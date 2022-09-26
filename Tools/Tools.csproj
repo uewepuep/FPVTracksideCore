@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net60</TargetFramework>
+    <ApplicationIcon />
+    <Platforms>AnyCPU;x64</Platforms>
+    <StartupObject />
+    <Version>2.0.35.6</Version>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+
+
+  <ItemGroup>
+	  <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.303">
+		  <PrivateAssets>all</PrivateAssets>
+	  </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+</Project>

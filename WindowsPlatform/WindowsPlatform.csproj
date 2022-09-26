@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<TargetFramework>net60-windows</TargetFramework>
+		<ApplicationIcon />
+		<Platforms>x64</Platforms>
+		<StartupObject />
+		<Version>2.0.35.6</Version>
+		<usewpf>true</usewpf>	
+	</PropertyGroup>
+
+
+	<ItemGroup>
+		<PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.1.303" />
+		<PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
+	  <PackageReference Include="System.Speech" Version="6.0.0" />
+	</ItemGroup>
+
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Compositor\Composition.csproj" />
+	  <ProjectReference Include="..\ImageServer\ImageServer.csproj" />
+	  <ProjectReference Include="..\RaceLib\RaceLib.csproj" />
+	  <ProjectReference Include="..\Tools\Tools.csproj" />
+	  <ProjectReference Include="..\UI\UI.csproj" />
+	  <ProjectReference Include="..\WinFormsGraphicsDevice\WinFormsGraphicsDevice.csproj" />
+	</ItemGroup>
+
+
+	<ItemGroup>
+	  <Compile Update="LayerStackControl.cs" />
+	  <Compile Update="LayerStackForm.cs" />
+	</ItemGroup>
+
+</Project>

@@ -1,0 +1,87 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net60</TargetFramework>
+    <ApplicationIcon />
+    <Platforms>AnyCPU;x64</Platforms>
+    <StartupObject />
+    <Version>2.0.35.6</Version>
+	  <Self-Contained>true</Self-Contained>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  
+  <ItemGroup>
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.303">
+		  <PrivateAssets>all</PrivateAssets>
+	  </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Compositor\Composition.csproj" />
+    <ProjectReference Include="..\ExternalData\ExternalData.csproj" />
+    <ProjectReference Include="..\ImageServer\ImageServer.csproj" />
+    <ProjectReference Include="..\RaceLib\RaceLib.csproj" />
+    <ProjectReference Include="..\Sound\Sound.csproj" />
+    <ProjectReference Include="..\Timing\Timing.csproj" />
+    <ProjectReference Include="..\Tools\Tools.csproj" />
+    <ProjectReference Include="..\Webb\Webb.csproj" />
+  </ItemGroup>
+
+
+
+  <ItemGroup>
+    <Content Include="themes\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="img\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="img\banner.png" />
+    <Content Remove="img\heros.jpg" />
+    <Content Remove="img\login\fpvtrackside.png" />
+    <Content Remove="img\login\multigp.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="themes\GClass\logo.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="img\banner.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="img\heros.jpg">
+    </EmbeddedResource>
+    <EmbeddedResource Include="img\login\fpvtrackside.png" />
+    <EmbeddedResource Include="img\login\multigp.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <None Update="sponsor\media\tmotor.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

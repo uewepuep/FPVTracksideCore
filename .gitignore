@@ -1,0 +1,14 @@
+
+.vs/
+*.msi
+*.swo
+*.swp
+*.txt
+*.user
+/.vs/
+**/bin/*
+**/obj/*
+*.csproj.user
+packages/
+*UpgradeLog.htm
+*.DS_Store

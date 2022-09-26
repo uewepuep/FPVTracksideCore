@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net60-windows</TargetFramework>
+    <ApplicationIcon />
+    <Platforms>x64;AnyCPU</Platforms>
+    <StartupObject />
+    <Version>2.0.35.6</Version>
+	  <usewpf>true</usewpf>
+  </PropertyGroup>
+
+  <ItemGroup>
+	  <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.1.303" />
+  </ItemGroup>
+</Project>

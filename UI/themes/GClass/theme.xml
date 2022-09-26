@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ArrayOfTheme xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Theme>
+    <FontFamily>Roboto</FontFamily>
+    <Background R="11" G="11" B="11" A="255" TextureFilename="background.png" />
+    <FPVTracksideLogo R="0" G="0" B="0" A="0" TextureFilename="logo.png" />
+    <TextAlt R="55" G="55" B="55" A="255" />
+    <TextMain R="255" G="255" B="255" A="255" />
+    <Button R="27" G="27" B="27" A="255" />
+    <Hover R="5" G="178" B="222" A="70" />
+    <TopPanel R="5" G="178" B="222" A="255" TextureFilename="TopPanel.png" />
+    <TopPanelText R="21" G="19" B="17" A="255" />
+    <TopPanelTextBorder>false</TopPanelTextBorder>
+    <PanelAlt R="21" G="19" B="17" A="255" />
+    <Panel R="22" G="22" B="22" A="255" />
+    <ScrollBar R="0" G="0" B="0" A="128" />
+    <MenuBackground R="44" G="44" B="44" A="240" />
+    <MenuText R="255" G="255" B="255" A="255" />
+    <MenuTextInactive R="55" G="55" B="55" A="255" />
+    <OverallBestTime R="240" G="124" B="255" A="255" />
+    <NewPersonalBest R="117" G="255" B="133" A="255" />
+    <BehindTime R="255" G="133" B="117" A="255" />
+    <AheadTime R="117" G="255" B="133" A="255" />
+    <PilotViewTheme>
+      <LapBackground R="28" G="28" B="28" A="180" TextureFilename="PilotViewTheme.LapBackground.png" />
+      <PositionText R="255" G="255" B="255" A="255" />
+      <PilotOverlayText R="255" G="255" B="255" A="255" />
+      <PilotOverlayPanel R="21" G="19" B="17" A="255" TextureFilename="PilotViewTheme.PilotOverlayPanel.png" />
+      <PilotTitleAlpha>160</PilotTitleAlpha>
+      <PilotNameBackground R="255" G="255" B="255" A="255" TextureFilename="pilot.png" />
+      <PBBackground R="0" G="0" B="0" A="255" TextureFilename="pbbg.png" />
+      <NoVideoBackground R="22" G="22" B="22" A="255" TextureFilename="static.png" />
+      <CrashedOut R="22" G="22" B="22" A="255" TextureFilename="crashed.png" />
+    </PilotViewTheme>
+    <Editor>
+      <Background R="22" G="22" B="22" A="240" TextureFilename="Editor.Background.png" />
+      <Foreground R="27" G="27" B="27" A="255" TextureFilename="Editor.Foreground.png" />
+      <Text R="255" G="255" B="255" A="255" />
+      <Border R="21" G="19" B="17" A="255" />
+    </Editor>
+    <Rounds>
+      <Background R="22" G="22" B="22" A="240" TextureFilename="Rounds.Background.png" />
+      <Foreground R="5" G="178" B="222" A="255" TextureFilename="Rounds.Foreground.png" />
+      <Text R="255" G="255" B="255" A="255" />
+      <Border R="21" G="19" B="17" A="255" />
+      <RaceTitle R="5" G="178" B="222" A="255" TextureFilename="Rounds.RaceTitle.png" />
+      <Channel R="255" G="255" B="255" A="255" TextureFilename="Rounds.Channel.png" />
+      <Heading R="5" G="178" B="222" A="255" TextureFilename="Rounds.Heading.png" />
+    </Rounds>
+    <RightControls>
+      <Background R="22" G="22" B="22" A="128" TextureFilename="RightControls.Background.png" />
+      <Foreground R="27" G="27" B="27" A="255" TextureFilename="RightControls.Foreground.png" />
+      <Text R="255" G="255" B="255" A="255" />
+    </RightControls>
+    <LeftPilotList>
+      <Background R="22" G="22" B="22" A="128" TextureFilename="LeftPilotList.Background.png" />
+      <Foreground R="5" G="178" B="222" A="255" TextureFilename="LeftPilotList.Foreground.png" />
+      <Text R="255" G="255" B="255" A="255" />
+      <Channel R="255" G="255" B="255" A="255" TextureFilename="LeftPilotList.Channel.png" />
+      <PilotCount R="255" G="255" B="255" A="255" />
+    </LeftPilotList>
+    <InfoPanel>
+      <Background R="22" G="22" B="22" A="240" TextureFilename="InfoPanel.Background.png" />
+      <Foreground R="27" G="27" B="27" A="255" TextureFilename="InfoPanel.Foreground.png" />
+      <Text R="255" G="255" B="255" A="255" />
+      <Border R="21" G="19" B="17" A="255" />
+      <Heading R="5" G="178" B="222" A="255" TextureFilename="InfoPanel.Heading.png" />
+    </InfoPanel>
+    <Login>
+      <Background R="22" G="22" B="22" A="255" TextureFilename="Login.Background.png" />
+      <Foreground R="27" G="27" B="27" A="255" TextureFilename="Login.Foreground.png" />
+      <Text R="255" G="255" B="255" A="255" />
+      <Border R="21" G="19" B="17" A="255" />
+    </Login>
+    <Replay>
+      <Background R="22" G="22" B="22" A="255" TextureFilename="Replay.Background.png" />
+      <Foreground R="27" G="27" B="27" A="255" TextureFilename="Replay.Foreground.png" />
+      <Text R="255" G="255" B="255" A="255" />
+    </Replay>
+    <ChannelColors>
+      <ToolColor R="0" G="0" B="255" A="255" />
+      <ToolColor R="255" G="106" B="0" A="255" />
+      <ToolColor R="255" G="255" B="0" A="255" />
+      <ToolColor R="255" G="0" B="255" A="255" />
+      <ToolColor R="50" G="240" B="0" A="255" />
+      <ToolColor R="255" G="255" B="255" A="255" />
+      <ToolColor R="0" G="240" B="240" A="255" />
+      <ToolColor R="255" G="168" B="0" A="255" />
+    </ChannelColors>
+  </Theme>
+</ArrayOfTheme>

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net60</TargetFramework>
+    <ApplicationIcon />
+    <Platforms>AnyCPU;x64</Platforms>
+    <StartupObject />
+    <Version>2.0.35.6</Version>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  
+  <ItemGroup>
+    <ProjectReference Include="..\RaceLib\RaceLib.csproj" />
+    <ProjectReference Include="..\Sound\Sound.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="httpfiles\" />
+  </ItemGroup>
+</Project>

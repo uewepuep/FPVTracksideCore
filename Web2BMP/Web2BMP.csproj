@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net60-windows</TargetFramework>
+		<ApplicationIcon />
+		<Platforms>x64</Platforms>
+		<StartupObject />
+		<Version>2.0.35.6</Version>
+		<UseWPF>true</UseWPF>
+		<UseWindowsForms>true</UseWindowsForms>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<Self-Contained>false</Self-Contained>
+	</PropertyGroup>
+	<ItemGroup>
+	  <PackageReference Include="Unofficial.Microsoft.mshtml" Version="7.0.3300" NoWarn ="NU1701" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Tools\Tools.csproj" />
+	</ItemGroup>
+</Project>
