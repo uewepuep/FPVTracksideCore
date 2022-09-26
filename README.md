@@ -14,8 +14,8 @@ This is the open source core project that FPVTrackside is built from. It contain
 - Remote notification
 - Executable for testing.
 
-For binaries / executables please grab the full version of FPVTrackside from our home at https://fpvtrackside.com/
+For binaries / executables please grab the full version of FPVTrackside from our home at https://fpvtrackside.com/. 
 
 Join us on Discord here https://discord.com/invite/V2x6dCs
 
---uewepuep
+_--uewepuep_
