@@ -1,5 +1,5 @@
 
-![alt text](https://fpvtrackside.com/media/banner.pngg)
+![alt text](https://fpvtrackside.com/media/banner.png)
 
 # FPVTracksideCore
 
