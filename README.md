@@ -16,6 +16,9 @@ This is the open source core project that FPVTrackside is built from. It contain
 
 For binaries / executables please grab the full version of FPVTrackside from our home at https://fpvtrackside.com/. 
 
+## Goals
+Core exists to allow the community to make changes to FPVTrackside and eventually have their changes included in the full version. So with that in mind this is primarily for developing your own fixes and additions to FPVTrackside. All of our normal users should just grab the binaries from our website.
+
 Join us on Discord here https://discord.com/invite/V2x6dCs
 
 _--uewepuep_
