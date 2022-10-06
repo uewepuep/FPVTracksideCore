@@ -41,23 +41,6 @@ namespace UI.Nodes
                 return listPropertyNode;
             }
 
-            if (pi.Name == "Type")
-            {
-                List<string> types = new List<string>();
-
-                foreach (EventTypes eventTypes in Event.GetEventTypes())
-                {
-                    string str = RaceStringFormatter.Instance.GetEventTypeText(eventTypes);
-                    if (!types.Contains(str))
-                    {
-                        types.Add(str);
-                    }
-                }
-
-                ListPropertyNode<Race> listPropertyNode = new ListPropertyNode<Race>(obj, pi, TextColor, ButtonHover, types.ToArray());
-                return listPropertyNode;
-            }
-
             return base.CreatePropertyNode(obj, pi);
         }
     }
