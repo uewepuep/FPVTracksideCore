@@ -139,18 +139,6 @@ namespace Timing.RotorHazard
         {
             try
             {
-                SetSettings setSettings = new SetSettings()
-                {
-                    calibration_offset = settings.CalibrationOffset,
-                    calibration_threshold = settings.CalibrationThreshold,
-                    trigger_threshold = settings.TriggerThreshold,
-                };
-
-                Logger.TimingLog.Log(this, "Setting Triggers");
-                socket.Emit("set_calibration_threshold", setSettings);
-                socket.Emit("set_calibration_offset", setSettings);
-                socket.Emit("set_trigger_threshold", setSettings);
-
                 Logger.TimingLog.Log(this, "SetListeningFrequencies", string.Join(", ", newFrequencies.Select(f => f.ToString())));
                 int node = 0;
                 foreach (ListeningFrequency freqSense in newFrequencies)
