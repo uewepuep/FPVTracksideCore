@@ -290,7 +290,15 @@ namespace UI
 
             loadingLayer.WorkQueue.Enqueue(startEventWorkSet, "Initializing Video Inputs", () =>
             {
-                eventLayer.LoadVideo();
+                try
+                {
+                    eventLayer.LoadVideo();
+                }
+                catch (Exception ex)
+                {
+                    Logger.VideoLog.LogException(this, ex);
+                    LayerStack.GetLayer<PopupLayer>().PopupMessage("Error loading Video: " + ex.Message);
+                }
             });
 
             loadingLayer.WorkQueue.Enqueue(startEventWorkSet, "Setting Scene", () =>
@@ -331,7 +339,7 @@ namespace UI
 
             Logger.UI.LogException(this, arg2);
 
-            LayerStack.GetLayer<PopupLayer>().PopupMessage("Error loading event", () =>
+            LayerStack.GetLayer<PopupLayer>().PopupMessage("Error loading event. Please check log files.", () =>
             {
                 if (LayerStack.Game is UI.BaseGame)
                 {

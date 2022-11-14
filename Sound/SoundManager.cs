@@ -146,17 +146,19 @@ namespace Sound
 
         private void InitSounds(bool reset)
         {
-            sounds = new Dictionary<SoundKey, Sound>();
             try
             {
-                Sounds = IOTools.Read<Sound>(filename);
-            }
-            catch
-            {
-            }
+                sounds = new Dictionary<SoundKey, Sound>();
+                try
+                {
+                    Sounds = IOTools.Read<Sound>(filename);
+                }
+                catch
+                {
+                }
 
-            Sound[] defaultSounds = new Sound[]
-            {
+                Sound[] defaultSounds = new Sound[]
+                {
                 new Sound() { Key = SoundKey.StartRaceIn, TextToSpeech = "Arm your quads. Starting on the tone in less than {time}", Category = Sound.SoundCategories.Race },
                 new Sound() { Key = SoundKey.RaceStart, TextToSpeech = "Go", Filename = @"sounds/tone.wav", Category = Sound.SoundCategories.Race },
                 new Sound() { Key = SoundKey.RaceOver, TextToSpeech = "Race over", Category = Sound.SoundCategories.Race },
@@ -173,7 +175,7 @@ namespace Sound
                 new Sound() { Key = SoundKey.NameTest, TextToSpeech = "{pilot}", Category = Sound.SoundCategories.Announcements },
                 new Sound() { Key = SoundKey.HurryUp, TextToSpeech = "Hurry Up {pilot}", Category = Sound.SoundCategories.Announcements },
                 new Sound() { Key = SoundKey.PilotChannel, TextToSpeech = "{pilot} on {band}{channel}", Category = Sound.SoundCategories.Announcements },
-           
+
                 new Sound() { Key = SoundKey.PilotResult, TextToSpeech = "{pilot} {position}", Category = Sound.SoundCategories.Announcements },
 
                 new Sound() { Key = SoundKey.Detection, TextToSpeech = "beep", Filename = @"sounds/detection.wav", Category = Sound.SoundCategories.Detection },
@@ -197,30 +199,35 @@ namespace Sound
                 new Sound() { Key = SoundKey.TimingSystemDisconnected, TextToSpeech = "Timing system disconnected", Category = Sound.SoundCategories.Status },
                 new Sound() { Key = SoundKey.TimingSystemConnected, TextToSpeech = "Timing system connected", Category = Sound.SoundCategories.Status },
                 new Sound() { Key = SoundKey.TimingSystemsConnected, TextToSpeech = "{count} Timing systems connected", Category = Sound.SoundCategories.Status },
-            };
+                };
 
-            foreach (Sound defaultSound in defaultSounds)
-            {
-                Sound settingsSound;
-                if (sounds.TryGetValue(defaultSound.Key, out settingsSound))
+                foreach (Sound defaultSound in defaultSounds)
                 {
-                    if (settingsSound.Filename != null && !System.IO.File.Exists(settingsSound.Filename) || reset)
+                    Sound settingsSound;
+                    if (sounds.TryGetValue(defaultSound.Key, out settingsSound))
                     {
-                        sounds[defaultSound.Key] = defaultSound;
+                        if (settingsSound.Filename != null && !System.IO.File.Exists(settingsSound.Filename) || reset)
+                        {
+                            sounds[defaultSound.Key] = defaultSound;
+                        }
+                    }
+                    else
+                    {
+                        // if its missing add it..
+                        sounds.Add(defaultSound.Key, defaultSound);
                     }
                 }
-                else
-                {
-                    // if its missing add it..
-                    sounds.Add(defaultSound.Key, defaultSound);
-                }
+
+                // preload all the waves
+                soundEffectManager.LoadSounds(sounds.Where(s => s.Value.HasFile).Select(s => s.Value.Filename));
+
+                WriteSettings();
+                initialised = true;
             }
-
-            // preload all the waves
-            soundEffectManager.LoadSounds(sounds.Where(s => s.Value.HasFile).Select(s => s.Value.Filename));
-
-            WriteSettings();
-            initialised = true;
+            catch (Exception ex)
+            {
+                Logger.SoundLog.LogException(this, ex);
+            }
         }
 
         public void Reset()

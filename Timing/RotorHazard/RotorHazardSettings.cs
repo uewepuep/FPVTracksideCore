@@ -15,14 +15,6 @@ namespace Timing.RotorHazard
         [Category("Network")]
         public int Port { get; set; }
 
-
-        [Category("Trigger Settings")]
-        public int CalibrationThreshold { get; set; }
-        [Category("Trigger Settings")]
-        public int CalibrationOffset { get; set; }
-        [Category("Trigger Settings")]
-        public int TriggerThreshold { get; set; }
-
         public int VoltageWarning { get; set; }
         public int TemperatureWarning { get; set; }
 
@@ -30,10 +22,6 @@ namespace Timing.RotorHazard
         {
             HostName = "10.1.1.207";
             Port = 5000;
-
-            CalibrationThreshold = 95;
-            CalibrationOffset = 8;
-            TriggerThreshold = 40;
 
             VoltageWarning = 11;
             TemperatureWarning = 80;
