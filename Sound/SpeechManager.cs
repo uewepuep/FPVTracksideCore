@@ -86,6 +86,7 @@ namespace Sound
 
         public void StopSpeech()
         {
+            ttsQueue.Clear();
             if (speaker != null)
             {
                 speaker.Stop();

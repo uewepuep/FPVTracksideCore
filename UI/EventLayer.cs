@@ -56,14 +56,14 @@ namespace UI
         private bool showPilotList;
 
         private ExternalData.RemoteNotifier RemoteNotifier;
-        private WorkQueue workQueue;
+        private WorkQueue workQueueStartRace;
 
         private SystemStatusNode systemStatusNode;
         public KeyboardShortcuts KeyMapper { get; private set; }
         public EventLayer(BaseGame game, GraphicsDevice graphicsDevice, EventManager eventManager)
             : base(graphicsDevice)
         {
-            workQueue = new WorkQueue("Event Layer");
+            workQueueStartRace = new WorkQueue("Event Layer - Start Race");
 
             showPilotList = true;
 
@@ -326,7 +326,7 @@ namespace UI
             }
 
             EventManager.Dispose();
-            workQueue.Dispose();
+            workQueueStartRace.Dispose();
             SoundManager.Dispose();
             videoManager.Dispose();
             sceneManagerNode.Dispose();
@@ -582,6 +582,9 @@ namespace UI
                 return;
             }
 
+            if (workQueueStartRace.QueueLength > 0)
+                return;
+
             if (GeneralSettings.Instance.AutoHideShowPilotList)
             {
                 ShowPilotList(false);
@@ -601,7 +604,7 @@ namespace UI
                 TimeSpan staggeredTime = TimeSpan.FromSeconds(GeneralSettings.Instance.StaggeredStartDelaySeconds);
                 EventManager.RaceManager.PreRaceStart();
 
-                workQueue.Enqueue(() =>
+                workQueueStartRace.Enqueue(() =>
                 {
                     EventManager.RaceManager.StartDetection();
                 });
@@ -613,7 +616,7 @@ namespace UI
                     wait.Set();
                 });
 
-                workQueue.Enqueue(() =>
+                workQueueStartRace.Enqueue(() =>
                 {
                     if (!wait.WaitOne(TimeSpan.FromSeconds(20)))
                     {
@@ -631,7 +634,7 @@ namespace UI
             {
                 EventManager.RaceManager.PreRaceStart();
 
-                workQueue.Enqueue(() =>
+                workQueueStartRace.Enqueue(() =>
                 {
                     EventManager.RaceManager.StartDetection();
 
@@ -647,7 +650,7 @@ namespace UI
             }
             else
             {
-                workQueue.Enqueue(() =>
+                workQueueStartRace.Enqueue(() =>
                 {
                     EventManager.RaceManager.PreRaceStart();
                     EventManager.RaceManager.StartDetection();
@@ -660,6 +663,8 @@ namespace UI
 
         private void StopRace()
         {
+            workQueueStartRace.Clear();
+
             if (EventManager.RaceManager.PreRaceStartDelay)
             {
                 EventManager.RaceManager.CancelRaceStart(false);

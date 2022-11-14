@@ -36,6 +36,14 @@ namespace Tools
 
         public int MaxQueueLength { get; private set; }
 
+        public int QueueLength
+        {
+            get
+            {
+                return queue.Count;
+            }
+        }
+
         public bool NeedWorkDone { get; private set; }
 
         public event System.Action OnEnqueue;
@@ -210,6 +218,14 @@ namespace Tools
                 MaxQueueLength = 0;
                 doingOne = false;
                 return false;
+            }
+        }
+
+        public void Clear()
+        {
+            lock (queue)
+            {
+                queue.Clear();
             }
         }
 
