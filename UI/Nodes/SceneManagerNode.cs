@@ -398,17 +398,20 @@ namespace UI.Nodes
                     channelsGridNode.SetProfileVisible(false, true);
 
                     launchCamsNode.SetAnimatedVisibility(false);
-
-                    commentatorsAndSummary.SetAnimatedVisibility(true);
-                    commentatorsAndSummary.RelativeBounds = new RectangleF(0.33f, channelGridHeight, 0.33f, nonChannelGridHeight);
-                    Node.AlignVertically(0, commentatorsAndSummary.Children);
-
+                    
                     channelsGridNode.SingleRow = true;
                     channelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 1, channelGridHeight);
 
-                    resultsRaceNode.RelativeBounds = new RectangleF(0, channelGridHeight, 0.33f, nonChannelGridHeight);
+                    commentatorsAndSummary.SetAnimatedVisibility(true);
+                    commentatorsAndSummary.RelativeBounds = new RectangleF(0.33f, channelGridHeight, 0.33f, nonChannelGridHeight);
+                    AlignVertically(0, commentatorsAndSummary.Children);
+
+                    float only2Fudge = commentatorsAndSummary.ChildCount > 0 ? 0 : 0.125f;
+
+                    resultsRaceNode.RelativeBounds = new RectangleF(0 + only2Fudge, channelGridHeight, 0.33f, nonChannelGridHeight);
                     resultsRaceNode.Scale(0.8f);
-                    nextRaceNode.RelativeBounds = new RectangleF(0.66f, channelGridHeight, 0.33f, nonChannelGridHeight);
+                    
+                    nextRaceNode.RelativeBounds = new RectangleF(0.66f - only2Fudge, channelGridHeight, 0.33f, nonChannelGridHeight);
                     nextRaceNode.Scale(0.8f);
 
                     nextRaceNode.SetAnimatedVisibility(true);
