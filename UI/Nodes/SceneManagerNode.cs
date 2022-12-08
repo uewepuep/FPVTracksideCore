@@ -27,7 +27,6 @@ namespace UI.Nodes
 
         private NamedRaceNode resultsRaceNode;
         private NamedRaceNode nextRaceNode;
-        private RaceLapSummary raceLapSummary;
 
         private WormNode wormNode;
 
@@ -79,10 +78,6 @@ namespace UI.Nodes
             
             commentatorsAndSummary = new AnimatedRelativeNode();
             commentatorsAndSummary.SetAnimatedVisibility(false);
-
-
-            raceLapSummary = new RaceLapSummary();
-            commentatorsAndSummary.AddChild(raceLapSummary);
 
             AddChild(launchCamsNode);
             AddChild(commentatorsAndSummary);
@@ -361,8 +356,6 @@ namespace UI.Nodes
 
                     channelsGridNode.MakeExtrasVisible(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
-                    channelsGridNode.SetLapsVisiblity(true);
-                    raceLapSummary.Visible = false;
                     break;
 
                 case Scenes.Race:
@@ -381,8 +374,6 @@ namespace UI.Nodes
                     channelsGridNode.SetBiggerChannelInfo(!eventManager.RaceManager.RaceRunning);
                     channelsGridNode.MakeExtrasVisible(true);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
-                    channelsGridNode.SetLapsVisiblity(true);
-                    raceLapSummary.Visible = false;
                     break;
 
                 case Scenes.Clear:
@@ -399,8 +390,6 @@ namespace UI.Nodes
                     channelsGridNode.MakeExtrasVisible(false);
                     channelsGridNode.SetProfileVisible(false, true);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
-                    channelsGridNode.SetLapsVisiblity(true);
-                    raceLapSummary.Visible = false;
                     break;
 
                 case Scenes.PostRace:
@@ -434,15 +423,11 @@ namespace UI.Nodes
                         resultsRaceNode.SetAnimatedVisibility(false);
                     }
 
-                    raceLapSummary.SetRace(eventManager, eventManager.RaceManager.CurrentRace);
-
                     UpdateNextRaceNode();
 
                     channelsGridNode.SetBiggerChannelInfo(true);
                     channelsGridNode.MakeExtrasVisible(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
-                    channelsGridNode.SetLapsVisiblity(false);
-                    raceLapSummary.Visible = true;
                     break;
 
                 case Scenes.Commentators:
@@ -457,7 +442,6 @@ namespace UI.Nodes
                     nextRaceNode.SetAnimatedVisibility(false);
                     resultsRaceNode.SetAnimatedVisibility(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
-                    raceLapSummary.Visible = false;
                     break;
 
                 case Scenes.EventStatus:
@@ -468,7 +452,6 @@ namespace UI.Nodes
                     nextRaceNode.SetAnimatedVisibility(false);
                     resultsRaceNode.SetAnimatedVisibility(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(true);
-                    raceLapSummary.Visible = false;
                     break;
             }
         }
@@ -491,14 +474,7 @@ namespace UI.Nodes
         public void SetupCams()
         {
             launchCamsNode.ClearDisposeChildren();
-
-            foreach (Node child in commentatorsAndSummary.Children)
-            {
-                if (child != raceLapSummary)
-                {
-                    child.Dispose();
-                }
-            }
+            commentatorsAndSummary.ClearDisposeChildren();
 
             foreach (FrameSource source in videoManager.GetFrameSources())
             {
