@@ -17,7 +17,7 @@ namespace UI.Nodes
     public class SceneManagerNode : Node
     {
         private AnimatedRelativeNode launchCamsNode;
-        private AnimatedRelativeNode commentatorsAndChat;
+        private AnimatedRelativeNode commentatorsAndSummary;
 
         private VideoManager videoManager;
         private EventManager eventManager;
@@ -27,10 +27,9 @@ namespace UI.Nodes
 
         private NamedRaceNode resultsRaceNode;
         private NamedRaceNode nextRaceNode;
+        private RaceLapSummary raceLapSummary;
 
         private WormNode wormNode;
-
-        private LiveChatNode liveChat;
 
         private AnimatedNode eventStatusNodeContainer;
 
@@ -78,11 +77,15 @@ namespace UI.Nodes
             launchCamsNode = new AnimatedRelativeNode();
             launchCamsNode.SetAnimatedVisibility(false);
             
-            commentatorsAndChat = new AnimatedRelativeNode();
-            commentatorsAndChat.SetAnimatedVisibility(false);
+            commentatorsAndSummary = new AnimatedRelativeNode();
+            commentatorsAndSummary.SetAnimatedVisibility(false);
+
+
+            raceLapSummary = new RaceLapSummary();
+            commentatorsAndSummary.AddChild(raceLapSummary);
 
             AddChild(launchCamsNode);
-            AddChild(commentatorsAndChat);
+            AddChild(commentatorsAndSummary);
             AddChild(channelsGridNode);
 
             resultsRaceNode = new NamedRaceNode("Results", eventManager);
@@ -90,9 +93,6 @@ namespace UI.Nodes
 
             nextRaceNode = new NamedRaceNode("Next Race", eventManager);
             AddChild(nextRaceNode);
-
-            liveChat = new LiveChatNode();
-            liveChat.Visible = false;
 
             resultsRaceNode.RelativeBounds = new RectangleF(0, 0, 0.01f, 0.01f);
             nextRaceNode.RelativeBounds = new RectangleF(0, 0, 0.01f, 0.01f);
@@ -254,11 +254,10 @@ namespace UI.Nodes
         public void SetAnimationTime(TimeSpan time)
         {
             launchCamsNode.AnimationTime = time;
-            commentatorsAndChat.AnimationTime = time;
+            commentatorsAndSummary.AnimationTime = time;
             resultsRaceNode.AnimationTime = time;
             nextRaceNode.AnimationTime = time;
             channelsGridNode.SetAnimationTime(time);
-            liveChat.AnimationTime = time;
             topBarNode.SetAnimationTime(time);
         }
 
@@ -310,11 +309,8 @@ namespace UI.Nodes
                     SetAnimationTime(SetupAnimationTime);
                     float launchWidth = 0.7f;
 
-                    liveChat.SetAnimatedVisibility(GeneralSettings.Instance.ShowLiveChatPreRace);
-                    liveChat.Refresh();
-
                     IEnumerable<Node> launchCams = launchCamsNode.VisibleChildren;
-                    IEnumerable<Node> commentatorCams = commentatorsAndChat.VisibleChildren;
+                    IEnumerable<Node> commentatorCams = commentatorsAndSummary.VisibleChildren;
 
                     if (!launchCams.Any() && !commentatorCams.Any())
                     {
@@ -346,16 +342,16 @@ namespace UI.Nodes
 
                     Node.AlignHorizontally(0, launchCams.ToArray());
 
-                    commentatorsAndChat.SetAnimatedVisibility(true);
-                    commentatorsAndChat.RelativeBounds = new RectangleF(launchWidth, 0, 1 - launchWidth, nonChannelGridHeight);
+                    commentatorsAndSummary.SetAnimatedVisibility(true);
+                    commentatorsAndSummary.RelativeBounds = new RectangleF(launchWidth, 0, 1 - launchWidth, nonChannelGridHeight);
 
                     if (launchCams.Any())
                     {
-                        Node.AlignVertically(0, commentatorsAndChat.VisibleChildren.ToArray());
+                        Node.AlignVertically(0, commentatorsAndSummary.VisibleChildren.ToArray());
                     }
                     else
                     {
-                        Node.AlignHorizontally(0, commentatorsAndChat.VisibleChildren.ToArray());
+                        Node.AlignHorizontally(0, commentatorsAndSummary.VisibleChildren.ToArray());
                     }
 
                     channelsGridNode.RelativeBounds = new RectangleF(0, nonChannelGridHeight, 1, channelGridHeight);
@@ -365,18 +361,19 @@ namespace UI.Nodes
 
                     channelsGridNode.MakeExtrasVisible(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
+                    channelsGridNode.SetLapsVisiblity(true);
+                    raceLapSummary.Visible = false;
                     break;
 
                 case Scenes.Race:
                     channelsGridNode.SetProfileVisible(false, true);
 
                     SetAnimationTime(MidRaceAnimationTime);
-                    liveChat.SetAnimatedVisibility(false);
-
+                    
                     channelsGridNode.SingleRow = false;
                     channelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 1, 1);
 
-                    commentatorsAndChat.SetAnimatedVisibility(false);
+                    commentatorsAndSummary.SetAnimatedVisibility(false);
                     launchCamsNode.SetAnimatedVisibility(false);
 
                     resultsRaceNode.SetAnimatedVisibility(false);
@@ -384,25 +381,26 @@ namespace UI.Nodes
                     channelsGridNode.SetBiggerChannelInfo(!eventManager.RaceManager.RaceRunning);
                     channelsGridNode.MakeExtrasVisible(true);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
+                    channelsGridNode.SetLapsVisiblity(true);
+                    raceLapSummary.Visible = false;
                     break;
 
                 case Scenes.Clear:
                     SetAnimationTime(SetupAnimationTime);
 
                     channelsGridNode.AllVisible(false);
-                    commentatorsAndChat.SetAnimatedVisibility(false);
+                    commentatorsAndSummary.SetAnimatedVisibility(false);
                     launchCamsNode.SetAnimatedVisibility(false);
 
                     resultsRaceNode.SetAnimatedVisibility(false);
                     nextRaceNode.SetAnimatedVisibility(false);
 
-                    liveChat.SetAnimatedVisibility(false);
-
                     channelsGridNode.SetBiggerChannelInfo(false);
                     channelsGridNode.MakeExtrasVisible(false);
                     channelsGridNode.SetProfileVisible(false, true);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
-
+                    channelsGridNode.SetLapsVisiblity(true);
+                    raceLapSummary.Visible = false;
                     break;
 
                 case Scenes.PostRace:
@@ -410,14 +408,11 @@ namespace UI.Nodes
 
                     channelsGridNode.SetProfileVisible(false, true);
 
-                    liveChat.SetAnimatedVisibility(GeneralSettings.Instance.ShowLiveChatPostRace);
-                    liveChat.Refresh();
-
                     launchCamsNode.SetAnimatedVisibility(false);
 
-                    commentatorsAndChat.SetAnimatedVisibility(true);
-                    commentatorsAndChat.RelativeBounds = new RectangleF(0.33f, channelGridHeight, 0.33f, nonChannelGridHeight);
-                    Node.AlignVertically(0, commentatorsAndChat.Children);
+                    commentatorsAndSummary.SetAnimatedVisibility(true);
+                    commentatorsAndSummary.RelativeBounds = new RectangleF(0.33f, channelGridHeight, 0.33f, nonChannelGridHeight);
+                    Node.AlignVertically(0, commentatorsAndSummary.Children);
 
                     channelsGridNode.SingleRow = true;
                     channelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 1, channelGridHeight);
@@ -439,39 +434,41 @@ namespace UI.Nodes
                         resultsRaceNode.SetAnimatedVisibility(false);
                     }
 
-                    UpdateNextRaceNode();
+                    raceLapSummary.SetRace(eventManager, eventManager.RaceManager.CurrentRace);
 
+                    UpdateNextRaceNode();
 
                     channelsGridNode.SetBiggerChannelInfo(true);
                     channelsGridNode.MakeExtrasVisible(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
+                    channelsGridNode.SetLapsVisiblity(false);
+                    raceLapSummary.Visible = true;
                     break;
-                case Scenes.Commentators:
-                    liveChat.SetAnimatedVisibility(false);
 
+                case Scenes.Commentators:
                     launchCamsNode.SetAnimatedVisibility(false);
 
-                    commentatorsAndChat.RelativeBounds = new RectangleF(0.0f, 0.0f, 1, 1);
-                    commentatorsAndChat.SetAnimatedVisibility(true);
-                    Node.AlignHorizontally(0, commentatorsAndChat.VisibleChildren.ToArray());
+                    commentatorsAndSummary.RelativeBounds = new RectangleF(0.0f, 0.0f, 1, 1);
+                    commentatorsAndSummary.SetAnimatedVisibility(true);
+                    Node.AlignHorizontally(0, commentatorsAndSummary.VisibleChildren.ToArray());
 
                     channelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 0, 0);
 
                     nextRaceNode.SetAnimatedVisibility(false);
                     resultsRaceNode.SetAnimatedVisibility(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
+                    raceLapSummary.Visible = false;
                     break;
 
                 case Scenes.EventStatus:
-                    liveChat.SetAnimatedVisibility(false);
                     launchCamsNode.SetAnimatedVisibility(false);
-                    commentatorsAndChat.SetAnimatedVisibility(false);
+                    commentatorsAndSummary.SetAnimatedVisibility(false);
                     channelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 0, 0);
 
                     nextRaceNode.SetAnimatedVisibility(false);
                     resultsRaceNode.SetAnimatedVisibility(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(true);
-
+                    raceLapSummary.Visible = false;
                     break;
             }
         }
@@ -479,7 +476,7 @@ namespace UI.Nodes
         public void Hide()
         {
             launchCamsNode.SetAnimatedVisibility(false);
-            commentatorsAndChat.SetAnimatedVisibility(false);
+            commentatorsAndSummary.SetAnimatedVisibility(false);
             resultsRaceNode.SetAnimatedVisibility(false);
             nextRaceNode.SetAnimatedVisibility(false);
 
@@ -493,13 +490,15 @@ namespace UI.Nodes
 
         public void SetupCams()
         {
-            if (liveChat != null)
-            {
-                liveChat.Remove();
-            }
-
             launchCamsNode.ClearDisposeChildren();
-            commentatorsAndChat.ClearDisposeChildren();
+
+            foreach (Node child in commentatorsAndSummary.Children)
+            {
+                if (child != raceLapSummary)
+                {
+                    child.Dispose();
+                }
+            }
 
             foreach (FrameSource source in videoManager.GetFrameSources())
             {
@@ -511,7 +510,7 @@ namespace UI.Nodes
                         case SourceTypes.Commentators:
                             node = new CamNode(source, videoBounds);
                             node.OnFullScreenRequest += Node_OnFullScreenRequest;
-                            commentatorsAndChat.AddChild(node);
+                            commentatorsAndSummary.AddChild(node);
                             break;
 
                         case SourceTypes.Launch:
@@ -528,12 +527,6 @@ namespace UI.Nodes
                     }
                 }
             }
-
-            if (liveChat != null)
-            {
-                commentatorsAndChat.AddChild(liveChat);
-            }
-
         }
 
         private void Node_OnFullScreenRequest()

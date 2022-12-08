@@ -74,21 +74,6 @@ namespace UI
         [NeedsRestart]
         public int ShownDecimalPlaces { get; set; }
 
-        [System.ComponentModel.Browsable(false)]
-        public string LiveChatURL { get; set; }
-        [Category("Live Chat")]
-        [DisplayName("Show Pre-Race")]
-        public bool ShowLiveChatPreRace { get; set; }
-       
-        [Category("Live Chat")]
-        [DisplayName("Show Mid-Race")]
-        [NeedsRestart]
-        public bool ShowLiveChatMidRace { get; set; }
-       
-        [Category("Live Chat")]
-        [DisplayName("Show Post-Race")]
-        public bool ShowLiveChatPostRace { get; set; }
-
         [Category("Dynamic pilot ordering")]
         public OrderTypes PilotOrderPreRace { get; set; }
         [Category("Dynamic pilot ordering")]

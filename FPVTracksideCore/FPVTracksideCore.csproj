@@ -44,10 +44,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Compositor\Composition.csproj" />
     <ProjectReference Include="..\Tools\Tools.csproj" />
-    <ProjectReference Include="..\Web2BMP\Web2BMP.csproj">
-		<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-		<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-	</ProjectReference>
     <ProjectReference Include="..\WindowsPlatform\WindowsPlatform.csproj" />
   </ItemGroup>
 

@@ -66,8 +66,6 @@ namespace UI.Nodes
 
         private GridStatsNode gridStatsNode;
 
-        private LiveChatNode liveChatNode;
-
         private object channelCreationLock;
 
         public bool SingleRow { get; set; }
@@ -152,13 +150,6 @@ namespace UI.Nodes
             gridStatsNode = new GridStatsNode(EventManager);
             gridStatsNode.Visible = false;
             AddChild(gridStatsNode);
-
-            if (GeneralSettings.Instance.ShowLiveChatMidRace)
-            {
-                liveChatNode = new LiveChatNode();
-                liveChatNode.Visible = false;
-                AddChild(liveChatNode);
-            }
         }
 
         public override void Dispose()
@@ -225,10 +216,6 @@ namespace UI.Nodes
             if (SingleRow)
             {
                 gridStatsNode.Visible = false;
-                if (liveChatNode != null)
-                {
-                    liveChatNode.Visible = false;
-                }
                 return GridTypes.SingleRow;
             }
 
@@ -236,13 +223,6 @@ namespace UI.Nodes
             if (gridStatsNode.Visible)
             {
                 count -= 1;
-            }
-
-            // Don't show the chat node if that's all there is..
-            if (count == 1 && liveChatNode != null && liveChatNode.Visible)
-            {
-                count = 0;
-                liveChatNode.Visible = false;
             }
 
             GridTypes decided = base.DecideLayout(count);
@@ -366,12 +346,6 @@ namespace UI.Nodes
                 output = output.Union(new Node[] { gridStatsNode });
             }
 
-            // And the live chat 
-            if (liveChatNode != null && liveChatNode.Visible)
-            {
-                output = output.Union(new Node[] { liveChatNode });
-            }
-
             // And the cam nodes
             if (CamNodes.Any(c => c.Visible))
             {
@@ -453,11 +427,6 @@ namespace UI.Nodes
             }
 
             gridStatsNode.SetAnimatedVisibility(visible);
-
-            if (liveChatNode != null)
-            {
-                liveChatNode.SetAnimatedVisibility(visible);
-            }
         }
 
         public void SetBiggerChannelInfo(bool tall)
@@ -795,11 +764,6 @@ namespace UI.Nodes
             if (gridStatsNode != null)
             {
                 gridStatsNode.AnimationTime = CurrentAnimationTime;
-            }
-
-            if (liveChatNode != null)
-            {
-                liveChatNode.AnimationTime = CurrentAnimationTime;
             }
         }
 
