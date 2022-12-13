@@ -6,7 +6,7 @@ using UI;
 namespace FPVMacsideCore
 {
 
-    public class FPVMacsideGame : UI.BaseGame
+    public class FPVMacsideCoreGame : UI.BaseGame
     {
 
         public MacPlatform Platform
@@ -17,7 +17,7 @@ namespace FPVMacsideCore
             }
         }
 
-        public FPVMacsideGame()
+        public FPVMacsideCoreGame()
             :base(new MacPlatform())
         {
           
