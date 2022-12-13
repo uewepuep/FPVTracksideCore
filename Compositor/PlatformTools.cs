@@ -44,6 +44,8 @@ namespace Composition
         public abstract string SaveFileDialog(string title, string fileExtension);
         public abstract void Invoke(Action value);
 
+        public abstract void OpenFileManager(string directory);
+
         public abstract PlatformFeature[] Features { get; }
         public abstract string InstallerExtension { get; }
 

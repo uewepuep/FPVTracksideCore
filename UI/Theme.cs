@@ -14,7 +14,7 @@ namespace UI
 {
     public class Theme
     {
-        public string Filename { get { return Directory + "theme.xml"; } }
+        public string Filename { get { return Directory + "/theme.xml"; } }
 
         [XmlIgnore()]
         [Browsable(false)]

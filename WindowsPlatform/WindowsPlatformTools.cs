@@ -213,5 +213,15 @@ namespace WindowsPlatform
             output = t;
             return true;
         }
+
+        public override void OpenFileManager(string directory)
+        {
+            FileInfo file = new FileInfo(directory);
+            if (file.Exists)
+            {
+                directory = file.DirectoryName;
+            }
+            System.Diagnostics.Process.Start("explorer.exe", directory);
+        }
     }
 }

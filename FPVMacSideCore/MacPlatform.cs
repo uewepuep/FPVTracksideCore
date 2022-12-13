@@ -169,6 +169,10 @@ namespace FPVMacsideCore
         public override void SetSavedUsernamePassword(string service, string username, string password)
         {
         }
+
+        public override void OpenFileManager(string directory)
+        {
+        }
     }
 }
 

@@ -575,7 +575,7 @@ namespace UI.Nodes
     {
         public AspectNode Demo { get; private set; }
 
-        public TextButtonNode Edit { get; private set; }
+        public TextButtonNode OpenDir { get; private set; }
 
         public ThemeSettingsEditor(IEnumerable<Theme> toEdit)
             : base(toEdit, false, true, false)
@@ -584,17 +584,17 @@ namespace UI.Nodes
             okButton.Text = "Set Theme";
             OnOK += ThemeSettingsEditor_OnOK;
 
-            Edit = new TextButtonNode("Edit Theme", ButtonBackground, ButtonHover, TextColor);
-            Edit.OnClick += (mie) =>
+            OpenDir = new TextButtonNode("Open Theme Dir", ButtonBackground, ButtonHover, TextColor);
+            OpenDir.OnClick += (mie) =>
             {
                 if (Selected != null)
                 {
-                    System.Diagnostics.Process.Start(@"C:\Windows\system32\notepad.exe", Selected.Filename);
+                    PlatformTools.OpenFileManager(Selected.Filename);
                 }
             };
-            buttonContainer.AddChild(Edit);
+            buttonContainer.AddChild(OpenDir);
 
-            Node[] buttons = new Node[] { Edit, cancelButton, okButton };
+            Node[] buttons = new Node[] { OpenDir, cancelButton, okButton };
             buttonContainer.SetOrder(buttons);
 
             AlignVisibleButtons();

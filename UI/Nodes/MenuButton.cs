@@ -505,7 +505,7 @@ namespace UI.Nodes
 
         public void OpenDirectory()
         {
-            System.Diagnostics.Process.Start("explorer.exe", System.IO.Directory.GetCurrentDirectory());
+            PlatformTools.OpenFileManager(System.IO.Directory.GetCurrentDirectory());
         }
 
         public void OpenWebServer()
