@@ -535,15 +535,17 @@ namespace UI.Video
         public IEnumerable<VideoConfig> GetRecordings(Race race)
         {
             DirectoryInfo videoDirectory = new DirectoryInfo("video");
-
-            foreach (FileInfo file in videoDirectory.GetFiles(race.ID + "*.recordinfo.xml"))
+            if (videoDirectory.Exists)
             {
-                RecodingInfo videoInfo = IOTools.ReadSingle<RecodingInfo>(file.FullName);
-                if (videoInfo != null)
+                foreach (FileInfo file in videoDirectory.GetFiles(race.ID + "*.recordinfo.xml"))
                 {
-                    if (File.Exists(videoInfo.FilePath))
+                    RecodingInfo videoInfo = IOTools.ReadSingle<RecodingInfo>(file.FullName);
+                    if (videoInfo != null)
                     {
-                        yield return videoInfo.GetVideoConfig();
+                        if (File.Exists(videoInfo.FilePath))
+                        {
+                            yield return videoInfo.GetVideoConfig();
+                        }
                     }
                 }
             }
