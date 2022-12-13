@@ -23,7 +23,10 @@ namespace FPVMacsideCore
 
         public string GetText()
         {
-            return OsxClipboard.GetText();
+            string text = OsxClipboard.GetText();
+            if (text == null)
+                return "";
+            return text;
         }
 
         public void SetLines(IEnumerable<string> items)

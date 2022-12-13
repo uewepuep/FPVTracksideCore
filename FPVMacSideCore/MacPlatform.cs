@@ -172,6 +172,7 @@ namespace FPVMacsideCore
 
         public override void OpenFileManager(string directory)
         {
+            System.Diagnostics.Process.Start("open", directory);
         }
     }
 }
