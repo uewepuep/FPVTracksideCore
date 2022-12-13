@@ -35,6 +35,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UI", "UI\UI.csproj", "{D7E4
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExternalData", "ExternalData\ExternalData.csproj", "{1720C2E5-4A61-4C8A-9AAC-60ECDA8967FC}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FPVMacsideCore", "FPVMacSideCore\FPVMacsideCore.csproj", "{F4D1C563-AF7A-403D-B28A-6E30EFF8577C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -171,6 +173,14 @@ Global
 		{1720C2E5-4A61-4C8A-9AAC-60ECDA8967FC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1720C2E5-4A61-4C8A-9AAC-60ECDA8967FC}.Release|x64.ActiveCfg = Release|x64
 		{1720C2E5-4A61-4C8A-9AAC-60ECDA8967FC}.Release|x64.Build.0 = Release|x64
+		{F4D1C563-AF7A-403D-B28A-6E30EFF8577C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4D1C563-AF7A-403D-B28A-6E30EFF8577C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4D1C563-AF7A-403D-B28A-6E30EFF8577C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F4D1C563-AF7A-403D-B28A-6E30EFF8577C}.Debug|x64.Build.0 = Debug|Any CPU
+		{F4D1C563-AF7A-403D-B28A-6E30EFF8577C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4D1C563-AF7A-403D-B28A-6E30EFF8577C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4D1C563-AF7A-403D-B28A-6E30EFF8577C}.Release|x64.ActiveCfg = Release|Any CPU
+		{F4D1C563-AF7A-403D-B28A-6E30EFF8577C}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
