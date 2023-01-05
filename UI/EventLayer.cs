@@ -363,19 +363,30 @@ namespace UI
             }
         }
 
-
-
-        public bool ResumeRace()
+        public void ResumeRace()
         {
             Race race = EventManager.RaceManager.CurrentRace;
-            if (race != null)
+            if (race != null && race.Ended)
             {
-                if (race.Ended)
+                TimeSpan timeSinceEnd = DateTime.Now - race.End;
+                if (timeSinceEnd.TotalSeconds > 5)
                 {
-                    return RecoverRace(race);
+                    workQueueStartRace.Enqueue(() =>
+                    {
+                        SoundManager.StartRaceIn(EventManager.Event.MaxStartDelay, () =>
+                        {
+                            if (RecoverRace(race))
+                            {
+                                SoundManager.Start();
+                            }
+                        });
+                    });
+                }
+                else
+                {
+                    RecoverRace(race);
                 }
             }
-            return false;
         }
 
         private bool RecoverRace(Race toRecover)
@@ -390,6 +401,7 @@ namespace UI
                 sceneManagerNode.Snap();
                 RequestLayout();
                 ControlButtons.UpdateControlButtons();
+                return true;
             }
             return false;
         }
@@ -764,6 +776,12 @@ namespace UI
 
                     return true;
                 }
+
+                if (KeyMapper.ResumeRace.Match(inputEvent))
+                {
+                    ResumeRace();
+                }
+
 
                 if (KeyMapper.NextRace.Match(inputEvent))
                 {

@@ -76,13 +76,12 @@ namespace UI.Nodes
             CopyResultsClipboard = new IconButtonNode(@"img\copy.png", "Copy", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
             AddChild(CopyResultsClipboard);
 
-            ClearButton = new IconButtonNode(@"img\clear.png", "Clear", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
+            ClearButton = new IconButtonNode(@"img\clear.png", "Clear Screen", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
             ClearButton.NodeName = "ClearRace";
             AddChild(ClearButton);
             
             PilotList = new IconButtonNode(@"img\pilotlist.png", "Pilots", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
             AddChild(PilotList);
-
 
 
             foreach (IconButtonNode ibm in Children.OfType<IconButtonNode>())
@@ -97,6 +96,7 @@ namespace UI.Nodes
         {
             SyncButton = button;
             SyncButton.ImageNode.Tint = Theme.Current.RightControls.Text.XNA;
+            AddChild(SyncButton);
         }
 
         public override void Dispose()

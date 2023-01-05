@@ -289,6 +289,11 @@ namespace Composition.Input
 
         public void OnKeyboardInput(ButtonStates buttonState, Keys key)
         {
+            Keys[] modifiers = new Keys[] { Keys.LeftControl, Keys.RightControl, Keys.LeftShift, Keys.RightShift, Keys.LeftAlt, Keys.RightAlt };
+
+            if (modifiers.Contains(key))
+                return;
+
             KeyboardInputEvent keyboardEvent = new KeyboardInputEvent(buttonState, key, AreShiftKeysDown(), AreControlKeysDown(), AreAltKeysDown());
 
             lock (keyboardInputs)

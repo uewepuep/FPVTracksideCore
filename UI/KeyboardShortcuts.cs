@@ -47,6 +47,8 @@ namespace Composition.Input
         [Category("Race Control")]
         public ShortcutKey StartStopRace { get; set; }
         [Category("Race Control")]
+        public ShortcutKey ResumeRace { get; set; }
+        [Category("Race Control")]
         public ShortcutKey NextRace { get; set; }
         [Category("Race Control")]
         public ShortcutKey PrevRace { get; set; }
@@ -140,6 +142,7 @@ namespace Composition.Input
             ReOrderChannelsNow = new ShortcutKey(Keys.O);
             
             StartStopRace = new ShortcutKey(Keys.Space);
+            ResumeRace = new ShortcutKey(Keys.Space, true);
 
             NextRace = new ShortcutKey(Keys.OemCloseBrackets);
             PrevRace = new ShortcutKey(Keys.OemOpenBrackets);

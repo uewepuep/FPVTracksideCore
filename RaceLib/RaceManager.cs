@@ -607,8 +607,7 @@ namespace RaceLib
         {
             return StartRaceInLessThan(EventManager.Event.MinStartDelay, EventManager.Event.MaxStartDelay);
         }
-
-        
+                
         public bool StartDetection()
         {
             Race currentRace = CurrentRace;
