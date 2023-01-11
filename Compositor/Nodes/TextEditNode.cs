@@ -108,7 +108,11 @@ namespace Composition.Nodes
                 else
                 {
                     Point cursorPosition = CharacterPosition(cursorIndex);
-                    cursorRenderer.Draw(id, new Rectangle(Bounds.X + cursorPosition.X - 2, Bounds.Y + cursorPosition.Y, cursorRenderer.TextSize.Width, cursorRenderer.TextSize.Height), RectangleAlignment.Center, Composition.Text.Scale.Disallowed, Color.White, Alpha);
+                    cursorRenderer.Draw(id, new Rectangle(Bounds.X + cursorPosition.X - 2, 
+                                                          Bounds.Y + cursorPosition.Y, 
+                                                          cursorRenderer.TextSize.Width, 
+                                                          cursorRenderer.TextSize.Height), 
+                                        RectangleAlignment.Center, Composition.Text.Scale.Disallowed, Color.White, Alpha);
                 }
             }
             DebugTimer.DebugEndTime(this);

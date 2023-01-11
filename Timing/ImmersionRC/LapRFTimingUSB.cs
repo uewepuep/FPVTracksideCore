@@ -27,33 +27,42 @@ namespace Timing.ImmersionRC
                 Disconnect();
             }
 
+
             try
             {
-                comPort = new SerialPort();
-                comPort.BaudRate = 115200;
-                comPort.RtsEnable = true;
-                comPort.DtrEnable = true;
-                comPort.ReadTimeout = 6000;
-                comPort.WriteTimeout = 12000;
-
-                comPort.PortName = (settings as LapRFSettingsUSB).ComPort;
-                comPort.Open();
-
-                if (comPort.IsOpen)
+                string portName = (settings as LapRFSettingsUSB).ComPort;
+                if (SerialPort.GetPortNames().Contains(portName))
                 {
-                    connectionCount++;
-                    Connected = true;
-                    lastData = DateTime.Now;
+                    comPort = new SerialPort();
+                    comPort.BaudRate = 115200;
+                    comPort.RtsEnable = true;
+                    comPort.DtrEnable = true;
+                    comPort.ReadTimeout = 6000;
+                    comPort.WriteTimeout = 12000;
 
-                    StartThreads();
+                    comPort.PortName = portName;
+                    comPort.Open();
 
-                    return true;
+                    if (comPort.IsOpen)
+                    {
+                        connectionCount++;
+                        Connected = true;
+                        lastData = DateTime.Now;
+
+                        StartThreads();
+
+                        return true;
+                    }
                 }
+
+                throw new Exception("Couldn't find " + portName);
             }
             catch (Exception e)
             {
                 Tools.Logger.TimingLog.LogException(this, e);
             }
+
+
             return false;
         }
 
