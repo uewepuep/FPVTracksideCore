@@ -133,9 +133,15 @@ namespace ImageServer
                     if (!processImages)
                         break;
 
-                    ProcessImage();
-
-                    Connected = true;
+                    try
+                    {
+                        ProcessImage();
+                        Connected = true;
+                    }
+                    catch 
+                    {
+                        Connected = false;
+                    }
                 }
                 else
                 {

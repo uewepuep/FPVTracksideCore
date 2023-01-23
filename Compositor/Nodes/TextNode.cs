@@ -147,6 +147,7 @@ namespace Composition.Nodes
 
             if (needsGeometryUpdate)
             {
+                needsGeometryUpdate = false;
                 int newHeight = height;
 
                 if (height == 0 || !IsAnimatingSize())
@@ -169,7 +170,6 @@ namespace Composition.Nodes
 
                 textRenderer.CreateGeometry(width, newHeight, DrawingText, Style);
                 needsTextureUpdate = true;
-                needsGeometryUpdate = false;
 
                 height = newHeight;
                 RequestRedraw();

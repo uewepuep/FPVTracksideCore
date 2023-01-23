@@ -14,7 +14,6 @@ namespace ImageServer
             switch (split)
             {
                 default:
-                case Splits.Custom:
                 case Splits.SingleChannel:
                     return split.ToString().CamelCaseToHuman();
                 case Splits.TwoByTwo:
@@ -23,10 +22,15 @@ namespace ImageServer
                     return "3 x 2";
                 case Splits.ThreeByThree:
                     return "3 x 3";
+                case Splits.ThreeByFour:
+                    return "3 x 4";
                 case Splits.FourByFour:
                     return "4 x 4";
+                case Splits.FourByThree:
+                    return "4 x 3";
+                case Splits.FourByTwo:
+                    return "4 x 2";
             }
         }
-
     }
 }

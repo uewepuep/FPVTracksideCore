@@ -17,6 +17,9 @@ namespace ImageServer
         TwoByTwo,
         ThreeByTwo,
         ThreeByThree,
+        ThreeByFour,
+        FourByTwo,
+        FourByThree,
         FourByFour,
         Custom
     }
@@ -313,10 +316,15 @@ namespace ImageServer
         {
             switch (splits)
             {
-                default: HorizontalSplits = 1; VerticalSplits = 1; break;
+                default:
+                case Splits.Custom:
+                case Splits.SingleChannel: HorizontalSplits = 1; VerticalSplits = 1; break;
                 case Splits.TwoByTwo: HorizontalSplits = 2; VerticalSplits = 2; break;
-                case Splits.ThreeByThree: HorizontalSplits = 3; VerticalSplits = 3; break;
                 case Splits.ThreeByTwo: HorizontalSplits = 3; VerticalSplits = 2; break;
+                case Splits.ThreeByThree: HorizontalSplits = 3; VerticalSplits = 3; break;
+                case Splits.ThreeByFour: HorizontalSplits = 3; VerticalSplits = 4; break;
+                case Splits.FourByTwo: HorizontalSplits = 4; VerticalSplits = 2; break;
+                case Splits.FourByThree: HorizontalSplits = 4; VerticalSplits = 3; break;
                 case Splits.FourByFour: HorizontalSplits = 4; VerticalSplits = 4; break;
             }
         }
