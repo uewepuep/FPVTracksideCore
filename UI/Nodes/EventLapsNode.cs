@@ -120,7 +120,7 @@ namespace UI.Nodes
         public override string MakeCSV()
         {
             string csv = "Pilot, Time\n";
-            foreach (EventPilotTimeNode pn in PilotNodes)
+            foreach (EventPilotTimeNode pn in PilotNodes.OrderBy(pn => pn.Bounds.Y))
             {
                 if (pn.Pilot != null)
                 {

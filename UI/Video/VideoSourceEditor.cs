@@ -636,14 +636,16 @@ namespace UI.Video
 
         }
 
-        public void LinearChannelAssignment(Channel[] channels)
+        public void LinearChannelAssignment(IEnumerable<Channel> channels)
         {
             if (channels != null)
             {
-                int max = Math.Min(channelVideoInfos.Length, channels.Length);
+                Channel[] ordered = channels.OrderBy(c => c.Band.GetBandType()).ThenBy(c => c.Frequency).ToArray();
+
+                int max = Math.Min(channelVideoInfos.Length, ordered.Length);
                 for (int i = 0; i < max; i++)
                 {
-                    AssignChannel(channelVideoInfos[i], channels[i]);
+                    AssignChannel(channelVideoInfos[i], ordered[i]);
                 }
             }
         }
@@ -748,8 +750,6 @@ namespace UI.Video
             }
 
             RemoveDuplicateChannels();
-            CreateChannelVideoInfos();
-
             MakeTable();
         }
 
@@ -775,8 +775,6 @@ namespace UI.Video
 
             channelVideoInfo.Channel = c;
             channelVideoInfo.VideoBounds.Channel = c.ToStringShort();
-
-            CreateChannelVideoInfos();
 
             MakeTable();
         }

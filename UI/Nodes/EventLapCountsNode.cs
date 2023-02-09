@@ -49,7 +49,7 @@ namespace UI.Nodes
         public override string MakeCSV()
         {
             string csv = "";
-            foreach (PilotLapCountsNode pn in PilotNodes)
+            foreach (PilotLapCountsNode pn in PilotNodes.OrderBy(pn => pn.Bounds.Y))
             {
                 string line = ",";
                 if (pn.Pilot != null)

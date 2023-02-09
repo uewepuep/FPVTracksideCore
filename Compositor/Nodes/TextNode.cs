@@ -134,8 +134,8 @@ namespace Composition.Nodes
         {
             if (textRenderer != null)
             {
-                textRenderer.CreateTextures(id);
                 needsTextureUpdate = false;
+                textRenderer.CreateTextures(id);
                 RequestRedraw();
             }
         }
