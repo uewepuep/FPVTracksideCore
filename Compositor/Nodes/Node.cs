@@ -344,9 +344,9 @@ namespace Composition.Nodes
 
         public virtual void Layout(Rectangle parentBounds)
         {
+            NeedsLayout = false;
             Bounds = CalculateRelativeBounds(parentBounds);
             LayoutChildren(Bounds);
-            NeedsLayout = false;
         }
 
         protected virtual void LayoutChildren(Rectangle bounds)
@@ -360,8 +360,8 @@ namespace Composition.Nodes
 
         public virtual void Draw(Drawer id, float parentAlpha)
         {
-            DrawChildren(id, parentAlpha);
             NeedsDraw = false;
+            DrawChildren(id, parentAlpha);
         }
 
         public void DrawChildren(Drawer id, float parentAlpha)

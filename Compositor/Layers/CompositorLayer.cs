@@ -78,8 +78,8 @@ namespace Composition.Layers
         private void Layout(Rectangle bounds)
         {
             Bounds = bounds;
-            Root.Layout(Bounds);
             NeedsLayout = false;
+            Root.Layout(Bounds);
         }
 
         public void RequestRedraw()
@@ -140,11 +140,10 @@ namespace Composition.Layers
         protected override void OnDraw()
         {
             DebugTimer.DebugStartTime("CompLayer.Draw");
-
+            needsRedraw = false;
             FrameNumber++;
 
             base.OnDraw();
-            needsRedraw = false;
             if (Root.Visible)
             {
                 try

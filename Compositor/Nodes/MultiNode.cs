@@ -75,8 +75,8 @@ namespace Composition.Nodes
 
         public override void Layout(Rectangle parentBounds)
         {
-            Bounds = CalculateRelativeBounds(parentBounds);
             NeedsLayout = false;
+            Bounds = CalculateRelativeBounds(parentBounds);
 
             LayoutLinearChildren();
         }

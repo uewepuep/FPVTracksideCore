@@ -114,9 +114,9 @@ namespace Composition.Nodes
                     {
                         Size = new Size(BaseBounds.Width, BaseBounds.Height);
                         hasLayedOut = true;
+                        NeedsLayout = false;
 
                         LayoutChildren(new Rectangle(0, 0, Size.Width, Size.Height));
-                        NeedsLayout = false;
                         NeedsDraw = true;
                         lastLayoutBounds = BaseBounds;
                     }
@@ -124,8 +124,8 @@ namespace Composition.Nodes
                 else
                 {
                     hasLayedOut = true;
-                    LayoutChildren(new Rectangle(0, 0, Size.Width, Size.Height));
                     NeedsLayout = false;
+                    LayoutChildren(new Rectangle(0, 0, Size.Width, Size.Height));
                     NeedsDraw = true;
                     lastLayoutBounds = BaseBounds;
                 }
@@ -282,8 +282,9 @@ namespace Composition.Nodes
         public void PreProcess(Drawer id)
         {
             DebugTimer.DebugStartTime(this);
-            DrawToTexture(id);
             NeedsDraw = false;
+
+            DrawToTexture(id);
             DebugTimer.DebugEndTime(this);
         }
 

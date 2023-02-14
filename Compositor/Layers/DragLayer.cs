@@ -59,8 +59,8 @@ namespace Composition.Layers
 
             if (needsRender)
             {
-                DrawToTexture();
                 needsRender = false;
+                DrawToTexture();
             }
         }
 
