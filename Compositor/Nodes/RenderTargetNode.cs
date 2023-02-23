@@ -282,9 +282,10 @@ namespace Composition.Nodes
         public void PreProcess(Drawer id)
         {
             DebugTimer.DebugStartTime(this);
-            NeedsDraw = false;
 
             DrawToTexture(id);
+            NeedsDraw = false;
+
             DebugTimer.DebugEndTime(this);
         }
 
