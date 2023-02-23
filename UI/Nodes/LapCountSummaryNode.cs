@@ -62,7 +62,10 @@ namespace UI.Nodes
             {
                 rows.SetOrder<PilotResultNode, double>(pa =>
                 {
-                    return -pa.GetValue(columnToOrderBy);
+                    double value;
+                    if (pa.GetValue(columnToOrderBy, out value))
+                        return -value;
+                    return 0;
                 });
             }
         }
@@ -71,7 +74,7 @@ namespace UI.Nodes
         {
             List<Node> nodes = new List<Node>();
 
-            int count = 0;
+            int total = 0;
 
             foreach (Round round in rounds)
             {
@@ -86,11 +89,11 @@ namespace UI.Nodes
                     int laps = race.GetValidLapsCount(pilot, false);
                     rn.Text = laps.ToString();
 
-                    count += laps;
+                    total += laps;
                 }
             }
 
-            TextNode t = new TextNode(count.ToString(), Theme.Current.Rounds.Text.XNA);
+            TextNode t = new TextNode(total.ToString(), Theme.Current.Rounds.Text.XNA);
             t.Alignment = RectangleAlignment.TopRight;
             nodes.Add(t);
 

@@ -20,7 +20,7 @@ namespace UI.Nodes
 
         private RoundsNode rounds;
         private SceneManagerNode sceneManagerNode;
-        private LapRecordsNode pbListNode;
+        private LapRecordsSummaryNode pbListNode;
         private PilotChanelList pilotChanelList;
         private ReplayNode replayNode;
         private PatreonsNode patreonsNode;
@@ -51,14 +51,13 @@ namespace UI.Nodes
             pilotPointsNode = new PointsSummaryNode(eventManager);
             pilotLapsListNode = new LapCountSummaryNode(eventManager);
 
-            pbListNode = new LapRecordsNode(eventManager, true);
+            pbListNode = new LapRecordsSummaryNode(eventManager);
             pilotChanelList = new PilotChanelList(eventManager);
 
             replayNode = new ReplayNode(eventManager);
 
             AddTab("Rounds", this.rounds, ShowRounds);
             liveButton = AddTab("Live", sceneManagerNode, ShowLive);
-
             replayButton = AddTab("Replay", replayNode, ShowReplay);
 
             AddTab("Lap Records", pbListNode, ShowTopLaps);
@@ -147,7 +146,7 @@ namespace UI.Nodes
             if (mie != null && mie.Button == MouseButtons.Middle)
             {
                 BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                baseGame.QuickLaunchWindow<LapRecordsNode>(eventManager);
+                baseGame.QuickLaunchWindow<LapRecordsSummaryNode>(eventManager);
                 return;
             }
 

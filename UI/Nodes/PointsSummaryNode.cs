@@ -76,7 +76,10 @@ namespace UI.Nodes
             {
                 rows.SetOrder<PilotResultNode, double>(pa =>
                 {
-                    return -pa.GetValue(columnToOrderBy);
+                    double value;
+                    if (pa.GetValue(columnToOrderBy, out value))
+                        return -value;
+                    return 0;
                 });
             }
         }

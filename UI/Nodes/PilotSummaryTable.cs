@@ -23,8 +23,15 @@ namespace UI.Nodes
 
         public int ItemHeight { get { return rows.ItemHeight; } set { rows.ItemHeight = value; } }
 
+        private bool needsRefresh;
+
+        public bool ShowPositions { get; set; }
+
+        public Pilot[] FilterPilots { get; private set; }
+
         public PilotSummaryTable(EventManager eventManager, string name)
         {
+            ShowPositions = true;
             this.eventManager = eventManager;
 
             PanelNode panelNode = new PanelNode();
@@ -52,6 +59,8 @@ namespace UI.Nodes
             panelNode.AddChild(rows);
 
             eventManager.RaceManager.OnRaceEnd += (Race race) => { Refresh(); };
+
+            needsRefresh = true;
         }
 
         public void OrderByLast()
@@ -61,17 +70,37 @@ namespace UI.Nodes
 
         public void Refresh()
         {
+            needsRefresh = true;
+        }
+
+        public override void Draw(Drawer id, float parentAlpha)
+        {
+            if (needsRefresh) 
+            {
+                needsRefresh = false;
+                DoRefresh();
+            }
+
+            base.Draw(id, parentAlpha);
+        }
+
+        private void DoRefresh()
+        {
             IEnumerable<Pilot> pilots = eventManager.Event.Pilots.Where(p => !p.PracticePilot).Distinct();
 
+            if (FilterPilots != null)
+            {
+                pilots = pilots.Intersect(FilterPilots);
+            }
 
             headings.ClearDisposeChildren();
 
             Node container = new Node();
-            container.RelativeBounds = new RectangleF(0.3f, 0, 0.7f, 1);
             headings.AddChild(container);
 
-
+            float right = 0;
             // Add position heading
+            if (ShowPositions)
             {
                 Node headingNode = new Node();
                 headings.AddChild(headingNode);
@@ -79,6 +108,8 @@ namespace UI.Nodes
                 TextNode position = new TextNode("Position", Theme.Current.InfoPanel.Text.XNA);
                 position.RelativeBounds = new RectangleF(0.0f, 0.17f, 0.1f, 0.73f);
                 headingNode.AddChild(position);
+
+                right = position.RelativeBounds.Right;
             }
 
             // Add pilot name heading
@@ -88,10 +119,14 @@ namespace UI.Nodes
 
                 TextButtonNode pilotsHeading = new TextButtonNode("Pilots", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
                 pilotsHeading.TextNode.Alignment = RectangleAlignment.TopCenter;
-                pilotsHeading.RelativeBounds = new RectangleF(0.1f, 0, 0.2f, 1);
+                pilotsHeading.RelativeBounds = new RectangleF(right, 0, 0.2f, 1);
                 headingNode.AddChild(pilotsHeading);
                 pilotsHeading.OnClick += (mie) => { columnToOrderBy = 0; Refresh(); };
+
+                container.RelativeBounds = new RectangleF(pilotsHeading.RelativeBounds.Right, 0, 1 - pilotsHeading.RelativeBounds.Right, 1);
             }
+
+
 
             Round[] rounds;
             int column;
@@ -126,18 +161,27 @@ namespace UI.Nodes
 
             SetOrder();
 
-            for (int i = 0; i < rows.ChildCount; i++)
+            if (ShowPositions)
             {
-                PilotResultNode pilotLapsNode = rows.GetChild<PilotResultNode>(i);
-                if (pilotLapsNode != null)
+                for (int i = 0; i < rows.ChildCount; i++)
                 {
-                    pilotLapsNode.Position = i + 1;
+                    PilotResultNode pilotLapsNode = rows.GetChild<PilotResultNode>(i);
+                    if (pilotLapsNode != null)
+                    {
+                        pilotLapsNode.Position = i + 1;
+                    }
                 }
             }
 
             rows.RequestLayout();
             RequestLayout();
             RequestRedraw();
+        }
+
+        public void SetFilterPilots(IEnumerable<Pilot> pilots)
+        {
+            FilterPilots = pilots.ToArray();
+            Refresh();
         }
 
         public virtual void SetOrder()
@@ -171,7 +215,7 @@ namespace UI.Nodes
         {
             while (index >= rows.ChildCount)
             {
-                PilotResultNode tn = new PilotResultNode(eventManager);
+                PilotResultNode tn = new PilotResultNode(eventManager, ShowPositions);
                 rows.AddChild(tn);
             }
             return (PilotResultNode)rows.GetChild(index);
@@ -197,21 +241,29 @@ namespace UI.Nodes
                 set
                 {
                     position = value;
-                    positionNode.Text = value.ToStringPosition();
+
+                    if (positionNode!= null) 
+                        positionNode.Text = value.ToStringPosition();
                 }
             }
 
-            public PilotResultNode(EventManager eventManager)
+            public PilotResultNode(EventManager eventManager, bool position)
             {
                 this.eventManager = eventManager;
 
-                positionNode = new TextNode("", Theme.Current.InfoPanel.Text.XNA);
-                positionNode.RelativeBounds = new RectangleF(0, 0, 0.1f, 0.75f);
-                positionNode.Alignment = RectangleAlignment.BottomCenter;
-                AddChild(positionNode);
+                float right = 0.0f;
+                if (position) 
+                {
+                    positionNode = new TextNode("", Theme.Current.InfoPanel.Text.XNA);
+                    positionNode.RelativeBounds = new RectangleF(0, 0, 0.1f, 0.75f);
+                    positionNode.Alignment = RectangleAlignment.BottomCenter;
+                    AddChild(positionNode);
+
+                    right = positionNode.RelativeBounds.Right;
+                }
 
                 pilotName = new TextNode("", Theme.Current.InfoPanel.Text.XNA);
-                pilotName.RelativeBounds = new RectangleF(0.1f, 0, 0.2f, 0.75f);
+                pilotName.RelativeBounds = new RectangleF(right, 0, 0.2f, 0.75f);
                 pilotName.Alignment = RectangleAlignment.BottomCenter;
                 AddChild(pilotName);
 
@@ -241,14 +293,15 @@ namespace UI.Nodes
                 AlignHorizontally(0.04f, cont.Children.ToArray());
             }
 
-            public double GetValue(int columnToOrderBy)
+            public bool GetValue(int columnToOrderBy, out double value)
             {
                 Node n = cont.GetChild(columnToOrderBy - 1);
 
                 ResultNode rn = n as ResultNode;
                 if (rn != null && rn.Result != null)
                 {
-                    return rn.Result.Points;
+                    value = rn.Result.Points;
+                    return true;
                 }
 
                 TextNode tn = n as TextNode;
@@ -257,11 +310,13 @@ namespace UI.Nodes
                     double output;
                     if (double.TryParse(tn.Text, out output))
                     {
-                        return output;
+                        value = output;
+                        return true;
                     }
                 }
 
-                return 0;
+                value = 0;
+                return false;
             }
         }
     }

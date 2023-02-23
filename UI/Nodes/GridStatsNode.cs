@@ -16,7 +16,7 @@ namespace UI.Nodes
     {
         public EventManager EventManager { get; private set; }
 
-        private LapRecordsNode pBList;
+        private LapRecordsSummaryNode pBList;
 
         public GridStatsNode(EventManager eventManager)
         {
@@ -27,7 +27,8 @@ namespace UI.Nodes
                 ColorNode background = new ColorNode(Theme.Current.PanelAlt.XNA);
                 AddChild(background);
 
-                pBList = new LapRecordsNode(eventManager, false);
+                pBList = new LapRecordsSummaryNode(eventManager);
+                pBList.ShowPositions = false;
                 pBList.RelativeBounds = new RectangleF(0, 0, 1, 1);
                 background.AddChild(pBList);
 

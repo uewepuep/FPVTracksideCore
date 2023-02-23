@@ -355,9 +355,9 @@ namespace UI
 
         public void QuickLaunchWindow<T>(EventManager eventManager)
         {
-            if (typeof(T) == typeof(LapRecordsNode))
+            if (typeof(T) == typeof(LapRecordsSummaryNode))
             {
-                var n = new LapRecordsNode(eventManager, true);
+                var n = new LapRecordsSummaryNode(eventManager);
                 ShowNewWindow(n);
             }
 

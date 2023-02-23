@@ -35,7 +35,7 @@ namespace UI.Nodes
         private NamedRaceNode currentRaceNode;
         private NamedRaceNode nextRaceNode;
 
-        private LapRecordsNode lapRecordsNode;
+        private LapRecordsSummaryNode lapRecordsNode;
         private PointsSummaryNode pointsSummaryNode;
         private LapCountSummaryNode lapCountSummaryNode;
 
@@ -63,7 +63,7 @@ namespace UI.Nodes
             resultsContainer.RelativeBounds = new RectangleF(0, 0.33f, 1, 0.65f);
             AddChild(resultsContainer);
 
-            lapRecordsNode = new LapRecordsNode(eventManager, true);
+            lapRecordsNode = new LapRecordsSummaryNode(eventManager);
             pointsSummaryNode = new PointsSummaryNode(eventManager);
             lapCountSummaryNode = new LapCountSummaryNode(eventManager);
 

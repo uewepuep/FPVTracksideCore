@@ -300,7 +300,7 @@ namespace UI.Nodes
         public override void MouseMenu(MouseMenu mm)
         {
             if (HasPB)
-                LapRecordsNode.AddDisqualifyOptions(mm, EventManager, Laps);
+                LapRecordsSummaryNode.AddContextMenus(mm, EventManager, Laps);
         }
 
     }

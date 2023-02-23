@@ -219,7 +219,7 @@ namespace UI.Nodes
                 openWindow.AddItem("Lap Records", () =>
                 {
                     BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                    baseGame.QuickLaunchWindow<LapRecordsNode>(eventManager);
+                    baseGame.QuickLaunchWindow<LapRecordsSummaryNode>(eventManager);
                 });
 
                 openWindow.AddItem("Points", () =>
