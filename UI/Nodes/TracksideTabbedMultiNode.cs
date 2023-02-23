@@ -51,7 +51,7 @@ namespace UI.Nodes
             pilotPointsNode = new PointsSummaryNode(eventManager);
             pilotLapsListNode = new LapCountSummaryNode(eventManager);
 
-            pbListNode = new LapRecordsNode(eventManager);
+            pbListNode = new LapRecordsNode(eventManager, true);
             pilotChanelList = new PilotChanelList(eventManager);
 
             replayNode = new ReplayNode(eventManager);

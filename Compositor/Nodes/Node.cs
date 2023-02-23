@@ -315,6 +315,11 @@ namespace Composition.Nodes
             }
         }
 
+        public T GetChild<T>(int index) where T : Node
+        {
+            return GetChild(index) as T;
+        }
+
         public int IndexOf(Node node)
         {
             return Array.IndexOf(children, node);

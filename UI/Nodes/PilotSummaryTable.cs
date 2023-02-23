@@ -11,7 +11,7 @@ using Tools;
 
 namespace UI.Nodes
 {
-    public class PilotRoundsResultTable : Node
+    public class PilotSummaryTable : Node
     {
         protected EventManager eventManager;
 
@@ -23,7 +23,7 @@ namespace UI.Nodes
 
         public int ItemHeight { get { return rows.ItemHeight; } set { rows.ItemHeight = value; } }
 
-        public PilotRoundsResultTable(EventManager eventManager, string name)
+        public PilotSummaryTable(EventManager eventManager, string name)
         {
             this.eventManager = eventManager;
 
@@ -67,19 +67,30 @@ namespace UI.Nodes
             headings.ClearDisposeChildren();
 
             Node container = new Node();
-            container.RelativeBounds = new RectangleF(0.2f, 0, 0.8f, 1);
+            container.RelativeBounds = new RectangleF(0.3f, 0, 0.7f, 1);
             headings.AddChild(container);
 
-            // Add pilot names list..
+
+            // Add position heading
             {
                 Node headingNode = new Node();
                 headings.AddChild(headingNode);
 
-                TextButtonNode headingText = new TextButtonNode("Pilots", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
-                headingText.TextNode.Alignment = RectangleAlignment.TopCenter;
-                headingText.RelativeBounds = new RectangleF(0.0f, 0, 0.2f, 1);
-                headingNode.AddChild(headingText);
-                headingText.OnClick += (mie) => { columnToOrderBy = 0; Refresh(); };
+                TextNode position = new TextNode("Position", Theme.Current.InfoPanel.Text.XNA);
+                position.RelativeBounds = new RectangleF(0.0f, 0.17f, 0.1f, 0.73f);
+                headingNode.AddChild(position);
+            }
+
+            // Add pilot name heading
+            {
+                Node headingNode = new Node();
+                headings.AddChild(headingNode);
+
+                TextButtonNode pilotsHeading = new TextButtonNode("Pilots", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
+                pilotsHeading.TextNode.Alignment = RectangleAlignment.TopCenter;
+                pilotsHeading.RelativeBounds = new RectangleF(0.1f, 0, 0.2f, 1);
+                headingNode.AddChild(pilotsHeading);
+                pilotsHeading.OnClick += (mie) => { columnToOrderBy = 0; Refresh(); };
             }
 
             Round[] rounds;
@@ -113,8 +124,16 @@ namespace UI.Nodes
                 t.Dispose();
             }
 
-
             SetOrder();
+
+            for (int i = 0; i < rows.ChildCount; i++)
+            {
+                PilotResultNode pilotLapsNode = rows.GetChild<PilotResultNode>(i);
+                if (pilotLapsNode != null)
+                {
+                    pilotLapsNode.Position = i + 1;
+                }
+            }
 
             rows.RequestLayout();
             RequestLayout();
@@ -166,12 +185,33 @@ namespace UI.Nodes
             private EventManager eventManager;
             private Node cont;
 
+            private TextNode positionNode;
+
+            private int position;
+            public int Position
+            {
+                get
+                {
+                    return position;
+                }
+                set
+                {
+                    position = value;
+                    positionNode.Text = value.ToStringPosition();
+                }
+            }
+
             public PilotResultNode(EventManager eventManager)
             {
                 this.eventManager = eventManager;
 
+                positionNode = new TextNode("", Theme.Current.InfoPanel.Text.XNA);
+                positionNode.RelativeBounds = new RectangleF(0, 0, 0.1f, 0.75f);
+                positionNode.Alignment = RectangleAlignment.BottomCenter;
+                AddChild(positionNode);
+
                 pilotName = new TextNode("", Theme.Current.InfoPanel.Text.XNA);
-                pilotName.RelativeBounds = new RectangleF(0, 0, 0.2f, 0.75f);
+                pilotName.RelativeBounds = new RectangleF(0.1f, 0, 0.2f, 0.75f);
                 pilotName.Alignment = RectangleAlignment.BottomCenter;
                 AddChild(pilotName);
 

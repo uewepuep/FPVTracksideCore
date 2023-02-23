@@ -63,7 +63,7 @@ namespace UI.Nodes
             resultsContainer.RelativeBounds = new RectangleF(0, 0.33f, 1, 0.65f);
             AddChild(resultsContainer);
 
-            lapRecordsNode = new LapRecordsNode(eventManager);
+            lapRecordsNode = new LapRecordsNode(eventManager, true);
             pointsSummaryNode = new PointsSummaryNode(eventManager);
             lapCountSummaryNode = new LapCountSummaryNode(eventManager);
 

@@ -27,7 +27,7 @@ namespace UI.Nodes
                 ColorNode background = new ColorNode(Theme.Current.PanelAlt.XNA);
                 AddChild(background);
 
-                pBList = new LapRecordsNode(eventManager);
+                pBList = new LapRecordsNode(eventManager, false);
                 pBList.RelativeBounds = new RectangleF(0, 0, 1, 1);
                 background.AddChild(pBList);
 

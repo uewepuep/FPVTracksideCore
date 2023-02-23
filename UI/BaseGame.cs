@@ -357,7 +357,7 @@ namespace UI
         {
             if (typeof(T) == typeof(LapRecordsNode))
             {
-                var n = new LapRecordsNode(eventManager);
+                var n = new LapRecordsNode(eventManager, true);
                 ShowNewWindow(n);
             }
 

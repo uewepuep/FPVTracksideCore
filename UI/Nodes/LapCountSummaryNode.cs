@@ -11,7 +11,7 @@ using Tools;
 
 namespace UI.Nodes
 {
-    public class LapCountSummaryNode : PilotRoundsResultTable
+    public class LapCountSummaryNode : PilotSummaryTable
     {
         public ResultManager PointsManager { get { return eventManager.ResultManager; } }
 

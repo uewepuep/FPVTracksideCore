@@ -1,6 +1,7 @@
 ﻿using Composition.Input;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
+using OfficeOpenXml.Style;
 using RaceLib;
 using System;
 using System.Collections.Generic;
@@ -28,8 +29,12 @@ namespace UI.Nodes
 
         public int ItemHeight { get { return rows.ItemHeight; } set { rows.ItemHeight = value; } }
 
-        public LapRecordsNode(EventManager em)
+        private bool positions;
+
+        public LapRecordsNode(EventManager em, bool positions)
         {
+            this.positions= positions;
+
             eventManager = em;
             recordManager = em.LapRecordManager;
 
@@ -99,6 +104,17 @@ namespace UI.Nodes
 
             rows.ClearDisposeChildren();
             headings.ClearDisposeChildren();
+
+            if (positions)
+            {
+                Node headingNode = new Node();
+                headings.AddChild(headingNode);
+
+                TextNode position = new TextNode("Position", Theme.Current.InfoPanel.Text.XNA);
+                position.Alignment = RectangleAlignment.BottomCenter;
+                position.Scale(1, 0.7f);
+                headingNode.AddChild(position);
+            }
 
             // Add pilot names list..
             {
@@ -229,6 +245,15 @@ namespace UI.Nodes
                 });
             }
 
+            for (int i = 0; i < rows.ChildCount; i++) 
+            {
+                PilotLapsNode pilotLapsNode = rows.GetChild<PilotLapsNode>(i);
+                if (pilotLapsNode != null) 
+                {
+                    pilotLapsNode.Position = i + 1;
+                }
+            }
+
             rows.RequestLayout();
             RequestLayout();
         }
@@ -237,7 +262,7 @@ namespace UI.Nodes
         {
             while (index >= rows.ChildCount)
             {
-                PilotLapsNode tn = new PilotLapsNode(eventManager, recordManager.ConsecutiveLapsToTrack);
+                PilotLapsNode tn = new PilotLapsNode(positions, eventManager, recordManager.ConsecutiveLapsToTrack);
                 rows.AddChild(tn);
             }
             return (PilotLapsNode)rows.GetChild(index);
@@ -284,7 +309,27 @@ namespace UI.Nodes
 
             public int LapTimeCount { get { return lapTimeNodes.Length; } }
 
-            public PilotLapsNode(EventManager eventManager, IEnumerable<int> consecutives)
+            private int position;
+            public int Position 
+            { 
+                get 
+                { 
+                    return position; 
+                }
+                set
+                {
+                    position = value;
+
+                    if (positionNode != null)
+                    {
+                        positionNode.Text = value.ToStringPosition();
+                    }
+                }
+            } 
+
+            private TextNode positionNode;
+
+            public PilotLapsNode(bool positions, EventManager eventManager, IEnumerable<int> consecutives)
             {
                 this.eventManager = eventManager;
                 this.consecutives = consecutives.ToList();
@@ -292,6 +337,12 @@ namespace UI.Nodes
                 Node n = new Node();
                 n.Scale(1, 0.75f);
                 AddChild(n);
+
+                if (positions)
+                {
+                    positionNode = new TextNode("", Theme.Current.InfoPanel.Text.XNA);
+                    n.AddChild(positionNode);
+                }
 
                 pilotName = new TextNode("", Theme.Current.InfoPanel.Text.XNA);
                 n.AddChild(pilotName);
@@ -320,6 +371,7 @@ namespace UI.Nodes
 
             public void SetLapTimes(int consecutive, Lap[] bestLaps, bool overalBest)
             {
+
                 int index = consecutives.IndexOf(consecutive);
                 if (index >= 0 && index < lapTimeNodes.Length)
                 {
@@ -327,6 +379,7 @@ namespace UI.Nodes
                     c.SetLapTimes(consecutive, bestLaps, overalBest);
                 }
             }
+
             public void SetPilot(Pilot p)
             {
                 pilotName.Text = p.Name;
