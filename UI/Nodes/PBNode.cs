@@ -272,6 +272,10 @@ namespace UI.Nodes
                 SetTint(recordLapCount, laps, isBest);
                 DetectionTime = Laps.LastOrDefault().Detection.Time;
             }
+            else
+            {
+                textNode.Tint = Color.White;
+            }
         }
 
         private void SetTint(int recordLapCount, Lap[] laps, bool isBest)
