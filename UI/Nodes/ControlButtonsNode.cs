@@ -76,7 +76,7 @@ namespace UI.Nodes
             CopyResultsClipboard = new IconButtonNode(@"img\copy.png", "Copy", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
             AddChild(CopyResultsClipboard);
 
-            ClearButton = new IconButtonNode(@"img\clear.png", "Clear Screen", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
+            ClearButton = new IconButtonNode(@"img\clear.png", "Clear Race", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
             ClearButton.NodeName = "ClearRace";
             AddChild(ClearButton);
             

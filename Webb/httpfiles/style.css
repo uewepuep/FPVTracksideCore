@@ -1,0 +1,176 @@
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: black;
+    background: url(/themes/Dark/background.png);
+    color: white;
+    margin: 0px;
+    padding: 0px;
+}
+
+.menu a:link, .menu a:visited, .menu a:hover, .menu a:active {
+    color: white;
+}
+
+a:link, a:visited, a:hover, a:active {
+    color: #ED1B24;
+}
+
+input {
+    border: 2px solid #ED1B24;
+    border-radius: 4px;
+    background-color: #00000000;
+    color: white;
+    padding: 5px;
+}
+
+table {
+    margin: 10px;
+}
+
+.content {
+    padding-left: 2%;
+    padding-right: 2%;
+}
+
+.top {
+    background: #ED1B24;
+    width: 100%;
+    padding: 0px;
+    margin: 0px;
+    padding-bottom: 1px;
+}
+
+.banner, .banner_small {
+    width: auto;
+    text-align: center;
+    padding: 20px;
+}
+
+td {
+    vertical-align: top;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+.small_top {
+    padding: 10px;
+    height: 50px;
+}
+
+.menu {
+    color: white;
+    font-size: 16pt;
+    text-align: center;
+    padding: 3px;
+    margin: 0px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.menu_item {
+    text-align: left;
+    padding: 20px;
+    padding-inline-start: 0px;
+}
+
+.rounds, .laps, .features {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+
+.round, .lap, .feature, .race_status {
+    padding: 20px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    margin: 5px;
+    background: #33333333;
+    min-width: 15em;
+}
+
+.race_status {
+    display: inline-block;
+}
+
+
+.right {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+canvas {
+    background: #33333333;
+    padding: 20px;
+}
+
+.featureimg {
+    height: 360px;
+}
+
+.featuredesc, .featureimg {
+    width: 640px;
+}
+
+.featuredesc {
+    padding: 5px;
+}
+
+.race {
+    display: block;
+    min-height: 10em;
+    margin-bottom: 40px;
+}
+
+h4 {
+    margin: 2px;
+}
+
+.race_pilot, .race_channel_color, .race_channel, .race_result {
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+.race_pilot {
+    width: 200px;
+}
+
+.race_channel_color {
+    width: 10px;
+    height: 10px;
+}
+
+.race_channel {
+    width: 10px;
+}
+
+.cell_numeric {
+    text-align: right;
+}
+
+.heading {
+    font-weight: bold;
+}
+
+.lap_pilot {
+    min-width: 6em;
+}
+
+.lap_time, .lap_behind, .lap_position {
+    min-width: 6em;
+    text-align: right;
+}
+
+.register, .details {
+    padding: 30px;
+    margin: auto;
+    max-width: 400px;
+}
+
+.input {
+    width: 256px;
+}

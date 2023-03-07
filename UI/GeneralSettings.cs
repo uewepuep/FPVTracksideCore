@@ -126,6 +126,7 @@ namespace UI
         public bool AutoSync { get; set; }
 
         [Category("Web")]
+        [DisplayName("HTTP Server")]
         [NeedsRestart]
         public bool HTTPServer { get; set; }
 

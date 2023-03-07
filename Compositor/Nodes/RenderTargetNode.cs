@@ -301,10 +301,10 @@ namespace Composition.Nodes
                     // Set the render target
                     CompositorLayer.GraphicsDevice.SetRenderTarget(renderTarget);
                     CompositorLayer.GraphicsDevice.Clear(Color.Transparent);
-#if DEBUG
-                    Random r = new Random(lastDrawFrame);
-                    CompositorLayer.GraphicsDevice.Clear(new Color((float)r.NextDouble(), (float)r.NextDouble(), (float)r.NextDouble()));
-#endif
+//#if DEBUG
+//                    Random r = new Random(lastDrawFrame);
+//                    CompositorLayer.GraphicsDevice.Clear(new Color((float)r.NextDouble(), (float)r.NextDouble(), (float)r.NextDouble()));
+//#endif
                     if (id != null)
                     {
                         id.Begin();

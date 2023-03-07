@@ -20,4 +20,10 @@
   <ItemGroup>
     <Folder Include="httpfiles\" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="httpfiles\style.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

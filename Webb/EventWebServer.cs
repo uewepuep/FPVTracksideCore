@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Web;
 using Tools;
@@ -126,9 +127,7 @@ namespace Webb
             }
             response.AppendHeader("Access-Control-Allow-Origin", "*");
 
-            string responseString = BuildResponse(context);
-
-            byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
+            byte[] buffer = Response(context);
             // Get a response stream and write the response to it.
             response.ContentLength64 = buffer.Length;
             System.IO.Stream output = response.OutputStream;
@@ -137,14 +136,14 @@ namespace Webb
             output.Close();
         }
 
-        private string BuildResponse(HttpListenerContext context)
+        private byte[] Response(HttpListenerContext context)
         {
             string[] requestPath = context.Request.Url.AbsolutePath.Split('/').Where(s => !string.IsNullOrEmpty(s)).ToArray();
 
             string refreshText = "";
 
             int decimalPlaces = 2;
-            int refresh = 5;
+            int refresh = 60;
 
             string query = context.Request.Url.Query;
             if (query.StartsWith("?"))
@@ -190,196 +189,92 @@ namespace Webb
                 refreshText = "<meta http-equiv=\"refresh\" content=\"" + refresh + "\" >";
             }
 
-            string output = "<html><head>" + refreshText + "</head><link rel=\"stylesheet\" href=\"httpfiles\\style.css\"><body>";
-           
+            string output = "<html><head>" + refreshText + "</head><link rel=\"stylesheet\" href=\"/httpfiles/style.css\"><body>";
+
+            output += "<div class=\"top\">";
+            output += "<h1>FPVTrackside Webserver - </h2>";
+            output += "</div>";
+
+
+            string[] items = new string[] { "VariableViewer", "RaceControl", "LapRecords", "httpfiles" };
+
+
+            foreach (string item in items)
+            {
+                output += "<a class=\"menu\" href=\"/" + item + "/\">" + item + "</a> ";
+            }
+
+            output += "<div class=\"content\">";
             if (requestPath.Length == 0)
             {
-                if (nameValueCollection.Count > 0)
-                {
-                    WebRaceControl.HandleInput(nameValueCollection);
-                }
-                output += WebRaceControl.GetHTML();
-                
-                output += "<h1>Variable Viewer</h2>";
-                output += VariableDumper(eventManager, 0, 0);
-
                 if (localOnly)
                 {
                     string url = listener.Prefixes.FirstOrDefault();
                     url = url.Replace("localhost", "+");
                     output += "<p>By default this webserver is only accessible from this machine. To access it over the network run in an Adminstrator command prompt:</p><p> netsh http add urlacl url = \"" + url + "\" user=everyone</p><p>Then restart the software</p>";
                 }
-
-                DirectoryInfo di = new DirectoryInfo("httpfiles");
-
-                FileInfo[] files = di.GetFiles();
-                if (files.Any())
-                {
-                    output += "<h1>Files</h2>";
-                    output += "<ul>";
-                    foreach (FileInfo filename in files)
-                    {
-                        output += "<li>";
-                        output += "<a href=\"httpfiles\\" + filename.Name + " \">" + filename.Name + "</a>";
-                        output += "</li>";
-                    }
-                    output += "</ul>";
-                }
             }
             else
             {
-                if (isFileRequest(requestPath))
+                switch (requestPath[0])
                 {
-                    return File.ReadAllText("httpfiles\\" + requestPath[1]);
-                }
-                else
-                {
-                    object found = FindObject(eventManager, requestPath);
-                    if (found == null)
-                    {
-                        found = FindObject(soundManager, requestPath);
-                    }
+                    case "VariableViewer":
+                        VariableViewer vv = new VariableViewer(eventManager, soundManager);
+                        output += vv.DumpObject(requestPath.Skip(1), refresh, decimalPlaces);
+                        break;
+                    case "RaceControl":
+                        if (nameValueCollection.Count > 0)
+                        {
+                            WebRaceControl.HandleInput(nameValueCollection);
+                        }
+                        output += WebRaceControl.GetHTML();
+                        break;
+                    case "LapRecords":
+                        break;
+                    case "httpfiles":
+                    case "themes":
+                        if (isFileRequest(requestPath))
+                        {
+                            string filename = string.Join('\\', requestPath);
+                            return File.ReadAllBytes(filename);
+                        }
+                        else
+                        {
+                            DirectoryInfo di = new DirectoryInfo("httpfiles");
 
-                    output += VariableDumper(found, refresh, decimalPlaces);
+                            FileInfo[] files = di.GetFiles();
+                            if (files.Any())
+                            {
+                                output += "<h1>Files</h2>";
+                                output += "<ul>";
+                                foreach (FileInfo filename in files)
+                                {
+                                    output += "<li>";
+                                    output += "<a href=\"httpfiles\\" + filename.Name + " \">" + filename.Name + "</a>";
+                                    output += "</li>";
+                                }
+                                output += "</ul>";
+                            }
+                        }
+                        break;
                 }
             }
-
+            
+            output += "</div>";
             output += "</body></html>";
-            return output;
+            return Encoding.ASCII.GetBytes(output);
         }
 
         private bool isFileRequest(string[] requestPath)
         {
             if (requestPath.Length > 1)
             {
-                return requestPath[0] == "httpfiles";
+                return requestPath[0] == "httpfiles" || requestPath[0] == "themes";
             }
             return false;
         }
 
-        private string VariableDumper(object found, int refresh, int decimalPlaces)
-        {
-            string output = "";
-            if (found != null)
-            {
-                if (found.GetType().IsPrimitive || found.GetType() == typeof(string))
-                {
-                    if (typeof(double).IsAssignableFrom(found.GetType()))
-                    {
-                        double dbl = (double)found;
-
-                        dbl = Math.Round((double)dbl, decimalPlaces);
-
-                        output += dbl.ToString();
-                    }
-                    else
-                    {
-                        output += found.ToString();
-                    }
-                }
-                else
-                {
-                    output += MakeTable(found, refresh, decimalPlaces);
-                }
-            }
-            return output;
-        }
-
-        private object FindObject(object obj, IEnumerable<string> requestPath)
-        {
-            Type type = obj.GetType();
-
-            IEnumerable<string> next = requestPath.Skip(1);
-
-            if (typeof(System.Collections.IEnumerable).IsAssignableFrom(type))
-            {
-                System.Collections.IEnumerable ienum = obj as System.Collections.IEnumerable;
-                int i = 0;
-                foreach (object o in ienum)
-                {
-                    if (i.ToString() == requestPath.FirstOrDefault())
-                    {
-                        if (next.Count() == 0)
-                        {
-                            return o;
-                        }
-                        return FindObject(o, next);
-                    }
-                    i++;
-                }
-            }
-            else
-            {
-                foreach (PropertyInfo pi in type.GetProperties())
-                {
-                    if (pi.Name == requestPath.FirstOrDefault())
-                    {
-                        object value = pi.GetValue(obj);
-
-                        if (next.Count() == 0)
-                        {
-                            return value;
-                        }
-
-                        if (value == null)
-                        {
-                            return null;
-                        }
-
-                        return FindObject(value, next);
-                    }
-                }
-            }
-            
-
-            return null;
-        }
-
-        private string MakeTable(object obj, int refresh, int decimalPlaces)
-        {
-            string append = "?refresh=" + refresh + "&decimalplaces=" + decimalPlaces;
-
-            string output = "<table>";
-            Type type = obj.GetType();
-
-            if (typeof(System.Collections.IEnumerable).IsAssignableFrom(type))
-            {
-                System.Collections.IEnumerable ienum = obj as System.Collections.IEnumerable;
-
-                int i = 0;
-                foreach (object o in ienum)
-                {
-                    if (o.GetType().IsPrimitive || o is string)
-                    {
-                        output += "<tr><td>" + o.ToString() + "</td></tr>";
-                    }
-                    else
-                    {
-                        string link = "<a href=\"" + i + "/" + append + "\">" + o.ToString() + "</a>";
-
-                        output += "<tr><td>" + link + "</td></tr>";
-                        i++;
-                    }
-                }
-            }
-            else
-            {
-                foreach (PropertyInfo pi in type.GetProperties())
-                {
-                    string link = "<a href=\"" + pi.Name + "/" + append + "\">" + pi.Name + "</a>";
-
-                    object value = pi.GetValue(obj);
-                    string strValue = "null";
-                    if (value != null)
-                    {
-                        strValue = value.ToString();
-                    }
-                    output += "<tr><td>" + link + "</td><td>" + strValue + "</td></tr>";
-                }
-            }
-            output += "</table>";
-            return output;
-        }
+        
 
         public bool Stop()
         {
