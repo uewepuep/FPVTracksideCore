@@ -81,13 +81,20 @@ img {
     flex-wrap: wrap;
 }
 
+.data {
+    padding: 10px;
+    background: #05050599;
+    font-weight: 600;
+    font-size: 16pt;
+    text-align: right;
+}
 
 .round, .lap, .feature, .race_status {
     padding: 20px;
     padding-top: 5px;
     padding-bottom: 5px;
     margin: 5px;
-    background: #33333333;
+    background: #66333333;
     min-width: 15em;
 }
 

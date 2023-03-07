@@ -232,7 +232,7 @@ namespace UI
 
             if (GeneralSettings.Instance.HTTPServer)
             {
-                eventWebServer = new EventWebServer(EventManager, SoundManager, this);
+                eventWebServer = new EventWebServer(EventManager, SoundManager, this, new IWebbTable[] { TabbedMultiNode.LapRecordsSummaryNode, TabbedMultiNode.LapCountSummaryNode, TabbedMultiNode.PointsSummaryNode });
                 eventWebServer.Start();
             }
 

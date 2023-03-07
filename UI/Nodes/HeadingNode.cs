@@ -12,6 +12,10 @@ namespace UI.Nodes
 {
     public class HeadingNode : ColorNode
     {
+        private TextNode title;
+
+        public string Text { get { return title.Text; } }
+
         public HeadingNode(InfoPanelTheme infoPanelTheme, string text)
             :this(infoPanelTheme.Heading.XNA, infoPanelTheme.HeadingText.XNA, text) 
         {
@@ -22,7 +26,7 @@ namespace UI.Nodes
         {
             RelativeBounds = new Tools.RectangleF(0, 0.0f, 1, 0.05f);
 
-            TextNode title = new TextNode(text, textColor);
+            title = new TextNode(text, textColor);
             title.Alignment = RectangleAlignment.BottomLeft;
             title.RelativeBounds = new RectangleF(0.05f, 0.07f, 0.9f, 0.9f);
             AddChild(title);

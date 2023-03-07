@@ -20,12 +20,14 @@ namespace UI.Nodes
 
         private RoundsNode rounds;
         private SceneManagerNode sceneManagerNode;
-        private LapRecordsSummaryNode pbListNode;
         private PilotChanelList pilotChanelList;
         private ReplayNode replayNode;
         private PatreonsNode patreonsNode;
-        private PointsSummaryNode pilotPointsNode;
-        private LapCountSummaryNode pilotLapsListNode;
+        
+        public LapRecordsSummaryNode LapRecordsSummaryNode { get; private set; }
+        public PointsSummaryNode PointsSummaryNode { get; private set; }
+        public LapCountSummaryNode LapCountSummaryNode { get; private set; }
+
         private RSSIAnalyserNode rssiNode;
 
         private TextButtonNode replayButton;
@@ -35,7 +37,6 @@ namespace UI.Nodes
         private VideoManager VideoManager;
         
         private TextButtonNode rssiButton;
-
 
 
         public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, RoundsNode rounds, SceneManagerNode sceneManagerContent)
@@ -48,10 +49,9 @@ namespace UI.Nodes
             sceneManagerNode = sceneManagerContent;
             rssiNode = new RSSIAnalyserNode(eventManager);
             patreonsNode = new PatreonsNode();
-            pilotPointsNode = new PointsSummaryNode(eventManager);
-            pilotLapsListNode = new LapCountSummaryNode(eventManager);
-
-            pbListNode = new LapRecordsSummaryNode(eventManager);
+            PointsSummaryNode = new PointsSummaryNode(eventManager);
+            LapCountSummaryNode = new LapCountSummaryNode(eventManager);
+            LapRecordsSummaryNode = new LapRecordsSummaryNode(eventManager);
             pilotChanelList = new PilotChanelList(eventManager);
 
             replayNode = new ReplayNode(eventManager);
@@ -60,9 +60,9 @@ namespace UI.Nodes
             liveButton = AddTab("Live", sceneManagerNode, ShowLive);
             replayButton = AddTab("Replay", replayNode, ShowReplay);
 
-            AddTab("Lap Records", pbListNode, ShowTopLaps);
-            AddTab("Lap Count", pilotLapsListNode, ShowLaps);
-            AddTab("Points", pilotPointsNode, ShowPoints);
+            AddTab("Lap Records", LapRecordsSummaryNode, ShowTopLaps);
+            AddTab("Lap Count", LapCountSummaryNode, ShowLaps);
+            AddTab("Points", PointsSummaryNode, ShowPoints);
             AddTab("Channel List", pilotChanelList, ShowPilotChannelList);
             rssiButton = AddTab("RSSI Analyser", rssiNode, ShowAnalyser);
             AddTab("Patreons", patreonsNode, ShowPatreons);
@@ -150,12 +150,12 @@ namespace UI.Nodes
                 return;
             }
 
-            if (pbListNode.Visible)
+            if (LapRecordsSummaryNode.Visible)
             {
-                pbListNode.Refresh();
+                LapRecordsSummaryNode.Refresh();
             }
-            Show(pbListNode);
-            pbListNode.Scale(0.9f);
+            Show(LapRecordsSummaryNode);
+            LapRecordsSummaryNode.Scale(0.9f);
         }
 
         public void ShowPoints(MouseInputEvent mie)
@@ -167,9 +167,9 @@ namespace UI.Nodes
                 return;
             }
 
-            pilotPointsNode.OrderByLast();
-            pilotPointsNode.Refresh();
-            Show(pilotPointsNode);
+            PointsSummaryNode.OrderByLast();
+            PointsSummaryNode.Refresh();
+            Show(PointsSummaryNode);
         }
 
         public void ShowLaps(MouseInputEvent mie)
@@ -181,9 +181,9 @@ namespace UI.Nodes
                 return;
             }
 
-            pilotLapsListNode.OrderByLast();
-            pilotLapsListNode.Refresh();
-            Show(pilotLapsListNode);
+            LapCountSummaryNode.OrderByLast();
+            LapCountSummaryNode.Refresh();
+            Show(LapCountSummaryNode);
         }
 
         public void ShowRounds(MouseInputEvent mie)

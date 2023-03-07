@@ -41,9 +41,6 @@ namespace UI.Nodes
             foreach (int c in eventManager.LapRecordManager.ConsecutiveLapsToTrack)
             {
                 column++;
-                Node headingNode = new Node();
-                container.AddChild(headingNode);
-
                 TextButtonNode headingText = new TextButtonNode(c.ToString() + " Lap", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
                 if (c > 1)
                     headingText.Text += "s";
@@ -51,7 +48,7 @@ namespace UI.Nodes
                     headingText.Text = "Holeshot";
 
                 headingText.TextNode.Alignment = RectangleAlignment.TopCenter;
-                headingNode.AddChild(headingText);
+                container.AddChild(headingText);
                 int ca = column;
                 headingText.OnClick += (mie) => { columnToOrderBy = ca; Refresh(); };
             }

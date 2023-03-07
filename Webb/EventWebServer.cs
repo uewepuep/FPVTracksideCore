@@ -3,6 +3,7 @@ using Sound;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -33,7 +34,9 @@ namespace Webb
 
         private bool localOnly;
 
-        public EventWebServer(EventManager eventManager, SoundManager soundManager, IRaceControl raceControl)
+        private IWebbTable[] webbTables;
+
+        public EventWebServer(EventManager eventManager, SoundManager soundManager, IRaceControl raceControl, IEnumerable<IWebbTable> tables)
         {
             CSSStyleSheet = new FileInfo("httpfiles/style.css");
             this.eventManager = eventManager;
@@ -46,6 +49,8 @@ namespace Webb
                 FileStream fileStream = CSSStyleSheet.Create();
                 fileStream.Dispose();
             }
+
+            webbTables = tables.ToArray();
         }
 
         public bool Start()
@@ -138,7 +143,10 @@ namespace Webb
 
         private byte[] Response(HttpListenerContext context)
         {
-            string[] requestPath = context.Request.Url.AbsolutePath.Split('/').Where(s => !string.IsNullOrEmpty(s)).ToArray();
+            string path = Uri.UnescapeDataString(context.Request.Url.AbsolutePath);
+
+
+            string[] requestPath = path.Split('/').Where(s => !string.IsNullOrEmpty(s)).ToArray();
 
             string refreshText = "";
 
@@ -192,21 +200,26 @@ namespace Webb
             string output = "<html><head>" + refreshText + "</head><link rel=\"stylesheet\" href=\"/httpfiles/style.css\"><body>";
 
             output += "<div class=\"top\">";
-            output += "<h1>FPVTrackside Webserver - </h2>";
+            output += "<img src=\"/img/logo.png\">";
             output += "</div>";
 
 
-            string[] items = new string[] { "VariableViewer", "RaceControl", "LapRecords", "httpfiles" };
-
-
-            foreach (string item in items)
+            List<string> items = new List<string>() { "VariableViewer", "RaceControl", "httpfiles" };
+            foreach (IWebbTable table in webbTables)
             {
-                output += "<a class=\"menu\" href=\"/" + item + "/\">" + item + "</a> ";
+                items.Add(table.Name);
             }
 
+
             output += "<div class=\"content\">";
+            output += "<center>";
             if (requestPath.Length == 0)
             {
+                foreach (string item in items)
+                {
+                    output += "<br><a class=\"menu\" href=\"/" + item + "/\">" + item + "</a> ";
+                }
+
                 if (localOnly)
                 {
                     string url = listener.Prefixes.FirstOrDefault();
@@ -216,11 +229,14 @@ namespace Webb
             }
             else
             {
-                switch (requestPath[0])
+                string action = requestPath[0];
+                string[] parameters = requestPath.Skip(1).ToArray();
+
+                switch (action)
                 {
                     case "VariableViewer":
                         VariableViewer vv = new VariableViewer(eventManager, soundManager);
-                        output += vv.DumpObject(requestPath.Skip(1), refresh, decimalPlaces);
+                        output += vv.DumpObject(parameters, refresh, decimalPlaces);
                         break;
                     case "RaceControl":
                         if (nameValueCollection.Count > 0)
@@ -232,8 +248,9 @@ namespace Webb
                     case "LapRecords":
                         break;
                     case "httpfiles":
+                    case "img":
                     case "themes":
-                        if (isFileRequest(requestPath))
+                        if (requestPath.Length > 1)
                         {
                             string filename = string.Join('\\', requestPath);
                             return File.ReadAllBytes(filename);
@@ -257,24 +274,34 @@ namespace Webb
                             }
                         }
                         break;
+                    default:
+                        IWebbTable webbTable = webbTables.FirstOrDefault(w => w.Name == action);
+                        if (webbTable != null)
+                        {
+                            output += "<h1>"+ webbTable.Name + "</h2>";
+                            output += "<table>";
+
+                            foreach(IEnumerable<string> row in webbTable.GetTable())
+                            {
+                                output += "<tr>";
+                                foreach (string cell in row)
+                                {
+                                    output += "<td class=\"data\">" + cell + "</td>";
+                                }
+                                output += "</tr>";
+                            }
+                            output += "</table>";
+                        }
+                        break;
                 }
             }
-            
+            output += "</center>";
+
             output += "</div>";
             output += "</body></html>";
             return Encoding.ASCII.GetBytes(output);
         }
-
-        private bool isFileRequest(string[] requestPath)
-        {
-            if (requestPath.Length > 1)
-            {
-                return requestPath[0] == "httpfiles" || requestPath[0] == "themes";
-            }
-            return false;
-        }
-
-        
+              
 
         public bool Stop()
         {

@@ -11,7 +11,7 @@ using Tools;
 
 namespace UI.Nodes
 {
-    public class PilotSummaryTable : Node
+    public class PilotSummaryTable : Node, IWebbTable
     {
         protected EventManager eventManager;
 
@@ -29,6 +29,9 @@ namespace UI.Nodes
 
         public Pilot[] FilterPilots { get; private set; }
 
+        private HeadingNode heading;
+        public string Name { get { return heading.Text; } }
+
         public PilotSummaryTable(EventManager eventManager, string name)
         {
             ShowPositions = true;
@@ -37,7 +40,7 @@ namespace UI.Nodes
             PanelNode panelNode = new PanelNode();
             AddChild(panelNode);
 
-            HeadingNode heading = new HeadingNode(Theme.Current.InfoPanel, name);
+            heading = new HeadingNode(Theme.Current.InfoPanel, name);
             panelNode.AddChild(heading);
 
             headings = new Node();
@@ -96,40 +99,34 @@ namespace UI.Nodes
             headings.ClearDisposeChildren();
 
             Node container = new Node();
-            headings.AddChild(container);
 
             float right = 0;
             // Add position heading
             if (ShowPositions)
             {
-                Node headingNode = new Node();
-                headings.AddChild(headingNode);
-
                 TextNode position = new TextNode("Position", Theme.Current.InfoPanel.Text.XNA);
                 position.RelativeBounds = new RectangleF(0.0f, 0.17f, 0.1f, 0.73f);
-                headingNode.AddChild(position);
+                headings.AddChild(position);
 
                 right = position.RelativeBounds.Right;
             }
 
             // Add pilot name heading
             {
-                Node headingNode = new Node();
-                headings.AddChild(headingNode);
-
                 TextButtonNode pilotsHeading = new TextButtonNode("Pilots", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
                 pilotsHeading.TextNode.Alignment = RectangleAlignment.TopCenter;
                 pilotsHeading.RelativeBounds = new RectangleF(right, 0, 0.2f, 1);
-                headingNode.AddChild(pilotsHeading);
+                headings.AddChild(pilotsHeading);
                 pilotsHeading.OnClick += (mie) => { columnToOrderBy = 0; Refresh(); };
 
                 container.RelativeBounds = new RectangleF(pilotsHeading.RelativeBounds.Right, 0, 1 - pilotsHeading.RelativeBounds.Right, 1);
             }
 
-
-
             Round[] rounds;
             int column;
+
+
+            headings.AddChild(container);
 
             CreateHeadings(container, out rounds, out column);
 
@@ -219,6 +216,52 @@ namespace UI.Nodes
                 rows.AddChild(tn);
             }
             return (PilotResultNode)rows.GetChild(index);
+        }
+
+        private IEnumerable<string> GetHeadings()
+        {
+            foreach (Node n2 in headings.Children)
+            {
+                TextNode tn2 = n2 as TextNode;
+                if (tn2 != null)
+                {
+                    yield return tn2.Text;
+                    continue;
+                }
+                TextButtonNode tbn2 = n2 as TextButtonNode;
+                if (tbn2 != null)
+                {
+                    yield return tbn2.Text;
+                    continue;
+                }
+
+                foreach (Node n in n2.Children)
+                {
+                    TextNode tn = n as TextNode;
+                    if (tn != null)
+                    {
+                        yield return tn.Text;
+                    }
+                    TextButtonNode tbn = n as TextButtonNode;
+                    if (tbn != null)
+                    {
+                        yield return tbn.Text;
+                    }
+                }
+            }
+        }
+
+
+        public IEnumerable<IEnumerable<string>> GetTable()
+        {
+            DoRefresh();
+
+            yield return GetHeadings();
+
+            foreach (PilotResultNode row in rows.Children) 
+            {
+                yield return row.GetValues();
+            }
         }
 
         protected class PilotResultNode : Node
@@ -317,6 +360,17 @@ namespace UI.Nodes
 
                 value = 0;
                 return false;
+            }
+
+            public IEnumerable<string> GetValues() 
+            { 
+                yield return positionNode.Text;
+                yield return pilotName.Text;
+
+                foreach (TextNode n in cont.Children.OfType<TextNode>()) 
+                {
+                    yield return n.Text;
+                }
             }
         }
     }

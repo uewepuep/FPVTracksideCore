@@ -23,7 +23,7 @@
 
   <ItemGroup>
     <None Update="httpfiles\style.css">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 </Project>
