@@ -9,7 +9,7 @@ using Tools;
 
 namespace UI.Nodes
 {
-    public class RSSIAnalyserNode : BorderPanelNode
+    public class RSSIAnalyserNode : BorderPanelShadowNode
     {
         private RSSINode rSSINode;
 

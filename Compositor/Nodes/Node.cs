@@ -198,6 +198,11 @@ namespace Composition.Nodes
             ClearDisposeChildren();
         }
 
+        protected virtual void SetParent(Node node)
+        {
+            Parent = node;
+        }
+
         public void ClearDisposeChildren()
         {
             Node[] t = children;
@@ -239,7 +244,7 @@ namespace Composition.Nodes
                 children = children.Union(nodes).ToArray();
                 foreach (Node node in nodes)
                 {
-                    node.Parent = this;
+                    node.SetParent(this);
                     node.SetCompositorLayer(CompositorLayer);
                 }
             }
@@ -256,7 +261,7 @@ namespace Composition.Nodes
             lock (children)
             {
                 children = (new Node[] { node }).Union(children).ToArray();
-                node.Parent = this;
+                node.SetParent(this);
                 node.SetCompositorLayer(CompositorLayer);
             }
         }
@@ -272,7 +277,7 @@ namespace Composition.Nodes
 #if DEBUG
                     node.lastAddress = node.Address;
 #endif
-                    node.Parent = null;
+                    node.SetParent(null);
                 }
             }
             foreach (Node node in nodes)

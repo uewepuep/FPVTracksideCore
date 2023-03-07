@@ -12,7 +12,7 @@ using Tools;
 
 namespace UI.Nodes
 {
-    public class AboutNode : BorderPanelNode
+    public class AboutNode : BorderPanelShadowNode
     {
         public ImageNode ImageNode { get; private set; }
 

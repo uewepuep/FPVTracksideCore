@@ -62,9 +62,9 @@ namespace Composition.Nodes
                     UpdateAspectRatioFromTexture();
                 }
 
-                if (Texture == null)
+                if (texture == null)
                 {
-                    Texture = id.TextureCache.GetTextureFromColor(Color);
+                    texture = id.TextureCache.GetTextureFromColor(Color);
                 }
 
                 sharedTexture = true;

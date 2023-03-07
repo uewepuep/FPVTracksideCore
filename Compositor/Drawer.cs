@@ -247,6 +247,15 @@ namespace Composition
                 }
             }
         }
+
+        public bool InView(Rectangle rectangle)
+        {
+            Rectangle zeroedView = GraphicsDevice.Viewport.Bounds;
+            zeroedView.X = 0;
+            zeroedView.Y = 0;
+
+            return zeroedView.Intersects(rectangle);
+        }
     }
 
     public interface IPreProcessable

@@ -34,7 +34,7 @@ namespace UI.Nodes
         {
             CanReOrder = canReorder;
 
-            BorderPanelNode background = new BorderPanelNode(Theme.Current.Editor.Background, Theme.Current.Editor.Border.XNA);
+            BorderPanelShadowNode background = new BorderPanelShadowNode(Theme.Current.Editor.Background, Theme.Current.Editor.Border.XNA);
             AddChild(background);
             SetBack(background);
 

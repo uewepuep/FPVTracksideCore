@@ -22,7 +22,7 @@ namespace Composition.Nodes
         public TextPopupNode(string title, string example, string existing)
             : base(350, 130)
         {
-            BorderPanelNode background = new BorderPanelNode();
+            BorderPanelShadowNode background = new BorderPanelShadowNode();
             AddChild(background);
 
             TextNode heading = new TextNode(title, Theme.Current.TextMain.XNA);

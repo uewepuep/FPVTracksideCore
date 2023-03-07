@@ -29,7 +29,7 @@ namespace UI
             ColorNode dimNode = new ColorNode(c);
             Root.AddChild(dimNode);
 
-            BorderPanelNode borderPanelNode = new BorderPanelNode();
+            BorderPanelShadowNode borderPanelNode = new BorderPanelShadowNode();
             borderPanelNode.RelativeBounds = new RectangleF(0.3f, 0.275f, 0.4f, 0.2f);
             dimNode.AddChild(borderPanelNode);
 

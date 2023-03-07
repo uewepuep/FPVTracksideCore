@@ -50,7 +50,7 @@ namespace UI.Nodes
             Race = Laps.FirstOrDefault().Race;
             Pilot = laps.First().Pilot;
 
-            BorderPanelNode background = new BorderPanelNode(Theme.Current.Editor.Background, Theme.Current.Editor.Border.XNA);
+            BorderPanelShadowNode background = new BorderPanelShadowNode(Theme.Current.Editor.Background, Theme.Current.Editor.Border.XNA);
             AddChild(background);
 
             TextNode title = new TextNode("Lap Editor - " + Pilot.Name, Theme.Current.Editor.Text.XNA);

@@ -19,7 +19,7 @@ namespace UI
     {
         private TextNode LoadingText;
 
-        private BorderPanelNode borderPanelNode;
+        private BorderPanelShadowNode borderPanelNode;
         private ProgressBarNode progressBar;
 
         public WorkQueue WorkQueue { get; set; }
@@ -35,7 +35,7 @@ namespace UI
             WorkQueue.OnCompleteLast += OnCompleteLast;
             WorkQueue.BeforeStart += WorkQueue_BeforeStart;
 
-            borderPanelNode = new BorderPanelNode();
+            borderPanelNode = new BorderPanelShadowNode();
             borderPanelNode.Scale(0.2f, 0.06f);
             borderPanelNode.Translate(0, 0.3f);
             Root.AddChild(borderPanelNode);

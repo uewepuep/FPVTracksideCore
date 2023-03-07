@@ -19,6 +19,7 @@ namespace UI.Nodes
             eventManager.LapRecordManager.OnNewPersonalBest += RecordManager_OnNewBest;
             eventManager.OnEventChange += Refresh;
             eventManager.OnPilotRefresh += Refresh;
+            columnToOrderBy = 3;
         }
         public override void Dispose()
         {

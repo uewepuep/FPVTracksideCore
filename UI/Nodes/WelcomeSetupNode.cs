@@ -28,7 +28,7 @@ namespace UI.Nodes
         {
             Scale(0.5f, 0.9f);
 
-            BorderPanelNode background = new BorderPanelNode();
+            BorderPanelShadowNode background = new BorderPanelShadowNode();
             AddChild(background);
             SetBack(background);
 

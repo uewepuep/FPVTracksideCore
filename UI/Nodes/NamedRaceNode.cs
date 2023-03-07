@@ -15,7 +15,7 @@ namespace UI.Nodes
         private EventRaceNode eventRaceNode;
         private TextNode label;
         private EventManager eventManager;
-        private BorderPanelNode panel;
+        private BorderPanelShadowNode panel;
 
         private NextRoundNode nextRoundNode;
 
@@ -23,7 +23,7 @@ namespace UI.Nodes
         {
             this.eventManager = eventManager;
 
-            panel = new BorderPanelNode(Theme.Current.Rounds.Background, Theme.Current.Rounds.Border.XNA);
+            panel = new BorderPanelShadowNode(Theme.Current.Rounds.Background, Theme.Current.Rounds.Border.XNA);
             AddChild(panel);
 
             label = new TextNode(name, Theme.Current.TextMain.XNA);

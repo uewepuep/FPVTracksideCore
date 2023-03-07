@@ -16,5 +16,13 @@ namespace Composition.Nodes
             RelativeBounds = new RectangleF(-0.1f, -0.1f, 1.2f, 1.2f);
             KeepAspectRatio = false;
         }
+#if DEBUG
+        protected override void SetParent(Node node)
+        {
+            base.SetParent(node);
+            System.Diagnostics.Debug.Assert(!ParentChain.Any(p => p is RenderTargetNode));
+        }
+#endif
+
     }
 }

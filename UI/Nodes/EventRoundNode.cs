@@ -225,12 +225,6 @@ namespace UI.Nodes
             RequestLayout();
         }
 
-        protected override void DrawContent(Drawer id)
-        {
-            base.DrawContent(id);
-        }
-
-
         private void ShowMenu(MouseInputEvent mie, Point position)
         {
             var lines = PlatformTools.Clipboard.GetLines();

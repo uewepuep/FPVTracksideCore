@@ -154,9 +154,11 @@ namespace Composition.Nodes
 
         public override void Draw(Drawer id, float parentAlpha)
         {
-            lastDrawFrame = id.FrameCount;
-
             DebugTimer.DebugStartTime(this);
+            if (!id.InView(Bounds))
+                return;
+
+            lastDrawFrame = id.FrameCount;
 
             float alpha = parentAlpha * Alpha;
             if (Tint.A != 255)
@@ -272,6 +274,7 @@ namespace Composition.Nodes
                         if (renderTarget != null)
                         {
                             drawer?.PreProcess(this);
+                            NeedsDraw = false;
                         }
                     }
                 }
@@ -298,10 +301,10 @@ namespace Composition.Nodes
                     // Set the render target
                     CompositorLayer.GraphicsDevice.SetRenderTarget(renderTarget);
                     CompositorLayer.GraphicsDevice.Clear(Color.Transparent);
-//#if DEBUG
-//                    Random r = new Random();
-//                    CompositorLayer.GraphicsDevice.Clear(new Color((float)r.NextDouble(), (float)r.NextDouble(), (float)r.NextDouble()));
-//#endif
+#if DEBUG
+                    Random r = new Random(lastDrawFrame);
+                    CompositorLayer.GraphicsDevice.Clear(new Color((float)r.NextDouble(), (float)r.NextDouble(), (float)r.NextDouble()));
+#endif
                     if (id != null)
                     {
                         id.Begin();
@@ -330,6 +333,8 @@ namespace Composition.Nodes
                 }
             }
             base.RequestRedraw();
+            NeedsDraw = false;
+            NeedsLayout = false;
         }
 
         protected virtual void DrawContent(Drawer id)

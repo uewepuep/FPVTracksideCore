@@ -9,9 +9,8 @@ namespace UI.Nodes
     public class BorderPanelNode : Node
     {
         public Node Inner { get; private set; }
-        
+
         public BorderNode BorderNode { get; private set; }
-        public ShadowNode ShadowNode { get; private set; }
 
         public BorderPanelNode()
            : this(Theme.Current.Panel.XNA, Theme.Current.PanelAlt.XNA)
@@ -19,7 +18,7 @@ namespace UI.Nodes
         }
 
         public BorderPanelNode(Color panel, Color border)
-             :base()
+             : base()
         {
             ColorNode n = new ColorNode(panel);
             Setup(n, border);
@@ -32,11 +31,8 @@ namespace UI.Nodes
             Setup(n, border);
         }
 
-        private void Setup(ColorNode panel, Color borderColor)
+        protected virtual void Setup(ColorNode panel, Color borderColor)
         {
-            ShadowNode = new ShadowNode();
-            AddChild(ShadowNode);
-
             BorderNode = new BorderNode(borderColor);
             AddChild(BorderNode);
 
@@ -48,7 +44,38 @@ namespace UI.Nodes
             Inner = new PaddingNode(5, 5);
             panel.AddChild(Inner);
         }
-
-        
     }
+
+    public class BorderPanelShadowNode : BorderPanelNode
+    {
+        public ShadowNode ShadowNode { get; private set; }
+
+        public BorderPanelShadowNode()
+          : this(Theme.Current.Panel.XNA, Theme.Current.PanelAlt.XNA)
+        {
+        }
+
+        public BorderPanelShadowNode(Color panel, Color border)
+             : base()
+        {
+            ColorNode n = new ColorNode(panel);
+            Setup(n, border);
+        }
+
+        public BorderPanelShadowNode(Tools.ToolTexture panel, Color border)
+             : base()
+        {
+            ColorNode n = new ColorNode(panel);
+            Setup(n, border);
+        }
+
+        protected override void Setup(ColorNode panel, Color borderColor)
+        {
+            ShadowNode = new ShadowNode();
+            AddChild(ShadowNode);
+
+            base.Setup(panel, borderColor);
+        }
+    }
+
 }
