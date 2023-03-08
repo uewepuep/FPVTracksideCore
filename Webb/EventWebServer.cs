@@ -278,26 +278,11 @@ namespace Webb
                         output += WebbRounds.Rounds(eventManager);
                         break;
                     case "Event Status":
-                        output += WebbRounds.EventStatus(eventManager);
+                        output += WebbRounds.EventStatus(eventManager, webbTables.FirstOrDefault());
                         break;
                     default:
                         IWebbTable webbTable = webbTables.FirstOrDefault(w => w.Name == action);
-                        if (webbTable != null)
-                        {
-                            output += "<h1>"+ webbTable.Name + "</h2>";
-                            output += "<table>";
-
-                            foreach(IEnumerable<string> row in webbTable.GetTable())
-                            {
-                                output += "<tr>";
-                                foreach (string cell in row)
-                                {
-                                    output += "<td class=\"data\">" + cell + "</td>";
-                                }
-                                output += "</tr>";
-                            }
-                            output += "</table>";
-                        }
+                        output += HTTPFormat.FormatTable(webbTable);
                         break;
                 }
             }

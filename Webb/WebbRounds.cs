@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 
 namespace Webb
 {
@@ -90,7 +91,7 @@ namespace Webb
             return output;
         }
 
-        public static string EventStatus(EventManager eventManager)
+        public static string EventStatus(EventManager eventManager, IWebbTable webbTable)
         {
             string output = "";
             output += "<h2>Event Status</h2>";
@@ -116,11 +117,16 @@ namespace Webb
             {
                 output += "<div class=\"race_status\">";
                 output += "<h3>" + kvp.Key + "</h3>";
+                output += "<h4>" + kvp.Value.RaceName + "</h4>";
 
                 output += RaceTable(eventManager, eventManager.Channels, kvp.Value);
 
                 output += "</div>";
             }
+
+            output += "<div>";
+            output += HTTPFormat.FormatTable(webbTable);
+            output += "</div>";
 
 
             return output;
