@@ -169,7 +169,7 @@ namespace UI.Nodes
 
             if (now.Minute != lastMinute)
             {
-                currentTime.Text = now.ToString("hh:mm tt").ToLower();
+                currentTime.Text = now.ToString("h:mm tt").ToLower();
                 lastMinute = now.Minute;
             }
         }

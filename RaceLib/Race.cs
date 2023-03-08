@@ -257,6 +257,22 @@ namespace RaceLib
 
         public Brackets Bracket { get; set; }
 
+        [LiteDB.BsonIgnore]
+        public string RaceName
+        {
+            get
+            {
+                if (Bracket == Brackets.None)
+                {
+                    return RaceStringFormatter.Instance.GetEventTypeText(Type) + " " + RoundRaceNumber;
+                }
+                else
+                {
+                    return RaceStringFormatter.Instance.GetEventTypeText(Type) + " " + RoundRaceNumber + " (" + Bracket + ")";
+                }
+            }
+        }
+
         public Race()
         {
             Bracket = Brackets.None;
@@ -884,5 +900,6 @@ namespace RaceLib
         {
             return Type + " " + RaceNumber + " (Round " + RoundNumber +  ") with " + PilotChannels.Count + " pilots.";
         }
+
     }
 }

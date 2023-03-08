@@ -35,6 +35,8 @@ namespace Webb
             {
                 output += RaceInfo(race);
                 output += LapControls(race);
+
+                output += WebbRounds.RaceBox(EventManager, race);
             }
 
 

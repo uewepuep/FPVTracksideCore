@@ -201,10 +201,11 @@ namespace Webb
 
             output += "<div class=\"top\">";
             output += "<img src=\"/img/logo.png\">";
+            output += "<div class=\"time\">" + DateTime.Now.ToString("h:mm tt").ToLower() + "</div>";
             output += "</div>";
 
 
-            List<string> items = new List<string>() { "VariableViewer", "RaceControl", "httpfiles" };
+            List<string> items = new List<string>() { "VariableViewer", "RaceControl", "Rounds", "Event Status" };
             foreach (IWebbTable table in webbTables)
             {
                 items.Add(table.Name);
@@ -212,7 +213,6 @@ namespace Webb
 
 
             output += "<div class=\"content\">";
-            output += "<center>";
             if (requestPath.Length == 0)
             {
                 foreach (string item in items)
@@ -274,6 +274,12 @@ namespace Webb
                             }
                         }
                         break;
+                    case "Rounds":
+                        output += WebbRounds.Rounds(eventManager);
+                        break;
+                    case "Event Status":
+                        output += WebbRounds.EventStatus(eventManager);
+                        break;
                     default:
                         IWebbTable webbTable = webbTables.FirstOrDefault(w => w.Name == action);
                         if (webbTable != null)
@@ -295,8 +301,6 @@ namespace Webb
                         break;
                 }
             }
-            output += "</center>";
-
             output += "</div>";
             output += "</body></html>";
             return Encoding.ASCII.GetBytes(output);

@@ -49,20 +49,11 @@ namespace UI.Nodes
             {
                 container.ClearDisposeChildren();
 
-                string headingText = RaceStringFormatter.Instance.GetEventTypeText(Race.Type) + " " + Race.RoundRaceNumber;
-
-                if (Race.Bracket != Race.Brackets.None)
-                {
-                    headingText = RaceStringFormatter.Instance.GetEventTypeText(Race.Type) + " " + Race.RoundRaceNumber + " (" + Race.Bracket + ")";
-                }
-
                 if (heading == null)
                 {
-                    heading = new TextButtonNode("", Theme.Current.Rounds.RaceTitle, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
+                    heading = new TextButtonNode(Race.RaceName, Theme.Current.Rounds.RaceTitle, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
                     AddChild(heading);
                 }
-                heading.Text = headingText + " >>";
-
                 float headingHeight = 0.15f;
 
                 // Make the heading shrink as the Aspect ratio becomes non-standard
@@ -105,48 +96,7 @@ namespace UI.Nodes
                     PilotRaceInfoNode pilotRaceInfoNode = new PilotRaceInfoNode(this, pilot, channel, channelChanged, shared.Where(c => c != channel));
                     container.AddChild(pilotRaceInfoNode);
 
-                    if (Race.Ended && pilot != null)
-                    {
-                        if (Race.Type == EventTypes.Race || Race.Type == EventTypes.AggregateLaps)
-                        {
-                            Result result = EventManager.ResultManager.GetResult(Race, pilot);
-                            if (result != null)
-                            {
-                                if (result.DNF)
-                                {
-                                    pilotRaceInfoNode.ResultText = "DNF";
-                                }
-                                else
-                                {
-                                    int position = result.Position;
-                                    pilotRaceInfoNode.ResultText = position.ToStringPosition();
-                                }
-                            }
-                            else
-                            {
-                                pilotRaceInfoNode.ResultText = "";
-                            }
-
-                        }
-                        else if (Race.Type == EventTypes.TimeTrial)
-                        {
-                            int position = EventManager.LapRecordManager.GetPosition(pilot, EventManager.Event.Laps);
-                            pilotRaceInfoNode.ResultText = position.ToStringPosition();
-
-                            if (EventManager.ResultManager.DNFed(Race, pilot))
-                            {
-                                pilotRaceInfoNode.ResultText = "DNF";
-                            }
-                        }
-                        else
-                        {
-                            pilotRaceInfoNode.ResultText = "-";
-                        }
-                    }
-                    else
-                    {
-                        pilotRaceInfoNode.ResultText = "";
-                    }
+                    pilotRaceInfoNode.ResultText = EventManager.ResultManager.GetResultText(Race, pilot);
                 }
 
                 int size = Math.Max(grouped.Count(), 6);

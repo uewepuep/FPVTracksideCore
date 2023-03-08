@@ -400,6 +400,9 @@ namespace RaceLib
             return points;
         }
 
+
+        
+
         public Result GetResult(Race race, Pilot pilot)
         {
             lock (Results)
@@ -564,6 +567,54 @@ namespace RaceLib
             RaceResultsChanged?.Invoke(race);
 
             return r;
+        }
+
+        public string GetResultText(Race race, Pilot pilot)
+        {
+            if (race.Ended && pilot != null)
+            {
+                if (race.Type == EventTypes.Race || race.Type == EventTypes.AggregateLaps)
+                {
+                    Result result = GetResult(race, pilot);
+                    if (result != null)
+                    {
+                        if (result.DNF)
+                        {
+                            return "DNF";
+                        }
+                        else
+                        {
+                            int position = result.Position;
+                            return position.ToStringPosition();
+                        }
+                    }
+                    else
+                    {
+                        return "";
+                    }
+
+                }
+                else if (race.Type == EventTypes.TimeTrial)
+                {
+                    if (EventManager.ResultManager.DNFed(race, pilot))
+                    {
+                        return "DNF";
+                    }
+                    else
+                    {
+                        int position = EventManager.LapRecordManager.GetPosition(pilot, EventManager.Event.Laps);
+                        return position.ToStringPosition();
+                    }
+                }
+                else
+                {
+                    return "-";
+                }
+            }
+            else
+            {
+                return "";
+            }
         }
 
         public string GetResultsText(Race race, string delimiter = "\t")

@@ -82,10 +82,10 @@ img {
 }
 
 .data {
-    padding: 10px;
+    padding: 5px;
     background: #05050599;
     font-weight: 600;
-    font-size: 16pt;
+    font-size: 12pt;
     text-align: right;
 }
 
@@ -94,7 +94,7 @@ img {
     padding-top: 5px;
     padding-bottom: 5px;
     margin: 5px;
-    background: #66333333;
+    background: #05050599;
     min-width: 15em;
 }
 
@@ -180,4 +180,12 @@ h4 {
 
 .input {
     width: 256px;
+}
+
+.time {
+    margin-left: auto;
+    margin-right: 0;
+    text-align:right;
+    font-size: 40pt;
+    display: inline;
 }
