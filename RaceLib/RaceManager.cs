@@ -616,15 +616,40 @@ namespace RaceLib
                 return false;
             }
 
-            IEnumerable<ListeningFrequency> frequencies = null;
-
-            if (currentRace.Type == EventTypes.CasualPractice)
+            List<ListeningFrequency> frequencies = new List<ListeningFrequency>();
+            bool enoughFrequenciesForEvent = TimingSystemManager.MaxPilots >= EventManager.Channels.GetChannelGroups().Count();
+            if (enoughFrequenciesForEvent)
             {
-                frequencies = EventManager.Channels.Select(c => new ListeningFrequency(c.Frequency, 1));
+                foreach (Channel eventChannel in EventManager.Channels)
+                {
+                    ListeningFrequency listeningFrequency;
+                    PilotChannel pilotChannel = currentRace.PilotChannelsSafe.FirstOrDefault(r => r.Channel.Frequency == eventChannel.Frequency);
+                    if (pilotChannel != null)
+                    {
+                        listeningFrequency = new ListeningFrequency(eventChannel.Frequency, pilotChannel.Pilot.TimingSensitivityPercent / 100.0f);
+                    }
+                    else
+                    {
+                        listeningFrequency = new ListeningFrequency(eventChannel.Frequency, 0);
+                    }
+
+                    frequencies.Add(listeningFrequency);
+                }
+
+                Logger.RaceLog.LogCall(this, CurrentRace, "Frequencies locked to receivers");
             }
             else
             {
-                frequencies = currentRace.PilotChannelsSafe.Select(pc => new ListeningFrequency(pc.Channel.Frequency, pc.Pilot.TimingSensitivityPercent / 100.0f));
+                if (currentRace.Type == EventTypes.CasualPractice)
+                {
+                    frequencies = EventManager.Channels.Select(c => new ListeningFrequency(c.Frequency, 1)).ToList();
+                }
+                else
+                {
+                    frequencies = currentRace.PilotChannelsSafe.Select(pc => new ListeningFrequency(pc.Channel.Frequency, pc.Pilot.TimingSensitivityPercent / 100.0f)).ToList();
+                }
+
+                Logger.RaceLog.LogCall(this, CurrentRace, "Frequencies dynamically assigned to receivers");
             }
 
             if (!TimingSystemManager.SetListeningFrequencies(frequencies))

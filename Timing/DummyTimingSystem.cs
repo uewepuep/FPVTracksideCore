@@ -31,7 +31,7 @@ namespace Timing
 
         private Random random;
 
-        public int MaxPilots { get { return 256; } }
+        public int MaxPilots { get { return DummingSettings.Receivers; } }
         public IEnumerable<StatusItem> Status
         {
             get
@@ -229,7 +229,11 @@ namespace Timing
         [Category("Failure cases")]
         public double FalseReadPercent { get; set; }
 
-        [Browsable(false)]
+        [Category("Virtual Hardware")]
+        public int Receivers { get; set; }
+
+
+    [Browsable(false)]
         public TimeSpan TypicalLapTime { get { return TimeSpan.FromSeconds(TypicalLapTimeSeconds); } }
 
         [Browsable(false)]
@@ -243,6 +247,7 @@ namespace Timing
             RangeSeconds = 5;
             FakeFailureRatePercent = 0;
             FalseReadPercent = 10;
+            Receivers = 8;
         }
 
         public override string ToString()
