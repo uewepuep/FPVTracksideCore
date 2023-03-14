@@ -102,8 +102,14 @@ namespace UI
         public float StartDelaySeconds { get; set; }
 
         [Category("Sound")]
+        [Browsable(false)]
+
+        public bool TextToSpeech { get { return TextToSpeechVolume > 0; } }
+
+        [Category("Sound")]
+        [DisplayName("Text to speech Volume (0 - 100)")]
         [NeedsRestart]
-        public bool TextToSpeech { get; set; }
+        public int TextToSpeechVolume { get; set; }
 
         [Category("Sound")]
         [NeedsRestart]
@@ -239,7 +245,7 @@ namespace UI
             HTTPServer = false;
             AlignChannelsTop = false;
             CropContent16by9 = false;
-            TextToSpeech = true;
+            TextToSpeechVolume = 100;
 
             ChannelGrid1 = true;
             ChannelGrid2 = true;

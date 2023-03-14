@@ -116,9 +116,9 @@ namespace Sound
             }
         }
 
-        public void SetupSpeaker(PlatformTools platformTools, string voice)
+        public void SetupSpeaker(PlatformTools platformTools, string voice, int volume)
         {
-            speechManager = new SpeechManager(platformTools, voice);
+            speechManager = new SpeechManager(platformTools, voice, volume);
         }
 
         public bool HasSpeech()
@@ -435,7 +435,7 @@ namespace Sound
 
         public void SponsorRead(string text, TimeSpan expiry)
         {
-            SpeechRequest speechRequest = new SpeechRequest(text, 0, new SpeechParameters(), DateTime.Now + expiry, null);
+            SpeechRequest speechRequest = new SpeechRequest(text, 0, 1, new SpeechParameters(), DateTime.Now + expiry, null);
             speechManager?.EnqueueSpeech(speechRequest);
         }
 
@@ -505,13 +505,13 @@ namespace Sound
 
             if (sound.HasFile)
             {
-                SoundEffectRequest effectRequest = new SoundEffectRequest(sound.Filename, parameters.Priority, DateTime.Now + expiry, onFinished);
+                SoundEffectRequest effectRequest = new SoundEffectRequest(sound.Filename, parameters.Priority, sound.Volume, DateTime.Now + expiry, onFinished);
                 soundEffectManager?.EnqueueSoundEffect(effectRequest);
                 request = effectRequest;
             }
             else
             {
-                SpeechRequest speechRequest = new SpeechRequest(sound.TextToSpeech, sound.Rate, parameters, DateTime.Now + expiry, onFinished);
+                SpeechRequest speechRequest = new SpeechRequest(sound.TextToSpeech, sound.Rate, sound.Volume, parameters, DateTime.Now + expiry, onFinished);
                 speechManager?.EnqueueSpeech(speechRequest);
                 request = speechRequest;
             }
@@ -790,6 +790,7 @@ namespace Sound
     class SoundWorkItem : WorkItem
     {
         public int Priority { get; set; }
+
     }
 
     public abstract class SoundRequest
@@ -798,11 +799,14 @@ namespace Sound
         public int Priority { get; private set; }
         public System.Action OnFinish { get; private set; }
 
-        public SoundRequest(int priority, DateTime expiry, Action onFinish)
+        public int Volume { get; private set; }
+
+        public SoundRequest(int priority, int volume, DateTime expiry, Action onFinish)
         {
             Priority = priority;
             Expiry = expiry;
             OnFinish = onFinish;
+            Volume = volume;
         }
     }
 }

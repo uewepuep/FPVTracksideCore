@@ -183,8 +183,7 @@ h4 {
 }
 
 .time {
-    margin-left: auto;
-    margin-right: 0;
+    float:right;
     text-align:right;
     font-size: 40pt;
     display: inline;

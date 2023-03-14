@@ -39,7 +39,9 @@ namespace Sound
 
         public string Voice { get; private set; }
 
-        public SpeechManager(PlatformTools platformTools, string voice)
+        public int Volume { get; set; }
+
+        public SpeechManager(PlatformTools platformTools, string voice, int volume)
         {
             Voice = voice;
             this.platformTools = platformTools;
@@ -54,6 +56,8 @@ namespace Sound
             {
                 mute = true;
             }
+
+            Volume = volume;
         }
 
         public void Dispose()
@@ -128,6 +132,11 @@ namespace Sound
 
             speaker.SetRate(Math.Max(-10, Math.Min(10, request.Rate)));
 
+
+            float factorVolume = (request.Volume / 100.0f) * (Volume / 100.0f);
+
+            speaker.SetVolume(Math.Clamp((int)(factorVolume * 100), 0, 100));
+
             SoundWorkItem[] soundWorkItems = ttsQueue.WorkItems.OfType<SoundWorkItem>().ToArray();
 
             int maxPriority = 0;
@@ -170,8 +179,8 @@ namespace Sound
 
         public SpeechParameters Parameters { get; private set; }
 
-        public SpeechRequest(string rawText, int rate, SpeechParameters parameters, DateTime expiry,Action onFinish)
-             : base(parameters.Priority, expiry, onFinish)
+        public SpeechRequest(string rawText, int rate, int volume, SpeechParameters parameters, DateTime expiry,Action onFinish)
+             : base(parameters.Priority, volume, expiry, onFinish)
         {
             Rate = rate;
             RawText = rawText;

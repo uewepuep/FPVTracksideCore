@@ -82,7 +82,7 @@ namespace Sound
                 {
                     if (File.Exists(request.Filename))
                     {
-                        PlayWaveFile(request.Filename);
+                        PlayWaveFile(request.Filename, request.Volume);
                     }
                 }
                 catch (Exception ex)
@@ -94,7 +94,7 @@ namespace Sound
         }
 
 
-        private bool PlayWaveFile(string filename)
+        private bool PlayWaveFile(string filename, int volume)
         {
             SoundEffect effect;
 
@@ -112,6 +112,7 @@ namespace Sound
             }
 
             SoundEffectInstance instance = effect.CreateInstance();
+            instance.Volume = Math.Clamp(volume / 100.0f, 0, 1);
             instance.Play();
 
             Logger.SoundLog.Log(this, "Play Sound", filename, Logger.LogType.Notice);
@@ -165,8 +166,8 @@ namespace Sound
     {
         public string Filename { get; private set; }
 
-        public SoundEffectRequest(string filename, int priority, DateTime expiry, Action onFinish)
-            : base(priority, expiry, onFinish)
+        public SoundEffectRequest(string filename, int priority, int volume, DateTime expiry, Action onFinish)
+            : base(priority, volume, expiry, onFinish)
         {
             Filename = filename;
         }

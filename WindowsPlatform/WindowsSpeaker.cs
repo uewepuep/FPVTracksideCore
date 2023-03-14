@@ -45,6 +45,11 @@ namespace WindowsPlatform
             speechSynthesizer.Rate = rate;
         }
 
+        public void SetVolume(int volume)
+        {
+            speechSynthesizer.Volume = volume;
+        }
+
         public void Speak(string text)
         {
             speechSynthesizer.Speak(text);

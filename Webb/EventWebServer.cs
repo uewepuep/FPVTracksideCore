@@ -199,32 +199,37 @@ namespace Webb
 
             string output = "<html><head>" + refreshText + "</head><link rel=\"stylesheet\" href=\"/httpfiles/style.css\"><body>";
 
-            output += "<div class=\"top\">";
-            output += "<img src=\"/img/logo.png\">";
-            output += "<div class=\"time\">" + DateTime.Now.ToString("h:mm tt").ToLower() + "</div>";
-            output += "</div>";
+            string heading = "<div class=\"top\">";
+            heading += "<img src=\"/img/logo.png\">";
+            heading += "<div class=\"time\">" + DateTime.Now.ToString("h:mm tt").ToLower() + "</div>";
+            heading += "</div>";
 
 
-            List<string> items = new List<string>() { "VariableViewer", "RaceControl", "Rounds", "Event Status" };
+            List<string> items = new List<string>() { "VariableViewer", "Rounds", "Event Status" };
+
+            if (localOnly)
+            {
+                items.Add("RaceControl");
+            }
+
             foreach (IWebbTable table in webbTables)
             {
                 items.Add(table.Name);
             }
 
-
-            output += "<div class=\"content\">";
+            string content = "<div class=\"content\">";
             if (requestPath.Length == 0)
             {
-                foreach (string item in items)
+                foreach (string item in items.OrderBy(r =>r))
                 {
-                    output += "<br><a class=\"menu\" href=\"/" + item + "/\">" + item + "</a> ";
+                    content += "<br><a class=\"menu\" href=\"/" + item + "/\">" + item + "</a> ";
                 }
 
                 if (localOnly)
                 {
                     string url = listener.Prefixes.FirstOrDefault();
                     url = url.Replace("localhost", "+");
-                    output += "<p>By default this webserver is only accessible from this machine. To access it over the network run in an Adminstrator command prompt:</p><p> netsh http add urlacl url = \"" + url + "\" user=everyone</p><p>Then restart the software</p>";
+                    content += "<p>By default this webserver is only accessible from this machine. To access it over the network run in an Adminstrator command prompt:</p><p> netsh http add urlacl url = \"" + url + "\" user=everyone</p><p>Then restart the software</p>";
                 }
             }
             else
@@ -235,15 +240,17 @@ namespace Webb
                 switch (action)
                 {
                     case "VariableViewer":
+                        heading = "";
+
                         VariableViewer vv = new VariableViewer(eventManager, soundManager);
-                        output += vv.DumpObject(parameters, refresh, decimalPlaces);
+                        content += vv.DumpObject(parameters, refresh, decimalPlaces);
                         break;
                     case "RaceControl":
                         if (nameValueCollection.Count > 0)
                         {
                             WebRaceControl.HandleInput(nameValueCollection);
                         }
-                        output += WebRaceControl.GetHTML();
+                        content += WebRaceControl.GetHTML();
                         break;
                     case "LapRecords":
                         break;
@@ -262,31 +269,34 @@ namespace Webb
                             FileInfo[] files = di.GetFiles();
                             if (files.Any())
                             {
-                                output += "<h1>Files</h2>";
-                                output += "<ul>";
+                                content += "<h1>Files</h2>";
+                                content += "<ul>";
                                 foreach (FileInfo filename in files)
                                 {
-                                    output += "<li>";
-                                    output += "<a href=\"httpfiles\\" + filename.Name + " \">" + filename.Name + "</a>";
-                                    output += "</li>";
+                                    content += "<li>";
+                                    content += "<a href=\"httpfiles\\" + filename.Name + " \">" + filename.Name + "</a>";
+                                    content += "</li>";
                                 }
-                                output += "</ul>";
+                                content += "</ul>";
                             }
                         }
                         break;
                     case "Rounds":
-                        output += WebbRounds.Rounds(eventManager);
+                        content += WebbRounds.Rounds(eventManager);
                         break;
                     case "Event Status":
-                        output += WebbRounds.EventStatus(eventManager, webbTables.FirstOrDefault());
+                        content += WebbRounds.EventStatus(eventManager, webbTables.FirstOrDefault());
                         break;
                     default:
                         IWebbTable webbTable = webbTables.FirstOrDefault(w => w.Name == action);
-                        output += HTTPFormat.FormatTable(webbTable);
+                        content += HTTPFormat.FormatTable(webbTable);
                         break;
                 }
             }
-            output += "</div>";
+            content += "</div>";
+
+            output += heading + content;
+
             output += "</body></html>";
             return Encoding.ASCII.GetBytes(output);
         }

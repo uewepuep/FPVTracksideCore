@@ -69,6 +69,10 @@ namespace Sound
         [DisplayName("TTS speed (-10 to 10)")]
         public int Rate { get; set; }
 
+        [DisplayName("Volume (0 to 100)")]
+
+        public int Volume { get; set; }
+
         public enum SoundCategories
         {
             Announcements,
@@ -85,6 +89,7 @@ namespace Sound
         {
             Enabled = true;
             Rate = 0;
+            Volume = 100;
         }
 
         [System.ComponentModel.Browsable(false)]

@@ -443,7 +443,7 @@ namespace UI
 
             if (SoundManager != null)
             {
-                SoundManager.SetupSpeaker(PlatformTools, GeneralSettings.Instance.Voice);
+                SoundManager.SetupSpeaker(PlatformTools, GeneralSettings.Instance.Voice, GeneralSettings.Instance.TextToSpeechVolume);
             }
         }
 

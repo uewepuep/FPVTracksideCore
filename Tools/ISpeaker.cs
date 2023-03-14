@@ -14,5 +14,7 @@ namespace Tools
         void Speak(string text);
 
         void Stop();
+
+        void SetVolume(int volume);
     }
 }

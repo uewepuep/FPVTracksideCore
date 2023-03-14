@@ -424,7 +424,7 @@ namespace UI.Nodes
             if (soundManager == null)
             {
                 soundManager = new SoundManager(null);
-                soundManager.SetupSpeaker(PlatformTools, GeneralSettings.Instance.Voice);
+                soundManager.SetupSpeaker(PlatformTools, GeneralSettings.Instance.Voice, GeneralSettings.Instance.TextToSpeechVolume);
                 soundManager.WaitForInit();
             }
             GetLayer<PopupLayer>().Popup(new SoundEditor(soundManager));
