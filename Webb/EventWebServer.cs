@@ -152,6 +152,7 @@ namespace Webb
 
             int decimalPlaces = 2;
             int refresh = 60;
+            bool autoScroll = false;
 
             string query = context.Request.Url.Query;
             if (query.StartsWith("?"))
@@ -173,6 +174,9 @@ namespace Webb
                                 break;
                             case "decimalplaces":
                                 int.TryParse(value, out decimalPlaces);
+                                break;
+                            case "autoscroll":
+                                bool.TryParse(value, out autoScroll);
                                 break;
                         }
                     }
@@ -197,7 +201,12 @@ namespace Webb
                 refreshText = "<meta http-equiv=\"refresh\" content=\"" + refresh + "\" >";
             }
 
-            string output = "<html><head>" + refreshText + "</head><link rel=\"stylesheet\" href=\"/httpfiles/style.css\"><body>";
+            string output = "<html><head>" + refreshText + "</head><link rel=\"stylesheet\" href=\"/httpfiles/style.css\">";
+
+            if (autoScroll)
+                output += "<script src=\"/httpfiles/scroll.js\"></script>";
+            
+            output += "<body>";
 
             string heading = "<div class=\"top\">";
             heading += "<img src=\"/img/logo.png\">";
@@ -251,8 +260,6 @@ namespace Webb
                             WebRaceControl.HandleInput(nameValueCollection);
                         }
                         content += WebRaceControl.GetHTML();
-                        break;
-                    case "LapRecords":
                         break;
                     case "httpfiles":
                     case "img":

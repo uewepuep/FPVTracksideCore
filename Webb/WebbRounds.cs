@@ -29,7 +29,7 @@ namespace Webb
                 if (races.Count() == 0)
                     continue;
 
-                output += "<div class=\"round\">";
+                output += "<div id=\"round" + round.RoundNumber + "\" class=\"round\">";
                 output += "<h3>" + round.ToString();
 
                 if (round.RoundType != Round.RoundTypes.Round)
@@ -56,7 +56,7 @@ namespace Webb
 
         public static string RaceBox(EventManager eventManager, Race race)
         {
-            string output = "<div class=\"race_status\">";
+            string output = "<div id=\"" + race.RaceNumber + "\" class=\"race_status\">";
             output += "<h4>" + race.RaceName + "</h4>";
 
             output += RaceTable(eventManager, eventManager.Channels, race);

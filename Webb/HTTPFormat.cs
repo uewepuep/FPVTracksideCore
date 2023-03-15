@@ -24,16 +24,20 @@ namespace Webb
             if (webbTable != null)
             {
                 output += "<h1>" + webbTable.Name + "</h2>";
+                output += "<a href=\"?autoscroll=true\">Autoscroll</a>";
                 output += "<table>";
+
+                int id = 0;
 
                 foreach (IEnumerable<string> row in webbTable.GetTable())
                 {
                     output += "<tr>";
                     foreach (string cell in row)
                     {
-                        output += "<td class=\"data\">" + cell + "</td>";
+                        output += "<td id=\"" + id + "\"class=\"data\">" + cell + "</td>";
                     }
                     output += "</tr>";
+                    id++;
                 }
                 output += "</table>";
             }

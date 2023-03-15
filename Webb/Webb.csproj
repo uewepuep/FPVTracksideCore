@@ -26,6 +26,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="httpfiles\scroll.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="httpfiles\style.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
