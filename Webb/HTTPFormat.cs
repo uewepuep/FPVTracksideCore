@@ -25,7 +25,7 @@ namespace Webb
             string output = "";
             if (webbTable != null)
             {
-                output += "<h1>" + webbTable.Name + "</h2>";
+                output += "<h2>" + webbTable.Name + " - </h2>";
                 output += "<a href=\"?autoscroll=true\">Autoscroll</a>";
                 output += "<div class=\"" + className + "\">";
 

@@ -13,7 +13,7 @@ namespace Webb
         public static string Rounds(EventManager eventManager)
         {
             string output = "";
-            output += "<h2>Rounds</h2>";
+            output += "<h2>Rounds - </h2>";
             output += "<a href=\"?autoscroll=true\">Autoscroll</a>";
             bool newRow = true;
 

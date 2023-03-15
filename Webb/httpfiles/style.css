@@ -15,14 +15,6 @@ a:link, a:visited, a:hover, a:active {
     color: #ED1B24;
 }
 
-input {
-    border: 2px solid #ED1B24;
-    border-radius: 4px;
-    background-color: #00000000;
-    color: white;
-    padding: 5px;
-}
-
 table {
     margin: 10px;
 }
@@ -40,12 +32,6 @@ table {
     padding-bottom: 1px;
 }
 
-.banner, .banner_small {
-    width: auto;
-    text-align: center;
-    padding: 20px;
-}
-
 td {
     vertical-align: top;
 }
@@ -53,11 +39,6 @@ td {
 img {
     max-width: 100%;
     height: auto;
-}
-
-.small_top {
-    padding: 10px;
-    height: 50px;
 }
 
 .menu {
@@ -70,18 +51,13 @@ img {
     margin-right: auto;
 }
 
-.menu_item {
-    text-align: left;
-    padding: 20px;
-    padding-inline-start: 0px;
-}
-
-.rounds, .features {
+.rounds
+{
     display: flex;
     flex-wrap: wrap;
 }
 
-.round, .feature, .race_status {
+.round, .race_status {
     padding: 20px;
     padding-top: 5px;
     padding-bottom: 5px;
@@ -94,29 +70,6 @@ img {
     display: inline-block;
 }
 
-
-.right {
-    display: flex;
-    flex-wrap: wrap;
-}
-
-canvas {
-    background: #33333333;
-    padding: 20px;
-}
-
-.featureimg {
-    height: 360px;
-}
-
-.featuredesc, .featureimg {
-    width: 640px;
-}
-
-.featuredesc {
-    padding: 5px;
-}
-
 .race {
     display: block;
     min-height: 10em;
@@ -125,6 +78,12 @@ canvas {
 
 h4 {
     margin: 2px;
+}
+
+h2
+{
+    display: inline-block;
+    padding-right: 10px;
 }
 
 .race_pilot, .race_channel_color, .race_channel, .race_result {
@@ -147,31 +106,9 @@ h4 {
     width: 10px;
 }
 
-.cell_numeric {
-    text-align: right;
-}
-
-.heading {
-    font-weight: bold;
-}
-
-.lap_pilot {
-    min-width: 6em;
-}
-
 .lap_time, .lap_behind, .lap_position {
     min-width: 6em;
     text-align: right;
-}
-
-.register, .details {
-    padding: 30px;
-    margin: auto;
-    max-width: 400px;
-}
-
-.input {
-    width: 256px;
 }
 
 .time {
@@ -179,10 +116,10 @@ h4 {
     text-align: right;
     font-size: 40pt;
     display: inline;
+    padding: 20px;
 }
 
-
-.position, .pilots, .holeshot, .laps, .lap, .t, .total {
+.position, .pilots, .holeshot, .laps, .lap, .t, .p, .r, .e, .c, .f, .a, .total {
     padding: 5px;
     background: #05050599;
     font-weight: 600;
@@ -216,7 +153,7 @@ h4 {
     white-space: nowrap;
 }
 
-.t {
+.t, .p, .r, .e, .c, .f, .a {
     width: 30px;
     text-align: right;
 }
