@@ -10,5 +10,6 @@ namespace Tools
     {
         string Name { get; }
         IEnumerable<IEnumerable<string>> GetTable();
+        IEnumerable<string> GetHeadings();
     }
 }

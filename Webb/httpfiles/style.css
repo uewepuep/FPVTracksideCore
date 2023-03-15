@@ -76,20 +76,12 @@ img {
     padding-inline-start: 0px;
 }
 
-.rounds, .laps, .features {
+.rounds, .features {
     display: flex;
     flex-wrap: wrap;
 }
 
-.data {
-    padding: 5px;
-    background: #05050599;
-    font-weight: 600;
-    font-size: 12pt;
-    text-align: right;
-}
-
-.round, .lap, .feature, .race_status {
+.round, .feature, .race_status {
     padding: 20px;
     padding-top: 5px;
     padding-bottom: 5px;
@@ -183,8 +175,48 @@ h4 {
 }
 
 .time {
-    float:right;
-    text-align:right;
+    float: right;
+    text-align: right;
     font-size: 40pt;
     display: inline;
+}
+
+
+.position, .pilots, .holeshot, .laps, .lap, .t, .total {
+    padding: 5px;
+    background: #05050599;
+    font-weight: 600;
+    font-size: 12pt;
+    text-align: left;
+    display: inline-block;
+    height: 20px;
+    width: 60px;
+    overflow: hidden;
+    white-space: nowrap; /* Don't forget this one */
+    text-overflow: ellipsis;
+}
+
+.pilots {
+    width: 120px;
+}
+
+.holeshot {
+    width: 80px;
+}
+
+.holeshot, .laps, .lap, .position, .total {
+    text-align: right;
+}
+
+.columns {
+    column-count: 2
+}
+
+.row {
+    white-space: nowrap;
+}
+
+.t {
+    width: 30px;
+    text-align: right;
 }

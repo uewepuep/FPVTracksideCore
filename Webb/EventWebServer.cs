@@ -294,9 +294,14 @@ namespace Webb
                     case "Event Status":
                         content += WebbRounds.EventStatus(eventManager, webbTables.FirstOrDefault());
                         break;
+
+                    case "Lap Count":
+                        IWebbTable webbTable2 = webbTables.FirstOrDefault(w => w.Name == action);
+                        content += HTTPFormat.FormatTable(webbTable2, "");
+                        break;
                     default:
                         IWebbTable webbTable = webbTables.FirstOrDefault(w => w.Name == action);
-                        content += HTTPFormat.FormatTable(webbTable);
+                        content += HTTPFormat.FormatTable(webbTable, "columns");
                         break;
                 }
             }

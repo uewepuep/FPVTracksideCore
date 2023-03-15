@@ -14,6 +14,7 @@ namespace Webb
         {
             string output = "";
             output += "<h2>Rounds</h2>";
+            output += "<a href=\"?autoscroll=true\">Autoscroll</a>";
             bool newRow = true;
 
             foreach (Round round in eventManager.RoundManager.Rounds)
@@ -125,7 +126,7 @@ namespace Webb
             }
 
             output += "<div>";
-            output += HTTPFormat.FormatTable(webbTable);
+            output += HTTPFormat.FormatTable(webbTable, "columns");
             output += "</div>";
 
 

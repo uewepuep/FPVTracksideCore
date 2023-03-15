@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Tools;
 
 namespace Webb
@@ -18,28 +20,48 @@ namespace Webb
             return "#" + string.Format("{0:X2}", color.R) + string.Format("{0:X2}", color.G) + string.Format("{0:X2}", color.B);
         }
 
-        public static string FormatTable(IWebbTable webbTable)
+        public static string FormatTable(IWebbTable webbTable, string className)
         {
             string output = "";
             if (webbTable != null)
             {
                 output += "<h1>" + webbTable.Name + "</h2>";
                 output += "<a href=\"?autoscroll=true\">Autoscroll</a>";
-                output += "<table>";
+                output += "<div class=\"" + className + "\">";
 
                 int id = 0;
+                
+                List<IEnumerable<string>> table = webbTable.GetTable().ToList();
 
-                foreach (IEnumerable<string> row in webbTable.GetTable())
+                string[] headings = webbTable.GetHeadings().ToArray();
+
+                foreach (IEnumerable<string> row in table)
                 {
-                    output += "<tr>";
+                    output += "<div class=\"row\">";
+                    int i = 0;
                     foreach (string cell in row)
                     {
-                        output += "<td id=\"" + id + "\"class=\"data\">" + cell + "</td>";
+                        string cellClass;
+                        if (headings.Length > i)
+                        {
+                            cellClass = Regex.Replace(headings[i], "[^a-zA-Z]", "").ToLower();
+                        }
+                        else
+                        {
+                            cellClass = "";
+                        }
+
+                        output += "<div id=\"" + id + "\"class=\"" + cellClass + "\">" + cell + "</div>";
+                        i++;
                     }
-                    output += "</tr>";
+                    output += "</div>";
                     id++;
                 }
-                output += "</table>";
+                output += "</div>";
+
+                output += "<div id=\"json\" style=\"display:none;\">";
+                output += Newtonsoft.Json.JsonConvert.SerializeObject(table);
+                output += "</div>";
             }
             return output;
         }

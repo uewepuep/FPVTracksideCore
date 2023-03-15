@@ -218,7 +218,7 @@ namespace UI.Nodes
             return (PilotResultNode)rows.GetChild(index);
         }
 
-        private IEnumerable<string> GetHeadings()
+        public IEnumerable<string> GetHeadings()
         {
             foreach (Node n2 in headings.Children)
             {
