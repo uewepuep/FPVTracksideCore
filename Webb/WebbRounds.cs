@@ -95,7 +95,7 @@ namespace Webb
         public static string EventStatus(EventManager eventManager, IWebbTable webbTable)
         {
             string output = "";
-            output += "<h2>Event Status</h2>";
+            output += "<h2>Event Status</h2><br>";
 
             Dictionary<string, Race> raceNames = new Dictionary<string, Race>();
 
