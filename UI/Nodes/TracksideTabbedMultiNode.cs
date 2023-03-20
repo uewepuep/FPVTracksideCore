@@ -125,7 +125,13 @@ namespace UI.Nodes
                 var groups = eventManager.Channels.GetChannelGroups();
                 var frequencies = groups.Select(c => c.FirstOrDefault());
 
-                eventManager.RaceManager.TimingSystemManager.SetListeningFrequencies(frequencies.Select(r => new Timing.ListeningFrequency(r.Frequency, 1)));
+                Timing.ListeningFrequency[] lastFrequencies = eventManager.RaceManager.TimingSystemManager.LastListeningFrequencies;
+                if (lastFrequencies.Length == 0)
+                {
+                    lastFrequencies = frequencies.Select(r => new Timing.ListeningFrequency(r.Frequency, 1)).ToArray();
+                }
+
+                eventManager.RaceManager.TimingSystemManager.SetListeningFrequencies(lastFrequencies);
                 eventManager.RaceManager.TimingSystemManager.StartDetection();
             }
         }

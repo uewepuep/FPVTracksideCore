@@ -85,10 +85,13 @@ namespace Timing
             }
         }
 
+        public ListeningFrequency[] LastListeningFrequencies { get; private set; }
+
         public TimingSystemManager()
         {
             PrimeSystems = new ITimingSystem[0];
             SplitSystems = new ITimingSystem[0];
+            LastListeningFrequencies = new ListeningFrequency[0];
 
             InitialiseTimingSystems();
         }
@@ -370,6 +373,8 @@ namespace Timing
             try
             {
                 ListeningFrequency[] ordered = newFrequencies.Distinct().OrderBy(i => i.Frequency).ToArray();
+
+                LastListeningFrequencies = ordered;
 
                 Logger.TimingLog.LogCall(this, string.Join(", ", ordered.Select(r => r.ToString())));
 

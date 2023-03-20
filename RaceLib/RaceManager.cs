@@ -617,7 +617,7 @@ namespace RaceLib
             }
 
             List<ListeningFrequency> frequencies = new List<ListeningFrequency>();
-            bool enoughFrequenciesForEvent = TimingSystemManager.MaxPilots >= EventManager.Channels.GetChannelGroups().Count();
+            bool enoughFrequenciesForEvent = TimingSystemManager.MaxPilots >= EventManager.Channels.Select(c => c.Frequency).Distinct().Count();
             if (enoughFrequenciesForEvent)
             {
                 foreach (Channel eventChannel in EventManager.Channels)

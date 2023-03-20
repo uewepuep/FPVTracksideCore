@@ -43,7 +43,22 @@ namespace Timing.ImmersionRC
 
         protected int timeoutSeconds;
 
-        public int MaxPilots { get { return 16; } }
+        public int MaxPilots
+        {
+            get
+            {
+                int i = 0;
+                if (settings.Enable1) i++;
+                if (settings.Enable2) i++;
+                if (settings.Enable3) i++;
+                if (settings.Enable4) i++;
+                if (settings.Enable5) i++;
+                if (settings.Enable6) i++;
+                if (settings.Enable7) i++;
+                if (settings.Enable8) i++;
+                return i;
+            }
+        }
 
         public IEnumerable<StatusItem> Status
         {

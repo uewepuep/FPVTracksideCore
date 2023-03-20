@@ -17,53 +17,47 @@ namespace UI.Nodes
     {
         private EventManager eventManager;
 
-        private Dictionary<Channel, RSSIChannelNode> nodes;
-
         public RSSINode(EventManager ev)
         {
             eventManager = ev;
-            nodes = new Dictionary<Channel, RSSIChannelNode>();
         }
 
         public void ReadRSSI()
         {
             RSSI[] rssis = eventManager.RaceManager.TimingSystemManager.GetRSSI().ToArray();
 
-            var lanes = eventManager.Channels.GetChannelGroups();
-            foreach (var channels in lanes)
-            {
-                Channel channel = channels.FirstOrDefault();
+            RSSIChannelNode[] channelNodes = Children.OfType<RSSIChannelNode>().ToArray();
 
+            List<RSSIChannelNode> usedNodes = new List<RSSIChannelNode>();
+
+            foreach (RSSI rssi in rssis)
+            {
+                Channel channel = eventManager.Channels.FirstOrDefault(c => c.Frequency == rssi.Frequency);
                 if (channel == null)
+                {
                     continue;
+                }
 
-                RSSIChannelNode node;
-
-                if (!nodes.TryGetValue(channel, out node))
+                RSSIChannelNode rssiNode = channelNodes.FirstOrDefault(r => r.Channel == channel);
+                if (rssiNode == null)
                 {
-                    node = new RSSIChannelNode(eventManager, channel);
-                    nodes.Add(channel, node);
-                    AddChild(node);
+                    rssiNode = new RSSIChannelNode(eventManager, channel);
+                    AddChild(rssiNode);
+                }
+
+                usedNodes.Add(rssiNode);
+                rssiNode.SetRSSI(rssi);
+            }
+
+            foreach (RSSIChannelNode node in channelNodes) 
+            { 
+                if (!usedNodes.Contains(node))
+                {
+                    node.Dispose();
                 }
             }
 
-            foreach (var kp in nodes)
-            {
-                Channel channel = kp.Key;
-                RSSIChannelNode rssiNode = kp.Value;
-
-                if (rssis.Any(r => r.Frequency == channel.Frequency))
-                {
-                    RSSI rssi = rssis.First(r => r.Frequency == channel.Frequency);
-                    rssiNode.SetRSSI(rssi);
-                }
-                else
-                {
-                    rssiNode.ClearRSSI();
-                }
-            }
-
-            AlignHorizontally(0.05f, nodes.Values.ToArray());
+            AlignHorizontally(0.05f, Children.OfType<RSSIChannelNode>().OrderBy(r => r.Channel.Frequency).ToArray());
         }
 
         public override void Draw(Drawer id, float parentAlpha)
@@ -76,7 +70,6 @@ namespace UI.Nodes
         class RSSIChannelNode : Node
         {
             public AnimatedNode RSSI { get; private set; }
-            public TextNode Channel { get; private set; }
 
             public TextNode Value { get; private set; }
 
@@ -84,8 +77,11 @@ namespace UI.Nodes
 
             public ColorNode Detected { get; private set; }
 
+            public Channel Channel { get; private set; }
+
             public RSSIChannelNode(EventManager eventManager, Channel channel)
             {
+                Channel = channel;
                 Color color = eventManager.GetChannelColor(channel);
                 color.A = 220;
 
