@@ -37,6 +37,10 @@ namespace FPVMacsideCore
         {
         }
 
+        public void SetVolume(int volume)
+        {
+        }
+
         public void Speak(string text)
         {
             string cmdArgs = text;
