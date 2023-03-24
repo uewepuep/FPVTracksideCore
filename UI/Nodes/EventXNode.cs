@@ -27,6 +27,7 @@ namespace UI.Nodes
         protected ColorNode headingbg;
 
         public delegate void RoundDelegate(Round round);
+        public delegate void RoundTimeDelegate(Round round, TimeSummary.TimeSummaryTypes type);
 
         public event RoundDelegate AddRound;
         public event RoundDelegate ChangeChannels;
@@ -37,7 +38,7 @@ namespace UI.Nodes
 
         public event RoundDelegate RemoveRound;
         public event RoundDelegate SumPoints;
-        public event RoundDelegate Times;
+        public event RoundTimeDelegate Times;
         public event RoundDelegate LapCounts;
 
         public event RoundDelegate CustomRound;
@@ -170,7 +171,11 @@ namespace UI.Nodes
                     results.AddItem("Show Points", () => { SumPoints?.Invoke(Round); });
 
                 if (canAddTimes)
-                    results.AddItem("Show Lap Records", () => { Times?.Invoke(Round); });
+                {
+                    results.AddItem("Show PB Records", () => { Times?.Invoke(Round, TimeSummary.TimeSummaryTypes.PB); });
+                    results.AddItem("Show Event Lap Records", () => { Times?.Invoke(Round, TimeSummary.TimeSummaryTypes.EventLap); });
+                    results.AddItem("Show Race Time Records", () => { Times?.Invoke(Round, TimeSummary.TimeSummaryTypes.RaceTime); });
+                }
 
                 if (canAddLapCount)
                     results.AddItem("Show Lap Count", () => { LapCounts?.Invoke(Round); });

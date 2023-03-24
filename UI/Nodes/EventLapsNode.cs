@@ -28,7 +28,29 @@ namespace UI.Nodes
 
         public override void UpdateNodes()
         {
-            Round startRound = EventManager.RoundManager.GetFirstRound(Round.EventType, Round.RoundType);
+            if (Round.TimeSummary == null)
+                return;
+
+            Round startRound = Round;
+
+            bool includeAllRounds = Round.TimeSummary.IncludeAllRounds;
+
+            while (startRound != null)
+            {
+                Round prevRound = EventManager.RoundManager.PreviousRound(startRound);
+                if (prevRound == null) 
+                {
+                    break;
+                }
+
+                if (prevRound.TimeSummary != null && !includeAllRounds)
+                {
+                    break;
+                }
+
+                startRound = prevRound;
+
+            } 
 
             if (startRound == null)
             {
@@ -82,21 +104,33 @@ namespace UI.Nodes
 
                 if (Round.TimeSummary.TimeSummaryType == TimeSummary.TimeSummaryTypes.PB)
                 {
-                    heading = "PB Records";
                     lapsToCount = EventManager.Event.PBLaps;
                 }
                 else
                 {
-                    heading = "Lap Records";
                     lapsToCount = EventManager.Event.Laps;
                 }
 
+                heading = lapsToCount + " Lap" + (lapsToCount > 1 ? "s" : "");
                 SetHeading(heading);
+
+                if (Round.TimeSummary.TimeSummaryType == TimeSummary.TimeSummaryTypes.RaceTime)
+                {
+                    SetHeading("Race Time");
+                }
             }
 
             foreach (EventPilotTimeNode pilotNode in PilotNodes)
             {
-                IEnumerable<Lap> laps = EventManager.LapRecordManager.GetBestLaps(races, pilotNode.Pilot, lapsToCount);
+                IEnumerable<Lap> laps;
+                if (Round.TimeSummary.TimeSummaryType == TimeSummary.TimeSummaryTypes.RaceTime)
+                {
+                    laps = LapRecordManager.GetBestRaceTime(races, pilotNode.Pilot, lapsToCount);
+                }
+                else
+                {
+                    laps = LapRecordManager.GetBestLaps(races, pilotNode.Pilot, lapsToCount);
+                }
                 pilotNode.SetLaps(laps);
             }
         }

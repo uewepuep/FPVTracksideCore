@@ -52,6 +52,13 @@ namespace UI.Nodes
                 int ca = column;
                 headingText.OnClick += (mie) => { columnToOrderBy = ca; Refresh(); };
             }
+            column++;
+
+            TextButtonNode racetimeHeading = new TextButtonNode("Race Time", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
+            racetimeHeading.TextNode.Alignment = RectangleAlignment.TopCenter;
+            container.AddChild(racetimeHeading);
+            int ca2 = column;
+            racetimeHeading.OnClick += (mie) => { columnToOrderBy = ca2; Refresh(); };
         }
 
         public override void SetOrder()
@@ -76,17 +83,23 @@ namespace UI.Nodes
         protected override void SetResult(PilotResultNode pilotResNode, Pilot pilot, Round[] rounds)
         {
             List<Node> nodes = new List<Node>();
+            Lap[] bestLaps;
+            bool overalBest;
 
             foreach (int consecutive in eventManager.LapRecordManager.ConsecutiveLapsToTrack)
             {
-                Lap[] bestLaps;
-                bool overalBest;
                 eventManager.LapRecordManager.GetBestLaps(pilot, consecutive, out bestLaps, out overalBest);
 
                 LapTimesTextNode napTimesTextNode = new LapTimesTextNode(eventManager);
-                napTimesTextNode.SetLapTimes(consecutive, bestLaps, overalBest);
+                napTimesTextNode.SetLapTimes( bestLaps, overalBest);
                 nodes.Add(napTimesTextNode);
             }
+
+            eventManager.LapRecordManager.GetBestRaceTime(pilot, out bestLaps, out overalBest);
+
+            LapTimesTextNode lapTimesTextNode = new LapTimesTextNode(eventManager);
+            lapTimesTextNode.SetLapTimes(bestLaps, overalBest);
+            nodes.Add(lapTimesTextNode);
 
             pilotResNode.Set(pilot, nodes);
         }
@@ -135,7 +148,7 @@ namespace UI.Nodes
                 this.eventManager = eventManager;
             }
 
-            public void SetLapTimes(int consecutive, Lap[] bestLaps, bool overalBest)
+            public void SetLapTimes(Lap[] bestLaps, bool overalBest)
             {
                 this.laps = bestLaps;
 

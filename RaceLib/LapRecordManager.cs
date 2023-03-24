@@ -188,6 +188,11 @@ namespace RaceLib
             {
                 plr.UpdateBestConsecutiveLaps(consecutive);
             }
+
+            if (EventManager.Event.EventType.HasLapCount())
+            {
+                plr.UpdateRaceTime(EventManager.Event.Laps);
+            }
         }
 
         private PilotLapRecord GetPilotLapRecord(Pilot pilot)
@@ -278,6 +283,11 @@ namespace RaceLib
                     {
                         plr.UpdateBestConsecutiveLaps(consecutive);
                     }
+
+                    if (EventManager.Event.EventType.HasLapCount())
+                    {
+                        plr.UpdateRaceTime(EventManager.Event.Laps);
+                    }
                 }
             }
         }
@@ -303,6 +313,24 @@ namespace RaceLib
                 if (laps != null && laps.Any())
                 {
                     overalBest = IsOverallBest(lapCount, laps);
+                    return true;
+                }
+            }
+
+            overalBest = false;
+            laps = new Lap[0];
+            return false;
+        }
+
+        public bool GetBestRaceTime(Pilot pilot, out Lap[] laps, out bool overalBest)
+        {
+            PilotLapRecord plr = null;
+            if (Records.TryGetValue(pilot, out plr))
+            {
+                laps = plr.GetBestRaceTime();
+                if (laps != null && laps.Any())
+                {
+                    overalBest = IsOverallBest(laps.Length, laps);
                     return true;
                 }
             }
@@ -437,10 +465,62 @@ namespace RaceLib
             }
         }
 
-        public IEnumerable<Lap> GetBestLaps(IEnumerable<Race> races, Pilot pilot, int consecutive)
+        public static IEnumerable<Lap> GetBestLaps(IEnumerable<Race> races, Pilot pilot, int consecutive)
         {
             IEnumerable<Lap> laps = races.SelectMany(r => r.GetValidLaps(pilot, false));
             return laps.BestConsecutive(consecutive);
+        }
+
+        public static IEnumerable<Lap> GetBestRaceTime(IEnumerable<Race> races, Pilot pilot, int lapCount)
+        {
+            Lap[] best = new Lap[0];
+            foreach (Race race in races.Where(r => r.HasPilot(pilot)))
+            {
+                Lap[] laps = race.GetValidLaps(pilot, true);
+
+                IEnumerable<Lap> bestInRace = null;
+
+                if (laps.Length >= lapCount)
+                {
+                    if (laps.First().Detection.IsHoleshot)
+                    {
+                        if (laps.Length >= lapCount + 1)
+                            bestInRace = laps.Take(lapCount + 1);
+                    }
+                    else
+                    {
+                        bestInRace = laps.Take(lapCount);
+                    }
+                }
+
+                if (bestInRace != null && (best == null || bestInRace.TotalTime() < best.TotalTime()))
+                {
+                    best = bestInRace.ToArray();
+                }
+            }
+            return best;
+        }
+
+        public static Lap GetBestHoleshot(Race[] races, Pilot pilot)
+        {
+            Lap best = null;
+
+            foreach (Race race in races)
+            {
+                Lap holeShot = race.GetHoleshot(pilot);
+                if (holeShot == null)
+                    continue;
+
+                if (best == null)
+                {
+                    best = holeShot;
+                }
+                else if (best.Length > holeShot.Length)
+                {
+                    best = holeShot;
+                }
+            }
+            return best;
         }
 
         public Pilot[] GetPositions(IEnumerable<Pilot> pilots, int laps)
@@ -458,6 +538,8 @@ namespace RaceLib
 
         public Pilot Pilot { get; private set; }
         private Dictionary<int, Lap[]> best;
+
+        private Lap[] bestRaceTime;
 
         public LapRecordManager RecordManager { get; private set; }
 
@@ -498,18 +580,32 @@ namespace RaceLib
             }
             return laps;
         }
+        public Lap[] GetBestRaceTime()
+        {
+            return bestRaceTime;
+        }
 
         public void UpdateBestConsecutiveLaps(int lapCount)
         {
             Lap[] bestLaps;
-            
+
+            Race[] races = RecordManager.RaceManager.GetRaces(r => r.HasPilot(Pilot) && r.Type != EventTypes.Practice).ToArray();
+
             if (lapCount == 0)
             {
-                bestLaps = BestHoleshot().ToArray();
+                Lap best = LapRecordManager.GetBestHoleshot(races, Pilot);
+                if (best == null)
+                {
+                    bestLaps = new Lap[0];
+                }
+                else
+                {
+                    bestLaps = new Lap[] { best };
+                }
             }
             else
             {
-                bestLaps = TopConsecutive(lapCount).ToArray();
+                bestLaps = LapRecordManager.GetBestLaps(races, Pilot, lapCount).ToArray();
             }
 
             if (bestLaps.Any())
@@ -538,64 +634,16 @@ namespace RaceLib
             }
         }
 
+        public void UpdateRaceTime(int lapCount)
+        {
+            Race[] races = RecordManager.RaceManager.GetRaces(r => r.HasPilot(Pilot) && r.Type.HasLapCount()).ToArray();
+            bestRaceTime = LapRecordManager.GetBestRaceTime(races, Pilot, lapCount).ToArray();
+        }
+
         public void Clear()
         {
+            bestRaceTime = new Lap[0];
             best.Clear();
-        }
-
-        private IEnumerable<Lap> BestHoleshot()
-        {
-            Race[] races = RecordManager.RaceManager.GetRaces(r => r.Type != EventTypes.Practice && r.HasPilot(Pilot)).ToArray();
-
-            Lap best = null;
-
-            foreach (Race race in races)
-            {
-                Lap holeShot = race.GetHoleshot(Pilot);
-                if (holeShot == null)
-                    continue;
-
-                if (best == null)
-                {
-                    best = holeShot;
-                }
-                else if (best.Length > holeShot.Length)
-                {
-                    best = holeShot;
-                }
-            }
-
-            if (best != null)
-                yield return best;
-        }
-
-        private IEnumerable<Lap> TopConsecutive(int consecutive)
-        {
-            Race[] races = RecordManager.RaceManager.GetRaces(r => r.HasPilot(Pilot) && r.Type != EventTypes.Practice).ToArray();
-
-            IEnumerable<Lap> best = null;
-
-            foreach (Race r in races)
-            {
-                IEnumerable<Lap> inRace = r.GetLaps(Pilot);
-                IEnumerable<Lap> bestInRace = inRace.BestConsecutive(consecutive);
-                if (bestInRace.Any() && (best == null || bestInRace.TotalTime() < best.TotalTime()))
-                {
-                    best = bestInRace;
-                }
-            }
-
-            if (best != null)
-            {
-#if DEBUG
-                System.Diagnostics.Debug.Assert(best.Count() == consecutive);
-#endif
-                return best;
-            }
-            else
-            {
-                return new Lap[0];
-            }
         }
     }
 }

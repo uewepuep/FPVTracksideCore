@@ -134,14 +134,18 @@ namespace RaceLib
         public enum TimeSummaryTypes
         {
             PB,
-            EventLap
+            EventLap,
+            RaceTime
         }
+
+        public bool IncludeAllRounds { get; set; }
 
         public TimeSummaryTypes TimeSummaryType { get; set; }
 
         public TimeSummary()
         {
             TimeSummaryType = TimeSummaryTypes.PB;
+            IncludeAllRounds = false;
         }
     }
 }

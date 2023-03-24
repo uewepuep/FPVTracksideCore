@@ -443,11 +443,11 @@ namespace RaceLib
             }
         }
 
-        public void ToggleTimePoints(Round round)
+        public void ToggleTimePoints(Round round, TimeSummary.TimeSummaryTypes type)
         {
             if (round.TimeSummary == null)
             {
-                round.TimeSummary = new TimeSummary();
+                round.TimeSummary = new TimeSummary() { TimeSummaryType = type };
             }
             else
             {

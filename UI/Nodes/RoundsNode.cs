@@ -339,10 +339,14 @@ namespace UI.Nodes
                 Scroller.ScrollToEnd(scrollTime);
             }
         }
-
         private void ToggleTimePoints(Round callingRound)
         {
-            EventManager.ToggleTimePoints(callingRound);
+            ToggleTimePoints(callingRound, TimeSummary.TimeSummaryTypes.PB);
+        }
+
+        private void ToggleTimePoints(Round callingRound, TimeSummary.TimeSummaryTypes type)
+        {
+            EventManager.ToggleTimePoints(callingRound, type);
             Refresh();
 
             if (callingRound.TimeSummary != null)
