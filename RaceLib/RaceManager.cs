@@ -1265,8 +1265,14 @@ namespace RaceLib
             // If its added manually by race director every lap is valid.
             if (detection.TimingSystemType != TimingSystemType.Manual)
             {
-                //Inside race start ignore window...
-                if (currentRace.Start + eve.RaceStartIgnoreDetections > detection.Time || currentRace.Start > detection.Time)
+                // We start the timer before the race start, so just ignore any times in there...
+                if (currentRace.Start > detection.Time)
+                {
+                    detection.Valid = false;
+                }
+
+                //Inside race start ignore window. Which is disabled in the UI for holeshot..
+                if (currentRace.Start + eve.RaceStartIgnoreDetections > detection.Time && eve.PrimaryTimingSystemLocation == PrimaryTimingSystemLocation.EndOfLap)
                 {
                     detection.Valid = false;
                 }
@@ -1297,43 +1303,36 @@ namespace RaceLib
             }
         }
 
-        public void AddManualLap(Pilot pilot)
-        {
-            Race currentRace = CurrentRace;
-            if (currentRace == null)
-                return;
-
-            DateTime time = DateTime.Now;
-            if (!currentRace.Running)
-            {
-                Lap[] laps = currentRace.GetValidLaps(pilot, false);
-                if (laps.Any())
-                {
-                    time = laps.Last().End;
-
-                    double length = Math.Ceiling(laps.Select(l => l.Length.TotalSeconds).Average());
-                    time = time.AddSeconds(length);
-                }
-                else
-                {
-                    time = currentRace.End;
-                }
-            }
-            AddManualLap(pilot, time);
-        }
-
         public void AddManualLap(Pilot pilot, DateTime time)
         {
             Race currentRace = CurrentRace;
             if (currentRace == null)
                 return;
 
-            Lap[] laps = currentRace.GetValidLaps(pilot, false);
-
             int lapCount = GetCurrentLapNumber(pilot);
 
             Channel c = currentRace.GetChannel(pilot);
             EventManager.RaceManager.AddLap(new Detection(TimingSystemType.Manual, 0, pilot, c, time, lapCount, true, 0));
+            EventManager.RaceManager.RecalcuateLaps(pilot, currentRace);
+        }
+
+        public void AddManualLap(Pilot pilot, TimeSpan time)
+        {
+            Race currentRace = CurrentRace;
+            if (currentRace == null)
+                return;
+
+            int lapCount = GetCurrentLapNumber(pilot);
+
+            DateTime from = currentRace.Start;
+            Lap last = currentRace.GetValidLaps(pilot, true).LastOrDefault();
+            if (last != null)
+            {
+                from = last.Detection.Time;
+            }
+
+            Channel c = currentRace.GetChannel(pilot);
+            EventManager.RaceManager.AddLap(new Detection(TimingSystemType.Manual, 0, pilot, c, from + time, lapCount, true, 0));
             EventManager.RaceManager.RecalcuateLaps(pilot, currentRace);
         }
 

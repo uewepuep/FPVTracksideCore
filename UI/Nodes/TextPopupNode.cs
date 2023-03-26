@@ -109,4 +109,41 @@ namespace Composition.Nodes
             ev.AddPilot(p);
         }
     }
+
+    public class AddLapTimeNode : TextPopupNode
+    {
+        private Pilot pilot;
+
+        private Action<Pilot, TimeSpan> addLapCallback;
+
+        public AddLapTimeNode(RaceManager racemanager, Pilot pilot)
+            : this(pilot, racemanager.AddManualLap)
+        {
+        }
+
+        public AddLapTimeNode(Pilot pilot, Action<Pilot, TimeSpan> addLapCallback)
+            : base("Add Lap", "Time (sec):", "")
+        {
+            this.pilot = pilot;
+
+            ok.Text = "Add";
+            OnOK += OK;
+            this.addLapCallback = addLapCallback;
+        }
+
+        private void OK(string stringTime)
+        {
+            float time;
+            if (float.TryParse(stringTime, out time))
+            {
+                if (time > 0)
+                {
+                    addLapCallback(pilot, TimeSpan.FromSeconds(time));
+                    return;
+                }
+            }
+
+            GetLayer<PopupLayer>().PopupMessage("Invalid lap time");
+        }
+    }
 }

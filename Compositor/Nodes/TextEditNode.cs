@@ -34,6 +34,10 @@ namespace Composition.Nodes
             OnFocusChanged += TextEditNode_OnFocusChanged;
             Alignment = RectangleAlignment.CenterLeft;
             CanEdit = true;
+            if (text.Length > 0) 
+            {
+                cursorIndex = text.Length;
+            }
         }
 
         public override void Dispose()
@@ -101,17 +105,19 @@ namespace Composition.Nodes
 
             if (showPipe)
             {
-                if (cursorRenderer == null)
+                ITextRenderer cr = cursorRenderer;
+
+                if (cr == null)
                 {
                     id.PreProcess(this);
                 }
                 else
                 {
                     Point cursorPosition = CharacterPosition(cursorIndex);
-                    cursorRenderer.Draw(id, new Rectangle(Bounds.X + cursorPosition.X - 2, 
-                                                          Bounds.Y + cursorPosition.Y, 
-                                                          cursorRenderer.TextSize.Width, 
-                                                          cursorRenderer.TextSize.Height), 
+                    cr.Draw(id, new Rectangle(Bounds.X + cursorPosition.X - 2, 
+                                                          Bounds.Y + cursorPosition.Y,
+                                                          cr.TextSize.Width,
+                                                          cr.TextSize.Height), 
                                         RectangleAlignment.Center, Composition.Text.Scale.Disallowed, Color.White, Alpha);
                 }
             }

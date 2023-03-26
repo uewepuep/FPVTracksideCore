@@ -1,5 +1,6 @@
 ﻿using Composition;
 using Composition.Input;
+using Composition.Layers;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
@@ -23,6 +24,7 @@ namespace UI.Nodes
         private Node lapsNode;
         private TextButtonNode okButton;
         private TextButtonNode cancelButton;
+        private TextButtonNode addLapButton;
 
         public event Action<Lap[]> OnOK;
         public event Action<Lap[]> OnCancel;
@@ -74,11 +76,14 @@ namespace UI.Nodes
             okButton = new TextButtonNode("Ok", Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
             cancelButton = new TextButtonNode("Cancel", Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
 
+            addLapButton = new TextButtonNode("Add Lap time...", Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
+
             okButton.OnClick += OkButton_OnClick;
             cancelButton.OnClick += CancelButton_OnClick;
+            addLapButton.OnClick += AddLapButton_OnClick;
 
-            buttonContainer.AddChild(cancelButton, okButton);
-            AlignHorizontally(0.05f, cancelButton, null, null, okButton);
+            buttonContainer.AddChild(cancelButton, addLapButton, okButton);
+            AlignHorizontally(0.05f, cancelButton, null, addLapButton, null, okButton);
 
             Scale(0.5f, 0.9f);
 
@@ -94,6 +99,31 @@ namespace UI.Nodes
             Layout();
 
             UpdateRaceNode();
+        }
+
+        private void AddLapButton_OnClick(MouseInputEvent mie)
+        {
+            GetLayer<PopupLayer>().Popup(new AddLapTimeNode(Pilot, AddLapCallback));
+        }
+
+        private void AddLapCallback(Pilot pilot, TimeSpan timeSinceLast)
+        {
+            DateTime start = Race.Start;
+
+            LapEditorContainer last = lapContainers.LastOrDefault();
+            if (last != null)
+            {
+                start = last.End;
+            }
+
+            LapEditorContainer newLC = new LapEditorContainer(start, start + timeSinceLast, ChannelColor);
+            newLC.OnValidityChanged += UpdateNumbersEtc;
+            newLC.OnSplitLap += OnSplitLap;
+            newLC.OnTimeChanged += () => { UpdateNumbersEtc(); };
+            lapContainers.Add(newLC);
+
+            Layout();
+            UpdateNumbersEtc();
         }
 
         private void Layout()
@@ -239,6 +269,11 @@ namespace UI.Nodes
                 focused.HasFocus = false;
             }
 
+            foreach (var lc in lapContainers.Where(lc => lc.Lap == null))
+            {
+                lc.CreateLap(RaceManager, Pilot);
+            }
+
             // Do any splits we gotta do.
             foreach (var lc in lapContainers.Where(lc => lc.Splits != null && lc.Lap != null))
             {
@@ -281,6 +316,7 @@ namespace UI.Nodes
         public List<LapEditorContainer> Splits { get; set; }
 
         public bool TextEditorFocused { get { return lapTime.HasFocus; } }
+
 
         public LapEditorContainer(Lap lap, Color channelColor)
             :this(lap.Start, lap.End, channelColor)
@@ -388,6 +424,14 @@ namespace UI.Nodes
 
             Refresh();
             OnValidityChanged?.Invoke();
+        }
+
+        public void CreateLap(RaceManager raceManager, Pilot pilot)
+        {
+            if (Lap == null)
+            {
+                raceManager.AddManualLap(pilot, End);
+            }
         }
 
         public void SaveChanges(Database db)

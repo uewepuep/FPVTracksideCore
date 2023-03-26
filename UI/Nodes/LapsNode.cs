@@ -269,20 +269,30 @@ namespace UI.Nodes
                 lap = lapNode.Lap;
             }
 
-            if (EventManager.RaceManager.RaceRunning || EventManager.RaceManager.RaceFinished)
+            if (EventManager.RaceManager.RaceRunning)
             {
-                mm.AddItem("Add Lap", () =>
+                mm.AddItem("Add Lap Now", () =>
                 {
-                    // if we're in video playback do some adjustments..
-                    if (playbackTime.HasValue)
+                    EventManager.RaceManager.AddManualLap(Pilot, DateTime.Now);
+                });
+            }  
+
+            if (EventManager.RaceManager.RaceFinished)
+            {
+                // if we're in video playback do some adjustments..
+                if (playbackTime.HasValue)
+                {
+                    mm.AddItem("Add Lap Now", () =>
                     {
                         EventManager.RaceManager.AddManualLap(Pilot, playbackTime.Value);
-                    }
-                    else
-                    {
-                        EventManager.RaceManager.AddManualLap(Pilot);
-                    }
-
+                    });
+                }
+            }
+            if (EventManager.RaceManager.RaceStarted)
+            {
+                mm.AddItem("Add Lap time...", () =>
+                {
+                    GetLayer<PopupLayer>().Popup(new AddLapTimeNode(EventManager.RaceManager, Pilot));
                 });
 
                 mm.AddItem("Edit Laps", () =>
