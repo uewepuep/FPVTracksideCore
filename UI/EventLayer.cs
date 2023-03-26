@@ -79,7 +79,7 @@ namespace UI
 
             EventManager.RaceManager.RemainingTimesToAnnounce = GeneralSettings.Instance.RemainingSecondsToAnnounce;
 
-            videoManager = new VideoManager();
+            videoManager = new VideoManager(GeneralSettings.Instance.VideoStorageLocation);
 
             SoundManager = new SoundManager(EventManager);
             SoundManager.MuteTTS = !GeneralSettings.Instance.TextToSpeech;

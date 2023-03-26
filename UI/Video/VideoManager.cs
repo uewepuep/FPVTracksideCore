@@ -78,8 +78,15 @@ namespace UI.Video
 
         private AutoResetEvent mutex;
 
-        public VideoManager()
+        public DirectoryInfo VideoDirectory { get; private set; }
+
+        public VideoManager(string directory)
         {
+            VideoDirectory = new DirectoryInfo(directory);
+
+            if (!VideoDirectory.Exists)
+                VideoDirectory.Create();
+
             todo = new List<Action>();
             mutex = new AutoResetEvent(false);
             Logger.VideoLog.LogCall(this);
@@ -519,7 +526,7 @@ namespace UI.Video
         private string GetRecordingFilename(Race race, FrameSource source)
         {
             int index = frameSources.IndexOf(source);
-            return "video\\" + race.ID + "_" + index;
+            return VideoDirectory.FullName + "\\" + race.ID + "_" + index;
         }
 
         public void LoadRecordings(Race race, FrameSourcesDelegate frameSourcesDelegate)
@@ -534,10 +541,11 @@ namespace UI.Video
 
         public IEnumerable<VideoConfig> GetRecordings(Race race)
         {
-            DirectoryInfo videoDirectory = new DirectoryInfo("video");
-            if (videoDirectory.Exists)
+            VideoDirectory.Refresh();
+
+            if (VideoDirectory.Exists)
             {
-                foreach (FileInfo file in videoDirectory.GetFiles(race.ID + "*.recordinfo.xml"))
+                foreach (FileInfo file in VideoDirectory.GetFiles(race.ID + "*.recordinfo.xml"))
                 {
                     RecodingInfo videoInfo = IOTools.ReadSingle<RecodingInfo>(file.FullName);
                     if (videoInfo != null)
@@ -593,8 +601,9 @@ namespace UI.Video
             try
             {
                 int maxCount = GeneralSettings.Instance.VideosToKeep;
-                DirectoryInfo videoDirectory = new DirectoryInfo("video\\");
-                FileInfo[] files = videoDirectory.GetFiles("*.wmv");
+                VideoDirectory.Refresh();
+
+                FileInfo[] files = VideoDirectory.GetFiles("*.wmv");
 
                 int toDelete = files.Count() - maxCount;
 

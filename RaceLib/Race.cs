@@ -295,6 +295,7 @@ namespace RaceLib
             clone.Track = Track;
             clone.Round = Round;
             clone.Bracket = Bracket;
+            clone.RaceNumber = RaceNumber;
 
             return clone;
         }

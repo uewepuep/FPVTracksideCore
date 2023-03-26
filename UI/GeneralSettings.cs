@@ -42,6 +42,9 @@ namespace UI
 
         [Category("Video Recording")]
         public int VideosToKeep { get; set; }
+        [Category("Video Recording")]
+        [NeedsRestart]
+        public string VideoStorageLocation { get; set; }
 
         [Category("Layout")]
         [Browsable(false)]
@@ -300,6 +303,7 @@ namespace UI
             ShownDecimalPlaces = 2;
 
             NotificationSerialPort = "";
+            VideoStorageLocation = @"Video/";
         }
 
         protected const string filename = @"data/GeneralSettings.xml";

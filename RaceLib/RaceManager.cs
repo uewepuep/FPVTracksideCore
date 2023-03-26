@@ -1266,7 +1266,7 @@ namespace RaceLib
             if (detection.TimingSystemType != TimingSystemType.Manual)
             {
                 //Inside race start ignore window...
-                if (currentRace.Start + eve.RaceStartIgnoreDetections > detection.Time && eve.PrimaryTimingSystemLocation == PrimaryTimingSystemLocation.EndOfLap)
+                if (currentRace.Start + eve.RaceStartIgnoreDetections > detection.Time || currentRace.Start > detection.Time)
                 {
                     detection.Valid = false;
                 }

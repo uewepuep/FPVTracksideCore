@@ -269,7 +269,7 @@ namespace UI.Nodes
 
                 string typeString = RaceStringFormatter.Instance.GetEventTypeText(typee);
 
-                typeMenu.AddItem(typeString, () => { SetRaceTypes?.Invoke(typee, Round); });
+                typeMenu.AddItem(typeString, () => { SetType(typee, Round); });
             }
 
             var sheet = EventManager.RoundManager.SheetFormatManager.GetRoundSheetFormat(Round);
@@ -305,6 +305,13 @@ namespace UI.Nodes
             }
 
             mm.Show(position - mie.Translation);
+        }
+
+        private void SetType(EventTypes type, Round round)
+        {
+            SetRaceTypes?.Invoke(type, Round);
+            contentContainer.ClearDisposeChildren();
+            Refresh(true);
         }
 
         private void GenerateDummyResults()
