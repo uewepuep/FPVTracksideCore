@@ -851,21 +851,26 @@ namespace RaceLib
 
         public bool SwapPilots(Database db, Pilot newPilot, Channel newChannel, Race oldRace)
         {
-            PilotChannel oldPilotChannel = GetPilotChannel(newChannel.Frequency);
-            Pilot oldPilot = null;
+            PilotChannel existingPilotChannel = GetPilotChannel(newChannel.Frequency);
+            Pilot existingPilot = null;
+            PilotChannel oldPilotChannel = oldRace.GetPilotChannel(newPilot);
             Channel oldChannel = Channel.None;
+
+            if (existingPilotChannel != null)
+            {
+                if (existingPilotChannel.Pilot != null)
+                    existingPilot = existingPilotChannel.Pilot;
+            }
 
             if (oldPilotChannel != null)
             {
-                if (oldPilotChannel.Pilot != null) 
-                    oldPilot = oldPilotChannel.Pilot;
-
                 if (oldPilotChannel.Channel != null)
                     oldChannel = oldPilotChannel.Channel;
             }
 
-            if (oldPilot == newPilot)
-                oldPilot = null;
+
+            if (existingPilot == newPilot)
+                existingPilot = null;
 
             if (newPilot == null)
                 return false;
@@ -875,14 +880,14 @@ namespace RaceLib
                 oldRace.RemovePilot(db, newPilot);
             }
             
-            if (oldPilot != null)
+            if (existingPilot != null)
             {
-                RemovePilot(db, oldPilot);
+                RemovePilot(db, existingPilot);
             }
 
-            if (oldRace != null && oldPilot != null && oldChannel != Channel.None)
+            if (oldRace != null && existingPilot != null && oldChannel != Channel.None)
             {
-                oldRace.SetPilot(db, oldChannel, oldPilot);
+                oldRace.SetPilot(db, oldChannel, existingPilot);
             }
 
             return SetPilot(db, newChannel, newPilot) != null;
