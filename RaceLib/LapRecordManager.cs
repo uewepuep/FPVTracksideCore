@@ -473,8 +473,22 @@ namespace RaceLib
 
         public static IEnumerable<Lap> GetBestLaps(IEnumerable<Race> races, Pilot pilot, int consecutive)
         {
-            IEnumerable<Lap> laps = races.SelectMany(r => r.GetValidLaps(pilot, false));
-            return laps.BestConsecutive(consecutive);
+            Lap[] bestConsecutive = null;
+            foreach (Race race in races)
+            {
+                Lap[] laps = race.GetValidLaps(pilot, false);
+
+                Lap[] thisRacesBest = laps.BestConsecutive(consecutive).ToArray();
+                if (thisRacesBest.Any())
+                {
+                    if (bestConsecutive == null || bestConsecutive.TotalTime() < thisRacesBest.TotalTime())
+                    {
+                        bestConsecutive = thisRacesBest;
+                    }
+                }
+            }
+
+            return bestConsecutive;
         }
 
         public static IEnumerable<Lap> GetBestRaceTime(IEnumerable<Race> races, Pilot pilot, int lapCount)
