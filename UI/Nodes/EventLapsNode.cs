@@ -123,13 +123,15 @@ namespace UI.Nodes
             foreach (EventPilotTimeNode pilotNode in PilotNodes)
             {
                 IEnumerable<Lap> laps;
+                IEnumerable<Race> pilotInRaces = races.Where(r => r.HasPilot(pilotNode.Pilot));
+
                 if (Round.TimeSummary.TimeSummaryType == TimeSummary.TimeSummaryTypes.RaceTime)
                 {
-                    laps = LapRecordManager.GetBestRaceTime(races, pilotNode.Pilot, lapsToCount);
+                    laps = LapRecordManager.GetBestRaceTime(pilotInRaces, pilotNode.Pilot, lapsToCount);
                 }
                 else
                 {
-                    laps = LapRecordManager.GetBestLaps(races, pilotNode.Pilot, lapsToCount);
+                    laps = LapRecordManager.GetBestLaps(pilotInRaces, pilotNode.Pilot, lapsToCount);
                 }
                 pilotNode.SetLaps(laps);
             }

@@ -473,7 +473,7 @@ namespace RaceLib
 
         public static IEnumerable<Lap> GetBestLaps(IEnumerable<Race> races, Pilot pilot, int consecutive)
         {
-            Lap[] bestConsecutive = null;
+            Lap[] bestConsecutive = new Lap[0];
             foreach (Race race in races)
             {
                 Lap[] laps = race.GetValidLaps(pilot, false);
@@ -481,7 +481,7 @@ namespace RaceLib
                 Lap[] thisRacesBest = laps.BestConsecutive(consecutive).ToArray();
                 if (thisRacesBest.Any())
                 {
-                    if (bestConsecutive == null || bestConsecutive.TotalTime() < thisRacesBest.TotalTime())
+                    if (bestConsecutive == null || bestConsecutive.TotalTime() > thisRacesBest.TotalTime())
                     {
                         bestConsecutive = thisRacesBest;
                     }
