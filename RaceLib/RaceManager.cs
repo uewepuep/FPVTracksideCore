@@ -1421,9 +1421,6 @@ namespace RaceLib
 
         public Race[] GetRaces(Round start, Round end) // Inclusive
         {
-            if (start.RoundType != end.RoundType || end.EventType != start.EventType)
-                return new Race[0];
-
             return EventManager.RaceManager.GetRaces(r => r.Round != null 
                                                   && r.RoundNumber >= start.RoundNumber
                                                   && r.RoundNumber <= end.RoundNumber

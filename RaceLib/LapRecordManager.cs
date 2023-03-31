@@ -146,7 +146,7 @@ namespace RaceLib
 
         private bool IsRecord(Pilot pilot, Lap[] laps)
         {
-            if (laps.Any())
+            if (laps.Where(l => l.Detection.Valid).Any())
             {
                 PilotLapRecord plr = GetPilotLapRecord(pilot);
                 foreach (int consecutive in ConsecutiveLapsToTrack)
@@ -155,6 +155,15 @@ namespace RaceLib
                     {
                         return true;
                     }
+                }
+                int raceLaps = EventManager.Event.Laps;
+                if (EventManager.Event.PrimaryTimingSystemLocation == PrimaryTimingSystemLocation.Holeshot)
+                    raceLaps++;
+
+                if (laps.Length == raceLaps) 
+                {
+                    if (laps.TotalTime() < plr.GetBestRaceTime().TotalTime())
+                        return true;
                 }
             }
             return false;
@@ -328,11 +337,8 @@ namespace RaceLib
             if (Records.TryGetValue(pilot, out plr))
             {
                 laps = plr.GetBestRaceTime();
-                if (laps != null && laps.Any())
-                {
-                    overalBest = IsOverallBest(laps.Length, laps);
-                    return true;
-                }
+                overalBest = false;
+                return true;
             }
 
             overalBest = false;
