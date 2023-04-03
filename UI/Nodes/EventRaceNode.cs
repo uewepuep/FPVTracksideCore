@@ -285,7 +285,7 @@ namespace UI.Nodes
             ResultManager pointsManager = EventManager.ResultManager;
 
             var grouped = EventManager.Event.Channels.GetChannelGroups();
-            for (int position = 1; position < grouped.Count(); position++)
+            for (int position = 1; position <= grouped.Count(); position++)
             {
                 string strPosition = position.ToStringPosition();
 

@@ -110,7 +110,7 @@ namespace UI.Nodes
         {
             DateTime start = Race.Start;
 
-            LapEditorContainer last = lapContainers.LastOrDefault();
+            LapEditorContainer last = lapContainers.Where(r => r.Valid).LastOrDefault();
             if (last != null)
             {
                 start = last.End;
@@ -428,7 +428,7 @@ namespace UI.Nodes
 
         public void CreateLap(RaceManager raceManager, Pilot pilot)
         {
-            if (Lap == null)
+            if (Lap == null && Valid)
             {
                 raceManager.AddManualLap(pilot, End);
             }
