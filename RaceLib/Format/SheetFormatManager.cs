@@ -465,7 +465,9 @@ namespace RaceLib.Format
                     SheetResult sr;
                     if (result.DNF)
                     {
-                        sr = new SheetResult(pilotName, channelGroup, " ");
+                        int position = race.GetPosition(pc.Pilot);
+
+                        sr = new SheetResult(pilotName, channelGroup, position);
                     }
                     else
                     {
