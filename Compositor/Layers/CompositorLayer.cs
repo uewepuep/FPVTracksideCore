@@ -54,8 +54,23 @@ namespace Composition.Layers
             }
         }
 
+        private Thread background;
+        private bool runBackground;
+
+        private AutoResetEvent backgroundSet;
+        private AutoResetEvent drawSet;
+
         public CompositorLayer(GraphicsDevice device)
         {
+            runBackground = true;
+
+            backgroundSet = new AutoResetEvent(true);
+            drawSet = new AutoResetEvent(false);
+
+            background = new Thread(Background);
+            background.Name = "Compistion Layer Background Draw";
+            background.Start();
+
             updateables = new List<IUpdateableNode>();
 
             drawer = new Drawer(device, false);
@@ -69,10 +84,31 @@ namespace Composition.Layers
 
         public override void Dispose()
         {
+            if (background != null) 
+            {
+                runBackground = false;
+                drawSet.Set();
+                background.Join();
+            }
+
             drawer?.Dispose();
 
             Root?.Dispose();
             base.Dispose();
+        }
+
+        private void Background()
+        {
+            while(runBackground)
+            {
+                drawSet.WaitOne();
+
+                if (!runBackground)
+                    break;
+
+                drawer.PreProcess();
+                backgroundSet.Set();
+            }
         }
 
         private void Layout(Rectangle bounds)
@@ -139,6 +175,8 @@ namespace Composition.Layers
 
         protected override void OnDraw()
         {
+            backgroundSet.WaitOne();
+
             DebugTimer.DebugStartTime("CompLayer.Draw");
             needsRedraw = false;
             FrameNumber++;
@@ -161,6 +199,8 @@ namespace Composition.Layers
                 }
             }
             DebugTimer.DebugEndTime("CompLayer.Draw");
+
+            drawSet.Set();
         }
 
         public override bool OnMouseInput(MouseInputEvent inputEvent)

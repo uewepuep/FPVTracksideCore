@@ -132,14 +132,9 @@ namespace Composition
             }
         }
 
-        public void Begin()
+        public void PreProcess()
         {
-            if (autoresetevent == null)
-                return;
-
-            autoresetevent.Reset();
-
-            FrameCount++;
+            DebugTimer.DebugStartTime("PreProcess " + Thread.CurrentThread.Name);
 
             if (preProcessForced.Count > 0)
             {
@@ -180,6 +175,18 @@ namespace Composition
                     }
                 }
             }
+
+            DebugTimer.DebugEndTime("PreProcess " + Thread.CurrentThread.Name);
+        }
+
+        public void Begin()
+        {
+            if (autoresetevent == null)
+                return;
+
+            autoresetevent.Reset();
+
+            FrameCount++;
 
             clipRectangles.Clear();
             SpriteBatch.Begin(SpriteSortMode.Deferred, blendState, SamplerState.AnisotropicClamp, null, null, null, null);

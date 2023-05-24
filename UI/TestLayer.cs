@@ -351,6 +351,11 @@ namespace UI
             if (inputEvent.Key == Keys.F10 && inputEvent.ButtonState == ButtonStates.Pressed)
             {
                 TestClearDiagnosticTimers();
+                foreach (Node n in debugText) 
+                {
+                    n.Dispose();
+                }
+                debugText.Clear();
             }
 
             return base.OnKeyboardInput(inputEvent);

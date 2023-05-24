@@ -42,7 +42,8 @@ namespace Tools
 
 #if DEBUG
 
-        private static Dictionary<string, TimeSpan> times = new Dictionary<string, TimeSpan>();
+        private static Dictionary<string, TimeSpan> total = new Dictionary<string, TimeSpan>();
+        private static Dictionary<string, TimeSpan> max = new Dictionary<string, TimeSpan>();
         private static Dictionary<string, DateTime> start = new Dictionary<string, DateTime>();
 #endif
 
@@ -82,15 +83,30 @@ namespace Tools
             {
                 DateTime now = DateTime.Now;
                 TimeSpan time = now - last;
-                lock (times)
+                lock (total)
                 {
-                    if (times.ContainsKey(name))
+                    if (total.ContainsKey(name))
                     {
-                        times[name] += time;
+                        total[name] += time;
                     }
                     else
                     {
-                        times.Add(name, time);
+                        total.Add(name, time);
+                    }
+                }
+
+                lock (max)
+                {
+                    if (max.ContainsKey(name))
+                    {
+                        if (max[name] < time)
+                        {
+                            max[name] = time;
+                        }
+                    }
+                    else
+                    {
+                        max.Add(name, time);
                     }
                 }
             }
@@ -100,14 +116,15 @@ namespace Tools
         public static IEnumerable<string> GetDebugTimeString(int frameCount)
         {
 #if DEBUG
-            lock (times)
+            lock (total)
             {
-                foreach (var kvp in times.OrderByDescending(k => k.Value))
+                foreach (var kvp in total.OrderByDescending(k => k.Value))
                 {
                     if (kvp.Value.TotalSeconds > 0.1)
                     {
-                        double timePerFrame = (kvp.Value.TotalSeconds / frameCount) * 1000;
-                        yield return kvp.Key + ": " + timePerFrame.ToString("0.00000") + " Total: " + kvp.Value.TotalSeconds.ToString("0.00000");
+                        double timePerFrame = (kvp.Value.TotalMilliseconds / frameCount);
+                        double thisMax = max[kvp.Key].TotalMilliseconds;
+                        yield return kvp.Key + ": Avg " + timePerFrame.ToString("0.000") + "ms, Max " + thisMax.ToString("0.000") + "ms, Total: " + kvp.Value.TotalSeconds.ToString("0.00000") + "s";
                     }
                 }
             }
@@ -120,14 +137,14 @@ namespace Tools
         public static void Clear()
         {
 #if DEBUG
-            lock (times)
+            lock (total)
             {
-                var keys = times.Keys.ToArray();
-                times.Clear();
-                foreach (var key in keys)
-                {
-                    times.Add(key, TimeSpan.Zero);
-                }
+                total.Clear();
+            }
+
+            lock (max)
+            {
+                max.Clear();
             }
 #endif
         }
