@@ -509,6 +509,7 @@ namespace UI.Nodes
                     if (EventRaceNode.Race.HasPilot(ipilotnode.Pilot))
                     {
                         EventRaceNode.Race.SwapPilots(db, ipilotnode.Pilot, channel, EventRaceNode.Race);
+                        EventRaceNode.Refresh();
                     }
                     else
                     {

@@ -1,4 +1,5 @@
 ﻿using Composition;
+using Composition.Input;
 using Composition.Nodes;
 using RaceLib;
 using System;
@@ -58,8 +59,16 @@ namespace UI.Nodes
             eventRaceNode.RelativeBounds = new RectangleF(0, label.RelativeBounds.Bottom, 1, 1 - label.RelativeBounds.Bottom);
             eventRaceNode.Scale(0.9f);
             eventRaceNode.Alignment = RectangleAlignment.TopCenter;
+            eventRaceNode.NeedRefresh += () => { Refresh(); };
+            eventRaceNode.NeedFullRefresh += () => { Refresh(); };
+
 
             panel.AddChild(eventRaceNode);
+        }
+
+        public void Refresh()
+        {
+            SetRace(Race);
         }
 
         public void ShowNextRoundOptions(Round currentRound)
@@ -68,6 +77,15 @@ namespace UI.Nodes
             nextRoundNode.RelativeBounds = new RectangleF(0, label.RelativeBounds.Bottom, 1, 1 - label.RelativeBounds.Bottom);
             nextRoundNode.Scale(0.9f);
             nextRoundNode.GenerateOptions(currentRound);
+        }
+
+        public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
+        {
+            base.OnDrop(finalInputEvent, node);
+         
+            
+            IPilot ipilotnode = node as IPilot;
+            return ipilotnode != null;
         }
 
     }
