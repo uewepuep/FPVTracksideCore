@@ -38,6 +38,8 @@ namespace Composition
 
         public BitmapFont BitmapFonts { get; private set; }
 
+        public Point Offset { get; set; }
+
         public Drawer(GraphicsDevice device, bool renderTarget)
         {
             TextureCache = new TextureCache(device);
@@ -50,6 +52,8 @@ namespace Composition
             preProcessOptional = new Queue<IPreProcessable>();
             PreProcessLimit = TimeSpan.FromMilliseconds(1000 / 120.0);
             CanPreProcess = true;
+
+            Offset = Point.Zero;
 
             autoresetevent = new AutoResetEvent(true);
 
@@ -97,6 +101,9 @@ namespace Composition
 
         public void Draw(Texture2D texture, Rectangle src, Rectangle dest, Color tint, float alpha)
         {
+            dest.X += Offset.X;
+            dest.Y += Offset.Y;
+
             SpriteBatch?.Draw(texture, dest, src, Color.FromNonPremultiplied(new Vector4(tint.ToVector3(), alpha)));
         }
 

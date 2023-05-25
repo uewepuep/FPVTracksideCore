@@ -743,6 +743,15 @@ namespace UI.Nodes
                     EventManager.RaceManager.SwapPilots(other, Channel, EventManager.RaceManager.CurrentRace);
                     return true;
                 }
+                IPilot pilotNode = node as IPilot;
+                if (pilotNode != null)
+                {
+
+                    EventManager.RaceManager.RemovePilotFromCurrentRace(Pilot);
+                    EventManager.RaceManager.AddPilot(Channel, pilotNode.Pilot);
+                    return true;
+                }
+
             }
 
             return base.OnDrop(finalInputEvent, node);

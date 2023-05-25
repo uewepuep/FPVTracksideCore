@@ -72,7 +72,7 @@ namespace Composition.Layers
             {
                 drawer.Begin();
                 Rectangle destination = renderTarget.Bounds;
-                destination.Location = DragDistance - DragNodeOffset;
+                destination.Location = DragDistance + DragNodeOffset;
                 drawer.Draw(renderTarget, renderTarget.Bounds, destination, Color.White, 0.8f);
                 drawer.End();
             }
@@ -140,7 +140,7 @@ namespace Composition.Layers
         {
             OverDragThreshold = false;
             DragNode = dragged;
-            DragNodeOffset = mie.Translation;
+            DragNodeOffset = mie.Position - mie.Translation;
             DragStart = mie;
             DragDistance = Point.Zero;
         }
@@ -159,9 +159,10 @@ namespace Composition.Layers
                             device.SetRenderTarget(renderTarget);
                             device.Clear(Color.Transparent);
 
+                            drawer.Offset = new Point(-DragNode.Bounds.X, -DragNode.Bounds.Y);
                             drawer.Begin();
-
                             DragNode.Draw(drawer, 1);
+                            drawer.Offset = Point.Zero;
 
                             //drawer.Draw(texture, sourceBounds, new Rectangle(0, 0, Size.Width, Size.Height), Color.White, 1);
                             drawer.End();
