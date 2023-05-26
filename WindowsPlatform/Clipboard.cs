@@ -16,6 +16,7 @@ namespace WindowsPlatform
             {
                 string[] result;
                 WindowsPlatformTools.ReturnAsSTAThread(GetLines, out result);
+
                 return result;
             }
 
@@ -26,6 +27,12 @@ namespace WindowsPlatform
                     string clipboardText = System.Windows.Forms.Clipboard.GetText(System.Windows.Forms.TextDataFormat.Text);
 
                     string[] lines = clipboardText.Split('\n');
+
+                    for (int i = 0; i < lines.Length; i++)
+                    {
+                        lines[i] = lines[i].Replace("\r", "");
+                    }
+
                     return lines;
                 }
                 return new string[0];

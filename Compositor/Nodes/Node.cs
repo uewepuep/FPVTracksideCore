@@ -250,7 +250,7 @@ namespace Composition.Nodes
             }
         }
 
-        public void AddChildFirst(Node node)
+        public void AddChild(Node node, int index)
         {
             if (Disposed)
             {
@@ -260,7 +260,10 @@ namespace Composition.Nodes
 
             lock (children)
             {
-                children = (new Node[] { node }).Union(children).ToArray();
+                List<Node> asList = children.ToList();
+                asList.Insert(index, node);
+                children = asList.ToArray();
+
                 node.SetParent(this);
                 node.SetCompositorLayer(CompositorLayer);
             }

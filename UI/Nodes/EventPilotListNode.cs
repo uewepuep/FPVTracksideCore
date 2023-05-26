@@ -34,7 +34,7 @@ namespace UI.Nodes
 
             MenuButton = new ImageButtonNode(@"img\settings.png", Color.Transparent, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
             MenuButton.OnClick += MenuButton_OnClick;
-            buttonContainer.AddChildFirst(MenuButton);
+            buttonContainer.AddChild(MenuButton, 0);
             FormatData();
             UpdateButtons();
         }

@@ -205,7 +205,7 @@ namespace UI.Nodes
             Round[] rounds = EventManager.Event.Rounds.Union(Races.Where(r => r.Round != null).Select(r => r.Round)).Distinct().OrderBy(e => e.Order).ToArray();
             foreach (Round round in rounds)
             {
-                IEnumerable<Race> roundRaces = EventManager.RaceManager.GetRaces(round);
+                IEnumerable<Race> roundRaces = EventManager.RaceManager.GetRaces(round).OrderBy(r => r.RaceNumber);
                 EventRoundNode ern = RoundNodes.FirstOrDefault(d => d.Round == round);
                 if (ern == null)
                 {

@@ -138,9 +138,13 @@ namespace Composition.Layers
 
         public void RegisterDrag(Node dragged, MouseInputEvent mie)
         {
+            Point mouseMinusTranslation = mie.Position - mie.Translation;
+
+            Point offsetFromNodeZero = mie.Position - dragged.Bounds.Location;
+
             OverDragThreshold = false;
             DragNode = dragged;
-            DragNodeOffset = mie.Position - mie.Translation;
+            DragNodeOffset = mouseMinusTranslation - offsetFromNodeZero;
             DragStart = mie;
             DragDistance = Point.Zero;
         }

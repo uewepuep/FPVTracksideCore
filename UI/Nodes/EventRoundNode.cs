@@ -48,7 +48,7 @@ namespace UI.Nodes
 
             MenuButton = new ImageButtonNode(@"img\settings.png", Color.Transparent, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
             MenuButton.OnClick += (mie) => { ShowMenu(mie, MenuButton.Bounds.Location); };
-            buttonContainer.AddChildFirst(MenuButton);
+            buttonContainer.AddChild(MenuButton, 0);
 
             instructionNode = new Node();
             instructionNode.RelativeBounds = new RectangleF(0.1f, 0.3f, 0.8f, 0.2f);
@@ -340,7 +340,7 @@ namespace UI.Nodes
                     }
                 }
             }
-            Refresh();
+            Refresh(true);
         }
 
         private void EditRound()
@@ -428,27 +428,21 @@ namespace UI.Nodes
                 }
             }
 
-            EventRaceNode eventRaceNode = node as EventRaceNode;
-            if (eventRaceNode != null)
+            EventRaceNode draggedRaceNode = node as EventRaceNode;
+            if (draggedRaceNode != null)
             {
-                Race race = eventRaceNode.Race;
-                if (race != null)
+                Race draggedRace = draggedRaceNode.Race;
+                if (draggedRace != null)
                 {
                     using (Database db = new Database())
                     {
-                        race.Round = Round;
+                        draggedRace.Round = Round;
 
                         bool found = false;
                         int number = 1;
-                        bool skippedDropped = false;
 
-                        foreach (EventRaceNode racenode in RaceNodes.OrderBy(r => r.Race.RaceNumber))
+                        foreach (EventRaceNode racenode in RaceNodes.Except(new EventRaceNode[] { draggedRaceNode }).OrderBy(r => r.Race.RaceNumber))
                         {
-                            if (racenode == eventRaceNode)
-                            {
-                                skippedDropped = true;
-                                continue;
-                            }
 
                             if (racenode.Bounds.Bottom > translated.Position.Y 
                              && racenode.Bounds.Right > translated.Position.X
@@ -456,23 +450,11 @@ namespace UI.Nodes
                              && !found)
                             {
                                 found = true;
-                                if (skippedDropped)
-                                {
-                                    racenode.Race.RaceNumber = number;
-                                    number++;
+                                draggedRace.RaceNumber = number;
+                                number++;
 
-                                    race.RaceNumber = number;
-                                    number++;
-                                }
-                                else
-                                {
-                                    race.RaceNumber = number;
-                                    number++;
-
-                                    racenode.Race.RaceNumber = number;
-                                    number++;
-                                }
-                                
+                                racenode.Race.RaceNumber = number;
+                                number++;
                             }
                             else
                             {
@@ -483,13 +465,17 @@ namespace UI.Nodes
 
                         if (!found)
                         {
-                            race.RaceNumber = number;
+                            draggedRace.RaceNumber = number;
                         }
 
-                        db.Races.Update(RaceNodes.Select(rn => rn.Race));
-                        db.Races.Update(race);
+                        Race[] races = RaceNodes.Select(rn => rn.Race).ToArray();
+
+                        db.Races.Update(races);
+                        db.Races.Update(draggedRace);
                     }
                 }
+                contentContainer.ClearDisposeChildren();
+
                 NeedFullRefresh?.Invoke();
             }
 
