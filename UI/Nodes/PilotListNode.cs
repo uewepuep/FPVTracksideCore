@@ -209,8 +209,6 @@ namespace UI.Nodes
             bool anyPilots = eventManager.Event.Pilots.Any();
             if (anyPilots)
             {
-                
-
                 if (pilot != null)
                 {
                     mm.AddItem("Edit Pilot", () =>
@@ -268,11 +266,20 @@ namespace UI.Nodes
                 }
             }
 
+
+
             if (anyPilots)
             {
                 mm.AddItem("Redistribute Channels", () =>
                 {
                     eventManager.RedistrubuteChannels();
+                    RebuildList();
+                });
+
+
+                mm.AddItemConfirm("Remove All Pilots", () =>
+                {
+                    eventManager.RemovePilots();
                     RebuildList();
                 });
             }
