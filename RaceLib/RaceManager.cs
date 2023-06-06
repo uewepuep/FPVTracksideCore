@@ -877,6 +877,15 @@ namespace RaceLib
             return true;
         }
 
+        public void ClearRace(Race race)
+        {
+            using (Database db = new Database())
+            {
+                race.ClearPilots(db);
+                db.Races.Update(race);
+            }
+        }
+
         public void AddRace(Race race)
         {
             Logger.RaceLog.LogCall(this, CurrentRace);

@@ -173,10 +173,13 @@ namespace UI.Nodes
                     editor.OnOK += (r) => { Refresh(true); };
                 });
 
+                MouseMenu copyMenu = mm.AddSubmenu("Copy...");
 
-                if (Race.PilotCount > 0)
+                bool pilotsToCopy = Race.PilotCount > 0;
+
+                if (pilotsToCopy)
                 {
-                    mm.AddItem("Copy pilots", () =>
+                    copyMenu.AddItem("Copy Pilots", () =>
                     {
                         CopyToClipboard();
                     });
@@ -184,19 +187,56 @@ namespace UI.Nodes
 
                 if (hasStarted)
                 {
-                    mm.AddItem("Copy Results", () =>
+                    if (pilotsToCopy)
+                    {
+                        MouseMenu top = copyMenu.AddSubmenu("Copy Top Pilots");
+                        MouseMenu bottom = copyMenu.AddSubmenu("Copy Bottom Pilots");
+
+                        var ordered = EventManager.ResultManager.GetResults(Race).OrderBy(r => r.Position);
+
+                        int topi = 1;
+                        int bottomi = ordered.Count();
+
+                        foreach (var result in ordered)
+                        {
+                            int localTop = topi;
+                            int localBottom = bottomi;
+
+                            top.AddItem("Copy Top " + (topi > 1 ? (topi + " pilots") : "pilot"), () => { CopyTop(localTop); });
+                            bottom.AddItem("Copy Bottom " + (bottomi > 1 ? (bottomi + " pilots") : "pilot"), () => { CopyBottom(localBottom); });
+                            bottomi--;
+                            topi++;
+                        }
+                    }
+
+                    copyMenu.AddItem("Copy Results (CSV)", () =>
                     {
                         string textResults = EventManager.ResultManager.GetResultsText(Race);
                         PlatformTools.Clipboard.SetText(textResults);
                     });
+
                     mm.AddItemConfirm("Reset Race", () => { EventManager.RaceManager.ResetRace(Race); });
                 }
                 else
                 {
-                    mm.AddItem("Paste pilots", () =>
+                    var lines = PlatformTools.Clipboard.GetLines();
+                    IEnumerable<Tuple<Pilot, Channel>> pilotChannels = EventManager.GetPilotsFromLines(lines, false);
+
+                    if (pilotChannels.Any()) 
                     {
-                        PasteFromClipboard();
-                    });
+                        mm.AddItem("Paste Pilots", () =>
+                        {
+                            PasteFromClipboard(false);
+                        });
+
+                        mm.AddItem("Paste Pilots (channel ordered)", () =>
+                        {
+                            PasteFromClipboard(true);
+                        });
+                    }
+                    
+
+                    mm.AddItemConfirm("Clear Race", () => { EventManager.RaceManager.ClearRace(Race); Refresh(); });
                 }
 
                 mm.AddItemConfirm("Delete Race", () => { EventManager.RaceManager.RemoveRace(Race, false); Refresh(); });
@@ -246,10 +286,11 @@ namespace UI.Nodes
                             {
                                 GetLayer<PopupLayer>().PopupMessage("Can't remove Pilot from a race that has finished");
                             }
-                      
-                        
                         });
                 }
+
+                mm.CollapseShortSubmenus();
+
 
                 if (EventManager.RaceManager.TimingSystemManager.HasDummyTiming)
                 {
@@ -278,6 +319,18 @@ namespace UI.Nodes
                 return false;
             }
             return true;
+        }
+
+        private void CopyTop(int number)
+        {
+            var ordered = EventManager.ResultManager.GetResults(Race).OrderBy(r => r.Position).Take(number);
+            PlatformTools.Clipboard.SetLines(ordered.Select(r => r.Pilot.Name));
+        }
+
+        private void CopyBottom(int number) 
+        {
+            var ordered = EventManager.ResultManager.GetResults(Race).OrderBy(r => r.Position).Reverse().Take(number);
+            PlatformTools.Clipboard.SetLines(ordered.Select(r => r.Pilot.Name));
         }
 
         private void SetResult(string result, Pilot pilot)
@@ -335,10 +388,10 @@ namespace UI.Nodes
             PlatformTools.Clipboard.SetLines(lines);
         }
 
-        private void PasteFromClipboard()
+        private void PasteFromClipboard(bool assign)
         {
             var lines = PlatformTools.Clipboard.GetLines();
-            IEnumerable<Tuple<Pilot, Channel>> pcs = EventManager.GetPilotsFromLines(lines, true);
+            IEnumerable<Tuple<Pilot, Channel>> pcs = EventManager.GetPilotsFromLines(lines, assign);
 
             using (Database db = new Database())
             {
@@ -346,6 +399,16 @@ namespace UI.Nodes
                 {
                     Pilot p = pc.Item1;
                     Channel c = pc.Item2;
+
+                    if (!assign && c != null)
+                    {
+                        if (!Race.IsFrequencyFree(c))
+                        {
+                            c = Race.GetFreeFrequencies(EventManager.Channels.Where(c => c.Band == c.Band)).FirstOrDefault();
+                            if (c == null)
+                                continue;
+                        }
+                    }
 
                     Race.SetPilot(db, c, p);
                 }

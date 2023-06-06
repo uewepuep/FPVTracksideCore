@@ -515,7 +515,7 @@ namespace RaceLib
 
         public void AddPilotsFromLines(IEnumerable<string> pilots)
         {
-            IEnumerable<Tuple<Pilot, Channel>> pcs = GetPilotsFromLines(pilots);
+            IEnumerable<Tuple<Pilot, Channel>> pcs = GetPilotsFromLines(pilots, true);
             foreach (Tuple<Pilot, Channel> pc in pcs)
             {
                 Pilot p = pc.Item1;

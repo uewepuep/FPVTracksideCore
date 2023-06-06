@@ -26,6 +26,7 @@ namespace Composition.Input
 
         public MouseMenu ParentMenu { get; private set; }
         private List<MouseMenu> childMenus;
+        private MenuItem parentMenuItem;
 
         public bool Open { get; private set; }
 
@@ -145,6 +146,7 @@ namespace Composition.Input
             //    ShowSubmenu(submenu, textButtonNode);
             //};
             listNode.AddChild(newItem);
+            submenu.parentMenuItem= newItem;
         }
 
         public MenuItem AddItem(string text, System.Action action)
@@ -365,6 +367,37 @@ namespace Composition.Input
             id.PushClipRectangle(Bounds);
             base.Draw(id, parentAlpha);
             id.PopClipRectangle();
+        }
+
+        public void CollapseMenu()
+        {
+            if (ParentMenu != null && parentMenuItem != null)
+            {
+                int index = ParentMenu.listNode.IndexOf(parentMenuItem);
+                ParentMenu.listNode.RemoveChild(parentMenuItem);
+
+                parentMenuItem.Dispose();
+                parentMenuItem = null ;
+
+                foreach (var child in Items)
+                {
+                    child.Remove();
+                    ParentMenu.listNode.AddChild(child, index);
+                 
+                    index++;
+                }
+            }
+        }
+
+        public void CollapseShortSubmenus()
+        {
+            foreach (var submenu in childMenus)
+            {
+                if (submenu.Items.Count() <= 1)
+                {
+                    submenu.CollapseMenu();
+                }
+            }
         }
     }
 
