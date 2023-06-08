@@ -60,9 +60,15 @@ namespace UI
 
         private SystemStatusNode systemStatusNode;
         public KeyboardShortcuts KeyMapper { get; private set; }
+
+        public OBSRemoteControl OBSRemoteControl { get; private set; }
+
+        private GeneralSettings gs { get { return GeneralSettings.Instance; } }
+
         public EventLayer(BaseGame game, GraphicsDevice graphicsDevice, EventManager eventManager)
             : base(graphicsDevice)
         {
+
             workQueueStartRace = new WorkQueue("Event Layer - Start Race");
 
             showPilotList = true;
@@ -70,21 +76,21 @@ namespace UI
             EventManager = eventManager;
             EventManager.SetChannelColors(Theme.Current.ChannelColors.XNA());
 
-            RaceStringFormatter.Instance.Practice = GeneralSettings.Instance.Practice;
-            RaceStringFormatter.Instance.TimeTrial = GeneralSettings.Instance.TimeTrial;
-            RaceStringFormatter.Instance.Race = GeneralSettings.Instance.Race;
-            RaceStringFormatter.Instance.Freestyle = GeneralSettings.Instance.Freestyle;
-            RaceStringFormatter.Instance.Endurance = GeneralSettings.Instance.Endurance;
-            RaceStringFormatter.Instance.CasualPractice = GeneralSettings.Instance.CasualPractice;
+            RaceStringFormatter.Instance.Practice = gs.Practice;
+            RaceStringFormatter.Instance.TimeTrial = gs.TimeTrial;
+            RaceStringFormatter.Instance.Race = gs.Race;
+            RaceStringFormatter.Instance.Freestyle = gs.Freestyle;
+            RaceStringFormatter.Instance.Endurance = gs.Endurance;
+            RaceStringFormatter.Instance.CasualPractice = gs.CasualPractice;
 
-            EventManager.RaceManager.RemainingTimesToAnnounce = GeneralSettings.Instance.RemainingSecondsToAnnounce;
+            EventManager.RaceManager.RemainingTimesToAnnounce = gs.RemainingSecondsToAnnounce;
 
-            videoManager = new VideoManager(GeneralSettings.Instance.VideoStorageLocation);
+            videoManager = new VideoManager(gs.VideoStorageLocation);
 
             SoundManager = new SoundManager(EventManager);
-            SoundManager.MuteTTS = !GeneralSettings.Instance.TextToSpeech;
-            SoundManager.NextRaceStartsInTimesToAnnounce = GeneralSettings.Instance.NextRaceTimesToAnnounce;
-            SoundManager.NextRaceTimer = GeneralSettings.Instance.NextRaceTimer;
+            SoundManager.MuteTTS = !gs.TextToSpeech;
+            SoundManager.NextRaceStartsInTimesToAnnounce = gs.NextRaceTimesToAnnounce;
+            SoundManager.NextRaceTimer = gs.NextRaceTimer;
 
             EventManager.RaceManager.TimingSystemManager.OnConnected += (int count) =>
             {
@@ -116,7 +122,7 @@ namespace UI
             Root.AddChild(topBar);
 
             rightBar = new AnimatedNode();
-            rightBar.AnimationTime = TimeSpan.FromSeconds(GeneralSettings.Instance.ReOrderAnimationSeconds);
+            rightBar.AnimationTime = TimeSpan.FromSeconds(gs.ReOrderAnimationSeconds);
 
             centralAspectNode = new AspectNode();
             centralAspectNode.SetAspectRatio(16, 9);
@@ -197,7 +203,7 @@ namespace UI
 
             TabbedMultiNode = new TracksideTabbedMultiNode(eventManager, videoManager, RoundsNode, sceneManagerNode);
             TabbedMultiNode.RelativeBounds = new RectangleF(0, 0, 1, 0.99f);
-            TabbedMultiNode.OnShowChange += OnShowChange;
+            TabbedMultiNode.OnTabChange += OnTabChange;
             centreContainer.AddChild(TabbedMultiNode);
 
             ControlButtons = new ControlButtonsNode(EventManager, channelsGridNode, TabbedMultiNode);
@@ -230,7 +236,7 @@ namespace UI
                 ShowPilotList(!showPilotList);
             };
 
-            if (GeneralSettings.Instance.HTTPServer)
+            if (gs.HTTPServer)
             {
                 eventWebServer = new EventWebServer(EventManager, SoundManager, this, new IWebbTable[] { TabbedMultiNode.LapRecordsSummaryNode, TabbedMultiNode.LapCountSummaryNode, TabbedMultiNode.PointsSummaryNode });
                 eventWebServer.Start();
@@ -309,12 +315,27 @@ namespace UI
 
             ControlButtons.UpdateControlButtons();
 
-            if (GeneralSettings.Instance.NotificationEnabled)
+            if (gs.NotificationEnabled)
             {
-                RemoteNotifier = new RemoteNotifier(EventManager, GeneralSettings.Instance.NotificationURL, GeneralSettings.Instance.NotificationSerialPort);
+                RemoteNotifier = new RemoteNotifier(EventManager, gs.NotificationURL, gs.NotificationSerialPort);
             }
 
             KeyMapper = KeyboardShortcuts.Read();
+
+            if (gs.OBSRemoteControlEnabled)
+            {
+                OBSRemoteControl = new OBSRemoteControl();
+                OBSRemoteControl.Connect(gs.OBSRemoteControlHost, gs.OBSRemoteControlPort, gs.OBSRemoteControlPassword);
+
+                // Assosicate each local scene with the OBS scene.
+                OBSRemoteControl.Add(OBSRemoteControl.Scenes.PreRace, gs.OBSRemoteControlLivePreRaceScene);
+                OBSRemoteControl.Add(OBSRemoteControl.Scenes.MidRace, gs.OBSRemoteControlLiveRaceScene);
+                OBSRemoteControl.Add(OBSRemoteControl.Scenes.PostRace, gs.OBSRemoteControlLivePostRaceScene);
+
+                OBSRemoteControl.Add(OBSRemoteControl.Scenes.Replay, gs.OBSRemoteControlReplayScene);
+                OBSRemoteControl.Add(OBSRemoteControl.Scenes.Rounds, gs.OBSRemoteControlRoundsScene);
+                OBSRemoteControl.Add(OBSRemoteControl.Scenes.Stats, gs.OBSRemoteControlStatisticsScene);
+            }
         }
 
         public override void Dispose()
@@ -392,7 +413,7 @@ namespace UI
         private bool RecoverRace(Race toRecover)
         {
             bool recoveredRace = EventManager.RaceManager.ResumeRace(toRecover);
-            if (recoveredRace && GeneralSettings.Instance.AutoHideShowPilotList)
+            if (recoveredRace && gs.AutoHideShowPilotList)
             {
                 ShowPilotList(false);
                 TabbedMultiNode.ShowLive();
@@ -433,7 +454,7 @@ namespace UI
         public override void SetLayerStack(LayerStack layerStack)
         {
             base.SetLayerStack(layerStack);
-            UpdateCrop(GeneralSettings.Instance.CropContent16by9);
+            UpdateCrop(gs.CropContent16by9);
 
             SponsorLayer sponsor = LayerStack.GetLayer<SponsorLayer>();
             if (sponsor != null)
@@ -443,7 +464,7 @@ namespace UI
 
             if (SoundManager != null)
             {
-                SoundManager.SetupSpeaker(PlatformTools, GeneralSettings.Instance.Voice, GeneralSettings.Instance.TextToSpeechVolume);
+                SoundManager.SetupSpeaker(PlatformTools, gs.Voice, gs.TextToSpeechVolume);
             }
         }
 
@@ -597,7 +618,7 @@ namespace UI
             if (workQueueStartRace.QueueLength > 0)
                 return;
 
-            if (GeneralSettings.Instance.AutoHideShowPilotList)
+            if (gs.AutoHideShowPilotList)
             {
                 ShowPilotList(false);
                 TabbedMultiNode.ShowLive();
@@ -607,13 +628,13 @@ namespace UI
 
             videoManager.StartRecording(race);
 
-            bool staggeredStart = GeneralSettings.Instance.TimeTrialStaggeredStart && EventManager.RaceManager.RaceType == EventTypes.TimeTrial;
+            bool staggeredStart = gs.TimeTrialStaggeredStart && EventManager.RaceManager.RaceType == EventTypes.TimeTrial;
 
             bool delayedStart = (EventManager.Event.MinStartDelay + EventManager.Event.MaxStartDelay).TotalSeconds > 0 && EventManager.RaceManager.RaceType.HasDelayedStart();
 
             if (staggeredStart)
             {
-                TimeSpan staggeredTime = TimeSpan.FromSeconds(GeneralSettings.Instance.StaggeredStartDelaySeconds);
+                TimeSpan staggeredTime = TimeSpan.FromSeconds(gs.StaggeredStartDelaySeconds);
                 EventManager.RaceManager.PreRaceStart();
 
                 workQueueStartRace.Enqueue(() =>
@@ -692,7 +713,7 @@ namespace UI
 
         public void Clear()
         {
-            if (GeneralSettings.Instance.AutoHideShowPilotList)
+            if (gs.AutoHideShowPilotList)
             {
                 ShowPilotList(true);
             }
@@ -916,10 +937,10 @@ namespace UI
             return false;
         }
 
-        private void OnShowChange(Node s)
+        private void OnTabChange(string tab, Node s)
         {
             ControlButtons.UpdateControlButtons(); 
-            if (GeneralSettings.Instance.AutoHideShowPilotList)
+            if (gs.AutoHideShowPilotList)
             {
                 if (TabbedMultiNode.IsOnLive)
                 {
@@ -933,11 +954,52 @@ namespace UI
             }
 
             UpdateTopBar();
+            ControlButtons.UpdateControlButtons();
+
+            if (OBSRemoteControl != null)
+            {
+                switch (tab)
+                {
+                    case "Live":
+                        break;
+
+                    case "Replay":
+                        OBSRemoteControl.SceneChange(OBSRemoteControl.Scenes.Replay);
+                        break;
+
+                    case "Rounds":
+                        OBSRemoteControl.SceneChange(OBSRemoteControl.Scenes.Rounds);
+                        break;
+
+                    default:
+                        OBSRemoteControl.SceneChange(OBSRemoteControl.Scenes.Stats);
+                        break;
+                }
+            }
         }
 
         private void SceneManagerNode_OnSceneChange(SceneManagerNode.Scenes scene)
         {
             UpdateTopBar();
+
+            if (OBSRemoteControl != null)
+            {
+                switch (scene)
+                {
+                    case SceneManagerNode.Scenes.Clear:
+                    case SceneManagerNode.Scenes.PreRace:
+                        OBSRemoteControl.SceneChange(OBSRemoteControl.Scenes.PreRace);
+                        break;
+
+                    case SceneManagerNode.Scenes.Race:
+                        OBSRemoteControl.SceneChange(OBSRemoteControl.Scenes.MidRace);
+                        break;
+
+                    case SceneManagerNode.Scenes.PostRace:
+                        OBSRemoteControl.SceneChange(OBSRemoteControl.Scenes.PostRace);
+                        break;
+                }
+            }
         }
 
         private void UpdateTopBar()

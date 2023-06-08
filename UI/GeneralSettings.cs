@@ -9,15 +9,15 @@ using Tools;
 
 namespace UI
 {
-
     public class GeneralSettings
     {
+        public static GeneralSettings Instance { get; protected set; }
+
         public enum OrderTypes
         {
             PositionAndPB,
             Channel
         }
-        
 
         [Category("General")]
         [DisplayName("Show Welcome Screen")]
@@ -223,7 +223,49 @@ namespace UI
         [Category("Start Rules")]
         public float StaggeredStartDelaySeconds { get; set; }
 
-        public static GeneralSettings Instance { get; protected set; }
+
+        [Category("OBS Remote Control")]
+        [NeedsRestart]
+        [DisplayName("Enabled")]
+        public bool OBSRemoteControlEnabled { get; set; }
+
+        [Category("OBS Remote Control")]
+        [NeedsRestart]
+        [DisplayName("Host")]
+        public string OBSRemoteControlHost { get; set; }
+        
+        [Category("OBS Remote Control")]
+        [NeedsRestart]
+        [DisplayName("Port")]
+        public int OBSRemoteControlPort { get; set; }
+       
+        [Category("OBS Remote Control")]
+        [NeedsRestart]
+        [DisplayName("Password")]
+        public string OBSRemoteControlPassword { get; set; }
+
+        [Category("OBS Remote Control")]
+        [DisplayName("Scene: Live Pre-Race")]
+        public string OBSRemoteControlLivePreRaceScene { get; set; }
+        
+        [Category("OBS Remote Control")]
+        [DisplayName("Scene: Live Mid-Race")]
+        public string OBSRemoteControlLiveRaceScene { get; set; }
+       
+        [Category("OBS Remote Control")]
+        [DisplayName("Scene: Live Post-Race")]
+        public string OBSRemoteControlLivePostRaceScene { get; set; }
+
+        [Category("OBS Remote Control")]
+        [DisplayName("Scene: Rounds")]
+        public string OBSRemoteControlRoundsScene { get; set; }
+       
+        [Category("OBS Remote Control")]
+        [DisplayName("Scene: Replay")]
+        public string OBSRemoteControlReplayScene { get; set; }
+        [Category("OBS Remote Control")]
+        [DisplayName("Scene: Stats / Laptimes / Points / etc")]
+        public string OBSRemoteControlStatisticsScene { get; set; }
 
         public GeneralSettings()
         {
@@ -304,6 +346,11 @@ namespace UI
 
             NotificationSerialPort = "";
             VideoStorageLocation = @"Video/";
+
+            OBSRemoteControlEnabled = false;
+            OBSRemoteControlHost = "localhost";
+            OBSRemoteControlPort = 4455;
+            OBSRemoteControlPassword = "42ZzDvzK3Cd43HQW";
         }
 
         protected const string filename = @"data/GeneralSettings.xml";

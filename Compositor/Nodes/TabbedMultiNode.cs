@@ -14,7 +14,7 @@ namespace Composition.Nodes
         public Node Showing { get { return multiNode.Showing; } }
 
         private MultiNode multiNode;
-        public Action<Node> OnShowChange { get; set; }
+        public Action<string, Node> OnTabChange { get; set; }
 
         private AlphaAnimatedNode tabContainer;
         private ColorNode tabBack;
@@ -119,7 +119,10 @@ namespace Composition.Nodes
 
         private void MultiNode_OnShowChange(Node obj)
         {
-            OnShowChange?.Invoke(obj);
+            if (mapBack.TryGetValue(obj, out TextButtonNode textButtonNode)) 
+            {
+                OnTabChange?.Invoke(textButtonNode.Text, obj);
+            }
         }
 
         public virtual void Update(GameTime gameTime)

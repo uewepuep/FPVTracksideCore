@@ -266,8 +266,6 @@ namespace UI.Nodes
                 }
             }
 
-
-
             if (anyPilots)
             {
                 mm.AddItem("Redistribute Channels", () =>

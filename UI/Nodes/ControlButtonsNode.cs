@@ -88,8 +88,6 @@ namespace UI.Nodes
             {
                 ibm.ImageNode.Tint = Theme.Current.RightControls.Text.XNA;
             }
-
-            tracksideMultiNode.OnShowChange += (n) => { UpdateControlButtons(); };
         }
 
         public void AddSyncButton(IconButtonNode button)
