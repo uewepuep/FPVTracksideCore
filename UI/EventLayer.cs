@@ -328,13 +328,13 @@ namespace UI
                 OBSRemoteControl.Connect(gs.OBSRemoteControlHost, gs.OBSRemoteControlPort, gs.OBSRemoteControlPassword);
 
                 // Assosicate each local scene with the OBS scene.
-                OBSRemoteControl.Add(OBSRemoteControl.Scenes.PreRace, gs.OBSRemoteControlLivePreRaceScene);
-                OBSRemoteControl.Add(OBSRemoteControl.Scenes.MidRace, gs.OBSRemoteControlLiveRaceScene);
-                OBSRemoteControl.Add(OBSRemoteControl.Scenes.PostRace, gs.OBSRemoteControlLivePostRaceScene);
+                OBSRemoteControl.Add(OBSRemoteControl.Scenes.PreRace, gs.OBSRemoteControlSceneLivePreRace);
+                OBSRemoteControl.Add(OBSRemoteControl.Scenes.MidRace, gs.OBSRemoteControlSceneLiveRace);
+                OBSRemoteControl.Add(OBSRemoteControl.Scenes.PostRace, gs.OBSRemoteControlSceneLivePostRace);
 
-                OBSRemoteControl.Add(OBSRemoteControl.Scenes.Replay, gs.OBSRemoteControlReplayScene);
-                OBSRemoteControl.Add(OBSRemoteControl.Scenes.Rounds, gs.OBSRemoteControlRoundsScene);
-                OBSRemoteControl.Add(OBSRemoteControl.Scenes.Stats, gs.OBSRemoteControlStatisticsScene);
+                OBSRemoteControl.Add(OBSRemoteControl.Scenes.Replay, gs.OBSRemoteControlSceneReplay);
+                OBSRemoteControl.Add(OBSRemoteControl.Scenes.Rounds, gs.OBSRemoteControlSceneRounds);
+                OBSRemoteControl.Add(OBSRemoteControl.Scenes.Stats, gs.OBSRemoteControlSceneStatistics);
             }
         }
 

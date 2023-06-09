@@ -1,16 +1,13 @@
-﻿using System;
+﻿using OBSWebsocketDotNet;
+using OBSWebsocketDotNet.Types;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.ConstrainedExecution;
-using System.Text;
-using System.Threading.Tasks;
-using OBSWebsocketDotNet;
-using OBSWebsocketDotNet.Types;
-using RaceLib;
+using System.Threading;
 
 namespace ExternalData
 {
-    public class OBSRemoteControl
+    public class OBSRemoteControl : IDisposable
     {
         private OBSWebsocket obsWebsocket;
 
@@ -37,6 +34,12 @@ namespace ExternalData
             translate = new Dictionary<Scenes, string>();
         }
 
+        public void Dispose()
+        {
+            obsWebsocket.Disconnect();
+            obsWebsocket = null;
+        }
+
         public void Add(Scenes scene, string name)
         {
             translate.Add(scene, name);
@@ -45,6 +48,21 @@ namespace ExternalData
         public void Connect(string url, int port, string password)
         {
             obsWebsocket.ConnectAsync("ws://" + url + ":" + port, password);
+        }
+
+        public bool WaitConnection()
+        {
+            DateTime start = DateTime.Now;
+            while (!Connected)
+            {
+                Thread.Sleep(100);
+                if (DateTime.Now - start > obsWebsocket.WSTimeout)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private void OnConnected(object sender, EventArgs e)
@@ -63,6 +81,23 @@ namespace ExternalData
             return sceneListInfo.Scenes.Select(s => s.Name);
         }
 
+        public IEnumerable<string> GetSourceFilters()
+        {
+            foreach (string scene in GetSceneList()) 
+            {
+                List<SceneItemDetails> sceneDetails = obsWebsocket.GetSceneItemList(scene);
+                foreach (SceneItemDetails details in sceneDetails) 
+                {
+                    string source = details.SourceName;
+                    List<FilterSettings> filters = obsWebsocket.GetSourceFilterList(source);
+                    foreach (FilterSettings filter in filters) 
+                    { 
+                        yield return source + " - " + filter.Name;
+                    }
+                }
+            }
+        }
+
         public void SceneChange(Scenes scene)
         {
             if (!Connected)
@@ -72,7 +107,27 @@ namespace ExternalData
 
             if (translate.TryGetValue(scene, out string name)) 
             { 
-                obsWebsocket.SetCurrentProgramScene(name);
+                try
+                {
+                    obsWebsocket.SetCurrentProgramScene(name);
+                }
+                catch (Exception e)
+                {
+
+                }
+            }
+        }
+
+        public IEnumerable<string> GetOptions()
+        {
+            foreach (string scene in GetSceneList())
+            {
+                yield return "Scene: " + scene;
+            }
+
+            foreach (string scene in GetSourceFilters())
+            {
+                yield return "Source Filter Toggle: " + scene;
             }
         }
     }

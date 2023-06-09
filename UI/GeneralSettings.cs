@@ -246,26 +246,26 @@ namespace UI
 
         [Category("OBS Remote Control")]
         [DisplayName("Scene: Live Pre-Race")]
-        public string OBSRemoteControlLivePreRaceScene { get; set; }
+        public string OBSRemoteControlSceneLivePreRace { get; set; }
         
         [Category("OBS Remote Control")]
         [DisplayName("Scene: Live Mid-Race")]
-        public string OBSRemoteControlLiveRaceScene { get; set; }
+        public string OBSRemoteControlSceneLiveRace { get; set; }
        
         [Category("OBS Remote Control")]
         [DisplayName("Scene: Live Post-Race")]
-        public string OBSRemoteControlLivePostRaceScene { get; set; }
+        public string OBSRemoteControlSceneLivePostRace { get; set; }
 
         [Category("OBS Remote Control")]
         [DisplayName("Scene: Rounds")]
-        public string OBSRemoteControlRoundsScene { get; set; }
+        public string OBSRemoteControlSceneRounds { get; set; }
        
         [Category("OBS Remote Control")]
         [DisplayName("Scene: Replay")]
-        public string OBSRemoteControlReplayScene { get; set; }
+        public string OBSRemoteControlSceneReplay { get; set; }
         [Category("OBS Remote Control")]
         [DisplayName("Scene: Stats / Laptimes / Points / etc")]
-        public string OBSRemoteControlStatisticsScene { get; set; }
+        public string OBSRemoteControlSceneStatistics { get; set; }
 
         public GeneralSettings()
         {

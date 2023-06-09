@@ -1,6 +1,7 @@
 ﻿using Composition.Input;
 using Composition.Layers;
 using Composition.Nodes;
+using ExternalData;
 using Microsoft.Xna.Framework;
 using RaceLib;
 using RaceLib.Format;
@@ -421,6 +422,11 @@ namespace UI.Nodes
                 return new ComPortPropertyNode<GeneralSettings>(obj, pi, TextColor, ButtonHover);
             }
 
+            if (pi.Name.StartsWith("OBSRemoteControlScene"))
+            {
+                return new OBSRemoteControlScenePropertyNode(obj, pi, TextColor, ButtonHover);
+            }
+
             return base.CreatePropertyNode(obj, pi);
         }
 
@@ -437,6 +443,33 @@ namespace UI.Nodes
                 {
                     Options = PlatformTools.GetSpeakerVoices().OfType<object>().ToList();
                 }
+                base.ShowMouseMenu();
+            }
+        }
+
+        private class OBSRemoteControlScenePropertyNode : ListPropertyNode<GeneralSettings>
+        {
+            public OBSRemoteControlScenePropertyNode(GeneralSettings obj, PropertyInfo pi, Color textColor, Color hover)
+                : base(obj, pi, textColor, hover)
+            {
+            }
+
+            protected override void ShowMouseMenu()
+            {
+                using (OBSRemoteControl oBSRemoteControl = new OBSRemoteControl())
+                {
+                    oBSRemoteControl.Connect(Object.OBSRemoteControlHost, Object.OBSRemoteControlPort, Object.OBSRemoteControlPassword);
+
+                    if (oBSRemoteControl.WaitConnection())
+                    {
+                        Options = oBSRemoteControl.GetOptions().OfType<object>().ToList();
+                    }
+                    else
+                    {
+                        Options = new List<object>();
+                    }
+                }
+                
                 base.ShowMouseMenu();
             }
         }
