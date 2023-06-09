@@ -79,7 +79,19 @@ namespace RaceLib
         [Category("Event Info")]
         [DisplayName("Pilots Registered")]
         [LiteDB.BsonIgnore]
-        public int PilotCount { get { return PilotChannels.Count; } }
+        public int PilotCount 
+        { 
+            get 
+            {
+                if (PilotChannels == null)
+                    return 0;
+
+                if (PilotChannels.Any())
+                    return 0;
+
+                return PilotChannels.Where(p => !p.Pilot.PracticePilot).Count();
+            } 
+        }
         
         [Category("Event Info")]
         [DisplayName("Channels")]
