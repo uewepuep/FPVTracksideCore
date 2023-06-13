@@ -11,36 +11,28 @@ namespace UI.Sponsor
         None,
         Video,
         Image,
+        Patreon
     }
 
     public class SponsorMedia
     {
         public string Filename { get; set; }
         public string Text { get; set; }
+        public string Name { get; set; }
+        public string Since { get; set; }
         public float DurationSeconds { get; set; }
 
-        public AdType AdType
-        {
-            get
-            {
-                string lower = Filename.ToLower();
-
-                if (lower.Contains(".wmv")) return AdType.Video;
-                if (lower.Contains(".mp4")) return AdType.Video;
-
-
-                if (lower.Contains(".png")) return AdType.Image;
-                if (lower.Contains(".jpg")) return AdType.Image;
-
-                return AdType.None;
-            }
-        }
+        public AdType AdType { get; set; }
+        public int Weight { get; set; }
 
         public SponsorMedia()
         {
             Filename = "";
             Text = "";
             DurationSeconds = 5;
+            Weight = 1;
+            Since = "";
+            Name = "";
         }
     }
 }

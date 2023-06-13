@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reactive.Joins;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
@@ -122,8 +123,6 @@ namespace UI.Nodes
         public TextNode NameNode { get; private set; }
         public TextNode InfoNode { get; private set; }
 
-        public Patreon Patreon { get; private set; }
-
         public PatreonNode()
         {
             ImageNode = new ImageNode();
@@ -152,10 +151,16 @@ namespace UI.Nodes
 
         public void SetPatreon(Patreon patreon)
         {
-            Patreon = patreon;
             NameNode.Text = patreon.Name;
             InfoNode.Text = patreon.Tier + " since " + patreon.StartDate.ToString("MMMM") + " " + patreon.StartDate.Year;
             ImageNode.SetFilename(patreon.ThumbFilename);
+        }
+
+        public void SetPatreon(string name, string info, string filename)
+        {
+            NameNode.Text = name;
+            InfoNode.Text = info;
+            ImageNode.SetFilename(filename);
         }
     }
 }

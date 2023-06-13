@@ -48,6 +48,19 @@ namespace UI.Sponsor
                     ImageNode imageNode = new ImageNode(media.Filename);
                     AddChild(imageNode);
                     break;
+
+                case AdType.Patreon:
+
+                    PatreonNode patreonNode = new PatreonNode();
+                    patreonNode.SetPatreon(media.Name, media.Since, media.Filename);
+                    patreonNode.Scale(0.6f, 1);
+
+                    BorderPanelNode borderPanelNode = new BorderPanelNode();
+                    borderPanelNode.Scale(1, 0.4f);
+                    borderPanelNode.AddChild(patreonNode);
+
+                    AddChild(borderPanelNode);
+                    break;
             }
 
             if (!string.IsNullOrEmpty(media.Text))
