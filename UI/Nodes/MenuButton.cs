@@ -202,6 +202,11 @@ namespace UI.Nodes
                 ShowExportSettings();
             });
 
+            root.AddItem("OBS Remote Control Settings", () =>
+            {
+                ShowOBSRemoteControlSettings();
+            });
+
             openWindow.AddItem("Log", () =>
             {
                 BaseGame baseGame = CompositorLayer.Game as BaseGame;
@@ -433,6 +438,19 @@ namespace UI.Nodes
         public void ShowExportSettings()
         {
             GetLayer<PopupLayer>().Popup(new ExportColumnEditor(eventManager));
+        }
+
+        public void ShowOBSRemoteControlSettings()
+        {
+            OBSRemoteControlManager.OBSRemoteControlConfig config = OBSRemoteControlManager.OBSRemoteControlConfig.Load();
+
+            var editor = new OBSRemoteControlEditor(config);
+            editor.OnOK += (e) =>
+            {
+                OBSRemoteControlManager.OBSRemoteControlConfig.Write(config);
+            };
+
+            GetLayer<PopupLayer>().Popup(editor);
         }
 
         public void ShowEventSettings()

@@ -2,6 +2,7 @@
 using Composition.Layers;
 using Composition.Nodes;
 using ExternalData;
+using ImageServer;
 using Microsoft.Xna.Framework;
 using RaceLib;
 using RaceLib.Format;
@@ -13,6 +14,7 @@ using System.Reflection;
 using Timing;
 using Tools;
 using UI;
+using UI.Video;
 
 namespace UI.Nodes
 {
@@ -120,7 +122,7 @@ namespace UI.Nodes
 
         }
     }
-    
+
     public class SoundEditor : ObjectEditorNode<Sound.Sound>
     {
         private Node variables;
@@ -422,17 +424,12 @@ namespace UI.Nodes
                 return new ComPortPropertyNode<GeneralSettings>(obj, pi, TextColor, ButtonHover);
             }
 
-            if (pi.Name.StartsWith("OBSRemoteControlScene"))
-            {
-                return new OBSRemoteControlScenePropertyNode(obj, pi, TextColor, ButtonHover);
-            }
-
             return base.CreatePropertyNode(obj, pi);
         }
 
         private class VoicesPropertyNode : ListPropertyNode<GeneralSettings>
         {
-            public VoicesPropertyNode(GeneralSettings obj, PropertyInfo pi, Color textColor, Color hover) 
+            public VoicesPropertyNode(GeneralSettings obj, PropertyInfo pi, Color textColor, Color hover)
                 : base(obj, pi, textColor, hover)
             {
             }
@@ -447,38 +444,38 @@ namespace UI.Nodes
             }
         }
 
-        private class OBSRemoteControlScenePropertyNode : ListPropertyNode<GeneralSettings>
-        {
-            public OBSRemoteControlScenePropertyNode(GeneralSettings obj, PropertyInfo pi, Color textColor, Color hover)
-                : base(obj, pi, textColor, hover)
-            {
-            }
+        //private class OBSRemoteControlScenePropertyNode : ListPropertyNode<GeneralSettings>
+        //{
+        //    public OBSRemoteControlScenePropertyNode(GeneralSettings obj, PropertyInfo pi, Color textColor, Color hover)
+        //        : base(obj, pi, textColor, hover)
+        //    {
+        //    }
 
-            protected override void ShowMouseMenu()
-            {
-                using (OBSRemoteControl oBSRemoteControl = new OBSRemoteControl())
-                {
-                    oBSRemoteControl.Connect(Object.OBSRemoteControlHost, Object.OBSRemoteControlPort, Object.OBSRemoteControlPassword);
+        //    protected override void ShowMouseMenu()
+        //    {
+        //        using (OBSRemoteControl oBSRemoteControl = new OBSRemoteControl())
+        //        {
+        //            oBSRemoteControl.Connect(Object.OBSRemoteControlHost, Object.OBSRemoteControlPort, Object.OBSRemoteControlPassword);
 
-                    if (oBSRemoteControl.WaitConnection())
-                    {
-                        Options = oBSRemoteControl.GetOptions().OfType<object>().ToList();
-                    }
-                    else
-                    {
-                        Options = new List<object>();
-                    }
-                }
-                
-                base.ShowMouseMenu();
-            }
-        }
+        //            if (oBSRemoteControl.WaitConnection())
+        //            {
+        //                Options = oBSRemoteControl.GetOptions().OfType<object>().ToList();
+        //            }
+        //            else
+        //            {
+        //                Options = new List<object>();
+        //            }
+        //        }
+
+        //        base.ShowMouseMenu();
+        //    }
+        //}
     }
 
 
     class KeyboardShortcutsEditor : ObjectEditorNode<KeyboardShortcuts>
     {
-        public Channel[] Channels { get; private set; } 
+        public Channel[] Channels { get; private set; }
 
         public KeyboardShortcutsEditor(KeyboardShortcuts toEdit)
             : base(toEdit, false, true, false)
@@ -535,7 +532,7 @@ namespace UI.Nodes
                     }));
                     return true;
                 }
-                
+
                 return base.OnMouseInput(mouseInputEvent);
             }
         }
@@ -586,7 +583,7 @@ namespace UI.Nodes
                 }
 
                 ShortcutKey key = new ShortcutKey(inputEvent);
-                
+
                 if (key.Key == Microsoft.Xna.Framework.Input.Keys.Escape)
                 {
                     onFinished(null);
@@ -835,4 +832,51 @@ namespace UI.Nodes
         }
     }
 
+    public class OBSRemoteControlEditor : ObjectEditorNode<OBSRemoteControlManager.OBSRemoteControlEvent>
+    {
+        public OBSRemoteControlManager.OBSRemoteControlConfig Config { get; private set; }
+
+        private BaseObjectEditorNode<OBSRemoteControlManager.OBSRemoteControlConfig> commonProperties;
+        private Node commonPropertiesBackground;
+
+        public OBSRemoteControlEditor(OBSRemoteControlManager.OBSRemoteControlConfig config)
+        {
+            Scale(0.8f, 1f);
+            Config = config;
+
+            SetObjects(config.RemoteControlEvents, true, true);
+        }
+
+        protected override void AddOnClick(MouseInputEvent mie)
+        {
+            MouseMenu mouseMenu = new MouseMenu(this);
+            mouseMenu.TopToBottom = false;
+
+            mouseMenu.AddItem("Add Scene Change", () => { AddNew(new OBSRemoteControlManager.OBSRemoteControlSetSceneEvent()); });
+            mouseMenu.AddItem("Add Source Filter Toggle", () => { AddNew(new OBSRemoteControlManager.OBSRemoteControlSourceFilterToggleEvent()); });
+            mouseMenu.Show(addButton);
+        }
+
+        public override void SetObjects(IEnumerable<OBSRemoteControlManager.OBSRemoteControlEvent> toEdit, bool addRemove = false, bool cancelButton = true)
+        {
+            if (commonPropertiesBackground == null)
+            {
+                commonPropertiesBackground = new ColorNode(Theme.Current.Editor.Foreground.XNA);
+                root.AddChild(commonPropertiesBackground);
+
+                commonProperties = new BaseObjectEditorNode<OBSRemoteControlManager.OBSRemoteControlConfig>(Theme.Current.Editor.Background.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA, Theme.Current.ScrollBar.XNA, false);
+                commonProperties.SetObject(Config, false, false);
+                commonPropertiesBackground.AddChild(commonProperties);
+            }
+
+            itemName.Visible = false;
+            base.SetObjects(toEdit, addRemove, cancelButton);
+
+            commonPropertiesBackground.RelativeBounds = new RectangleF(objectProperties.RelativeBounds.X, objectProperties.RelativeBounds.Y, objectProperties.RelativeBounds.Width, 0.12f);
+            commonPropertiesBackground.Scale(0.5f, 1);
+
+            container.Translate(0, commonPropertiesBackground.RelativeBounds.Bottom);
+            container.AddSize(0, -commonPropertiesBackground.RelativeBounds.Bottom);
+        }
+    }
 }

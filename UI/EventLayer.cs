@@ -61,7 +61,7 @@ namespace UI
         private SystemStatusNode systemStatusNode;
         public KeyboardShortcuts KeyMapper { get; private set; }
 
-        public OBSRemoteControl OBSRemoteControl { get; private set; }
+        public OBSRemoteControlManager OBSRemoteControlManager { get; private set; }
 
         private GeneralSettings gs { get { return GeneralSettings.Instance; } }
 
@@ -322,20 +322,7 @@ namespace UI
 
             KeyMapper = KeyboardShortcuts.Read();
 
-            if (gs.OBSRemoteControlEnabled)
-            {
-                OBSRemoteControl = new OBSRemoteControl();
-                OBSRemoteControl.Connect(gs.OBSRemoteControlHost, gs.OBSRemoteControlPort, gs.OBSRemoteControlPassword);
-
-                // Assosicate each local scene with the OBS scene.
-                OBSRemoteControl.Add(OBSRemoteControl.Scenes.PreRace, gs.OBSRemoteControlSceneLivePreRace);
-                OBSRemoteControl.Add(OBSRemoteControl.Scenes.MidRace, gs.OBSRemoteControlSceneLiveRace);
-                OBSRemoteControl.Add(OBSRemoteControl.Scenes.PostRace, gs.OBSRemoteControlSceneLivePostRace);
-
-                OBSRemoteControl.Add(OBSRemoteControl.Scenes.Replay, gs.OBSRemoteControlSceneReplay);
-                OBSRemoteControl.Add(OBSRemoteControl.Scenes.Rounds, gs.OBSRemoteControlSceneRounds);
-                OBSRemoteControl.Add(OBSRemoteControl.Scenes.Stats, gs.OBSRemoteControlSceneStatistics);
-            }
+            OBSRemoteControlManager = new OBSRemoteControlManager(sceneManagerNode, TabbedMultiNode, EventManager);
         }
 
         public override void Dispose()
@@ -955,51 +942,11 @@ namespace UI
 
             UpdateTopBar();
             ControlButtons.UpdateControlButtons();
-
-            if (OBSRemoteControl != null)
-            {
-                switch (tab)
-                {
-                    case "Live":
-                        break;
-
-                    case "Replay":
-                        OBSRemoteControl.SceneChange(OBSRemoteControl.Scenes.Replay);
-                        break;
-
-                    case "Rounds":
-                        OBSRemoteControl.SceneChange(OBSRemoteControl.Scenes.Rounds);
-                        break;
-
-                    default:
-                        OBSRemoteControl.SceneChange(OBSRemoteControl.Scenes.Stats);
-                        break;
-                }
-            }
         }
 
         private void SceneManagerNode_OnSceneChange(SceneManagerNode.Scenes scene)
         {
             UpdateTopBar();
-
-            if (OBSRemoteControl != null)
-            {
-                switch (scene)
-                {
-                    case SceneManagerNode.Scenes.Clear:
-                    case SceneManagerNode.Scenes.PreRace:
-                        OBSRemoteControl.SceneChange(OBSRemoteControl.Scenes.PreRace);
-                        break;
-
-                    case SceneManagerNode.Scenes.Race:
-                        OBSRemoteControl.SceneChange(OBSRemoteControl.Scenes.MidRace);
-                        break;
-
-                    case SceneManagerNode.Scenes.PostRace:
-                        OBSRemoteControl.SceneChange(OBSRemoteControl.Scenes.PostRace);
-                        break;
-                }
-            }
         }
 
         private void UpdateTopBar()

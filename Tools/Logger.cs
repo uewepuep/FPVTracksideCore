@@ -23,6 +23,7 @@ namespace Tools
         public static Logger HTTP { get; private set; }
         public static Logger Sync { get; private set; }
         public static Logger Sheets { get; private set; }
+        public static Logger OBS { get; private set; }
         public static Logger AllLog { get; private set; }
 
         public static IEnumerable<Logger> Logs
@@ -39,6 +40,7 @@ namespace Tools
                 yield return HTTP;
                 yield return Sync;
                 yield return Sheets;
+                yield return OBS;
                 yield return AllLog;
             }
         }
@@ -68,6 +70,7 @@ namespace Tools
             HTTP = new Logger(logDir, "HTTP", AllLog);
             Sync = new Logger(logDir, "Sync", AllLog);
             Sheets = new Logger(logDir, "Sheets", AllLog);
+            OBS = new Logger(logDir, "OBS", AllLog);
 
             AllLog.LogCall("\n\n\nLog Startup");
         }

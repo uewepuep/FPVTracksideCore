@@ -66,7 +66,7 @@ namespace Composition.Nodes
 
         private bool needsDispose;
 
-        public BaseObjectEditorNode(Color buttonBackground, Color buttonHover, Color textColor, Color scrollColor)
+        public BaseObjectEditorNode(Color buttonBackground, Color buttonHover, Color textColor, Color scrollColor, bool hasButtons = true)
         {
             changes = new List<Change>();
 
@@ -146,6 +146,8 @@ namespace Composition.Nodes
             okButton.OnClick += OkButton_OnClick;
             addButton.OnClick += AddOnClick;
             removeButton.OnClick += Remove;
+
+            buttonContainer.Visible = hasButtons;
         }
         public override void Dispose()
         {
@@ -209,7 +211,7 @@ namespace Composition.Nodes
                 itemName.Visible = false;
             }
 
-            if (Type.GetConstructor(Type.EmptyTypes) != null || Type.IsValueType)
+            if (Type.GetConstructor(Type.EmptyTypes) != null || Type.IsValueType || addRemove)
             {
                 addButton.Visible = true;
             }

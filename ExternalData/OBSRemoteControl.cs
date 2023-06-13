@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Tools;
 
 namespace ExternalData
 {
@@ -13,25 +14,12 @@ namespace ExternalData
 
         public bool Connected { get; private set; }
 
-        private Dictionary<Scenes, string> translate;
-
-        public enum Scenes
-        {
-            PreRace,
-            MidRace,
-            PostRace,
-            Rounds,
-            Replay,
-            Stats
-        }
 
         public OBSRemoteControl() 
         {
             obsWebsocket = new OBSWebsocket();
             obsWebsocket.Connected += OnConnected;
             obsWebsocket.Disconnected += OnDisconnected;
-
-            translate = new Dictionary<Scenes, string>();
         }
 
         public void Dispose()
@@ -40,10 +28,6 @@ namespace ExternalData
             obsWebsocket = null;
         }
 
-        public void Add(Scenes scene, string name)
-        {
-            translate.Add(scene, name);
-        }
 
         public void Connect(string url, int port, string password)
         {
@@ -98,23 +82,37 @@ namespace ExternalData
             }
         }
 
-        public void SceneChange(Scenes scene)
+        public void SetScene(string name)
         {
-            if (!Connected)
+            if (!Connected || obsWebsocket == null)
             {
                 return;
             }
 
-            if (translate.TryGetValue(scene, out string name)) 
-            { 
-                try
-                {
-                    obsWebsocket.SetCurrentProgramScene(name);
-                }
-                catch (Exception e)
-                {
+            try
+            {
+                obsWebsocket.SetCurrentProgramScene(name);
+            }
+            catch (Exception e)
+            {
+                Logger.OBS.LogException(this, e);
+            }
+        }
 
-                }
+        public void SetSourceFilterEnabled(string source, string filter, bool enabled)
+        {
+            if (!Connected || obsWebsocket == null)
+            {
+                return;
+            }
+
+            try
+            {
+                obsWebsocket.SetSourceFilterEnabled(source, filter, enabled);
+            }
+            catch (Exception e)
+            {
+                Logger.OBS.LogException(this, e);
             }
         }
 
