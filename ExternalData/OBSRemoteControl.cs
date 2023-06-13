@@ -14,9 +14,20 @@ namespace ExternalData
 
         public bool Connected { get; private set; }
 
+        private bool connecting;
 
-        public OBSRemoteControl() 
+
+        private string host;
+        private int port;
+        private string password;
+
+        public OBSRemoteControl(string host, int port, string password) 
         {
+            this.host = host;
+            this.port = port;
+            this.password = password;
+
+
             obsWebsocket = new OBSWebsocket();
             obsWebsocket.Connected += OnConnected;
             obsWebsocket.Disconnected += OnDisconnected;
@@ -28,16 +39,22 @@ namespace ExternalData
             obsWebsocket = null;
         }
 
-
-        public void Connect(string url, int port, string password)
+        public void Connect()
         {
-            obsWebsocket.ConnectAsync("ws://" + url + ":" + port, password);
+            if (connecting)
+                return;
+
+            string url = "ws://" + host + ":" + port;
+            Logger.OBS.LogCall(this, url, password);
+
+            connecting = true;
+            obsWebsocket.ConnectAsync(url, password);
         }
 
         public bool WaitConnection()
         {
             DateTime start = DateTime.Now;
-            while (!Connected)
+            while (connecting)
             {
                 Thread.Sleep(100);
                 if (DateTime.Now - start > obsWebsocket.WSTimeout)
@@ -51,11 +68,15 @@ namespace ExternalData
 
         private void OnConnected(object sender, EventArgs e)
         {
+            Logger.OBS.LogCall(this);
             Connected = true;
+            connecting = false;
         }
 
         private void OnDisconnected(object sender, OBSWebsocketDotNet.Communication.ObsDisconnectionInfo e)
         {
+            Logger.OBS.LogCall(this, e, e.DisconnectReason);
+            connecting = false;
             Connected = false;
         }
 
@@ -86,8 +107,15 @@ namespace ExternalData
         {
             if (!Connected || obsWebsocket == null)
             {
+                Connect();
+                WaitConnection();
+            }
+
+            if (!Connected || obsWebsocket == null)
+            {
                 return;
             }
+
 
             try
             {

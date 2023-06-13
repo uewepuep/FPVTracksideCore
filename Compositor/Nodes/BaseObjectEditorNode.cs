@@ -168,6 +168,16 @@ namespace Composition.Nodes
             base.Draw(id, parentAlpha);
         }
 
+        public void SetHeadingText(string text)
+        {
+            heading.Text = text;
+        }
+
+        public void SetItemNameText(string text)
+        {
+            itemName.Text = text;
+        }
+
         public void SetButtonsHeight(float height)
         {
             SetHeadingButtonsHeight(heading.RelativeBounds.Height, height);

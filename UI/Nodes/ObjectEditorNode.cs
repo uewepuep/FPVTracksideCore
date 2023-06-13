@@ -838,11 +838,27 @@ namespace UI.Nodes
 
         private BaseObjectEditorNode<OBSRemoteControlManager.OBSRemoteControlConfig> commonProperties;
         private Node commonPropertiesBackground;
+        private TextNode triggersHeading;
 
         public OBSRemoteControlEditor(OBSRemoteControlManager.OBSRemoteControlConfig config)
         {
             Scale(0.8f, 1f);
             Config = config;
+
+            commonPropertiesBackground = new Node();
+            root.AddChild(commonPropertiesBackground);
+
+            commonProperties = new BaseObjectEditorNode<OBSRemoteControlManager.OBSRemoteControlConfig>(Theme.Current.Editor.Background.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA, Theme.Current.ScrollBar.XNA, false);
+            commonProperties.SetObject(Config, false, false);
+            commonPropertiesBackground.AddChild(commonProperties);
+            commonProperties.SetHeadingText("");
+
+            commonPropertiesBackground.RelativeBounds = new RectangleF(objectProperties.RelativeBounds.X, objectProperties.RelativeBounds.Y, objectProperties.RelativeBounds.Width, 0.12f);
+            commonPropertiesBackground.Scale(0.5f, 1);
+
+            triggersHeading = new TextNode("Triggers", Theme.Current.Editor.Text.XNA);
+            triggersHeading.RelativeBounds = new RectangleF(objectProperties.RelativeBounds.X, commonPropertiesBackground.RelativeBounds.Bottom + 0.02f, objectProperties.RelativeBounds.Width, 0.03f);
+            root.AddChild(triggersHeading);
 
             SetObjects(config.RemoteControlEvents, true, true);
         }
@@ -859,24 +875,11 @@ namespace UI.Nodes
 
         public override void SetObjects(IEnumerable<OBSRemoteControlManager.OBSRemoteControlEvent> toEdit, bool addRemove = false, bool cancelButton = true)
         {
-            if (commonPropertiesBackground == null)
-            {
-                commonPropertiesBackground = new ColorNode(Theme.Current.Editor.Foreground.XNA);
-                root.AddChild(commonPropertiesBackground);
-
-                commonProperties = new BaseObjectEditorNode<OBSRemoteControlManager.OBSRemoteControlConfig>(Theme.Current.Editor.Background.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA, Theme.Current.ScrollBar.XNA, false);
-                commonProperties.SetObject(Config, false, false);
-                commonPropertiesBackground.AddChild(commonProperties);
-            }
-
             itemName.Visible = false;
             base.SetObjects(toEdit, addRemove, cancelButton);
-
-            commonPropertiesBackground.RelativeBounds = new RectangleF(objectProperties.RelativeBounds.X, objectProperties.RelativeBounds.Y, objectProperties.RelativeBounds.Width, 0.12f);
-            commonPropertiesBackground.Scale(0.5f, 1);
-
-            container.Translate(0, commonPropertiesBackground.RelativeBounds.Bottom);
-            container.AddSize(0, -commonPropertiesBackground.RelativeBounds.Bottom);
+           
+            container.Translate(0, triggersHeading.RelativeBounds.Bottom);
+            container.AddSize(0, -triggersHeading.RelativeBounds.Bottom);
         }
     }
 }

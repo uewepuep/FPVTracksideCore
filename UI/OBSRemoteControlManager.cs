@@ -7,12 +7,14 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
+using Timing;
 using Tools;
 using UI.Nodes;
 
 namespace UI
 {
-    public class OBSRemoteControlManager
+    public class OBSRemoteControlManager : IDisposable
     {
         public enum Triggers
         {
@@ -34,8 +36,18 @@ namespace UI
         private OBSRemoteControlConfig config;
         private OBSRemoteControl remoteControl;
 
+        private SceneManagerNode sceneManagerNode;
+        private TabbedMultiNode tabbedMultiNode;
+        private EventManager eventManager;
+
+        private bool eventsHooked;
+
         public OBSRemoteControlManager(SceneManagerNode sceneManagerNode, TabbedMultiNode tabbedMultiNode, EventManager eventManager)
         {
+            this.sceneManagerNode = sceneManagerNode;
+            this.tabbedMultiNode = tabbedMultiNode;
+            this.eventManager = eventManager;
+
             config = OBSRemoteControlConfig.Load();
 
             if (config.Enabled) 
@@ -44,9 +56,23 @@ namespace UI
                 eventManager.RaceManager.OnRaceStart += OnRaceStart;
                 eventManager.RaceManager.OnRacePreStart += OnRacePreStart;
                 tabbedMultiNode.OnTabChange += OnTabChange;
+                eventsHooked = true;
 
-                remoteControl = new OBSRemoteControl();
-                remoteControl.Connect(config.Host, config.Port, config.Password);
+                remoteControl = new OBSRemoteControl(config.Host, config.Port, config.Password);
+                remoteControl.Connect();
+            }
+        }
+
+        public void Dispose()
+        {
+            remoteControl?.Dispose();
+
+            if (eventsHooked)
+            {
+                sceneManagerNode.OnSceneChange -= OnSceneChange;
+                eventManager.RaceManager.OnRaceStart -= OnRaceStart;
+                eventManager.RaceManager.OnRacePreStart -= OnRacePreStart;
+                tabbedMultiNode.OnTabChange -= OnTabChange;
             }
         }
 
@@ -59,6 +85,8 @@ namespace UI
             {
                 if (rcEvent.Trigger == type) 
                 {
+                    Logger.OBS.LogCall(this, rcEvent.GetType().Name, rcEvent.ToString());
+                    
                     if (rcEvent is OBSRemoteControlSetSceneEvent)
                     {
                         OBSRemoteControlSetSceneEvent a = rcEvent as OBSRemoteControlSetSceneEvent;
@@ -139,7 +167,7 @@ namespace UI
 
             public override string ToString()
             {
-                return Trigger + " -> Scene: " + SceneName;
+                return Trigger + " -> " + SceneName;
             }
         }
 
@@ -151,9 +179,13 @@ namespace UI
 
             public override string ToString()
             {
-                return Trigger + " -> Source: " + SourceName + " " + FilterName + " " + Enable;
+                return Trigger + " -> " + SourceName + " " + FilterName + " " + Enable;
             }
         }
+
+        [XmlInclude(typeof(OBSRemoteControlEvent)),
+         XmlInclude(typeof(OBSRemoteControlSetSceneEvent)),
+         XmlInclude(typeof(OBSRemoteControlSourceFilterToggleEvent))]
 
         public class OBSRemoteControlConfig
         {
@@ -166,7 +198,7 @@ namespace UI
             public string Password { get; set; }
 
             [Browsable(false)]
-            public List<OBSRemoteControlEvent> RemoteControlEvents { get; private set; }
+            public List<OBSRemoteControlEvent> RemoteControlEvents { get; set; }
 
             public OBSRemoteControlConfig()
             {

@@ -40,6 +40,7 @@ namespace UI.Nodes
         public event System.Action DataDeleted;
         public event System.Action BugReport;
 
+        public event System.Action OBSRemoteSettingsSaved;
         public event System.Action GeneralSettingsSaved;
 
         private Event evennt;
@@ -447,7 +448,10 @@ namespace UI.Nodes
             var editor = new OBSRemoteControlEditor(config);
             editor.OnOK += (e) =>
             {
+                config.RemoteControlEvents = editor.Objects.ToList();
                 OBSRemoteControlManager.OBSRemoteControlConfig.Write(config);
+
+                OBSRemoteSettingsSaved?.Invoke();
             };
 
             GetLayer<PopupLayer>().Popup(editor);

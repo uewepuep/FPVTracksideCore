@@ -293,6 +293,8 @@ namespace UI
                 }
             };
 
+            MenuButton.OBSRemoteSettingsSaved += ReloadOBSRemoteControl;
+
             float width = 0.9f;
 
             systemStatusNode = new SystemStatusNode(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager);
@@ -322,7 +324,7 @@ namespace UI
 
             KeyMapper = KeyboardShortcuts.Read();
 
-            OBSRemoteControlManager = new OBSRemoteControlManager(sceneManagerNode, TabbedMultiNode, EventManager);
+            ReloadOBSRemoteControl();
         }
 
         public override void Dispose()
@@ -339,15 +341,10 @@ namespace UI
             videoManager.Dispose();
             sceneManagerNode.Dispose();
 
-            if (eventWebServer != null)
-            {
-                eventWebServer.Stop();
-            }
+            eventWebServer?.Stop();
+            RemoteNotifier?.Dispose();
 
-            if (RemoteNotifier != null)
-            {
-                RemoteNotifier.Dispose();
-            }
+            OBSRemoteControlManager?.Dispose();
 
             base.Dispose();
         }
@@ -369,6 +366,11 @@ namespace UI
                 Clear();
                 TabbedMultiNode.Snap();
             }
+        }
+        private void ReloadOBSRemoteControl()
+        {
+            OBSRemoteControlManager?.Dispose();
+            OBSRemoteControlManager = new OBSRemoteControlManager(sceneManagerNode, TabbedMultiNode, EventManager);
         }
 
         public void ResumeRace()
