@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using System.Windows.Markup;
 using Tools;
 
 namespace Composition.Nodes
@@ -951,6 +952,7 @@ namespace Composition.Nodes
 
         protected override void SetValue(object value)
         {
+            Value.Text = value.ToString();
             base.SetValue(value);
         }
 
@@ -1252,13 +1254,14 @@ namespace Composition.Nodes
               
 
 
-    public class ListPropertyNode<T> : StaticTextPropertyNode<T>
+    public class ListPropertyNode<T> : TextPropertyNode<T>
     {
         public List<object> Options { get; protected set; }
 
         public ListPropertyNode(T obj, PropertyInfo pi, Color textColor, Color hover, System.Array options)
             : base(obj, pi, textColor)
         {
+            Value.CanEdit = false;
             SetOptions(options.OfType<object>());
             Value.AddChild(new HoverNode(hover));
         }
@@ -1266,6 +1269,7 @@ namespace Composition.Nodes
         public ListPropertyNode(T obj, PropertyInfo pi, Color textColor, Color hover)
             : base(obj, pi, textColor)
         {
+            Value.CanEdit = false;
             Value.AddChild(new HoverNode(hover));
         }
 

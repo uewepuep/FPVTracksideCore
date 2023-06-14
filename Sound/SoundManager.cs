@@ -435,6 +435,8 @@ namespace Sound
 
         public void SponsorRead(string text, TimeSpan expiry)
         {
+            StopSound();
+
             SpeechRequest speechRequest = new SpeechRequest(text, 0, 100, new SpeechParameters(), DateTime.Now + expiry, null);
             speechManager?.EnqueueSpeech(speechRequest);
         }

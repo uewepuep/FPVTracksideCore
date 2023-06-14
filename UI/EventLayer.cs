@@ -213,7 +213,7 @@ namespace UI
             ControlButtons.StartButton.OnClick += (mie) => { StartRace(); };
             ControlButtons.StopButton.OnClick += (mie) => { StopRace(); };
             ControlButtons.ClearButton.OnClick += (mie) => { Clear(); };
-            ControlButtons.NextButton.OnClick += (mie) => { EventManager.RaceManager.NextRace(true); };
+            ControlButtons.NextButton.OnClick += (mie) => { NextRace(true); };
             ControlButtons.ResumeButton.OnClick += (mie) => { ResumeRace(); };
             ControlButtons.ResetButton.OnClick += (mie) => 
             {
@@ -396,6 +396,22 @@ namespace UI
                 {
                     RecoverRace(race);
                 }
+            }
+        }
+
+        public void NextRace(bool unfinishedOnly)
+        {
+            SponsorLayer sponsorLayer = LayerStack.GetLayer<SponsorLayer>();
+            if (sponsorLayer != null && GeneralSettings.Instance.SponsoredByMessages)
+            {
+                sponsorLayer.TriggerMaybe(() => 
+                {
+                    EventManager.RaceManager.NextRace(unfinishedOnly);
+                });       
+            }
+            else
+            {
+                EventManager.RaceManager.NextRace(unfinishedOnly);
             }
         }
 
@@ -780,7 +796,7 @@ namespace UI
                         }
                         else if (sceneManagerNode.Scene == SceneManagerNode.Scenes.PostRace)
                         {
-                            EventManager.RaceManager.NextRace(false);
+                            NextRace(false);
                         }
                     }
 
@@ -795,7 +811,7 @@ namespace UI
 
                 if (KeyMapper.NextRace.Match(inputEvent))
                 {
-                    EventManager.RaceManager.NextRace(false);
+                    NextRace(false);
                     return true;
                 }
 

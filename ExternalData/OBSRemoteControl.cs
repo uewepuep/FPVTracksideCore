@@ -80,24 +80,37 @@ namespace ExternalData
             Connected = false;
         }
 
-        public IEnumerable<string> GetSceneList()
+        public IEnumerable<string> GetScenes()
         {
             GetSceneListInfo sceneListInfo = obsWebsocket.GetSceneList();
             return sceneListInfo.Scenes.Select(s => s.Name);
         }
 
-        public IEnumerable<string> GetSourceFilters()
+        public IEnumerable<string> GetSources()
         {
-            foreach (string scene in GetSceneList()) 
+            foreach (string scene in GetScenes()) 
             {
                 List<SceneItemDetails> sceneDetails = obsWebsocket.GetSceneItemList(scene);
                 foreach (SceneItemDetails details in sceneDetails) 
                 {
                     string source = details.SourceName;
+                    yield return source;
+                }
+            }
+        }
+
+        public IEnumerable<string> GetFilters()
+        {
+            foreach (string scene in GetScenes())
+            {
+                List<SceneItemDetails> sceneDetails = obsWebsocket.GetSceneItemList(scene);
+                foreach (SceneItemDetails details in sceneDetails)
+                {
+                    string source = details.SourceName;
                     List<FilterSettings> filters = obsWebsocket.GetSourceFilterList(source);
-                    foreach (FilterSettings filter in filters) 
-                    { 
-                        yield return source + " - " + filter.Name;
+                    foreach (FilterSettings filter in filters)
+                    {
+                        yield return filter.Name;
                     }
                 }
             }
@@ -141,19 +154,6 @@ namespace ExternalData
             catch (Exception e)
             {
                 Logger.OBS.LogException(this, e);
-            }
-        }
-
-        public IEnumerable<string> GetOptions()
-        {
-            foreach (string scene in GetSceneList())
-            {
-                yield return "Scene: " + scene;
-            }
-
-            foreach (string scene in GetSourceFilters())
-            {
-                yield return "Source Filter Toggle: " + scene;
             }
         }
     }

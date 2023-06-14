@@ -26,6 +26,11 @@ namespace UI
         [Category("General")]
         public RaceLib.Units Units { get; set; }
 
+        [Category("General")]
+        [DisplayName("FPVTrackside 'Sponsored By' Messages")]
+        public bool SponsoredByMessages { get; set; }
+
+
         [Category("Performance")]
         [NeedsRestart]
         public int FrameRateLimit { get; set; }
@@ -227,6 +232,7 @@ namespace UI
         {
             InverseResolutionScalePercent = 100;
             AutoSync = true;
+            SponsoredByMessages = true;
 
             Theme = "Dark";
             FrameRateLimit = 60;

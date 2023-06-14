@@ -443,33 +443,6 @@ namespace UI.Nodes
                 base.ShowMouseMenu();
             }
         }
-
-        //private class OBSRemoteControlScenePropertyNode : ListPropertyNode<GeneralSettings>
-        //{
-        //    public OBSRemoteControlScenePropertyNode(GeneralSettings obj, PropertyInfo pi, Color textColor, Color hover)
-        //        : base(obj, pi, textColor, hover)
-        //    {
-        //    }
-
-        //    protected override void ShowMouseMenu()
-        //    {
-        //        using (OBSRemoteControl oBSRemoteControl = new OBSRemoteControl())
-        //        {
-        //            oBSRemoteControl.Connect(Object.OBSRemoteControlHost, Object.OBSRemoteControlPort, Object.OBSRemoteControlPassword);
-
-        //            if (oBSRemoteControl.WaitConnection())
-        //            {
-        //                Options = oBSRemoteControl.GetOptions().OfType<object>().ToList();
-        //            }
-        //            else
-        //            {
-        //                Options = new List<object>();
-        //            }
-        //        }
-
-        //        base.ShowMouseMenu();
-        //    }
-        //}
     }
 
 
@@ -880,6 +853,76 @@ namespace UI.Nodes
            
             container.Translate(0, triggersHeading.RelativeBounds.Bottom);
             container.AddSize(0, -triggersHeading.RelativeBounds.Bottom);
+        }
+
+        protected override PropertyNode<OBSRemoteControlManager.OBSRemoteControlEvent> CreatePropertyNode(OBSRemoteControlManager.OBSRemoteControlEvent obj, PropertyInfo pi)
+        {
+            if (pi.Name == "SceneName")
+            {
+                return new OBSRemoteControlScenePropertyNode(obj, pi, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlScenePropertyNode.Types.Scene);
+            }
+            else if (pi.Name == "SourceName")
+            {
+                return new OBSRemoteControlScenePropertyNode(obj, pi, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlScenePropertyNode.Types.Source);
+            }
+            else if (pi.Name == "FilterName")
+            {
+                return new OBSRemoteControlScenePropertyNode(obj, pi, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlScenePropertyNode.Types.SourceFilter);
+            }
+
+            return base.CreatePropertyNode(obj, pi);
+        }
+
+
+        private class OBSRemoteControlScenePropertyNode : ListPropertyNode<OBSRemoteControlManager.OBSRemoteControlEvent>
+        {
+            public OBSRemoteControlManager.OBSRemoteControlConfig Config { get; private set; }
+
+            public enum Types
+            {
+                Scene,
+                Source,
+                SourceFilter
+            }
+            public Types OBSType { get; private set; }
+
+            public OBSRemoteControlScenePropertyNode(OBSRemoteControlManager.OBSRemoteControlEvent obj, PropertyInfo pi, Color textColor, Color hover, OBSRemoteControlManager.OBSRemoteControlConfig config, Types type)
+                : base(obj, pi, textColor, hover)
+            {
+                Config = config;
+                Value.CanEdit = true;
+                OBSType = type;
+            }
+
+            protected override void ShowMouseMenu()
+            {
+                using (OBSRemoteControl oBSRemoteControl = new OBSRemoteControl(Config.Host, Config.Port, Config.Password))
+                {
+                    oBSRemoteControl.Connect();
+
+                    if (oBSRemoteControl.WaitConnection())
+                    {
+                        switch (OBSType)
+                        {
+                            case Types.Scene:
+                                Options = oBSRemoteControl.GetScenes().OfType<object>().ToList();
+                                break;
+                            case Types.Source:
+                                Options = oBSRemoteControl.GetSources().OfType<object>().ToList();
+                                break;
+                            case Types.SourceFilter:
+                                Options = oBSRemoteControl.GetFilters().OfType<object>().ToList();
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        Options = new List<object>();
+                    }
+                }
+
+                base.ShowMouseMenu();
+            }
         }
     }
 }

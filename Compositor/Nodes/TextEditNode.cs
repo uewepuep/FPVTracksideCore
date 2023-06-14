@@ -9,6 +9,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Tools;
 using Composition.Text;
+using System.Reflection;
 
 namespace Composition.Nodes
 {
@@ -131,7 +132,7 @@ namespace Composition.Nodes
                 HasFocus = true;
                 RequestRedraw();
                 
-                int index = HitCharacterIndex(mouseInputEvent); 
+                int index = HitCharacterIndex(mouseInputEvent);
                 if (index >= 0)
                 {
                     cursorIndex = index;
