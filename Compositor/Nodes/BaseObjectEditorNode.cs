@@ -150,6 +150,7 @@ namespace Composition.Nodes
 
             buttonContainer.Visible = hasButtons;
         }
+
         public override void Dispose()
         {
             base.Dispose();
