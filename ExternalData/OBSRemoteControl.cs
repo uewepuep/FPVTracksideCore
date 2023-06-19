@@ -21,12 +21,13 @@ namespace ExternalData
         private int port;
         private string password;
 
+        private WorkQueue workQueue;
+
         public OBSRemoteControl(string host, int port, string password) 
         {
             this.host = host;
             this.port = port;
             this.password = password;
-
 
             obsWebsocket = new OBSWebsocket();
             obsWebsocket.Connected += OnConnected;
@@ -35,8 +36,11 @@ namespace ExternalData
 
         public void Dispose()
         {
-            obsWebsocket.Disconnect();
+            obsWebsocket?.Disconnect();
             obsWebsocket = null;
+
+            workQueue?.Dispose();
+            workQueue = null;
         }
 
         public void Connect()
@@ -53,6 +57,16 @@ namespace ExternalData
 
         public bool WaitConnection()
         {
+            if (Connected)
+                return true;
+
+            if (!connecting)
+                Connect();
+
+            OBSWebsocket oBSWebsocket = obsWebsocket;
+            if (oBSWebsocket == null)
+                return false;
+
             DateTime start = DateTime.Now;
             while (connecting)
             {
@@ -80,14 +94,56 @@ namespace ExternalData
             Connected = false;
         }
 
-        public IEnumerable<string> GetScenes()
+        private delegate IEnumerable<string> stringReturner();
+
+        private void callBackIenumerable(stringReturner input, Action<string[]> callback)
         {
+            if (workQueue == null)
+            {
+                workQueue = new WorkQueue("OBSRemoteControl");
+            }
+
+            workQueue?.Enqueue(() =>
+            {
+                try
+                {
+                    string[] strings = input().ToArray();
+                   
+                    Logger.OBS.Log(this, "", strings);
+
+                    callback(strings);
+                }
+                catch (Exception ex) 
+                {
+                    Logger.OBS.LogException(this, ex);
+                }
+            });
+        }
+
+
+        public void GetScenes(Action<string[]> callback)
+        {
+            callBackIenumerable(GetScenes, callback);
+        }
+
+        private IEnumerable<string> GetScenes()
+        {
+            WaitConnection();
+
             GetSceneListInfo sceneListInfo = obsWebsocket.GetSceneList();
             return sceneListInfo.Scenes.Select(s => s.Name);
         }
 
-        public IEnumerable<string> GetSources()
+        public void GetSources(Action<string[]> callback)
         {
+            callBackIenumerable(GetSources, callback);
+        }
+
+        private IEnumerable<string> GetSources()
+        {
+            WaitConnection();
+
+
             foreach (string scene in GetScenes()) 
             {
                 List<SceneItemDetails> sceneDetails = obsWebsocket.GetSceneItemList(scene);
@@ -99,8 +155,15 @@ namespace ExternalData
             }
         }
 
-        public IEnumerable<string> GetFilters()
+        public void GetFilters(Action<string[]> callback)
         {
+            callBackIenumerable(GetFilters, callback);
+        }
+
+        private IEnumerable<string> GetFilters()
+        {
+            WaitConnection();
+
             foreach (string scene in GetScenes())
             {
                 List<SceneItemDetails> sceneDetails = obsWebsocket.GetSceneItemList(scene);

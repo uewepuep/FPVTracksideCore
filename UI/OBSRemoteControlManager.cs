@@ -32,7 +32,6 @@ namespace UI
             StatsTab
         }
 
-
         private OBSRemoteControlConfig config;
         private OBSRemoteControl remoteControl;
 
@@ -151,10 +150,6 @@ namespace UI
                     break;
             }
         }
-
-
-
-
 
         public abstract class OBSRemoteControlEvent
         {

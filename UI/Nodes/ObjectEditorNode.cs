@@ -886,41 +886,37 @@ namespace UI.Nodes
             }
             public Types OBSType { get; private set; }
 
+            private OBSRemoteControl oBSRemoteControl;
+
             public OBSRemoteControlScenePropertyNode(OBSRemoteControlManager.OBSRemoteControlEvent obj, PropertyInfo pi, Color textColor, Color hover, OBSRemoteControlManager.OBSRemoteControlConfig config, Types type)
                 : base(obj, pi, textColor, hover)
             {
                 Config = config;
                 Value.CanEdit = true;
                 OBSType = type;
+
+                oBSRemoteControl = new OBSRemoteControl(Config.Host, Config.Port, Config.Password);
             }
 
             protected override void ShowMouseMenu()
             {
-                using (OBSRemoteControl oBSRemoteControl = new OBSRemoteControl(Config.Host, Config.Port, Config.Password))
+                switch (OBSType)
                 {
-                    oBSRemoteControl.Connect();
-
-                    if (oBSRemoteControl.WaitConnection())
-                    {
-                        switch (OBSType)
-                        {
-                            case Types.Scene:
-                                Options = oBSRemoteControl.GetScenes().OfType<object>().ToList();
-                                break;
-                            case Types.Source:
-                                Options = oBSRemoteControl.GetSources().OfType<object>().ToList();
-                                break;
-                            case Types.SourceFilter:
-                                Options = oBSRemoteControl.GetFilters().OfType<object>().ToList();
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        Options = new List<object>();
-                    }
+                    case Types.Scene:
+                        oBSRemoteControl?.GetScenes(ShowMouseMenu);
+                        break;
+                    case Types.Source:
+                        oBSRemoteControl?.GetSources(ShowMouseMenu);
+                        break;
+                    case Types.SourceFilter:
+                        oBSRemoteControl?.GetFilters(ShowMouseMenu);
+                        break;
                 }
+            }
 
+            private void ShowMouseMenu(string[] options)
+            {
+                Options = options.OfType<object>().ToList();
                 base.ShowMouseMenu();
             }
         }
