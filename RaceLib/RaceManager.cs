@@ -1738,13 +1738,11 @@ namespace RaceLib
 
         private void OnTimingSystemReconnect(int count)
         {
+            Logger.RaceLog.LogCall(this, "Timing system reconnect. Count: " + count);
             if (RaceRunning)
             {
-                Race current = CurrentRace;
-                if (current != null)
-                {
-                    ResumeRace(current);
-                }
+                Logger.RaceLog.LogCall(this, CurrentRace, "Starting detection again..");
+                StartDetection();
             }
         }
 
