@@ -12,46 +12,45 @@ using System.Threading.Tasks;
 using Timing;
 using Tools;
 using UI.Video;
+using static UI.OBSRemoteControlManager;
 
 namespace UI.Nodes
 {
     public class SystemStatusNode : Node
     {
-        public TimingSystemManager TimingSystemManager { get; private set; }
-        public VideoManager VideoManager { get; private set; }
-        public SoundManager SoundManager { get; private set; }
-
         private MuteStatusNode tts;
 
-        public SystemStatusNode(TimingSystemManager timingSystemManager, VideoManager videoManager, SoundManager soundManager)
+        public SystemStatusNode()
         {
-            TimingSystemManager = timingSystemManager;
-            VideoManager = videoManager;
-            SoundManager = soundManager;
-
-            SetupStatuses();
         }
 
-        public void SetupStatuses()
+        public void SetupStatuses(TimingSystemManager timingSystemManager, VideoManager videoManager, SoundManager soundManager, OBSRemoteControlManager oBSRemoteControlManager)
         {
             ClearDisposeChildren();
 
-            tts = new MuteStatusNode(SoundManager, true);
+            tts = new MuteStatusNode(soundManager, true);
 
             AddChild(tts);
-            AddChild(new MuteStatusNode(SoundManager, false));
+            AddChild(new MuteStatusNode(soundManager, false));
 
-            foreach (ITimingSystem timingSystem in TimingSystemManager.TimingSystems)
+            foreach (ITimingSystem timingSystem in timingSystemManager.TimingSystems)
             {
-                TimingSystemStatusNode tsn = new TimingSystemStatusNode(TimingSystemManager, timingSystem);
+                TimingSystemStatusNode tsn = new TimingSystemStatusNode(timingSystemManager, timingSystem);
                 AddChild(tsn);
             }
 
-            foreach (VideoConfig videoConfig in VideoManager.VideoConfigs)
+            foreach (VideoConfig videoConfig in videoManager.VideoConfigs)
             {
-                VideoSystemStatusNode vsn = new VideoSystemStatusNode(VideoManager, videoConfig);
+                VideoSystemStatusNode vsn = new VideoSystemStatusNode(videoManager, videoConfig);
                 AddChild(vsn);
             }
+
+            if (oBSRemoteControlManager != null) 
+            {
+                OBSStatusNode vsn = new OBSStatusNode(oBSRemoteControlManager);
+                AddChild(vsn);
+            }
+
             RequestLayout();
         }
 
@@ -62,7 +61,7 @@ namespace UI.Nodes
             int ItemHeight = 30;
             int width = bounds.Width;
 
-            tts.Visible = SoundManager.HasSpeech();
+            tts.Visible = tts.SoundManager.HasSpeech();
 
             Node[] nodes = VisibleChildren.ToArray();
 
@@ -322,7 +321,7 @@ namespace UI.Nodes
 
     public class MuteStatusNode : StatusNode
     {
-        private SoundManager soundManager;
+        public SoundManager SoundManager { get; private set; }
 
         private CheckboxNode cbn;
 
@@ -334,22 +333,22 @@ namespace UI.Nodes
             {
                 if (tts)
                 {
-                    return soundManager.MuteTTS;
+                    return SoundManager.MuteTTS;
                 }
                 else
                 {
-                    return soundManager.MuteWAV;
+                    return SoundManager.MuteWAV;
                 }
             }
             set
             {
                 if (tts)
                 {
-                    soundManager.MuteTTS = value;
+                    SoundManager.MuteTTS = value;
                 }
                 else
                 {
-                    soundManager.MuteWAV = value;
+                    SoundManager.MuteWAV = value;
                 }
             }
         }
@@ -357,7 +356,7 @@ namespace UI.Nodes
         public MuteStatusNode(SoundManager soundManager, bool tts)
             : base("")
         {
-            this.soundManager = soundManager;
+            this.SoundManager = soundManager;
             this.tts = tts;
 
             if (tts)
@@ -392,6 +391,30 @@ namespace UI.Nodes
         private void Cbn_ValueChanged(bool obj)
         {
             SetMute(!obj);
+        }
+    }
+
+    public class OBSStatusNode : StatusNode
+    {
+        private OBSRemoteControlManager oBSRemoteControlManager;
+
+        public OBSStatusNode(OBSRemoteControlManager oBSRemoteControlManager)
+            : base(@"img/obs.png")
+        {
+            Name = "OBS RC";
+            this.oBSRemoteControlManager = oBSRemoteControlManager;
+            oBSRemoteControlManager.Activity += OBSRemoteControlManager_Activity;
+        }
+
+        private void OBSRemoteControlManager_Activity(bool obj)
+        {
+            OnDataRecv();
+        }
+
+        public override void StatusUpdate()
+        {
+            base.StatusUpdate();
+            SetStatus("", oBSRemoteControlManager.Connected);
         }
     }
 }

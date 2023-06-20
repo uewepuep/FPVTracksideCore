@@ -467,10 +467,16 @@ namespace RaceLib
 
             DateTime lapStart = GetRaceStartTime(detection.Pilot);
 
-            Lap prevLap = GetValidLaps(detection.Pilot, true).OrderBy(l => l.End).LastOrDefault();
+            Lap prevLap = GetValidLaps(detection.Pilot, true).Where(l => l.Detection.Time < detection.Time).OrderBy(l => l.End).LastOrDefault();
             if (prevLap != null)
             {
                 lapStart = prevLap.End;
+            }
+
+            // ignore impossibly short laps
+            if ((detection.Time - lapStart).TotalMilliseconds < 1)
+            {
+                detection.Valid = false;
             }
 
             Lap lap = new Lap(this, lapStart, detection);

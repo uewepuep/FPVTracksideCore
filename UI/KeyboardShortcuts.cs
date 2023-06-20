@@ -159,14 +159,14 @@ namespace Composition.Input
             ReplayPrevFrame = new ShortcutKey(Keys.OemComma);
             ReplayNextFrame = new ShortcutKey(Keys.OemPeriod);
 
-            AddLapChannelGroup1 = new ShortcutKey(Keys.D1);
-            AddLapChannelGroup2 = new ShortcutKey(Keys.D2);
-            AddLapChannelGroup3 = new ShortcutKey(Keys.D3);
-            AddLapChannelGroup4 = new ShortcutKey(Keys.D4);
-            AddLapChannelGroup5 = new ShortcutKey(Keys.D5);
-            AddLapChannelGroup6 = new ShortcutKey(Keys.D6);
-            AddLapChannelGroup7 = new ShortcutKey(Keys.D7);
-            AddLapChannelGroup8 = new ShortcutKey(Keys.D8);
+            AddLapChannelGroup1 = new ShortcutKey(Keys.D1, false, true);
+            AddLapChannelGroup2 = new ShortcutKey(Keys.D2, false, true);
+            AddLapChannelGroup3 = new ShortcutKey(Keys.D3, false, true);
+            AddLapChannelGroup4 = new ShortcutKey(Keys.D4, false, true);
+            AddLapChannelGroup5 = new ShortcutKey(Keys.D5, false, true);
+            AddLapChannelGroup6 = new ShortcutKey(Keys.D6, false, true);
+            AddLapChannelGroup7 = new ShortcutKey(Keys.D7, false, true);
+            AddLapChannelGroup8 = new ShortcutKey(Keys.D8, false, true);
 
             RemoveLapChannelGroup1 = new ShortcutKey(Keys.D1, true);
             RemoveLapChannelGroup2 = new ShortcutKey(Keys.D2, true);

@@ -258,7 +258,7 @@ namespace UI
 
             MenuButton.TimingChanged += () =>
             {
-                systemStatusNode.SetupStatuses();
+                systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager);
             };
 
             MenuButton.VideoSettingsExited += (bool changed) =>
@@ -297,7 +297,8 @@ namespace UI
 
             float width = 0.9f;
 
-            systemStatusNode = new SystemStatusNode(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager);
+            systemStatusNode = new SystemStatusNode();
+            systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager);
             systemStatusNode.RelativeBounds = new RectangleF((1 - width) / 2, MenuButton.RelativeBounds.Bottom + 0.01f, 0.9f, 1);
             rightSideColor.AddChild(systemStatusNode);
 
@@ -371,6 +372,8 @@ namespace UI
         {
             OBSRemoteControlManager?.Dispose();
             OBSRemoteControlManager = new OBSRemoteControlManager(sceneManagerNode, TabbedMultiNode, EventManager);
+
+            systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager);
         }
 
         public void ResumeRace()
@@ -443,7 +446,7 @@ namespace UI
                 {
                     channelsGridNode.FillChannelNodes();
                     sceneManagerNode.SetupCams();
-                    systemStatusNode.SetupStatuses();
+                    systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager);
 
                     if (current != null)
                     {

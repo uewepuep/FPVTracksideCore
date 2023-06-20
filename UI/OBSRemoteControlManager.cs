@@ -41,6 +41,18 @@ namespace UI
 
         private bool eventsHooked;
 
+        public event Action<bool> Activity;
+
+        public bool Connected 
+        { 
+            get
+            {
+                if (remoteControl == null)
+                    return false;
+                return remoteControl.Connected;
+            }
+        }
+
         public OBSRemoteControlManager(SceneManagerNode sceneManagerNode, TabbedMultiNode tabbedMultiNode, EventManager eventManager)
         {
             this.sceneManagerNode = sceneManagerNode;
@@ -58,8 +70,14 @@ namespace UI
                 eventsHooked = true;
 
                 remoteControl = new OBSRemoteControl(config.Host, config.Port, config.Password);
+                remoteControl.Activity += RemoteControl_Activity;
                 remoteControl.Connect();
             }
+        }
+
+        private void RemoteControl_Activity(bool success)
+        {
+            Activity?.Invoke(success);
         }
 
         public void Dispose()

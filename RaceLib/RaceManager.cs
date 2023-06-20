@@ -1304,11 +1304,18 @@ namespace RaceLib
                 lap = currentRace.RecordLap(db, detection);
             }
 
-            Lapalyser.OnLap(lap);
-
-            if (detection.Valid && lap != null)
+            if (lap != null)
             {
-                OnLapDetected?.Invoke(lap);
+                Lapalyser.OnLap(lap);
+
+                if (detection.Valid)
+                {
+                    OnLapDetected?.Invoke(lap);
+                }
+            }
+            else
+            {
+
             }
         }
 
@@ -1769,7 +1776,9 @@ namespace RaceLib
             IEnumerable<Channel> shuffled = race.Channels;
             foreach (Channel channel in shuffled)
             {
-                foreach (DateTime detection in dummyTimingSystem.GetTriggers(race.Start, requiredLaps))
+                DateTime[] detections = dummyTimingSystem.GetTriggers(race.Start, requiredLaps).ToArray();
+
+                foreach (DateTime detection in detections)
                 {
                     OnDetection(TimingSystemType.Dummy, 0, channel.Frequency, detection, true, 1000);
                 }

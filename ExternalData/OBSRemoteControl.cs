@@ -23,6 +23,8 @@ namespace ExternalData
 
         private WorkQueue workQueue;
 
+        public event Action<bool> Activity;
+
         public OBSRemoteControl(string host, int port, string password) 
         {
             this.host = host;
@@ -30,6 +32,8 @@ namespace ExternalData
             this.password = password;
 
             obsWebsocket = new OBSWebsocket();
+            workQueue = new WorkQueue("OBSRemoteControl");
+
             obsWebsocket.Connected += OnConnected;
             obsWebsocket.Disconnected += OnDisconnected;
         }
@@ -53,6 +57,7 @@ namespace ExternalData
 
             connecting = true;
             obsWebsocket.ConnectAsync(url, password);
+            Activity?.Invoke(true);
         }
 
         public bool WaitConnection()
@@ -85,6 +90,8 @@ namespace ExternalData
             Logger.OBS.LogCall(this);
             Connected = true;
             connecting = false;
+
+            Activity?.Invoke(true);
         }
 
         private void OnDisconnected(object sender, OBSWebsocketDotNet.Communication.ObsDisconnectionInfo e)
@@ -92,16 +99,15 @@ namespace ExternalData
             Logger.OBS.LogCall(this, e, e.DisconnectReason);
             connecting = false;
             Connected = false;
+
+            Activity?.Invoke(true);
         }
 
         private delegate IEnumerable<string> stringReturner();
 
         private void callBackIenumerable(stringReturner input, Action<string[]> callback)
         {
-            if (workQueue == null)
-            {
-                workQueue = new WorkQueue("OBSRemoteControl");
-            }
+            
 
             workQueue?.Enqueue(() =>
             {
@@ -112,10 +118,12 @@ namespace ExternalData
                     Logger.OBS.Log(this, "", strings);
 
                     callback(strings);
+                    Activity?.Invoke(true);
                 }
                 catch (Exception ex) 
                 {
                     Logger.OBS.LogException(this, ex);
+                    Activity?.Invoke(false);
                 }
             });
         }
@@ -181,43 +189,54 @@ namespace ExternalData
 
         public void SetScene(string name)
         {
-            if (!Connected || obsWebsocket == null)
+            workQueue?.Enqueue(() =>
             {
-                Connect();
-                WaitConnection();
-            }
+                if (!Connected || obsWebsocket == null)
+                {
+                    Connect();
+                    WaitConnection();
+                }
 
-            if (!Connected || obsWebsocket == null)
-            {
-                return;
-            }
+                if (!Connected || obsWebsocket == null)
+                {
+                    return;
+                }
 
 
-            try
-            {
-                obsWebsocket.SetCurrentProgramScene(name);
-            }
-            catch (Exception e)
-            {
-                Logger.OBS.LogException(this, e);
-            }
+                try
+                {
+                    obsWebsocket.SetCurrentProgramScene(name);
+                    Activity?.Invoke(true);
+                }
+                catch (Exception e)
+                {
+                    Logger.OBS.LogException(this, e);
+                    Activity?.Invoke(false);
+                }
+            });
         }
 
         public void SetSourceFilterEnabled(string source, string filter, bool enabled)
         {
-            if (!Connected || obsWebsocket == null)
+            workQueue?.Enqueue(() =>
             {
-                return;
-            }
+                if (!Connected || obsWebsocket == null)
+                {
+                    return;
+                }
 
-            try
-            {
-                obsWebsocket.SetSourceFilterEnabled(source, filter, enabled);
-            }
-            catch (Exception e)
-            {
-                Logger.OBS.LogException(this, e);
-            }
+                try
+                {
+                    obsWebsocket.SetSourceFilterEnabled(source, filter, enabled);
+                    Activity?.Invoke(true);
+                }
+                catch (Exception e)
+                {
+                    Logger.OBS.LogException(this, e);
+                    Activity?.Invoke(false);
+                }
+
+            });
         }
     }
 }
