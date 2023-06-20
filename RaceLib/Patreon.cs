@@ -15,5 +15,6 @@ namespace RaceLib
         public string Tier { get; set; }
         public bool Active { get; set; }
         public string ThumbFilename { get; set; }
+        public int Amount { get; set; }
     }
 }

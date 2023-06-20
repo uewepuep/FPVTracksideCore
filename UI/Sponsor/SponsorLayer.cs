@@ -75,25 +75,19 @@ namespace UI.Sponsor
 
             foreach (Patreon patreon in patreons)
             {
-                int weight = 1;
-                if (patreon.Tier != null)
+                if (patreon.Active && patreon.Amount > 0)
                 {
-                    if (patreon.Tier.Contains("Club"))
-                        weight = 5;
-                    if (patreon.Tier.Contains("Developer"))
-                        weight = 0;
+                    SponsorMedias.Add(new SponsorMedia()
+                    {
+                        Filename = patreon.ThumbFilename,
+                        Name = patreon.Name,
+                        Text = "The next race is brought to you by " + patreon.Name + "; supporting FPVTrackside on Patreon since " + patreon.StartDate.ToString("MMMM") + " " + patreon.StartDate.Year,
+                        DurationSeconds = 10,
+                        Weight = patreon.Amount,
+                        AdType = AdType.Patreon,
+                        Since = "Since " + patreon.StartDate.ToString("MMMM") + " " + patreon.StartDate.Year
+                    });
                 }
-
-                SponsorMedias.Add(new SponsorMedia()
-                {
-                    Filename = patreon.ThumbFilename,
-                    Name = patreon.Name,
-                    Text = "The next race is brought to you by " + patreon.Name + "; supporting FPVTrackside on Patreon since " + patreon.StartDate.ToString("MMMM") + " " + patreon.StartDate.Year,
-                    DurationSeconds = 10,
-                    Weight = weight,
-                    AdType = AdType.Patreon,
-                    Since = "Since " + patreon.StartDate.ToString("MMMM") + " " + patreon.StartDate.Year
-                });
             }
 
             //SponsorMedias.Add(new SponsorMedia()
