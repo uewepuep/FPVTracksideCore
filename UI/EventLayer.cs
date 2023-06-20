@@ -213,7 +213,7 @@ namespace UI
             ControlButtons.StartButton.OnClick += (mie) => { StartRace(); };
             ControlButtons.StopButton.OnClick += (mie) => { StopRace(); };
             ControlButtons.ClearButton.OnClick += (mie) => { Clear(); };
-            ControlButtons.NextButton.OnClick += (mie) => { NextRace(true); };
+            ControlButtons.NextButton.OnClick += NextButton_OnClick;
             ControlButtons.ResumeButton.OnClick += (mie) => { ResumeRace(); };
             ControlButtons.ResetButton.OnClick += (mie) => 
             {
@@ -326,6 +326,22 @@ namespace UI
             KeyMapper = KeyboardShortcuts.Read();
 
             ReloadOBSRemoteControl();
+        }
+
+        private void NextButton_OnClick(MouseInputEvent mie)
+        {
+            if (EventManager.RaceManager.CurrentRace == null)
+            {
+                Race lastRace = EventManager.RaceManager.LastFinishedRace();
+                if (lastRace != null) 
+                {
+                    EventManager.RaceManager.SetRace(lastRace);
+                }
+            }
+            else
+            {
+                NextRace(true);
+            }
         }
 
         public override void Dispose()

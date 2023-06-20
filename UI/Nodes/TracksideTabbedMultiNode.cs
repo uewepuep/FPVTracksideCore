@@ -276,7 +276,11 @@ namespace UI.Nodes
 
             if (eventManager.RaceManager.CurrentRace == null)
             {
-                eventManager.RaceManager.LastFinishedRace();
+                Race race = eventManager.RaceManager.LastFinishedRace();
+                if (race != null) 
+                { 
+                    eventManager.RaceManager.SetRace(race);
+                }
             }
 
             Show(sceneManagerNode);

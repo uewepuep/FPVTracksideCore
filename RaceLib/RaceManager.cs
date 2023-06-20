@@ -1041,13 +1041,14 @@ namespace RaceLib
             }
         }
 
-        public void LastFinishedRace()
+        public Race LastFinishedRace()
         {
             Race race = GetRaces(r => r.Ended).OrderByDescending(r => r.RaceOrder).FirstOrDefault();
             if (race != null)
             {
-                SetRace(race);
+                return race;
             }
+            return null;
         }
 
         public void SetTargetLaps(int laps)

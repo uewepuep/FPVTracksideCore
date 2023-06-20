@@ -161,6 +161,15 @@ namespace UI.Nodes
                               && nextRace != null 
                               && nextRace != eventManager.RaceManager.CurrentRace;
 
+            if (!NextButton.Visible)
+            {
+                // If we're mid event but have no current race.
+                if (eventManager.RaceManager.CurrentRace == null && eventManager.RaceManager.LastFinishedRace() != null)
+                {
+                    NextButton.Visible = true;
+                }
+            }
+
             RequestLayout();
         }
 
