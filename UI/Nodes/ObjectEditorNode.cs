@@ -850,7 +850,7 @@ namespace UI.Nodes
         {
             itemName.Visible = false;
             base.SetObjects(toEdit, addRemove, cancelButton);
-           
+
             container.Translate(0, triggersHeading.RelativeBounds.Bottom);
             container.AddSize(0, -triggersHeading.RelativeBounds.Bottom);
         }
@@ -919,6 +919,15 @@ namespace UI.Nodes
                 Options = options.OfType<object>().ToList();
                 base.ShowMouseMenu();
             }
+        }
+    }
+
+    public class AutoRunnerConfigEditor : ObjectEditorNode<AutoRunnerConfig>
+    {
+        public AutoRunnerConfigEditor(AutoRunnerConfig config)
+            : base(config) 
+        {
+            Scale(0.8f, 1f);
         }
     }
 }

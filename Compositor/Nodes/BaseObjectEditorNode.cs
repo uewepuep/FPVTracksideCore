@@ -901,14 +901,19 @@ namespace Composition.Nodes
 
             if (value != null)
             {
-                Value.Text = value.ToString().CamelCaseToHuman();
+                Value.Text = ValueToString(value);
             }
         }
 
         protected override void SetValue(object value)
         {
-            Value.Text = value.ToString();
+            Value.Text = ValueToString(value); 
             base.SetValue(value);
+        }
+
+        public virtual string ValueToString(object value)
+        {
+            return value.ToString();
         }
     }
 
@@ -946,13 +951,13 @@ namespace Composition.Nodes
 
             if (value != null)
             {
-                Value.Text = value.ToString();
+                Value.Text = ValueToString(value);
             }
         }
 
         protected override void SetValue(object value)
         {
-            Value.Text = value.ToString();
+            Value.Text = ValueToString(value);
             base.SetValue(value);
         }
 
@@ -960,6 +965,11 @@ namespace Composition.Nodes
         {
             Value.HasFocus = true;
             return true;
+        }
+
+        public virtual string ValueToString(object value)
+        {
+            return value.ToString();
         }
     }
 
@@ -1055,7 +1065,11 @@ namespace Composition.Nodes
         public override void UpdateFromObject()
         {
             object value = PropertyInfo.GetValue(Object, null);
+            Value.Text = ValueToString(value);
+        }
 
+        public override string ValueToString(object value)
+        {
             if (value != null)
             {
                 string text;
@@ -1072,9 +1086,10 @@ namespace Composition.Nodes
                 {
                     text = value.ToString();
                 }
-           
-                Value.Text = text;
+
+                return text;
             }
+            return "";
         }
 
         protected override void SetValue(object value)
@@ -1111,7 +1126,6 @@ namespace Composition.Nodes
             if (value != null)
             {
                 string text = value.ToString();
-
                 Value.Text = text + "%";
             }
         }
@@ -1167,25 +1181,33 @@ namespace Composition.Nodes
         {
         }
 
-        public override void UpdateFromObject()
-        {
-            TimeSpan value = (TimeSpan)PropertyInfo.GetValue(Object, null);
-
-            if (value != default(TimeSpan))
-            {
-                Value.Text = value.TotalSeconds.ToString();
-            }
-        }
-
         protected override void SetValue(object value)
         {
             string str = value.ToString();
 
+            TimeSpan timeSpan;
             double d;
             if (double.TryParse(str, out d))
             {
-                TimeSpan timeSpan = TimeSpan.FromSeconds(d);
+                timeSpan = TimeSpan.FromSeconds(d);
                 base.SetValue(timeSpan);
+            }
+            else if (TimeSpan.TryParse(str, out timeSpan))
+            {
+                base.SetValue(timeSpan);
+            }
+        }
+
+        public override string ValueToString(object obj)
+        {
+            TimeSpan value = (TimeSpan)obj;
+            if (value != default(TimeSpan))
+            {
+                return value.TotalSeconds.ToString();
+            }
+            else
+            {
+                return "";
             }
         }
     }

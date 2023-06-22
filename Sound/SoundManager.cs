@@ -110,7 +110,6 @@ namespace Sound
                 eventManager.RaceManager.OnLapDetected += (lap) => { Lap(lap); };
                 eventManager.RaceManager.OnSplitDetection += Sector;
                 eventManager.LapRecordManager.OnNewOveralBest += OnNewRecord;
-                eventManager.RaceManager.OnRaceEnd += OnRaceEnd;
                 eventManager.RaceManager.OnRaceChanged += OnRaceChanged;
                 eventManager.RaceManager.OnRaceCancelled += RaceManager_OnRaceCancelled;
             }
@@ -171,7 +170,6 @@ namespace Sound
 
                 new Sound() { Key = SoundKey.AnnounceRace, TextToSpeech = "Next up Round {round} {type} {race} {bracket}, With {pilots}", Category = Sound.SoundCategories.Announcements },
                 new Sound() { Key = SoundKey.AnnounceRaceResults, TextToSpeech = "Results of Round {round} {type} {race} {bracket}. {pilots}", Category = Sound.SoundCategories.Announcements },
-                new Sound() { Key = SoundKey.UntilNextRace, TextToSpeech = "{time} until the next race", Category = Sound.SoundCategories.Announcements },
                 new Sound() { Key = SoundKey.NameTest, TextToSpeech = "{pilot}", Category = Sound.SoundCategories.Announcements },
                 new Sound() { Key = SoundKey.HurryUp, TextToSpeech = "Hurry Up {pilot}", Category = Sound.SoundCategories.Announcements },
                 new Sound() { Key = SoundKey.PilotChannel, TextToSpeech = "{pilot} on {band}{channel}", Category = Sound.SoundCategories.Announcements },
@@ -199,6 +197,12 @@ namespace Sound
                 new Sound() { Key = SoundKey.TimingSystemDisconnected, TextToSpeech = "Timing system disconnected", Category = Sound.SoundCategories.Status },
                 new Sound() { Key = SoundKey.TimingSystemConnected, TextToSpeech = "Timing system connected", Category = Sound.SoundCategories.Status },
                 new Sound() { Key = SoundKey.TimingSystemsConnected, TextToSpeech = "{count} Timing systems connected", Category = Sound.SoundCategories.Status },
+
+                new Sound() { Key = SoundKey.NoVideoDelayingRace, TextToSpeech = "{pilot} has no video. Race start delayed by {time}.", Category = Sound.SoundCategories.Race },
+
+                new Sound() { Key = SoundKey.UntilNextRace, TextToSpeech = "{time} until the next race", Category = Sound.SoundCategories.Announcements },
+                
+
                 };
 
                 foreach (Sound defaultSound in defaultSounds)
@@ -240,48 +244,6 @@ namespace Sound
             if (race != null && eventManager.RaceManager.CanRunRace)
             {
                 AnnounceRace(race);
-            }
-        }
-
-        private void OnRaceEnd(Race race)
-        {
-            eventManager.TimedActionManager.Cancel(TimedActionManager.ActionTypes.NextRaceCallout);
-            eventManager.TimedActionManager.Enqueue(DateTime.Now.AddSeconds(5), TimedActionManager.ActionTypes.NextRaceCallout, () =>
-            {
-                Race next = eventManager.RaceManager.GetNextRace(true);
-                if (next != null)
-                {
-                    NextRaceStarts(next);
-                }
-            });
-        }
-
-        private void NextRaceStarts(Race race)
-        {
-            if (NextRaceTimer && NextRaceStartsInTimesToAnnounce.Any())
-            {
-                eventManager.TimedActionManager.Cancel(TimedActionManager.ActionTypes.NextRaceStarts);
-
-                DateTime end = DateTime.Now.AddSeconds(NextRaceStartsInTimesToAnnounce.Max());
-
-                foreach (int seconds in NextRaceStartsInTimesToAnnounce)
-                {
-                    DateTime time = end.AddSeconds(-seconds);
-                    TimeSpan timespan = TimeSpan.FromSeconds(seconds);
-                    eventManager.TimedActionManager.Enqueue(time, TimedActionManager.ActionTypes.NextRaceStarts, () =>
-                    {
-                        if (eventManager.RaceManager.CurrentRace == race || eventManager.RaceManager.GetNextRace(true) == race)
-                        {
-                            if (!eventManager.RaceManager.RaceRunning && !eventManager.RaceManager.PreRaceStartDelay)
-                            {
-                                SpeechParameters soundParameters = new SpeechParameters();
-                                soundParameters.AddTime(SpeechParameters.Types.time, timespan);
-                                PlaySound(SoundKey.UntilNextRace, soundParameters);
-                            }
-                        }
-
-                    });
-                }
             }
         }
 
@@ -468,7 +430,7 @@ namespace Sound
             PlaySound(soundKey, parameters);
         }
 
-        private SoundRequest PlaySound(SoundKey soundKey, SpeechParameters soundParameters)
+        public SoundRequest PlaySound(SoundKey soundKey, SpeechParameters soundParameters)
         {
             return PlaySound(soundKey, null, soundParameters);
         }

@@ -40,7 +40,8 @@ namespace UI.Nodes
         public event System.Action DataDeleted;
         public event System.Action BugReport;
 
-        public event System.Action OBSRemoteSettingsSaved;
+        public event System.Action OBSRemoteConfigSaved;
+        public event System.Action AutoRunnerConfigsSaved;
         public event System.Action GeneralSettingsSaved;
 
         private Event evennt;
@@ -206,6 +207,11 @@ namespace UI.Nodes
             root.AddItem("OBS Remote Control Settings", () =>
             {
                 ShowOBSRemoteControlSettings();
+            });
+
+            root.AddItem("Auto Runner Settings", () =>
+            {
+                ShowAutoRunnerSettings();
             });
 
             openWindow.AddItem("Log", () =>
@@ -451,7 +457,20 @@ namespace UI.Nodes
                 config.RemoteControlEvents = editor.Objects.ToList();
                 OBSRemoteControlManager.OBSRemoteControlConfig.Write(config);
 
-                OBSRemoteSettingsSaved?.Invoke();
+                OBSRemoteConfigSaved?.Invoke();
+            };
+
+            GetLayer<PopupLayer>().Popup(editor);
+        }
+        public void ShowAutoRunnerSettings()
+        {
+            AutoRunnerConfig config = AutoRunnerConfig.Load();
+
+            AutoRunnerConfigEditor editor = new AutoRunnerConfigEditor(config);
+            editor.OnOK += (e) =>
+            {
+                AutoRunnerConfig.Write(config);
+                AutoRunnerConfigsSaved?.Invoke();
             };
 
             GetLayer<PopupLayer>().Popup(editor);

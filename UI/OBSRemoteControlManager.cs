@@ -163,7 +163,7 @@ namespace UI
                     Trigger(Triggers.PreRaceTab);
                     break;
 
-                case SceneManagerNode.Scenes.PostRace:
+                case SceneManagerNode.Scenes.RaceResults:
                     Trigger(Triggers.PostRaceTab);
                     break;
             }

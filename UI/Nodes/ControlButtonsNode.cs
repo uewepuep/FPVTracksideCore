@@ -25,6 +25,8 @@ namespace UI.Nodes
         public IconButtonNode PilotList { get; private set; }
         public IconButtonNode SyncButton { get; private set; }
 
+        public AutoRunnerControls AutoRunnerControls { get; private set; }
+
         private EventManager eventManager;
         private TracksideTabbedMultiNode tracksideMultiNode;
         private ChannelsGridNode channelsGridNode;
@@ -33,7 +35,7 @@ namespace UI.Nodes
         public int ItemPaddingHorizontal { get; set; }
         public int ItemPaddingVertical { get; set; }
 
-        public ControlButtonsNode(EventManager eventManager, ChannelsGridNode channelsGridNode, TracksideTabbedMultiNode tracksideMultiNode)
+        public ControlButtonsNode(EventManager eventManager, ChannelsGridNode channelsGridNode, TracksideTabbedMultiNode tracksideMultiNode, AutoRunner autoRunner)
         {
             ItemHeight = 55;
             ItemPaddingHorizontal = 2;
@@ -83,6 +85,8 @@ namespace UI.Nodes
             PilotList = new IconButtonNode(@"img\pilotlist.png", "Pilots", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
             AddChild(PilotList);
 
+            AutoRunnerControls = new AutoRunnerControls(autoRunner);
+            AddChild(AutoRunnerControls);
 
             foreach (IconButtonNode ibm in Children.OfType<IconButtonNode>())
             {
@@ -187,10 +191,21 @@ namespace UI.Nodes
                     continue;
 
                 n.RelativeBounds = new RectangleF(0, 0, 1, 1);
-                n.Layout(new Rectangle(left,
-                        prevTop - (ItemPaddingVertical + ItemHeight),
-                        width,
-                        ItemHeight));
+
+                int height = ItemHeight;
+
+                if (n == AutoRunnerControls)
+                {
+                    height = (int)(1.5 * ItemHeight);
+                }
+
+                Rectangle newBounds = new Rectangle(left, 
+                                                    prevTop - (ItemPaddingVertical + height),
+                                                    width,
+                                                    height);
+
+                n.Layout(newBounds);
+
                 prevTop = n.Bounds.Y;
             }
         }

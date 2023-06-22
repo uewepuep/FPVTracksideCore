@@ -37,7 +37,7 @@ namespace UI.Nodes
             Clear,
             PreRace,
             Race,
-            PostRace,
+            RaceResults,
 
             EventStatus,
             Commentators,
@@ -56,7 +56,9 @@ namespace UI.Nodes
         public TimeSpan SetupAnimationTime { get { return TimeSpan.FromSeconds(0.2f); } }
         public TimeSpan MidRaceAnimationTime { get { return TimeSpan.FromSeconds(GeneralSettings.Instance.ReOrderAnimationSeconds); } }
 
-        public SceneManagerNode(EventManager eventManager, VideoManager videoManager, ChannelsGridNode channelsGridNode, TopBarNode topBarNode)
+        private AutoRunnerTimerNode autoRunnerTimerNode;
+
+        public SceneManagerNode(EventManager eventManager, VideoManager videoManager, ChannelsGridNode channelsGridNode, TopBarNode topBarNode, AutoRunner autoRunner)
         {
             AfterRaceStart = TimeSpan.FromSeconds(2);
 
@@ -107,6 +109,13 @@ namespace UI.Nodes
             eventManager.OnPilotRefresh += EventManager_OnPilotRefresh;
 
             SetScene(Scenes.Clear);
+
+            autoRunner.SetSceneManager(this);
+
+            autoRunnerTimerNode = new AutoRunnerTimerNode(autoRunner);
+            autoRunnerTimerNode.RelativeBounds = new RectangleF(0, 0.95f, 0.97f, 0.04f);
+            autoRunnerTimerNode.Alignment = RectangleAlignment.TopRight;
+            AddChild(autoRunnerTimerNode);
         }
 
         private void EventManager_OnPilotRefresh()
@@ -185,12 +194,12 @@ namespace UI.Nodes
 
         private void RaceManager_OnRaceEnd(Race race)
         {
-            SetScene(Scenes.PostRace);
+            SetScene(Scenes.RaceResults);
         }
 
         private void OnLapsRecalculated(Race race)
         {
-            if (Scene == Scenes.PostRace && resultsRaceNode.Race == race)
+            if (Scene == Scenes.RaceResults && resultsRaceNode.Race == race)
             {
                 // Update the results.
                 resultsRaceNode.SetRace(race);
@@ -207,7 +216,7 @@ namespace UI.Nodes
 
             if (race.Ended)
             {
-                SetScene(Scenes.PostRace);
+                SetScene(Scenes.RaceResults);
             }
             else if (race.Running)
             {
@@ -229,7 +238,7 @@ namespace UI.Nodes
             SetChannelGridReordering(s);
 
             // If those scenes are disabled, ignore that scene and do race.
-            if (s == Scenes.PreRace && !PreRaceScene || s == Scenes.PostRace && !PostRaceScene)
+            if (s == Scenes.PreRace && !PreRaceScene || s == Scenes.RaceResults && !PostRaceScene)
             {
                 SceneLayout(Scenes.Race);
             }
@@ -281,7 +290,7 @@ namespace UI.Nodes
                         channelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.ChannelOrder);
                     }
                     break;
-                case Scenes.PostRace:
+                case Scenes.RaceResults:
                     if (GeneralSettings.Instance.PilotOrderPostRace == GeneralSettings.OrderTypes.PositionAndPB)
                     {
                         channelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.PositionOrder);
@@ -392,7 +401,7 @@ namespace UI.Nodes
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
                     break;
 
-                case Scenes.PostRace:
+                case Scenes.RaceResults:
                     SetAnimationTime(SetupAnimationTime);
 
                     channelsGridNode.SetProfileVisible(false, true);

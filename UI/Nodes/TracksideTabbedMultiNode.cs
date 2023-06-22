@@ -267,7 +267,7 @@ namespace UI.Nodes
             }
             else if (eventManager.RaceManager.RaceFinished)
             {
-                sceneManagerNode.SetScene(SceneManagerNode.Scenes.PostRace, true);
+                sceneManagerNode.SetScene(SceneManagerNode.Scenes.RaceResults, true);
             }
             else
             {

@@ -54,7 +54,9 @@ namespace Sound
         StaggeredStart,
         StaggeredPilot,
 
-        Detection
+        Detection,
+
+        NoVideoDelayingRace,
     }
 
 

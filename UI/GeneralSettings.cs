@@ -99,19 +99,18 @@ namespace UI
         [Category("Dynamic pilot ordering")]
         public bool ReOrderAtHoleshot { get; set; }
 
-        [Category("StaticDetector")]
+        [Category("Static Detector")]
         [NeedsRestart]
         public bool VideoStaticDetector { get; set; }
-        [Category("StaticDetector")]
+        [Category("Static Detector")]
         public float CrashThreshold { get; set; }
-        [Category("StaticDetector")]
+        [Category("Static Detector")]
         public float ReactivateThreshold { get; set; }
-        [Category("StaticDetector")]
+        [Category("Static Detector")]
         public float StartDelaySeconds { get; set; }
 
         [Category("Sound")]
         [Browsable(false)]
-
         public bool TextToSpeech { get { return TextToSpeechVolume > 0; } }
 
         [Category("Sound")]
@@ -126,14 +125,6 @@ namespace UI
         [Category("Sound")]
         [NeedsRestart]
         public int[] RemainingSecondsToAnnounce { get; set; }
-
-        [Category("Sound")]
-        [NeedsRestart]
-        public bool NextRaceTimer { get; set; }
-
-        [Category("Sound")]
-        [NeedsRestart]
-        public int[] NextRaceTimesToAnnounce { get; set; }
 
         [Category("Web")]
         [DisplayName("Auto Sync race results")]
@@ -281,12 +272,10 @@ namespace UI
             TopBlank = false;
 
             RemainingSecondsToAnnounce = new int[] { 0, 10, 30, 60 };
-            NextRaceTimesToAnnounce = new int[] { 10, 30, 60, 120 };
 
             PreRaceScene = true;
             PostRaceScene = true;
 
-            NextRaceTimer = false;
 
             Voice = "Microsoft Zira Desktop";
 

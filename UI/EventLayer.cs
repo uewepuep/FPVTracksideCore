@@ -63,6 +63,8 @@ namespace UI
 
         public OBSRemoteControlManager OBSRemoteControlManager { get; private set; }
 
+        public AutoRunner AutoRunner { get; private set; }
+
         private GeneralSettings gs { get { return GeneralSettings.Instance; } }
 
         public EventLayer(BaseGame game, GraphicsDevice graphicsDevice, EventManager eventManager)
@@ -89,8 +91,6 @@ namespace UI
 
             SoundManager = new SoundManager(EventManager);
             SoundManager.MuteTTS = !gs.TextToSpeech;
-            SoundManager.NextRaceStartsInTimesToAnnounce = gs.NextRaceTimesToAnnounce;
-            SoundManager.NextRaceTimer = gs.NextRaceTimer;
 
             EventManager.RaceManager.TimingSystemManager.OnConnected += (int count) =>
             {
@@ -116,6 +116,7 @@ namespace UI
 
                 ShowPilotList(r == null || r.PilotCount == 0);
             };
+
 
             topBar = new TopBarNode(EventManager);
             topBar.RelativeBounds = new RectangleF(0, 0, 1, 0.1f); 
@@ -174,6 +175,7 @@ namespace UI
                 RequestLayout();
             };
 
+
             centreContainer = new AnimatedRelativeNode();
             mainContainer.AddChild(centreContainer);
             mainContainer.AddChild(leftContainer);
@@ -194,8 +196,10 @@ namespace UI
             };
             hideLeftNode.AddChild(hideButton);
 
+            AutoRunner = new AutoRunner(this);
+
             channelsGridNode = new ChannelsGridNode(EventManager, videoManager);
-            sceneManagerNode = new SceneManagerNode(EventManager, videoManager, channelsGridNode, topBar);
+            sceneManagerNode = new SceneManagerNode(EventManager, videoManager, channelsGridNode, topBar, AutoRunner);
             sceneManagerNode.OnSceneChange += SceneManagerNode_OnSceneChange;
             sceneManagerNode.OnVideoSettingsChange += LoadVideo;
 
@@ -206,7 +210,7 @@ namespace UI
             TabbedMultiNode.OnTabChange += OnTabChange;
             centreContainer.AddChild(TabbedMultiNode);
 
-            ControlButtons = new ControlButtonsNode(EventManager, channelsGridNode, TabbedMultiNode);
+            ControlButtons = new ControlButtonsNode(EventManager, channelsGridNode, TabbedMultiNode, AutoRunner);
             ControlButtons.RelativeBounds = new RectangleF(0, 0.0f, 1, 1);
             rightBar.AddChild(ControlButtons);
 
@@ -293,7 +297,8 @@ namespace UI
                 }
             };
 
-            MenuButton.OBSRemoteSettingsSaved += ReloadOBSRemoteControl;
+            MenuButton.OBSRemoteConfigSaved += ReloadOBSRemoteControl;
+            MenuButton.AutoRunnerConfigsSaved += ReloadAutoRunnerConfig;
 
             float width = 0.9f;
 
@@ -326,6 +331,11 @@ namespace UI
             KeyMapper = KeyboardShortcuts.Read();
 
             ReloadOBSRemoteControl();
+        }
+
+        private void ReloadAutoRunnerConfig()
+        {
+            AutoRunner.LoadConfig();
         }
 
         private void NextButton_OnClick(MouseInputEvent mie)
@@ -557,11 +567,8 @@ namespace UI
         protected override void OnUpdate(GameTime gameTime)
         {
             base.OnUpdate(gameTime);
-
-            if (EventManager != null)
-            {
-                EventManager.Update(gameTime);
-            }
+            EventManager?.Update(gameTime);
+            AutoRunner?.Update();
         }
 
         protected override void OnDraw()
@@ -813,7 +820,7 @@ namespace UI
                         {
                             StartRace();
                         }
-                        else if (sceneManagerNode.Scene == SceneManagerNode.Scenes.PostRace)
+                        else if (sceneManagerNode.Scene == SceneManagerNode.Scenes.RaceResults)
                         {
                             NextRace(false);
                         }
@@ -861,7 +868,7 @@ namespace UI
 
                 if (KeyMapper.ScenePostRace.Match(inputEvent))
                 {
-                    TabbedMultiNode.ShowLive(SceneManagerNode.Scenes.PostRace);
+                    TabbedMultiNode.ShowLive(SceneManagerNode.Scenes.RaceResults);
                     return true;
                 }
 
