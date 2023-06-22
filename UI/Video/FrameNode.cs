@@ -104,7 +104,7 @@ namespace UI.Video
             return src;
         }
 
-        public void PreProcess(Drawer id)
+        public virtual void PreProcess(Drawer id)
         {
             Texture2D tryTexture = texture;
             if (Source.UpdateTexture(id.GraphicsDevice, id.FrameCount, ref tryTexture))

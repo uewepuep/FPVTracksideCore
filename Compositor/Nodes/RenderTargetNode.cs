@@ -11,7 +11,7 @@ using Tools;
 
 namespace Composition.Nodes
 {
-    public class RenderTargetNode : ImageNode, IPreProcessable, IUpdateableNode
+    public class RenderTargetNode : ImageNode, IUpdateableNode
     {
         private RenderTarget2D renderTarget
         {
@@ -234,6 +234,8 @@ namespace Composition.Nodes
 
             Scroller.Draw(id, parentAlpha);
             DebugTimer.DebugEndTime(this);
+
+            
         }
 
         public void Update(GameTime gameTime)
@@ -270,24 +272,15 @@ namespace Composition.Nodes
                             renderTarget = new RenderTarget2D(drawer.GraphicsDevice, Math.Min(4096, Size.Width), Math.Min(4096, Size.Height));
                             NeedsDraw = true;
                         }
-
-                        if (renderTarget != null)
-                        {
-                            drawer?.PreProcess(this);
-                            NeedsDraw = false;
-                        }
                     }
                 }
             }
-            DebugTimer.DebugEndTime(this);
-        }
 
-        public void PreProcess(Drawer id)
-        {
-            DebugTimer.DebugStartTime(this);
-
-            DrawToTexture(id);
-            NeedsDraw = false;
+            if (renderTarget != null)
+            {
+                DrawToTexture(drawer);
+                NeedsDraw = false;
+            }
 
             DebugTimer.DebugEndTime(this);
         }

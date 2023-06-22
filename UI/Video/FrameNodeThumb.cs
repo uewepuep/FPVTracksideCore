@@ -14,11 +14,10 @@ namespace UI.Video
 {
     public class FrameNodeThumb : FrameNode, IUpdateableNode
     {
-        public Texture2D Thumbnail { get { return renderTarget; } }
-
         private RenderTarget2D renderTarget;
-        private object renderTargetLock;
+        private Color[] colorData;
         private Drawer drawer;
+        private object renderTargetLock;
 
         public Size Size { get; set; }
 
@@ -31,10 +30,11 @@ namespace UI.Video
         public FrameNodeThumb(FrameSource s)
             : base(s)
         {
+            renderTargetLock = new object();
+
             DrawThumbnail = false;
 
             Size = new Size(8, 8);
-            renderTargetLock = new object();
             ThumbnailEnabled = false;
 
             Info = new TextNode("", Color.White);
@@ -52,58 +52,63 @@ namespace UI.Video
         {
             lock (renderTargetLock)
             {
-                if (renderTarget != null)
-                {
-                    renderTarget.Dispose();
-                    renderTarget = null;
-                }
+                renderTarget?.Dispose();
+                renderTarget = null;
+
+                drawer?.Dispose();
+                drawer = null;
+
+                colorData = null;
             }
 
-            drawer?.Dispose();
-            drawer = null;
             base.Dispose();
-        }
-
-        public void Update(GameTime gameTime)
-        {
-            if (ThumbnailEnabled)
-            {
-                lock (renderTargetLock)
-                {
-                    if (renderTarget == null)
-                    {
-                        renderTarget = new RenderTarget2D(CompositorLayer.GraphicsDevice, Size.Width, Size.Height);
-                    }
-
-                    if (drawer == null)
-                    {
-                        drawer = new Drawer(CompositorLayer.GraphicsDevice, true);
-                    }
-
-                    if (renderTarget != null && drawer != null && texture != null)
-                    {
-                        DrawToTexture();
-                    }
-                }
-            }
         }
 
         public override void Draw(Drawer id, float parentAlpha)
         {
             base.Draw(id, parentAlpha);
 
-            if (renderTarget != null && DrawThumbnail)
+            lock (renderTargetLock)
             {
-                DebugTimer.DebugStartTime(this);
+                if (renderTarget != null && DrawThumbnail)
+                {
+                    DebugTimer.DebugStartTime(this);
 
-                Rectangle sourceBounds = new Rectangle(0, 0, Size.Width, Size.Height);
+                    Rectangle sourceBounds = new Rectangle(0, 0, Size.Width, Size.Height);
 
-                Rectangle rectangle = Bounds;
-                rectangle.Width = 48;
-                rectangle.Height = 48;
+                    Rectangle rectangle = Bounds;
+                    rectangle.Width = 48;
+                    rectangle.Height = 48;
 
-                id.Draw(renderTarget, sourceBounds, rectangle, Tint, 1);
-                DebugTimer.DebugEndTime(this);
+                    id.Draw(renderTarget, sourceBounds, rectangle, Tint, 1);
+                    DebugTimer.DebugEndTime(this);
+                }
+            }
+        }
+
+        public void Update(GameTime gameTime)
+        {
+            lock (renderTargetLock)
+            {
+                if (renderTarget == null)
+                {
+                    renderTarget = new RenderTarget2D(CompositorLayer.GraphicsDevice, Size.Width, Size.Height);
+                    colorData = new Color[renderTarget.Width * renderTarget.Height];
+                }
+
+                if (drawer == null)
+                {
+                    drawer = new Drawer(CompositorLayer.GraphicsDevice, true);
+                    drawer.CanPreProcess = false;
+                }
+
+                if (renderTarget != null && drawer != null && texture != null)
+                {
+                    DrawToTexture();
+
+                    if (colorData != null)
+                        renderTarget.GetData(colorData);
+                }
             }
         }
 
@@ -117,38 +122,26 @@ namespace UI.Video
 
             sourceBounds = Flip(sourceBounds);
 
-            lock (renderTargetLock)
+            try
             {
-                try
-                {
-                    // Set the render target
-                    CompositorLayer.GraphicsDevice.SetRenderTarget(renderTarget);
-                    CompositorLayer.GraphicsDevice.Clear(Color.Transparent);
+                // Set the render target
+                CompositorLayer.GraphicsDevice.SetRenderTarget(renderTarget);
+                CompositorLayer.GraphicsDevice.Clear(Color.Transparent);
 
-                    drawer.Begin();
-                    drawer.Draw(texture, sourceBounds, new Rectangle(0, 0, Size.Width, Size.Height), Color.White, 1);
-                    drawer.End();
-                }
-                finally
-                {
-                    // Drop the render target
-                    CompositorLayer.GraphicsDevice.SetRenderTarget(null);
-                }
+                drawer.Begin();
+                drawer.Draw(texture, sourceBounds, new Rectangle(0, 0, Size.Width, Size.Height), Color.White, 1);
+                drawer.End();
+            }
+            finally
+            {
+                // Drop the render target
+                CompositorLayer.GraphicsDevice.SetRenderTarget(null);
             }
         }
 
         public Color[] GetColorData()
         {
-            lock (renderTargetLock)
-            {
-                if (renderTarget != null && !renderTarget.IsDisposed)
-                {
-                    Color[] color = new Color[renderTarget.Width * renderTarget.Height];
-                    renderTarget.GetData(color);
-                    return color;
-                }
-            }
-            return new Color[0];
+            return colorData;
         }
     }
 }

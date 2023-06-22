@@ -149,6 +149,9 @@ namespace UI
                         MotionDetector motionDetector = kvp.Value;
 
                         Color[] colors = channelNode.FrameNode.GetColorData();
+                        if (colors == null)
+                            continue;
+
                         motionDetector.AddFrame(colors);
 
                         float motionValue;

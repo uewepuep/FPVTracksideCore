@@ -31,10 +31,10 @@ namespace Composition
         public bool CanPreProcess { get; set; }
 
         private WorkQueue background;
+        private AutoResetEvent autoresetevent;
 
         public TextureCache TextureCache { get; private set; }
 
-        private AutoResetEvent autoresetevent; 
 
         public BitmapFont BitmapFonts { get; private set; }
 

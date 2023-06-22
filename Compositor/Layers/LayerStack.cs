@@ -237,5 +237,13 @@ namespace Composition.Layers
         {
             OnRequestRedraw?.Invoke();
         }
+
+        public void DoBackground()
+        {
+            foreach (Layer l in layerStack)
+            {
+                l.DoBackground();
+            }
+        }
     }
 }

@@ -76,5 +76,7 @@ namespace Composition.Layers
         public virtual bool OnKeyboardInput(KeyboardInputEvent inputEvent) { return false; }
 
         public virtual bool OnTextInput(TextInputEventArgs text) { return false; }
+
+        public virtual void DoBackground() { }
     }
 }

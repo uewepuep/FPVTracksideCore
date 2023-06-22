@@ -1,11 +1,13 @@
 ﻿using Composition.Layers;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Tools;
 
 namespace Composition
 {
@@ -111,6 +113,84 @@ namespace Composition
             {
                 Tools.Logger.UI.LogException(this, e);
             }
+
+            DoBackground();
+        }
+
+        protected virtual void DoBackground()
+        {
+            LayerStack.DoBackground();
+        }
+    }
+
+    public class LayerStackGameBackgroundThread : LayerStackGame
+    {
+
+        private Thread background;
+        private bool runBackground;
+
+        private AutoResetEvent backgroundSet;
+        private AutoResetEvent drawSet;
+
+        public LayerStackGameBackgroundThread(PlatformTools platformTools)
+            :base(platformTools) 
+        {
+            backgroundSet = new AutoResetEvent(true);
+            drawSet = new AutoResetEvent(false);
+
+            background = new Thread(Background);
+            background.Name = "LayerStackGame Background Draw";
+            background.Start();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+
+            if (background != null)
+            {
+                runBackground = false;
+                drawSet.Set();
+                background.Join();
+            }
+        }
+
+        private void Background()
+        {
+            while (runBackground)
+            {
+                drawSet.WaitOne();
+
+                if (!runBackground)
+                    break;
+
+                base.DoBackground();
+
+                backgroundSet.Set();
+            }
+        }
+
+        protected override bool BeginDraw()
+        {
+            backgroundSet.WaitOne();
+
+            GraphicsDeviceManager.PreferredBackBufferHeight = 1000;
+            GraphicsDeviceManager.PreferredBackBufferWidth = 1900;
+            GraphicsDeviceManager.ApplyChanges();
+
+            return base.BeginDraw();
+        }
+
+        protected override void EndDraw()
+        {
+            base.EndDraw();
+
+            drawSet.Set();
+        }
+
+        protected override void DoBackground()
+        {
+
         }
     }
 }
