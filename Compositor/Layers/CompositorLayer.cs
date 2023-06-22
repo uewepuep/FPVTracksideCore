@@ -244,7 +244,16 @@ namespace Composition.Layers
         public override void DoBackground()
         {
             base.DoBackground();
-            drawer.PreProcess();
+            drawer.DoPreProcess();
+        }
+
+        public bool InView(Rectangle rectangle)
+        {
+            Rectangle zeroedView = Bounds;
+            zeroedView.X = 0;
+            zeroedView.Y = 0;
+
+            return zeroedView.Intersects(rectangle);
         }
 
     }

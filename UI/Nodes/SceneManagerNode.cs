@@ -53,7 +53,7 @@ namespace UI.Nodes
         public bool PreRaceScene { get { return GeneralSettings.Instance.PreRaceScene; } }
         public bool PostRaceScene { get { return GeneralSettings.Instance.PostRaceScene; } }
 
-        public TimeSpan SetupAnimationTime { get { return TimeSpan.FromSeconds(0.2f); } }
+        public TimeSpan SetupAnimationTime { get { return TimeSpan.FromSeconds(0.5f); } }
         public TimeSpan MidRaceAnimationTime { get { return TimeSpan.FromSeconds(GeneralSettings.Instance.ReOrderAnimationSeconds); } }
 
         private AutoRunnerTimerNode autoRunnerTimerNode;
@@ -81,22 +81,24 @@ namespace UI.Nodes
             commentatorsAndSummary = new AnimatedRelativeNode();
             commentatorsAndSummary.SetAnimatedVisibility(false);
 
-            AddChild(launchCamsNode);
-            AddChild(commentatorsAndSummary);
-            AddChild(channelsGridNode);
-
             resultsRaceNode = new NamedRaceNode("Results", eventManager);
-            AddChild(resultsRaceNode);
 
             nextRaceNode = new NamedRaceNode("Next Race", eventManager);
-            AddChild(nextRaceNode);
 
             resultsRaceNode.RelativeBounds = new RectangleF(0, 0, 0.01f, 0.01f);
             nextRaceNode.RelativeBounds = new RectangleF(0, 0, 0.01f, 0.01f);
 
             wormNode = new WormNode(eventManager);
             wormNode.RelativeBounds = new RectangleF(0.0f, 1f, 1, 0.0f);
+
+
+            AddChild(resultsRaceNode);
+            AddChild(nextRaceNode);
             AddChild(wormNode);
+
+            AddChild(launchCamsNode);
+            AddChild(commentatorsAndSummary);
+            AddChild(channelsGridNode);
 
             eventManager.RaceManager.OnRaceStart += RaceManager_OnRaceStart;
             eventManager.RaceManager.OnRaceEnd += RaceManager_OnRaceEnd;

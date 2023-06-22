@@ -34,11 +34,14 @@ namespace UI.Nodes
                 switch (autoRunner.State)
                 {
                     case AutoRunner.States.WaitingRaceStart:
-                        Text = "Next Race Start in " + time.TotalSeconds.ToString("0") + "s";
+                        Text = "Race Start in " + time.TotalSeconds.ToString("0") + "s";
                         break;
 
                     case AutoRunner.States.WaitingResults:
-                        Text = "Showing Results for " + time.TotalSeconds.ToString("0") + "s";
+
+                        TimeSpan nextRace = time + TimeSpan.FromSeconds(autoRunner.Config.SecondsToNextRace);
+
+                        Text = "Showing Results for " + time.TotalSeconds.ToString("0") + "s. Next Race in " + nextRace.TotalSeconds.ToString("0") + "s.";
                         break;
 
                     case AutoRunner.States.WaitingRaceFinalLap:

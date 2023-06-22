@@ -35,7 +35,6 @@ namespace Composition
 
         public TextureCache TextureCache { get; private set; }
 
-
         public BitmapFont BitmapFonts { get; private set; }
 
         public Point Offset { get; set; }
@@ -139,7 +138,7 @@ namespace Composition
             }
         }
 
-        public void PreProcess()
+        public void DoPreProcess()
         {
             DebugTimer.DebugStartTime("PreProcess " + Thread.CurrentThread.Name);
 
@@ -260,15 +259,6 @@ namespace Composition
                     }
                 }
             }
-        }
-
-        public bool InView(Rectangle rectangle)
-        {
-            Rectangle zeroedView = GraphicsDevice.Viewport.Bounds;
-            zeroedView.X = 0;
-            zeroedView.Y = 0;
-
-            return zeroedView.Intersects(rectangle);
         }
     }
 

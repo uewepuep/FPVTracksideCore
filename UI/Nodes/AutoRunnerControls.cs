@@ -36,6 +36,7 @@ namespace UI.Nodes
 
             pauseNode = new ImageNode(@"img\pause.png");
             pauseNode.Visible = false;
+            pauseNode.Scale(0.8f);
             controlButton.AddChild(pauseNode);
 
             bottomButtonsContainer = new Node();

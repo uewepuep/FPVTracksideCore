@@ -24,7 +24,7 @@ using Webb;
 
 namespace UI
 {
-    public class BaseGame : LayerStackGame
+    public class BaseGame : LayerStackGameBackgroundThread
     {
         protected EventLayer eventLayer;
 

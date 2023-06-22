@@ -132,6 +132,8 @@ namespace Composition
         private AutoResetEvent backgroundSet;
         private AutoResetEvent drawSet;
 
+        public Viewport ViewPort { get; private set; }
+
         public LayerStackGameBackgroundThread(PlatformTools platformTools)
             :base(platformTools) 
         {
@@ -141,6 +143,8 @@ namespace Composition
             background = new Thread(Background);
             background.Name = "LayerStackGame Background Draw";
             background.Start();
+
+            runBackground = true;
         }
 
         protected override void Dispose(bool disposing)
@@ -162,35 +166,33 @@ namespace Composition
                 drawSet.WaitOne();
 
                 if (!runBackground)
+                {
                     break;
+                }
 
                 base.DoBackground();
 
                 backgroundSet.Set();
             }
+
+            backgroundSet.Set();
         }
 
         protected override bool BeginDraw()
         {
             backgroundSet.WaitOne();
-
-            GraphicsDeviceManager.PreferredBackBufferHeight = 1000;
-            GraphicsDeviceManager.PreferredBackBufferWidth = 1900;
-            GraphicsDeviceManager.ApplyChanges();
-
             return base.BeginDraw();
         }
 
         protected override void EndDraw()
         {
             base.EndDraw();
-
             drawSet.Set();
         }
 
         protected override void DoBackground()
         {
-
+            // done on the thread so this do nothing.
         }
     }
 }

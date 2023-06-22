@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using RaceLib;
+using RaceLib.Format;
 using Sound;
 using Sound.AutoCommentator;
 using System;
@@ -87,6 +88,8 @@ namespace UI
             RaceManager.OnRaceEnd += OnRaceEnd;
 
             lastUpdate = DateTime.Now;
+
+            TogglePause();
         }
 
         public void Dispose()
@@ -176,8 +179,15 @@ namespace UI
                     // No next race..
                     if (!hasNextRace)
                     {
-                        State = States.None;
-                        return;
+                        if (Config.AutoCreateRounds)
+                        {
+                            GenerateRound();
+                        }
+                        else
+                        {
+                            SetState(States.None);
+                            return;
+                        }
                     }
 
                     Timer = TimeSpan.FromSeconds(Config.SecondsToShowResults);
@@ -185,6 +195,45 @@ namespace UI
 
                 case States.WaitVideo:
                     Timer = TimeSpan.FromSeconds(Config.SecondsDelayIfStatic);
+                    break;
+            }
+        }
+
+        private void GenerateRound()
+        {
+            Race current = RaceManager.CurrentRace;
+
+            if (current == null)
+            {
+                SetState(States.None);
+                return;
+            }
+
+            Round round = current.Round;
+            if (round == null)
+            {
+                SetState(States.None);
+                return;
+            }
+
+            RoundPlan roundPlan;
+
+            switch (Config.AutoCreateRoundsType)
+            {
+                case AutoRunnerConfig.AutoCreateRoundsTypes.KeepChannels:
+                    roundPlan = new RoundPlan(EventManager, round);
+                    roundPlan.ChannelChange = RoundPlan.ChannelChangeEnum.KeepFromPreviousRound;
+                    EventManager.RoundManager.GenerateRound(roundPlan);
+                    break;
+
+                case AutoRunnerConfig.AutoCreateRoundsTypes.RandomChannels:
+                    roundPlan = new RoundPlan(EventManager, round);
+                    roundPlan.ChannelChange = RoundPlan.ChannelChangeEnum.Change;
+                    EventManager.RoundManager.GenerateRound(roundPlan);
+                    break;
+
+                case AutoRunnerConfig.AutoCreateRoundsTypes.CloneLast:
+                    EventManager.RoundManager.CloneRound(round);
                     break;
             }
         }
@@ -234,6 +283,13 @@ namespace UI
 
                         case States.WaitingResults:
                             RaceManager.NextRace(true);
+                            break;
+
+                        case States.WaitingRaceFinalLap:
+                            if (RaceManager.RaceFinished)
+                            {
+                                SetState(States.WaitingResults);
+                            }
                             break;
                     }
                 }
@@ -398,6 +454,19 @@ namespace UI
         [Category("Sound")]
         public int[] NextRaceInAnnounceSeconds { get; set; }
 
+        [Category("Rounds")]
+        public bool AutoCreateRounds { get; set; }
+
+        public enum AutoCreateRoundsTypes
+        {
+            KeepChannels,
+            RandomChannels,
+            CloneLast
+        }
+        [Category("Rounds")]
+        public AutoCreateRoundsTypes AutoCreateRoundsType { get; set; }
+
+
         public AutoRunnerConfig()
         {
             CheckPilotsVideo = true;
@@ -409,6 +478,8 @@ namespace UI
 
             NextRaceInAnnounceSeconds = new int[] { 10, 20, 30, 45, 60, 90, 120, 180, 240, 300 };
             AnnounceNextRaceIn = false;
+            AutoCreateRounds = false;
+            AutoCreateRoundsType = AutoCreateRoundsTypes.KeepChannels;
         }
 
         protected const string filename = @"data/AutoRunnerConfig.xml";

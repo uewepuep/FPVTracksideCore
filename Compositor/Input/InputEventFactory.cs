@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Composition.Layers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -46,8 +47,6 @@ namespace Composition.Input
 
         public DateTime LastKeyboardUpdateTime { get; private set; }
 
-        private GraphicsDevice graphicsDevice;
-
         public GameWindow Window { get; private set; }
 
         private List<KeyboardInputEvent> keyboardInputs;
@@ -66,8 +65,12 @@ namespace Composition.Input
 
         public PlatformTools PlatformTools { get; private set; }
 
-        public InputEventFactory(GraphicsDevice graphicsDevice, GameWindow window, PlatformTools platformTools)
+        private LayerStack layerStack;
+
+        public InputEventFactory(LayerStack layerStack, GameWindow window, PlatformTools platformTools)
         {
+            this.layerStack = layerStack;
+
             PlatformTools = platformTools;
             ResolutionScale = 1;
 
@@ -81,7 +84,6 @@ namespace Composition.Input
             InitialRepeatDelay = TimeSpan.FromSeconds(1 / 3.0);
 
             Window = window;
-            this.graphicsDevice = graphicsDevice;
 
             OldKeyboardState = new KeyboardState();
             OldMouseState = new MouseState();
@@ -320,7 +322,7 @@ namespace Composition.Input
                     Point cursorPosition = new Point((int)(newState.X * ResolutionScale), (int)(newState.Y * ResolutionScale));
 
                     // check we're in the window.
-                    if (!graphicsDevice.Viewport.Bounds.Contains(cursorPosition))
+                    if (!layerStack.Bounds.Contains(cursorPosition))
                     {
                         return;
                     }

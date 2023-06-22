@@ -761,9 +761,13 @@ namespace Sound
 
         public void PlayVideoIssuesDelayRace(TimeSpan time, Pilot pilot)
         {
+            StopSound();
+
             SpeechParameters soundParameters = new SpeechParameters();
             soundParameters.AddTime(SpeechParameters.Types.time, time);
             soundParameters.Add(SpeechParameters.Types.pilot, pilot.Phonetic);
+            soundParameters.Priority = 1111;
+            soundParameters.SecondsExpiry = 10;
             PlaySound(SoundKey.NoVideoDelayingRace, soundParameters);
         }
     }

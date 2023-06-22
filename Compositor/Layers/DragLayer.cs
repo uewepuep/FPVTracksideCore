@@ -45,15 +45,13 @@ namespace Composition.Layers
         {
             base.OnUpdate(gameTime);
 
-            Rectangle bounds = new Rectangle(device.Viewport.X,
-                                            device.Viewport.Y,
-                                            device.Viewport.Width,
-                                            device.Viewport.Height);
-            if (renderTarget == null || bounds != renderTarget.Bounds && bounds.Width > 0 && bounds.Height > 0)
+            Rectangle bounds = LayerStack.Bounds;
+            if ((renderTarget == null || bounds != renderTarget.Bounds) && bounds.Width > 0 && bounds.Height > 0)
             {
                 lock (renderTargetLock)
                 {
-                    renderTarget = new RenderTarget2D(device, device.Viewport.Width, device.Viewport.Height);
+                    renderTarget?.Dispose();
+                    renderTarget = new RenderTarget2D(device, bounds.Width, bounds.Height);
                 }
             }
 

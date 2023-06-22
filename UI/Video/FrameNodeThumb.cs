@@ -12,7 +12,7 @@ using Tools;
 
 namespace UI.Video
 {
-    public class FrameNodeThumb : FrameNode, IUpdateableNode
+    public class FrameNodeThumb : FrameNode
     {
         private RenderTarget2D renderTarget;
         private Color[] colorData;
@@ -86,8 +86,10 @@ namespace UI.Video
             }
         }
 
-        public void Update(GameTime gameTime)
+        public override void PreProcess(Drawer id)
         {
+            base.PreProcess(id);
+
             lock (renderTargetLock)
             {
                 if (renderTarget == null)
@@ -125,8 +127,8 @@ namespace UI.Video
             try
             {
                 // Set the render target
-                CompositorLayer.GraphicsDevice.SetRenderTarget(renderTarget);
-                CompositorLayer.GraphicsDevice.Clear(Color.Transparent);
+                drawer.GraphicsDevice.SetRenderTarget(renderTarget);
+                drawer.GraphicsDevice.Clear(Color.Transparent);
 
                 drawer.Begin();
                 drawer.Draw(texture, sourceBounds, new Rectangle(0, 0, Size.Width, Size.Height), Color.White, 1);
@@ -135,7 +137,7 @@ namespace UI.Video
             finally
             {
                 // Drop the render target
-                CompositorLayer.GraphicsDevice.SetRenderTarget(null);
+                drawer.GraphicsDevice.SetRenderTarget(null);
             }
         }
 

@@ -23,6 +23,8 @@ namespace Composition.Layers
 
         public PlatformTools PlatformTools { get; private set; }
 
+        public Rectangle Bounds { get; private set; }
+
         public LayerStack(GraphicsDevice graphicsDevice, LayerStackGame game, PlatformTools platformTools)
             :this(graphicsDevice, game.Window, platformTools)
         {
@@ -38,7 +40,7 @@ namespace Composition.Layers
             Window = gameWindow;
 
             layerStack = new Layer[0];
-            InputEventFactory = new InputEventFactory(GraphicsDevice, Window, platformTools);
+            InputEventFactory = new InputEventFactory(this, Window, platformTools);
 
             InputEventFactory.OnKeyboardInputEvent += OnKeyboardInputEvent;
             InputEventFactory.OnMouseInputEvent += OnMouseInputEvent;
@@ -61,10 +63,7 @@ namespace Composition.Layers
 
         public virtual Rectangle GetBounds()
         {
-            return new Rectangle(0,
-                                 0,
-                                 GraphicsDevice.Viewport.Width,
-                                 GraphicsDevice.Viewport.Height);
+            return Bounds;
         }
 
         private bool OnKeyboardInputEvent(KeyboardInputEvent inputEvent)
@@ -135,6 +134,8 @@ namespace Composition.Layers
 
         public virtual void Draw()
         {
+            Bounds = new Rectangle(0, 0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
+
             Layer[] layerArray = layerStack;
 
             //iterate through in reverse order

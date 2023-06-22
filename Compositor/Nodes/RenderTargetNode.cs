@@ -11,7 +11,7 @@ using Tools;
 
 namespace Composition.Nodes
 {
-    public class RenderTargetNode : ImageNode, IUpdateableNode
+    public class RenderTargetNode : ImageNode, IUpdateableNode, IPreProcessable
     {
         private RenderTarget2D renderTarget
         {
@@ -155,7 +155,7 @@ namespace Composition.Nodes
         public override void Draw(Drawer id, float parentAlpha)
         {
             DebugTimer.DebugStartTime(this);
-            if (!id.InView(Bounds))
+            if (!CompositorLayer.InView(Bounds))
                 return;
 
             lastDrawFrame = id.FrameCount;
@@ -234,8 +234,7 @@ namespace Composition.Nodes
 
             Scroller.Draw(id, parentAlpha);
             DebugTimer.DebugEndTime(this);
-
-            
+            id.PreProcess(this);
         }
 
         public void Update(GameTime gameTime)
@@ -275,14 +274,16 @@ namespace Composition.Nodes
                     }
                 }
             }
+            DebugTimer.DebugEndTime(this);
+        }
 
+        public void PreProcess(Drawer id)
+        {
             if (renderTarget != null)
             {
                 DrawToTexture(drawer);
                 NeedsDraw = false;
             }
-
-            DebugTimer.DebugEndTime(this);
         }
 
         protected void DrawToTexture(Drawer id)
@@ -292,12 +293,12 @@ namespace Composition.Nodes
                 try
                 {
                     // Set the render target
-                    CompositorLayer.GraphicsDevice.SetRenderTarget(renderTarget);
-                    CompositorLayer.GraphicsDevice.Clear(Color.Transparent);
-//#if DEBUG
-//                    Random r = new Random(lastDrawFrame);
-//                    CompositorLayer.GraphicsDevice.Clear(new Color((float)r.NextDouble(), (float)r.NextDouble(), (float)r.NextDouble()));
-//#endif
+                    id.GraphicsDevice.SetRenderTarget(renderTarget);
+                    id.GraphicsDevice.Clear(Color.Transparent);
+                    //#if DEBUG
+                    //                    Random r = new Random(lastDrawFrame);
+                    //                    id.GraphicsDevice.Clear(new Color((float)r.NextDouble(), (float)r.NextDouble(), (float)r.NextDouble()));
+                    //#endif
                     if (id != null)
                     {
                         id.Begin();
@@ -322,7 +323,7 @@ namespace Composition.Nodes
                 finally
                 {
                     // Drop the render target
-                    CompositorLayer.GraphicsDevice.SetRenderTarget(null);
+                    id.GraphicsDevice.SetRenderTarget(null);
                 }
             }
             base.RequestRedraw();

@@ -106,16 +106,6 @@ namespace UI.Nodes
             }
         }
 
-        public override void Update(GameTime gameTime)
-        {
-            if (IsAnimating() && Showing == sceneManagerNode)
-            {
-                sceneManagerNode.Snap();
-            }
-
-            base.Update(gameTime);
-        }
-
         public void ShowAnalyser(MouseInputEvent mie)
         {
             Show(rssiNode);
