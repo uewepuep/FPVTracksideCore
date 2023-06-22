@@ -54,17 +54,37 @@ namespace Sound
 
         public void AddTime(Types type, TimeSpan timeSpan)
         {
+            double value;
+            string unit;
+
             if (timeSpan.Hours > 1)
             {
-                Add(type, Math.Round(timeSpan.TotalHours, 1).ToString("0.0") + " hours");
+                value = Math.Round(timeSpan.TotalHours, 1);
+                unit = " hour";
             }
             else if (timeSpan.Minutes > 1)
             {
-                Add(type, Math.Round(timeSpan.TotalMinutes, 1).ToString("0.0") + " minutes");
+                value = Math.Round(timeSpan.TotalMinutes, 1);
+                unit = " minute";
             }
             else
             {
-                Add(type, Math.Round(timeSpan.TotalSeconds, 1).ToString("0") + " seconds");
+                value = Math.Round(timeSpan.TotalSeconds, 0);
+                unit = " second";
+            }
+
+            if (value > 1)
+            {
+                unit += "s";
+            }
+
+            if ((int)value == value)
+            {
+                Add(type, value.ToString("0") + unit);
+            }
+            else
+            {
+                Add(type, value.ToString("0.0") + unit);
             }
         }
 

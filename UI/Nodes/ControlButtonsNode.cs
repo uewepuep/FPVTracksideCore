@@ -194,9 +194,9 @@ namespace UI.Nodes
 
                 int height = ItemHeight;
 
-                if (n == AutoRunnerControls)
+                if (n == AutoRunnerControls && AutoRunnerControls.LargeMode)
                 {
-                    height = (int)(1.5 * ItemHeight);
+                    height = (int)(1.7 * ItemHeight);
                 }
 
                 Rectangle newBounds = new Rectangle(left, 

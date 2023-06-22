@@ -15,6 +15,7 @@ namespace UI
     public class AutoCrashOut
     {
         private Dictionary<ChannelVideoNode, MotionDetector> toProcess;
+        private Dictionary<Channel, bool> channelHasMotion;
 
         private Thread thread;
         private bool run;
@@ -28,18 +29,24 @@ namespace UI
 
         private DateTime waitTill;
 
+        public bool Enabled { get { return GeneralSettings.Instance.VideoStaticDetector; } }
+
         public AutoCrashOut(EventManager eventManager, ChannelsGridNode channelsGridNode)
         {
             this.eventManager = eventManager;
             this.channelsGridNode = channelsGridNode;
 
+            eventManager.RaceManager.OnRaceChanged += RaceManager_OnRaceChanged;
             eventManager.RaceManager.OnRaceStart += RaceManager_OnRaceStart;
 
             run = true;
+            channelHasMotion = new Dictionary<Channel, bool>();
             toProcess = new Dictionary<ChannelVideoNode, MotionDetector>();
             thread = new Thread(Process);
             thread.Name = "Auto Crash Out";
         }
+
+
         public void Dispose()
         {
             eventManager.RaceManager.OnRaceStart -= RaceManager_OnRaceStart;
@@ -53,15 +60,34 @@ namespace UI
             }
         }
 
+        public bool HasMotion(Channel channel)
+        {
+            lock (channelHasMotion)
+            {
+                bool motion;
+                if (channelHasMotion.TryGetValue(channel, out motion))
+                {
+                    return motion;
+                }
+            }
+            return true;
+        }
+
+
+        private void RaceManager_OnRaceChanged(Race race)
+        {
+            waitTill = DateTime.MaxValue;
+            needsClear = true;
+        }
+
         private void RaceManager_OnRaceStart(Race race)
         {
             waitTill = DateTime.Now + RaceStartDelay;
-            needsClear = true;
         }
 
         public void AddChannelNode(ChannelVideoNode channelNode)
         {
-            if (!channelNode.FrameNode.ThumbnailEnabled || !GeneralSettings.Instance.VideoStaticDetector)
+            if (!channelNode.FrameNode.ThumbnailEnabled || !Enabled)
             {
                 return;
             }
@@ -83,12 +109,6 @@ namespace UI
 
             while (run)
             {
-                if (!eventManager.RaceManager.RaceRunning)
-                {
-                    Thread.Sleep(100);
-                    continue;
-                }
-
                 lock (toProcess)
                 {
                     ChannelVideoNode first = toProcess.Keys.FirstOrDefault();
@@ -108,16 +128,16 @@ namespace UI
 
                     if (needsClear)
                     {
-                        if (DateTime.Now > waitTill)
+                        needsClear = false;
+                        foreach (var kvp in toProcess)
                         {
-                            needsClear = false;
-                            foreach (var kvp in toProcess)
-                            {
-                                MotionDetector motionDetector = kvp.Value;
-                                motionDetector.Clear();
-                            }
+                            MotionDetector motionDetector = kvp.Value;
+                            motionDetector.Clear();
                         }
-                        continue;
+                        lock (channelHasMotion)
+                        {
+                            channelHasMotion.Clear();
+                        }
                     }
 
                     foreach (var kvp in toProcess)
@@ -131,12 +151,24 @@ namespace UI
                         Color[] colors = channelNode.FrameNode.GetColorData();
                         motionDetector.AddFrame(colors);
 
-                        if (eventManager.RaceManager.RaceRunning)
-                        {
-                            float motionValue;
-                            bool motion;
+                        float motionValue;
+                        bool motion;
+                        motionDetector.DetectMotion(out motionValue, out motion);
 
-                            motionDetector.DetectMotion(out motionValue, out motion);
+                        lock (channelHasMotion)
+                        {
+                            if (channelHasMotion.ContainsKey(channelNode.Channel))
+                            {
+                                channelHasMotion[channelNode.Channel] = motion;
+                            }
+                            else
+                            {
+                                channelHasMotion.Add(channelNode.Channel, motion);
+                            }
+                        }
+
+                        if (eventManager.RaceManager.RaceRunning && DateTime.Now > waitTill)
+                        {
                             if (motion == channelNode.CrashedOut)
                             {
                                 channelsGridNode.AutomaticSetCrashed(channelNode, !motion);

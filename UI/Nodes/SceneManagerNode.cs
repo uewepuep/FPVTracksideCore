@@ -113,8 +113,8 @@ namespace UI.Nodes
             autoRunner.SetSceneManager(this);
 
             autoRunnerTimerNode = new AutoRunnerTimerNode(autoRunner);
-            autoRunnerTimerNode.RelativeBounds = new RectangleF(0, 0.95f, 0.97f, 0.04f);
-            autoRunnerTimerNode.Alignment = RectangleAlignment.TopRight;
+            autoRunnerTimerNode.RelativeBounds = new RectangleF(0, 0.96f, 0.97f, 0.04f);
+            autoRunnerTimerNode.Alignment = RectangleAlignment.BottomRight;
             AddChild(autoRunnerTimerNode);
         }
 

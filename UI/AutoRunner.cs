@@ -1,14 +1,13 @@
 ﻿using Composition.Nodes;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using RaceLib;
 using Sound;
+using Sound.AutoCommentator;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static UI.OBSRemoteControlManager;
 using Tools;
 using UI.Nodes;
 
@@ -23,6 +22,8 @@ namespace UI
         public SoundManager SoundManager { get; private set; }
 
         public SceneManagerNode SceneManager { get; private set; }
+
+        public AutoCrashOut AutoCrashOut { get { return EventLayer.ChannelsGridNode.AutoCrashOut; } }
 
         public AutoRunnerConfig Config { get; private set; }
 
@@ -59,9 +60,11 @@ namespace UI
         public enum States
         {
             None,
-            WaitingRaceEnd,
             WaitingResults,
-            WaitingRaceStart
+            WaitingRaceStart,
+            WaitingRaceFinalLap,
+            WaitVideo
+
         }
 
         public States State { get; private set; }
@@ -80,26 +83,43 @@ namespace UI
 
             RaceManager.OnRacePreStart += RaceManager_OnRacePreStart;
             RaceManager.OnRaceChanged += RaceManager_OnRaceChanged;
+            RaceManager.OnRaceCreated += RaceManager_OnRaceCreated;
             RaceManager.OnRaceEnd += OnRaceEnd;
 
             lastUpdate = DateTime.Now;
         }
 
+        public void Dispose()
+        {
+            RaceManager.OnRacePreStart -= RaceManager_OnRacePreStart;
+            RaceManager.OnRaceChanged -= RaceManager_OnRaceChanged;
+            RaceManager.OnRaceCreated -= RaceManager_OnRaceCreated;
+            RaceManager.OnRaceEnd -= OnRaceEnd;
+            SceneManager.OnSceneChange -= SceneManager_OnSceneChange;
+        }
+
+        private void RaceManager_OnRaceCreated(Race race)
+        {
+            if (SceneManager.Scene == SceneManagerNode.Scenes.RaceResults)
+            {
+                SetState(States.WaitingResults);
+            }
+        }
+
         public void SetSceneManager(SceneManagerNode sceneManager)
         {
+            if (SceneManager != null)
+            {
+                SceneManager.OnSceneChange -= SceneManager_OnSceneChange;
+            }
+
             SceneManager = sceneManager;
-            sceneManager.OnSceneChange += SceneManager_OnSceneChange;
+            SceneManager.OnSceneChange += SceneManager_OnSceneChange;
         }
 
         private void RaceManager_OnRacePreStart(Race race)
         {
             SetState(States.None);
-        }
-
-        public void Dispose()
-        {
-            RaceManager.OnRaceChanged -= RaceManager_OnRaceChanged;
-            RaceManager.OnRaceEnd -= OnRaceEnd;
         }
 
         private void SceneManager_OnSceneChange(SceneManagerNode.Scenes scene)
@@ -137,18 +157,22 @@ namespace UI
 
         public void SetState(States newState)
         {
+            Logger.AutoRunner.LogCall(this, State, newState);
+
             bool hasNextRace = RaceManager.GetNextRace(true) != null;
 
-            switch (newState) 
+            State = newState;
+            switch (State) 
             {
                 case States.WaitingRaceStart:
                     Timer = TimeSpan.FromSeconds(Config.SecondsToNextRace);
                     break;
-                case States.WaitingRaceEnd:
+
+                case States.WaitingRaceFinalLap:
                     Timer = TimeSpan.FromSeconds(Config.SecondsToFinishFinalLapAfterTimesUp);
                     break;
-                case States.WaitingResults:
 
+                case States.WaitingResults:
                     // No next race..
                     if (!hasNextRace)
                     {
@@ -158,8 +182,11 @@ namespace UI
 
                     Timer = TimeSpan.FromSeconds(Config.SecondsToShowResults);
                     break;
+
+                case States.WaitVideo:
+                    Timer = TimeSpan.FromSeconds(Config.SecondsDelayIfStatic);
+                    break;
             }
-            State = newState;
         }
 
         public void Update()
@@ -169,33 +196,51 @@ namespace UI
             if (Paused)
             {
                 Timer = pausedAt;
-
-                lastUpdate = now;
                 return;
             }
 
             if (!RaceManager.RaceRunning && !EventManager.RaceManager.PreRaceStartDelay)
             {
-                if (Config.AnnounceNextRaceIn)
-                {
-                    AnnounceNextRaceUpdate(now);
-                }
-
                 if (Config.AutoRunRaces && TimesUp)
                 {
                     switch (State)
                     {
                         case States.WaitingRaceStart:
-                            if (CheckVideo())
+
+                            Channel channel;
+
+                            if (CheckVideo(out channel))
                             {
                                 EventLayer.StartRace();
                             }
+                            else
+                            {
+                                Pilot pilot = RaceManager.GetPilot(channel);
+                                if (pilot != null)
+                                {
+                                    SetState(States.WaitVideo);
+                                    SoundManager.PlayVideoIssuesDelayRace(Timer, pilot);
+                                }
+                                else
+                                {
+                                    EventLayer.StartRace();
+                                }
+                            }
+                            break;
+
+                        case States.WaitVideo:
+                            EventLayer.StartRace();
                             break;
 
                         case States.WaitingResults:
                             RaceManager.NextRace(true);
                             break;
                     }
+                }
+
+                if (Config.AnnounceNextRaceIn)
+                {
+                    AnnounceNextRaceUpdate(now);
                 }
             }
 
@@ -211,9 +256,9 @@ namespace UI
                 // if the time is up, plus the extra final lap time is up.
                 if (RaceManager.TimesUp)
                 {
-                    if (State != States.WaitingRaceEnd)
+                    if (State != States.WaitingRaceFinalLap)
                     {
-                        SetState(States.WaitingRaceEnd);
+                        SetState(States.WaitingRaceFinalLap);
                     }
 
                     if (TimesUp)
@@ -223,11 +268,32 @@ namespace UI
                 }
             }
 
-            lastUpdate = now;
         }
 
-        private bool CheckVideo()
+        private bool CheckVideo(out Channel badChannel)
         {
+            badChannel = null;
+            if (!Config.CheckPilotsVideo)
+                return true;
+
+            Race race = RaceManager.CurrentRace;
+            if (race == null) 
+                return false;
+
+            if (AutoCrashOut == null)
+                return true;
+
+            if (!AutoCrashOut.Enabled)
+                return true;
+
+            foreach (Channel channel in race.Channels) 
+            {
+                if (!AutoCrashOut.HasMotion(channel))
+                {
+                    badChannel = channel;
+                    return false;
+                }
+            }
             return true;
         }
 
@@ -243,10 +309,17 @@ namespace UI
                     case States.WaitingRaceStart:
                         nextRaceStartTime = TimerEnd;
                         break;
+                    
                     case States.WaitingResults:
                         nextRaceStartTime = TimerEnd + TimeSpan.FromSeconds(Config.SecondsToNextRace);
                         break;
+                    
+                    case States.WaitVideo:
+                        nextRaceStartTime = TimerEnd;
+                        break;
+
                     default:
+                        lastUpdate = now;
                         return;
 
                 }
@@ -254,21 +327,29 @@ namespace UI
                 TimeSpan lastTimeToRace = nextRaceStartTime - lastUpdate;
                 TimeSpan currentTimeToRace = nextRaceStartTime - now;
 
-                foreach (int seconds in Config.NextRaceInAnnounceSeconds.OrderByDescending(c => c))
+                // If we're more than 5 seconds out.. ignore
+                if (Math.Abs(lastTimeToRace.TotalSeconds - currentTimeToRace.TotalSeconds) > 1)
+                {
+                    lastUpdate = now;
+                    return;
+                }
+
+                foreach (int seconds in Config.NextRaceInAnnounceSeconds.Distinct().OrderByDescending(c => c))
                 {
                     TimeSpan callAt = TimeSpan.FromSeconds(seconds);
                     if (callAt >= currentTimeToRace && callAt < lastTimeToRace)
                     {
                         if (!EventManager.RaceManager.RaceRunning && !EventManager.RaceManager.PreRaceStartDelay)
                         {
-                            SpeechParameters soundParameters = new SpeechParameters();
-                            soundParameters.AddTime(SpeechParameters.Types.time, callAt);
-                            SoundManager.PlaySound(SoundKey.UntilNextRace, soundParameters);
+                            Logger.AutoRunner.LogCall(this, callAt, lastTimeToRace, currentTimeToRace);
+                            SoundManager.PlayTimeUntilNextRace(callAt);
                             break;
                         }
                     }
                 }
             }
+
+            lastUpdate = now;
         }
 
         private void OnRaceEnd(Race race)
@@ -284,6 +365,8 @@ namespace UI
             {
                 pausedAt = Timer;
             }
+
+            Logger.AutoRunner.LogCall(this, Paused, pausedAt);
         }
     }
 

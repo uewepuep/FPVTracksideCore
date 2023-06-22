@@ -57,7 +57,8 @@ namespace UI.Nodes
 
         public TimeSpan CurrentAnimationTime { get; private set; }
 
-        private AutoCrashOut autoCrashOut;
+        public AutoCrashOut AutoCrashOut { get; private set; }
+
         private VideoTimingManager videoTimingManager;
 
         private List<ChannelVideoInfo> channelInfos;
@@ -163,7 +164,7 @@ namespace UI.Nodes
             EventManager.OnPilotRefresh -= Refresh;
 
             videoTimingManager?.Dispose();
-            autoCrashOut?.Dispose();
+            AutoCrashOut?.Dispose();
             base.Dispose();
         }
 
@@ -370,7 +371,7 @@ namespace UI.Nodes
 
         public void ClearVideo()
         {
-            autoCrashOut?.Dispose();
+            AutoCrashOut?.Dispose();
 
             channelInfos.Clear();
 
@@ -457,7 +458,7 @@ namespace UI.Nodes
                     channelNode.Init();
                     channelNode.FrameNode.RelativeSourceBounds = ci.ScaledRelativeSourceBounds;
                     channelNode.FrameNode.SetAspectRatio(withLaps);
-                    autoCrashOut?.AddChannelNode(channelNode);
+                    AutoCrashOut?.AddChannelNode(channelNode);
 
                     channelNodeBase = channelNode;
                 }
@@ -707,7 +708,7 @@ namespace UI.Nodes
         public void FillChannelNodes()
         {
             ClearVideo();
-            autoCrashOut = new AutoCrashOut(EventManager, this);
+            AutoCrashOut = new AutoCrashOut(EventManager, this);
        
             Channel[] channels = EventManager.Channels;
 

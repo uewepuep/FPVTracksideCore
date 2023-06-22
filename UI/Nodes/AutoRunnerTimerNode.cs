@@ -41,8 +41,12 @@ namespace UI.Nodes
                         Text = "Showing Results for " + time.TotalSeconds.ToString("0") + "s";
                         break;
 
-                    case AutoRunner.States.WaitingRaceEnd:
-                        Text = "Race Ends in " + time.TotalSeconds.ToString("0") + "s";
+                    case AutoRunner.States.WaitingRaceFinalLap:
+                        Text = ""; // "Race Ends in " + time.TotalSeconds.ToString("0") + "s";
+                        break;
+
+                    case AutoRunner.States.WaitVideo:
+                        Text = "Video Issue " + time.TotalSeconds.ToString("0") + "s";
                         break;
                 }
 

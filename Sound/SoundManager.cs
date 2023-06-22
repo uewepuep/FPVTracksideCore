@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using Tools;
 using Composition;
+using Sound.AutoCommentator;
 
 namespace Sound
 {
@@ -198,9 +199,9 @@ namespace Sound
                 new Sound() { Key = SoundKey.TimingSystemConnected, TextToSpeech = "Timing system connected", Category = Sound.SoundCategories.Status },
                 new Sound() { Key = SoundKey.TimingSystemsConnected, TextToSpeech = "{count} Timing systems connected", Category = Sound.SoundCategories.Status },
 
-                new Sound() { Key = SoundKey.NoVideoDelayingRace, TextToSpeech = "{pilot} has no video. Race start delayed by {time}.", Category = Sound.SoundCategories.Race },
+                new Sound() { Key = SoundKey.NoVideoDelayingRace, TextToSpeech = " Race start delayed as {pilot} has no video. Race starts in {time}", Category = Sound.SoundCategories.Race },
 
-                new Sound() { Key = SoundKey.UntilNextRace, TextToSpeech = "{time} until the next race", Category = Sound.SoundCategories.Announcements },
+                new Sound() { Key = SoundKey.UntilRaceStart, TextToSpeech = "{time} until the race start", Category = Sound.SoundCategories.Announcements },
                 
 
                 };
@@ -748,6 +749,22 @@ namespace Sound
                 parameters.Add(SpeechParameters.Types.count, count.ToString());
                 PlaySound(SoundKey.TimingSystemsConnected, parameters);
             }
+        }
+
+        public void PlayTimeUntilNextRace(TimeSpan time)
+        {
+            SpeechParameters soundParameters = new SpeechParameters();
+            soundParameters.SecondsExpiry = 1;
+            soundParameters.AddTime(SpeechParameters.Types.time, time);
+            PlaySound(SoundKey.UntilRaceStart, soundParameters);
+        }
+
+        public void PlayVideoIssuesDelayRace(TimeSpan time, Pilot pilot)
+        {
+            SpeechParameters soundParameters = new SpeechParameters();
+            soundParameters.AddTime(SpeechParameters.Types.time, time);
+            soundParameters.Add(SpeechParameters.Types.pilot, pilot.Phonetic);
+            PlaySound(SoundKey.NoVideoDelayingRace, soundParameters);
         }
     }
 

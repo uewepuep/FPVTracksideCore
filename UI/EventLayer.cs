@@ -39,7 +39,7 @@ namespace UI
 
         private EventWebServer eventWebServer;
 
-        private ChannelsGridNode channelsGridNode;
+        public ChannelsGridNode ChannelsGridNode { get; private set; }
         public RoundsNode RoundsNode { get; private set; }
 
         public TracksideTabbedMultiNode TabbedMultiNode { get; private set; }
@@ -198,8 +198,8 @@ namespace UI
 
             AutoRunner = new AutoRunner(this);
 
-            channelsGridNode = new ChannelsGridNode(EventManager, videoManager);
-            sceneManagerNode = new SceneManagerNode(EventManager, videoManager, channelsGridNode, topBar, AutoRunner);
+            ChannelsGridNode = new ChannelsGridNode(EventManager, videoManager);
+            sceneManagerNode = new SceneManagerNode(EventManager, videoManager, ChannelsGridNode, topBar, AutoRunner);
             sceneManagerNode.OnSceneChange += SceneManagerNode_OnSceneChange;
             sceneManagerNode.OnVideoSettingsChange += LoadVideo;
 
@@ -210,7 +210,7 @@ namespace UI
             TabbedMultiNode.OnTabChange += OnTabChange;
             centreContainer.AddChild(TabbedMultiNode);
 
-            ControlButtons = new ControlButtonsNode(EventManager, channelsGridNode, TabbedMultiNode, AutoRunner);
+            ControlButtons = new ControlButtonsNode(EventManager, ChannelsGridNode, TabbedMultiNode, AutoRunner);
             ControlButtons.RelativeBounds = new RectangleF(0, 0.0f, 1, 1);
             rightBar.AddChild(ControlButtons);
 
@@ -307,7 +307,7 @@ namespace UI
             systemStatusNode.RelativeBounds = new RectangleF((1 - width) / 2, MenuButton.RelativeBounds.Bottom + 0.01f, 0.9f, 1);
             rightSideColor.AddChild(systemStatusNode);
 
-            channelsGridNode.OnChannelNodeCloseClick += (ChannelNodeBase cn) =>
+            ChannelsGridNode.OnChannelNodeCloseClick += (ChannelNodeBase cn) =>
             {
                 if (cn.Pilot != null)
                 {
@@ -470,7 +470,7 @@ namespace UI
 
                 videoManager.LoadCreateDevices((fs) =>
                 {
-                    channelsGridNode.FillChannelNodes();
+                    ChannelsGridNode.FillChannelNodes();
                     sceneManagerNode.SetupCams();
                     systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager);
 
@@ -583,7 +583,7 @@ namespace UI
 
         public void TogglePilot(Pilot p)
         {
-            channelsGridNode.TogglePilotVisible(p);
+            ChannelsGridNode.TogglePilotVisible(p);
 
             if (EventManager.RaceManager.HasPilot(p) && !EventManager.RaceManager.RaceFinished)
             {
@@ -607,7 +607,7 @@ namespace UI
                 {
                     if (EventManager.RaceManager.AddPilot(c, p))
                     {
-                        channelsGridNode.SetPilotVisible(p, true);
+                        ChannelsGridNode.SetPilotVisible(p, true);
                         TabbedMultiNode.ShowLive();
                     }
                 }
@@ -780,31 +780,31 @@ namespace UI
 
                 if (KeyMapper.ShowMoreChannels.Match(inputEvent))
                 {
-                    channelsGridNode.IncreaseChannelVisiblity();
+                    ChannelsGridNode.IncreaseChannelVisiblity();
                     return true;
                 }
 
                 if (KeyMapper.ShowLessChannels.Match(inputEvent))
                 {
-                    channelsGridNode.DecreaseChannelVisiblity();
+                    ChannelsGridNode.DecreaseChannelVisiblity();
                     return true;
                 }
 
                 if (KeyMapper.ShowLaps.Match(inputEvent))
                 {
-                    channelsGridNode.SetLapsVisiblity(true);
+                    ChannelsGridNode.SetLapsVisiblity(true);
                     return true;
                 }
 
                 if (KeyMapper.HideLaps.Match(inputEvent))
                 {
-                    channelsGridNode.SetLapsVisiblity(false);
+                    ChannelsGridNode.SetLapsVisiblity(false);
                     return true;
                 }
 
                 if (KeyMapper.ReOrderChannelsNow.Match(inputEvent))
                 {
-                    channelsGridNode.Reorder(true);
+                    ChannelsGridNode.Reorder(true);
                     return true;
                 }
 

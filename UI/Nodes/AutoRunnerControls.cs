@@ -1,5 +1,6 @@
 ﻿using Composition;
 using Composition.Nodes;
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,26 +10,27 @@ using Tools;
 
 namespace UI.Nodes
 {
-    public class AutoRunnerControls : Node
+    public class AutoRunnerControls : ColorNode
     {
         private TextButtonNode lessTimeNode;
         private TextButtonNode moreTimeNode;
         private IconButtonNode controlButton;
+        private TextNode timeRemaining;
 
         private ImageNode pauseNode;
 
         public AutoRunner AutoRunner { get; private set; }
 
-        public AutoRunnerControls(AutoRunner autoRunner) 
+        public bool LargeMode { get { return bottomButtonsContainer.Visible; } }
+
+        private Node bottomButtonsContainer;
+
+        public AutoRunnerControls(AutoRunner autoRunner)
+            : base(Theme.Current.RightControls.Foreground)
         {
             AutoRunner = autoRunner;
 
-            float b = 0.3f;
-            float oneminusb = 1 - b;
-
-
             controlButton = new IconButtonNode(@"img\auto.png", "Auto", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
-            controlButton.RelativeBounds = new RectangleF(0.0f, 0, 1, oneminusb);
             controlButton.OnClick += ControlButton_OnClick;
             AddChild(controlButton);
 
@@ -36,15 +38,26 @@ namespace UI.Nodes
             pauseNode.Visible = false;
             controlButton.AddChild(pauseNode);
 
+            bottomButtonsContainer = new Node();
+            bottomButtonsContainer.RelativeBounds = new RectangleF(0.0f, controlButton.RelativeBounds.Bottom, 1, 1 - controlButton.RelativeBounds.Bottom);
+            AddChild(bottomButtonsContainer);
+
+
+            timeRemaining = new TextNode("", Theme.Current.RightControls.Text.XNA);
+            timeRemaining.RelativeBounds = new RectangleF(0.0f, 0, 1, 0.4f);
+            bottomButtonsContainer.AddChild(timeRemaining);
+
+            float bottomButtonHeight = timeRemaining.RelativeBounds.Bottom;
+
             lessTimeNode = new TextButtonNode("-", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
-            lessTimeNode.RelativeBounds = new RectangleF(0, oneminusb, 0.5f, b);
+            lessTimeNode.RelativeBounds = new RectangleF(0, bottomButtonHeight, 0.5f, 1 - bottomButtonHeight);
             lessTimeNode.OnClick += LessTimeNode_OnClick;
-            AddChild(lessTimeNode);
+            bottomButtonsContainer.AddChild(lessTimeNode);
 
             moreTimeNode = new TextButtonNode("+", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
-            moreTimeNode.RelativeBounds = new RectangleF(0.5f, oneminusb, 0.5f, b);
+            moreTimeNode.RelativeBounds = new RectangleF(0.5f, bottomButtonHeight, 0.5f, 1 - bottomButtonHeight);
             moreTimeNode.OnClick += MoreTimeNode_OnClick;
-            AddChild(moreTimeNode);
+            bottomButtonsContainer.AddChild(moreTimeNode);
         }
 
         private void ControlButton_OnClick(Composition.Input.MouseInputEvent mie)
@@ -62,27 +75,64 @@ namespace UI.Nodes
             AutoRunner.Timer -= TimeSpan.FromSeconds(10);
         }
 
+        public override void Layout(Rectangle parentBounds)
+        {
+            if (LargeMode) 
+            {
+                controlButton.RelativeBounds = new RectangleF(0.0f, 0, 1, 0.61f);
+                bottomButtonsContainer.RelativeBounds = new RectangleF(0.0f, controlButton.RelativeBounds.Bottom, 1, 1 - controlButton.RelativeBounds.Bottom);
+            }
+            else
+            {
+                controlButton.RelativeBounds = new RectangleF(0.0f, 0, 1, 1);
+            }
+
+            base.Layout(parentBounds);
+        }
+
         public override void Draw(Drawer id, float parentAlpha)
         {
             pauseNode.Visible = AutoRunner.Paused;
 
-            if (AutoRunner.Config.AutoRunRaces && AutoRunner.State != AutoRunner.States.None)
+            if (AutoRunner.Config.AutoRunRaces)
             {
-                string time = " (" + AutoRunner.Timer.TotalSeconds.ToString("0") + ")";
+                bottomButtonsContainer.Visible = AutoRunner.State != AutoRunner.States.None;
+
+                string time = " " + AutoRunner.Timer.TotalSeconds.ToString("0") + "s";
 
                 switch (AutoRunner.State)
                 {
                     case AutoRunner.States.None:
-                        controlButton.Text = "Auto";
+
+                        if (AutoRunner.Paused)
+                        {
+                            controlButton.Text = "Paused";
+                        }
+                        else
+                        {
+                            controlButton.Text = "Idle";
+                        }
+                        timeRemaining.Text = "";
                         break;
-                    case AutoRunner.States.WaitingRaceEnd:
-                        controlButton.Text = "End" + time;
-                        break;
+                    
                     case AutoRunner.States.WaitingRaceStart:
-                        controlButton.Text = "Start" + time;
+                        controlButton.Text = "Start";
+                        timeRemaining.Text = time;
                         break;
+
+                    case AutoRunner.States.WaitingRaceFinalLap:
+                        controlButton.Text = "Final Lap";
+                        timeRemaining.Text = time;
+                        break;
+
                     case AutoRunner.States.WaitingResults:
-                        controlButton.Text = "Results" + time;
+                        controlButton.Text = "Results";
+                        timeRemaining.Text = time;
+                        break;
+
+                    case AutoRunner.States.WaitVideo:
+                        controlButton.Text = "Video issue";
+                        timeRemaining.Text = time;
                         break;
                 }
 

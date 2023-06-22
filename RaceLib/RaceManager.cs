@@ -703,6 +703,7 @@ namespace RaceLib
             currentRace.Start = DateTime.Now;
             currentRace.End = default(DateTime);
             currentRace.AutoAssignNumbers = false;
+            currentRace.TotalPausedTime = TimeSpan.Zero;
 
             lock (races)
             {
@@ -777,6 +778,7 @@ namespace RaceLib
                 currentRace.TargetLaps = EventManager.Event.Laps;
                 currentRace.Start = DateTime.Now;
                 currentRace.End = default(DateTime);
+                currentRace.TotalPausedTime = TimeSpan.Zero;
                 currentRace.AutoAssignNumbers = false;
 
                 lock (races)
@@ -1644,22 +1646,22 @@ namespace RaceLib
             return toRecover;
         }
 
-        public DateTime GetPauseStart(Race paused)
+        public DateTime GetPauseStart(Race pausedRace)
         {
             DateTime startOfPause;
-            if (paused.Ended)
+            if (pausedRace.Ended)
             {
-                startOfPause = paused.End;
+                startOfPause = pausedRace.End;
             }
             else
             {
-                if (paused.Detections.Count > 0)
+                if (pausedRace.Detections.Count > 0)
                 {
-                    startOfPause = paused.Detections.OrderBy(d => d.Time).LastOrDefault().Time;
+                    startOfPause = pausedRace.Detections.OrderBy(d => d.Time).LastOrDefault().Time;
                 }
                 else
                 {
-                    startOfPause = paused.Start;
+                    startOfPause = pausedRace.Start;
                 }
             }
             return startOfPause;
@@ -1679,7 +1681,7 @@ namespace RaceLib
             if (startOfPause != default(DateTime))
             {
                 TimeSpan pauseTime = DateTime.Now - startOfPause;
-                toResume.TotalPausedTime += pauseTime;
+                toResume.TotalPausedTime = pauseTime;
             }
 
             if (toResume != CurrentRace)
@@ -1960,6 +1962,16 @@ namespace RaceLib
 
                 race.SetPilot(db, preferedChannel, pilot);
             }
+        }
+
+        public Pilot GetPilot(Channel channel)
+        {
+            Race race = CurrentRace;
+            if (race != null)
+            {
+                return race.GetPilot(channel);
+            }
+            return null;
         }
     }
 }

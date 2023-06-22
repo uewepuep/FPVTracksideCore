@@ -21,7 +21,7 @@ namespace Sound
         AfterTimesUp,
         AnnounceRace,
         AnnounceRaceResults,
-        UntilNextRace,
+        UntilRaceStart,
 
         Sector,
 
