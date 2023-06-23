@@ -725,7 +725,7 @@ namespace UI
             ControlButtons.UpdateControlButtons();
         }
 
-        private void StopRace()
+        public void StopRace()
         {
             workQueueStartRace.Clear();
 

@@ -306,7 +306,7 @@ namespace UI
                 // If all laps are finished.
                 if (EventLayer.EventManager.RaceManager.HasFinishedAllLaps())
                 {
-                    RaceManager.EndRace();
+                    EventLayer.StopRace();
                 }
 
                 // if the time is up, plus the extra final lap time is up.
@@ -319,7 +319,7 @@ namespace UI
 
                     if (TimesUp)
                     {
-                        RaceManager.EndRace();
+                        EventLayer.StopRace();
                     }
                 }
             }
