@@ -32,7 +32,7 @@ namespace Composition.Layers
         {
             this.device = device;
             renderTargetLock = new object();
-            drawer = new Drawer(device, true);
+            drawer = new Drawer(device);
         }
 
         public override void Dispose()

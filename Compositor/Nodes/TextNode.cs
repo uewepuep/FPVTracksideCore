@@ -80,9 +80,10 @@ namespace Composition.Nodes
 
             try
             {
+                ITextRenderer textRenderer = this.textRenderer;
                 if (textRenderer == null)
                 {
-                    textRenderer = CompositorLayer.LayerStack.PlatformTools.CreateTextRenderer();
+                    this.textRenderer = textRenderer = CompositorLayer.LayerStack.PlatformTools.CreateTextRenderer();
                 }
 
                 bool isAnimatingSize = IsAnimatingSize();
@@ -96,7 +97,17 @@ namespace Composition.Nodes
                 {
                     if (!IsAnimatingInvisiblity() && !isAnimatingSize && Alpha > 0)
                     {
-                        id.EnqueueBackgroundWork(() => { UpdateTexture(id); });
+                        UpdateGeometry();
+
+                        if (textRenderer.CanCreateTextures)
+                        {
+                            id.PreProcess(this);
+                        }
+                        else
+                        {
+                            textRenderer.Reset();
+                        }
+                        RequestRedraw();
                     }
                 }
 
@@ -117,11 +128,11 @@ namespace Composition.Nodes
                     scale = Composition.Text.Scale.Disallowed;
                 }
 
-                textRenderer?.Draw(id, Bounds, Alignment, scale, Tint, parentAlpha * Alpha);
+                textRenderer.Draw(id, Bounds, Alignment, scale, Tint, parentAlpha * Alpha);
             }
             catch
             {
-                textRenderer?.Reset();
+                textRenderer.Reset();
             }
             DebugTimer.DebugEndTime(this);
 
@@ -140,7 +151,7 @@ namespace Composition.Nodes
             }
         }
 
-        public void UpdateTexture(Drawer id)
+        public void UpdateGeometry()
         {
             if (textRenderer == null)
                 return;
@@ -172,19 +183,6 @@ namespace Composition.Nodes
                 needsTextureUpdate = true;
 
                 height = newHeight;
-                RequestRedraw();
-            }
-
-            if (textRenderer == null)
-                return;
-
-            if (textRenderer.CanCreateTextures)
-            {
-                id.PreProcess(this);
-            }
-            else
-            {
-                textRenderer.Reset();
             }
         }
 
@@ -221,6 +219,16 @@ namespace Composition.Nodes
             return base.OnMouseInput(mouseInputEvent);
         }
 #endif
-    }
 
+        public Size GetTextSize()
+        {
+            UpdateGeometry();
+
+            if (textRenderer != null)
+            {
+                return textRenderer.TextSize;
+            }
+            return default;
+        }
+    }
 }

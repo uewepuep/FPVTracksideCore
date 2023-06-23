@@ -261,7 +261,7 @@ namespace Composition.Nodes
                     {
                         if (drawer == null)
                         {
-                            drawer = new Drawer(CompositorLayer.GraphicsDevice, true);
+                            drawer = new Drawer(CompositorLayer.GraphicsDevice);
                         }
 
                         if (renderTarget != null && !IsAnimating() && (Size.Width != renderTarget.Width || Size.Height != renderTarget.Height))

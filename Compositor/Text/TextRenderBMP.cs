@@ -202,7 +202,7 @@ namespace Composition.Text
             textRenderBMP.CreateGeometry(0, TextSize.Height, text, style);
 
             RenderTarget2D renderTarget = new RenderTarget2D(graphicsDevice, Math.Min(4096, textRenderBMP.TextSize.Width), Math.Min(4096, textRenderBMP.TextSize.Height));
-            using (Drawer drawer = new Drawer(renderTarget.GraphicsDevice, true))
+            using (Drawer drawer = new Drawer(renderTarget.GraphicsDevice))
             {
                 drawer.Begin();
                 textRenderBMP.Draw(drawer, new Rectangle(0, 0, renderTarget.Width, renderTarget.Height), RectangleAlignment.Center, Scale.Disallowed, Color.White, 1);

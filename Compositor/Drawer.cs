@@ -30,7 +30,6 @@ namespace Composition
         public TimeSpan PreProcessLimit { get; set; }
         public bool CanPreProcess { get; set; }
 
-        private WorkQueue background;
         private AutoResetEvent autoresetevent;
 
         public TextureCache TextureCache { get; private set; }
@@ -39,7 +38,7 @@ namespace Composition
 
         public Point Offset { get; set; }
 
-        public Drawer(GraphicsDevice device, bool renderTarget)
+        public Drawer(GraphicsDevice device)
         {
             TextureCache = new TextureCache(device);
             GraphicsDevice = device;
@@ -55,12 +54,6 @@ namespace Composition
             Offset = Point.Zero;
 
             autoresetevent = new AutoResetEvent(true);
-
-            if (!renderTarget)
-            {
-                background = new WorkQueue("Drawer");
-                background.Priority = ThreadPriority.BelowNormal;
-            }
         }
 
         public void Dispose()
@@ -71,21 +64,6 @@ namespace Composition
 
             SpriteBatch?.Dispose();
             SpriteBatch = null;
-
-            background?.Dispose();
-            background = null;
-        }
-
-        public void EnqueueBackgroundWork(Action action)
-        {
-            if (background != null)
-            {
-                background.Enqueue(action);
-            }
-            else
-            {
-                action();
-            }
         }
 
         public void QuickDraw(Rectangle dest)

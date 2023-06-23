@@ -1316,10 +1316,6 @@ namespace RaceLib
                     OnLapDetected?.Invoke(lap);
                 }
             }
-            else
-            {
-
-            }
         }
 
         public void AddManualLap(Pilot pilot, DateTime time)

@@ -21,7 +21,7 @@ namespace Composition.Layers
             : base(graphicsDevice, game, textRenderer)
         {
             Scale = 1;
-            drawer = new Drawer(GraphicsDevice, false);
+            drawer = new Drawer(GraphicsDevice);
         }
 
         public override void Dispose()

@@ -100,7 +100,7 @@ namespace UI.Video
 
                 if (drawer == null)
                 {
-                    drawer = new Drawer(CompositorLayer.GraphicsDevice, true);
+                    drawer = new Drawer(CompositorLayer.GraphicsDevice);
                     drawer.CanPreProcess = false;
                 }
 

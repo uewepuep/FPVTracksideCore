@@ -37,6 +37,8 @@ namespace Composition.Nodes
 
         public Color[] BackgroundColors { get; set; }
 
+        public bool ShrinkContentsForScroller { get; set; }
+
         public ListNode(Microsoft.Xna.Framework.Color scrollColor)
         {
             Scroller.ScrollType = ScrollerNode.Types.VerticalRight;
@@ -50,6 +52,7 @@ namespace Composition.Nodes
             KeepAspectRatio = false;
             CanScale = false;
             BackgroundColors = null;
+            ShrinkContentsForScroller = true;
         }
 
         protected override void DrawContent(Drawer id)
@@ -100,7 +103,7 @@ namespace Composition.Nodes
             int left = ItemPadding;
             int width = bounds.Width - (ItemPadding * 2);
 
-            if (Scroller.Needed && Scroller.Visible)
+            if (Scroller.Needed && Scroller.Visible && ShrinkContentsForScroller)
             {
                 switch (Scroller.ScrollType)
                 {

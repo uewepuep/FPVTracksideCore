@@ -58,7 +58,7 @@ namespace Composition.Layers
         {
             updateables = new List<IUpdateableNode>();
 
-            drawer = new Drawer(device, false);
+            drawer = new Drawer(device);
             GraphicsDevice = device;
 
             needsRedraw = true;
@@ -157,7 +157,7 @@ namespace Composition.Layers
                     drawer?.Dispose();
                     Logger.UI.LogException(this, e);
                     Logger.UI.Log(this, "Creating new Drawing object", drawer);
-                    drawer = new Drawer(GraphicsDevice, false);
+                    drawer = new Drawer(GraphicsDevice);
                 }
             }
             DebugTimer.DebugEndTime("CompLayer.Draw");

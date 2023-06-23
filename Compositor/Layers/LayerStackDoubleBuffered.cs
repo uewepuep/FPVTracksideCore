@@ -25,7 +25,7 @@ namespace Composition.Layers
             : base(graphicsDevice, game, textRenderer)
         {
             UpdateSize();
-            drawer = new Drawer(GraphicsDevice, false);
+            drawer = new Drawer(GraphicsDevice);
             FrameRate = 60;
             draw = true;
 

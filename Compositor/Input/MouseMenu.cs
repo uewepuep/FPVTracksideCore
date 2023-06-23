@@ -56,6 +56,8 @@ namespace Composition.Input
             MenuLayer = menuLayer;
 
             listNode = new ListNode<MenuItem>(MenuLayer.ScrollBar);
+            listNode.ShrinkContentsForScroller = false;
+
             AddChild(listNode);
 
             AnimationTime = TimeSpan.FromSeconds(0.1f);
@@ -213,14 +215,26 @@ namespace Composition.Input
         {
             MenuItem[] validItems = Items.Where(i => i.Text != null).ToArray();
 
-            if (validItems.Any())
+            if (validItems.Any(m => m.NeedsLayout))
             {
-                int chars = validItems.Select(b => b.Text.Length).Max();
+                if (validItems.Any())
+                {
+                    int chars = validItems.Select(b => b.Text.Length).Max();
 
-                if (chars < 10)
-                    chars = 10;
+                    if (chars < 10)
+                        chars = 10;
 
-                return chars * WidthPerChar;
+                    return chars * WidthPerChar;
+                }
+            }
+            else
+            {
+                int max = 0;
+                foreach (var item in validItems) 
+                { 
+                    max = Math.Max(max, item.Bounds.Width);
+                }
+                return max;
             }
             return 0;
         }
@@ -237,7 +251,6 @@ namespace Composition.Input
                     Y = TopToBottom ? CalleeArea.Top : CalleeArea.Bottom,
                     Width = GetWidth(),
                     Height = validItems.Count() * listNode.ItemHeightFull
-
                 };
 
                 // Keep on screen.
