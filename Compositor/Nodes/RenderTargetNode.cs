@@ -234,7 +234,12 @@ namespace Composition.Nodes
 
             Scroller.Draw(id, parentAlpha);
             DebugTimer.DebugEndTime(this);
-            id.PreProcess(this);
+
+            if (NeedsDraw) 
+            { 
+                NeedsDraw = false;
+                id.PreProcess(this);
+            }
         }
 
         public void Update(GameTime gameTime)
@@ -257,7 +262,6 @@ namespace Composition.Nodes
                         if (drawer == null)
                         {
                             drawer = new Drawer(CompositorLayer.GraphicsDevice, true);
-                            drawer.CanPreProcess = false;
                         }
 
                         if (renderTarget != null && !IsAnimating() && (Size.Width != renderTarget.Width || Size.Height != renderTarget.Height))
@@ -279,10 +283,21 @@ namespace Composition.Nodes
 
         public void PreProcess(Drawer id)
         {
+            if (drawer != null)
+            {
+                if (drawer.CanPreProcess)
+                {
+                    drawer.DoPreProcess();
+                }
+            }
+
             if (renderTarget != null)
             {
                 DrawToTexture(drawer);
-                NeedsDraw = false;
+            }
+            else
+            {
+                NeedsDraw = true;
             }
         }
 
@@ -326,9 +341,7 @@ namespace Composition.Nodes
                     id.GraphicsDevice.SetRenderTarget(null);
                 }
             }
-            base.RequestRedraw();
-            NeedsDraw = false;
-            NeedsLayout = false;
+            Parent?.RequestRedraw();
         }
 
         protected virtual void DrawContent(Drawer id)

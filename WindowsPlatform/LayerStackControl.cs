@@ -43,7 +43,9 @@ namespace WindowsPlatform
         {
             DateTime now = DateTime.Now;
             GameTime gameTime = new GameTime(now - Start, now - LastFrame);
-            
+
+            LayerStack.DoBackground();
+
             LayerStack.Update(gameTime);
             LayerStack.Draw();
         }

@@ -102,6 +102,8 @@ namespace Composition
         {
             try
             {
+                DoBackground();
+
                 GraphicsDeviceManager.GraphicsDevice.Clear(ClearColor);
                 if (LayerStack != null)
                 {
@@ -113,13 +115,11 @@ namespace Composition
             {
                 Tools.Logger.UI.LogException(this, e);
             }
-
-            DoBackground();
         }
 
         protected virtual void DoBackground()
         {
-            LayerStack.DoBackground();
+            LayerStack?.DoBackground();
         }
     }
 

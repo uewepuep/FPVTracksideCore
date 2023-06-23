@@ -191,7 +191,7 @@ namespace UI.Nodes
             Event[] events;
             using (Database db = new Database())
             {
-                events = db.Events.Include(e => e.Channels).Include(e => e.Club).FindAll().OrderBy(e => e.Name).ToArray();
+                events = db.Events.Include(e => e.Channels).Include(e => e.Club).Include(e => e.PilotChannels).Include(e => e.PilotChannels.Select(p => p.Pilot)).FindAll().OrderBy(e => e.Name).ToArray();
 
                 Club club = db.Clubs.FindAll().FirstOrDefault();
                 if (club == null)

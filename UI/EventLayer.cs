@@ -346,12 +346,12 @@ namespace UI
                 if (lastRace != null) 
                 {
                     EventManager.RaceManager.SetRace(lastRace);
+                    return;
                 }
             }
-            else
-            {
-                NextRace(true);
-            }
+
+            // If we didn't find the last finished race, just do next race.
+            NextRace(true);
         }
 
         public override void Dispose()

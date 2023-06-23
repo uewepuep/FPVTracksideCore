@@ -441,6 +441,7 @@ namespace Composition.Nodes
                     AddPropertyNode(newNode);
                 }
             }
+            objectProperties.RequestLayout();
         }
 
         protected void AddPropertyNode(PropertyNode<T> newNode)

@@ -415,6 +415,8 @@ namespace UI.Nodes
         {
             base.StatusUpdate();
             SetStatus("", oBSRemoteControlManager.Connected);
+
+            this.Visible = oBSRemoteControlManager.Enabled;
         }
     }
 }

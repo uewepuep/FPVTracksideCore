@@ -53,6 +53,15 @@ namespace UI
             }
         }
 
+        public bool Enabled
+        {
+            get
+            {
+                return config.Enabled;
+            }
+
+        }
+
         public OBSRemoteControlManager(SceneManagerNode sceneManagerNode, TabbedMultiNode tabbedMultiNode, EventManager eventManager)
         {
             this.sceneManagerNode = sceneManagerNode;

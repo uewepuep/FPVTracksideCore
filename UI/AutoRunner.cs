@@ -312,7 +312,7 @@ namespace UI
                 // if the time is up, plus the extra final lap time is up.
                 if (RaceManager.TimesUp)
                 {
-                    if (State != States.WaitingRaceFinalLap)
+                    if (State == States.None)
                     {
                         SetState(States.WaitingRaceFinalLap);
                     }

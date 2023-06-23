@@ -86,10 +86,10 @@ namespace RaceLib
                 if (PilotChannels == null)
                     return 0;
 
-                if (PilotChannels.Any())
+                if (!PilotChannels.Any())
                     return 0;
 
-                return PilotChannels.Where(p => !p.Pilot.PracticePilot).Count();
+                return PilotChannels.Where(p => p.Pilot != null && !p.Pilot.PracticePilot).Count();
             } 
         }
         
@@ -132,7 +132,7 @@ namespace RaceLib
         public TimeSpan RaceStartIgnoreDetections { get; set; }
 
         [Category("Track Layout")]
-        [DisplayName("Smart-Minimum Lap Time (Seconds)")]
+        [DisplayName("Smart Minimum Lap Time (Seconds)")]
         public TimeSpan MinLapTime { get; set; }
 
         [System.ComponentModel.Browsable(false)]
