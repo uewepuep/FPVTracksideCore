@@ -56,7 +56,7 @@ namespace Composition.Input
             MenuLayer = menuLayer;
 
             listNode = new ListNode<MenuItem>(MenuLayer.ScrollBar);
-            listNode.ShrinkContentsForScroller = false;
+            listNode.ShrinkContentsForScrollers = false;
 
             AddChild(listNode);
 
