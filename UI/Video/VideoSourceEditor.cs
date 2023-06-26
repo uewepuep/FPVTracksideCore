@@ -482,7 +482,7 @@ namespace UI.Video
             table.RelativeBounds = new RectangleF(0, 0, 1, 0.96f);
             main.AddChild(table);
 
-            TextNode channelInstructions = new TextNode("Click on the video feed to change channel/camera assignments", Theme.Current.Editor.Text.XNA);
+            TextNode channelInstructions = new TextNode("Click on the video feed to change channel / camera assignments / edit settings", Theme.Current.Editor.Text.XNA);
             channelInstructions.RelativeBounds = new RectangleF(0, table.RelativeBounds.Bottom, 1, 1 - table.RelativeBounds.Bottom);
             main.AddChild(channelInstructions);
 
@@ -574,6 +574,16 @@ namespace UI.Video
             MouseMenu mouseMenu = new MouseMenu(this);
             mouseMenu.TopToBottom = true;
 
+            if (channelVideoInfo.VideoBounds.SourceType != SourceTypes.FPVFeed)
+            {
+                mouseMenu.AddItem("Edit Cam Settings", () =>
+                {
+                    VideoBoundsEditor editor = new VideoBoundsEditor(channelVideoInfo.VideoBounds);
+                    GetLayer<PopupLayer>().Popup(editor);
+                });
+                mouseMenu.AddBlank();
+            }
+
             MouseMenu channelMenu = mouseMenu.AddSubmenu("Channel Assigment");
 
             channelMenu.AddItem("No Channel", () => { AssignChannel(channelVideoInfo, Channel.None); });
@@ -601,16 +611,7 @@ namespace UI.Video
             {
                 SetSourceType(channelVideoInfo, SourceTypes.Commentators);
             });
-
-            if (channelVideoInfo.VideoBounds.SourceType != SourceTypes.FPVFeed)
-            {
-                mouseMenu.AddItem("Edit Cam Settings", () =>
-                {
-                    VideoBoundsEditor editor = new VideoBoundsEditor(channelVideoInfo.VideoBounds);
-                    GetLayer<PopupLayer>().Popup(editor);
-                });
-            }
-
+            mouseMenu.AddBlank();
 
             MouseMenu splitMenu = mouseMenu.AddSubmenu("Split");
             foreach (Splits split in Enum.GetValues(typeof(Splits)))
@@ -629,6 +630,8 @@ namespace UI.Video
             cropMenu.AddItem("Crop 16:9", () => { Crop(channelVideoInfo, 16, 9); });
 
             mouseMenu.AddItem("Duplicate", () => { DuplicateView(channelVideoInfo); });
+
+            mouseMenu.AddBlank();
             mouseMenu.AddItem("Remove", () => { RemoveView(channelVideoInfo); });
             mouseMenu.AddItem("Reset All", Reset);
 
@@ -747,6 +750,9 @@ namespace UI.Video
             {
                 channelVideoInfo.Channel = Channel.None;
                 channelVideoInfo.VideoBounds.Channel = channelVideoInfo.Channel.ToStringShort();
+
+                VideoBoundsEditor editor = new VideoBoundsEditor(channelVideoInfo.VideoBounds);
+                GetLayer<PopupLayer>().Popup(editor);
             }
 
             RemoveDuplicateChannels();

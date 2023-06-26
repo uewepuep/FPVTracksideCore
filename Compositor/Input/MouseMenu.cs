@@ -10,7 +10,7 @@ using Tools;
 
 namespace Composition.Input
 {
-    public class MouseMenu : AnimatedNode
+    public class MouseMenu : AlphaAnimatedNode
     {
         public Point Position { get { return CalleeArea.Location; } }
         public Rectangle CalleeArea { get; private set; }
@@ -355,14 +355,14 @@ namespace Composition.Input
         public void Show(Rectangle callee)
         {
             CalleeArea = callee;
-            Bounds = new Rectangle(callee.Location, new Point(1, 1));
-
             if (Items.Any())
             {
+                Alpha = 0;
                 MenuLayer.Root.AddChild(this);
                 RequestLayout();
                 RequestRedraw();
                 Open = true;
+                SetAnimatedAlpha(1);
             }
             else
             {

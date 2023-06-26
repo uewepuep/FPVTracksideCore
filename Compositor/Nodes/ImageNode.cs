@@ -143,7 +143,7 @@ namespace Composition.Nodes
         {
             try
             {
-                Texture = id.TextureCache.GetTextureFromFilename(FileName);
+                texture = id.TextureCache.GetTextureFromFilename(FileName);
                 SourceBounds = new Rectangle(0, 0, Texture.Width, Texture.Height);
                 sharedTexture = true;
                 UpdateAspectRatioFromTexture();
@@ -151,7 +151,7 @@ namespace Composition.Nodes
             catch
             {
                 FileName = null;
-                Texture = null;
+                texture = null;
             }
         }
 

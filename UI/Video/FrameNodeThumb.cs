@@ -101,7 +101,7 @@ namespace UI.Video
                 if (drawer == null)
                 {
                     drawer = new Drawer(CompositorLayer.GraphicsDevice);
-                    drawer.CanPreProcess = false;
+                    drawer.CanMultiThread = false;
                 }
 
                 if (renderTarget != null && drawer != null && texture != null)

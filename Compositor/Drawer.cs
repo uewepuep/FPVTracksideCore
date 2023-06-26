@@ -28,7 +28,7 @@ namespace Composition
         private Queue<IPreProcessable> preProcessOptional;
 
         public TimeSpan PreProcessLimit { get; set; }
-        public bool CanPreProcess { get; set; }
+        public bool CanMultiThread { get; set; }
 
         private AutoResetEvent autoresetevent;
 
@@ -49,7 +49,7 @@ namespace Composition
             preProcessForced = new Queue<IPreProcessable>();
             preProcessOptional = new Queue<IPreProcessable>();
             PreProcessLimit = TimeSpan.FromMilliseconds(1000 / 120.0);
-            CanPreProcess = true;
+            CanMultiThread = true;
 
             Offset = Point.Zero;
 
@@ -211,7 +211,7 @@ namespace Composition
             if (preProcessForced == null)
                 return;
 
-            if (!CanPreProcess)
+            if (!CanMultiThread)
             {
                 toPreProcess.PreProcess(this);
                 return;

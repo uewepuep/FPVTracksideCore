@@ -106,8 +106,8 @@ namespace Composition.Nodes
                         else
                         {
                             textRenderer.Reset();
+                            RequestRedraw();
                         }
-                        RequestRedraw();
                     }
                 }
 
@@ -147,7 +147,10 @@ namespace Composition.Nodes
             {
                 needsTextureUpdate = false;
                 textRenderer.CreateTextures(id);
-                RequestRedraw();
+                if (id.CanMultiThread)
+                {
+                    RequestRedraw();
+                }
             }
         }
 

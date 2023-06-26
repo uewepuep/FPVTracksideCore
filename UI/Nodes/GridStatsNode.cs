@@ -30,6 +30,7 @@ namespace UI.Nodes
                 pBList = new LapRecordsSummaryNode(eventManager);
                 pBList.ShowPositions = false;
                 pBList.RelativeBounds = new RectangleF(0, 0, 1, 1);
+                pBList.SetHeadingsHeight(0.1f, 0.08f, 35);
                 background.AddChild(pBList);
 
                 EventManager.RaceManager.OnPilotAdded += RaceManager_OnPilotAdded;

@@ -29,8 +29,8 @@ namespace UI.Nodes
 
         public Pilot[] FilterPilots { get; private set; }
 
-        private HeadingNode heading;
-        public string Name { get { return heading.Text; } }
+        private HeadingNode title;
+        public string Name { get { return title.Text; } }
 
         public PilotSummaryTable(EventManager eventManager, string name)
         {
@@ -40,17 +40,14 @@ namespace UI.Nodes
             PanelNode panelNode = new PanelNode();
             AddChild(panelNode);
 
-            heading = new HeadingNode(Theme.Current.InfoPanel, name);
-            panelNode.AddChild(heading);
+            title = new HeadingNode(Theme.Current.InfoPanel, name);
+            panelNode.AddChild(title);
 
             headings = new Node();
-            headings.RelativeBounds = new Tools.RectangleF(0, heading.RelativeBounds.Bottom, 1, 0.05f);
             panelNode.AddChild(headings);
 
             rows = new ListNode<PilotResultNode>(Theme.Current.ScrollBar.XNA);
-            rows.RelativeBounds = new Tools.RectangleF(0, headings.RelativeBounds.Bottom, 1, 1 - headings.RelativeBounds.Bottom);
-            rows.ItemHeight = 40;
-            rows.ItemPadding = 0;
+            rows.ItemPadding = 1;
             rows.Scale(0.99f);
 
             rows.BackgroundColors = new Color[]
@@ -61,9 +58,20 @@ namespace UI.Nodes
 
             panelNode.AddChild(rows);
 
+            SetHeadingsHeight(0.05f, 0.05f, 40);
+
             eventManager.RaceManager.OnRaceEnd += (Race race) => { Refresh(); };
 
             needsRefresh = true;
+
+        }
+
+        public void SetHeadingsHeight(float titleHeight, float headingsHeight, int itemHeight)
+        {
+            title.RelativeBounds = new RectangleF(0, 0, 1, titleHeight);
+            headings.RelativeBounds = new RectangleF(0, title.RelativeBounds.Bottom, 1, headingsHeight);
+            rows.RelativeBounds = new RectangleF(0, headings.RelativeBounds.Bottom, 1, 1 - headings.RelativeBounds.Bottom);
+            rows.ItemHeight = itemHeight;
         }
 
         public void OrderByLast()

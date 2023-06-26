@@ -253,7 +253,7 @@ namespace Composition.Nodes
             }
 
             bool canRender = !LayoutDefinesSize || (LayoutDefinesSize && hasLayedOut);
-            if (canRender && NeedsDraw && !disposed)
+            if (canRender && !disposed)
             {
                 if (lastDrawFrame == CompositorLayer.FrameNumber)
                 {
@@ -262,6 +262,7 @@ namespace Composition.Nodes
                         if (drawer == null)
                         {
                             drawer = new Drawer(CompositorLayer.GraphicsDevice);
+                            drawer.CanMultiThread = false;
                         }
 
                         if (renderTarget != null && !IsAnimating() && (Size.Width != renderTarget.Width || Size.Height != renderTarget.Height))
@@ -285,7 +286,7 @@ namespace Composition.Nodes
         {
             if (drawer != null)
             {
-                if (drawer.CanPreProcess)
+                if (drawer.CanMultiThread)
                 {
                     drawer.DoPreProcess();
                 }
