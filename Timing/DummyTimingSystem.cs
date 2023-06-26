@@ -195,6 +195,8 @@ namespace Timing
             frequencies.Clear();
             frequencies.AddRange(newFrequencies.Select(r => r.Frequency));
 
+            System.Diagnostics.Debug.Assert(frequencies.Distinct().Count() == frequencies.Count);
+
             OnDataSent?.Invoke();
             OnDataReceived?.Invoke();
 

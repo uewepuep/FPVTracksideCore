@@ -41,6 +41,19 @@ namespace Timing
         {
             return Frequency + "mhz(" + (SensitivityFactor * 100) + "%)";
         }
+
+        public override bool Equals(object obj)
+        {
+            if (obj as ListeningFrequency == null)
+                return false;
+
+            return ((ListeningFrequency)obj).Frequency == Frequency;
+        }
+
+        public override int GetHashCode()
+        {
+            return Frequency;
+        }
     }
 
     public enum TimingSystemRole
