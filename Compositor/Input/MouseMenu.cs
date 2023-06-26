@@ -214,6 +214,7 @@ namespace Composition.Input
         public int GetWidth()
         {
             MenuItem[] validItems = Items.Where(i => i.Text != null).ToArray();
+            int width = 0;
 
             if (validItems.Any(m => m.NeedsLayout))
             {
@@ -224,19 +225,17 @@ namespace Composition.Input
                     if (chars < 10)
                         chars = 10;
 
-                    return chars * WidthPerChar;
+                    width = chars * WidthPerChar;
                 }
             }
             else
             {
-                int max = 0;
                 foreach (var item in validItems) 
                 { 
-                    max = Math.Max(max, item.Bounds.Width);
+                    width = Math.Max(width, item.Bounds.Width);
                 }
-                return max;
             }
-            return 0;
+            return width;
         }
 
         public override Rectangle CalculateRelativeBounds(Rectangle parentBounds)
