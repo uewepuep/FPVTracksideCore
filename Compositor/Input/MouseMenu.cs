@@ -214,7 +214,7 @@ namespace Composition.Input
         public int GetWidth()
         {
             MenuItem[] validItems = Items.Where(i => i.Text != null).ToArray();
-            int width = 0;
+            int width = 120;
 
             if (validItems.Any(m => m.NeedsLayout))
             {
@@ -222,10 +222,7 @@ namespace Composition.Input
                 {
                     int chars = validItems.Select(b => b.Text.Length).Max();
 
-                    if (chars < 10)
-                        chars = 10;
-
-                    width = chars * WidthPerChar;
+                    width = Math.Max(width, chars * WidthPerChar);
                 }
             }
             else
@@ -287,6 +284,8 @@ namespace Composition.Input
                 {
                     bounds.X += bounds.Width;
                 }
+
+                //Logger.UI.LogCall(this, "menubounds", bounds);
 
                 return bounds;
             }
@@ -359,7 +358,6 @@ namespace Composition.Input
                 Alpha = 0;
                 MenuLayer.Root.AddChild(this);
                 RequestLayout();
-                RequestRedraw();
                 Open = true;
                 SetAnimatedAlpha(1);
             }
