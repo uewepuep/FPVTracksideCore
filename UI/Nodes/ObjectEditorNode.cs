@@ -817,7 +817,6 @@ namespace UI.Nodes
         {
             Scale(0.8f, 1f);
             Config = config;
-            CanReOrder = false;
 
             commonPropertiesBackground = new Node();
             root.AddChild(commonPropertiesBackground);
@@ -856,31 +855,79 @@ namespace UI.Nodes
             container.AddSize(0, -triggersHeading.RelativeBounds.Bottom);
         }
 
-        private class OBSRemoteControlScenePropertyNode : ListPropertyNode<OBSRemoteControlManager.OBSRemoteControlConfig>
+        protected override PropertyNode<OBSRemoteControlManager.OBSRemoteControlEvent> CreatePropertyNode(OBSRemoteControlManager.OBSRemoteControlEvent obj, PropertyInfo pi)
         {
-            public OBSRemoteControlScenePropertyNode(OBSRemoteControlManager.OBSRemoteControlConfig obj, PropertyInfo pi, Color textColor, Color hover)
+            if (pi.Name == "SceneName")
+            {
+                return new OBSRemoteControlScenePropertyNode(obj, pi, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlScenePropertyNode.Types.Scene);
+            }
+            else if (pi.Name == "SourceName")
+            {
+                return new OBSRemoteControlScenePropertyNode(obj, pi, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlScenePropertyNode.Types.Source);
+            }
+            else if (pi.Name == "FilterName")
+            {
+                return new OBSRemoteControlScenePropertyNode(obj, pi, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlScenePropertyNode.Types.SourceFilter);
+            }
+
+            return base.CreatePropertyNode(obj, pi);
+        }
+
+
+        private class OBSRemoteControlScenePropertyNode : ListPropertyNode<OBSRemoteControlManager.OBSRemoteControlEvent>
+        {
+            public OBSRemoteControlManager.OBSRemoteControlConfig Config { get; private set; }
+
+            public enum Types
+            {
+                Scene,
+                Source,
+                SourceFilter
+            }
+            public Types OBSType { get; private set; }
+
+            private OBSRemoteControl oBSRemoteControl;
+
+            public OBSRemoteControlScenePropertyNode(OBSRemoteControlManager.OBSRemoteControlEvent obj, PropertyInfo pi, Color textColor, Color hover, OBSRemoteControlManager.OBSRemoteControlConfig config, Types type)
                 : base(obj, pi, textColor, hover)
             {
+                Config = config;
+                Value.CanEdit = true;
+                OBSType = type;
+
+                oBSRemoteControl = new OBSRemoteControl(Config.Host, Config.Port, Config.Password);
             }
 
             protected override void ShowMouseMenu()
             {
-                using (OBSRemoteControl oBSRemoteControl = new OBSRemoteControl(Object.Host, Object.Port, Object.Password))
+                switch (OBSType)
                 {
-                    oBSRemoteControl.Connect();
-
-                    if (oBSRemoteControl.WaitConnection())
-                    {
-                        Options = oBSRemoteControl.GetOptions().OfType<object>().ToList();
-                    }
-                    else
-                    {
-                        Options = new List<object>();
-                    }
+                    case Types.Scene:
+                        oBSRemoteControl?.GetScenes(ShowMouseMenu);
+                        break;
+                    case Types.Source:
+                        oBSRemoteControl?.GetSources(ShowMouseMenu);
+                        break;
+                    case Types.SourceFilter:
+                        oBSRemoteControl?.GetFilters(ShowMouseMenu);
+                        break;
                 }
+            }
 
+            private void ShowMouseMenu(string[] options)
+            {
+                Options = options.OfType<object>().ToList();
                 base.ShowMouseMenu();
             }
+        }
+    }
+
+    public class AutoRunnerConfigEditor : ObjectEditorNode<AutoRunnerConfig>
+    {
+        public AutoRunnerConfigEditor(AutoRunnerConfig config)
+            : base(config) 
+        {
+            Scale(0.8f, 1f);
         }
     }
 }
