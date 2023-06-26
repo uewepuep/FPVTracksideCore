@@ -182,21 +182,30 @@ namespace RaceLib
             {
                 Race currentRace = CurrentRace;
 
+                TimeSpan time;
+
                 if (RaceFinished)
                 {
-                    return (currentRace.End - currentRace.Start) - currentRace.TotalPausedTime;
+                    time = currentRace.End - currentRace.Start;
                 }
                 else
                 {
                     if (RaceRunning)
                     {
-                        return (DateTime.Now - currentRace.Start) - currentRace.TotalPausedTime;
+                        time = DateTime.Now - currentRace.Start;
                     }
                     else
                     {
                         return TimeSpan.Zero;
                     }
                 }
+
+                time -= currentRace.TotalPausedTime;
+
+                if (time < TimeSpan.Zero)
+                    return TimeSpan.Zero;
+
+                return time;
             }
         }
 

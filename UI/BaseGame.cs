@@ -134,8 +134,9 @@ namespace UI
             LayerStack.Add(dragLayer);
 
             LayerStack.Add(new SponsorLayer(GraphicsDevice));
+#if DEBUG
             LayerStack.Add(new TestLayer(GraphicsDevice, popupLayer));
-
+#endif
             bool waitingOnMutex;
             try
             {
@@ -292,7 +293,7 @@ namespace UI
             {
                 try
                 {
-                    eventLayer.LoadVideo();
+                    eventLayer?.LoadVideo();
                 }
                 catch (Exception ex)
                 {
@@ -321,7 +322,12 @@ namespace UI
 
             eventLayer.Root.Alpha = 0;
             LayerStack.AddAbove<BackgroundLayer>(eventLayer);
-            LayerStack.GetLayer<TestLayer>().EventLayer = eventLayer;
+
+            TestLayer testLayer = LayerStack.GetLayer<TestLayer>();
+            if (testLayer != null)
+            {
+                testLayer.EventLayer = eventLayer;
+            }
         }
 
         protected virtual void OnStartEvent(EventManager eventManager, Event selected)

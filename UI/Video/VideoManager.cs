@@ -84,8 +84,19 @@ namespace UI.Video
         {
             VideoDirectory = new DirectoryInfo(directory);
 
-            if (!VideoDirectory.Exists)
-                VideoDirectory.Create();
+            try
+            {
+                if (!VideoDirectory.Exists)
+                    VideoDirectory.Create();
+            }
+            catch (Exception e)
+            {
+                Logger.VideoLog.LogException(this, e);
+                VideoDirectory = new DirectoryInfo("video");
+
+                if (!VideoDirectory.Exists)
+                    VideoDirectory.Create();
+            }
 
             todo = new List<Action>();
             mutex = new AutoResetEvent(false);
