@@ -37,6 +37,7 @@ namespace Composition
         public abstract IClipboard Clipboard { get; }
 
         public abstract bool Focused { get; }
+        public abstract bool ThreadedDrawing { get; }
 
         public abstract void ShowNewWindow(Node node);
 

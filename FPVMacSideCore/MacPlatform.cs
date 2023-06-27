@@ -54,6 +54,8 @@ namespace FPVMacsideCore
         private DirectoryInfo workingDirectory;
         public override DirectoryInfo WorkingDirectory { get { return workingDirectory; } }
 
+        public override bool ThreadedDrawing { get { return false; } }
+
         public MacPlatform()
         {
             Console.WriteLine("Mac Platform Start");

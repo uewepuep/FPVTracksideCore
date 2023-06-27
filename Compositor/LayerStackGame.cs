@@ -140,11 +140,13 @@ namespace Composition
             backgroundSet = new AutoResetEvent(true);
             drawSet = new AutoResetEvent(false);
 
-            background = new Thread(Background);
-            background.Name = "LayerStackGame Background Draw";
-            background.Start();
-
-            runBackground = true;
+            if (platformTools.ThreadedDrawing)
+            {
+                background = new Thread(Background);
+                background.Name = "LayerStackGame Background Draw";
+                background.Start();
+            }
+            runBackground = platformTools.ThreadedDrawing;
         }
 
         protected override void Dispose(bool disposing)
@@ -193,6 +195,11 @@ namespace Composition
         protected override void DoBackground()
         {
             // done on the thread so this do nothing.
+            if (!runBackground)
+            {
+                base.DoBackground();
+                backgroundSet.Set();
+            }
         }
     }
 }
