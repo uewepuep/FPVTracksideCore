@@ -129,14 +129,17 @@ namespace UI.Nodes
                 BugReport();
             });
 
+            
             if (tabbedMultiNode != null)
             {
                 root.AddBlank();
+                MouseMenu tabs = root.AddSubmenu("Open Tab");
+
                 foreach (var kvp in tabbedMultiNode.Tabs)
                 {
                     TextButtonNode tbn = kvp.Key;
                     Node n = kvp.Value;
-                    root.AddItem(tbn.Text, () =>
+                    tabs.AddItem(tbn.Text, () =>
                     {
                         tbn.ButtonNode.Click(null);
                     });
@@ -146,9 +149,19 @@ namespace UI.Nodes
 
             root.AddBlank();
 
-            root.AddItem("General Settings", () =>
+            root.AddItem("Auto Runner Settings", () =>
             {
-                ShowGeneralSettings();
+                ShowAutoRunnerSettings();
+            });
+
+            root.AddItem("Channel Settings", () =>
+            {
+                ShowChannelSettings();
+            });
+
+            root.AddItem("Export Column Settings", () =>
+            {
+                ShowExportSettings();
             });
 
             if (hasEvent)
@@ -159,19 +172,21 @@ namespace UI.Nodes
                 });
             }
 
-            root.AddItem("Channel Settings", () =>
+            root.AddItem("General Settings", () =>
             {
-                ShowChannelSettings();
+                ShowGeneralSettings();
             });
 
-            root.AddItem("Theme Settings", () =>
-            {
-                ShowThemeSettings();
-            }, isNotRunningRace);
 
             root.AddItem("Keyboard Shortcuts", () =>
             {
                 ShowKeyboardShortcuts();
+            });
+
+
+            root.AddItem("OBS Remote Control Settings", () =>
+            {
+                ShowOBSRemoteControlSettings();
             });
 
             root.AddItem("Points Settings", () =>
@@ -180,10 +195,21 @@ namespace UI.Nodes
 
             }, isNotRunningRace);
 
+           
+           
+
+          
+
             root.AddItem("Sound Editor", () =>
             {
                 ShowSoundsSettings();
             });
+
+            root.AddItem("Theme Settings", () =>
+            {
+                ShowThemeSettings();
+            }, isNotRunningRace);
+
 
             root.AddItem("Timing Settings", () =>
             {
@@ -199,20 +225,11 @@ namespace UI.Nodes
                 });
             }
 
-            root.AddItem("Export Column Settings", () =>
-            {
-                ShowExportSettings();
-            });
+          
 
-            root.AddItem("OBS Remote Control Settings", () =>
-            {
-                ShowOBSRemoteControlSettings();
-            });
+            
 
-            root.AddItem("Auto Runner Settings", () =>
-            {
-                ShowAutoRunnerSettings();
-            });
+            
 
             openWindow.AddItem("Log", () =>
             {

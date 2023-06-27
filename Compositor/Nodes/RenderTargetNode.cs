@@ -265,15 +265,20 @@ namespace Composition.Nodes
                             drawer.CanMultiThread = false;
                         }
 
-                        if (renderTarget != null && !IsAnimating() && (Size.Width != renderTarget.Width || Size.Height != renderTarget.Height))
+                        Size maxSize = Size;
+
+                        maxSize.Width = Math.Min(4096, maxSize.Width);
+                        maxSize.Height = Math.Min(4096, maxSize.Height);
+
+                        if (renderTarget != null && !IsAnimating() && (maxSize.Width != renderTarget.Width || maxSize.Height != renderTarget.Height))
                         {
                             renderTarget.Dispose();
                             renderTarget = null;
                         }
 
-                        if (renderTarget == null && Size.Width > 0 && Size.Height > 0)
+                        if (renderTarget == null && maxSize.Width > 0 && maxSize.Height > 0)
                         {
-                            renderTarget = new RenderTarget2D(drawer.GraphicsDevice, Math.Min(4096, Size.Width), Math.Min(4096, Size.Height));
+                            renderTarget = new RenderTarget2D(drawer.GraphicsDevice, maxSize.Width, maxSize.Height);
                             NeedsDraw = true;
                         }
                     }
