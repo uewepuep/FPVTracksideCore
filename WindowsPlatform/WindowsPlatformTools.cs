@@ -56,6 +56,8 @@ namespace WindowsPlatform
             }
         }
 
+        public override bool ThreadedDrawing { get { return true; } }
+
         public WindowsPlatformTools()
         {
             workingDirectory = new DirectoryInfo(Directory.GetCurrentDirectory());
