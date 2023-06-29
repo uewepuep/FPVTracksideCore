@@ -21,7 +21,9 @@ namespace UI
 
             ClickStartRace,
             StartRaceTone,
-            ClickEndRace,
+            RaceEnd,
+
+            RaceStartCancelled,
            
             PreRaceTab,
             PostRaceTab,
@@ -75,6 +77,8 @@ namespace UI
                 sceneManagerNode.OnSceneChange += OnSceneChange;
                 eventManager.RaceManager.OnRaceStart += OnRaceStart;
                 eventManager.RaceManager.OnRacePreStart += OnRacePreStart;
+                eventManager.RaceManager.OnRaceEnd += RaceManager_OnRaceEnd;
+                eventManager.RaceManager.OnRaceCancelled += RaceManager_OnRaceCancelled;
                 tabbedMultiNode.OnTabChange += OnTabChange;
                 eventsHooked = true;
 
@@ -98,6 +102,7 @@ namespace UI
                 sceneManagerNode.OnSceneChange -= OnSceneChange;
                 eventManager.RaceManager.OnRaceStart -= OnRaceStart;
                 eventManager.RaceManager.OnRacePreStart -= OnRacePreStart;
+                eventManager.RaceManager.OnRaceEnd -= RaceManager_OnRaceEnd;
                 tabbedMultiNode.OnTabChange -= OnTabChange;
             }
         }
@@ -158,6 +163,16 @@ namespace UI
         private void OnRaceStart(Race race)
         {
             Trigger(Triggers.StartRaceTone);
+        }
+
+        private void RaceManager_OnRaceEnd(Race race)
+        {
+            Trigger(Triggers.RaceEnd);
+        }
+
+        private void RaceManager_OnRaceCancelled(Race arg1, bool arg2)
+        {
+            Trigger(Triggers.RaceStartCancelled);
         }
 
         private void OnSceneChange(SceneManagerNode.Scenes scene)

@@ -859,22 +859,22 @@ namespace UI.Nodes
         {
             if (pi.Name == "SceneName")
             {
-                return new OBSRemoteControlScenePropertyNode(obj, pi, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlScenePropertyNode.Types.Scene);
+                return new OBSRemoteControlPropertyNode(obj, pi, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlPropertyNode.Types.Scene);
             }
             else if (pi.Name == "SourceName")
             {
-                return new OBSRemoteControlScenePropertyNode(obj, pi, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlScenePropertyNode.Types.Source);
+                return new OBSRemoteControlPropertyNode(obj, pi, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlPropertyNode.Types.Source);
             }
             else if (pi.Name == "FilterName")
             {
-                return new OBSRemoteControlScenePropertyNode(obj, pi, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlScenePropertyNode.Types.SourceFilter);
+                return new OBSRemoteControlPropertyNode(obj, pi, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlPropertyNode.Types.SourceFilter);
             }
 
             return base.CreatePropertyNode(obj, pi);
         }
 
 
-        private class OBSRemoteControlScenePropertyNode : ListPropertyNode<OBSRemoteControlManager.OBSRemoteControlEvent>
+        private class OBSRemoteControlPropertyNode : ListPropertyNode<OBSRemoteControlManager.OBSRemoteControlEvent>
         {
             public OBSRemoteControlManager.OBSRemoteControlConfig Config { get; private set; }
 
@@ -888,7 +888,7 @@ namespace UI.Nodes
 
             private OBSRemoteControl oBSRemoteControl;
 
-            public OBSRemoteControlScenePropertyNode(OBSRemoteControlManager.OBSRemoteControlEvent obj, PropertyInfo pi, Color textColor, Color hover, OBSRemoteControlManager.OBSRemoteControlConfig config, Types type)
+            public OBSRemoteControlPropertyNode(OBSRemoteControlManager.OBSRemoteControlEvent obj, PropertyInfo pi, Color textColor, Color hover, OBSRemoteControlManager.OBSRemoteControlConfig config, Types type)
                 : base(obj, pi, textColor, hover)
             {
                 Config = config;
