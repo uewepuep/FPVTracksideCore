@@ -242,7 +242,9 @@ namespace UI
                 Enabled = false;
                 Host = "localhost";
                 Port = 4455;
+#if DEBUG
                 Password = "42ZzDvzK3Cd43HQW";
+#endif
 
                 RemoteControlEvents = new List<OBSRemoteControlEvent>();
             }

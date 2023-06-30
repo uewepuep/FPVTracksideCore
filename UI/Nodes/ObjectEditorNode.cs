@@ -895,11 +895,17 @@ namespace UI.Nodes
                 Value.CanEdit = true;
                 OBSType = type;
 
-                oBSRemoteControl = new OBSRemoteControl(Config.Host, Config.Port, Config.Password);
             }
 
             protected override void ShowMouseMenu()
             {
+                if (oBSRemoteControl != null) 
+                {
+                    oBSRemoteControl.Dispose();
+                }
+
+                oBSRemoteControl = new OBSRemoteControl(Config.Host, Config.Port, Config.Password);
+
                 switch (OBSType)
                 {
                     case Types.Scene:
