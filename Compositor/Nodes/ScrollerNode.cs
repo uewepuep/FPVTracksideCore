@@ -183,22 +183,24 @@ namespace Composition.Nodes
                 return false;
             }
 
-            bool result = false;
-
-            if (mouseInputEvent.ButtonState == ButtonStates.Pressed && Bounds.Contains(mouseInputEvent.Position))
+            if (Bounds.Contains(mouseInputEvent.Position))
             {
-                Dragging = true;
-                result = true;
-                grabOffset = Bounds.Location - mouseInputEvent.Position;
+                if (mouseInputEvent.ButtonState == ButtonStates.Pressed)
+                {
+                    Dragging = true;
+                    grabOffset = Bounds.Location - mouseInputEvent.Position;
+                }
+
+                return true;
             }
 
             if (mouseInputEvent.WheelChange != 0)
             {
                 ScrollAdd(-mouseInputEvent.WheelChange);
-                result = true;
+                return true;
             }
 
-            return result;
+            return false;
         }
 
         public void ScrollTo(float point, TimeSpan time)

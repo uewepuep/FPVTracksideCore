@@ -142,7 +142,7 @@ namespace UI.Video
         {
             if (pi.Name == "VideoMode")
             {
-                return new ModePropertyNode(this, obj, pi, TextColor, ButtonHover);
+                return new ModePropertyNode(this, obj, pi, ButtonBackground, TextColor, ButtonHover);
             }
 
             if (pi.Name == "AnyUSBPort")
@@ -161,14 +161,14 @@ namespace UI.Video
             if (pi.Name == "RecordResolution")
             {
                 int[] resolutions = new int[] { 240, 480, 720, 1080, 2160 };
-                ListPropertyNode<VideoConfig> listPropertyNode = new ListPropertyNode<VideoConfig>(obj, pi, TextColor, ButtonHover, resolutions);
+                ListPropertyNode<VideoConfig> listPropertyNode = new ListPropertyNode<VideoConfig>(obj, pi, ButtonBackground, TextColor, ButtonHover, resolutions);
                 return listPropertyNode;
             }
 
             if (pi.Name == "RecordFrameRate")
             {
                 int[] framerates = new int[] { 15, 25, 30, 50, 60 };
-                ListPropertyNode<VideoConfig> listPropertyNode = new ListPropertyNode<VideoConfig>(obj, pi, TextColor, ButtonHover, framerates);
+                ListPropertyNode<VideoConfig> listPropertyNode = new ListPropertyNode<VideoConfig>(obj, pi, ButtonBackground, TextColor, ButtonHover, framerates);
                 return listPropertyNode;
             }
 
@@ -184,7 +184,7 @@ namespace UI.Video
 
             if (pi.Name == "Splits")
             {
-                return new SplitsPropertyNode(obj, pi, TextColor, ButtonHover);
+                return new SplitsPropertyNode(obj, pi, ButtonBackground, TextColor, ButtonHover);
             }
 
             PropertyNode<VideoConfig> propertyNode = base.CreatePropertyNode(obj, pi);
@@ -316,8 +316,8 @@ namespace UI.Video
 
             private bool rebootRequired;
 
-            public ModePropertyNode(VideoSourceEditor vse, VideoConfig obj, PropertyInfo pi, Color textColor, Color hoverColor)
-                : base(obj, pi, textColor, hoverColor, new object[0])
+            public ModePropertyNode(VideoSourceEditor vse, VideoConfig obj, PropertyInfo pi, Color background, Color textColor, Color hoverColor)
+                : base(obj, pi, background, textColor, hoverColor)
             {
                 this.vse = vse;
                 modes = new Mode[0];
@@ -1012,8 +1012,8 @@ namespace UI.Video
 
     public class SplitsPropertyNode : EnumPropertyNode<VideoConfig>
     {
-        public SplitsPropertyNode(VideoConfig obj, PropertyInfo pi, Color textColor, Color hover)
-            : base(obj, pi, textColor, hover)
+        public SplitsPropertyNode(VideoConfig obj, PropertyInfo pi, Color background, Color textColor, Color hover)
+            : base(obj, pi, background, textColor, hover)
         {
         }
 

@@ -160,6 +160,9 @@ namespace UI.Nodes
             {
                 soundManager.Sounds = Objects;
             };
+
+            RelativeBounds = new RectangleF(0, 0, 1, 1);
+            Scale(0.8f, 0.9f);
         }
 
         public override void SetObjects(IEnumerable<Sound.Sound> toEdit, bool addRemove = false, bool cancelButton = true)
@@ -408,20 +411,20 @@ namespace UI.Nodes
         {
             if (pi.Name == "Voice")
             {
-                VoicesPropertyNode listPropertyNode = new VoicesPropertyNode(obj, pi, TextColor, ButtonHover);
+                VoicesPropertyNode listPropertyNode = new VoicesPropertyNode(obj, pi, ButtonBackground, TextColor, ButtonHover);
                 return listPropertyNode;
             }
 
             if (pi.Name == "InverseResolutionScalePercent")
             {
                 int[] scales = new int[] { 50, 75, 100, 125, 150, 200 };
-                ListPropertyNode<GeneralSettings> listPropertyNode = new ListPropertyNode<GeneralSettings>(obj, pi, TextColor, ButtonHover, scales);
+                ListPropertyNode<GeneralSettings> listPropertyNode = new ListPropertyNode<GeneralSettings>(obj, pi, ButtonBackground, TextColor, ButtonHover, scales);
                 return listPropertyNode;
             }
 
             if (pi.Name == "NotificationSerialPort")
             {
-                return new ComPortPropertyNode<GeneralSettings>(obj, pi, TextColor, ButtonHover);
+                return new ComPortPropertyNode<GeneralSettings>(obj, pi, ButtonBackground, TextColor, ButtonHover);
             }
 
             return base.CreatePropertyNode(obj, pi);
@@ -429,8 +432,8 @@ namespace UI.Nodes
 
         private class VoicesPropertyNode : ListPropertyNode<GeneralSettings>
         {
-            public VoicesPropertyNode(GeneralSettings obj, PropertyInfo pi, Color textColor, Color hover)
-                : base(obj, pi, textColor, hover)
+            public VoicesPropertyNode(GeneralSettings obj, PropertyInfo pi, Color background, Color textColor, Color hover)
+                : base(obj, pi, background, textColor, hover)
             {
             }
 
@@ -784,8 +787,8 @@ namespace UI.Nodes
 
     public class ComPortPropertyNode<T> : ListPropertyNode<T>
     {
-        public ComPortPropertyNode(T obj, PropertyInfo pi, Color textColor, Color hoverColor)
-            : base(obj, pi, textColor, hoverColor, new object[0])
+        public ComPortPropertyNode(T obj, PropertyInfo pi, Color background, Color textColor, Color hoverColor)
+            : base(obj, pi, background, textColor, hoverColor)
         {
         }
 
@@ -821,7 +824,7 @@ namespace UI.Nodes
             commonPropertiesBackground = new Node();
             root.AddChild(commonPropertiesBackground);
 
-            commonProperties = new BaseObjectEditorNode<OBSRemoteControlManager.OBSRemoteControlConfig>(Theme.Current.Editor.Background.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA, Theme.Current.ScrollBar.XNA, false);
+            commonProperties = new BaseObjectEditorNode<OBSRemoteControlManager.OBSRemoteControlConfig>(Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA, Theme.Current.ScrollBar.XNA, false);
             commonProperties.SetObject(Config, false, false);
             commonPropertiesBackground.AddChild(commonProperties);
             commonProperties.SetHeadingText("");
@@ -859,15 +862,15 @@ namespace UI.Nodes
         {
             if (pi.Name == "SceneName")
             {
-                return new OBSRemoteControlPropertyNode(obj, pi, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlPropertyNode.Types.Scene);
+                return new OBSRemoteControlPropertyNode(obj, pi, ButtonBackground, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlPropertyNode.Types.Scene);
             }
             else if (pi.Name == "SourceName")
             {
-                return new OBSRemoteControlPropertyNode(obj, pi, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlPropertyNode.Types.Source);
+                return new OBSRemoteControlPropertyNode(obj, pi, ButtonBackground, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlPropertyNode.Types.Source);
             }
             else if (pi.Name == "FilterName")
             {
-                return new OBSRemoteControlPropertyNode(obj, pi, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlPropertyNode.Types.SourceFilter);
+                return new OBSRemoteControlPropertyNode(obj, pi, ButtonBackground, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlPropertyNode.Types.SourceFilter);
             }
 
             return base.CreatePropertyNode(obj, pi);
@@ -888,13 +891,12 @@ namespace UI.Nodes
 
             private OBSRemoteControl oBSRemoteControl;
 
-            public OBSRemoteControlPropertyNode(OBSRemoteControlManager.OBSRemoteControlEvent obj, PropertyInfo pi, Color textColor, Color hover, OBSRemoteControlManager.OBSRemoteControlConfig config, Types type)
-                : base(obj, pi, textColor, hover)
+            public OBSRemoteControlPropertyNode(OBSRemoteControlManager.OBSRemoteControlEvent obj, PropertyInfo pi, Color textBackground, Color textColor, Color hover, OBSRemoteControlManager.OBSRemoteControlConfig config, Types type)
+                : base(obj, pi, textBackground, textColor, hover)
             {
                 Config = config;
                 Value.CanEdit = true;
                 OBSType = type;
-
             }
 
             protected override void ShowMouseMenu()

@@ -475,35 +475,35 @@ namespace Composition.Nodes
             {
                 if (pi.Name.ToLower().Contains("password"))
                 {
-                    newNode = new PasswordPropertyNode<T>(obj, pi, TextColor);
+                    newNode = new PasswordPropertyNode<T>(obj,  pi, ButtonBackground, TextColor);
                 }
                 else
                 {
-                    newNode = new TextPropertyNode<T>(obj, pi, TextColor);
+                    newNode = new TextPropertyNode<T>(obj, pi, ButtonBackground, TextColor);
                 }
             }
             else if (pi.PropertyType == typeof(int) || pi.PropertyType == typeof(double) || pi.PropertyType == typeof(float))
             {
                 if (pi.Name.ToLower().Contains("percent"))
                 {
-                    newNode = new PercentagePropertyNode<T>(obj, pi, TextColor);
+                    newNode = new PercentagePropertyNode<T>(obj, pi, ButtonBackground, TextColor);
                 }
                 else
                 {
-                    newNode = new NumberPropertyNode<T>(obj, pi, TextColor);
+                    newNode = new NumberPropertyNode<T>(obj, pi, ButtonBackground, TextColor);
                 }
             }
             else if (pi.PropertyType == typeof(int[]))
             {
-                newNode = new NumberArrayPropertyNode<T>(obj, pi, TextColor);
+                newNode = new NumberArrayPropertyNode<T>(obj, pi, ButtonBackground, TextColor);
             }
             else if (pi.PropertyType == typeof(TimeSpan))
             {
-                newNode = new TimeSpanPropertyNode<T>(obj, pi, TextColor);
+                newNode = new TimeSpanPropertyNode<T>(obj, pi, ButtonBackground, TextColor);
             }
             else if (pi.PropertyType.IsEnum)
             {
-                newNode = new EnumPropertyNode<T>(obj, pi, TextColor, ButtonHover);
+                newNode = new EnumPropertyNode<T>(obj, pi, ButtonBackground, TextColor, ButtonHover);
             }
             else if (pi.PropertyType == typeof(bool))
             {
@@ -515,7 +515,7 @@ namespace Composition.Nodes
             }
             else if (pi.PropertyType == typeof(DateTime))
             {
-                newNode = new DateTimePropertyNode<T>(obj, pi, TextColor);
+                newNode = new DateTimePropertyNode<T>(obj, pi, ButtonBackground, TextColor);
             }
             else
             {
@@ -840,6 +840,14 @@ namespace Composition.Nodes
 
         protected virtual void SetValue(object value)
         {
+            if (value != null) 
+            { 
+                if (PropertyInfo.PropertyType != value.GetType()) 
+                {
+                    return;
+                }
+            }
+
             PropertyInfo.SetValue(Object, value);
 
             if (originalValue != value)
@@ -922,15 +930,19 @@ namespace Composition.Nodes
     {
         public TextEditNode Value { get; private set; }
 
-        public TextPropertyNode(T obj, PropertyInfo pi, Color textColor)
+        public TextPropertyNode(T obj, PropertyInfo pi, Color textBackground, Color textColor)
             : base(obj, pi, textColor)
         {
+            ColorNode textBackgroundNode = new ColorNode(textBackground);
+            AddChild(textBackgroundNode);
+
             Value = new TextEditNode("", textColor);
             Value.TextChanged += SetValue;
             Value.Alignment = RectangleAlignment.BottomLeft;
             Value.OnTab += FocusNext;
             Value.OnReturn += FocusNext;
-            AddChild(Value);
+
+            textBackgroundNode.AddChild(Value);
 
             AlignHorizontally(0.01f, Children.ToArray());
 
@@ -978,15 +990,19 @@ namespace Composition.Nodes
     {
         public PasswordNode Value { get; private set; }
 
-        public PasswordPropertyNode(T obj, PropertyInfo pi, Color textColor)
+        public PasswordPropertyNode(T obj, PropertyInfo pi, Color background, Color textColor)
             : base(obj, pi, textColor)
         {
+            ColorNode textBackgroundNode = new ColorNode(background);
+            AddChild(textBackgroundNode);
+
             Value = new PasswordNode("", textColor);
             Value.TextChanged += SetValue;
             Value.Alignment = RectangleAlignment.BottomLeft;
             Value.OnTab += FocusNext;
             Value.OnReturn += FocusNext;
-            AddChild(Value);
+
+            textBackgroundNode.AddChild(Value);
 
             AlignHorizontally(0.01f, Children.ToArray());
 
@@ -1031,7 +1047,7 @@ namespace Composition.Nodes
         public string FileExtension { get; set; }
 
         public FilenamePropertyNode(T obj, PropertyInfo pi, Color background, Color hover, Color textColor, string fileExtension) 
-            : base(obj, pi, textColor)
+            : base(obj, pi, background, textColor)
         {
             FileExtension = fileExtension;
 
@@ -1058,8 +1074,8 @@ namespace Composition.Nodes
 
     public class NumberPropertyNode<T> : TextPropertyNode<T>
     {
-        public NumberPropertyNode(T obj, PropertyInfo pi, Color textColor) 
-            : base(obj, pi, textColor)
+        public NumberPropertyNode(T obj, PropertyInfo pi, Color textBackground, Color textColor) 
+            : base(obj, pi, textBackground, textColor)
         {
         }
 
@@ -1115,8 +1131,8 @@ namespace Composition.Nodes
 
     public class PercentagePropertyNode<T> : NumberPropertyNode<T>
     {
-        public PercentagePropertyNode(T obj, PropertyInfo pi, Color textColor) 
-            : base(obj, pi, textColor)
+        public PercentagePropertyNode(T obj, PropertyInfo pi, Color textBackground, Color textColor) 
+            : base(obj, pi, textBackground, textColor)
         {
         }
 
@@ -1140,8 +1156,8 @@ namespace Composition.Nodes
 
     public class NumberArrayPropertyNode<T> : TextPropertyNode<T>
     {
-        public NumberArrayPropertyNode(T obj, PropertyInfo pi, Color textColor)
-            : base(obj, pi, textColor)
+        public NumberArrayPropertyNode(T obj, PropertyInfo pi, Color textBackground, Color textColor)
+            : base(obj, pi, textBackground, textColor)
         {
         }
 
@@ -1177,8 +1193,8 @@ namespace Composition.Nodes
 
     public class TimeSpanPropertyNode<T> : TextPropertyNode<T>
     {
-        public TimeSpanPropertyNode(T obj, PropertyInfo pi, Color textColor)
-            : base(obj, pi, textColor)
+        public TimeSpanPropertyNode(T obj, PropertyInfo pi, Color textBackground, Color textColor)
+            : base(obj, pi, textBackground, textColor)
         {
         }
 
@@ -1217,8 +1233,8 @@ namespace Composition.Nodes
     {
         public bool ShowTime { get; private set; }
 
-        public DateTimePropertyNode(T obj, PropertyInfo pi, Color textColor)
-            : base(obj, pi, textColor)
+        public DateTimePropertyNode(T obj, PropertyInfo pi, Color textBackground, Color textColor)
+            : base(obj, pi, textBackground, textColor)
         {
             bool dateOnly = pi.GetCustomAttribute<DateOnlyAttribute>() != null;
             SetShowTime(!dateOnly);
@@ -1230,10 +1246,21 @@ namespace Composition.Nodes
             RequestUpdateFromObject();
         }
 
-        public override void UpdateFromObject()
+        public override string ValueToString(object value)
         {
-            DateTime value = (DateTime)PropertyInfo.GetValue(Object, null);
-            if (value != default(DateTime))
+            if (value == null)
+            {
+                return "";
+            }
+
+            if (value.GetType() != typeof(DateTime)) 
+            {
+                return "";
+            }
+
+            DateTime dateTime = (DateTime)value;
+
+            if (dateTime != default(DateTime))
             {
                 string showTimeText = "";
                 if (ShowTime)
@@ -1241,8 +1268,9 @@ namespace Composition.Nodes
                     showTimeText = " HH:mm";
                 }
 
-                Value.Text = value.ToString("yyyy/MM/dd" + showTimeText);
+                return dateTime.ToString("yyyy/M/d" + showTimeText);
             }
+            return "";
         }
 
         protected override void SetValue(object value)
@@ -1281,20 +1309,24 @@ namespace Composition.Nodes
     {
         public List<object> Options { get; protected set; }
 
-        public ListPropertyNode(T obj, PropertyInfo pi, Color textColor, Color hover, System.Array options)
-            : base(obj, pi, textColor)
+        public ListPropertyNode(T obj, PropertyInfo pi, Color textBackground, Color textColor, Color hover, System.Array options = null)
+        : base(obj, pi, textBackground, textColor)
         {
             Value.CanEdit = false;
-            SetOptions(options.OfType<object>());
+
+            if (options != null && options.Length > 0)
+            {
+                SetOptions(options.OfType<object>());
+            }
+
             Value.AddChild(new HoverNode(hover));
         }
 
-        public ListPropertyNode(T obj, PropertyInfo pi, Color textColor, Color hover)
-            : base(obj, pi, textColor)
-        {
-            Value.CanEdit = false;
-            Value.AddChild(new HoverNode(hover));
-        }
+        //public ListPropertyNode(T obj, PropertyInfo pi, Color textColor, Color hover, System.Array options = null)
+        //    :this(obj, pi, Color.Transparent, textColor, hover, options)
+        //{
+        //}
+            
 
         public void SetOptions(IEnumerable<object> options)
         {
@@ -1348,12 +1380,17 @@ namespace Composition.Nodes
             }
             return base.OnMouseInput(mouseInputEvent);
         }
+
+        public override bool Focus()
+        {
+            return false;
+        }
     }
 
     public class EnumPropertyNode<T> : ListPropertyNode<T>
     {
-        public EnumPropertyNode(T obj, PropertyInfo pi, Color textColor, Color hover)
-            : base(obj, pi, textColor, hover)
+        public EnumPropertyNode(T obj, PropertyInfo pi, Color background, Color textColor, Color hover)
+            : base(obj, pi, background, textColor, hover)
         {
             List<object> enums = new List<object>();
             foreach (var enume in Enum.GetValues(pi.PropertyType))

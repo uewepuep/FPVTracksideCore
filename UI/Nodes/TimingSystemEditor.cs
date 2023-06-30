@@ -83,7 +83,7 @@ namespace UI.Nodes
         {
             if (pi.Name == "ComPort")
             {
-                return new ComPortPropertyNode<TimingSystemSettings>(obj, pi, TextColor, ButtonHover);
+                return new ComPortPropertyNode<TimingSystemSettings>(obj, pi, ButtonBackground, TextColor, ButtonHover);
             }
 
             return base.CreatePropertyNode(obj, pi);

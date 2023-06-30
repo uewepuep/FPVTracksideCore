@@ -37,7 +37,7 @@ namespace UI.Nodes
             if (pi.Name == "RoundNumber")
             {
                 int[] rounds = obj.Event.Rounds.Select(r => r.RoundNumber).Distinct().OrderBy(i => i).ToArray();
-                ListPropertyNode<Race> listPropertyNode = new ListPropertyNode<Race>(obj, pi, TextColor, ButtonHover, rounds);
+                ListPropertyNode<Race> listPropertyNode = new ListPropertyNode<Race>(obj, pi, ButtonBackground, TextColor, ButtonHover, rounds);
                 return listPropertyNode;
             }
 
