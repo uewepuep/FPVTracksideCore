@@ -105,7 +105,8 @@ namespace Composition.Nodes
             get
             {
                 if (CompositorLayer == null) return false;
-                return CompositorLayer.FocusedNode == this;
+                if (CompositorLayer.PlatformTools == null) return false;
+                return CompositorLayer.FocusedNode == this && CompositorLayer.PlatformTools.Focused;
             }
             set
             {
