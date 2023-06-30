@@ -1343,7 +1343,7 @@ namespace Composition.Nodes
             }
         }
 
-        public virtual string ValueToString(object value)
+        public override string ValueToString(object value)
         {
             return value.ToString().CamelCaseToHuman();
         }
