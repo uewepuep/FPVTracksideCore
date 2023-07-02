@@ -27,7 +27,7 @@ namespace UI
         public RaceLib.Units Units { get; set; }
 
         [Category("General")]
-        [DisplayName("FPVTrackside 'Sponsored By' Messages")]
+        [DisplayName("'Sponsored By' messages. Please don't disable. This is how we fund the project.")]
         public bool SponsoredByMessages { get; set; }
 
 
