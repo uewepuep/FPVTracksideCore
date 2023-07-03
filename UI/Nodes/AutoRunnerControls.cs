@@ -34,9 +34,10 @@ namespace UI.Nodes
             controlButton.OnClick += ControlButton_OnClick;
             AddChild(controlButton);
 
+            float pauseSize = 0.25f;
             pauseNode = new ImageNode(@"img\pause.png");
             pauseNode.Visible = false;
-            pauseNode.Scale(0.8f);
+            pauseNode.RelativeBounds = new RectangleF(1 - pauseSize, 0, pauseSize, pauseSize);
             controlButton.AddChild(pauseNode);
 
             bottomButtonsContainer = new Node();
@@ -95,50 +96,47 @@ namespace UI.Nodes
         {
             pauseNode.Visible = AutoRunner.Paused;
 
-            if (AutoRunner.Config.AutoRunRaces)
+            bottomButtonsContainer.Visible = AutoRunner.State != AutoRunner.States.None;
+
+            string time = " " + AutoRunner.Timer.TotalSeconds.ToString("0") + "s";
+
+            switch (AutoRunner.State)
             {
-                bottomButtonsContainer.Visible = AutoRunner.State != AutoRunner.States.None;
+                case AutoRunner.States.None:
 
-                string time = " " + AutoRunner.Timer.TotalSeconds.ToString("0") + "s";
-
-                switch (AutoRunner.State)
-                {
-                    case AutoRunner.States.None:
-
-                        if (AutoRunner.Paused)
-                        {
-                            controlButton.Text = "Paused";
-                        }
-                        else
-                        {
-                            controlButton.Text = "Idle";
-                        }
-                        timeRemaining.Text = "";
-                        break;
+                    if (AutoRunner.Paused)
+                    {
+                        controlButton.Text = "Paused";
+                    }
+                    else
+                    {
+                        controlButton.Text = "Idle";
+                    }
+                    timeRemaining.Text = "";
+                    break;
                     
-                    case AutoRunner.States.WaitingRaceStart:
-                        controlButton.Text = "Start";
-                        timeRemaining.Text = time;
-                        break;
+                case AutoRunner.States.WaitingRaceStart:
+                    controlButton.Text = "Start";
+                    timeRemaining.Text = time;
+                    break;
 
-                    case AutoRunner.States.WaitingRaceFinalLap:
-                        controlButton.Text = "Final Lap";
-                        timeRemaining.Text = time;
-                        break;
+                case AutoRunner.States.WaitingRaceFinalLap:
+                    controlButton.Text = "Final Lap";
+                    timeRemaining.Text = time;
+                    break;
 
-                    case AutoRunner.States.WaitingResults:
-                        controlButton.Text = "Results";
-                        timeRemaining.Text = time;
-                        break;
+                case AutoRunner.States.WaitingResults:
+                    controlButton.Text = "Results";
+                    timeRemaining.Text = time;
+                    break;
 
-                    case AutoRunner.States.WaitVideo:
-                        controlButton.Text = "Video issue";
-                        timeRemaining.Text = time;
-                        break;
-                }
-
-                base.Draw(id, parentAlpha);
+                case AutoRunner.States.WaitVideo:
+                    controlButton.Text = "Video issue";
+                    timeRemaining.Text = time;
+                    break;
             }
+
+            base.Draw(id, parentAlpha);
         }
     }
 }

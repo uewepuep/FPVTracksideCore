@@ -250,7 +250,7 @@ namespace UI
 
             if (!RaceManager.RaceRunning && !EventManager.RaceManager.PreRaceStartDelay)
             {
-                if (Config.AutoRunRaces && TimesUp)
+                if (TimesUp)
                 {
                     switch (State)
                     {
@@ -301,7 +301,7 @@ namespace UI
             }
 
             // Auto End races.
-            if (RaceManager.RaceRunning && Config.AutoRunRaces)
+            if (RaceManager.RaceRunning)
             {
                 // If all laps are finished.
                 if (EventLayer.EventManager.RaceManager.HasFinishedAllLaps())
@@ -429,9 +429,6 @@ namespace UI
     public class AutoRunnerConfig
     {
         [Category("Auto Runner")]
-        public bool AutoRunRaces { get; set; }
-
-        [Category("Auto Runner")]
         public int SecondsToShowResults { get; set; }
 
         [Category("Auto Runner")]
@@ -466,7 +463,6 @@ namespace UI
         [Category("Rounds")]
         public AutoCreateRoundsTypes AutoCreateRoundsType { get; set; }
 
-
         public AutoRunnerConfig()
         {
             CheckPilotsVideo = true;
@@ -479,7 +475,7 @@ namespace UI
             NextRaceInAnnounceSeconds = new int[] { 10, 20, 30, 45, 60, 90, 120, 180, 240, 300 };
             AnnounceNextRaceIn = false;
             AutoCreateRounds = false;
-            AutoCreateRoundsType = AutoCreateRoundsTypes.KeepChannels;
+            AutoCreateRoundsType = AutoCreateRoundsTypes.CloneLast;
         }
 
         protected const string filename = @"data/AutoRunnerConfig.xml";
