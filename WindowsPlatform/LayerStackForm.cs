@@ -90,5 +90,34 @@ namespace WindowsPlatform
             return form;
         }
 
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            if (WindowState == FormWindowState.Maximized)
+            {
+                Properties.Settings.Default.Size = RestoreBounds.Size;
+            }
+            else if (WindowState == FormWindowState.Normal)
+            {
+                Properties.Settings.Default.Size = Size;
+            }
+            else
+            {
+                Properties.Settings.Default.Size = RestoreBounds.Size;
+            }
+            Properties.Settings.Default.Save();
+
+            base.OnFormClosed(e);
+        }
+
+        protected override void OnLoad(EventArgs e)
+        {
+            if (!Properties.Settings.Default.Size.IsEmpty)
+            {
+                Size = Properties.Settings.Default.Size;
+            }
+
+            base.OnLoad(e);
+        }
+
     }
 }
