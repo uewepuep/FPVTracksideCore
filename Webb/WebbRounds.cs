@@ -13,8 +13,7 @@ namespace Webb
         public static string Rounds(EventManager eventManager)
         {
             string output = "";
-            output += "<h2>Rounds - </h2>";
-            output += "<a href=\"?autoscroll=true\">Autoscroll</a>";
+            output += "<h2>Rounds</h2>";
             bool newRow = true;
 
             foreach (Round round in eventManager.RoundManager.Rounds)
@@ -51,6 +50,9 @@ namespace Webb
                 }
             }
             output += "</div>";
+
+            output += "<br><br><a href=\"?autoscroll=true\">Autoscroll</a>";
+
             return output;
         }
 

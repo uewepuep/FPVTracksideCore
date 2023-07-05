@@ -240,9 +240,16 @@ namespace UI
                 ShowPilotList(!showPilotList);
             };
 
+            IRaceControl raceControl = null;
+            if (GeneralSettings.Instance.HTTPServerRaceControl)
+            {
+                raceControl = this;
+            }
+
+            eventWebServer = new EventWebServer(EventManager, SoundManager, raceControl, new IWebbTable[] { TabbedMultiNode.LapRecordsSummaryNode, TabbedMultiNode.LapCountSummaryNode, TabbedMultiNode.PointsSummaryNode });
+
             if (gs.HTTPServer)
             {
-                eventWebServer = new EventWebServer(EventManager, SoundManager, this, new IWebbTable[] { TabbedMultiNode.LapRecordsSummaryNode, TabbedMultiNode.LapCountSummaryNode, TabbedMultiNode.PointsSummaryNode });
                 eventWebServer.Start();
             }
 
@@ -372,6 +379,8 @@ namespace UI
             RemoteNotifier?.Dispose();
 
             OBSRemoteControlManager?.Dispose();
+
+            eventWebServer?.Dispose();
 
             base.Dispose();
         }

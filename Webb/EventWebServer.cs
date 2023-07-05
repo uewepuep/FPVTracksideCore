@@ -15,14 +15,14 @@ using Tools;
 
 namespace Webb
 {
-    public class EventWebServer
+    public class EventWebServer : IDisposable
     {
         private EventManager eventManager;
         private SoundManager soundManager;
         private IRaceControl raceControl;
 
         private Thread thread;
-        private bool run;
+        public bool Running { get; private set; }
 
         private HttpListener listener;
 
@@ -43,6 +43,7 @@ namespace Webb
             this.soundManager = soundManager;
             this.raceControl = raceControl;
             WebRaceControl = new WebRaceControl(eventManager, soundManager, raceControl);
+            Url = "http://localhost:8080/";
 
             if (!CSSStyleSheet.Exists)
             {
@@ -53,16 +54,40 @@ namespace Webb
             webbTables = tables.ToArray();
         }
 
+        public void Dispose() 
+        {
+            Stop();
+        }
+
+
+        public IEnumerable<string> GetPages()
+        {
+            yield return "Rounds";
+            yield return "Event Status";
+
+            foreach (IWebbTable table in webbTables)
+            {
+                yield return table.Name;
+            }
+
+            if (raceControl != null) 
+            {
+                yield return "RaceControl";
+                yield return "Variable Viewer";
+            }
+        }
+
         public bool Start()
         {
             try
             {
+                Running = true;
 
-                Url = "http://localhost:8080/";
-
-
-                run = true;
-
+                if (thread != null)
+                {
+                    Stop();
+                }
+                
                 thread = new Thread(Run);
 
                 thread.Name = "Webb Thread";
@@ -100,7 +125,7 @@ namespace Webb
                 Logger.HTTP.Log(this, "Listening on " + listener.Prefixes.FirstOrDefault());
             }
 
-            while (run)
+            while (Running)
             {
 
                 try
@@ -144,8 +169,6 @@ namespace Webb
         private byte[] Response(HttpListenerContext context)
         {
             string path = Uri.UnescapeDataString(context.Request.Url.AbsolutePath);
-
-
             string[] requestPath = path.Split('/').Where(s => !string.IsNullOrEmpty(s)).ToArray();
 
             string refreshText = "";
@@ -213,18 +236,7 @@ namespace Webb
             heading += "<div class=\"time\">" + DateTime.Now.ToString("h:mm tt").ToLower() + "</div>";
             heading += "</div>";
 
-
-            List<string> items = new List<string>() { "VariableViewer", "Rounds", "Event Status" };
-
-            if (localOnly)
-            {
-                items.Add("RaceControl");
-            }
-
-            foreach (IWebbTable table in webbTables)
-            {
-                items.Add(table.Name);
-            }
+            IEnumerable<string> items = GetPages();
 
             string content = "<div class=\"content\">";
             if (requestPath.Length == 0)
@@ -316,7 +328,7 @@ namespace Webb
 
         public bool Stop()
         {
-            run = false;
+            Running = false;
             listener.Abort();
             thread.Join();
 

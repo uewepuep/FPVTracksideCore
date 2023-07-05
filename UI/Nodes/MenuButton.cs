@@ -58,7 +58,7 @@ namespace UI.Nodes
 
             if (eventManager != null)
             {
-                this.timingSystemManager = eventManager.RaceManager.TimingSystemManager;
+                timingSystemManager = eventManager.RaceManager.TimingSystemManager;
             }
 
             OnClick += SettingsButton_OnClick;
@@ -145,7 +145,21 @@ namespace UI.Nodes
                     });
                 }
             }
+
+            if (eventWebServer != null)
+            {
+                MouseMenu openWebPage = root.AddSubmenu("Open Local Web page");
+                foreach (string page in eventWebServer.GetPages())
+                {
+                    string t = page;
+                    openWebPage.AddItem(t, () =>
+                    {
+                        OpenWebServer(t);
+                    });
+                }
+            }
             MouseMenu openWindow = root.AddSubmenu("Open New Window");
+
 
             root.AddBlank();
 
@@ -196,10 +210,6 @@ namespace UI.Nodes
             }, isNotRunningRace);
 
            
-           
-
-          
-
             root.AddItem("Sound Editor", () =>
             {
                 ShowSoundsSettings();
@@ -224,12 +234,6 @@ namespace UI.Nodes
                     ShowVideoSettings();
                 });
             }
-
-          
-
-            
-
-            
 
             openWindow.AddItem("Log", () =>
             {
@@ -305,14 +309,6 @@ namespace UI.Nodes
                 {
                     RemoveAllPilots();
                 });
-
-                if (eventWebServer != null)
-                {
-                    root.AddItem("Open Local Webserver", () =>
-                    {
-                        OpenWebServer();
-                    });
-                }
             }
             root.AddBlank();
 
@@ -566,11 +562,21 @@ namespace UI.Nodes
             PlatformTools.OpenFileManager(System.IO.Directory.GetCurrentDirectory());
         }
 
-        public void OpenWebServer()
+        public void OpenWebServer(string page)
         {
             if (eventWebServer != null)
             {
-                DataTools.StartBrowser(eventWebServer.Url);
+                if (GeneralSettings.Instance.HTTPServer == false)
+                {
+                    GeneralSettings.Instance.HTTPServer = true;
+                }
+
+                if (!eventWebServer.Running)
+                {
+                    eventWebServer.Start();
+                }
+
+                DataTools.StartBrowser(eventWebServer.Url + page);
             }
         }
 

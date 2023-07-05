@@ -25,8 +25,7 @@ namespace Webb
             string output = "";
             if (webbTable != null)
             {
-                output += "<h2>" + webbTable.Name + " - </h2>";
-                output += "<a href=\"?autoscroll=true\">Autoscroll</a>";
+                output += "<h2>" + webbTable.Name + "</h2>";
                 output += "<div class=\"" + className + "\">";
 
                 int id = 0;
@@ -63,6 +62,9 @@ namespace Webb
                 output += Newtonsoft.Json.JsonConvert.SerializeObject(table);
                 output += "</div>";
             }
+
+            output += "<br><br><a href=\"?autoscroll=true\">Autoscroll</a>";
+
             return output;
         }
     }

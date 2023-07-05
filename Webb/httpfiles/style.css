@@ -119,7 +119,7 @@ h2
     padding: 20px;
 }
 
-.position, .pilots, .holeshot, .laps, .lap, .t, .p, .r, .e, .c, .f, .a, .total {
+.position, .pilots, .holeshot, .racetime, .laps, .lap, .t, .p, .r, .e, .c, .f, .a, .total {
     padding: 5px;
     background: #05050599;
     font-weight: 600;
@@ -137,11 +137,11 @@ h2
     width: 120px;
 }
 
-.holeshot {
+.holeshot, .racetime {
     width: 80px;
 }
 
-.holeshot, .laps, .lap, .position, .total {
+.holeshot, .racetime, .laps, .lap, .position, .total {
     text-align: right;
 }
 

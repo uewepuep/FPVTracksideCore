@@ -131,9 +131,14 @@ namespace UI
         public bool AutoSync { get; set; }
 
         [Category("Web")]
-        [DisplayName("HTTP Server")]
+        [DisplayName("Auto start HTTP Server")]
         [NeedsRestart]
         public bool HTTPServer { get; set; }
+
+        [Category("Web")]
+        [NeedsRestart]
+        [DisplayName("HTTP Server race controls enabled")]
+        public bool HTTPServerRaceControl { get; set; }
 
         [Category("Gate / LED POST notifications")]
         [NeedsRestart]
