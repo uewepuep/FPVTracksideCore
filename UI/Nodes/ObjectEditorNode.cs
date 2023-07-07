@@ -9,6 +9,7 @@ using RaceLib.Format;
 using Sound;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Reflection;
 using Timing;
@@ -812,7 +813,7 @@ namespace UI.Nodes
     {
         public OBSRemoteControlManager.OBSRemoteControlConfig Config { get; private set; }
 
-        private BaseObjectEditorNode<OBSRemoteControlManager.OBSRemoteControlConfig> commonProperties;
+        private OBSRemoteControlCommonEditor commonProperties;
         private Node commonPropertiesBackground;
         private TextNode triggersHeading;
 
@@ -824,19 +825,27 @@ namespace UI.Nodes
             commonPropertiesBackground = new Node();
             root.AddChild(commonPropertiesBackground);
 
-            commonProperties = new BaseObjectEditorNode<OBSRemoteControlManager.OBSRemoteControlConfig>(Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA, Theme.Current.ScrollBar.XNA, false);
+            commonProperties = new OBSRemoteControlCommonEditor(Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA, Theme.Current.ScrollBar.XNA, false);
             commonProperties.SetObject(Config, false, false);
             commonPropertiesBackground.AddChild(commonProperties);
-            commonProperties.SetHeadingText("");
+            commonProperties.ProfileChanged += CommonProperties_ProfileChanged;
 
-            commonPropertiesBackground.RelativeBounds = new RectangleF(objectProperties.RelativeBounds.X, objectProperties.RelativeBounds.Y, objectProperties.RelativeBounds.Width, 0.12f);
+            commonPropertiesBackground.RelativeBounds = new RectangleF(objectProperties.RelativeBounds.X, objectProperties.RelativeBounds.Y, objectProperties.RelativeBounds.Width, 0.32f);
             commonPropertiesBackground.Scale(0.5f, 1);
 
             triggersHeading = new TextNode("Triggers", Theme.Current.Editor.Text.XNA);
             triggersHeading.RelativeBounds = new RectangleF(objectProperties.RelativeBounds.X, commonPropertiesBackground.RelativeBounds.Bottom + 0.02f, objectProperties.RelativeBounds.Width, 0.03f);
             root.AddChild(triggersHeading);
 
+            SetHeadingText("OBS Remote Control");
+
             SetObjects(config.RemoteControlEvents, true, true);
+        }
+
+        private void CommonProperties_ProfileChanged()
+        {
+            RefreshList();
+            SetSelected(Single);
         }
 
         protected override void AddOnClick(MouseInputEvent mie)
@@ -844,8 +853,8 @@ namespace UI.Nodes
             MouseMenu mouseMenu = new MouseMenu(this);
             mouseMenu.TopToBottom = false;
 
-            mouseMenu.AddItem("Add Scene Change", () => { AddNew(new OBSRemoteControlManager.OBSRemoteControlSetSceneEvent()); });
-            mouseMenu.AddItem("Add Source Filter Toggle", () => { AddNew(new OBSRemoteControlManager.OBSRemoteControlSourceFilterToggleEvent()); });
+            mouseMenu.AddItem("Add Scene Change", () => { AddNew(new OBSRemoteControlManager.OBSRemoteControlSetSceneEvent() { Profile = commonProperties.Profile }); });
+            mouseMenu.AddItem("Add Source Filter Toggle", () => { AddNew(new OBSRemoteControlManager.OBSRemoteControlSourceFilterToggleEvent() { Profile = commonProperties.Profile }); });
             mouseMenu.Show(addButton);
         }
 
@@ -856,6 +865,11 @@ namespace UI.Nodes
 
             container.Translate(0, triggersHeading.RelativeBounds.Bottom);
             container.AddSize(0, -triggersHeading.RelativeBounds.Bottom);
+        }
+
+        public override bool IsVisible(OBSRemoteControlManager.OBSRemoteControlEvent t)
+        {
+            return t.Profile == commonProperties.Profile;
         }
 
         protected override PropertyNode<OBSRemoteControlManager.OBSRemoteControlEvent> CreatePropertyNode(OBSRemoteControlManager.OBSRemoteControlEvent obj, PropertyInfo pi)
@@ -876,6 +890,67 @@ namespace UI.Nodes
             return base.CreatePropertyNode(obj, pi);
         }
 
+        public class OBSRemoteControlCommonEditor : BaseObjectEditorNode<OBSRemoteControlManager.OBSRemoteControlConfig>
+        {
+            private OBSProfileNode profile;
+
+            public string Profile
+            {
+                get
+                {
+                    if (profile != null)
+                    {
+                        return profile.Value.Text;
+                    }
+                    return "";
+                }
+            }
+
+            public event Action ProfileChanged;
+
+            public OBSRemoteControlCommonEditor(Color buttonBackground, Color buttonHover, Color textColor, Color scrollColor, bool hasButtons = true) : base(buttonBackground, buttonHover, textColor, scrollColor, hasButtons)
+            {
+                SetHeadingText("");
+            }
+
+            protected override PropertyNode<OBSRemoteControlManager.OBSRemoteControlConfig> CreatePropertyNode(OBSRemoteControlManager.OBSRemoteControlConfig obj, PropertyInfo pi)
+            {
+                if (pi.Name == "Profile")
+                {
+                    profile = new OBSProfileNode(obj, pi, ButtonBackground, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA);
+
+                    profile.onChanged += Profile_onChanged;
+
+                    return profile;
+                }
+                return base.CreatePropertyNode(obj, pi);
+            }
+
+            private void Profile_onChanged(object obj)
+            {
+                ProfileChanged?.Invoke();
+            }
+        }
+
+        private class OBSProfileNode : ListPropertyNode<OBSRemoteControlManager.OBSRemoteControlConfig>
+        {
+            public OBSProfileNode(OBSRemoteControlManager.OBSRemoteControlConfig obj, PropertyInfo pi, Color textBackground, Color textColor, Color hover) 
+                : base(obj, pi, textBackground, textColor, hover, null)
+            {
+                Value.CanEdit = true;
+            }
+
+            protected override void ShowMouseMenu()
+            {
+                Options = GetProfiles().OfType<object>().ToList();
+                base.ShowMouseMenu();
+            }
+
+            private IEnumerable<string> GetProfiles()
+            {
+                return Object.RemoteControlEvents.Select(r => r.Profile).Distinct().OrderBy(r => r);
+            }
+        }
 
         private class OBSRemoteControlPropertyNode : ListPropertyNode<OBSRemoteControlManager.OBSRemoteControlEvent>
         {

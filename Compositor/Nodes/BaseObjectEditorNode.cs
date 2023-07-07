@@ -265,6 +265,9 @@ namespace Composition.Nodes
                 bool moreThanOne = group.Count() > 1;
                 foreach (T t in Order(group))
                 {
+                    if (!IsVisible(t))
+                        continue;
+
                     ItemNode<T> tbn = new ItemNode<T>(t, ItemToString(t), ButtonBackground, ButtonHover, TextColor, CanReOrder && moreThanOne);
                     tbn.OnClick += (mie) => { SetSelected(t); };
                     tbn.OnUpClick += (mie) => { MoveUp(tbn); };
@@ -280,6 +283,11 @@ namespace Composition.Nodes
             }
             multiItemBox.RequestLayout();
             RequestLayout();
+        }
+
+        public virtual bool IsVisible(T t)
+        {
+            return true;
         }
 
         public virtual IEnumerable<T> Order(IEnumerable<T> ts)
@@ -369,6 +377,9 @@ namespace Composition.Nodes
         protected virtual void SetSelected(T obj)
         {
             ClearSelected();
+
+            if (!IsVisible(obj))
+                return;
 
             if (obj != null)
             {
@@ -1309,6 +1320,8 @@ namespace Composition.Nodes
     {
         public List<object> Options { get; protected set; }
 
+        public event Action<object> onChanged;
+
         public ListPropertyNode(T obj, PropertyInfo pi, Color textBackground, Color textColor, Color hover, System.Array options = null)
         : base(obj, pi, textBackground, textColor)
         {
@@ -1352,6 +1365,8 @@ namespace Composition.Nodes
         {
             base.SetValue(value);
             Value.Text = ValueToString(value);
+
+            onChanged?.Invoke(value);
         }
 
         protected virtual void ShowMouseMenu()

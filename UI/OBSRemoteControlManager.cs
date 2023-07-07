@@ -114,7 +114,7 @@ namespace UI
 
             foreach (OBSRemoteControlEvent rcEvent in config.RemoteControlEvents)
             {
-                if (rcEvent.Trigger == type) 
+                if (rcEvent.Trigger == type && rcEvent.Profile == config.Profile) 
                 {
                     Logger.OBS.LogCall(this, rcEvent.GetType().Name, rcEvent.ToString());
                     
@@ -193,32 +193,6 @@ namespace UI
             }
         }
 
-        public abstract class OBSRemoteControlEvent
-        {
-            public Triggers Trigger { get; set; }
-        }
-
-        public class OBSRemoteControlSetSceneEvent : OBSRemoteControlEvent
-        {
-            public string SceneName { get; set; }
-
-            public override string ToString()
-            {
-                return Trigger + " -> " + SceneName;
-            }
-        }
-
-        public class OBSRemoteControlSourceFilterToggleEvent: OBSRemoteControlEvent
-        {
-            public string SourceName { get; set; }
-            public string FilterName { get; set; }
-            public bool Enable { get; set; }
-
-            public override string ToString()
-            {
-                return Trigger + " -> " + SourceName + " " + FilterName + " " + Enable;
-            }
-        }
 
         [XmlInclude(typeof(OBSRemoteControlEvent)),
          XmlInclude(typeof(OBSRemoteControlSetSceneEvent)),
@@ -228,11 +202,17 @@ namespace UI
         {
             public bool Enabled { get; set; }
 
+            [Category("Connection")]
             public string Host { get; set; }
+            [Category("Connection")]
 
             public int Port { get; set; }
+            [Category("Connection")]
 
             public string Password { get; set; }
+            
+            [Category("Advanced")]
+            public string Profile { get; set; }
 
             [Browsable(false)]
             public List<OBSRemoteControlEvent> RemoteControlEvents { get; set; }
@@ -245,7 +225,6 @@ namespace UI
 #if DEBUG
                 Password = "42ZzDvzK3Cd43HQW";
 #endif
-
                 RemoteControlEvents = new List<OBSRemoteControlEvent>();
             }
 
@@ -292,6 +271,35 @@ namespace UI
             public override string ToString()
             {
                 return "OBS Remote Control Config";
+            }
+        }
+
+        public abstract class OBSRemoteControlEvent
+        {
+            public Triggers Trigger { get; set; }
+            [Browsable(false)]
+            public string Profile { get; set; }
+        }
+
+        public class OBSRemoteControlSetSceneEvent : OBSRemoteControlEvent
+        {
+            public string SceneName { get; set; }
+
+            public override string ToString()
+            {
+                return Trigger + " -> " + SceneName;
+            }
+        }
+
+        public class OBSRemoteControlSourceFilterToggleEvent : OBSRemoteControlEvent
+        {
+            public string SourceName { get; set; }
+            public string FilterName { get; set; }
+            public bool Enable { get; set; }
+
+            public override string ToString()
+            {
+                return Trigger + " -> " + SourceName + " " + FilterName + " " + Enable;
             }
         }
     }
