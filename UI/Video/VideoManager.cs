@@ -773,7 +773,6 @@ namespace UI.Video
                             }
 
                             frameSource.CleanUp();
-                            frameSource.Flipped = frameSource.VideoConfig.Flipped;
 
                             bool result = false;
                             bool shouldStart = false;
@@ -935,7 +934,7 @@ namespace UI.Video
     {
         public string FilePath { get; set; }
         public float ChannelCoveragePercent { get; set; }
-        public bool Flipped { get; set; }
+        public FlipMirroreds FlipMirrored { get; set; }
 
         public VideoBounds[] ChannelBounds { get; set; }
 
@@ -974,7 +973,7 @@ namespace UI.Video
             ChannelCoveragePercent = captureFrameSource.VideoConfig.ChannelCoveragePercent;
             FrameTimes = captureFrameSource.FrameTimes.ToArray();
             ChannelBounds = captureFrameSource.VideoConfig.VideoBounds;
-            Flipped = false;
+            FlipMirrored = captureFrameSource.VideoConfig.FlipMirrored;
         }
 
         public VideoConfig GetVideoConfig()
@@ -984,7 +983,7 @@ namespace UI.Video
             videoConfig.ChannelCoveragePercent = ChannelCoveragePercent;
             videoConfig.FrameTimes = FrameTimes;
             videoConfig.VideoBounds = ChannelBounds;
-            videoConfig.Flipped = Flipped;
+            videoConfig.FlipMirrored = FlipMirrored;
             videoConfig.Pauseable = false;
             return videoConfig;
         }

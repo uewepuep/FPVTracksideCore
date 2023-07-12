@@ -30,6 +30,14 @@ namespace ImageServer
         BottomLeft, BottomRight
     }
 
+    public enum FlipMirroreds
+    {
+        None,
+        Flipped,
+        Mirrored,
+        FlippedAndMirrored
+    }
+
     public class VideoConfig
     {
         [System.ComponentModel.ReadOnly(true)]
@@ -74,8 +82,8 @@ namespace ImageServer
         public Mode VideoMode { get; set; }
         
         [Category("Device")]
-        [DisplayName("Flipped Vertically")]
-        public bool Flipped { get; set; }
+        [DisplayName("Flipped / Mirrored")]
+        public FlipMirroreds FlipMirrored { get; set; }
 
         [Category("Device")]
         [DisplayName("Stop feed when not in use")]
@@ -146,7 +154,7 @@ namespace ImageServer
         {
             VideoMode = new Mode();
             AnyUSBPort = false;
-            Flipped = true;
+            FlipMirrored = FlipMirroreds.None;
             Splits = Splits.SingleChannel;
             FilePath = null;
             ChannelCoveragePercent = 99f;

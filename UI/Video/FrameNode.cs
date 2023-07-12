@@ -95,10 +95,35 @@ namespace UI.Video
 
         public Rectangle Flip(Rectangle src)
         {
-            if (Source.Flipped)
+            bool flipped = false;
+            bool mirrored = false;
+
+            switch (Source.VideoConfig.FlipMirrored)
+            {
+                case FlipMirroreds.Flipped:
+                    flipped = true;
+                    mirrored = false;
+                    break;
+                case FlipMirroreds.Mirrored:
+                    flipped = false;
+                    mirrored = true;
+                    break;
+                case FlipMirroreds.FlippedAndMirrored:
+                    flipped = true;
+                    mirrored = true;
+                    break;
+            }
+
+            if (flipped)
             {
                 src.Y = texture.Height - src.Y;
                 src.Height = -src.Height;
+            }
+
+            if (mirrored)
+            {
+                src.X = texture.Width - src.X;
+                src.Width = -src.Width;
             }
 
             return src;

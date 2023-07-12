@@ -45,8 +45,6 @@ namespace ImageServer
 
         public bool IsVisible { get; set; }
 
-        public bool Flipped { get; set; }
-
         public bool DrawnThisGraphicsFrame { get; set; }
         public bool Recording { get; protected set; }
         public bool RebootRequired { get; protected set; }
@@ -54,7 +52,6 @@ namespace ImageServer
         public FrameSource(VideoConfig videoConfig)
         {
             VideoConfig = videoConfig;
-            Flipped = videoConfig.Flipped;
             FrameCount = 0;
             OnFrameEvent = null;
         }
@@ -116,7 +113,6 @@ namespace ImageServer
         void StartRecording(string filename);
         void StopRecording();
         string Filename { get; }
-        bool Flipped { get; }
         bool Recording { get; }
         VideoConfig VideoConfig { get; }
 
