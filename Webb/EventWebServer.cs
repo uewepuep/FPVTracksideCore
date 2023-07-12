@@ -329,8 +329,8 @@ namespace Webb
         public bool Stop()
         {
             Running = false;
-            listener.Abort();
-            thread.Join();
+            listener?.Abort();
+            thread?.Join();
 
             return true;
         }
