@@ -869,6 +869,9 @@ namespace UI.Nodes
 
         public override bool IsVisible(OBSRemoteControlManager.OBSRemoteControlEvent t)
         {
+            if (t == null)
+                return false;
+
             return t.Profile == commonProperties.Profile;
         }
 
