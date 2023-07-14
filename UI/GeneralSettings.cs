@@ -45,9 +45,10 @@ namespace UI
         [DisplayName("UI / Font Scale (Percent)")]
         public float InverseResolutionScalePercent { get; set; }
 
-        [Category("Video Recording")]
+        [DisplayName("Video recordings to keep")]
+        [Category("Video")]
         public int VideosToKeep { get; set; }
-        [Category("Video Recording")]
+        [Category("Video")]
         [NeedsRestart]
         public string VideoStorageLocation { get; set; }
 
@@ -280,7 +281,6 @@ namespace UI
 
             PreRaceScene = true;
             PostRaceScene = true;
-
 
             Voice = "Microsoft Zira Desktop";
 

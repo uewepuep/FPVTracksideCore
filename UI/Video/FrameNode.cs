@@ -81,7 +81,8 @@ namespace UI.Video
             }
             else
             {
-                id.Draw(texture, Flip(SourceBounds), Bounds, Tint, alpha);
+                Rectangle sourceBounds = Flip(SourceBounds);
+                id.Draw(texture, sourceBounds, Bounds, Tint, alpha);
             }
             DebugTimer.DebugEndTime(this);
 

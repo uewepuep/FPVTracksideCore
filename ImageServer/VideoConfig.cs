@@ -154,7 +154,7 @@ namespace ImageServer
         {
             VideoMode = new Mode();
             AnyUSBPort = false;
-            FlipMirrored = FlipMirroreds.None;
+            FlipMirrored = FlipMirroreds.Flipped;
             Splits = Splits.SingleChannel;
             FilePath = null;
             ChannelCoveragePercent = 99f;
