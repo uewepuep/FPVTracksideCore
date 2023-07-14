@@ -38,11 +38,11 @@ namespace UI.Nodes
             }
         }
 
-        public IEnumerable<CamNode> CamNodes
+        public IEnumerable<CamClosableNode> CamNodes
         {
             get
             {
-                return Children.OfType<CamNode>();
+                return Children.OfType<CamClosableNode>();
             }
         }
 
@@ -277,7 +277,7 @@ namespace UI.Nodes
                     }
                 }
 
-                foreach (CamNode camNode in CamNodes)
+                foreach (CamClosableNode camNode in CamNodes)
                 {
                     camNode.SetAnimatedVisibility(camNode.VideoBounds.ShowInGrid && extrasVisible);
                 }
@@ -380,7 +380,7 @@ namespace UI.Nodes
                 n.Dispose();
             }
 
-            foreach (CamNode n in CamNodes.ToArray())
+            foreach (CamClosableNode n in CamNodes.ToArray())
             {
                 n.Dispose();
             }
@@ -422,7 +422,7 @@ namespace UI.Nodes
         public void MakeExtrasVisible(bool visible)
         {
             extrasVisible = visible;
-            foreach (CamNode camNode in CamNodes)
+            foreach (CamClosableNode camNode in CamNodes)
             {
                 camNode.SetAnimatedVisibility(visible);
             }
@@ -736,7 +736,11 @@ namespace UI.Nodes
                         FrameSource source = VideoManager.GetFrameSource(vs);
                         if (source != null)
                         {
-                            CamNode camNode = new CamNode(source, videoBounds);
+                            CamClosableNode camNode = new CamClosableNode(source, videoBounds);
+                            camNode.OnCloseClick += () =>
+                            {
+                                MakeExtrasVisible(false);
+                            };
                             AddChild(camNode);
                         }
                     }

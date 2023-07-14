@@ -4,12 +4,15 @@ using Composition.Layers;
 using Composition.Nodes;
 using ImageServer;
 using Microsoft.Xna.Framework;
+using RaceLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
+using UI.Nodes;
+using static UI.Nodes.ChannelNodeBase;
 
 namespace UI.Video
 {
@@ -32,9 +35,9 @@ namespace UI.Video
             //Background.AddChild(wtf);
 
             FrameNode = new FrameNode(s);
-            AddChild(FrameNode);
-            ReloadConfig();
+            AddChild(FrameNode, 0);
 
+            ReloadConfig();
         }
 
         private void ReloadConfig()
@@ -103,6 +106,25 @@ namespace UI.Video
         {
             OnVideoBoundsChange(obj.Selected);
             ReloadConfig();
+        }
+    }
+
+    public class CamClosableNode : CamNode
+    {
+        public CloseNode CloseButton { get; private set; }
+
+        public event Action OnCloseClick;
+
+        public CamClosableNode(FrameSource s, VideoBounds videoBounds) 
+            : base(s, videoBounds)
+        {
+            CloseButton = new CloseNode();
+            AddChild(CloseButton);
+
+            CloseButton.OnClick += (mie) =>
+            {
+                OnCloseClick?.Invoke();
+            };
         }
     }
 
