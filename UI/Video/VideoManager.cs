@@ -506,8 +506,17 @@ namespace UI.Video
             {
                 foreach (ICaptureFrameSource source in frameSources.OfType<ICaptureFrameSource>())
                 {
-                    if (source.IsVisible)
+                    // if all feeds on this source are FPV, only record if they're visible..
+                    if (source.VideoConfig.VideoBounds.All(r => r.SourceType == SourceTypes.FPVFeed))
                     {
+                        if (source.IsVisible)
+                        {
+                            recording.Add(source);
+                        }
+                    }
+                    else
+                    {
+                        // record
                         recording.Add(source);
                     }
                 }
@@ -688,6 +697,15 @@ namespace UI.Video
                             {
                                 if (!source.Recording)
                                 {
+                                    FrameSource frameSource = source as FrameSource;
+                                    if (frameSource != null)
+                                    {
+                                        if (frameSource.State == FrameSource.States.Paused)
+                                        {
+                                            frameSource.Unpause();
+                                        }
+                                    }
+                                    
                                     string filename = GetRecordingFilename(race, (FrameSource)source);
                                     source.StartRecording(filename);
                                     doCountClean = true;
@@ -803,7 +821,7 @@ namespace UI.Video
                         FrameSource[] toResume;
                         lock (frameSources)
                         {
-                            toPause = frameSources.Where(r => !r.IsVisible && r.State == FrameSource.States.Running && r.VideoConfig.Pauseable).ToArray();
+                            toPause = frameSources.Where(r => !r.IsVisible && r.State == FrameSource.States.Running && r.VideoConfig.Pauseable && !r.Recording).ToArray();
                             toResume = frameSources.Where(r => r.IsVisible && r.State == FrameSource.States.Paused).ToArray();
                         }
 

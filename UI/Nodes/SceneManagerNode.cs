@@ -18,6 +18,7 @@ namespace UI.Nodes
     {
         private AnimatedRelativeNode launchCamsNode;
         private AnimatedRelativeNode commentatorsAndSummary;
+        private AnimatedRelativeNode finishLineNode;
 
         private VideoManager videoManager;
         private EventManager eventManager;
@@ -37,6 +38,7 @@ namespace UI.Nodes
             Clear,
             PreRace,
             Race,
+            FinishLine,
             RaceResults,
 
             EventStatus,
@@ -77,7 +79,10 @@ namespace UI.Nodes
 
             launchCamsNode = new AnimatedRelativeNode();
             launchCamsNode.SetAnimatedVisibility(false);
-            
+
+            finishLineNode = new AnimatedRelativeNode();
+            finishLineNode.SetAnimatedVisibility(false);
+
             commentatorsAndSummary = new AnimatedRelativeNode();
             commentatorsAndSummary.SetAnimatedVisibility(false);
 
@@ -99,6 +104,7 @@ namespace UI.Nodes
             AddChild(launchCamsNode);
             AddChild(commentatorsAndSummary);
             AddChild(channelsGridNode);
+            AddChild(finishLineNode);
 
             eventManager.RaceManager.OnRaceStart += RaceManager_OnRaceStart;
             eventManager.RaceManager.OnRaceEnd += RaceManager_OnRaceEnd;
@@ -309,11 +315,12 @@ namespace UI.Nodes
         {
             float channelGridHeight = 0.3f;
             float nonChannelGridHeight = 1 - channelGridHeight;
+
             switch (scene)
             {
                 case Scenes.PreRace:
-                    SetAnimationTime(SetupAnimationTime);
                     float launchWidth = 0.7f;
+                    SetAnimationTime(SetupAnimationTime);
 
                     IEnumerable<Node> launchCams = launchCamsNode.VisibleChildren;
                     IEnumerable<Node> commentatorCams = commentatorsAndSummary.VisibleChildren;
@@ -324,6 +331,7 @@ namespace UI.Nodes
                         nonChannelGridHeight = 0;
 
                         channelsGridNode.SingleRow = false;
+                        channelsGridNode.MakeExtrasVisible(true);
                     }
                     else
                     {
@@ -338,6 +346,7 @@ namespace UI.Nodes
                         {
                             launchWidth = 1;
                         }
+                        channelsGridNode.MakeExtrasVisible(false);
                     }
 
                     channelsGridNode.SetBiggerChannelInfo(true);
@@ -365,8 +374,9 @@ namespace UI.Nodes
                     resultsRaceNode.SetAnimatedVisibility(false);
                     nextRaceNode.SetAnimatedVisibility(false);
 
-                    channelsGridNode.MakeExtrasVisible(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
+                    finishLineNode.SetAnimatedVisibility(false);
+
                     break;
 
                 case Scenes.Race:
@@ -379,6 +389,7 @@ namespace UI.Nodes
 
                     commentatorsAndSummary.SetAnimatedVisibility(false);
                     launchCamsNode.SetAnimatedVisibility(false);
+                    finishLineNode.SetAnimatedVisibility(false);
 
                     resultsRaceNode.SetAnimatedVisibility(false);
                     nextRaceNode.SetAnimatedVisibility(false);
@@ -393,6 +404,7 @@ namespace UI.Nodes
                     channelsGridNode.AllVisible(false);
                     commentatorsAndSummary.SetAnimatedVisibility(false);
                     launchCamsNode.SetAnimatedVisibility(false);
+                    finishLineNode.SetAnimatedVisibility(false);
 
                     resultsRaceNode.SetAnimatedVisibility(false);
                     nextRaceNode.SetAnimatedVisibility(false);
@@ -409,7 +421,8 @@ namespace UI.Nodes
                     channelsGridNode.SetProfileVisible(false, true);
 
                     launchCamsNode.SetAnimatedVisibility(false);
-                    
+                    finishLineNode.SetAnimatedVisibility(false);
+
                     channelsGridNode.SingleRow = true;
                     channelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 1, channelGridHeight);
 
@@ -446,6 +459,7 @@ namespace UI.Nodes
 
                 case Scenes.Commentators:
                     launchCamsNode.SetAnimatedVisibility(false);
+                    finishLineNode.SetAnimatedVisibility(false);
 
                     commentatorsAndSummary.RelativeBounds = new RectangleF(0.0f, 0.0f, 1, 1);
                     commentatorsAndSummary.SetAnimatedVisibility(true);
@@ -466,6 +480,39 @@ namespace UI.Nodes
                     nextRaceNode.SetAnimatedVisibility(false);
                     resultsRaceNode.SetAnimatedVisibility(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(true);
+                    break;
+
+                case Scenes.FinishLine:
+                    SetAnimationTime(SetupAnimationTime);
+
+                    IEnumerable<Node> finishCam = finishLineNode.VisibleChildren;
+
+                    if (finishCam.Any())
+                    {
+                        channelsGridNode.SingleRow = true;
+                        channelsGridNode.MakeExtrasVisible(false);
+                    }
+                    else
+                    {
+                        channelGridHeight = 1;
+                        nonChannelGridHeight = 0;
+
+                        channelsGridNode.SingleRow = false;
+                        channelsGridNode.MakeExtrasVisible(true);
+                    }
+
+                    channelsGridNode.SetBiggerChannelInfo(true);
+                    channelsGridNode.SetProfileVisible(true, true);
+
+                    finishLineNode.SetAnimatedVisibility(true);
+                    finishLineNode.RelativeBounds = new RectangleF(0, 0, 1, nonChannelGridHeight);
+
+                    channelsGridNode.RelativeBounds = new RectangleF(0, nonChannelGridHeight, 1, channelGridHeight);
+
+                    resultsRaceNode.SetAnimatedVisibility(false);
+                    nextRaceNode.SetAnimatedVisibility(false);
+
+                    eventStatusNodeContainer.SetAnimatedVisibility(false);
                     break;
             }
         }
@@ -510,6 +557,15 @@ namespace UI.Nodes
                             node.FrameNode.Alignment = RectangleAlignment.Center;
                             launchCamsNode.AddChild(node);
                             break;
+
+                        case SourceTypes.FinishLine:
+                            node = new CamNode(source, videoBounds);
+                            node.FrameNode.KeepAspectRatio = false;
+                            node.FrameNode.CropToFit = true;
+                            node.FrameNode.Alignment = RectangleAlignment.Center;
+                            finishLineNode.AddChild(node);
+                            break;
+
                     }
                     if (node != null)
                     {

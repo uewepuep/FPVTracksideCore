@@ -611,6 +611,11 @@ namespace UI.Video
             {
                 SetSourceType(channelVideoInfo, SourceTypes.Commentators);
             });
+
+            cameraMenu.AddItem("Finish line Cam", () =>
+            {
+                SetSourceType(channelVideoInfo, SourceTypes.FinishLine);
+            });
             mouseMenu.AddBlank();
 
             MouseMenu splitMenu = mouseMenu.AddSubmenu("Split");
@@ -884,15 +889,11 @@ namespace UI.Video
             string text;
             switch (ChannelVideoInfo.VideoBounds.SourceType)
             {
-                case SourceTypes.Commentators:
-                    text = "Commentators";
-                    break;
-
-                case SourceTypes.Launch:
-                    text = "Launch";
-                    break;
-
                 default:
+                    text = ChannelVideoInfo.VideoBounds.SourceType.ToString().CamelCaseToHuman();
+                    break;
+
+                case SourceTypes.FPVFeed:
                     text = ChannelVideoInfo.Channel.ToStringShort();
                     break;
             }

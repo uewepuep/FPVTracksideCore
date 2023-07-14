@@ -265,7 +265,8 @@ namespace ImageServer
     {
         FPVFeed,
         Commentators,
-        Launch = 3
+        Launch = 3,
+        FinishLine
     }
 
     public class VideoBounds

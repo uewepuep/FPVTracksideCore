@@ -42,6 +42,9 @@ namespace Composition.Input
         public ShortcutKey SceneEventStatus { get; set; }
 
         [Category("Live Video")]
+        public ShortcutKey SceneFinishLine { get; set; }
+
+        [Category("Live Video")]
         public ShortcutKey ShowWorm { get; set; }
 
         [Category("Race Control")]
@@ -154,6 +157,7 @@ namespace Composition.Input
             ScenePostRace = new ShortcutKey(Keys.F3);
             SceneEventStatus = new ShortcutKey(Keys.F4);
             SceneCommentators = new ShortcutKey(Keys.F5);
+            SceneFinishLine = new ShortcutKey(Keys.F6);
 
             ReplayPlayStop = new ShortcutKey(Keys.Space);
             ReplayPrevFrame = new ShortcutKey(Keys.OemComma);

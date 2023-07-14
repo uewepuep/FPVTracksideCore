@@ -113,9 +113,9 @@ namespace UI.Nodes
             set
             {
                 name.Text = value;
-                if (name.Text.Length > 4)
+                if (name.Text.Length > 5)
                 {
-                    name.Text = name.Text.Substring(0, 4);
+                    name.Text = name.Text.Substring(0, 5);
                 }
             }
         }
@@ -274,7 +274,22 @@ namespace UI.Nodes
             VideoManager = videoManager;
             VideoConfig = videoConfig;
 
-            Name = VideoConfig.DeviceName.AutoAcronym();
+            IEnumerable<SourceTypes> types = videoConfig.VideoBounds.Select(r => r.SourceType).Distinct();
+
+            if (types.Count() == 1)
+            {
+                switch(types.First())
+                {
+                    case SourceTypes.FPVFeed: Name = "FPV"; break;
+                    case SourceTypes.Commentators: Name = "COM"; break;
+                    case SourceTypes.Launch: Name = "LCH"; break;
+                    case SourceTypes.FinishLine: Name = "FIN"; break;
+                }
+            }
+            else
+            {
+                Name = VideoConfig.DeviceName.AutoAcronym().ToUpper();
+            }
         }
 
         public override void StatusUpdate()

@@ -199,7 +199,17 @@ namespace UI.Video
                         fileFrameSource.Mute();
                     }
 
+                    // show everything in video playback.
+                    foreach (FrameSource frameSource in frameSources)
+                    {
+                        foreach(VideoBounds videoBounds in frameSource.VideoConfig.VideoBounds)
+                        {
+                            videoBounds.ShowInGrid = true;
+                        }
+                    }
+
                     ChannelsGridNode.FillChannelNodes();
+                    ChannelsGridNode.MakeExtrasVisible(true);
 
                     foreach (PilotChannel pilotChannel in race.PilotChannelsSafe)
                     {

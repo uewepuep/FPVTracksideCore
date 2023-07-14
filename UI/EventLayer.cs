@@ -887,6 +887,12 @@ namespace UI
                     return true;
                 }
 
+                if (KeyMapper.SceneFinishLine.Match(inputEvent)) 
+                {
+                    TabbedMultiNode.ShowLive(SceneManagerNode.Scenes.FinishLine);
+                    return true;
+                }
+
                 if (KeyMapper.SceneEventStatus.Match(inputEvent))
                 {
                     TabbedMultiNode.ShowLive(SceneManagerNode.Scenes.EventStatus);
