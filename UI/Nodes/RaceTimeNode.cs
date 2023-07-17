@@ -41,6 +41,9 @@ namespace UI.Nodes
 
         public void SetTime(TimeSpan timespan)
         {
+            if (timespan < TimeSpan.Zero)
+                timespan = TimeSpan.Zero;
+
             Text = Prepend + timespan.ToStringRaceTime(1);
         }
     }
