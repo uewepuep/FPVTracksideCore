@@ -1318,7 +1318,8 @@ namespace RaceLib
 
             if (lap != null)
             {
-                Lapalyser.OnLap(lap);
+                if (detection.TimingSystemType != TimingSystemType.Manual)
+                    Lapalyser.OnLap(lap);
 
                 if (detection.Valid)
                 {

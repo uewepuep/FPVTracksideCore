@@ -440,6 +440,8 @@ namespace UI.Nodes
 
         public void Refresh(bool full = false)
         {
+            heading.TextNode.Text = Race.RaceName;
+
             if (full)
             {
                 NeedFullRefresh?.Invoke();

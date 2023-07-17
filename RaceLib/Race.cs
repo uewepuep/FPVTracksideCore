@@ -467,6 +467,12 @@ namespace RaceLib
 
             DateTime lapStart = GetRaceStartTime(detection.Pilot);
 
+            // Manual override holeshot stuff.
+            if (detection.Time < lapStart && detection.TimingSystemType != TimingSystemType.Manual)
+            {
+                lapStart = Start;
+            }
+
             Lap prevLap = GetValidLaps(detection.Pilot, true).Where(l => l.Detection.Time < detection.Time).OrderBy(l => l.End).LastOrDefault();
             if (prevLap != null)
             {
