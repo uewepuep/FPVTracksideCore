@@ -49,11 +49,20 @@ namespace ImageServer
         public bool Recording { get; protected set; }
         public bool RebootRequired { get; protected set; }
 
+        public enum Directions
+        {
+            TopDown,
+            BottomUp
+        }
+
+        public Directions Direction { get; protected set; }
+
         public FrameSource(VideoConfig videoConfig)
         {
             VideoConfig = videoConfig;
             FrameCount = 0;
             OnFrameEvent = null;
+            Direction = Directions.TopDown;
         }
 
         public virtual void CleanUp()

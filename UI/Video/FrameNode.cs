@@ -96,21 +96,19 @@ namespace UI.Video
 
         public Rectangle Flip(Rectangle src)
         {
-            bool flipped = false;
+            bool flipped = Source.Direction == FrameSource.Directions.TopDown;
             bool mirrored = false;
 
             switch (Source.VideoConfig.FlipMirrored)
             {
                 case FlipMirroreds.Flipped:
-                    flipped = true;
-                    mirrored = false;
+                    flipped = !flipped;
                     break;
                 case FlipMirroreds.Mirrored:
-                    flipped = false;
                     mirrored = true;
                     break;
                 case FlipMirroreds.FlippedAndMirrored:
-                    flipped = true;
+                    flipped = !flipped;
                     mirrored = true;
                     break;
             }
