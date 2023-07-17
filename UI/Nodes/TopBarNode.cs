@@ -9,6 +9,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using RaceLib;
 using Tools;
+using UI.Video;
 
 namespace UI.Nodes
 {
@@ -32,7 +33,11 @@ namespace UI.Nodes
         private AnimatedRelativeNode logoContainerNode;
         private ColorNode background;
 
-        public TopBarNode(EventManager eventManager)
+        public TopBarNode()
+        {
+        }
+
+        public void Init(EventManager eventManager, ReplayNode replayNode)
         {
             lastMinute = -1;
             EventManager = eventManager;
@@ -63,7 +68,7 @@ namespace UI.Nodes
             lower.Scale(0.98f, 0.95f);
 
             AddChild(lower);
-            
+
             background.RelativeBounds = new RectangleF(0, 0, 1, 1);
 
             eventName = new TextNode("", Theme.Current.TopPanelText.XNA);
@@ -84,17 +89,17 @@ namespace UI.Nodes
 
             UpdateDetails();
 
-            lapSummaryNode = new LapSummaryNode(eventManager, Theme.Current.TopPanelText.XNA);
+            lapSummaryNode = new LapSummaryNode(eventManager, replayNode, Theme.Current.TopPanelText.XNA);
             lapSummaryNode.Alignment = RectangleAlignment.CenterLeft;
             lapSummaryNode.Style.Border = border;
             lower.AddChild(lapSummaryNode);
 
-            timeNode = new RaceTimeNode(eventManager.RaceManager, Theme.Current.TopPanelText.XNA);
+            timeNode = new RaceTimeNode(eventManager.RaceManager, replayNode, Theme.Current.TopPanelText.XNA);
             timeNode.Alignment = RectangleAlignment.CenterLeft;
             timeNode.Style.Border = border;
             lower.AddChild(timeNode);
 
-            remainingNode = new RaceTimeRemainingNode(eventManager.RaceManager, Theme.Current.TopPanelText.XNA);
+            remainingNode = new RaceTimeRemainingNode(eventManager.RaceManager, replayNode, Theme.Current.TopPanelText.XNA);
             remainingNode.Alignment = RectangleAlignment.CenterLeft;
             remainingNode.Style.Border = border;
             lower.AddChild(remainingNode);
@@ -204,6 +209,5 @@ namespace UI.Nodes
             AnimationTime = time;
             logoContainerNode.AnimationTime = time;
         }
-
     }
 }

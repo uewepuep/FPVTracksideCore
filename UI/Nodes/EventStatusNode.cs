@@ -17,8 +17,9 @@ namespace UI.Nodes
 
         public EventStatusNodeTopBar(EventManager eventManager)
         {
-            topBar = new TopBarNode(eventManager);
+            topBar = new TopBarNode();
             topBar.RelativeBounds = new RectangleF(0, 0, 1, 0.1f);
+            topBar.Init(eventManager, null);
             topBar.DisableTimeNodes();
             AddChild(topBar);
 

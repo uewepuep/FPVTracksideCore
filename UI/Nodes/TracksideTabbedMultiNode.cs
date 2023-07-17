@@ -21,9 +21,10 @@ namespace UI.Nodes
         private RoundsNode rounds;
         private SceneManagerNode sceneManagerNode;
         private PilotChanelList pilotChanelList;
-        private ReplayNode replayNode;
         private PatreonsNode patreonsNode;
-        
+
+        public ReplayNode ReplayNode { get; private set; }
+
         public LapRecordsSummaryNode LapRecordsSummaryNode { get; private set; }
         public PointsSummaryNode PointsSummaryNode { get; private set; }
         public LapCountSummaryNode LapCountSummaryNode { get; private set; }
@@ -43,7 +44,7 @@ namespace UI.Nodes
             : base(TimeSpan.FromSeconds(0.6f), Theme.Current.Panel.XNA, Theme.Current.PanelAlt.XNA, Theme.Current.Hover.XNA, Theme.Current.TextMain.XNA)
         {
             this.eventManager = eventManager;
-            this.VideoManager = videoManager;
+            VideoManager = videoManager;
 
             this.rounds = rounds;
             sceneManagerNode = sceneManagerContent;
@@ -54,11 +55,11 @@ namespace UI.Nodes
             LapRecordsSummaryNode = new LapRecordsSummaryNode(eventManager);
             pilotChanelList = new PilotChanelList(eventManager);
 
-            replayNode = new ReplayNode(eventManager);
+            ReplayNode = new ReplayNode(eventManager);
 
             AddTab("Rounds", this.rounds, ShowRounds);
             liveButton = AddTab("Live", sceneManagerNode, ShowLive);
-            replayButton = AddTab("Replay", replayNode, ShowReplay);
+            replayButton = AddTab("Replay", ReplayNode, ShowReplay);
 
             AddTab("Lap Records", LapRecordsSummaryNode, ShowTopLaps);
             AddTab("Lap Count", LapCountSummaryNode, ShowLaps);
@@ -286,14 +287,14 @@ namespace UI.Nodes
         public void ShowReplay(MouseInputEvent mie)
         {
             Race current = eventManager.RaceManager.CurrentRace;
-            Show(replayNode);
-            replayNode.ReplayRace(current);
+            Show(ReplayNode);
+            ReplayNode.ReplayRace(current);
         }
 
         public override void Show(Node node)
         {
             base.Show(node);
-            replayNode.CleanUp();
+            ReplayNode.CleanUp();
             GC.Collect();
         }
     }

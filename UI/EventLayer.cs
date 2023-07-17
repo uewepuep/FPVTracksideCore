@@ -118,7 +118,7 @@ namespace UI
             };
 
 
-            topBar = new TopBarNode(EventManager);
+            topBar = new TopBarNode();
             topBar.RelativeBounds = new RectangleF(0, 0, 1, 0.1f); 
             Root.AddChild(topBar);
 
@@ -209,6 +209,8 @@ namespace UI
             TabbedMultiNode.RelativeBounds = new RectangleF(0, 0, 1, 0.99f);
             TabbedMultiNode.OnTabChange += OnTabChange;
             centreContainer.AddChild(TabbedMultiNode);
+
+            topBar.Init(EventManager, TabbedMultiNode.ReplayNode);
 
             ControlButtons = new ControlButtonsNode(EventManager, ChannelsGridNode, TabbedMultiNode, AutoRunner);
             ControlButtons.RelativeBounds = new RectangleF(0, 0.0f, 1, 1);

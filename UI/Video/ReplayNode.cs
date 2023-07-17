@@ -34,6 +34,36 @@ namespace UI.Video
         private DateTime minStart;
         private DateTime maxEnd;
 
+        public bool Active
+        {
+            get
+            {
+                return race != null;
+            }
+        }
+
+        public TimeSpan ElapsedTime 
+        {
+            get
+            {
+                if (race == null || SeekNode == null) 
+                    return TimeSpan.Zero;
+
+                return SeekNode.CurrentTime - race.Start;
+            }
+        }
+
+        public TimeSpan RemainingTime
+        {
+            get
+            {
+                if (race == null || SeekNode == null)
+                    return TimeSpan.Zero;
+
+                return race.End - SeekNode.CurrentTime;
+            }
+        }
+
         public ReplayNode(EventManager eventManager)
         {
             EventManager = eventManager;

@@ -6,13 +6,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UI.Video;
 
 namespace UI.Nodes
 {
     public class RaceTimeRemainingNode : RaceTimeNode
     {
-        public RaceTimeRemainingNode(RaceManager raceManager, Color textColor) 
-            : base(raceManager, textColor)
+        public RaceTimeRemainingNode(RaceManager raceManager, ReplayNode replayNode, Color textColor) 
+            : base(raceManager, replayNode, textColor)
         {
             Prepend = "Remaining ";
         }
@@ -34,7 +35,14 @@ namespace UI.Nodes
                 return;
             }
 
-            SetTime(RaceManager.RemainingTime);
+            if (ReplayNode != null && ReplayNode.Active)
+            {
+                SetTime(ReplayNode.RemainingTime);
+            }
+            else
+            {
+                SetTime(RaceManager.RemainingTime);
+            }
         }
     }
 }

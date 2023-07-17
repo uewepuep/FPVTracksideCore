@@ -8,17 +8,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
+using UI.Video;
 
 namespace UI.Nodes
 {
     public class RaceTimeNode : TextNode, IUpdateableNode
     {
         public RaceManager RaceManager { get; private set; }
+        public ReplayNode ReplayNode { get; private set; }
         public string Prepend { get; set; }
 
-        public RaceTimeNode(RaceManager raceManager, Color textColor) 
+        public RaceTimeNode(RaceManager raceManager, ReplayNode replayNode, Color textColor) 
             : base("0.00", textColor)
         {
+            ReplayNode = replayNode;
             RaceManager = raceManager;
             Prepend = "Time ";
             Alignment = RectangleAlignment.CenterRight;
@@ -26,7 +29,14 @@ namespace UI.Nodes
 
         public virtual void Update(GameTime gameTime)
         {
-            SetTime(RaceManager.ElapsedTime);
+            if (ReplayNode != null && ReplayNode.Active)
+            {
+                SetTime(ReplayNode.ElapsedTime);
+            }
+            else
+            {
+                SetTime(RaceManager.ElapsedTime);
+            }
         }
 
         public void SetTime(TimeSpan timespan)

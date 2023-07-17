@@ -10,18 +10,22 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
+using UI.Video;
 
 namespace UI.Nodes
 {
     public class LapSummaryNode : TextNode
     {
         public EventManager EventManager { get; private set; }
+        public ReplayNode ReplayNode { get; private set; }
 
         private bool NeedsUpdateText;
 
-        public LapSummaryNode(EventManager eventManager, Color text)
+        public LapSummaryNode(EventManager eventManager, ReplayNode replayNode, Color text)
             : base("", text)
         {
+            ReplayNode = replayNode;
+
             EventManager = eventManager;
             EventManager.RaceManager.OnLapDetected += OnNeedsUpdateText;
             EventManager.RaceManager.OnLapDisqualified += OnNeedsUpdateText;
@@ -61,6 +65,13 @@ namespace UI.Nodes
         {
             if (EventManager.Event == null)
                 return;
+
+            if (ReplayNode != null && ReplayNode.Active)
+            {
+                Text = "";
+                return;
+            }
+
             switch (EventManager.RaceManager.RaceType)
             {
                 case EventTypes.Freestyle:
@@ -68,8 +79,9 @@ namespace UI.Nodes
                 case EventTypes.AggregateLaps:
                     Text = "";
                     break;
-                case EventTypes.Race:
 
+                case EventTypes.Race:
+                    int leadLapPlus = EventManager.RaceManager.LeadLap + 1;
                     int maxLap = EventManager.Event.Laps;
                     Race current = EventManager.RaceManager.CurrentRace;
                     if (current != null)
@@ -77,13 +89,14 @@ namespace UI.Nodes
                         maxLap = current.TargetLaps;
                     }
 
-                    int lap = Math.Min(EventManager.RaceManager.LeadLap + 1, maxLap);
+                    int lap = Math.Min(leadLapPlus, maxLap);
 
                     if (lap >= maxLap)
                         Text = "Lap " + lap + " / " + maxLap;
                     else
-                        Text = "Lap " + (EventManager.RaceManager.LeadLap + 1) + " / " + maxLap;
+                        Text = "Lap " + leadLapPlus + " / " + maxLap;
                     break;
+
                 case EventTypes.TimeTrial:
                 case EventTypes.CasualPractice:
                     if (EventManager.Event.Laps == 1)
