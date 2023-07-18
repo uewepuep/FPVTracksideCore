@@ -1289,7 +1289,7 @@ namespace Composition.Nodes
             string str = value.ToString();
 
             DateTime temp;
-            string[] splits = str.Split('/');
+            string[] splits = str.Split('/', '-','\\');
             if (splits.Length == 3 && DateTime.TryParse(str, out temp))
             {
                 int y, m, d;
