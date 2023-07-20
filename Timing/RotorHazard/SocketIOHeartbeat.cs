@@ -73,9 +73,9 @@ namespace Timing.RotorHazard
                     return false;
                 }
             }
-            catch (Exception e)
+            catch
             {
-                Logger.TimingLog.LogException(owner, e);
+                Logger.TimingLog.Log(owner, "Couldn't connect to " + host);
                 return false;
             }
         }
@@ -103,9 +103,9 @@ namespace Timing.RotorHazard
 
                 return true;
             }
-            catch (Exception e)
+            catch
             {
-                Logger.TimingLog.LogException(owner, e);
+                Connected = false;
                 return false;
             }
         }
@@ -174,7 +174,7 @@ namespace Timing.RotorHazard
                 catch (Exception e)
                 {
                     runBeat = false;
-                    Connected = false;
+                    Connected = false; 
                     Logger.TimingLog.LogException(owner, e);
                 }
             }
@@ -202,6 +202,9 @@ namespace Timing.RotorHazard
 
         public bool Emit(string command, object obj)
         {
+            if (!Connected)
+                return false;
+
             lock (locker)
             {
                 try
@@ -221,9 +224,9 @@ namespace Timing.RotorHazard
                         }
                     }
                 }
-                catch (Exception ex)
+                catch (Exception e)
                 {
-                    Logger.TimingLog.LogException(this, ex);
+                    Logger.TimingLog.LogException(this, e);
                     Connected = false;
                     return false;
                 }
@@ -234,6 +237,9 @@ namespace Timing.RotorHazard
 
         public bool Emit(string command, Response callback)
         {
+            if (!Connected)
+                return false;
+
             try
             {
                 lock (locker)
@@ -254,8 +260,10 @@ namespace Timing.RotorHazard
                 }
 
             }
-            catch
+            catch (Exception e)
             {
+                Logger.TimingLog.LogException(this, e);
+
                 Connected = false;
                 return false;
             }

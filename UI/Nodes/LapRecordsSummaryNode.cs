@@ -150,6 +150,11 @@ namespace UI.Nodes
 
             public void SetLapTimes(Lap[] bestLaps, bool overalBest)
             {
+                if (bestLaps == null)
+                {
+                    bestLaps = new Lap[0];
+                }
+
                 this.laps = bestLaps;
 
                 TimeSpan time = bestLaps.TotalTime();

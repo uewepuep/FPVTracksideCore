@@ -240,7 +240,7 @@ namespace Tools
             if (!Enabled)
                 return;
 
-            Log(caller, exception.ToString(), LogType.Exception);
+            Log(caller, exception.ToString(), null, LogType.Exception);
         }
 
         public void FlushRecentHistory(Action<string> logEvents)
