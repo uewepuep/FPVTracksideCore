@@ -35,6 +35,7 @@ namespace RaceLib
         public event Race.OnRaceEvent OnRaceClear;
         public event Action<Race, bool> OnRaceCancelled;
         public event Action<Race, TimeSpan> OnRaceTimeRemaining;
+        public event Action<Race> OnRaceTimesUp;
 
         public event Race.OnRaceEvent OnRaceRemoved;
 
@@ -1413,7 +1414,17 @@ namespace RaceLib
 
                     if (lastTimeRemaining > timeSpan && RemainingTime <= timeSpan && currentRace != null)
                     {
-                        OnRaceTimeRemaining?.Invoke(currentRace, timeSpan);
+                        if (timeSpan == TimeSpan.Zero)
+                        {
+                            OnRaceTimesUp?.Invoke(currentRace);
+                        }
+                        else
+                        {
+                            if (Math.Abs((timeSpan - RemainingTime).TotalSeconds) < 5)
+                            {
+                                OnRaceTimeRemaining?.Invoke(currentRace, timeSpan);
+                            }
+                        }
                     }
                 }
 

@@ -853,7 +853,7 @@ namespace Composition.Nodes
         {
             if (value != null) 
             { 
-                if (PropertyInfo.PropertyType != value.GetType()) 
+                if (!PropertyInfo.PropertyType.IsAssignableFrom(value.GetType())) 
                 {
                     return;
                 }
@@ -929,6 +929,7 @@ namespace Composition.Nodes
         {
             Value.Text = ValueToString(value); 
             base.SetValue(value);
+            RequestRedraw();
         }
 
         public virtual string ValueToString(object value)

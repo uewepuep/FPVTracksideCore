@@ -22,6 +22,7 @@ namespace UI
             ClickStartRace,
             StartRaceTone,
             RaceEnd,
+            TimesUp,
 
             RaceStartCancelled,
            

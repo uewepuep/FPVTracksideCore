@@ -57,6 +57,12 @@ namespace Sound
         Detection,
 
         NoVideoDelayingRace,
+
+        Custom1,
+        Custom2, 
+        Custom3,
+        Custom4,
+        Custom5
     }
 
 
@@ -86,7 +92,7 @@ namespace Sound
 
         [System.ComponentModel.Browsable(false)]
         public SoundCategories Category { get; set; }
-
+        
         public Sound()
         {
             Enabled = true;

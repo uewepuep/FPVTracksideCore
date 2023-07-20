@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading;
 using Tools;
 using Composition;
-using Sound.AutoCommentator;
 
 namespace Sound
 {
@@ -159,51 +158,55 @@ namespace Sound
 
                 Sound[] defaultSounds = new Sound[]
                 {
-                new Sound() { Key = SoundKey.StartRaceIn, TextToSpeech = "Arm your quads. Starting on the tone in less than {time}", Category = Sound.SoundCategories.Race },
-                new Sound() { Key = SoundKey.RaceStart, TextToSpeech = "Go", Filename = @"sounds/tone.wav", Category = Sound.SoundCategories.Race },
-                new Sound() { Key = SoundKey.RaceOver, TextToSpeech = "Race over", Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.StartRaceIn, TextToSpeech = "Arm your quads. Starting on the tone in less than {time}", Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.RaceStart, TextToSpeech = "Go", Filename = @"sounds/tone.wav", Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.RaceOver, TextToSpeech = "Race over", Category = Sound.SoundCategories.Race },
 
-                new Sound() { Key = SoundKey.TimesUp, TextToSpeech = "Times Up", Filename = @"sounds/horn.wav", Category = Sound.SoundCategories.Race },
-                new Sound() { Key = SoundKey.TimeRemaining, TextToSpeech = "{time} remaining", Category = Sound.SoundCategories.Race },
-                new Sound() { Key = SoundKey.AfterTimesUp, TextToSpeech = "Finish your lap and then land", Category = Sound.SoundCategories.Race },
-                new Sound() { Key = SoundKey.StaggeredStart, TextToSpeech = "Arm your quads. Start on your name", Category = Sound.SoundCategories.Race },
-                new Sound() { Key = SoundKey.StaggeredPilot, TextToSpeech = "{pilot}", Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.TimesUp, TextToSpeech = "Times Up", Filename = @"sounds/horn.wav", Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.TimeRemaining, TextToSpeech = "{time} remaining", Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.AfterTimesUp, TextToSpeech = "Finish your lap and then land", Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.StaggeredStart, TextToSpeech = "Arm your quads. Start on your name", Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.StaggeredPilot, TextToSpeech = "{pilot}", Category = Sound.SoundCategories.Race },
 
-                new Sound() { Key = SoundKey.AnnounceRace, TextToSpeech = "Next up Round {round} {type} {race} {bracket}, With {pilots}", Category = Sound.SoundCategories.Announcements },
-                new Sound() { Key = SoundKey.AnnounceRaceResults, TextToSpeech = "Results of Round {round} {type} {race} {bracket}. {pilots}", Category = Sound.SoundCategories.Announcements },
-                new Sound() { Key = SoundKey.NameTest, TextToSpeech = "{pilot}", Category = Sound.SoundCategories.Announcements },
-                new Sound() { Key = SoundKey.HurryUp, TextToSpeech = "Hurry Up {pilot}", Category = Sound.SoundCategories.Announcements },
-                new Sound() { Key = SoundKey.PilotChannel, TextToSpeech = "{pilot} on {band}{channel}", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.AnnounceRace, TextToSpeech = "Next up Round {round} {type} {race} {bracket}, With {pilots}", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.AnnounceRaceResults, TextToSpeech = "Results of Round {round} {type} {race} {bracket}. {pilots}", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.NameTest, TextToSpeech = "{pilot}", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.HurryUp, TextToSpeech = "Hurry Up {pilot}", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.PilotChannel, TextToSpeech = "{pilot} on {band}{channel}", Category = Sound.SoundCategories.Announcements },
 
-                new Sound() { Key = SoundKey.PilotResult, TextToSpeech = "{pilot} {position}", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.PilotResult, TextToSpeech = "{pilot} {position}", Category = Sound.SoundCategories.Announcements },
 
-                new Sound() { Key = SoundKey.Detection, TextToSpeech = "beep", Filename = @"sounds/detection.wav", Category = Sound.SoundCategories.Detection },
-                new Sound() { Key = SoundKey.Sector, TextToSpeech = "{pilot} sector {count} in {position}", Enabled = false, Category = Sound.SoundCategories.Detection },
+                    new Sound() { Key = SoundKey.Detection, TextToSpeech = "beep", Filename = @"sounds/detection.wav", Category = Sound.SoundCategories.Detection },
+                    new Sound() { Key = SoundKey.Sector, TextToSpeech = "{pilot} sector {count} in {position}", Enabled = false, Category = Sound.SoundCategories.Detection },
 
-                new Sound() { Key = SoundKey.RaceDone, TextToSpeech = "{pilot} finished in {position}", Category = Sound.SoundCategories.Detection },
-                new Sound() { Key = SoundKey.RaceLap, TextToSpeech = "{pilot} lap {lapnumber} in {position}", Category = Sound.SoundCategories.Detection },
+                    new Sound() { Key = SoundKey.RaceDone, TextToSpeech = "{pilot} finished in {position}", Category = Sound.SoundCategories.Detection },
+                    new Sound() { Key = SoundKey.RaceLap, TextToSpeech = "{pilot} lap {lapnumber} in {position}", Category = Sound.SoundCategories.Detection },
 
-                new Sound() { Key = SoundKey.TimeTrialLap, TextToSpeech = "{pilot} {count} lap{s} in {lapstime}", Category = Sound.SoundCategories.Detection },
-                new Sound() { Key = SoundKey.TimeTrialDone, TextToSpeech = "{pilot} finished {count} lap{s} in {lapstime}, Please land", Category = Sound.SoundCategories.Detection },
-                new Sound() { Key = SoundKey.PracticeLap, TextToSpeech = "{pilot} {laptime}", Category = Sound.SoundCategories.Detection },
-                new Sound() { Key = SoundKey.CasualLap, TextToSpeech = "{pilot} {count} lap{s} in {lapstime}", Category = Sound.SoundCategories.Detection },
-                new Sound() { Key = SoundKey.Holeshot, TextToSpeech = "Holeshot {pilot} {laptime}", Category = Sound.SoundCategories.Detection },
+                    new Sound() { Key = SoundKey.TimeTrialLap, TextToSpeech = "{pilot} {count} lap{s} in {lapstime}", Category = Sound.SoundCategories.Detection },
+                    new Sound() { Key = SoundKey.TimeTrialDone, TextToSpeech = "{pilot} finished {count} lap{s} in {lapstime}, Please land", Category = Sound.SoundCategories.Detection },
+                    new Sound() { Key = SoundKey.PracticeLap, TextToSpeech = "{pilot} {laptime}", Category = Sound.SoundCategories.Detection },
+                    new Sound() { Key = SoundKey.CasualLap, TextToSpeech = "{pilot} {count} lap{s} in {lapstime}", Category = Sound.SoundCategories.Detection },
+                    new Sound() { Key = SoundKey.Holeshot, TextToSpeech = "Holeshot {pilot} {laptime}", Category = Sound.SoundCategories.Detection },
 
-                new Sound() { Key = SoundKey.NewLapRecord, TextToSpeech = "{pilot} new record {count} lap{s} in {lapstime}", Enabled = false, Category = Sound.SoundCategories.Records },
-                new Sound() { Key = SoundKey.NewHoleshotRecord, TextToSpeech = "{pilot} new record holeshot in {time}", Enabled = false, Category = Sound.SoundCategories.Records },
+                    new Sound() { Key = SoundKey.NewLapRecord, TextToSpeech = "{pilot} new record {count} lap{s} in {lapstime}", Enabled = false, Category = Sound.SoundCategories.Records },
+                    new Sound() { Key = SoundKey.NewHoleshotRecord, TextToSpeech = "{pilot} new record holeshot in {time}", Enabled = false, Category = Sound.SoundCategories.Records },
 
 
-                new Sound() { Key = SoundKey.StandDownCancelled, TextToSpeech = "Stand down and disarm, Race Start Cancelled", Category = Sound.SoundCategories.Status},
-                new Sound() { Key = SoundKey.StandDownTimingSystem, TextToSpeech = "Stand down and disarm, Timing system failure", Category = Sound.SoundCategories.Status },
-                new Sound() { Key = SoundKey.TimingSystemDisconnected, TextToSpeech = "Timing system disconnected", Category = Sound.SoundCategories.Status },
-                new Sound() { Key = SoundKey.TimingSystemConnected, TextToSpeech = "Timing system connected", Category = Sound.SoundCategories.Status },
-                new Sound() { Key = SoundKey.TimingSystemsConnected, TextToSpeech = "{count} Timing systems connected", Category = Sound.SoundCategories.Status },
+                    new Sound() { Key = SoundKey.StandDownCancelled, TextToSpeech = "Stand down and disarm, Race Start Cancelled", Category = Sound.SoundCategories.Status},
+                    new Sound() { Key = SoundKey.StandDownTimingSystem, TextToSpeech = "Stand down and disarm, Timing system failure", Category = Sound.SoundCategories.Status },
+                    new Sound() { Key = SoundKey.TimingSystemDisconnected, TextToSpeech = "Timing system disconnected", Category = Sound.SoundCategories.Status },
+                    new Sound() { Key = SoundKey.TimingSystemConnected, TextToSpeech = "Timing system connected", Category = Sound.SoundCategories.Status },
+                    new Sound() { Key = SoundKey.TimingSystemsConnected, TextToSpeech = "{count} Timing systems connected", Category = Sound.SoundCategories.Status },
 
-                new Sound() { Key = SoundKey.NoVideoDelayingRace, TextToSpeech = " Race start delayed as {pilot} has no video. Race starts in {time}", Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.NoVideoDelayingRace, TextToSpeech = " Race start delayed as {pilot} has no video. Race starts in {time}", Category = Sound.SoundCategories.Race },
 
-                new Sound() { Key = SoundKey.UntilRaceStart, TextToSpeech = "{time} until the race start", Category = Sound.SoundCategories.Announcements },
-                
+                    new Sound() { Key = SoundKey.UntilRaceStart, TextToSpeech = "{time} until the race start", Category = Sound.SoundCategories.Announcements },
 
+                    new Sound() { Key = SoundKey.Custom1, TextToSpeech = "Custom sound 1", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.Custom2, TextToSpeech = "Custom sound 2", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.Custom3, TextToSpeech = "Custom sound 3", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.Custom4, TextToSpeech = "Custom sound 4", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.Custom5, TextToSpeech = "Custom sound 5", Category = Sound.SoundCategories.Announcements },
                 };
 
                 foreach (Sound defaultSound in defaultSounds)
@@ -504,8 +507,11 @@ namespace Sound
             PlaySound(SoundKey.RaceOver, new SpeechParameters() { Priority = 10000 });
         }
 
-        public void RaceTimerElapsed(Race race, TimeSpan timeRemaining)
+        public void TimesUp(Race race)
         {
+            if (race == null)
+                return;
+
             SpeechParameters parameters = new SpeechParameters();
             parameters.Priority = 9000;
 
@@ -518,16 +524,20 @@ namespace Sound
                 };
             }
 
-            if (timeRemaining == TimeSpan.Zero)
-            {
-                StopSound();
-                PlaySound(SoundKey.TimesUp, onFinished, parameters);
-            }
-            else
-            {
-                parameters.AddTime(SpeechParameters.Types.time, timeRemaining);
-                PlaySound(SoundKey.TimeRemaining, parameters);
-            }
+            StopSound();
+            PlaySound(SoundKey.TimesUp, onFinished, parameters);
+        }
+
+        public void TimeRemaining(Race race, TimeSpan timeRemaining)
+        {
+            if (race == null)
+                return;
+
+            SpeechParameters parameters = new SpeechParameters();
+            parameters.Priority = 9000;
+
+            parameters.AddTime(SpeechParameters.Types.time, timeRemaining);
+            PlaySound(SoundKey.TimeRemaining, parameters);
         }
 
         private int LapNumberToPriority(Detection detection, int position)

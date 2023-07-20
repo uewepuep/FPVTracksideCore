@@ -38,6 +38,7 @@ namespace ExternalData
             eventManager.RaceManager.OnRaceCancelled += RaceManager_OnRaceCancelled;
             eventManager.RaceManager.OnPilotAdded += OnPilotsChanged;
             eventManager.RaceManager.OnPilotRemoved += OnPilotsChanged;
+            eventManager.RaceManager.OnRaceTimesUp += OnRaceTimesUp;
 
             JSONDataAccessor = new JSONDataAccessor();
             workQueue = new WorkQueue("RemoteNotifier");
@@ -66,6 +67,12 @@ namespace ExternalData
             {
                 serialPort = null;
             }
+        }
+
+        private void OnRaceTimesUp(Race race)
+        {
+            RaceState raceState = new RaceState(race, URL) { State = "Times Up" };
+            PutObject(raceState);
         }
 
         private void OnPilotsChanged(RaceLib.PilotChannel pilot)
@@ -109,6 +116,8 @@ namespace ExternalData
             eventManager.RaceManager.OnRaceCancelled -= RaceManager_OnRaceCancelled;
             eventManager.RaceManager.OnPilotAdded -= OnPilotsChanged;
             eventManager.RaceManager.OnPilotRemoved -= OnPilotsChanged;
+            eventManager.RaceManager.OnRaceTimesUp -= OnRaceTimesUp;
+
 
             workQueue.Dispose();
             workQueue = null;

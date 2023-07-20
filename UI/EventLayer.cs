@@ -104,9 +104,15 @@ namespace UI
 
             EventManager.RaceManager.OnRaceTimeRemaining += (r, t) =>
             {
-                SoundManager.RaceTimerElapsed(r, t);
+                SoundManager.TimeRemaining(r, t);
             };
-            
+
+            EventManager.RaceManager.OnRaceTimesUp += (r) =>
+            {
+                SoundManager.TimesUp(r);
+                OBSRemoteControlManager.Trigger(OBSRemoteControlManager.Triggers.TimesUp);
+            };
+
             EventManager.RaceManager.OnRaceChanged += (r) =>
             {
                 if (r != null)
@@ -901,7 +907,53 @@ namespace UI
                     return true;
                 }
 
+
                 Race race = EventManager.RaceManager.CurrentRace;
+                if (KeyMapper.AnnounceRace.Match(inputEvent)) 
+                {
+                    SoundManager.AnnounceRace(race);
+                }
+
+                if (KeyMapper.AnnounceRaceResults.Match(inputEvent))
+                {
+                    SoundManager.AnnounceResults(race);
+                }
+
+                if (KeyMapper.HurryUpEveryone.Match(inputEvent))
+                {
+                    SoundManager.HurryUpEveryone();
+                }
+
+                if (KeyMapper.UntilRaceStart.Match(inputEvent))
+                {
+                    SoundManager.PlayTimeUntilNextRace(AutoRunner.NextRaceStartTime - DateTime.Now);
+                }
+
+                if (KeyMapper.TimeRemaining.Match(inputEvent))
+                {
+                    SoundManager.TimeRemaining(race, EventManager.RaceManager.RemainingTime);
+                }
+
+                if (KeyMapper.RaceOver.Match(inputEvent))
+                {
+                    SoundManager.RaceOver();
+                }
+
+                if (KeyMapper.Custom1.Match(inputEvent))
+                    SoundManager.PlaySound(SoundKey.Custom1);
+                
+                if (KeyMapper.Custom2.Match(inputEvent))
+                    SoundManager.PlaySound(SoundKey.Custom2);
+
+                if (KeyMapper.Custom3.Match(inputEvent))
+                    SoundManager.PlaySound(SoundKey.Custom3);
+
+                if (KeyMapper.Custom4.Match(inputEvent))
+                    SoundManager.PlaySound(SoundKey.Custom4);
+
+                if (KeyMapper.Custom5.Match(inputEvent))
+                    SoundManager.PlaySound(SoundKey.Custom5);
+
                 if (race != null)
                 {
                     int channelGroupId = 0;

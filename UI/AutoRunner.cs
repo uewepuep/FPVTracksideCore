@@ -56,6 +56,26 @@ namespace UI
 
         public DateTime TimerEnd { get; private set; }
 
+        public DateTime NextRaceStartTime
+        {
+            get
+            {
+                switch (State)
+                {
+                    case States.WaitingRaceStart:
+                        return TimerEnd;
+
+                    case States.WaitingResults:
+                        return TimerEnd + TimeSpan.FromSeconds(Config.SecondsToNextRace);
+                        
+                    case States.WaitVideo:
+                        return TimerEnd;
+                }
+
+                return DateTime.Now + TimeSpan.FromSeconds(Config.SecondsToNextRace);
+            }
+        }
+
         private DateTime lastUpdate;
 
         public enum States
@@ -358,26 +378,12 @@ namespace UI
             Race nextRace = RaceManager.GetNextRace(true, true);
             if (nextRace != null)
             {
-                DateTime nextRaceStartTime;
+                DateTime nextRaceStartTime = NextRaceStartTime;
 
-                switch (State)
+                if (State == States.None)
                 {
-                    case States.WaitingRaceStart:
-                        nextRaceStartTime = TimerEnd;
-                        break;
-                    
-                    case States.WaitingResults:
-                        nextRaceStartTime = TimerEnd + TimeSpan.FromSeconds(Config.SecondsToNextRace);
-                        break;
-                    
-                    case States.WaitVideo:
-                        nextRaceStartTime = TimerEnd;
-                        break;
-
-                    default:
-                        lastUpdate = now;
-                        return;
-
+                    lastUpdate = now;
+                    return;
                 }
 
                 TimeSpan lastTimeToRace = nextRaceStartTime - lastUpdate;

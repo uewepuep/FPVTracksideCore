@@ -53,6 +53,15 @@ namespace UI.Nodes
         {
             AlignHorizontally(0.05f, buttonContainer.Children.Where(b => b.Visible).ToArray());
         }
+
+        protected override PropertyNode<T> CreatePropertyNode(T obj, PropertyInfo pi)
+        {
+            if (typeof(ShortcutKey).IsAssignableFrom(pi.PropertyType))
+            {
+                return new ShortcutKeyPropertyNode<T>(obj, pi, Theme.Current.Editor.Text.XNA);
+            }
+            return base.CreatePropertyNode(obj, pi);
+        }
     }
 
     class PilotEditor : ObjectEditorNode<Pilot>
@@ -157,11 +166,6 @@ namespace UI.Nodes
 
             AlignHorizontally(0.05f, reset, null, speakButton, null, cancelButton, okButton);
 
-            OnOK += (e) =>
-            {
-                soundManager.Sounds = Objects;
-            };
-
             RelativeBounds = new RectangleF(0, 0, 1, 1);
             Scale(0.8f, 0.9f);
         }
@@ -215,7 +219,7 @@ namespace UI.Nodes
                 variables.AddChild(row);
             }
 
-            Node.AlignVertically(0.01f, variables.Children);
+            AlignVertically(0.01f, variables.Children);
 
             float height = 0.4f;
             objectProperties.AddSize(0, -height);
@@ -301,19 +305,21 @@ namespace UI.Nodes
             MouseMenu mouseMenu = new MouseMenu(this);
             mouseMenu.TopToBottom = false;
 
-            Dictionary<string, Channel[]> allChannels = new Dictionary<string, Channel[]>();
-            allChannels.Add("Fatshark", Channel.Fatshark);
-            allChannels.Add("RaceBand", Channel.RaceBand);
-            allChannels.Add("IMD6C", Channel.IMD6C);
+            Dictionary<string, Channel[]> allChannels = new Dictionary<string, Channel[]>
+            {
+                { "Fatshark", Channel.Fatshark },
+                { "RaceBand", Channel.RaceBand },
+                { "IMD6C", Channel.IMD6C },
 
-            allChannels.Add("DJIFPVHD", Channel.DJIFPVHD);
-            allChannels.Add("HDZero", Channel.HDZero);
+                { "DJIFPVHD", Channel.DJIFPVHD },
+                { "HDZero", Channel.HDZero },
 
-            allChannels.Add("LowBand", Channel.LowBand);
-            allChannels.Add("BoscamA", Channel.BoscamA);
-            allChannels.Add("BoscamB", Channel.BoscamB);
-            allChannels.Add("E", Channel.E);
-            allChannels.Add("Diatone", Channel.Diatone);
+                { "LowBand", Channel.LowBand },
+                { "BoscamA", Channel.BoscamA },
+                { "BoscamB", Channel.BoscamB },
+                { "E", Channel.E },
+                { "Diatone", Channel.Diatone }
+            };
 
             foreach (var kvp in allChannels)
             {
@@ -452,130 +458,97 @@ namespace UI.Nodes
 
     class KeyboardShortcutsEditor : ObjectEditorNode<KeyboardShortcuts>
     {
-        public Channel[] Channels { get; private set; }
-
         public KeyboardShortcutsEditor(KeyboardShortcuts toEdit)
             : base(toEdit, false, true, false)
         {
         }
+    }
 
-        protected override PropertyNode<KeyboardShortcuts> CreatePropertyNode(KeyboardShortcuts obj, PropertyInfo pi)
+    class ShortcutKeyPropertyNode<T> : StaticTextPropertyNode<T>
+    {
+        public ShortcutKeyPropertyNode(T obj, PropertyInfo pi, Color textColor)
+            : base(obj, pi, textColor)
         {
-            if (pi.PropertyType == typeof(ShortcutKey))
-            {
-                return new ShortcutKeyPropertyNode<KeyboardShortcuts>(obj, pi, Theme.Current.Editor.Text.XNA);
-            }
-
-            return base.CreatePropertyNode(obj, pi);
         }
 
-        class ShortcutKeyPropertyNode<T> : StaticTextPropertyNode<T>
+        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
         {
-            public ShortcutKeyPropertyNode(T obj, PropertyInfo pi, Color textColor)
-                : base(obj, pi, textColor)
+            if (mouseInputEvent.EventType == MouseInputEvent.EventTypes.Button)
             {
-                //var regex = new System.Text.RegularExpressions.Regex(".*ChannelGroup([0-9]+)");
-
-                //if (regex.IsMatch(pi.Name))
-                //{
-                //    var groups = regex.Match(pi.Name).Groups;
-                //    var match = groups[1];
-
-                //    int channelGroupIndex = 0;
-                //    if (int.TryParse(match.Value, out channelGroupIndex))
-                //    {
-                //        channelGroupIndex--;
-
-                //        Channel[] c = keyMapSettingsEditor.Channels.GetChannelGroup(channelGroupIndex);
-
-                //        if (c != null)
-                //        {
-                //            SetName(pi.Name.CamelCaseToHuman() + " (" + String.Join(", ", c.Select(r => r.ToStringShort())) + ")");
-                //        }
-                //    }
-                //}
-            }
-
-            public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
-            {
-                if (mouseInputEvent.EventType == MouseInputEvent.EventTypes.Button)
+                GetLayer<PopupLayer>().Popup(new KeybindNode((k) =>
                 {
-                    GetLayer<PopupLayer>().Popup(new KeybindNode((k) =>
+                    if (k != null)
                     {
-                        if (k != null)
-                        {
-                            SetValue(k);
-                        }
-                    }));
-                    return true;
-                }
-
-                return base.OnMouseInput(mouseInputEvent);
+                        SetValue(k);
+                    }
+                }));
+                return true;
             }
-        }
 
-        public class KeybindNode : AspectNode
+            return base.OnMouseInput(mouseInputEvent);
+        }
+    }
+
+    public class KeybindNode : AspectNode
+    {
+        private Action<ShortcutKey> onFinished;
+
+        public KeybindNode(Action<ShortcutKey> onFinished)
+            : this("Press a new key combination", Theme.Current.Editor.Foreground.XNA, Theme.Current.Editor.Text.XNA, onFinished)
         {
-            private Action<ShortcutKey> onFinished;
-
-            public KeybindNode(Action<ShortcutKey> onFinished)
-                : this("Press a new key combination", Theme.Current.Editor.Foreground.XNA, Theme.Current.Editor.Text.XNA, onFinished)
-            {
-            }
-
-            public KeybindNode(string message, Color background, Color text, Action<ShortcutKey> onFinished)
-            {
-                AspectRatio = (message.Length / 40.0f) * 4f;
-
-                Alignment = RectangleAlignment.Center;
-                RelativeBounds = new RectangleF(0, 0.4f, 1, 0.1f);
-
-                ColorNode backgroundNode = new ColorNode(background);
-                AddChild(backgroundNode);
-
-                TextNode questionNode = new TextNode(message, text);
-                questionNode.RelativeBounds = new RectangleF(0.025f, 0.1f, 0.95f, 0.3f);
-                backgroundNode.AddChild(questionNode);
-
-                Node buttonsContainer = new Node();
-                buttonsContainer.RelativeBounds = new RectangleF(0.1f, 0.5f, 0.8f, 0.4f);
-                backgroundNode.AddChild(buttonsContainer);
-
-                AlignHorizontally(0.1f, buttonsContainer.Children.ToArray());
-
-                this.onFinished = onFinished;
-            }
-
-            public override bool OnKeyboardInput(KeyboardInputEvent inputEvent)
-            {
-                if (inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.LeftShift ||
-                    inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.RightShift ||
-                    inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.LeftAlt ||
-                    inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.RightAlt ||
-                    inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.LeftControl ||
-                    inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.RightControl)
-                {
-                    // ignore any modifier key.
-                    return true;
-                }
-
-                ShortcutKey key = new ShortcutKey(inputEvent);
-
-                if (key.Key == Microsoft.Xna.Framework.Input.Keys.Escape)
-                {
-                    onFinished(null);
-                }
-                else
-                {
-                    onFinished(key);
-                }
-
-                Dispose();
-
-                return base.OnKeyboardInput(inputEvent);
-            }
         }
 
+        public KeybindNode(string message, Color background, Color text, Action<ShortcutKey> onFinished)
+        {
+            AspectRatio = (message.Length / 40.0f) * 4f;
+
+            Alignment = RectangleAlignment.Center;
+            RelativeBounds = new RectangleF(0, 0.4f, 1, 0.1f);
+
+            ColorNode backgroundNode = new ColorNode(background);
+            AddChild(backgroundNode);
+
+            TextNode questionNode = new TextNode(message, text);
+            questionNode.RelativeBounds = new RectangleF(0.025f, 0.1f, 0.95f, 0.3f);
+            backgroundNode.AddChild(questionNode);
+
+            Node buttonsContainer = new Node();
+            buttonsContainer.RelativeBounds = new RectangleF(0.1f, 0.5f, 0.8f, 0.4f);
+            backgroundNode.AddChild(buttonsContainer);
+
+            AlignHorizontally(0.1f, buttonsContainer.Children.ToArray());
+
+            this.onFinished = onFinished;
+        }
+
+        public override bool OnKeyboardInput(KeyboardInputEvent inputEvent)
+        {
+            if (inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.LeftShift ||
+                inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.RightShift ||
+                inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.LeftAlt ||
+                inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.RightAlt ||
+                inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.LeftControl ||
+                inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.RightControl)
+            {
+                // ignore any modifier key.
+                return true;
+            }
+
+            ShortcutKey key = new ShortcutKey(inputEvent.Key, inputEvent.Ctrl, inputEvent.Alt, inputEvent.Shift);
+
+            if (key.Key == Microsoft.Xna.Framework.Input.Keys.Escape)
+            {
+                onFinished(null);
+            }
+            else
+            {
+                onFinished(key);
+            }
+
+            Dispose();
+
+            return base.OnKeyboardInput(inputEvent);
+        }
     }
 
     class ThemeSettingsEditor : ObjectEditorNode<Theme>

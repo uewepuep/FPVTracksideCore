@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Xna.Framework.Input;
+using Tools;
 
 namespace Composition.Input
 {
@@ -129,6 +130,38 @@ namespace Composition.Input
         [Category("Replay")]
         public ShortcutKey ReplayPrevFrame { get; set; }
 
+
+        [Category("Trigger Sound")]
+        public ShortcutKey AnnounceRace { get; set; }
+
+        [Category("Trigger Sound")]
+        public ShortcutKey AnnounceRaceResults { get; set; }
+
+        [Category("Trigger Sound")]
+        public ShortcutKey HurryUpEveryone { get; set; }
+
+        [Category("Trigger Sound")]
+        public ShortcutKey UntilRaceStart { get; set; }
+
+        [Category("Trigger Sound")]
+        public ShortcutKey TimeRemaining { get; set; }
+
+        [Category("Trigger Sound")]
+        public ShortcutKey RaceOver { get; set; }
+
+        [Category("Trigger Sound")]
+        public ShortcutKey Custom1 { get; set; }
+        [Category("Trigger Sound")]
+        public ShortcutKey Custom2 { get; set; }
+        [Category("Trigger Sound")]
+        public ShortcutKey Custom3 { get; set; }
+        [Category("Trigger Sound")]
+        public ShortcutKey Custom4 { get; set; }
+        [Category("Trigger Sound")]
+        public ShortcutKey Custom5 { get; set; }
+
+
+
         private static string filename = @"data/Keys.xml";
 
         public KeyboardShortcuts()
@@ -180,6 +213,19 @@ namespace Composition.Input
             RemoveLapChannelGroup6 = new ShortcutKey(Keys.D6, true);
             RemoveLapChannelGroup7 = new ShortcutKey(Keys.D7, true);
             RemoveLapChannelGroup8 = new ShortcutKey(Keys.D8, true);
+
+            AnnounceRace = new ShortcutKey(Keys.A, true);
+            AnnounceRaceResults = new ShortcutKey(Keys.R, true);
+            HurryUpEveryone = new ShortcutKey(Keys.H, true);
+            UntilRaceStart = new ShortcutKey(Keys.N, true);
+            TimeRemaining = new ShortcutKey(Keys.T, true);
+            RaceOver = new ShortcutKey(Keys.O, true);
+
+            Custom1 = new ShortcutKey(Keys.D1, true, true);
+            Custom2 = new ShortcutKey(Keys.D2, true, true);
+            Custom3 = new ShortcutKey(Keys.D3, true, true);
+            Custom4 = new ShortcutKey(Keys.D4, true, true);
+            Custom5 = new ShortcutKey(Keys.D5, true, true);
         }
 
 
@@ -208,63 +254,11 @@ namespace Composition.Input
         }
     }
 
-    public class ShortcutKey
+    public static class ShortcutKeyExt
     {
-        public bool ControlKey { get; set; }
-        public bool AltKey { get; set; }
-        public bool ShiftKey { get; set; }
-
-        public Keys Key { get; set; }
-       
-        public ShortcutKey()
+        public static bool Match(this ShortcutKey key, KeyboardInputEvent keyboardInputEvent)
         {
-            ControlKey = false;
-            AltKey = false;
-            ShiftKey = false;
-        }
-
-
-        public ShortcutKey(Keys key, bool ctrl = false, bool alt = false, bool shift = false)
-        {
-            Key = key;
-            ControlKey = ctrl;
-            AltKey = alt;
-            ShiftKey = shift;
-        }
-
-        public ShortcutKey(KeyboardInputEvent copy)
-        {
-            Key = copy.Key;
-            ControlKey = copy.Ctrl;
-            AltKey = copy.Alt;
-            ShiftKey = copy.Shift;
-        }
-
-        public bool Match(KeyboardInputEvent keyboardInputEvent)
-        {
-            return Match(keyboardInputEvent.Key, keyboardInputEvent.Ctrl, keyboardInputEvent.Alt, keyboardInputEvent.Shift);
-        }
-
-        public bool Match(Keys key, bool ctrl, bool alt, bool shift)
-        {
-            if (ControlKey != ctrl) return false;
-            if (ShiftKey != shift) return false;
-            if (AltKey != alt) return false;
-
-            return key == Key;
-        }
-
-        public override string ToString()
-        {
-            List<string> texts = new List<string>();
-
-            if (ControlKey) texts.Add("Ctrl");
-            if (AltKey) texts.Add("Alt");
-            if (ShiftKey) texts.Add("Shift");
-
-            texts.Add(Key.ToString());
-
-            return string.Join(" + ", texts);
+            return key.Match(keyboardInputEvent.Key, keyboardInputEvent.Ctrl, keyboardInputEvent.Alt, keyboardInputEvent.Shift);
         }
     }
 }
