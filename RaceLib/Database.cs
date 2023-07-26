@@ -197,8 +197,7 @@ namespace RaceLib
                     var oldTableName = new ModifiedLiteCollection<Result>(database, "Results");
                     results = Results.FindAll().ToArray();
 
-
-                    Channel[] channels = Channel.Read();
+                    Channel[] channels = Channel.Read(new Tools.Profile("Profile 1"));
                     foreach (Event eve in events)
                     {
                         if (eve.Channels == null)

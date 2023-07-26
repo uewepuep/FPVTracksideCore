@@ -31,6 +31,11 @@ namespace Composition.Layers
             Root.AddChild(BackgroundNode);
         }
 
+        public void SetBackground(ToolTexture texture)
+        {
+            BackgroundNode.SetFilename(texture.TextureFilename);
+        }
+
         public void Crop(int width, int height)
         {
             BackgroundNode.KeepAspectRatio = true;

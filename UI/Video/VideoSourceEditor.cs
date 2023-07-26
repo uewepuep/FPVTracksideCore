@@ -31,9 +31,9 @@ namespace UI.Video
         private ChannelVideoMapperNode mapperNode;
         private object locker;
 
-        public static VideoSourceEditor GetVideoSourceEditor(GraphicsDevice gd, EventManager em)
+        public static VideoSourceEditor GetVideoSourceEditor(EventManager em, Profile profile)
         {
-            VideoManager videoManager = new VideoManager(GeneralSettings.Instance.VideoStorageLocation);
+            VideoManager videoManager = new VideoManager(GeneralSettings.Instance.VideoStorageLocation, profile);
 
             videoManager.LoadDevices();
             videoManager.MaintainConnections = true;
@@ -472,7 +472,7 @@ namespace UI.Video
             }
             else
             {
-                eventChannels = Channel.Read();
+                eventChannels = Channel.Read(eventManager.Profile);
             }
 
             main = new Node();

@@ -75,6 +75,27 @@ namespace UI
             
             Logger.Init(Log);
             Database.Init(Data);
+
+            FileInfo[] oldConfigs = Data.GetFiles("*.xml").Where(r => !r.Name.EndsWith("GeneralSettings.xml")).ToArray();
+            if (oldConfigs.Any())
+            {
+                if (Data.GetDirectories().Any(d => d.Name == "default"))
+                {
+                    foreach (FileInfo xml in oldConfigs) 
+                    { 
+                        string newName = Path.Combine(Data.FullName, "default",xml.Name);
+
+                        if (!File.Exists(newName))
+                        {
+                            xml.MoveTo(newName);
+                        }
+                        else
+                        {
+                            xml.Delete();
+                        }
+                    }
+                }
+            }
         }
 
         private DirectoryInfo CreateDirectory(DirectoryInfo working, string directory)
@@ -232,8 +253,10 @@ namespace UI
             LayerStack.AddAbove<BackgroundLayer>(welcomeLayer);
         }
 
-        public void EventSelected(BaseObjectEditorNode<Event> editor)
+        public void EventSelected(BaseObjectEditorNode<Event> ed)
         {
+            EventSelectorEditor editor = ed as EventSelectorEditor;
+
             Logger.UI.LogCall(this, editor.Selected);
 
             Event selected = editor.Selected;
@@ -241,7 +264,7 @@ namespace UI
             if (selected == null)
                 selected = editor.Objects.First();
 
-            StartEvent(selected);
+            StartEvent(selected, editor.Profile);
         }
 
         public void Restart(Event evvent)
@@ -260,7 +283,7 @@ namespace UI
                             if (eventSelectorLayer != null)
                             {
                                 eventSelectorLayer.Dispose();
-                                StartEvent(evvent);
+                                StartEvent(evvent, eventSelectorLayer.Editor.Profile);
                             }
                         });
                     }
@@ -268,13 +291,23 @@ namespace UI
             }
         }
 
-        private void StartEvent(Event selected)
+        private void StartEvent(Event selected, Profile profile)
         {
             loadingLayer.BlockOnLoading = true;
 
+            ProfileSettings.Initialize(profile);
+
             WorkSet startEventWorkSet = new WorkSet();
             startEventWorkSet.OnError += ErrorLoadingEvent;
-            EventManager eventManager = new EventManager();
+            EventManager eventManager = new EventManager(profile);
+
+            Theme.Initialise(PlatformTools.WorkingDirectory, "Dark");
+
+            BackgroundLayer backgroundLayer = LayerStack.GetLayer<BackgroundLayer>();
+            if (backgroundLayer != null)
+            {
+                backgroundLayer.SetBackground(Theme.Current.Background);
+            }
 
             eventManager.LoadEvent(startEventWorkSet, loadingLayer.WorkQueue, selected);
             

@@ -71,7 +71,7 @@ namespace UI
             this.tabbedMultiNode = tabbedMultiNode;
             this.eventManager = eventManager;
 
-            config = OBSRemoteControlConfig.Load();
+            config = OBSRemoteControlConfig.Load(eventManager.Profile);
 
             if (config.Enabled) 
             {
@@ -115,7 +115,7 @@ namespace UI
 
             foreach (OBSRemoteControlEvent rcEvent in config.RemoteControlEvents)
             {
-                if (rcEvent.Trigger == type && rcEvent.Profile == config.Profile) 
+                if (rcEvent.Trigger == type) 
                 {
                     Logger.OBS.LogCall(this, rcEvent.GetType().Name, rcEvent.ToString());
                     
@@ -211,9 +211,6 @@ namespace UI
             [Category("Connection")]
 
             public string Password { get; set; }
-            
-            [Category("Advanced")]
-            public string Profile { get; set; }
 
             [Browsable(false)]
             public List<OBSRemoteControlEvent> RemoteControlEvents { get; set; }
@@ -229,20 +226,20 @@ namespace UI
                 RemoteControlEvents = new List<OBSRemoteControlEvent>();
             }
 
-            protected const string filename = @"data/OBSRemoteControl.xml";
-            public static OBSRemoteControlConfig Load()
+            protected const string filename = "OBSRemoteControl.xml";
+            public static OBSRemoteControlConfig Load(Profile profile)
             {
                 OBSRemoteControlConfig config = new OBSRemoteControlConfig();
 
                 bool error = false;
                 try
                 {
-                    OBSRemoteControlConfig[] s = IOTools.Read<OBSRemoteControlConfig>(filename);
+                    OBSRemoteControlConfig[] s = IOTools.Read<OBSRemoteControlConfig>(profile, filename);
 
                     if (s != null && s.Any())
                     {
                         config = s[0];
-                        Write(config);
+                        Write(profile, config);
                     }
                     else
                     {
@@ -257,16 +254,16 @@ namespace UI
                 if (error)
                 {
                     OBSRemoteControlConfig s = new OBSRemoteControlConfig();
-                    Write(s);
+                    Write(profile, s);
                     config = s;
                 }
 
                 return config;
             }
 
-            public static void Write(OBSRemoteControlConfig s)
+            public static void Write(Profile profile, OBSRemoteControlConfig s)
             {
-                IOTools.Write(filename, s);
+                IOTools.Write(profile, filename, s);
             }
 
             public override string ToString()
@@ -278,8 +275,6 @@ namespace UI
         public abstract class OBSRemoteControlEvent
         {
             public Triggers Trigger { get; set; }
-            [Browsable(false)]
-            public string Profile { get; set; }
         }
 
         public class OBSRemoteControlSetSceneEvent : OBSRemoteControlEvent

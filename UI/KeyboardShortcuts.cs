@@ -162,7 +162,7 @@ namespace Composition.Input
 
 
 
-        private static string filename = @"data/Keys.xml";
+        private const string filename = "Keys.xml";
 
         public KeyboardShortcuts()
         {
@@ -229,12 +229,12 @@ namespace Composition.Input
         }
 
 
-        public static KeyboardShortcuts Read()
+        public static KeyboardShortcuts Read(Profile profile)
         {
             KeyboardShortcuts s = null;
             try
             {
-                s = Tools.IOTools.Read<KeyboardShortcuts>(filename).FirstOrDefault();
+                s = Tools.IOTools.Read<KeyboardShortcuts>(profile,filename).FirstOrDefault();
                 if (s == null)
                 {
                     s = new KeyboardShortcuts();
@@ -248,9 +248,9 @@ namespace Composition.Input
             }
         }
 
-        public static void Write(KeyboardShortcuts sources)
+        public static void Write(Profile profile, KeyboardShortcuts sources)
         {
-            Tools.IOTools.Write(filename, sources);
+            Tools.IOTools.Write(profile, filename, sources);
         }
     }
 

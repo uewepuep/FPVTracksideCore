@@ -13,15 +13,19 @@ namespace Tools
     {
         public static DirectoryInfo WorkingDirectory { get; set; }
 
-
-        public static T[] Read<T>(string filename) where T : new()
+        public static T[] Read<T>(Profile profile, string filename) where T : new()
         {
-            return Read<T>(filename, null);
+            return Read<T>(profile.GetPath(), filename, null);
         }
 
-        public static T[] Read<T>(string filename, IEnumerable<KeyValuePair<string, string>> replacements) where T : new()
+        public static T[] Read<T>(string directory, string filename) where T : new()
         {
-            FileInfo file = new FileInfo(Path.Combine(WorkingDirectory.FullName, filename));
+            return Read<T>(directory, filename, null);
+        }
+
+        public static T[] Read<T>(string directory, string filename, IEnumerable<KeyValuePair<string, string>> replacements) where T : new()
+        {
+            FileInfo file = new FileInfo(Path.Combine(WorkingDirectory.FullName, directory, filename));
 
             bool deleteAfterReading = false;
 
@@ -84,19 +88,19 @@ namespace Tools
             throw new FormatException();
         }
 
-        public static T ReadSingle<T>(string filename) where T : new()
+        public static T ReadSingle<T>(string directory, string filename) where T : new()
         {
-            return Read<T>(filename).FirstOrDefault();
+            return Read<T>(directory, filename).FirstOrDefault();
         }
 
-        public static void Write<T>(string filename, T item) where T : new()
+        public static void Write<T>(Profile profile, string filename, params T[] items) where T : new()
         {
-            Write(filename, new T[] { item });
+            Write(profile.GetPath(), filename, items);
         }
 
-        public static void Write<T>(string filename, T[] items) where T : new()
+        public static void Write<T>(string directory, string filename, params T[] items) where T : new()
         {
-            FileInfo file = new FileInfo(Path.Combine(WorkingDirectory.FullName, filename));
+            FileInfo file = new FileInfo(Path.Combine(WorkingDirectory.FullName, directory, filename));
 
             if (!file.Directory.Exists)
             {

@@ -80,8 +80,11 @@ namespace UI.Video
 
         public DirectoryInfo VideoDirectory { get; private set; }
 
-        public VideoManager(string directory)
+        public Profile Profile { get; private set; }
+
+        public VideoManager(string directory, Profile profile)
         {
+            Profile = profile;
             VideoDirectory = new DirectoryInfo(directory);
 
             try
@@ -130,7 +133,7 @@ namespace UI.Video
             MaintainConnections = true;
 
             VideoConfigs.Clear();
-            VideoConfigs.AddRange(VideoConfig.Read());
+            VideoConfigs.AddRange(VideoConfig.Read(Profile));
 
             StartThread();
         }
@@ -148,12 +151,12 @@ namespace UI.Video
 
         public void WriteCurrentDeviceConfig()
         {
-            WriteDeviceConfig(VideoConfigs);
+            WriteDeviceConfig(Profile, VideoConfigs);
         }
 
-        public static void WriteDeviceConfig(IEnumerable<VideoConfig> vcs)
+        public static void WriteDeviceConfig(Profile profile, IEnumerable<VideoConfig> vcs)
         {
-            VideoConfig.Write(vcs.ToArray());
+            VideoConfig.Write(profile,vcs.ToArray());
         }
 
         public void Dispose()
@@ -567,7 +570,7 @@ namespace UI.Video
             {
                 foreach (FileInfo file in VideoDirectory.GetFiles(race.ID + "*.recordinfo.xml"))
                 {
-                    RecodingInfo videoInfo = IOTools.ReadSingle<RecodingInfo>(file.FullName);
+                    RecodingInfo videoInfo = IOTools.ReadSingle<RecodingInfo>(VideoDirectory.FullName, file.Name);
                     if (videoInfo != null)
                     {
                         if (File.Exists(videoInfo.FilePath))
@@ -753,8 +756,8 @@ namespace UI.Video
                                 {
                                     RecodingInfo vi = new RecodingInfo(source);
 
-                                    string filename = vi.FilePath.Replace(".wmv", "") + ".recordinfo.xml";
-                                    IOTools.Write(filename, vi);
+                                    FileInfo fileinfo = new FileInfo(vi.FilePath.Replace(".wmv", "") + ".recordinfo.xml");
+                                    IOTools.Write(VideoDirectory.FullName, fileinfo.Name, vi);
                                     needsVideoInfoWrite.Remove((FrameSource)source);
                                 }
                             }

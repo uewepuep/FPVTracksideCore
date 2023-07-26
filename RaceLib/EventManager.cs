@@ -38,8 +38,11 @@ namespace RaceLib
 
         public ExportColumn[] ExportColumns { get; set; }
 
-        public EventManager()
+        public Profile Profile { get; private set; }
+
+        public EventManager(Profile profile)
         {
+            Profile = profile;
             RaceManager = new RaceManager(this);
             LapRecordManager = new LapRecordManager(RaceManager);
             ResultManager = new ResultManager(this);
@@ -47,7 +50,7 @@ namespace RaceLib
             RoundManager = new RoundManager(this);
             SpeedRecordManager = new SpeedRecordManager(RaceManager);
 
-            ExportColumns = ExportColumn.Read();
+            ExportColumns = ExportColumn.Read(Profile);
 
             channelColour = new Dictionary<Channel, Microsoft.Xna.Framework.Color>();
 
@@ -226,7 +229,7 @@ namespace RaceLib
 
                 if (eve.Channels == null || !eve.Channels.Any())
                 {
-                    Event.Channels = Channel.Read();
+                    Event.Channels = Channel.Read(Profile);
                 }
             });
 

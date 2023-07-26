@@ -251,11 +251,11 @@ namespace UI.Nodes
     public class ExportColumnEditor : ObjectEditorNode<ExportColumn>
     {
         public ExportColumnEditor(EventManager eventManager)
-            : base(ExportColumn.Read(), false, true, true)
+            : base(ExportColumn.Read(eventManager.Profile), false, true, true)
         {
             OnOK += (e) =>
             {
-                ExportColumn.Write(Objects.ToArray());
+                ExportColumn.Write(eventManager.Profile, Objects.ToArray());
                 if (eventManager != null)
                 {
                     eventManager.ExportColumns = Objects.ToArray();
@@ -416,12 +416,6 @@ namespace UI.Nodes
 
         protected override PropertyNode<GeneralSettings> CreatePropertyNode(GeneralSettings obj, PropertyInfo pi)
         {
-            if (pi.Name == "Voice")
-            {
-                VoicesPropertyNode listPropertyNode = new VoicesPropertyNode(obj, pi, ButtonBackground, TextColor, ButtonHover);
-                return listPropertyNode;
-            }
-
             if (pi.Name == "InverseResolutionScalePercent")
             {
                 int[] scales = new int[] { 50, 75, 100, 125, 150, 200 };
@@ -437,9 +431,30 @@ namespace UI.Nodes
             return base.CreatePropertyNode(obj, pi);
         }
 
-        private class VoicesPropertyNode : ListPropertyNode<GeneralSettings>
+    }
+
+
+    class ProfileSettingsEditor : ObjectEditorNode<ProfileSettings>
+    {
+        public ProfileSettingsEditor(ProfileSettings toEdit)
+            : base(toEdit, false, true, false)
         {
-            public VoicesPropertyNode(GeneralSettings obj, PropertyInfo pi, Color background, Color textColor, Color hover)
+        }
+
+        protected override PropertyNode<ProfileSettings> CreatePropertyNode(ProfileSettings obj, PropertyInfo pi)
+        {
+            if (pi.Name == "Voice")
+            {
+                VoicesPropertyNode listPropertyNode = new VoicesPropertyNode(obj, pi, ButtonBackground, TextColor, ButtonHover);
+                return listPropertyNode;
+            }
+
+            return base.CreatePropertyNode(obj, pi);
+        }
+
+        private class VoicesPropertyNode : ListPropertyNode<ProfileSettings>
+        {
+            public VoicesPropertyNode(ProfileSettings obj, PropertyInfo pi, Color background, Color textColor, Color hover)
                 : base(obj, pi, background, textColor, hover)
             {
             }
@@ -556,10 +571,12 @@ namespace UI.Nodes
         public AspectNode Demo { get; private set; }
 
         public TextButtonNode OpenDir { get; private set; }
+        public Profile Profile { get; private set; }
 
-        public ThemeSettingsEditor(IEnumerable<Theme> toEdit)
+        public ThemeSettingsEditor(Profile profile, IEnumerable<Theme> toEdit)
             : base(toEdit, false, true, false)
         {
+            this.Profile = profile;
             heading.Text = "Themes";
             okButton.Text = "Set Theme";
             OnOK += ThemeSettingsEditor_OnOK;
@@ -582,8 +599,9 @@ namespace UI.Nodes
 
         private void ThemeSettingsEditor_OnOK(BaseObjectEditorNode<Theme> obj)
         {
-            GeneralSettings.Instance.Theme = Selected.Name;
-            GeneralSettings.Write();
+            ProfileSettings profileSettings = ProfileSettings.Read(Profile);
+            profileSettings.Theme = Selected.Name;
+            ProfileSettings.Write(Profile, profileSettings);
         }
 
         public override void SetObjects(IEnumerable<Theme> toEdit, bool addRemove = false, bool cancelButton = true)
@@ -826,8 +844,8 @@ namespace UI.Nodes
             MouseMenu mouseMenu = new MouseMenu(this);
             mouseMenu.TopToBottom = false;
 
-            mouseMenu.AddItem("Add Scene Change", () => { AddNew(new OBSRemoteControlManager.OBSRemoteControlSetSceneEvent() { Profile = commonProperties.Profile }); });
-            mouseMenu.AddItem("Add Source Filter Toggle", () => { AddNew(new OBSRemoteControlManager.OBSRemoteControlSourceFilterToggleEvent() { Profile = commonProperties.Profile }); });
+            mouseMenu.AddItem("Add Scene Change", () => { AddNew(new OBSRemoteControlManager.OBSRemoteControlSetSceneEvent() ); });
+            mouseMenu.AddItem("Add Source Filter Toggle", () => { AddNew(new OBSRemoteControlManager.OBSRemoteControlSourceFilterToggleEvent()); });
             mouseMenu.Show(addButton);
         }
 
@@ -838,14 +856,6 @@ namespace UI.Nodes
 
             container.Translate(0, triggersHeading.RelativeBounds.Bottom);
             container.AddSize(0, -triggersHeading.RelativeBounds.Bottom);
-        }
-
-        public override bool IsVisible(OBSRemoteControlManager.OBSRemoteControlEvent t)
-        {
-            if (t == null)
-                return false;
-
-            return t.Profile == commonProperties.Profile;
         }
 
         protected override PropertyNode<OBSRemoteControlManager.OBSRemoteControlEvent> CreatePropertyNode(OBSRemoteControlManager.OBSRemoteControlEvent obj, PropertyInfo pi)
@@ -868,20 +878,6 @@ namespace UI.Nodes
 
         public class OBSRemoteControlCommonEditor : BaseObjectEditorNode<OBSRemoteControlManager.OBSRemoteControlConfig>
         {
-            private OBSProfileNode profile;
-
-            public string Profile
-            {
-                get
-                {
-                    if (profile != null)
-                    {
-                        return profile.Value.Text;
-                    }
-                    return "";
-                }
-            }
-
             public event Action ProfileChanged;
 
             public OBSRemoteControlCommonEditor(Color buttonBackground, Color buttonHover, Color textColor, Color scrollColor, bool hasButtons = true) : base(buttonBackground, buttonHover, textColor, scrollColor, hasButtons)
@@ -889,42 +885,9 @@ namespace UI.Nodes
                 SetHeadingText("");
             }
 
-            protected override PropertyNode<OBSRemoteControlManager.OBSRemoteControlConfig> CreatePropertyNode(OBSRemoteControlManager.OBSRemoteControlConfig obj, PropertyInfo pi)
-            {
-                if (pi.Name == "Profile")
-                {
-                    profile = new OBSProfileNode(obj, pi, ButtonBackground, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA);
-
-                    profile.onChanged += Profile_onChanged;
-
-                    return profile;
-                }
-                return base.CreatePropertyNode(obj, pi);
-            }
-
             private void Profile_onChanged(object obj)
             {
                 ProfileChanged?.Invoke();
-            }
-        }
-
-        private class OBSProfileNode : ListPropertyNode<OBSRemoteControlManager.OBSRemoteControlConfig>
-        {
-            public OBSProfileNode(OBSRemoteControlManager.OBSRemoteControlConfig obj, PropertyInfo pi, Color textBackground, Color textColor, Color hover) 
-                : base(obj, pi, textBackground, textColor, hover, null)
-            {
-                Value.CanEdit = true;
-            }
-
-            protected override void ShowMouseMenu()
-            {
-                Options = GetProfiles().OfType<object>().ToList();
-                base.ShowMouseMenu();
-            }
-
-            private IEnumerable<string> GetProfiles()
-            {
-                return Object.RemoteControlEvents.Select(r => r.Profile).Distinct().OrderBy(r => r);
             }
         }
 

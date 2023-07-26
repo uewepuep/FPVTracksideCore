@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 
 namespace RaceLib
 {
@@ -39,13 +40,13 @@ namespace RaceLib
             RoundPositionRollover = false;
         }
 
-        private static string filename = @"data/PointSettings.xml";
-        public static PointsSettings Read()
+        private const string filename = @"PointSettings.xml";
+        public static PointsSettings Read(Profile profile)
         {
             PointsSettings s = null;
             try
             {
-                s = Tools.IOTools.Read<PointsSettings>(filename).FirstOrDefault();
+                s = Tools.IOTools.Read<PointsSettings>(profile, filename).FirstOrDefault();
                 if (s == null)
                 {
                     s = new PointsSettings();
@@ -59,9 +60,9 @@ namespace RaceLib
             }
         }
 
-        public static void Write(PointsSettings points)
+        public static void Write(Profile profile, PointsSettings points)
         {
-            Tools.IOTools.Write(filename, new PointsSettings[] { points });
+            Tools.IOTools.Write(profile, filename, new PointsSettings[] { points });
         }
     }
 
@@ -79,7 +80,7 @@ namespace RaceLib
 
         public ResultManager(EventManager eventManager)
         {
-            PointsSettings = PointsSettings.Read();
+            PointsSettings = PointsSettings.Read(eventManager.Profile);
 
             if (eventManager != null)
             {

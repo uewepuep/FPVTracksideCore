@@ -180,7 +180,7 @@ namespace ImageServer
             }
         }
 
-        private static string filename = @"data/VideoSettings.xml";
+        private const string filename = "VideoSettings.xml";
 
         public VideoConfig Clone()
         {
@@ -197,12 +197,14 @@ namespace ImageServer
             return c;
         }
 
-        public static VideoConfig[] Read()
+        public static VideoConfig[] Read(Profile profile)
         {
+
+
             VideoConfig[] s = null;
             try
             {
-                s = Tools.IOTools.Read<VideoConfig>(filename);
+                s = Tools.IOTools.Read<VideoConfig>(profile, filename);
                 if (s == null)
                 {
                     s = new VideoConfig[0];
@@ -216,9 +218,9 @@ namespace ImageServer
             }
         }
 
-        public static void Write(VideoConfig[] sources)
+        public static void Write(Profile profile, VideoConfig[] sources)
         {
-            Tools.IOTools.Write(filename, sources);
+            Tools.IOTools.Write(profile, filename, sources);
         }
 
         public override bool Equals(object obj)

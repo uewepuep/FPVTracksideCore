@@ -24,8 +24,6 @@ namespace Timing.ImmersionRC
 
         protected LapRFSettings settings;
 
-        private const string settingsFilename = @"data/lapRFSettings.xml";
-
         public event System.Action OnDataReceived;
         public event System.Action OnDataSent;
 

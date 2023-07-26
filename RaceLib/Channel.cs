@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
+using Tools;
 
 namespace RaceLib
 {
@@ -375,15 +376,15 @@ namespace RaceLib
             return pool.Where(c => InterferesWith(c));
         }
 
-        private static string filename = @"data/channels.xml";
-        public static Channel[] Read()
+        private const string filename = "Channels.xml";
+        public static Channel[] Read(Profile profile)
         {
             try
             {
                 Channel[] s = null;
                 try
                 {
-                    s = Tools.IOTools.Read<SimpleChannel>(filename).Select(c => c.GetChannel()).Where(c => c != null).ToArray();
+                    s = Tools.IOTools.Read<SimpleChannel>(profile, filename).Select(c => c.GetChannel()).Where(c => c != null).ToArray();
                 }
                 catch
                 {
@@ -404,7 +405,7 @@ namespace RaceLib
                     s[i] = AllChannels.FirstOrDefault(ch => ch.Band == s[i].Band && ch.Number == s[i].Number);
                 }
 
-                Write(s);
+                Write(profile, s);
 
                 return s;
             }
@@ -414,9 +415,9 @@ namespace RaceLib
             }
         }
 
-        public static void Write(Channel[] s)
+        public static void Write(Profile profile, Channel[] s)
         {
-            Tools.IOTools.Write(filename, s.Select(c => new SimpleChannel(c)).ToArray());
+            Tools.IOTools.Write(profile, filename, s.Select(c => new SimpleChannel(c)).ToArray());
         }
 
         public class SimpleChannel

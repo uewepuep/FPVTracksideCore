@@ -65,7 +65,13 @@ namespace UI
 
         public AutoRunner AutoRunner { get; private set; }
 
-        private GeneralSettings gs { get { return GeneralSettings.Instance; } }
+        public Profile Profile
+        {
+            get
+            {
+                return EventManager.Profile;
+            }
+        }
 
         public EventLayer(BaseGame game, GraphicsDevice graphicsDevice, EventManager eventManager)
             : base(graphicsDevice)
@@ -78,19 +84,19 @@ namespace UI
             EventManager = eventManager;
             EventManager.SetChannelColors(Theme.Current.ChannelColors.XNA());
 
-            RaceStringFormatter.Instance.Practice = gs.Practice;
-            RaceStringFormatter.Instance.TimeTrial = gs.TimeTrial;
-            RaceStringFormatter.Instance.Race = gs.Race;
-            RaceStringFormatter.Instance.Freestyle = gs.Freestyle;
-            RaceStringFormatter.Instance.Endurance = gs.Endurance;
-            RaceStringFormatter.Instance.CasualPractice = gs.CasualPractice;
+            RaceStringFormatter.Instance.Practice = ProfileSettings.Instance.Practice;
+            RaceStringFormatter.Instance.TimeTrial = ProfileSettings.Instance.TimeTrial;
+            RaceStringFormatter.Instance.Race = ProfileSettings.Instance.Race;
+            RaceStringFormatter.Instance.Freestyle = ProfileSettings.Instance.Freestyle;
+            RaceStringFormatter.Instance.Endurance = ProfileSettings.Instance.Endurance;
+            RaceStringFormatter.Instance.CasualPractice = ProfileSettings.Instance.CasualPractice;
 
-            EventManager.RaceManager.RemainingTimesToAnnounce = gs.RemainingSecondsToAnnounce;
+            EventManager.RaceManager.RemainingTimesToAnnounce = ProfileSettings.Instance.RemainingSecondsToAnnounce;
 
-            videoManager = new VideoManager(gs.VideoStorageLocation);
+            videoManager = new VideoManager(GeneralSettings.Instance.VideoStorageLocation, eventManager.Profile);
 
             SoundManager = new SoundManager(EventManager);
-            SoundManager.MuteTTS = !gs.TextToSpeech;
+            SoundManager.MuteTTS = !ProfileSettings.Instance.TextToSpeech;
 
             EventManager.RaceManager.TimingSystemManager.OnConnected += (int count) =>
             {
@@ -129,7 +135,7 @@ namespace UI
             Root.AddChild(topBar);
 
             rightBar = new AnimatedNode();
-            rightBar.AnimationTime = TimeSpan.FromSeconds(gs.ReOrderAnimationSeconds);
+            rightBar.AnimationTime = TimeSpan.FromSeconds(ProfileSettings.Instance.ReOrderAnimationSeconds);
 
             centralAspectNode = new AspectNode();
             centralAspectNode.SetAspectRatio(16, 9);
@@ -256,12 +262,12 @@ namespace UI
 
             eventWebServer = new EventWebServer(EventManager, SoundManager, raceControl, new IWebbTable[] { TabbedMultiNode.LapRecordsSummaryNode, TabbedMultiNode.LapCountSummaryNode, TabbedMultiNode.PointsSummaryNode });
 
-            if (gs.HTTPServer)
+            if (GeneralSettings.Instance.HTTPServer)
             {
                 eventWebServer.Start();
             }
 
-            MenuButton = new MenuButton(EventManager, videoManager, SoundManager, eventWebServer, TabbedMultiNode, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
+            MenuButton = new MenuButton(Profile, EventManager, videoManager, SoundManager, eventWebServer, TabbedMultiNode, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
             MenuButton.RelativeBounds = new RectangleF(0.7f, 0, 0.3f, 0.03f);
             MenuButton.ImageNode.Tint = Theme.Current.RightControls.Text.XNA;
             rightBar.AddChild(MenuButton);
@@ -338,19 +344,19 @@ namespace UI
 
             ControlButtons.UpdateControlButtons();
 
-            if (gs.NotificationEnabled)
+            if (ProfileSettings.Instance.NotificationEnabled)
             {
-                RemoteNotifier = new RemoteNotifier(EventManager, gs.NotificationURL, gs.NotificationSerialPort);
+                RemoteNotifier = new RemoteNotifier(EventManager, ProfileSettings.Instance.NotificationURL, ProfileSettings.Instance.NotificationSerialPort);
             }
 
-            KeyMapper = KeyboardShortcuts.Read();
+            KeyMapper = KeyboardShortcuts.Read(Profile);
 
             ReloadOBSRemoteControl();
         }
 
         private void ReloadAutoRunnerConfig()
         {
-            AutoRunner.LoadConfig();
+            AutoRunner.LoadConfig(Profile);
         }
 
         private void NextButton_OnClick(MouseInputEvent mie)
@@ -464,7 +470,7 @@ namespace UI
         private bool RecoverRace(Race toRecover)
         {
             bool recoveredRace = EventManager.RaceManager.ResumeRace(toRecover);
-            if (recoveredRace && gs.AutoHideShowPilotList)
+            if (recoveredRace && ProfileSettings.Instance.AutoHideShowPilotList)
             {
                 ShowPilotList(false);
                 TabbedMultiNode.ShowLive();
@@ -505,7 +511,7 @@ namespace UI
         public override void SetLayerStack(LayerStack layerStack)
         {
             base.SetLayerStack(layerStack);
-            UpdateCrop(gs.CropContent16by9);
+            UpdateCrop(ProfileSettings.Instance.CropContent16by9);
 
             SponsorLayer sponsor = LayerStack.GetLayer<SponsorLayer>();
             if (sponsor != null)
@@ -515,7 +521,7 @@ namespace UI
 
             if (SoundManager != null)
             {
-                SoundManager.SetupSpeaker(PlatformTools, gs.Voice, gs.TextToSpeechVolume);
+                SoundManager.SetupSpeaker(PlatformTools, ProfileSettings.Instance.Voice, ProfileSettings.Instance.TextToSpeechVolume);
             }
         }
 
@@ -666,7 +672,7 @@ namespace UI
             if (workQueueStartRace.QueueLength > 0)
                 return;
 
-            if (gs.AutoHideShowPilotList)
+            if (ProfileSettings.Instance.AutoHideShowPilotList)
             {
                 ShowPilotList(false);
                 TabbedMultiNode.ShowLive();
@@ -676,13 +682,13 @@ namespace UI
 
             videoManager.StartRecording(race);
 
-            bool staggeredStart = gs.TimeTrialStaggeredStart && EventManager.RaceManager.RaceType == EventTypes.TimeTrial;
+            bool staggeredStart = ProfileSettings.Instance.TimeTrialStaggeredStart && EventManager.RaceManager.RaceType == EventTypes.TimeTrial;
 
             bool delayedStart = (EventManager.Event.MinStartDelay + EventManager.Event.MaxStartDelay).TotalSeconds > 0 && EventManager.RaceManager.RaceType.HasDelayedStart();
 
             if (staggeredStart)
             {
-                TimeSpan staggeredTime = TimeSpan.FromSeconds(gs.StaggeredStartDelaySeconds);
+                TimeSpan staggeredTime = TimeSpan.FromSeconds(ProfileSettings.Instance.StaggeredStartDelaySeconds);
                 EventManager.RaceManager.PreRaceStart();
 
                 workQueueStartRace.Enqueue(() =>
@@ -761,7 +767,7 @@ namespace UI
 
         public void Clear()
         {
-            if (gs.AutoHideShowPilotList)
+            if (ProfileSettings.Instance.AutoHideShowPilotList)
             {
                 ShowPilotList(true);
             }
@@ -1040,7 +1046,7 @@ namespace UI
         private void OnTabChange(string tab, Node s)
         {
             ControlButtons.UpdateControlButtons(); 
-            if (gs.AutoHideShowPilotList)
+            if (ProfileSettings.Instance.AutoHideShowPilotList)
             {
                 if (TabbedMultiNode.IsOnLive)
                 {

@@ -20,7 +20,7 @@ namespace UI
         public EventSelectorLayer(GraphicsDevice device, Texture2D logo)
             : base(device)
         {
-            Editor = new EventSelectorEditor(logo);
+            Editor = new EventSelectorEditor(logo, new Tools.Profile(GeneralSettings.Instance.Profile));
             Editor.OnOK += Editor_OnOK;
             Editor.GeneralSettingsSaved += () =>
             {

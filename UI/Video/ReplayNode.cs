@@ -202,7 +202,7 @@ namespace UI.Video
 
                 this.race = race;
 
-                PlaybackVideoManager = new VideoManager(GeneralSettings.Instance.VideoStorageLocation);
+                PlaybackVideoManager = new VideoManager(GeneralSettings.Instance.VideoStorageLocation, EventManager.Profile);
                 PlaybackVideoManager.OnStart += PlaybackVideoManager_OnStart;
 
                 ChannelsGridNode = new ChannelsGridNode(EventManager, PlaybackVideoManager);
@@ -346,7 +346,7 @@ namespace UI.Video
                     SeekNode.RequestLayout();
 
                     ChannelsGridNode.SetPlaybackTime(currentTime);
-                    ChannelsGridNode.SetReorderType(GeneralSettings.Instance.PilotOrderMidRace == GeneralSettings.OrderTypes.Channel ? ChannelsGridNode.ReOrderTypes.ChannelOrder : ChannelsGridNode.ReOrderTypes.PositionOrder);
+                    ChannelsGridNode.SetReorderType(ProfileSettings.Instance.PilotOrderMidRace == GeneralSettings.OrderTypes.Channel ? ChannelsGridNode.ReOrderTypes.ChannelOrder : ChannelsGridNode.ReOrderTypes.PositionOrder);
                 }
             }
         }

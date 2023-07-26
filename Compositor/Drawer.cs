@@ -181,7 +181,7 @@ namespace Composition
             if (autoresetevent == null)
                 return;
 
-            SpriteBatch.End();
+            SpriteBatch?.End();
 
             autoresetevent.Set();
 

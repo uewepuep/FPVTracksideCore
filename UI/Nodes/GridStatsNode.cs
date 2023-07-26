@@ -22,7 +22,7 @@ namespace UI.Nodes
         {
             EventManager = eventManager;
 
-            if (GeneralSettings.Instance.GridShowPBs)
+            if (ProfileSettings.Instance.GridShowPBs)
             {
                 ColorNode background = new ColorNode(Theme.Current.PanelAlt.XNA);
                 AddChild(background);
@@ -39,7 +39,7 @@ namespace UI.Nodes
 
         public override void Dispose()
         {
-            if (GeneralSettings.Instance.GridShowPBs)
+            if (ProfileSettings.Instance.GridShowPBs)
             {
                 EventManager.RaceManager.OnPilotAdded -= RaceManager_OnPilotAdded;
             }

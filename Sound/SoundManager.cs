@@ -16,7 +16,7 @@ namespace Sound
         private SpeechManager speechManager;
         private Dictionary<SoundKey, Sound> sounds;
 
-        private static string filename = @"data/Sounds.xml";
+        private const string filename = @"Sounds.xml";
 
         public IEnumerable<Sound> Sounds
         {
@@ -82,8 +82,18 @@ namespace Sound
             }
         }
 
+        public Profile Profile
+        {
+            get
+            {
+                return eventManager.Profile;
+            }
+        }
+
         public SoundManager(EventManager eventManager)
         {
+            this.eventManager = eventManager;
+
             announceConnection = false;
             Instance = this;
 
@@ -95,7 +105,6 @@ namespace Sound
 
             Logger.SoundLog.LogCall(this);
 
-            this.eventManager = eventManager;
 
             if (eventManager != null)
             {
@@ -140,7 +149,7 @@ namespace Sound
 
         private void InitSounds()
         {
-            InitSounds(false);
+            InitSounds( false);
         }
 
         private void InitSounds(bool reset)
@@ -150,7 +159,7 @@ namespace Sound
                 sounds = new Dictionary<SoundKey, Sound>();
                 try
                 {
-                    Sounds = IOTools.Read<Sound>(filename);
+                    Sounds = IOTools.Read<Sound>(Profile, filename);
                 }
                 catch
                 {
@@ -373,7 +382,7 @@ namespace Sound
 
         public void WriteSettings()
         {
-            IOTools.Write(filename, sounds.Values.OrderBy(s => s.Key).ToArray());
+            IOTools.Write(eventManager.Profile, filename, sounds.Values.OrderBy(s => s.Key).ToArray());
         }
 
         private void AddSound(Sound sound)

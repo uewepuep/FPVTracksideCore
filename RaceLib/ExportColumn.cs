@@ -40,13 +40,13 @@ namespace RaceLib
             return Type.ToString();
         }
 
-        private static string filename = @"data/ExportSettings.xml";
-        public static ExportColumn[] Read()
+        private const string filename = "ExportSettings.xml";
+        public static ExportColumn[] Read(Profile profile)
         {
             List<ExportColumn> columns = new List<ExportColumn>(); ;
             try
             {
-                columns.AddRange(IOTools.Read<ExportColumn>(filename));
+                columns.AddRange(IOTools.Read<ExportColumn>(profile, filename));
             }
             catch
             {
@@ -60,13 +60,13 @@ namespace RaceLib
                 }
             }
 
-            Write(columns.ToArray());
+            Write(profile, columns.ToArray());
             return columns.ToArray();
         }
 
-        public static void Write(ExportColumn[] s)
+        public static void Write(Profile profile, ExportColumn[] s)
         {
-            IOTools.Write(filename, s);
+            IOTools.Write(profile, filename, s);
         }
     }
 }

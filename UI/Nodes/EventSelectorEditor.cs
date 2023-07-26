@@ -24,9 +24,13 @@ namespace UI.Nodes
         public TextButtonNode RecoverButton { get; private set; }
         public TextButtonNode SyncButton { get; private set; }
         public TextButtonNode LoginButton { get; private set; }
-        
-        public EventSelectorEditor(Texture2D logo, bool addRemove = true, bool cancelButton = false)
-            : this(GetEvents(), addRemove, cancelButton)
+
+        public Profile Profile { get { return MenuButton.Profile; } }
+
+        public MenuButton MenuButton { get; private set; }
+
+        public EventSelectorEditor(Texture2D logo, Profile profile)
+            : this(GetEvents(profile), true, false)
         {
             heading.RelativeBounds = new RectangleF(0, 0.18f, 1, 0.05f);
             container.RelativeBounds = new RectangleF(0, heading.RelativeBounds.Bottom, 1, 1 - heading.RelativeBounds.Bottom);
@@ -42,10 +46,10 @@ namespace UI.Nodes
             logoNode.Alignment = RectangleAlignment.TopCenter;
             colorNode.AddChild(logoNode);
 
-            MenuButton menuButton = new MenuButton(Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
-            menuButton.RelativeBounds = new RectangleF(0.96f, 0.01f, 0.025f, 0.025f);
-            menuButton.GeneralSettingsSaved += () => { GeneralSettingsSaved?.Invoke(); };
-            menuButton.Restart += (e) =>
+            MenuButton = new MenuButton(profile, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
+            MenuButton.RelativeBounds = new RectangleF(0.96f, 0.01f, 0.025f, 0.025f);
+            MenuButton.GeneralSettingsSaved += () => { GeneralSettingsSaved?.Invoke(); };
+            MenuButton.Restart += (e) =>
             {
                 if (CompositorLayer.LayerStack.Game is UI.BaseGame)
                 {
@@ -53,7 +57,15 @@ namespace UI.Nodes
                 }
             };
 
-            AddChild(menuButton);
+            MenuButton.ProfileSet += MenuButton_ProfileSet;
+            AddChild(MenuButton);
+        }
+
+        private void MenuButton_ProfileSet(Profile profile)
+        {
+            MenuButton.Profile = profile;
+            GeneralSettings.Instance.Profile = profile.Name;
+            GeneralSettings.Write();
         }
 
         public EventSelectorEditor(IEnumerable<Event> events, bool addRemove = true, bool cancelButtona = false)
@@ -151,7 +163,7 @@ namespace UI.Nodes
                 Club club = db.GetDefaultClub();
 
                 eve = new Event();
-                eve.Channels = Channel.Read();
+                eve.Channels = Channel.Read(Profile);
                 eve.Club = club;
                 db.Events.Insert(eve);
             }
@@ -164,7 +176,7 @@ namespace UI.Nodes
             MouseMenu mouseMenu = new MouseMenu(this);
             mouseMenu.TopToBottom = false;
 
-            Event[] all = GetEvents();
+            Event[] all = GetEvents(Profile);
 
             IEnumerable<Event> notIn = all.Except(Objects);
 
@@ -186,7 +198,7 @@ namespace UI.Nodes
             SetObjects(elist, true, true);
         }
 
-        private static Event[] GetEvents()
+        private static Event[] GetEvents(Profile profile)
         {
             Event[] events;
             using (Database db = new Database())
@@ -203,7 +215,7 @@ namespace UI.Nodes
 
                 if (events.Length == 0)
                 {
-                    events = new Event[] { new Event() { Club = club, Channels = Channel.Read() } };
+                    events = new Event[] { new Event() { Club = club, Channels = Channel.Read(profile) } };
                     db.Events.Insert(events.First());
                 }
             }

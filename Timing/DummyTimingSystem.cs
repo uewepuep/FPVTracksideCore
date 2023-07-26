@@ -25,7 +25,6 @@ namespace Timing
         public event DetectionEventDelegate OnDetectionEvent;
 
         public DummySettings DummingSettings { get; private set; }
-        private const string settingsFilename = @"data/DummyTimingSettings.xml";
 
         public TimingSystemSettings Settings { get { return DummingSettings; } set { DummingSettings = value as DummySettings; } }
 

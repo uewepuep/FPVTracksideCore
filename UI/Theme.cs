@@ -131,14 +131,14 @@ namespace UI
                     Theme theme;
                     try
                     {
-                        theme = IOTools.Read<Theme>(themeFile.FullName, replacements).FirstOrDefault();
+                        theme = IOTools.Read<Theme>(directory.FullName, themeFile.Name, replacements).FirstOrDefault();
                         theme.Name = directory.Name;
                         theme.Directory = directory;
                         theme.ReadTime = DateTime.Now;
 
                         theme.Repair();
 
-                        IOTools.Write(themeFile.FullName, theme);
+                        IOTools.Write(directory.FullName, themeFile.Name, theme);
 
                     }
                     catch
@@ -161,7 +161,10 @@ namespace UI
 
             Themes = themes.ToList();
 
-            Current = Themes.FirstOrDefault(t => t.Name == GeneralSettings.Instance.Theme);
+            if (ProfileSettings.Instance != null)
+            {
+                Current = Themes.FirstOrDefault(t => t.Name == ProfileSettings.Instance.Theme);
+            }
 
             if (Current == null)
             {

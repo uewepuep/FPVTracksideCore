@@ -137,24 +137,24 @@ namespace Timing
         [DisplayName("Sector Length (Meters)")]
         public float SectorLengthMeters { get; set; }
 
-        private static string timingSystemFilename = @"data/TimingSystemSettings.xml";
+        private const string timingSystemFilename = "TimingSystemSettings.xml";
 
         public override string ToString()
         {
             return GetType().Name;
         }
 
-        public static TimingSystemSettings[] Read()
+        public static TimingSystemSettings[] Read(Profile profile)
         {
             try
             {
-                TimingSystemSettings[] s = Tools.IOTools.Read<TimingSystemSettings>(timingSystemFilename);
+                TimingSystemSettings[] s = Tools.IOTools.Read<TimingSystemSettings>(profile, timingSystemFilename);
                 if (s == null || s.Length == 0)
                 {
                     s = new TimingSystemSettings[] { };
                 }
 
-                Write(s);
+                Write(profile, s);
 
                 return s;
             }
@@ -164,9 +164,9 @@ namespace Timing
             }
         }
 
-        public static void Write(TimingSystemSettings[] settings)
+        public static void Write(Profile profile, TimingSystemSettings[] settings)
         {
-            Tools.IOTools.Write(timingSystemFilename, settings);
+            Tools.IOTools.Write(profile, timingSystemFilename, settings);
         }
     }
 

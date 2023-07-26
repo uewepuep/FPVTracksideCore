@@ -41,7 +41,7 @@ namespace UI.Nodes
         {
             lastMinute = -1;
             EventManager = eventManager;
-            AnimationTime = TimeSpan.FromSeconds(GeneralSettings.Instance.ReOrderAnimationSeconds);
+            AnimationTime = TimeSpan.FromSeconds(ProfileSettings.Instance.ReOrderAnimationSeconds);
 
             bool border = Theme.Current.TopPanelTextBorder;
 
@@ -136,12 +136,12 @@ namespace UI.Nodes
             float top = 0.075f;
             float height = 1 - (2 * top);
 
-            eventName.Visible = GeneralSettings.Instance.TopEventName;
-            type.Visible = GeneralSettings.Instance.TopEventType;
-            lapSummaryNode.Visible = GeneralSettings.Instance.TopLapInfo;
-            timeNode.Visible = GeneralSettings.Instance.TopRaceTime;
-            remainingNode.Visible = GeneralSettings.Instance.TopRemainingTime;
-            currentTime.Visible = GeneralSettings.Instance.TopClock;
+            eventName.Visible = ProfileSettings.Instance.TopEventName;
+            type.Visible = ProfileSettings.Instance.TopEventType;
+            lapSummaryNode.Visible = ProfileSettings.Instance.TopLapInfo;
+            timeNode.Visible = ProfileSettings.Instance.TopRaceTime;
+            remainingNode.Visible = ProfileSettings.Instance.TopRemainingTime;
+            currentTime.Visible = ProfileSettings.Instance.TopClock;
 
             type.RelativeBounds = new RectangleF(0, top, 0.37f, height);
             lapSummaryNode.RelativeBounds = new RectangleF(0, top, 0.18f, height);

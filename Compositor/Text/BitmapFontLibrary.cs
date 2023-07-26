@@ -101,7 +101,7 @@ namespace Composition.Text
 
         public CharBounds[] CharBounds { get; set; }
 
-        private static string filename = "bitmapfonts/fonts.xml";
+        private const string filename = "fonts.xml";
 
         public BitmapFontDef()
         {
@@ -109,12 +109,12 @@ namespace Composition.Text
 
         public static void Write(BitmapFontDef[] s)
         {
-            IOTools.Write(filename, s);
+            IOTools.Write(@"bitmapfonts/", filename, s);
         }
 
         public static BitmapFontDef[] Read()
         {
-            return IOTools.Read<BitmapFontDef>(filename);
+            return IOTools.Read<BitmapFontDef>(@"bitmapfonts/", filename);
         }
 
     }

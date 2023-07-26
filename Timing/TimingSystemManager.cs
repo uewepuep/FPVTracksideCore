@@ -87,13 +87,13 @@ namespace Timing
 
         public ListeningFrequency[] LastListeningFrequencies { get; private set; }
 
-        public TimingSystemManager()
+        public TimingSystemManager(Profile profile)
         {
             PrimeSystems = new ITimingSystem[0];
             SplitSystems = new ITimingSystem[0];
             LastListeningFrequencies = new ListeningFrequency[0];
 
-            InitialiseTimingSystems();
+            InitialiseTimingSystems(profile);
         }
 
 
@@ -111,7 +111,7 @@ namespace Timing
             HasSpectrumAnalyser = false;
         }
 
-        public void InitialiseTimingSystems()
+        public void InitialiseTimingSystems(Profile profile)
         {
             Logger.TimingLog.LogCall(this);
 
@@ -122,7 +122,7 @@ namespace Timing
 
             HasSpectrumAnalyser = false;
 
-            TimingSystemsSettings = TimingSystemSettings.Read();
+            TimingSystemsSettings = TimingSystemSettings.Read(profile);
 
             ITimingSystem[] timingSystems = CreateTimingSystems().ToArray();
 

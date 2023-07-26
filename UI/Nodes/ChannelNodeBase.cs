@@ -238,7 +238,7 @@ namespace UI.Nodes
             //WidgetManager = new WidgetManagerNode();
             //DisplayNode.AddChild(WidgetManager);
 
-            if (GeneralSettings.Instance.ShowSplitTimes)
+            if (ProfileSettings.Instance.ShowSplitTimes)
             {
                 SplitsNode = new SplitsNode(EventManager);
                 SplitsNode.RelativeBounds = new RectangleF(0, LapsNode.RelativeBounds.Y - LapLineHeight, 1, LapLineHeight);
@@ -664,7 +664,7 @@ namespace UI.Nodes
                 {
                     if (showPosition)
                     {
-                        if (!GeneralSettings.Instance.AlwaysShowPosition)
+                        if (!ProfileSettings.Instance.AlwaysShowPosition)
                         {
                             recentPositionNode.SetTextAlpha(position.ToStringPosition());
                             recentPositionNode.Normal = 0;
@@ -678,7 +678,7 @@ namespace UI.Nodes
                 }
                 Position = position;
 
-                if (GeneralSettings.Instance.AlwaysShowPosition)
+                if (ProfileSettings.Instance.AlwaysShowPosition)
                 {
                     if (race.Started && !hasFinished)
                     {
@@ -705,7 +705,7 @@ namespace UI.Nodes
             {
                 if (holeshot)
                 {
-                    if (GeneralSettings.Instance.ReOrderAtHoleshot)
+                    if (ProfileSettings.Instance.ReOrderAtHoleshot)
                     {
                         RequestReorder?.Invoke();
                     }

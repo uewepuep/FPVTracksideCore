@@ -43,13 +43,19 @@ namespace UI.Nodes
         public event System.Action OBSRemoteConfigSaved;
         public event System.Action AutoRunnerConfigsSaved;
         public event System.Action GeneralSettingsSaved;
+        public event System.Action ProfileSettingsSaved;
+        public event System.Action<Profile> ProfileSet;
 
         private Event evennt;
         private bool hasEvent;
 
-        public MenuButton(EventManager eventManager, VideoManager videoManager, SoundManager soundManager, EventWebServer eventWebServer, TracksideTabbedMultiNode tabbedMultiNode, Color hover, Color tint) 
+        public Profile Profile { get; set; }
+
+        public MenuButton(Profile profile, EventManager eventManager, VideoManager videoManager, SoundManager soundManager, EventWebServer eventWebServer, TracksideTabbedMultiNode tabbedMultiNode, Color hover, Color tint) 
             : base(@"img\settings.png", Color.Transparent, hover, tint)
         {
+            Profile = profile;
+
             this.eventManager = eventManager;
             this.videoManager = videoManager;
             this.soundManager = soundManager;
@@ -59,6 +65,7 @@ namespace UI.Nodes
             if (eventManager != null)
             {
                 timingSystemManager = eventManager.RaceManager.TimingSystemManager;
+                Profile = eventManager.Profile;
             }
 
             OnClick += SettingsButton_OnClick;
@@ -66,8 +73,8 @@ namespace UI.Nodes
             ImageNode.CanScale = false;
         }
 
-        public MenuButton(Color hover, Color tint) 
-            : this(null, null, null, null, null, hover, tint)
+        public MenuButton(Profile profile, Color hover, Color tint) 
+            : this(profile, null, null, null, null, null, hover, tint)
         {
             hasEvent = false;
         }
@@ -160,6 +167,33 @@ namespace UI.Nodes
             }
             MouseMenu openWindow = root.AddSubmenu("Open New Window");
 
+            if (eventManager == null)
+            {
+                root.AddBlank();
+                MouseMenu mouseMenu = root.AddSubmenu("Profile");
+
+                mouseMenu.AddItem("Add New Profile", () =>
+                {
+                    TextPopupNode textPopupNode = new TextPopupNode("Add Profile", "Profile Name", "");
+                    textPopupNode.OnOK += (string name) =>
+                    {
+                        Profile profile = Profile.AddProfile(PlatformTools.WorkingDirectory, name);
+
+                        if (profile != null)
+                        {
+                            ProfileSet?.Invoke(profile);
+                        }
+                    };
+                    GetLayer<PopupLayer>().Popup(textPopupNode);
+                });
+                mouseMenu.AddBlank();
+
+                foreach (Profile profile in Profile.GetProfiles(PlatformTools.WorkingDirectory))
+                {
+                    Profile temp = profile;
+                    mouseMenu.AddItem(profile.Name, () => { ProfileSet?.Invoke(temp); });
+                }
+            }
 
             root.AddBlank();
 
@@ -191,7 +225,6 @@ namespace UI.Nodes
                 ShowGeneralSettings();
             });
 
-
             root.AddItem("Keyboard Shortcuts", () =>
             {
                 ShowKeyboardShortcuts();
@@ -201,6 +234,11 @@ namespace UI.Nodes
             root.AddItem("OBS Remote Control Settings", () =>
             {
                 ShowOBSRemoteControlSettings();
+            });
+
+            root.AddItem("Profile Settings", () =>
+            {
+                ShowProfileSettingsEditor();
             });
 
             root.AddItem("Points Settings", () =>
@@ -343,7 +381,7 @@ namespace UI.Nodes
             Channel[] channels;
             if (eventManager == null)
             {
-                channels = Channel.Read();
+                channels = Channel.Read(Profile);
             }
             else
             {
@@ -359,7 +397,7 @@ namespace UI.Nodes
 
                 if (editor.SaveDefault)
                 {
-                    Channel.Write(channels);
+                    Channel.Write(Profile, channels);
                 }
 
                 if (eventManager != null)
@@ -380,13 +418,13 @@ namespace UI.Nodes
         {
             videoManager?.StopDevices();
 
-            VideoSourceEditor editor = VideoSourceEditor.GetVideoSourceEditor(CompositorLayer.GraphicsDevice, eventManager);
+            VideoSourceEditor editor = VideoSourceEditor.GetVideoSourceEditor(eventManager, Profile);
             GetLayer<PopupLayer>().Popup(editor);
 
             editor.OnOK += (e) =>
             {
                 List<VideoConfig> sources = editor.Objects.ToList();
-                VideoManager.WriteDeviceConfig(sources);
+                VideoManager.WriteDeviceConfig(Profile, sources);
 
                 VideoSettingsExited?.Invoke(true);
             };
@@ -407,14 +445,14 @@ namespace UI.Nodes
             }
             else
             {
-                settings = PointsSettings.Read();
+                settings = PointsSettings.Read(Profile);
             }
 
             ObjectEditorNode<PointsSettings> editor = new ObjectEditorNode<PointsSettings>(settings, false, true, false);
             editor.OnOK += (a) =>
             {
                 settings = a.Objects.FirstOrDefault();
-                PointsSettings.Write(settings);
+                PointsSettings.Write(Profile, settings);
                 if (eventManager != null)
                 {
                     eventManager.ResultManager.PointsSettings = settings;
@@ -427,17 +465,17 @@ namespace UI.Nodes
         {
             if (timingSystemManager == null)
             {
-                timingSystemManager = new TimingSystemManager();
+                timingSystemManager = new TimingSystemManager(Profile);
             }
 
-            TimingSystemSettings[] timingSystemSettings = TimingSystemSettings.Read();
+            TimingSystemSettings[] timingSystemSettings = TimingSystemSettings.Read(Profile);
 
             TimingSystemEditor editor = new TimingSystemEditor(timingSystemSettings);
             editor.OnOK += (a) =>
             {
                 timingSystemManager.TimingSystemsSettings = a.Objects.ToArray();
-                TimingSystemSettings.Write(timingSystemManager.TimingSystemsSettings);
-                timingSystemManager.InitialiseTimingSystems();
+                TimingSystemSettings.Write(Profile, timingSystemManager.TimingSystemsSettings);
+                timingSystemManager.InitialiseTimingSystems(Profile);
 
                 TimingChanged?.Invoke();
             };
@@ -448,8 +486,10 @@ namespace UI.Nodes
         {
             if (soundManager == null)
             {
+                ProfileSettings profileSettings = ProfileSettings.Read(Profile);
+
                 soundManager = new SoundManager(null);
-                soundManager.SetupSpeaker(PlatformTools, GeneralSettings.Instance.Voice, GeneralSettings.Instance.TextToSpeechVolume);
+                soundManager.SetupSpeaker(PlatformTools, profileSettings.Voice, profileSettings.TextToSpeechVolume);
                 soundManager.WaitForInit();
             }
             GetLayer<PopupLayer>().Popup(new SoundEditor(soundManager));
@@ -462,13 +502,13 @@ namespace UI.Nodes
 
         public void ShowOBSRemoteControlSettings()
         {
-            OBSRemoteControlManager.OBSRemoteControlConfig config = OBSRemoteControlManager.OBSRemoteControlConfig.Load();
+            OBSRemoteControlManager.OBSRemoteControlConfig config = OBSRemoteControlManager.OBSRemoteControlConfig.Load(Profile);
 
             var editor = new OBSRemoteControlEditor(config);
             editor.OnOK += (e) =>
             {
                 config.RemoteControlEvents = editor.Objects.ToList();
-                OBSRemoteControlManager.OBSRemoteControlConfig.Write(config);
+                OBSRemoteControlManager.OBSRemoteControlConfig.Write(Profile, config);
 
                 OBSRemoteConfigSaved?.Invoke();
             };
@@ -477,12 +517,12 @@ namespace UI.Nodes
         }
         public void ShowAutoRunnerSettings()
         {
-            AutoRunnerConfig config = AutoRunnerConfig.Load();
+            AutoRunnerConfig config = AutoRunnerConfig.Load(Profile);
 
             AutoRunnerConfigEditor editor = new AutoRunnerConfigEditor(config);
             editor.OnOK += (e) =>
             {
-                AutoRunnerConfig.Write(config);
+                AutoRunnerConfig.Write(Profile, config);
                 AutoRunnerConfigsSaved?.Invoke();
             };
 
@@ -523,9 +563,28 @@ namespace UI.Nodes
             };
         }
 
+        public void ShowProfileSettingsEditor()
+        {
+            ProfileSettings profileSettings = ProfileSettings.Read(Profile);
+
+            ProfileSettingsEditor editor = new ProfileSettingsEditor(profileSettings);
+            GetLayer<PopupLayer>().Popup(editor);
+
+            editor.OnOK += (e) =>
+            {
+                ProfileSettings.Write(Profile, profileSettings);
+                if (hasEvent && Restart != null && editor.NeedsRestart)
+                {
+                    GetLayer<PopupLayer>().PopupConfirmation("Changes require restart to take effect. Restart now?", () => { Restart(evennt); });
+                }
+
+                ProfileSettingsSaved?.Invoke();
+            };
+        }
+
         public void ShowThemeSettings()
         {
-            ThemeSettingsEditor editor = new ThemeSettingsEditor(Theme.Themes);
+            ThemeSettingsEditor editor = new ThemeSettingsEditor(Profile, Theme.Themes);
             editor.Selected = Theme.Current;
             GetLayer<PopupLayer>().Popup(editor);
 
@@ -537,7 +596,7 @@ namespace UI.Nodes
 
         public void ShowKeyboardShortcuts()
         {
-            var k = KeyboardShortcuts.Read();
+            var k = KeyboardShortcuts.Read(Profile);
 
             KeyboardShortcutsEditor editor = new KeyboardShortcutsEditor(k);
             editor.Selected = k;
@@ -545,7 +604,7 @@ namespace UI.Nodes
 
             editor.OnOK += (e) =>
             {
-                KeyboardShortcuts.Write(k);
+                KeyboardShortcuts.Write(Profile, k);
                 Restart?.Invoke(evennt);
             };
         }

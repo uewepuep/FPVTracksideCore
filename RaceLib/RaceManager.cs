@@ -320,7 +320,7 @@ namespace RaceLib
             RemainingTimesToAnnounce = new int[] { 0, 10, 30, 60 };
             Lapalyser = new Lapalyser(this);
 
-            TimingSystemManager = new TimingSystemManager();
+            TimingSystemManager = new TimingSystemManager(eventManager.Profile);
             TimingSystemManager.DetectionEvent += OnDetection;
             TimingSystemManager.OnConnected += OnTimingSystemReconnect;
             races = new List<Race>();

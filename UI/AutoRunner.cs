@@ -100,7 +100,7 @@ namespace UI
             EventManager = eventLayer.EventManager;
             SoundManager = eventLayer.SoundManager;
 
-            LoadConfig();
+            LoadConfig(EventManager.Profile);
 
             RaceManager.OnRacePreStart += RaceManager_OnRacePreStart;
             RaceManager.OnRaceChanged += RaceManager_OnRaceChanged;
@@ -173,9 +173,9 @@ namespace UI
             }
         }
 
-        public void LoadConfig()
+        public void LoadConfig(Profile profile)
         {
-            Config = AutoRunnerConfig.Load();
+            Config = AutoRunnerConfig.Load(profile);
         }
 
         public void SetState(States newState)
@@ -484,20 +484,20 @@ namespace UI
             AutoCreateRoundsType = AutoCreateRoundsTypes.CloneLast;
         }
 
-        protected const string filename = @"data/AutoRunnerConfig.xml";
-        public static AutoRunnerConfig Load()
+        protected const string filename = "AutoRunnerConfig.xml";
+        public static AutoRunnerConfig Load(Profile profile)
         {
             AutoRunnerConfig config = new AutoRunnerConfig();
 
             bool error = false;
             try
             {
-                AutoRunnerConfig[] s = IOTools.Read<AutoRunnerConfig>(filename);
+                AutoRunnerConfig[] s = IOTools.Read<AutoRunnerConfig>(profile, filename);
 
                 if (s != null && s.Any())
                 {
                     config = s[0];
-                    Write(config);
+                    Write(profile, config);
                 }
                 else
                 {
@@ -512,16 +512,16 @@ namespace UI
             if (error)
             {
                 AutoRunnerConfig s = new AutoRunnerConfig();
-                Write(s);
+                Write(profile,s);
                 config = s;
             }
 
             return config;
         }
 
-        public static void Write(AutoRunnerConfig s)
+        public static void Write(Profile profile, AutoRunnerConfig s)
         {
-            IOTools.Write(filename, s);
+            IOTools.Write(profile, filename, s);
         }
 
         public override string ToString()

@@ -138,7 +138,7 @@ namespace UI.Nodes
             p4.RelativeBounds = new RectangleF(0, currentY, 1, oneItem);
             content.AddChild(p4);
 
-            menuButton = new MenuButton(Color.White, Color.White);
+            menuButton = new MenuButton(null, Color.White, Color.White);
             menuButton.Visible = false;
             menuButton.Restart += MenuButton_Restart;
             content.AddChild(menuButton);
