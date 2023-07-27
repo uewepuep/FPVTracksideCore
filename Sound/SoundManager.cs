@@ -82,17 +82,12 @@ namespace Sound
             }
         }
 
-        public Profile Profile
-        {
-            get
-            {
-                return eventManager.Profile;
-            }
-        }
+        public Profile Profile { get; private set; }
 
-        public SoundManager(EventManager eventManager)
+        public SoundManager(EventManager eventManager, Profile profile)
         {
             this.eventManager = eventManager;
+            Profile = profile;
 
             announceConnection = false;
             Instance = this;
@@ -382,7 +377,7 @@ namespace Sound
 
         public void WriteSettings()
         {
-            IOTools.Write(eventManager.Profile, filename, sounds.Values.OrderBy(s => s.Key).ToArray());
+            IOTools.Write(Profile, filename, sounds.Values.OrderBy(s => s.Key).ToArray());
         }
 
         private void AddSound(Sound sound)

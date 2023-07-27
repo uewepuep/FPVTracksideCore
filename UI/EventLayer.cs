@@ -95,7 +95,7 @@ namespace UI
 
             videoManager = new VideoManager(GeneralSettings.Instance.VideoStorageLocation, eventManager.Profile);
 
-            SoundManager = new SoundManager(EventManager);
+            SoundManager = new SoundManager(EventManager, eventManager.Profile);
             SoundManager.MuteTTS = !ProfileSettings.Instance.TextToSpeech;
 
             EventManager.RaceManager.TimingSystemManager.OnConnected += (int count) =>
