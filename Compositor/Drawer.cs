@@ -58,6 +58,15 @@ namespace Composition
 
         public void Dispose()
         {
+            lock (cleanup)
+            {
+                foreach (IDisposable toClean in cleanup)
+                {
+                    toClean.Dispose();
+                }
+                cleanup.Clear();
+            }
+
             autoresetevent?.WaitOne(5000);
             autoresetevent?.Dispose();
             autoresetevent = null;
@@ -173,12 +182,13 @@ namespace Composition
             FrameCount++;
 
             clipRectangles.Clear();
-            SpriteBatch.Begin(SpriteSortMode.Deferred, blendState, SamplerState.AnisotropicClamp, null, null, null, null);
+
+            SpriteBatch?.Begin(SpriteSortMode.Deferred, blendState, SamplerState.AnisotropicClamp, null, null, null, null);
         }
 
         public void End()
         {
-            if (autoresetevent == null)
+            if (autoresetevent == null || SpriteBatch == null)
                 return;
 
             SpriteBatch?.End();

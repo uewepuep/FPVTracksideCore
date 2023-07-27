@@ -229,6 +229,18 @@ namespace RaceLib.Format
             }
         }
 
+        public int ChannelCount
+        {
+            get
+            {
+                if (SheetFormat != null)
+                {
+                    return SheetFormat.Channels;
+                }
+                return 0;
+            }
+        }
+
         public RoundSheetFormat(Round startRound, SheetFormatManager sheetFormatManager, FileInfo file)
         {
             SheetFormatManager = sheetFormatManager;

@@ -440,20 +440,22 @@ namespace RaceLib
         }
 
 
-        public void ClearPoint(Race race)
+        public void ClearPoints(Race race)
         {
-            ClearPointsNoTrigger(race);
-            RaceResultsChanged?.Invoke(race);
+            if (ClearPointsNoTrigger(race))
+            {
+                RaceResultsChanged?.Invoke(race);
+            }
         }
 
-        private void ClearPointsNoTrigger(Race race)
+        private bool ClearPointsNoTrigger(Race race)
         {
             lock (Results)
             {
                 Result[] toRemove = Results.Where(r => r.Race != null && r.Race.ID == race.ID).ToArray();
 
                 if (!toRemove.Any())
-                    return;
+                    return false;
 
                 Results.RemoveAll(r => toRemove.Contains(r));
 
@@ -461,6 +463,7 @@ namespace RaceLib
                 {
                     db.Results.Delete(toRemove);
                 }
+                return true;
             }
         }
 

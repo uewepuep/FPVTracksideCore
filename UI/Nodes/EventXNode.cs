@@ -163,6 +163,10 @@ namespace UI.Nodes
             {
                 AddFormatMenu(rootMenu, "Add Format");
             }
+            else
+            {
+                AddFormatMenu(rootMenu, "Set Format");
+            }
 
             if (canSum || canAddTimes || canAddLapCount)
             {
@@ -184,10 +188,13 @@ namespace UI.Nodes
 
         protected void AddFormatMenu(MouseMenu rootMenu, string menuname)
         {
+            MouseMenu addFormat = rootMenu.AddSubmenu(menuname);
+            addFormat.AddItem("Double Elimination", () => { DoubleElim?.Invoke(Round); });
+           
+
             //add format
             if (EventManager.RoundManager.SheetFormatManager.Sheets.Any())
             {
-                MouseMenu addFormat = rootMenu.AddSubmenu(menuname);
                 foreach (SheetFormatManager.SheetFile sheet in EventManager.RoundManager.SheetFormatManager.Sheets)
                 {
                     string name = sheet.Name + " (" + sheet.Pilots + " pilots)";
@@ -209,11 +216,8 @@ namespace UI.Nodes
             addRound.AddItem("Randomise (Random channels)", () => { ChangeChannels?.Invoke(Round); });
             addRound.AddItem("Randomise (Keep Channels)", () => { AddRound?.Invoke(Round); });
 
-            addRound.AddItem("Double Elimination", () => { DoubleElim?.Invoke(Round); });
-
             if (canAddFinal)
                 addRound.AddItem("Final", () => { Finals?.Invoke(Round); });
-
             addRound.AddItem("Custom Round", () => { CustomRound?.Invoke(Round); });
         }
 

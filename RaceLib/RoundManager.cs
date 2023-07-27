@@ -12,6 +12,7 @@ namespace RaceLib
         public EventManager EventManager { get; }
         public Event Event { get { return EventManager.Event; } }
         public RaceManager RaceManager { get { return EventManager.RaceManager; } }
+        public ResultManager ResultManager { get { return EventManager.ResultManager; } }
         public SheetFormatManager SheetFormatManager { get; set; }
 
         public event System.Action OnRoundAdded;
@@ -35,7 +36,9 @@ namespace RaceLib
             SheetFormatManager = new SheetFormatManager(this);
             RaceManager.OnRaceEnd += OnRaceResultsChange;
             RaceManager.OnRaceReset += OnRaceResultsChange;
+            ResultManager.RaceResultsChanged += OnRaceResultsChange;
         }
+
 
         private void OnRaceResultsChange(Race race)
         {

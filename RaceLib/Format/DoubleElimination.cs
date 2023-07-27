@@ -20,6 +20,8 @@ namespace RaceLib.Format
             newRound.RoundType = Round.RoundTypes.DoubleElimination;
             db.Rounds.Upsert(newRound);
 
+            preExisting.ClearPilots(db);
+
             startNumber = preExisting.Count();
 
             List<Pilot> winners = new List<Pilot>();

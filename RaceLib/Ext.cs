@@ -311,5 +311,13 @@ namespace RaceLib
         {
             return pool.Count(r => r.Band.GetBandType() == bandType);
         }
+
+        public static void ClearPilots(this IEnumerable<Race> races, Database db) 
+        {
+            foreach (Race race in races)
+            {
+                race.ClearPilots(db);
+            }
+        }
     }
 }

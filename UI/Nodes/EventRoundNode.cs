@@ -246,7 +246,7 @@ namespace UI.Nodes
 
             if (!hasRace)
             {
-                AddFormatMenu(mm, "Format");
+                AddFormatMenu(mm, "Set Format");
             }
 
             if (canPasteAll && pastePilotCount > EventManager.Channels.Length)

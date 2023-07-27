@@ -1031,7 +1031,7 @@ namespace RaceLib
 
             UpdateRaceRoundNumbers();
 
-            EventManager.ResultManager.ClearPoint(remove);
+            EventManager.ResultManager.ClearPoints(remove);
             OnRaceRemoved?.Invoke(remove);
         }
 
@@ -1169,7 +1169,7 @@ namespace RaceLib
                     race.ResetRace(db);
                 }
                 EventManager.LapRecordManager.ResetRace(race);
-                EventManager.ResultManager.ClearPoint(race);
+                EventManager.ResultManager.ClearPoints(race);
 
                 OnRaceReset?.Invoke(race);
             }

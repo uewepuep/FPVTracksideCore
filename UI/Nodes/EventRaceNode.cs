@@ -4,6 +4,7 @@ using Composition.Layers;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
+using RaceLib.Format;
 using Sound;
 using System;
 using System.Collections.Generic;
@@ -49,6 +50,9 @@ namespace UI.Nodes
             {
                 container.ClearDisposeChildren();
 
+                RoundSheetFormat sheetFormat = EventManager.RoundManager.SheetFormatManager.GetRoundSheetFormat(Race.Round);
+                int pilotCount = Race.PilotCount;
+
                 if (heading == null)
                 {
                     heading = new TextButtonNode(Race.RaceName, Theme.Current.Rounds.RaceTitle, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
@@ -91,6 +95,11 @@ namespace UI.Nodes
                         {
                             channelChanged = previousRace.GetChannel(pilot) != channel;
                         }
+                    }
+
+                    if (pilot == null && sheetFormat != null && pilotCount == sheetFormat.ChannelCount)
+                    {
+                        continue;
                     }
 
                     PilotRaceInfoNode pilotRaceInfoNode = new PilotRaceInfoNode(this, pilot, channel, channelChanged, shared.Where(c => c != channel));

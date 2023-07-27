@@ -75,19 +75,16 @@ namespace Composition.Nodes
         {
             disposed = true;
 
-            lock (renderTargetLock)
+            if (renderTarget != null)
             {
-                if (renderTarget != null)
-                {
-                    renderTarget.Dispose();
-                    renderTarget = null;
-                }
+                CompositorLayer.CleanUp(renderTarget);
+                renderTarget = null;
+            }
 
-                if (drawer != null)
-                {
-                    drawer.Dispose();
-                    drawer = null;
-                }
+            if (drawer != null)
+            {
+                CompositorLayer.CleanUp(drawer);
+                drawer = null;
             }
 
             Scroller.Dispose();
@@ -154,11 +151,11 @@ namespace Composition.Nodes
 
         public override void Draw(Drawer id, float parentAlpha)
         {
+            lastDrawFrame = id.FrameCount;
+
             DebugTimer.DebugStartTime(this);
             if (!CompositorLayer.InView(Bounds))
                 return;
-
-            lastDrawFrame = id.FrameCount;
 
             float alpha = parentAlpha * Alpha;
             if (Tint.A != 255)
@@ -255,7 +252,7 @@ namespace Composition.Nodes
             bool canRender = !LayoutDefinesSize || (LayoutDefinesSize && hasLayedOut);
             if (canRender && !disposed)
             {
-                if (lastDrawFrame == CompositorLayer.FrameNumber)
+                //if (lastDrawFrame == CompositorLayer.FrameNumber)
                 {
                     lock (renderTargetLock)
                     {
