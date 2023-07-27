@@ -463,33 +463,29 @@ namespace RaceLib.Format
 
         public void SetResult(Race race)
         {
-            List<SheetResult> results = new List<SheetResult>();
+            List<SheetResult> sheetResults = new List<SheetResult>();
 
-            foreach (var pc in race.PilotChannelsSafe)
+            Result[] orderedResults = SheetFormatManager.EventManager.ResultManager.GetOrderedResults(race).ToArray();
+
+            // Calcualte position rather than using results as this does DNF better.
+            int position = 1;
+            foreach (Result result in orderedResults)
             {
-                Result result = SheetFormatManager.EventManager.ResultManager.GetResult(race, pc.Pilot);
+                Channel channel = race.GetChannel(result.Pilot);
+                if (channel == null)
+                    continue;
 
-                int channelGroup = SheetFormatManager.EventManager.GetChannelGroupIndex(pc.Channel);
-                string pilotName = GetPilotRef(pc.Pilot);
+                int channelGroup = SheetFormatManager.EventManager.GetChannelGroupIndex(channel);
+                string pilotName = GetPilotRef(result.Pilot);
 
-                if (!string.IsNullOrEmpty(pilotName) && result != null)
+                if (!string.IsNullOrEmpty(pilotName))
                 {
-                    SheetResult sr;
-                    if (result.DNF)
-                    {
-                        int position = race.GetPosition(pc.Pilot);
-
-                        sr = new SheetResult(pilotName, channelGroup, position);
-                    }
-                    else
-                    {
-                        sr = new SheetResult(pilotName, channelGroup, result.Position);
-                    }
-
-                    results.Add(sr);
+                    SheetResult sr = new SheetResult(pilotName, channelGroup, position);
+                    sheetResults.Add(sr);
+                    position++;
                 }
             }
-            SheetFormat.SetResults(race.Round.EventType.ToString(), race.RoundNumber - Offset, race.RaceNumber, results);
+            SheetFormat.SetResults(race.Round.EventType.ToString(), race.RoundNumber - Offset, race.RaceNumber, sheetResults);
         }
 
         private Pilot GetPilot(string pilotRef)

@@ -38,6 +38,8 @@ namespace Composition
 
         public Point Offset { get; set; }
 
+        private bool hasBegun;
+
         public Drawer(GraphicsDevice device)
         {
             TextureCache = new TextureCache(device);
@@ -58,13 +60,16 @@ namespace Composition
 
         public void Dispose()
         {
+            IDisposable[] disposables;
             lock (cleanup)
             {
-                foreach (IDisposable toClean in cleanup)
-                {
-                    toClean.Dispose();
-                }
+                disposables = cleanup.ToArray();
                 cleanup.Clear();
+            }
+
+            foreach (IDisposable toClean in disposables)
+            {
+                toClean.Dispose();
             }
 
             autoresetevent?.WaitOne(5000);
@@ -174,7 +179,7 @@ namespace Composition
 
         public void Begin()
         {
-            if (autoresetevent == null)
+            if (autoresetevent == null || hasBegun)
                 return;
 
             autoresetevent.Reset();
@@ -183,15 +188,22 @@ namespace Composition
 
             clipRectangles.Clear();
 
-            SpriteBatch?.Begin(SpriteSortMode.Deferred, blendState, SamplerState.AnisotropicClamp, null, null, null, null);
+            SpriteBatch sb = SpriteBatch;
+            if (sb != null) 
+            {
+                sb.Begin(SpriteSortMode.Deferred, blendState, SamplerState.AnisotropicClamp, null, null, null, null);
+                hasBegun = true;
+            }
         }
 
         public void End()
         {
-            if (autoresetevent == null || SpriteBatch == null)
+            SpriteBatch sb = SpriteBatch;
+            if (autoresetevent == null || sb == null || !hasBegun)
                 return;
 
-            SpriteBatch?.End();
+            sb.End();
+            hasBegun = false;
 
             autoresetevent.Set();
 

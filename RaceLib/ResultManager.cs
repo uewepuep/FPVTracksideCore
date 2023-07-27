@@ -402,8 +402,6 @@ namespace RaceLib
         }
 
 
-        
-
         public Result GetResult(Race race, Pilot pilot)
         {
             lock (Results)
@@ -428,6 +426,11 @@ namespace RaceLib
             }
         }
 
+        public IEnumerable<Result> GetOrderedResults(Race race)
+        {
+            return GetResults(race).OrderBy(r => r.DNF).ThenBy(r => r.Position);
+        }
+
         public int GetPosition(Race race, Pilot pilot)
         {
             Result result = GetResult(race, pilot);
@@ -438,7 +441,6 @@ namespace RaceLib
 
             return -1;
         }
-
 
         public void ClearPoints(Race race)
         {
