@@ -105,6 +105,31 @@ namespace Webb
 
         private void Run()
         {
+            while (Running)
+            {
+
+                if (listener == null)
+                {
+                    CreateListener();
+                }
+
+                try
+                {
+                    HttpListenerContext context = listener.GetContext();
+                    HandleRequest(context);
+
+                }
+                catch (Exception ex)
+                {
+                    Logger.HTTP.LogException(this, ex);
+                    listener.Abort();
+                    listener = null;
+                }
+            }
+        }
+
+        private void CreateListener()
+        {
             try
             {
                 // Try open all interfaces first
@@ -123,25 +148,6 @@ namespace Webb
                 listener.Prefixes.Add(Url);
                 listener.Start();
                 Logger.HTTP.Log(this, "Listening on " + listener.Prefixes.FirstOrDefault());
-            }
-
-            while (Running)
-            {
-
-                try
-                {
-                    HttpListenerContext context = listener.GetContext();
-                    HandleRequest(context);
-                }
-                catch (HttpListenerException hex)
-                {
-                    Logger.HTTP.LogException(this, hex);
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    Logger.HTTP.LogException(this, ex);
-                }
             }
         }
 

@@ -65,6 +65,12 @@ namespace UI.Nodes
             }
         }
 
+        public override IEnumerable<IEnumerable<string>> GetTable()
+        {
+            OrderByLast();
+            return base.GetTable();
+        }
+
         public override void SetOrder()
         {
             // order them

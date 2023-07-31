@@ -280,7 +280,8 @@ namespace UI
 
                             if (CheckVideo(out channel))
                             {
-                                EventLayer.StartRace();
+                                if (!EventLayer.StartRace())
+                                    State = States.None;
                             }
                             else
                             {
@@ -292,13 +293,15 @@ namespace UI
                                 }
                                 else
                                 {
-                                    EventLayer.StartRace();
+                                    if (!EventLayer.StartRace())
+                                        State = States.None;
                                 }
                             }
                             break;
 
                         case States.WaitVideo:
-                            EventLayer.StartRace();
+                            if (!EventLayer.StartRace())
+                                State = States.None;
                             break;
 
                         case States.WaitingResults:
@@ -323,10 +326,13 @@ namespace UI
             // Auto End races.
             if (RaceManager.RaceRunning)
             {
-                // If all laps are finished.
-                if (EventLayer.EventManager.RaceManager.HasFinishedAllLaps())
+                if (RaceManager.RaceType == EventTypes.Race)
                 {
-                    EventLayer.StopRace();
+                    // If all laps are finished.
+                    if (EventLayer.EventManager.RaceManager.HasFinishedAllLaps())
+                    {
+                        EventLayer.StopRace();
+                    }
                 }
 
                 // if the time is up, plus the extra final lap time is up.

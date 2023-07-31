@@ -851,21 +851,21 @@ namespace Composition.Nodes
 
         protected virtual void SetValue(object value)
         {
-            if (value != null) 
-            { 
-                if (!PropertyInfo.PropertyType.IsAssignableFrom(value.GetType())) 
-                {
-                    return;
-                }
-            }
-
-            PropertyInfo.SetValue(Object, value);
-
-            if (originalValue != value)
+            try
             {
-                OnChanged?.Invoke(new Change(Object, PropertyInfo, originalValue, value));
+                PropertyInfo.SetValue(Object, value);
+
+                if (originalValue != value)
+                {
+                    OnChanged?.Invoke(new Change(Object, PropertyInfo, originalValue, value));
+                }
+
+                RequestRedraw();
             }
-            RequestRedraw();
+            catch (Exception ex) 
+            {
+                Logger.UI.LogException(this, ex);
+            }
         }
 
         public virtual bool Focus()

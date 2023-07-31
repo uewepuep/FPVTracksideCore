@@ -19,6 +19,7 @@ namespace UI.Nodes
             :base(eventManager, "Lap Count")
         {
             eventManager.OnPilotRefresh += Refresh;
+            OrderByLast();
         }
 
 
@@ -98,6 +99,12 @@ namespace UI.Nodes
             nodes.Add(t);
 
             pilotResNode.Set(pilot, nodes);
+        }
+
+        public override IEnumerable<IEnumerable<string>> GetTable()
+        {
+            OrderByLast();
+            return base.GetTable();
         }
     }
 }

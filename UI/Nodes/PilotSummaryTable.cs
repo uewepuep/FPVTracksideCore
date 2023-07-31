@@ -95,7 +95,7 @@ namespace UI.Nodes
             base.Draw(id, parentAlpha);
         }
 
-        private void DoRefresh()
+        protected void DoRefresh()
         {
             IEnumerable<Pilot> pilots = eventManager.Event.Pilots.Where(p => !p.PracticePilot).Distinct();
 
@@ -260,7 +260,7 @@ namespace UI.Nodes
         }
 
 
-        public IEnumerable<IEnumerable<string>> GetTable()
+        public virtual IEnumerable<IEnumerable<string>> GetTable()
         {
             DoRefresh();
 

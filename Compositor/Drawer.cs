@@ -207,13 +207,19 @@ namespace Composition
 
             autoresetevent.Set();
 
-            lock (cleanup)
+            if (cleanup.Any())
             {
-                foreach (IDisposable toClean in cleanup)
+                IDisposable[] disposables;
+                lock (cleanup)
+                {
+                    disposables = cleanup.ToArray();
+                    cleanup.Clear();
+                }
+
+                foreach (IDisposable toClean in disposables)
                 {
                     toClean.Dispose();
                 }
-                cleanup.Clear();
             }
         }
 

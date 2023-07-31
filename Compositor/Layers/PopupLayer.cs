@@ -80,6 +80,8 @@ namespace Composition.Layers
 
         public void PopupConfirmation(string question, Action onOk)
         {
+            background.ClearDisposeChildren();
+
             ConfirmationNode cfn = new ConfirmationNode(question, LayerStack.GetLayer<MenuLayer>(), onOk);
             background.AddChild(cfn);
             RequestLayout();
@@ -93,6 +95,8 @@ namespace Composition.Layers
 
         public void PopupMessage(string message, Action onOk)
         {
+            background.ClearDisposeChildren();
+
             MessageNode cfn = new MessageNode(message, LayerStack.GetLayer<MenuLayer>(), onOk);
             background.AddChild(cfn);
             RequestLayout();

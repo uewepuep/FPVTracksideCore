@@ -638,19 +638,19 @@ namespace UI
         }
 
 
-        public void StartRace()
+        public bool StartRace()
         {
-            StartRace(false);
+            return StartRace(false);
         }
 
-        public void StartRace(bool ignoreMax)
+        public bool StartRace(bool ignoreMax)
         {
             if (!EventManager.RaceManager.CanRunRace)
-                return;
+                return false;
             
             Race race = EventManager.RaceManager.CurrentRace;
             if (race == null)
-                return;
+                return false;
 
             if (EventManager.RaceManager.TimingSystemManager.MaxPilots < race.PilotCount && !ignoreMax)
             {
@@ -666,11 +666,11 @@ namespace UI
 
                 LayerStack.GetLayer<PopupLayer>().PopupConfirmation(message,
                     () => { StartRace(true); });
-                return;
+                return false;
             }
 
             if (workQueueStartRace.QueueLength > 0)
-                return;
+                return false;
 
             if (ProfileSettings.Instance.AutoHideShowPilotList)
             {
@@ -746,6 +746,7 @@ namespace UI
             }
 
             ControlButtons.UpdateControlButtons();
+            return true;
         }
 
         public void StopRace()

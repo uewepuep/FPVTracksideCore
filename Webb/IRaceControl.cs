@@ -8,6 +8,6 @@ namespace Webb
 {
     public interface IRaceControl
     {
-        void StartRace();
+        bool StartRace();
     }
 }
