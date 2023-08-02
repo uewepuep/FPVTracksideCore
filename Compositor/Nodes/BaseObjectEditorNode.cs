@@ -247,7 +247,7 @@ namespace Composition.Nodes
 
         public void RefreshList()
         {
-            selectedHover.Remove();
+            selectedHover?.Remove();
             multiItemBox.ClearDisposeChildren();
 
             var grouped = Order(Objects).GroupBy(o => ItemToGroupString(o));
