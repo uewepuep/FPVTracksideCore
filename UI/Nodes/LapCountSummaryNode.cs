@@ -100,11 +100,9 @@ namespace UI.Nodes
 
             pilotResNode.Set(pilot, nodes);
         }
-
-        public override IEnumerable<IEnumerable<string>> GetTable()
+        protected override IEnumerable<PilotResultNode> GetWebOrdered(IEnumerable<PilotResultNode> nodes)
         {
-            OrderByLast();
-            return base.GetTable();
+            return base.GetWebOrdered(nodes).Reverse();
         }
     }
 }

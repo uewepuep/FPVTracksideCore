@@ -260,16 +260,32 @@ namespace UI.Nodes
         }
 
 
-        public virtual IEnumerable<IEnumerable<string>> GetTable()
+        public IEnumerable<IEnumerable<string>> GetTable()
         {
             DoRefresh();
 
             yield return GetHeadings();
 
-            foreach (PilotResultNode row in rows.Children) 
+            int position = 1;
+            foreach (PilotResultNode row in GetWebOrdered(rows.Children.OfType<PilotResultNode>())) 
             {
-                yield return row.GetValues();
+                yield return row.GetValues(position);
+                position++;
             }
+        }
+
+        protected virtual IEnumerable<PilotResultNode> GetWebOrdered(IEnumerable<PilotResultNode> nodes)
+        {
+            return nodes.OrderBy(r => 
+            {
+                double value;
+                if (r.GetLastValue(out value))
+                {
+                    return value;
+                }
+
+                return int.MaxValue;
+            });
         }
 
         protected class PilotResultNode : Node
@@ -344,6 +360,12 @@ namespace UI.Nodes
                 AlignHorizontally(0.04f, cont.Children.ToArray());
             }
 
+            public bool GetLastValue(out double value)
+            {
+                return GetValue(cont.ChildCount, out value);
+            }
+
+
             public bool GetValue(int columnToOrderBy, out double value)
             {
                 Node n = cont.GetChild(columnToOrderBy - 1);
@@ -370,9 +392,9 @@ namespace UI.Nodes
                 return false;
             }
 
-            public IEnumerable<string> GetValues() 
+            public IEnumerable<string> GetValues(int position) 
             { 
-                yield return positionNode.Text;
+                yield return position.ToStringPosition();
                 yield return pilotName.Text;
 
                 foreach (TextNode n in cont.Children.OfType<TextNode>()) 

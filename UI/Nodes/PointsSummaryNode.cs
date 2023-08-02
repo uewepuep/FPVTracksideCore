@@ -28,6 +28,8 @@ namespace UI.Nodes
 
             column = 0;
             bool prevTotal = false;
+            bool anyTotal = false;
+
             foreach (Round r in rounds)
             {
                 column++;
@@ -61,14 +63,26 @@ namespace UI.Nodes
                     sumText.OnClick += (mie) => { columnToOrderBy = ca2; Refresh(); };
                     container.AddChild(sumText);
                     prevTotal = true;
+                    anyTotal = true;
                 }
+            }
+
+            if (!anyTotal)
+            {
+                int col = column + 1;
+
+                TextButtonNode sumText = new TextButtonNode("Total", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
+                sumText.TextNode.Alignment = RectangleAlignment.TopRight;
+                sumText.OnClick += (mie) => { columnToOrderBy = col; Refresh(); };
+                container.AddChild(sumText);
+                prevTotal = true;
+                anyTotal = true;
             }
         }
 
-        public override IEnumerable<IEnumerable<string>> GetTable()
+        protected override IEnumerable<PilotResultNode> GetWebOrdered(IEnumerable<PilotResultNode> nodes)
         {
-            OrderByLast();
-            return base.GetTable();
+            return base.GetWebOrdered(nodes).Reverse();
         }
 
         public override void SetOrder()
@@ -93,6 +107,7 @@ namespace UI.Nodes
         protected override void SetResult(PilotResultNode pilotResNode, Pilot pilot, Round[] rounds)
         {
             bool prevTotal = false;
+            bool anyTotal = false;
 
             List<Node> nodes = new List<Node>();
 
@@ -126,7 +141,19 @@ namespace UI.Nodes
                     tn.Alignment = RectangleAlignment.CenterRight;
                     tn.Style.Bold = true;
                     nodes.Add(tn);
+                    anyTotal = true;
                 }
+            }
+
+            if (!anyTotal)
+            {
+                Round last = rounds.Last();
+
+                int points = PointsManager.GetPointsTotal(last, pilot);
+                TextNode tn = new TextNode(points.ToString(), Theme.Current.Rounds.Text.XNA);
+                tn.Alignment = RectangleAlignment.CenterRight;
+                tn.Style.Bold = true;
+                nodes.Add(tn);
             }
 
             pilotResNode.Set(pilot, nodes);
