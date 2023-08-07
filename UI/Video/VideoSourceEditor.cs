@@ -594,7 +594,7 @@ namespace UI.Video
 
             if (eventChannels != null)
             {
-                channelMenu.AddItem("Linear Auto-Assign", () => { LinearChannelAssignment(eventChannels); });
+                channelMenu.AddItem("Auto-Assign", () => { LinearChannelAssignment(eventChannels); });
                 channelMenu.AddSubmenu("Event Channels", (c) => { AssignChannel(channelVideoInfo, c); }, eventChannels);
             }
 
@@ -637,7 +637,19 @@ namespace UI.Video
             cropMenu.AddItem("Crop 4:3", () => { Crop(channelVideoInfo, 4, 3); });
             cropMenu.AddItem("Crop 16:9", () => { Crop(channelVideoInfo, 16, 9); });
 
-            mouseMenu.AddItem("Duplicate", () => { DuplicateView(channelVideoInfo); });
+
+            mouseMenu.AddItem("Duplicate", () => { Duplicate(channelVideoInfo, Channel.None); });
+
+            if (eventChannels != null)
+            {
+                Channel c = channelVideoInfo.Channel;
+
+                Channel channel = eventChannels.GetOthersInChannelGroup(c).FirstOrDefault();
+                if (channel != null)
+                {
+                    mouseMenu.AddItem("Duplicate to " + channel.GetBandChannelText(), () => { Duplicate(channelVideoInfo, channel); });
+                }
+            }
 
             mouseMenu.AddBlank();
             mouseMenu.AddItem("Remove", () => { RemoveView(channelVideoInfo); });
@@ -684,12 +696,12 @@ namespace UI.Video
             MakeTable();
         }
 
-        private void DuplicateView(ChannelVideoInfo channelVideoInfo)
+        private void Duplicate(ChannelVideoInfo channelVideoInfo, Channel channel)
         {
             videoConfig.Splits = Splits.Custom;
 
             VideoBounds clone = channelVideoInfo.VideoBounds.Clone();
-            clone.Channel = Channel.None.ToStringShort();
+            clone.Channel = channel.ToStringShort();
 
             List<VideoBounds> videoBoundsList = videoConfig.VideoBounds.ToList();
 

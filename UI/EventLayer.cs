@@ -177,9 +177,13 @@ namespace UI
             {
                 MouseMenu mm = new MouseMenu(LayerStack.GetLayer<MenuLayer>());
 
-                foreach (Channel c in EventManager.Channels)
+                foreach (var cg in EventManager.Channels.GetChannelGroups())
                 {
-                    mm.AddItem(c.ToString(), () => { EventManager.SetPilotChannel(p, c); });
+                    foreach (Channel c in cg)
+                    {
+                        mm.AddItem(c.ToString(), () => { EventManager.SetPilotChannel(p, c); });
+                    }
+                    mm.AddBlank();
                 }
 
                 mm.Show(mie);

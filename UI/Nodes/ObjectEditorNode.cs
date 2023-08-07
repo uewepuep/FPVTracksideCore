@@ -311,10 +311,18 @@ namespace UI.Nodes
                 { "RaceBand", Channel.RaceBand },
                 { "IMD6C", Channel.IMD6C },
 
-                { "DJIFPVHD", Channel.DJIFPVHD },
+                { "1", null },
+
                 { "HDZero", Channel.HDZero },
+                { "HDZero IMD6C", Channel.HDZeroIMD6C },
+                { "DJIFPVHD", Channel.DJIFPVHD },
+
+                { "2", null },
 
                 { "LowBand", Channel.LowBand },
+
+                { "3", null },
+
                 { "BoscamA", Channel.BoscamA },
                 { "BoscamB", Channel.BoscamB },
                 { "E", Channel.E },
@@ -325,6 +333,12 @@ namespace UI.Nodes
             {
                 string name = kvp.Key;
                 Channel[] channels = kvp.Value;
+
+                if (channels == null)
+                {
+                    mouseMenu.AddBlank();
+                    continue;
+                }
 
                 MouseMenu submenu = mouseMenu.AddSubmenu(name, AddNew, channels.ToArray());
                 submenu.AddItem("All " + name, () => { AddAll(channels); });

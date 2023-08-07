@@ -301,8 +301,19 @@ namespace UI.Nodes
                         Pilot p = eventManager.GetCreatePilot(pilotname);
                         if (newPilots.FirstOrDefault(p2 => p.Name == p2.Pilot.Name) == null)
                         {
-                            Channel c = eventManager.Channels[channelIndex];
-                            newPilots.Add(new PilotChannel(p, c));
+                            var cs = eventManager.Channels.GetChannelGroup(channelIndex);
+                            if (cs != null) 
+                            {
+                                Channel c = cs.FirstOrDefault();
+                                if (c != null)
+                                {
+                                    newPilots.Add(new PilotChannel(p, c));
+                                }
+                            }
+                            else
+                            {
+
+                            }
                         }
                     }
                 }

@@ -280,6 +280,23 @@ namespace RaceLib
             return channels.FirstOrDefault(c => c.ToStringShort() == shortString);
         }
 
+        public static IEnumerable<Channel> GetOthersInChannelGroup(this IEnumerable<Channel> pool, Channel c)
+        {
+            foreach (var channelGroup in pool.GetChannelGroups())
+            {
+                if (channelGroup.Contains(c))
+                {
+                    foreach (Channel channel in channelGroup)
+                    {
+                        if (channel != c)
+                        {
+                            yield return channel;
+                        }
+                    }
+                }
+            }
+        }
+
         public static Channel[] GetChannelGroup(this IEnumerable<Channel> pool, int index)
         {
             int i = 0;
@@ -287,6 +304,7 @@ namespace RaceLib
             {
                 if (i == index)
                     return channel;
+                i++;
             }
 
             return null;

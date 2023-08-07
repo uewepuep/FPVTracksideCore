@@ -225,6 +225,18 @@ namespace RaceLib
             new Channel(58, 'F', 4, Band.HDZero)
         };
 
+        public static Channel[] HDZeroIMD6C = new Channel[] {
+
+            HDZero[0],
+            HDZero[1],
+
+            HDZero[8],
+            HDZero[9],
+
+            HDZero[6],
+            HDZero[7],
+        };
+
         public static Channel[] LowBand = new Channel[] {
             new Channel(59, 1, Band.LowBand),
             new Channel(60, 2, Band.LowBand),
@@ -306,9 +318,9 @@ namespace RaceLib
                     switch (prefix)
                     {
                         case 'R':
-                            return FrequencyLookup(Band.Raceband, char.MinValue, channel);
+                            return FrequencyLookup(Band.Raceband, prefix, channel);
                         case 'F': 
-                            return FrequencyLookup(Band.Fatshark, char.MinValue, channel);
+                            return FrequencyLookup(Band.Fatshark, prefix, channel);
                     }
                     break;
 
@@ -402,7 +414,7 @@ namespace RaceLib
 
                 for (int i = 0; i < s.Length; i++)
                 {
-                    s[i] = AllChannels.FirstOrDefault(ch => ch.Band == s[i].Band && ch.Number == s[i].Number);
+                    s[i] = AllChannels.FirstOrDefault(ch => ch.Equals(s[i]));
                 }
 
                 Write(profile, s);
