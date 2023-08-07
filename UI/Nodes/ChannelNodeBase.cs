@@ -751,7 +751,6 @@ namespace UI.Nodes
                     EventManager.RaceManager.AddPilot(Channel, pilotNode.Pilot);
                     return true;
                 }
-
             }
 
             return base.OnDrop(finalInputEvent, node);

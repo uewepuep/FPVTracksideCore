@@ -227,14 +227,20 @@ namespace Spreadsheets
             }
         }
 
+        private int GetRaceRow(int race)
+        {
+            return Channels * (race - 1) + 2;
+        }
+
         public bool SetResults(string eventType, int round, int race, IEnumerable<SheetResult> results)
         {
             int nameColumn = GetColumn(eventType, round);
+            int raceRowStart = GetRaceRow(race);
+
             int resultColumn = nameColumn + 1;
             if (nameColumn > 0)
             {
                 List<SheetResult> unfound = results.ToList();
-                int raceRowStart = Channels * (race - 1) + 2;
 
                 // Go through and add results to each channel if they exist..
                 for (int i = 0; i < Channels; i++)
@@ -273,6 +279,23 @@ namespace Spreadsheets
             }
 
             return false;
+        }
+
+        public void SwapPilots(string eventType, int round, int race, string oldPilotSheetName, string newPilotSheetName)
+        {
+            int nameColumn = GetColumn(eventType, round);
+            int raceRowStart = GetRaceRow(race);
+            if (nameColumn > 0)
+            {
+                for (int i = 0; i < Channels; i++)
+                {
+                    string sheetName = sheet.GetText(raceRowStart + i, nameColumn);
+                    if (sheetName == oldPilotSheetName)
+                    {
+                        sheet.SetValue(raceRowStart + i, nameColumn, newPilotSheetName);
+                    }
+                }
+            }
         }
 
         public void GetSize(out int rows, out int columns)

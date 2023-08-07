@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -528,6 +529,17 @@ namespace RaceLib.Format
 
             Dictionary<string, string> pilotNameMap = pilotMap.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Name);
             SheetFormat.Save(fileName, pilotNameMap, eventTypes);
+        }
+
+        public void SwapPilots(Race race, Pilot oldPilot, Pilot newPilot)
+        {
+            string oldPilotSheetName = GetPilotSheetName(oldPilot);
+            string newPilotSheetName = GetPilotSheetName(newPilot);
+
+            if (!string.IsNullOrEmpty(oldPilotSheetName) && !string.IsNullOrEmpty(newPilotSheetName))
+            {
+                SheetFormat.SwapPilots(race.Round.EventType.ToString(), race.RoundNumber - Offset, race.RaceNumber, oldPilotSheetName, newPilotSheetName);
+            }
         }
 
     }

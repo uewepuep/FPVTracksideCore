@@ -860,7 +860,6 @@ namespace RaceLib
             SetPilot(db, channel, otherPilot);
         }
 
-
         public bool SwapPilots(Database db, Pilot newPilot, Channel newChannel, Race oldRace)
         {
             PilotChannel existingPilotChannel = GetPilotChannel(newChannel.Frequency);
