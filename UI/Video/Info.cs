@@ -90,5 +90,10 @@ namespace UI.Video
             // Scale the relative source bounds now...
             ScaledRelativeSourceBounds = VideoBounds.RelativeSourceBounds.Scale(FrameSource.VideoConfig.ChannelCoveragePercent / 100.0f);
         }
+
+        public override string ToString()
+        {
+            return ScaledRelativeSourceBounds.ToString() + " " + Channel.ToString();
+        }
     }
 }

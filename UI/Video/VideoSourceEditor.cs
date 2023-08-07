@@ -31,6 +31,8 @@ namespace UI.Video
         private ChannelVideoMapperNode mapperNode;
         private object locker;
 
+        public Profile Profile { get; private set; }    
+
         public static VideoSourceEditor GetVideoSourceEditor(EventManager em, Profile profile)
         {
             VideoManager videoManager = new VideoManager(GeneralSettings.Instance.VideoStorageLocation, profile);
@@ -39,12 +41,13 @@ namespace UI.Video
             videoManager.MaintainConnections = true;
             videoManager.AutoPause = false;
 
-            return new VideoSourceEditor(videoManager, em);
+            return new VideoSourceEditor(videoManager, em, profile);
         }
 
-        private VideoSourceEditor(VideoManager videoManager, EventManager em)
+        private VideoSourceEditor(VideoManager videoManager, EventManager em, Profile profile)
         {
             locker = new object();
+            Profile = profile;
 
             VideoManager = videoManager;
             VideoManager.OnStart += VideoManager_OnStart;
@@ -243,7 +246,7 @@ namespace UI.Video
 
                 if (VideoManager != null)
                 {
-                    mapperNode = new ChannelVideoMapperNode(VideoManager, EventManager, videoConfig, Objects);
+                    mapperNode = new ChannelVideoMapperNode(Profile, VideoManager, EventManager, videoConfig, Objects);
                     preview.AddChild(mapperNode);
                     RequestLayout();
                 }
@@ -458,7 +461,7 @@ namespace UI.Video
 
         private Channel[] eventChannels;
 
-        public ChannelVideoMapperNode(VideoManager videoManager, EventManager eventManager, VideoConfig videoConfig, IEnumerable<VideoConfig> others)
+        public ChannelVideoMapperNode(Profile profile, VideoManager videoManager, EventManager eventManager, VideoConfig videoConfig, IEnumerable<VideoConfig> others)
         {
             channelVideoMapNodes = new List<ChannelVideoMapNode>();
 
@@ -472,7 +475,7 @@ namespace UI.Video
             }
             else
             {
-                eventChannels = Channel.Read(eventManager.Profile);
+                eventChannels = Channel.Read(profile);
             }
 
             main = new Node();
