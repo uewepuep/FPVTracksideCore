@@ -80,6 +80,7 @@ namespace UI
                 eventManager.RaceManager.OnRacePreStart += OnRacePreStart;
                 eventManager.RaceManager.OnRaceEnd += RaceManager_OnRaceEnd;
                 eventManager.RaceManager.OnRaceCancelled += RaceManager_OnRaceCancelled;
+                eventManager.RaceManager.OnRaceResumed += OnRaceStart;
                 tabbedMultiNode.OnTabChange += OnTabChange;
                 eventsHooked = true;
 
@@ -102,6 +103,7 @@ namespace UI
             {
                 sceneManagerNode.OnSceneChange -= OnSceneChange;
                 eventManager.RaceManager.OnRaceStart -= OnRaceStart;
+                eventManager.RaceManager.OnRaceResumed -= OnRaceStart;
                 eventManager.RaceManager.OnRacePreStart -= OnRacePreStart;
                 eventManager.RaceManager.OnRaceEnd -= RaceManager_OnRaceEnd;
                 tabbedMultiNode.OnTabChange -= OnTabChange;

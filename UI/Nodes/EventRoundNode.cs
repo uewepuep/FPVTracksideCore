@@ -275,6 +275,13 @@ namespace UI.Nodes
             var sheet = EventManager.RoundManager.SheetFormatManager.GetRoundSheetFormat(Round);
             if (sheet != null)
             {
+                mm.AddBlank();
+
+                mm.AddItem("Regenerate Round from Sheet", () =>
+                {
+                    sheet.GenerateSingleRound(Round);
+                });
+
                 mm.AddItem("View Sheet Contents", () =>
                 {
                     BaseGame baseGame = CompositorLayer.Game as BaseGame;
@@ -286,7 +293,14 @@ namespace UI.Nodes
                     string filename = PlatformTools.SaveFileDialog("Export Sheet Contents", "XLSX|*.xlsx");
                     if (!string.IsNullOrEmpty(filename))
                     {
-                        sheet.Save(filename);
+                        try
+                        {
+                            sheet.Save(filename);
+                        }
+                        catch (Exception ex) 
+                        {
+                            GetLayer<PopupLayer>().PopupMessage("Couldn't save. " + ex.Message);
+                        }
                     }
                 });
             }

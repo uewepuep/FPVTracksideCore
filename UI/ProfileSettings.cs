@@ -213,6 +213,8 @@ namespace UI
             StaggeredStartDelaySeconds = 1;
             ReOrderAtHoleshot = true;
             NotificationSerialPort = "";
+
+            CropContent16by9 = true;
         }
 
         protected const string filename = "ProfileSettings.xml";

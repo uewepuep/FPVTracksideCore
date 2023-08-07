@@ -27,7 +27,7 @@ namespace Composition
             Window.AllowUserResizing = true;
             GraphicsDeviceManager = new GraphicsDeviceManager(this);
             GraphicsDeviceManager.PreferredBackBufferHeight = 1000;
-            GraphicsDeviceManager.PreferredBackBufferWidth = 1900;
+            GraphicsDeviceManager.PreferredBackBufferWidth = 1842;
 
             lastBounds = new Rectangle(0, 0, 0, 0);
 

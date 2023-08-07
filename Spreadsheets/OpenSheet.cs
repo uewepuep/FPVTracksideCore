@@ -82,7 +82,10 @@ namespace Spreadsheets
             {
                 if (sheet != null)
                 {
-                    sheet.SetValue(r, c, value);
+                    ExcelRange cell = sheet.Cells[r, c];
+
+                    cell.ClearFormulas(); 
+                    cell.Value = value;
                 }
             }
             catch (Exception e)

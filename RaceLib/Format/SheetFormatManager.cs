@@ -44,7 +44,7 @@ namespace RaceLib.Format
 
             sheets = GetSheetFiles(directory).ToList();
         }
-        
+
         public bool CanAddFormat(Round round)
         {
             if (!sheets.Any())
@@ -420,7 +420,7 @@ namespace RaceLib.Format
         private Race GetCreateRace(Round round, SheetRace srace)
         {
             Race race = SheetFormatManager.RaceManager.GetCreateRace(round, srace.Number);
-            if (race.Ended)
+            if (race.Started)
             {
                 return race;
             }
@@ -432,7 +432,7 @@ namespace RaceLib.Format
                 foreach (var pc in srace.PilotChannels)
                 {
                     IEnumerable<Channel> channels = SheetFormatManager.EventManager.GetChannelGroup(pc.ChannelSlot);
-                    Pilot pilot = GetPilot(pc.Pilot);
+                    Pilot pilot = GetPilot(pc.PilotSheetName);
                     if (pilot != null && channels.Any())
                     {
                         Channel currentChannel = SheetFormatManager.EventManager.GetChannel(pilot);
@@ -452,7 +452,7 @@ namespace RaceLib.Format
                     }
                 }
 
-                if (!SheetFormat.LockChannels && !race.Ended)
+                if (!SheetFormat.LockChannels)
                 {
                     SheetFormatManager.EventManager.RaceManager.OptimiseChannels(db, race);
                 }
@@ -476,11 +476,11 @@ namespace RaceLib.Format
                     continue;
 
                 int channelGroup = SheetFormatManager.EventManager.GetChannelGroupIndex(channel);
-                string pilotName = GetPilotRef(result.Pilot);
+                string pilotSheetName = GetPilotSheetName(result.Pilot);
 
-                if (!string.IsNullOrEmpty(pilotName))
+                if (!string.IsNullOrEmpty(pilotSheetName))
                 {
-                    SheetResult sr = new SheetResult(pilotName, channelGroup, position);
+                    SheetResult sr = new SheetResult(pilotSheetName, result.Pilot.Name, channelGroup, position);
                     sheetResults.Add(sr);
                     position++;
                 }
@@ -498,7 +498,7 @@ namespace RaceLib.Format
             return null;
         }
 
-        private string GetPilotRef(Pilot pilot)
+        private string GetPilotSheetName(Pilot pilot)
         {
             foreach (var kvp in pilotMap)
             {

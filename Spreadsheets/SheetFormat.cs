@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.IO;
+using System.Drawing;
 
 namespace Spreadsheets
 {
@@ -232,25 +233,46 @@ namespace Spreadsheets
             int resultColumn = nameColumn + 1;
             if (nameColumn > 0)
             {
+                List<SheetResult> unfound = results.ToList();
                 int raceRowStart = Channels * (race - 1) + 2;
-                foreach (var sr in results)
+
+                // Go through and add results to each channel if they exist..
+                for (int i = 0; i < Channels; i++)
                 {
-                    string pilotName = sr.Pilot;
-                    for (int i = 0; i < Channels; i++)
+                    string sheetName = sheet.GetText(raceRowStart + i, nameColumn);
+                    SheetResult sr = unfound.FirstOrDefault(r => r.PilotSheetName == sheetName);
+                    if (sr != null)
                     {
-                        string nameCell = sheet.GetText(raceRowStart + i, nameColumn);
-                        if (nameCell == pilotName)
+                        sheet.SetValue(raceRowStart + i, resultColumn, sr.Value);
+                        unfound.Remove(sr);
+                    }
+                    else
+                    {
+                        sheet.SetValue(raceRowStart + i, resultColumn, "");
+                    }
+                }
+
+                // Go through any missing results and try to add them in order. It'll probably work..
+                for (int i = 0; i < Channels && unfound.Any(); i++)
+                {
+                    string value = sheet.GetText(raceRowStart + i, resultColumn);
+                    if (string.IsNullOrEmpty(value))
+                    {
+                        SheetResult sr = unfound.OrderBy(r => r.ChannelSlot).FirstOrDefault();
+                        if (sr != null)
                         {
+                            sheet.SetValue(raceRowStart + i, nameColumn, sr.PilotSheetName);
                             sheet.SetValue(raceRowStart + i, resultColumn, sr.Value);
-                            break;
+                            unfound.Remove(sr);
                         }
                     }
                 }
+
+                sheet.Calculate();
+                return true;
             }
 
-            sheet.Calculate();
-
-            return true;
+            return false;
         }
 
         public void GetSize(out int rows, out int columns)
@@ -413,34 +435,36 @@ namespace Spreadsheets
 
     public class SheetPilotChannel
     {
-        public string Pilot { get; set; }
+        public string PilotSheetName { get; set; }
         public int ChannelSlot { get; set; }
 
-        public SheetPilotChannel(string pilot, int channel)
+        public SheetPilotChannel(string pilotSheetName, int channel)
         {
-            this.Pilot = pilot;
+            this.PilotSheetName = pilotSheetName;
             this.ChannelSlot = channel;
         }
 
         public override string ToString()
         {
-            return Pilot + " " + ChannelSlot;
+            return PilotSheetName + " CS" + ChannelSlot;
         }
     }
 
     public class SheetResult : SheetPilotChannel
     {
+        public string PilotTracksideName { get; set; }
         public object Value { get; set; }
 
-        public SheetResult(string pilot, int channel, object value)
-            :base(pilot, channel)
+        public SheetResult(string pilotSheetName, string pilotTracksideName, int channel, object value)
+            :base(pilotSheetName, channel)
         {
-            this.Value = value;
+            PilotTracksideName = pilotTracksideName;
+            Value = value;
         }
 
         public override string ToString()
         {
-            return base.ToString() + " " + Value;
+            return base.ToString() + " P" + Value + "(" + PilotTracksideName + ")";
         }
     }
 }
