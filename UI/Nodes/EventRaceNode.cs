@@ -243,12 +243,11 @@ namespace UI.Nodes
                             PasteFromClipboard(true);
                         });
                     }
-                    
-
-                    mm.AddItemConfirm("Clear Race", () => { EventManager.RaceManager.ClearRace(Race); Refresh(); });
+            
+                    mm.AddItemConfirm("Clear Race", () => { EventManager.RaceManager.ClearRace(Race); SyncSheetChange(); Refresh(); });
                 }
 
-                mm.AddItemConfirm("Delete Race", () => { EventManager.RaceManager.RemoveRace(Race, false); Refresh(); });
+                mm.AddItemConfirm("Delete Race", () => { EventManager.RaceManager.RemoveRace(Race, false); SyncSheetChange(); Refresh(); });
 
                 mm.AddSubmenu("Set Race Bracket", SetBracket, Enum.GetValues(typeof(Race.Brackets)).OfType<Race.Brackets>().ToArray());
                 if (pilot != null)
@@ -289,6 +288,7 @@ namespace UI.Nodes
                         {
                             if (EventManager.RaceManager.RemovePilot(Race, pilot) != null)
                             {
+                                SyncSheetChange();
                                 Refresh();
                             }
                             else
@@ -374,6 +374,7 @@ namespace UI.Nodes
             {
                 Race.RemovePilot(db, p);
                 Race.SetPilot(db, c, p);
+                SyncSheetChange();
             }
             Refresh(true);
         }
@@ -422,7 +423,9 @@ namespace UI.Nodes
                     Race.SetPilot(db, c, p);
                 }
             }
-            
+
+            SyncSheetChange();
+
             Refresh();
         }
 
@@ -462,6 +465,14 @@ namespace UI.Nodes
             }
         }
 
+        public void SyncSheetChange()
+        {
+            RoundSheetFormat sheetFormat = EventManager.RoundManager.SheetFormatManager.GetRoundSheetFormat(Race.Round);
+            if (sheetFormat == null)
+                return;
+
+            sheetFormat.SyncRace(Race);
+        }
     }
 
     public class PilotRaceInfoNode : ColorNode, IPilot
@@ -567,6 +578,8 @@ namespace UI.Nodes
                     if (oldRace == null || oldRace.RoundNumber != EventRaceNode.Race.RoundNumber)
                     {
                         EventRaceNode.Race.SetPilot(db, channel, prin.Pilot);
+                        EventRaceNode.SyncSheetChange();
+                        prin.EventRaceNode.SyncSheetChange();
                         EventRaceNode.Refresh();
                         return true;
                     }
@@ -574,6 +587,8 @@ namespace UI.Nodes
                     if (!oldRace.Ended)
                     {
                         EventRaceNode.Race.SwapPilots(db, prin.Pilot, channel, oldRace);
+                        EventRaceNode.SyncSheetChange();
+                        prin.EventRaceNode.SyncSheetChange();
                         EventRaceNode.Refresh();
                         return true;
                     }
@@ -583,12 +598,14 @@ namespace UI.Nodes
                     if (EventRaceNode.Race.HasPilot(ipilotnode.Pilot))
                     {
                         EventRaceNode.Race.SwapPilots(db, ipilotnode.Pilot, channel, EventRaceNode.Race);
+                        EventRaceNode.SyncSheetChange();
                         EventRaceNode.Refresh();
                     }
                     else
                     {
                         EventRaceNode.Race.ClearChannel(db, channel);
                         EventRaceNode.Race.SetPilot(db, channel, ipilotnode.Pilot);
+                        EventRaceNode.SyncSheetChange();
                         EventRaceNode.Refresh();
                     }
                    

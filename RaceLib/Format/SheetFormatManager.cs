@@ -151,12 +151,18 @@ namespace RaceLib.Format
 
                 foreach (Round round in sheetFormat.Rounds)
                 {
-                    IEnumerable<Race> endedRaces = RaceManager.GetRaces(r => r.Round == round && r.Ended);
-                    foreach (Race race in endedRaces)
+                    IEnumerable<Race> races = RaceManager.GetRaces(r => r.Round == round);
+                    foreach (Race race in races.Where(r => r.Ended))
                     {
                         sheetFormat.SetResult(race);
                     }
+
+                    foreach (Race race in races)
+                    {
+                        sheetFormat.SyncRace(race);
+                    }
                 }
+
 
                 if (generate)
                 {
@@ -542,5 +548,35 @@ namespace RaceLib.Format
             }
         }
 
+        public void SyncRace(Race race)
+        {
+            if (SheetFormat == null)
+                return;
+
+            Round round = race.Round;
+
+            string eventType = race.Round.EventType.ToString();
+            int roundNumber = race.RoundNumber - Offset;
+
+            // Get the specifc race.
+            SheetRace sfRace = SheetFormat.GetRaces(round.EventType.ToString(), round.RoundNumber - Offset).FirstOrDefault(r => r.Round == round.RoundNumber && r.Number == race.RaceNumber);
+            if (sfRace != null) 
+            {
+                string[] newPilotSheetNames = race.Pilots.Select(r => GetPilotSheetName(r)).ToArray();
+                string[] oldPilotSheetNames = sfRace.PilotChannels.Select(r => r.PilotSheetName).ToArray();
+
+                // foreach pilot that exists in the sheet, but not in the race.
+                foreach (string name in oldPilotSheetNames.Except(newPilotSheetNames))
+                {
+                    SheetFormat.SwapPilots(eventType, roundNumber, race.RaceNumber, name, "");
+                }
+
+                // foreach pilot that doesn't exist in the sheet but does in the race
+                foreach (string name in newPilotSheetNames.Except(oldPilotSheetNames))
+                {
+                    SheetFormat.SwapPilots(eventType, roundNumber, race.RaceNumber, "", name);
+                }
+            }
+        }
     }
 }
