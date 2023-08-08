@@ -497,7 +497,7 @@ namespace UI.Nodes
 
         public void ShowExportSettings()
         {
-            GetLayer<PopupLayer>().Popup(new ExportColumnEditor(eventManager));
+            GetLayer<PopupLayer>().Popup(new ExportColumnEditor(eventManager, Profile));
         }
 
         public void ShowOBSRemoteControlSettings()

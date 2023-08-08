@@ -250,12 +250,12 @@ namespace UI.Nodes
 
     public class ExportColumnEditor : ObjectEditorNode<ExportColumn>
     {
-        public ExportColumnEditor(EventManager eventManager)
-            : base(ExportColumn.Read(eventManager.Profile), false, true, true)
+        public ExportColumnEditor(EventManager eventManager, Profile profile)
+            : base(ExportColumn.Read(profile), false, true, true)
         {
             OnOK += (e) =>
             {
-                ExportColumn.Write(eventManager.Profile, Objects.ToArray());
+                ExportColumn.Write(profile, Objects.ToArray());
                 if (eventManager != null)
                 {
                     eventManager.ExportColumns = Objects.ToArray();
