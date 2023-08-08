@@ -634,9 +634,10 @@ namespace RaceLib
                 {
                     ListeningFrequency listeningFrequency;
                     PilotChannel pilotChannel = currentRace.PilotChannelsSafe.FirstOrDefault(r => r.Channel.Frequency == eventChannel.Frequency);
+
                     if (pilotChannel != null)
                     {
-                        listeningFrequency = new ListeningFrequency(eventChannel.Frequency, pilotChannel.Pilot.TimingSensitivityPercent / 100.0f);
+                        listeningFrequency = new ListeningFrequency(pilotChannel.PilotName, eventChannel.Frequency, pilotChannel.Pilot.TimingSensitivityPercent / 100.0f);
                     }
                     else
                     {
@@ -656,7 +657,7 @@ namespace RaceLib
                 }
                 else
                 {
-                    frequencies = currentRace.PilotChannelsSafe.Select(pc => new ListeningFrequency(pc.Channel.Frequency, pc.Pilot.TimingSensitivityPercent / 100.0f)).ToList();
+                    frequencies = currentRace.PilotChannelsSafe.Select(pc => new ListeningFrequency(pc.PilotName, pc.Channel.Frequency, pc.Pilot.TimingSensitivityPercent / 100.0f)).ToList();
                 }
 
                 Logger.RaceLog.LogCall(this, CurrentRace, "Frequencies dynamically assigned to receivers");

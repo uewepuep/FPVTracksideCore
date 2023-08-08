@@ -16,6 +16,19 @@ namespace RaceLib
         [LiteDB.BsonRef("Channel")]
         public Channel Channel { get; set; }
 
+        [LiteDB.BsonIgnore]
+        public string PilotName
+        {
+            get
+            {
+                if (Pilot == null) 
+                {
+                    return "";
+                }
+                return Pilot.Name;
+            }
+        }
+
         public PilotChannel()
         {
         }

@@ -31,10 +31,19 @@ namespace Timing
     {
         public int Frequency { get; set; }
         public float SensitivityFactor { get; set; }
-        public ListeningFrequency(int freq, float sensitivity)
+
+        public string Pilot { get; set; }
+
+        public ListeningFrequency(int frequency, float sensitivityFactor)
+            :this("", frequency, sensitivityFactor)
+        {
+        }
+
+        public ListeningFrequency(string pilot, int freq, float sensitivity)
         {
             Frequency = freq;
             SensitivityFactor = sensitivity;
+            Pilot = pilot;
         }
 
         public override string ToString()

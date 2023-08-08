@@ -37,6 +37,10 @@ namespace Timing.RotorHazard
 
         private SocketIOHeartbeat socket;
 
+        private DateTime piTimeStart;
+        private List<PiTimeSample> piTimeSamples;
+        private static TimeSpan CaptureTime = TimeSpan.FromSeconds(1);
+
         public int MaxPilots 
         { 
             get 
@@ -83,6 +87,8 @@ namespace Timing.RotorHazard
             socket.OnHeartBeat += OnHeartBeat;
 
             passRecords = new List<PassRecord>();
+
+            piTimeSamples = new List<PiTimeSample>();
         }
         public void Dispose()
         {
@@ -101,6 +107,8 @@ namespace Timing.RotorHazard
                 {
                     Logger.TimingLog.Log(this, "Load All");
                 });
+
+                socket.On("pi_time", OnPiTime);
 
                 string[] toLog = new string[]
                 {
@@ -139,6 +147,8 @@ namespace Timing.RotorHazard
         {
             try
             {
+                TriggerTimeSync();
+
                 Logger.TimingLog.Log(this, "SetListeningFrequencies", string.Join(", ", newFrequencies.Select(f => f.ToString())));
                 int node = 0;
                 foreach (ListeningFrequency freqSense in newFrequencies)
@@ -157,6 +167,69 @@ namespace Timing.RotorHazard
             return false;
         }
 
+        public void TriggerTimeSync()
+        {
+            Logger.TimingLog.Log(this, "Syncing pi time");
+
+            lock (piTimeSamples)
+            {
+                piTimeSamples.Clear();
+            }
+
+            piTimeStart = DateTime.Now;
+            socket.Emit("get_pi_time", OnPiTime);
+        }
+
+
+        private void OnPiTime(string text)
+        {
+            DateTime now = DateTime.Now; 
+            TimeSpan responseTime = new TimeSpan(Environment.TickCount64);
+
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            PiTime piTime = JsonConvert.DeserializeObject<PiTime>(text);
+            if (piTime.Pi_Time_S < 0)
+                return;
+
+            TimeSpan delay = DateTime.Now - piTimeStart;
+            TimeSpan oneway = delay / 2;
+
+            PiTimeSample piTimeSample = new PiTimeSample()
+            {
+                Differential = TimeSpan.FromSeconds(piTime.Pi_Time_S) - responseTime - oneway,
+                Response = delay
+            };
+
+            lock (piTimeSamples)
+            {
+                piTimeSamples.Add(piTimeSample);
+
+                IEnumerable<PiTimeSample> ordered = piTimeSamples.OrderBy(x => x.Response);
+
+                PiTimeSample first = ordered.FirstOrDefault();
+                var diffMin = first.Differential - first.Response;
+                var diffMax = first.Differential + first.Response;
+
+                // remove unsuable samples
+                piTimeSamples.RemoveAll(v => v.Differential < diffMin || v.Differential > diffMax);
+
+                if (piTimeStart + CaptureTime > now)
+                {
+                    socket.Emit("get_pi_time", OnPiTime);
+                }
+                else
+                {
+                    IEnumerable<double> orderedSeconds = ordered.Select(x => x.Differential.TotalSeconds);
+
+                    double median = orderedSeconds.Skip(orderedSeconds.Count() / 2).First();
+
+                    Logger.TimingLog.Log(this, "Epoch", epoch.ToLongTimeString());
+                    epoch = now - TimeSpan.FromSeconds(median);
+                }
+            }
+        }
 
         private void OnEnvironmentData(string text)
         {
@@ -204,7 +277,6 @@ namespace Timing.RotorHazard
                     temp = passRecords.ToArray();
                     passRecords.Clear();
                 }
-
 
                 foreach (PassRecord record in temp)
                 {
@@ -309,12 +381,6 @@ namespace Timing.RotorHazard
                 return false;
             }
 
-            if (!socket.Emit("get_timestamp", GotTimestamp))
-            {
-                Logger.TimingLog.Log(this, "get_timestamp failed", Logger.LogType.Error);
-                return false;
-            }
-
             if (!socket.Emit("stage_race", GotRaceStart))
             {
                 Logger.TimingLog.Log(this, "stage_race failed", Logger.LogType.Error);
@@ -322,16 +388,6 @@ namespace Timing.RotorHazard
             }
 
             return true;
-        }
-
-        protected void GotTimestamp(string text)
-        {
-            TimeStamp response = JsonConvert.DeserializeObject<TimeStamp>(text);
-            epoch = DateTime.Now.AddMilliseconds(-response.timestamp);
-
-            Logger.TimingLog.Log(this, "Timestamp", response.timestamp.ToString("N"));
-            Logger.TimingLog.Log(this, "Epoch", epoch.ToLongTimeString());
-
         }
 
         protected void GotRaceStart(string args)

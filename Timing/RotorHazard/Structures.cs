@@ -41,6 +41,17 @@ namespace Timing.RotorHazard
         public string Units { get; set; }
     }
 
+    public struct PiTime
+    {
+        public double Pi_Time_S { get; set; }
+    }
+
+    public struct PiTimeSample
+    {
+        public TimeSpan Differential { get; set; }
+        public TimeSpan Response { get; set; }
+    }
+
     public class NodeData
     {
         //node_data {"node_peak_rssi":[122,51,51,53],"node_nadir_rssi":[40,39,43,47],"pass_peak_rssi":[115,0,0,0],"pass_nadir_rssi":[71,0,0,0],"debug_pass_count":[3,0,0,0]}
