@@ -167,7 +167,7 @@ namespace Timing.Chorus
             return false;
         }
 
-        public bool StartDetection()
+        public bool StartDetection(DateTime time)
         {
             requestStart = DateTime.Now;
             responseStart = DateTime.Now;

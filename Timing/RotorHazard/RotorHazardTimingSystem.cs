@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Tools;
 using SocketIOClient;
+using System.Reflection;
 
 namespace Timing.RotorHazard
 {
@@ -42,7 +43,7 @@ namespace Timing.RotorHazard
         private Heartbeat lastBeat;
         private DateTime lastBeatTime;
 
-        private DateTime epoch;
+        private DateTime serverEpoch;
 
         private RotorHazardSettings settings;
         public TimingSystemSettings Settings { get { return settings; } set { settings = value as RotorHazardSettings; } }
@@ -93,6 +94,7 @@ namespace Timing.RotorHazard
 
         public TimeSpan TimeOut { get; set; }
 
+        public ServerInfo ServerInfo { get; private set; }
 
         public RotorHazardTimingSystem()
         {
@@ -145,7 +147,7 @@ namespace Timing.RotorHazard
                     Logger.TimingLog.Log(this, "Load All");
                 });
 
-                socket.On("pi_time", OnPiTime);
+                socket.On("pi_time", OnServerTime);
 
                 string[] toLog = new string[]
                 {
@@ -169,6 +171,11 @@ namespace Timing.RotorHazard
                 }
 
                 connected = true;
+                Logger.TimingLog.Log(this, "Connected");
+
+                socket.EmitAsync("ts_server_info", OnServerInfo);
+
+                TriggerTimeSync();
 
                 connectionCount++;
             }
@@ -219,10 +226,18 @@ namespace Timing.RotorHazard
             }
             return false;
         }
+        private void OnServerInfo(SocketIOResponse response)
+        {
+            ServerInfo = response.GetValue<ServerInfo>();
+        }
 
         public void TriggerTimeSync()
         {
-            Logger.TimingLog.Log(this, "Syncing pi time");
+            SocketIO socket = socketIOClient;
+            if (socket == null)
+                return;
+
+            Logger.TimingLog.Log(this, "Syncing Server time");
 
             lock (piTimeSamples)
             {
@@ -230,10 +245,10 @@ namespace Timing.RotorHazard
             }
 
             piTimeStart = DateTime.Now;
-            socketIOClient.EmitAsync("get_pi_time", OnPiTime);
+            socketIOClient.EmitAsync("ts_server_time", OnServerTime);
         }
 
-        private void OnPiTime(SocketIOResponse response)
+        private void OnServerTime(SocketIOResponse response)
         {
             if (response.Count == 0) return;
 
@@ -242,14 +257,14 @@ namespace Timing.RotorHazard
 
             try
             {
-                PiTime piTime = response.GetValue<PiTime>();
+                double time = response.GetValue<double>();
 
                 TimeSpan delay = DateTime.Now - piTimeStart;
                 TimeSpan oneway = delay / 2;
 
                 PiTimeSample piTimeSample = new PiTimeSample()
                 {
-                    Differential = TimeSpan.FromSeconds(piTime.pi_time_s) - responseTime - oneway,
+                    Differential = TimeSpan.FromSeconds(time) - responseTime - oneway,
                     Response = delay
                 };
 
@@ -268,7 +283,7 @@ namespace Timing.RotorHazard
 
                     if (piTimeStart + CaptureTime > now)
                     {
-                        socketIOClient.EmitAsync("get_pi_time", OnPiTime);
+                        socketIOClient.EmitAsync("ts_server_time", OnServerTime);
                     }
                     else
                     {
@@ -276,8 +291,8 @@ namespace Timing.RotorHazard
 
                         double median = orderedSeconds.Skip(orderedSeconds.Count() / 2).First();
 
-                        Logger.TimingLog.Log(this, "Epoch", epoch.ToLongTimeString());
-                        epoch = now - TimeSpan.FromSeconds(median);
+                        serverEpoch = now - TimeSpan.FromSeconds(median);
+                        Logger.TimingLog.Log(this, "Epoch", serverEpoch.ToLongTimeString());
                     }
                 }
             }
@@ -333,7 +348,7 @@ namespace Timing.RotorHazard
 
                 foreach (PassRecord record in temp)
                 {
-                    DateTime time = epoch.AddMilliseconds(record.timestamp);
+                    DateTime time = serverEpoch.AddMilliseconds(record.timestamp);
 
                     int rssi = 0;
 
@@ -354,7 +369,7 @@ namespace Timing.RotorHazard
         private void DebugLog(SocketIOResponse response)
         {
 #if DEBUG
-            Logger.TimingLog.Log(this, "Debug Log: " + response.ToString());
+            //Logger.TimingLog.Log(this, "Debug Log: " + response.ToString());
 #endif
         }
 
@@ -414,7 +429,7 @@ namespace Timing.RotorHazard
                 Logger.TimingLog.LogException(this, ex);
             }
         }
-        public bool StartDetection()
+        public bool StartDetection(DateTime time)
         {
             if (!Connected)
                 return false;
@@ -424,9 +439,10 @@ namespace Timing.RotorHazard
                 passRecords.Clear();
             }
 
-            socketIOClient.EmitAsync("get_version", VersionResponse);
-            socketIOClient.EmitAsync("join_cluster", SecondaryResponse);
-            socketIOClient.EmitAsync("stage_race", GotRaceStart);
+            TimeSpan serverStartTime = time - serverEpoch;
+
+            Logger.TimingLog.Log(this, "Start detection: Server time: " + serverStartTime.TotalSeconds);
+            socketIOClient.EmitAsync("ts_race_stage", GotRaceStart, new RaceStart { start_time_s = serverStartTime.TotalSeconds }); ;
 
             return true;
         }

@@ -40,7 +40,7 @@ namespace Timing
         {
         }
 
-        public bool StartDetection()
+        public bool StartDetection(DateTime time)
         {
 
             detecting = true;

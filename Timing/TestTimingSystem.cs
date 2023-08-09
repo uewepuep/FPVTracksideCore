@@ -42,7 +42,7 @@ namespace Timing
             return true;
         }
 
-        public bool StartDetection()
+        public bool StartDetection(DateTime time)
         {
             return true;
         }

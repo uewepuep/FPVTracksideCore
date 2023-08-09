@@ -695,12 +695,6 @@ namespace UI
                 TimeSpan staggeredTime = TimeSpan.FromSeconds(ProfileSettings.Instance.StaggeredStartDelaySeconds);
                 EventManager.RaceManager.PreRaceStart();
 
-                workQueueStartRace.Enqueue(() =>
-                {
-                    EventManager.RaceManager.StartDetection();
-                });
-
-
                 AutoResetEvent wait = new AutoResetEvent(false);
                 SoundManager.StaggeredStart(() =>
                 {
@@ -727,8 +721,6 @@ namespace UI
 
                 workQueueStartRace.Enqueue(() =>
                 {
-                    EventManager.RaceManager.StartDetection();
-
                     SoundManager.StartRaceIn(EventManager.Event.MaxStartDelay, () =>
                     {
                         if (!EventManager.RaceManager.StartRace())
@@ -744,7 +736,6 @@ namespace UI
                 workQueueStartRace.Enqueue(() =>
                 {
                     EventManager.RaceManager.PreRaceStart();
-                    EventManager.RaceManager.StartDetection();
                     EventManager.RaceManager.StartRaceInLessThan(TimeSpan.Zero, TimeSpan.Zero);
                 });
             }

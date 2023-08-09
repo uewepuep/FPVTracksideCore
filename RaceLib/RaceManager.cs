@@ -617,65 +617,7 @@ namespace RaceLib
         {
             return StartRaceInLessThan(EventManager.Event.MinStartDelay, EventManager.Event.MaxStartDelay);
         }
-                
-        public bool StartDetection()
-        {
-            Race currentRace = CurrentRace;
-            if (currentRace == null)
-            {
-                return false;
-            }
-
-            List<ListeningFrequency> frequencies = new List<ListeningFrequency>();
-            bool enoughFrequenciesForEvent = TimingSystemManager.MaxPilots >= EventManager.Channels.Select(c => c.Frequency).Distinct().Count();
-            if (enoughFrequenciesForEvent)
-            {
-                foreach (Channel eventChannel in EventManager.Channels)
-                {
-                    ListeningFrequency listeningFrequency;
-                    PilotChannel pilotChannel = currentRace.PilotChannelsSafe.FirstOrDefault(r => r.Channel.Frequency == eventChannel.Frequency);
-
-                    if (pilotChannel != null)
-                    {
-                        listeningFrequency = new ListeningFrequency(pilotChannel.PilotName, eventChannel.Frequency, pilotChannel.Pilot.TimingSensitivityPercent / 100.0f);
-                    }
-                    else
-                    {
-                        listeningFrequency = new ListeningFrequency(eventChannel.Frequency, 0);
-                    }
-
-                    frequencies.Add(listeningFrequency);
-                }
-
-                Logger.RaceLog.LogCall(this, CurrentRace, "Frequencies locked to receivers");
-            }
-            else
-            {
-                if (currentRace.Type == EventTypes.CasualPractice)
-                {
-                    frequencies = EventManager.Channels.Select(c => new ListeningFrequency(c.Frequency, 1)).ToList();
-                }
-                else
-                {
-                    frequencies = currentRace.PilotChannelsSafe.Select(pc => new ListeningFrequency(pc.PilotName, pc.Channel.Frequency, pc.Pilot.TimingSensitivityPercent / 100.0f)).ToList();
-                }
-
-                Logger.RaceLog.LogCall(this, CurrentRace, "Frequencies dynamically assigned to receivers");
-            }
-
-            if (!TimingSystemManager.SetListeningFrequencies(frequencies))
-            {
-                return false;
-            }
-
-            if (!TimingSystemManager.StartDetection())
-            {
-                return false;
-            }
-
-            return true;
-        }
-        
+                        
         public bool StartStaggered(TimeSpan delay, Action<PilotChannel> onStart)
         {
             PreRaceStartDelay = false;
@@ -683,6 +625,11 @@ namespace RaceLib
             DateTime now = DateTime.Now;
 
             Logger.RaceLog.LogCall(this, CurrentRace, delay);
+
+            if (!StartDetection(now))
+            {
+                return false;
+            }
 
             if (!CanRunRace)
             {
@@ -751,6 +698,11 @@ namespace RaceLib
             DateTime startTime = now + randomTime;
 
             Logger.RaceLog.LogCall(this, CurrentRace, minDelay, maxDelay, randomTime);
+
+            if (!StartDetection(startTime))
+            {
+                return false;
+            }
 
             if (!CanRunRace)
             {
@@ -830,6 +782,63 @@ namespace RaceLib
             PreRaceStartDelay = false;
 
             OnRaceCancelled?.Invoke(CurrentRace, failure);
+
+            return true;
+        }
+        private bool StartDetection(DateTime start)
+        {
+            Race currentRace = CurrentRace;
+            if (currentRace == null)
+            {
+                return false;
+            }
+
+            List<ListeningFrequency> frequencies = new List<ListeningFrequency>();
+            bool enoughFrequenciesForEvent = TimingSystemManager.MaxPilots >= EventManager.Channels.Select(c => c.Frequency).Distinct().Count();
+            if (enoughFrequenciesForEvent)
+            {
+                foreach (Channel eventChannel in EventManager.Channels)
+                {
+                    ListeningFrequency listeningFrequency;
+                    PilotChannel pilotChannel = currentRace.PilotChannelsSafe.FirstOrDefault(r => r.Channel.Frequency == eventChannel.Frequency);
+
+                    if (pilotChannel != null)
+                    {
+                        listeningFrequency = new ListeningFrequency(pilotChannel.PilotName, eventChannel.Frequency, pilotChannel.Pilot.TimingSensitivityPercent / 100.0f);
+                    }
+                    else
+                    {
+                        listeningFrequency = new ListeningFrequency(eventChannel.Frequency, 0);
+                    }
+
+                    frequencies.Add(listeningFrequency);
+                }
+
+                Logger.RaceLog.LogCall(this, CurrentRace, "Frequencies locked to receivers");
+            }
+            else
+            {
+                if (currentRace.Type == EventTypes.CasualPractice)
+                {
+                    frequencies = EventManager.Channels.Select(c => new ListeningFrequency(c.Frequency, 1)).ToList();
+                }
+                else
+                {
+                    frequencies = currentRace.PilotChannelsSafe.Select(pc => new ListeningFrequency(pc.PilotName, pc.Channel.Frequency, pc.Pilot.TimingSensitivityPercent / 100.0f)).ToList();
+                }
+
+                Logger.RaceLog.LogCall(this, CurrentRace, "Frequencies dynamically assigned to receivers");
+            }
+
+            if (!TimingSystemManager.SetListeningFrequencies(frequencies))
+            {
+                return false;
+            }
+
+            if (!TimingSystemManager.StartDetection(start))
+            {
+                return false;
+            }
 
             return true;
         }
@@ -1707,7 +1716,7 @@ namespace RaceLib
                 SetRace(toResume);
             }
 
-            if (!StartDetection())
+            if (!StartDetection(toResume.Start))
                 return false;
 
             
@@ -1770,7 +1779,7 @@ namespace RaceLib
             if (RaceRunning)
             {
                 Logger.RaceLog.LogCall(this, CurrentRace, "Starting detection again..");
-                StartDetection();
+                StartDetection(DateTime.Now);
             }
         }
 

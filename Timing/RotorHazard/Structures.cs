@@ -109,4 +109,21 @@ namespace Timing.RotorHazard
     {
         public EnvironmentDataSensor Core { get; set; }
     }
+
+    //{[{"release_version":"4.0.0-dev.9","server_api":41,"json_api":3,"node_api_match":true,"node_api_lowest":35,"node_api_levels":[35,35,35,35],"node_version_match":true,"node_fw_versions":["1.1.4","1.1.4","1.1.4","1.1.4"],"node_api_best":35,"prog_start_epoch":"1691557662399","prog_start_time":"2023-08-09 05:07:42.398829"}]}
+
+    public struct ServerInfo
+    {
+        public string release_version { get; set; }
+        public string[] node_fw_versions { get; set; }
+
+        public string prog_start_epoch { get; set; }
+        public string prog_start_time { get; set; }
+    }
+
+    public struct RaceStart
+    {
+        public double start_time_s { get; set; }
+    }
 }
+
