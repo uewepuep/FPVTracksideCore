@@ -27,7 +27,6 @@ namespace UI.Nodes
 
             mouseMenu.AddItem("LapRF 8-way", () => { AddNew(new Timing.ImmersionRC.LapRFSettingsEthernet()); });
             mouseMenu.AddItem("LapRF Puck", () => { AddNew(new Timing.ImmersionRC.LapRFSettingsUSB()); });
-            mouseMenu.AddItem("Delta 5 (Beta)", () => { AddNew(new Timing.Delta5.Delta5TimingSettings()); });
             mouseMenu.AddItem("RotorHazard (Beta)", () => { AddNew(new Timing.RotorHazard.RotorHazardSettings()); });
             mouseMenu.AddItem("Chorus (Alpha)", () => { AddNew(new Timing.Chorus.ChorusSettings()); });
             mouseMenu.AddItem("Video Color (Alpha)", () => { AddNew(new VideoTimingSettings()); });

@@ -4,7 +4,6 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Timing.Delta5;
 
 namespace Timing.RotorHazard
 {

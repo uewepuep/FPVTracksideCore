@@ -8,26 +8,40 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Tools;
+using SocketIOClient;
 
 namespace Timing.RotorHazard
 {
     public class RotorHazardTimingSystem : ITimingSystemWithRSSI
     {
-        public bool Connected { get { return socket.Connected; } }
+
+        private bool connected;
+        public bool Connected
+        {
+            get
+            {
+                if ((DateTime.Now - lastBeatTime) > TimeOut)
+                {
+                    Disconnect();
+                    connected = false;
+                }
+
+                return connected;
+            }
+        }
 
         public TimingSystemType Type { get { return TimingSystemType.RotorHazard; } }
 
         public Version Version { get; private set; }
 
-        private float voltage;
-        private Regex voltageRegex;
-
-        private float temperature;
-        private Regex tempRegex;
+        private double voltage;
+        private double temperature;
 
         private bool detecting;
 
         private Heartbeat lastBeat;
+        private DateTime lastBeatTime;
+
         private DateTime epoch;
 
         private RotorHazardSettings settings;
@@ -35,7 +49,7 @@ namespace Timing.RotorHazard
 
         public event DetectionEventDelegate OnDetectionEvent;
 
-        private SocketIOHeartbeat socket;
+        private SocketIO socketIOClient;
 
         private DateTime piTimeStart;
         private List<PiTimeSample> piTimeSamples;
@@ -45,11 +59,11 @@ namespace Timing.RotorHazard
         { 
             get 
             {
-                if (lastBeat.Frequency != null)
+                if (lastBeat.frequency != null)
                 {
-                    return lastBeat.Frequency.Length;
+                    return lastBeat.frequency.Length;
                 }
-                return int.MaxValue;
+                return 4;
             } 
         }
 
@@ -77,32 +91,55 @@ namespace Timing.RotorHazard
         private int connectionCount;
 
 
+        public TimeSpan TimeOut { get; set; }
+
+
         public RotorHazardTimingSystem()
         {
-            voltageRegex = new Regex("\"voltage\":{\"value\":([0-9.]*)", RegexOptions.Compiled);
-            tempRegex = new Regex("\"temperature\":{\"value\":([0-9.]*)", RegexOptions.Compiled);
-
             settings = new RotorHazardSettings();
-            socket = new SocketIOHeartbeat(this);
-            socket.OnHeartBeat += OnHeartBeat;
-
             passRecords = new List<PassRecord>();
-
             piTimeSamples = new List<PiTimeSample>();
+            TimeOut = TimeSpan.FromSeconds(10);
         }
+        
         public void Dispose()
         {
             Disconnect();
         }
+
         public bool Connect()
         {
-            if (socket.Connect("http://" + settings.HostName + ":" + settings.Port))
+            try
             {
+                socketIOClient = new SocketIO("http://" + settings.HostName + ":" + settings.Port);
+                socketIOClient.OnConnected += Socket_OnConnected;
+
+                lastBeatTime = DateTime.Now;
+                connected = true;
+
+                socketIOClient.ConnectAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.TimingLog.LogException(this, ex);
+            }
+
+            return false;
+        }
+
+        private void Socket_OnConnected(object sender, EventArgs e)
+        {
+            try
+            {
+                SocketIO socket = (SocketIO)sender;
+
                 socket.On("pass_record", OnPassRecord);
                 socket.On("frequency_set", (a) => { });
                 socket.On("frequency_data", OnFrequencyData);
                 socket.On("environmental_data", OnEnvironmentData);
                 socket.On("node_data", OnNodeData);
+                socket.On("heartbeat", HeartBeat);
                 socket.On("load_all", e =>
                 {
                     Logger.TimingLog.Log(this, "Load All");
@@ -112,18 +149,18 @@ namespace Timing.RotorHazard
 
                 string[] toLog = new string[]
                 {
-                        "cluster_status",
-                        "heat_data",
-                        "current_laps",
-                        "leaderboard",
-                        "race_status",
-                        "race_format",
-                        "stop_timer",
-                        "stage_ready",
-                        "node_crossing_change",
-                        "message",
-                        "first_pass_registered",
-                        "priority_message"
+                            "cluster_status",
+                            "heat_data",
+                            "current_laps",
+                            "leaderboard",
+                            "race_status",
+                            "race_format",
+                            "stop_timer",
+                            "stage_ready",
+                            "node_crossing_change",
+                            "message",
+                            "first_pass_registered",
+                            "priority_message"
                 };
 
                 foreach (string tolog in toLog)
@@ -131,20 +168,36 @@ namespace Timing.RotorHazard
                     socket.On(tolog, DebugLog);
                 }
 
-                connectionCount++;
-                return true;
-            }
+                connected = true;
 
-            return false;
+                connectionCount++;
+            }
+            catch (Exception ex)
+            {
+                Logger.TimingLog.LogException(this, ex);
+                connected = false;
+            }
         }
 
         public bool Disconnect()
         {
-            return socket.Disconnect();
+            connected = false;
+
+            if (socketIOClient == null)
+                return true;
+
+            if (socketIOClient.Connected)
+            {
+                socketIOClient.DisconnectAsync();
+            }
+            return true;
         }
 
         public bool SetListeningFrequencies(IEnumerable<ListeningFrequency> newFrequencies)
         {
+            if (!Connected)
+                return false;
+
             try
             {
                 TriggerTimeSync();
@@ -154,14 +207,14 @@ namespace Timing.RotorHazard
                 foreach (ListeningFrequency freqSense in newFrequencies)
                 {
                     SetFrequency sf = new SetFrequency() { node = node, frequency = freqSense.Frequency };
-                    socket.Emit("set_frequency", sf);
+                    socketIOClient.EmitAsync("set_frequency", sf);
                     node++;
                 }
                 return true;
             }
             catch (Exception e)
             {
-                socket.Disconnect();
+                socketIOClient.DisconnectAsync();
                 Logger.TimingLog.LogException(this, e);
             }
             return false;
@@ -177,86 +230,77 @@ namespace Timing.RotorHazard
             }
 
             piTimeStart = DateTime.Now;
-            socket.Emit("get_pi_time", OnPiTime);
+            socketIOClient.EmitAsync("get_pi_time", OnPiTime);
         }
 
-
-        private void OnPiTime(string text)
+        private void OnPiTime(SocketIOResponse response)
         {
-            DateTime now = DateTime.Now; 
+            if (response.Count == 0) return;
+
+            DateTime now = DateTime.Now;
             TimeSpan responseTime = new TimeSpan(Environment.TickCount64);
-
-            if (string.IsNullOrEmpty(text))
-                return;
-
-            PiTime piTime = JsonConvert.DeserializeObject<PiTime>(text);
-            if (piTime.Pi_Time_S < 0)
-                return;
-
-            TimeSpan delay = DateTime.Now - piTimeStart;
-            TimeSpan oneway = delay / 2;
-
-            PiTimeSample piTimeSample = new PiTimeSample()
-            {
-                Differential = TimeSpan.FromSeconds(piTime.Pi_Time_S) - responseTime - oneway,
-                Response = delay
-            };
-
-            lock (piTimeSamples)
-            {
-                piTimeSamples.Add(piTimeSample);
-
-                IEnumerable<PiTimeSample> ordered = piTimeSamples.OrderBy(x => x.Response);
-
-                PiTimeSample first = ordered.FirstOrDefault();
-                var diffMin = first.Differential - first.Response;
-                var diffMax = first.Differential + first.Response;
-
-                // remove unsuable samples
-                piTimeSamples.RemoveAll(v => v.Differential < diffMin || v.Differential > diffMax);
-
-                if (piTimeStart + CaptureTime > now)
-                {
-                    socket.Emit("get_pi_time", OnPiTime);
-                }
-                else
-                {
-                    IEnumerable<double> orderedSeconds = ordered.Select(x => x.Differential.TotalSeconds);
-
-                    double median = orderedSeconds.Skip(orderedSeconds.Count() / 2).First();
-
-                    Logger.TimingLog.Log(this, "Epoch", epoch.ToLongTimeString());
-                    epoch = now - TimeSpan.FromSeconds(median);
-                }
-            }
-        }
-
-        private void OnEnvironmentData(string text)
-        {
-            //[{"Core":{"temperature":{"value":42.932,"units":"\u00b0C"}}}]
 
             try
             {
-                Match match = voltageRegex.Match(text);
-                if (match != null)
+                PiTime piTime = response.GetValue<PiTime>();
+
+                TimeSpan delay = DateTime.Now - piTimeStart;
+                TimeSpan oneway = delay / 2;
+
+                PiTimeSample piTimeSample = new PiTimeSample()
                 {
-                    string voltage = match.Groups[1].Value;
-                    float v;
-                    if (float.TryParse(voltage, out v))
+                    Differential = TimeSpan.FromSeconds(piTime.pi_time_s) - responseTime - oneway,
+                    Response = delay
+                };
+
+                lock (piTimeSamples)
+                {
+                    piTimeSamples.Add(piTimeSample);
+
+                    IEnumerable<PiTimeSample> ordered = piTimeSamples.OrderBy(x => x.Response);
+
+                    PiTimeSample first = ordered.FirstOrDefault();
+                    var diffMin = first.Differential - first.Response;
+                    var diffMax = first.Differential + first.Response;
+
+                    // remove unsuable samples
+                    piTimeSamples.RemoveAll(v => v.Differential < diffMin || v.Differential > diffMax);
+
+                    if (piTimeStart + CaptureTime > now)
                     {
-                        this.voltage = v;
+                        socketIOClient.EmitAsync("get_pi_time", OnPiTime);
+                    }
+                    else
+                    {
+                        IEnumerable<double> orderedSeconds = ordered.Select(x => x.Differential.TotalSeconds);
+
+                        double median = orderedSeconds.Skip(orderedSeconds.Count() / 2).First();
+
+                        Logger.TimingLog.Log(this, "Epoch", epoch.ToLongTimeString());
+                        epoch = now - TimeSpan.FromSeconds(median);
                     }
                 }
+            }
+            catch (Exception ex) 
+            {
+                Logger.TimingLog.LogException(this, ex);
+            }
+        }
 
-                match = tempRegex.Match(text);
-                if (match != null)
+        private void OnEnvironmentData(SocketIOResponse response)
+        {
+            //{[[{"Core":{"temperature":{"value":47.774,"units":"\u00b0C"}}}]]}
+
+            try
+            {
+                var result = response.GetValue<EnvironmentData[]>();
+
+                if (result.Length >= 1)
                 {
-                    string temp = match.Groups[1].Value;
-                    float t;
-                    if (float.TryParse(temp, out t))
-                    {
-                        this.temperature = t;
-                    }
+                    EnvironmentData value = result.First();
+
+                    this.voltage = value.Core.voltage.value;
+                    this.temperature = value.Core.temperature.value;
                 }
             }
             catch (Exception ex)
@@ -265,11 +309,20 @@ namespace Timing.RotorHazard
             }
         }
 
-        private void OnNodeData(string text)
+        private void HeartBeat(SocketIOResponse response)
+        {
+            //{[{"current_rssi":[57,57,49,41],"frequency":[5658,5695,5760,5800],"loop_time":[1020,1260,1092,1136],"crossing_flag":[false,false,false,false]}]}
+
+            lastBeat = response.GetValue<Heartbeat>();
+            connected = true;
+            lastBeatTime = DateTime.Now;
+        }
+
+        private void OnNodeData(SocketIOResponse response)
         {
             try
             {
-                NodeData nodeData = JsonConvert.DeserializeObject<NodeData>(text);
+                NodeData nodeData = response.GetValue<NodeData>();
 
                 PassRecord[] temp;
                 lock (passRecords)
@@ -284,9 +337,9 @@ namespace Timing.RotorHazard
 
                     int rssi = 0;
 
-                    if (nodeData.Pass_Peak_RSSI.Length > record.node)
+                    if (nodeData.pass_peak_rssi.Length > record.node)
                     {
-                        rssi = nodeData.Pass_Peak_RSSI[record.node];
+                        rssi = nodeData.pass_peak_rssi[record.node];
                     }
 
                     OnDetectionEvent?.Invoke(this, record.frequency, time, rssi);
@@ -298,28 +351,27 @@ namespace Timing.RotorHazard
             }
         }
 
-        private void DebugLog(string text)
+        private void DebugLog(SocketIOResponse response)
         {
 #if DEBUG
-            Logger.TimingLog.Log(this, "Debug Log: " + text);
+            Logger.TimingLog.Log(this, "Debug Log: " + response.ToString());
 #endif
         }
 
-        private void OnPassRecord(string text)
+        private void OnPassRecord(SocketIOResponse response)
         {
-            PassRecord response = JsonConvert.DeserializeObject<PassRecord>(text);
-
+            PassRecord passRecord = response.GetValue<PassRecord>();
             lock (passRecords)
             {
-                passRecords.Add(response);
+                passRecords.Add(passRecord);
             }
         }
 
-        public void OnHeartBeat(string text)
+        public void OnHeartBeat(SocketIOResponse response)
         {
             try
             {
-                lastBeat = JsonConvert.DeserializeObject<Heartbeat>(text);
+                lastBeat = response.GetValue<Heartbeat>();
             }
             catch (Exception ex)
             {
@@ -327,18 +379,18 @@ namespace Timing.RotorHazard
             }
         }
 
-        private void SecondaryResponse(string args)
+        private void SecondaryResponse(SocketIOResponse response)
         {
             Logger.TimingLog.Log(this, "Secondary Race Format");
         }
 
-        private void VersionResponse(string text)
+        private void VersionResponse(SocketIOResponse response)
         {
             //{"major":"3","minor":"1"}
 
             try
             {
-                Version = JsonConvert.DeserializeObject<Version>(text);
+                Version = response.GetValue<Version>();
                 Logger.TimingLog.Log(this, "Version " + Version.Major + "." + Version.Minor);
 
             }
@@ -348,12 +400,12 @@ namespace Timing.RotorHazard
             }
         }
 
-        private void OnFrequencyData(string text)
+        private void OnFrequencyData(SocketIOResponse response)
         {
             //frequency_data {"fdata":[{"band":null,"channel":null,"frequency":5658},{"band":null,"channel":null,"frequency":5695},{"band":null,"channel":null,"frequency":5760},{"band":null,"channel":null,"frequency":5880}]})
             try
             {
-                FrequencyDatas frequencyData = JsonConvert.DeserializeObject<FrequencyDatas>(text);
+                FrequencyDatas frequencyData = response.GetValue<FrequencyDatas>();
                 Logger.TimingLog.Log(this, "Device listening on " + string.Join(", ", frequencyData.fdata.Select(r => r.ToString())));
 
             }
@@ -364,33 +416,22 @@ namespace Timing.RotorHazard
         }
         public bool StartDetection()
         {
+            if (!Connected)
+                return false;
+
             lock (passRecords)
             {
                 passRecords.Clear();
             }
 
-            if (!socket.Emit("get_version", VersionResponse))
-            {
-                Logger.TimingLog.Log(this, "get_version failed", Logger.LogType.Error);
-                return false;
-            }
-
-            if (!socket.Emit("join_cluster", SecondaryResponse))
-            {
-                Logger.TimingLog.Log(this, "join_cluster failed", Logger.LogType.Error);
-                return false;
-            }
-
-            if (!socket.Emit("stage_race", GotRaceStart))
-            {
-                Logger.TimingLog.Log(this, "stage_race failed", Logger.LogType.Error);
-                return false;
-            }
+            socketIOClient.EmitAsync("get_version", VersionResponse);
+            socketIOClient.EmitAsync("join_cluster", SecondaryResponse);
+            socketIOClient.EmitAsync("stage_race", GotRaceStart);
 
             return true;
         }
 
-        protected void GotRaceStart(string args)
+        protected void GotRaceStart(SocketIOResponse reponse)
         {
             Logger.TimingLog.Log(this, "Device started Race");
             detecting = true;
@@ -398,42 +439,47 @@ namespace Timing.RotorHazard
 
         public bool EndDetection()
         {
+            if (!Connected)
+                return false;
+
             if (!detecting)
                 return false;
 
             detecting = false;
 
-            return socket.Emit("stop_race", GotRaceStop);
+            socketIOClient.EmitAsync("stop_race", GotRaceStop);
+
+            return true;
         }
 
-        protected void GotRaceStop(string args)
+        protected void GotRaceStop(SocketIOResponse response)
         {
             Logger.TimingLog.Log(this, "Device stopped Race");
         }
 
         public IEnumerable<RSSI> GetRSSI()
         {
-            if (lastBeat.Current_RSSI == null ||
-                lastBeat.Frequency == null ||
-                lastBeat.Crossing_Flag == null)
+            if (lastBeat.current_rssi == null ||
+                lastBeat.frequency == null ||
+                lastBeat.crossing_flag == null)
             {
                 yield break;
             }
 
 
             int length = (new int[] {
-                lastBeat.Current_RSSI.Length,
-                lastBeat.Frequency.Length,
-                lastBeat.Crossing_Flag.Length
+                lastBeat.current_rssi.Length,
+                lastBeat.frequency.Length,
+                lastBeat.crossing_flag.Length
             }).Min();
 
             for (int i = 0; i < length; i++)
             {
                 RSSI rssi = new RSSI()
                 {
-                    CurrentRSSI = lastBeat.Current_RSSI[i],
-                    Frequency = lastBeat.Frequency[i],
-                    Detected = lastBeat.Crossing_Flag[i],
+                    CurrentRSSI = lastBeat.current_rssi[i],
+                    Frequency = lastBeat.frequency[i],
+                    Detected = lastBeat.crossing_flag[i],
                     ScaleMax = 200,
                     ScaleMin = 20,
                     TimingSystem = this

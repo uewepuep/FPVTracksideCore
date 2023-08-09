@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Timing.Chorus;
-using Timing.Delta5;
 using Timing.ImmersionRC;
 using Timing.RotorHazard;
 using Tools;
@@ -134,7 +133,6 @@ namespace Timing
     [XmlInclude(typeof(LapRFSettingsUSB))]
     [XmlInclude(typeof(LapRFSettingsEthernet))]
     [XmlInclude(typeof(VideoTimingSettings))]
-    [XmlInclude(typeof(Delta5TimingSettings))]
     [XmlInclude(typeof(ChorusSettings))]
     [XmlInclude(typeof(RotorHazardSettings))]
     public class TimingSystemSettings

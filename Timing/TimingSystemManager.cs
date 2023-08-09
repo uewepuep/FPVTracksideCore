@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Timing.Chorus;
-using Timing.Delta5;
 using Timing.ImmersionRC;
 using Timing.RotorHazard;
 using Tools;
@@ -174,9 +173,6 @@ namespace Timing
 
                 else if (settings is RotorHazardSettings)
                     timingSystem = new RotorHazardTimingSystem();
-
-                else if (settings is Delta5TimingSettings)
-                    timingSystem = new Delta5TimingSystem();
 
                 else if (settings is ChorusSettings)
                     timingSystem = new ChorusTiming();
