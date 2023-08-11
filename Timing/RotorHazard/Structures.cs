@@ -12,6 +12,7 @@ namespace Timing.RotorHazard
         public string Minor { get; set; }
     }
 
+    //{[{"fdata":[{"band":null,"channel":null,"frequency":5658},{"band":null,"channel":null,"frequency":5695},{"band":null,"channel":null,"frequency":5760},{"band":null,"channel":null,"frequency":5800}]}]}
     public struct FrequencyDatas
     {
         public FrequencyData[] fdata { get; set; }
@@ -19,17 +20,17 @@ namespace Timing.RotorHazard
 
     public class FrequencyData
     {
-        public string Band { get; set; }
-        public string Channel { get; set; }
-        public int Frequency { get; set; }
+        public string band { get; set; }
+        public string channel { get; set; }
+        public int frequency { get; set; }
 
         public override string ToString()
         {
             string output = "";
-            if (Band != null) output += Band;
-            if (Channel != null) output += Channel + " ";
+            if (band != null) output += band;
+            if (channel != null) output += channel + " ";
 
-            output += Frequency + "mhz";
+            output += frequency + "mhz";
 
             return output;
         }
@@ -40,7 +41,7 @@ namespace Timing.RotorHazard
         public double pi_time_s { get; set; }
     }
 
-    public struct PiTimeSample
+    public struct ServerTimeSample
     {
         public TimeSpan Differential { get; set; }
         public TimeSpan Response { get; set; }

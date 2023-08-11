@@ -43,8 +43,6 @@ namespace Timing.RotorHazard
         private Heartbeat lastBeat;
         private DateTime lastBeatTime;
 
-        private DateTime serverEpoch;
-
         private RotorHazardSettings settings;
         public TimingSystemSettings Settings { get { return settings; } set { settings = value as RotorHazardSettings; } }
 
@@ -52,20 +50,37 @@ namespace Timing.RotorHazard
 
         private SocketIO socketIOClient;
 
-        private DateTime piTimeStart;
-        private List<PiTimeSample> piTimeSamples;
+        private TimeSpan serverTimeStart;
+        private List<ServerTimeSample> serverTimeSamples;
         private static TimeSpan CaptureTime = TimeSpan.FromSeconds(1);
 
-        public int MaxPilots 
-        { 
-            get 
+        private TimeSpan serverDifferential;
+
+        public TimeSpan Monotonic { get { return TimeSpan.FromMilliseconds(Environment.TickCount64); } }
+
+        private DateTime serverEpoch
+        {
+            get
+            {
+                DateTime time = DateTime.Now;
+
+                // Adjust by our monotonic clock and the difference to the servers monotonic clock
+                time -= Monotonic + serverDifferential;
+
+                return time;
+            }
+        }
+
+        public int MaxPilots
+        {
+            get
             {
                 if (lastBeat.frequency != null)
                 {
                     return lastBeat.frequency.Length;
                 }
                 return 4;
-            } 
+            }
         }
 
         private List<PassRecord> passRecords;
@@ -93,15 +108,21 @@ namespace Timing.RotorHazard
 
 
         public TimeSpan TimeOut { get; set; }
+        public TimeSpan CommandTimeOut { get; set; }
 
         public ServerInfo ServerInfo { get; private set; }
+
+
+        private AutoResetEvent responseWait;
 
         public RotorHazardTimingSystem()
         {
             settings = new RotorHazardSettings();
             passRecords = new List<PassRecord>();
-            piTimeSamples = new List<PiTimeSample>();
+            serverTimeSamples = new List<ServerTimeSample>();
             TimeOut = TimeSpan.FromSeconds(10);
+            CommandTimeOut = TimeSpan.FromSeconds(3);
+            responseWait = new AutoResetEvent(false);
         }
         
         public void Dispose()
@@ -175,8 +196,6 @@ namespace Timing.RotorHazard
 
                 socket.EmitAsync("ts_server_info", OnServerInfo);
 
-                TriggerTimeSync();
-
                 connectionCount++;
             }
             catch (Exception ex)
@@ -205,10 +224,10 @@ namespace Timing.RotorHazard
             if (!Connected)
                 return false;
 
+            detecting = false;
+
             try
             {
-                TriggerTimeSync();
-
                 Logger.TimingLog.Log(this, "SetListeningFrequencies", string.Join(", ", newFrequencies.Select(f => f.ToString())));
                 int node = 0;
                 foreach (ListeningFrequency freqSense in newFrequencies)
@@ -231,57 +250,71 @@ namespace Timing.RotorHazard
             ServerInfo = response.GetValue<ServerInfo>();
         }
 
-        public void TriggerTimeSync()
+        public bool TimeSync()
         {
             SocketIO socket = socketIOClient;
             if (socket == null)
-                return;
+                return false;
 
             Logger.TimingLog.Log(this, "Syncing Server time");
 
-            lock (piTimeSamples)
+            lock (serverTimeSamples)
             {
-                piTimeSamples.Clear();
+                serverTimeSamples.Clear();
             }
 
-            piTimeStart = DateTime.Now;
+            serverTimeStart = Monotonic;
             socketIOClient.EmitAsync("ts_server_time", OnServerTime);
+
+            if (!responseWait.WaitOne(CommandTimeOut))
+            {
+                Logger.TimingLog.Log(this, "Time sync took too long");
+                return false;
+            }
+
+            bool enoughSamples;
+            lock (serverTimeSamples)
+            {
+                enoughSamples = serverTimeSamples.Count > 5;
+            }
+
+            Logger.TimingLog.Log(this, "Server Time Samples " + serverTimeSamples.Count);
+
+            return enoughSamples;
         }
 
         private void OnServerTime(SocketIOResponse response)
         {
             if (response.Count == 0) return;
 
-            DateTime now = DateTime.Now;
-            TimeSpan responseTime = new TimeSpan(Environment.TickCount64);
-
+            TimeSpan responseTime = Monotonic;
             try
             {
                 double time = response.GetValue<double>();
 
-                TimeSpan delay = DateTime.Now - piTimeStart;
+                TimeSpan delay = Monotonic - serverTimeStart;
                 TimeSpan oneway = delay / 2;
 
-                PiTimeSample piTimeSample = new PiTimeSample()
+                ServerTimeSample piTimeSample = new ServerTimeSample()
                 {
                     Differential = TimeSpan.FromSeconds(time) - responseTime - oneway,
                     Response = delay
                 };
 
-                lock (piTimeSamples)
+                lock (serverTimeSamples)
                 {
-                    piTimeSamples.Add(piTimeSample);
+                    serverTimeSamples.Add(piTimeSample);
 
-                    IEnumerable<PiTimeSample> ordered = piTimeSamples.OrderBy(x => x.Response);
+                    IEnumerable<ServerTimeSample> ordered = serverTimeSamples.OrderBy(x => x.Response);
 
-                    PiTimeSample first = ordered.FirstOrDefault();
+                    ServerTimeSample first = ordered.FirstOrDefault();
                     var diffMin = first.Differential - first.Response;
                     var diffMax = first.Differential + first.Response;
 
                     // remove unsuable samples
-                    piTimeSamples.RemoveAll(v => v.Differential < diffMin || v.Differential > diffMax);
+                    serverTimeSamples.RemoveAll(v => v.Differential < diffMin || v.Differential > diffMax);
 
-                    if (piTimeStart + CaptureTime > now)
+                    if (serverTimeStart + CaptureTime > responseTime)
                     {
                         socketIOClient.EmitAsync("ts_server_time", OnServerTime);
                     }
@@ -291,8 +324,10 @@ namespace Timing.RotorHazard
 
                         double median = orderedSeconds.Skip(orderedSeconds.Count() / 2).First();
 
-                        serverEpoch = now - TimeSpan.FromSeconds(median);
-                        Logger.TimingLog.Log(this, "Epoch", serverEpoch.ToLongTimeString());
+                        serverDifferential = TimeSpan.FromSeconds(median);
+                        Logger.TimingLog.Log(this, "Server Differential " + serverDifferential.TotalSeconds + " Epoch " + serverEpoch);
+
+                        responseWait.Set();
                     }
                 }
             }
@@ -394,30 +429,9 @@ namespace Timing.RotorHazard
             }
         }
 
-        private void SecondaryResponse(SocketIOResponse response)
-        {
-            Logger.TimingLog.Log(this, "Secondary Race Format");
-        }
-
-        private void VersionResponse(SocketIOResponse response)
-        {
-            //{"major":"3","minor":"1"}
-
-            try
-            {
-                Version = response.GetValue<Version>();
-                Logger.TimingLog.Log(this, "Version " + Version.Major + "." + Version.Minor);
-
-            }
-            catch (Exception ex)
-            {
-                Logger.TimingLog.LogException(this, ex);
-            }
-        }
-
         private void OnFrequencyData(SocketIOResponse response)
         {
-            //frequency_data {"fdata":[{"band":null,"channel":null,"frequency":5658},{"band":null,"channel":null,"frequency":5695},{"band":null,"channel":null,"frequency":5760},{"band":null,"channel":null,"frequency":5880}]})
+            //{[{"fdata":[{"band":null,"channel":null,"frequency":5658},{"band":null,"channel":null,"frequency":5695},{"band":null,"channel":null,"frequency":5760},{"band":null,"channel":null,"frequency":5800}]}]}
             try
             {
                 FrequencyDatas frequencyData = response.GetValue<FrequencyDatas>();
@@ -439,18 +453,25 @@ namespace Timing.RotorHazard
                 passRecords.Clear();
             }
 
+            if (!TimeSync())
+                return false;
+
             TimeSpan serverStartTime = time - serverEpoch;
 
             Logger.TimingLog.Log(this, "Start detection: Server time: " + serverStartTime.TotalSeconds);
-            socketIOClient.EmitAsync("ts_race_stage", GotRaceStart, new RaceStart { start_time_s = serverStartTime.TotalSeconds }); ;
+            Task t = socketIOClient.EmitAsync("ts_race_stage", GotRaceStart, new RaceStart { start_time_s = serverStartTime.TotalSeconds }); ;
 
-            return true;
+            if (!responseWait.WaitOne(CommandTimeOut))
+                return false;
+
+            return detecting;
         }
 
         protected void GotRaceStart(SocketIOResponse reponse)
         {
             Logger.TimingLog.Log(this, "Device started Race");
             detecting = true;
+            responseWait.Set();
         }
 
         public bool EndDetection()
@@ -463,7 +484,7 @@ namespace Timing.RotorHazard
 
             detecting = false;
 
-            socketIOClient.EmitAsync("stop_race", GotRaceStop);
+            socketIOClient.EmitAsync("ts_race_stop", GotRaceStop);
 
             return true;
         }
