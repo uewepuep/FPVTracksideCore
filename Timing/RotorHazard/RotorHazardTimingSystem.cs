@@ -52,7 +52,6 @@ namespace Timing.RotorHazard
 
         private TimeSpan serverTimeStart;
         private List<ServerTimeSample> serverTimeSamples;
-        private static TimeSpan CaptureTime = TimeSpan.FromSeconds(1);
 
         private TimeSpan serverDifferential;
 
@@ -83,8 +82,6 @@ namespace Timing.RotorHazard
             }
         }
 
-        private List<PassRecord> passRecords;
-
         public IEnumerable<StatusItem> Status
         {
             get
@@ -112,13 +109,15 @@ namespace Timing.RotorHazard
 
         public ServerInfo ServerInfo { get; private set; }
 
-
         private AutoResetEvent responseWait;
+
+        private const int MaxTimeSamples = 20;
+
+        private DateTime detectionStart;
 
         public RotorHazardTimingSystem()
         {
             settings = new RotorHazardSettings();
-            passRecords = new List<PassRecord>();
             serverTimeSamples = new List<ServerTimeSample>();
             TimeOut = TimeSpan.FromSeconds(10);
             CommandTimeOut = TimeSpan.FromSeconds(3);
@@ -167,8 +166,6 @@ namespace Timing.RotorHazard
                 {
                     Logger.TimingLog.Log(this, "Load All");
                 });
-
-                socket.On("pi_time", OnServerTime);
 
                 string[] toLog = new string[]
                 {
@@ -233,9 +230,17 @@ namespace Timing.RotorHazard
                 foreach (ListeningFrequency freqSense in newFrequencies)
                 {
                     SetFrequency sf = new SetFrequency() { node = node, frequency = freqSense.Frequency };
-                    socketIOClient.EmitAsync("set_frequency", sf);
+                    socketIOClient.EmitAsync("set_frequency", OnSetFrequency, sf);
                     node++;
+                    if (!responseWait.WaitOne(CommandTimeOut))
+                    {
+                        return false;
+                    }
                 }
+
+                if (!TimeSync())
+                    return false;
+
                 return true;
             }
             catch (Exception e)
@@ -245,6 +250,12 @@ namespace Timing.RotorHazard
             }
             return false;
         }
+
+        protected void OnSetFrequency(SocketIOResponse reponse)
+        {
+            responseWait.Set();
+        }
+
         private void OnServerInfo(SocketIOResponse response)
         {
             ServerInfo = response.GetValue<ServerInfo>();
@@ -272,20 +283,21 @@ namespace Timing.RotorHazard
                 return false;
             }
 
-            bool enoughSamples;
+            int count = 0;
             lock (serverTimeSamples)
             {
-                enoughSamples = serverTimeSamples.Count > 5;
+                count = serverTimeSamples.Count;
             }
 
-            Logger.TimingLog.Log(this, "Server Time Samples " + serverTimeSamples.Count);
+            Logger.TimingLog.Log(this, "Server Time Samples " + count);
 
-            return enoughSamples;
+            return count > 0;
         }
 
         private void OnServerTime(SocketIOResponse response)
         {
             if (response.Count == 0) return;
+
 
             TimeSpan responseTime = Monotonic;
             try
@@ -305,21 +317,14 @@ namespace Timing.RotorHazard
                 {
                     serverTimeSamples.Add(piTimeSample);
 
-                    IEnumerable<ServerTimeSample> ordered = serverTimeSamples.OrderBy(x => x.Response);
-
-                    ServerTimeSample first = ordered.FirstOrDefault();
-                    var diffMin = first.Differential - first.Response;
-                    var diffMax = first.Differential + first.Response;
-
-                    // remove unsuable samples
-                    serverTimeSamples.RemoveAll(v => v.Differential < diffMin || v.Differential > diffMax);
-
-                    if (serverTimeStart + CaptureTime > responseTime)
+                    if (serverTimeSamples.Count < MaxTimeSamples)
                     {
+                        serverTimeStart = Monotonic;
                         socketIOClient.EmitAsync("ts_server_time", OnServerTime);
                     }
                     else
                     {
+                        IEnumerable<ServerTimeSample> ordered = serverTimeSamples.OrderBy(x => x.Response);
                         IEnumerable<double> orderedSeconds = ordered.Select(x => x.Differential.TotalSeconds);
 
                         double median = orderedSeconds.Skip(orderedSeconds.Count() / 2).First();
@@ -372,28 +377,6 @@ namespace Timing.RotorHazard
         {
             try
             {
-                NodeData nodeData = response.GetValue<NodeData>();
-
-                PassRecord[] temp;
-                lock (passRecords)
-                {
-                    temp = passRecords.ToArray();
-                    passRecords.Clear();
-                }
-
-                foreach (PassRecord record in temp)
-                {
-                    DateTime time = serverEpoch.AddMilliseconds(record.timestamp);
-
-                    int rssi = 0;
-
-                    if (nodeData.pass_peak_rssi.Length > record.node)
-                    {
-                        rssi = nodeData.pass_peak_rssi[record.node];
-                    }
-
-                    OnDetectionEvent?.Invoke(this, record.frequency, time, rssi);
-                }
             }
             catch (Exception ex)
             {
@@ -411,10 +394,12 @@ namespace Timing.RotorHazard
         private void OnPassRecord(SocketIOResponse response)
         {
             PassRecord passRecord = response.GetValue<PassRecord>();
-            lock (passRecords)
-            {
-                passRecords.Add(passRecord);
-            }
+            Logger.TimingLog.Log(this, "PassRecord", passRecord);
+
+            //DateTime passingTime = serverEpoch + TimeSpan.FromSeconds(passRecord.monotonic);
+            DateTime passingTime = detectionStart + TimeSpan.FromMilliseconds(passRecord.lap_time_stamp);
+
+            OnDetectionEvent?.Invoke(this, passRecord.frequency, passingTime, passRecord.peak_rssi);
         }
 
         public void OnHeartBeat(SocketIOResponse response)
@@ -448,13 +433,7 @@ namespace Timing.RotorHazard
             if (!Connected)
                 return false;
 
-            lock (passRecords)
-            {
-                passRecords.Clear();
-            }
-
-            if (!TimeSync())
-                return false;
+            detectionStart = time;
 
             TimeSpan serverStartTime = time - serverEpoch;
 

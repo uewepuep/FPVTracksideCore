@@ -45,6 +45,11 @@ namespace Timing.RotorHazard
     {
         public TimeSpan Differential { get; set; }
         public TimeSpan Response { get; set; }
+
+        public override string ToString()
+        {
+            return Differential + " " + Response;
+        }
     }
 
     public class NodeData
@@ -79,6 +84,14 @@ namespace Timing.RotorHazard
         public int node { get; set; }
         public int frequency { get; set; }
         public double timestamp { get; set; }
+        public double monotonic { get; set; }
+        public int peak_rssi { get; set; }
+        public double lap_time_stamp { get; set; }
+
+        public override string ToString()
+        {
+            return "N" + node + " " + frequency + "mHz" + " " + timestamp + ". M" + monotonic + " " + peak_rssi + "rssi";
+        }
     }
 
     public struct SetSettings

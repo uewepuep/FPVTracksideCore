@@ -693,7 +693,10 @@ namespace UI
             if (staggeredStart)
             {
                 TimeSpan staggeredTime = TimeSpan.FromSeconds(ProfileSettings.Instance.StaggeredStartDelaySeconds);
-                EventManager.RaceManager.PreRaceStart();
+                if (!EventManager.RaceManager.PreRaceStart())
+                {
+                    EventManager.RaceManager.CancelRaceStart(true);
+                }
 
                 AutoResetEvent wait = new AutoResetEvent(false);
                 SoundManager.StaggeredStart(() =>
@@ -717,18 +720,30 @@ namespace UI
             }
             else if (delayedStart)
             {
-                EventManager.RaceManager.PreRaceStart();
 
                 workQueueStartRace.Enqueue(() =>
                 {
+                    bool failed = false;
+
+                    // Trigger the sound. The actual race start will happen after it ends
                     SoundManager.StartRaceIn(EventManager.Event.MaxStartDelay, () =>
                     {
+                        if (failed)
+                            return;
+
                         if (!EventManager.RaceManager.StartRace())
                         {
                             EventManager.RaceManager.CancelRaceStart(true);
                         }
                         ControlButtons.UpdateControlButtons();
                     });
+
+                    // Pre race start. Happens first because the sound is playing.
+                    if (!EventManager.RaceManager.PreRaceStart())
+                    {
+                        failed = true;
+                        EventManager.RaceManager.CancelRaceStart(true);
+                    }
                 });
             }
             else

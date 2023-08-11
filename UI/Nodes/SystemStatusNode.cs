@@ -214,9 +214,6 @@ namespace UI.Nodes
         {
             switch (type)
             {
-                case TimingSystemType.Delta5:
-                    return "D5";
-
                 case TimingSystemType.Dummy:
                     return "DMY";
 
@@ -226,8 +223,6 @@ namespace UI.Nodes
                 case TimingSystemType.Video:
                     return "V";
 
-                case TimingSystemType.Chorus:
-                    return "CHR";
                 default:
                     return Maths.AutoAcronym(type.ToString());
             }

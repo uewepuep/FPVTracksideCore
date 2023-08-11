@@ -313,8 +313,11 @@ namespace RaceLib
             }
         }
 
+        private AutoResetEvent preRaceStartMutex;
+
         public RaceManager(EventManager eventManager)
         {
+            preRaceStartMutex = new AutoResetEvent(false);
             random = new Random();
             EventManager = eventManager;
             RemainingTimesToAnnounce = new int[] { 0, 10, 30, 60 };
@@ -610,6 +613,14 @@ namespace RaceLib
             OnRacePreStart?.Invoke(CurrentRace);
 
             PreRaceStartDelay = true;
+
+            if (!SetListeningFrequencies(CurrentRace))
+            {
+                preRaceStartMutex.Set();
+                return false;
+            }
+
+            preRaceStartMutex.Set();
             return true;
         }
 
@@ -620,6 +631,9 @@ namespace RaceLib
                         
         public bool StartStaggered(TimeSpan delay, Action<PilotChannel> onStart)
         {
+            if (!preRaceStartMutex.WaitOne(1000))
+                return false;
+
             PreRaceStartDelay = false;
             StaggeredStart = true;
             DateTime now = DateTime.Now;
@@ -692,13 +706,18 @@ namespace RaceLib
 
         public bool StartRaceInLessThan(TimeSpan minDelay, TimeSpan maxDelay)
         {
+            if (!preRaceStartMutex.WaitOne(1000))
+                return false;
+
+            if (minDelay < TimeSpan.FromSeconds(1))
+                minDelay = TimeSpan.FromSeconds(1);
+
             TimeSpan delayLength = maxDelay - minDelay;
             TimeSpan randomTime = minDelay + TimeSpan.FromMilliseconds(delayLength.TotalMilliseconds * random.NextDouble());
             DateTime now = DateTime.Now;
             DateTime startTime = now + randomTime;
 
             Logger.RaceLog.LogCall(this, CurrentRace, minDelay, maxDelay, randomTime);
-
             if (!StartDetection(startTime))
             {
                 return false;
@@ -729,7 +748,7 @@ namespace RaceLib
 
             while (PreRaceStartDelay && DateTime.Now < startTime)
             {
-                Thread.Sleep(10);
+                Thread.Sleep(1);
             }
 
             // If we've cancelled, race delay will be false.
@@ -739,7 +758,7 @@ namespace RaceLib
 
                 currentRace.PrimaryTimingSystemLocation = EventManager.Event.PrimaryTimingSystemLocation;
                 currentRace.TargetLaps = EventManager.Event.Laps;
-                currentRace.Start = DateTime.Now;
+                currentRace.Start = startTime;
                 currentRace.End = default(DateTime);
                 currentRace.TotalPausedTime = TimeSpan.Zero;
                 currentRace.AutoAssignNumbers = false;
@@ -785,13 +804,11 @@ namespace RaceLib
 
             return true;
         }
-        private bool StartDetection(DateTime start)
+
+        private bool SetListeningFrequencies(Race race)
         {
-            Race currentRace = CurrentRace;
-            if (currentRace == null)
-            {
+            if (race == null)
                 return false;
-            }
 
             List<ListeningFrequency> frequencies = new List<ListeningFrequency>();
             bool enoughFrequenciesForEvent = TimingSystemManager.MaxPilots >= EventManager.Channels.Select(c => c.Frequency).Distinct().Count();
@@ -800,7 +817,7 @@ namespace RaceLib
                 foreach (Channel eventChannel in EventManager.Channels)
                 {
                     ListeningFrequency listeningFrequency;
-                    PilotChannel pilotChannel = currentRace.PilotChannelsSafe.FirstOrDefault(r => r.Channel.Frequency == eventChannel.Frequency);
+                    PilotChannel pilotChannel = race.PilotChannelsSafe.FirstOrDefault(r => r.Channel.Frequency == eventChannel.Frequency);
 
                     if (pilotChannel != null)
                     {
@@ -814,32 +831,35 @@ namespace RaceLib
                     frequencies.Add(listeningFrequency);
                 }
 
-                Logger.RaceLog.LogCall(this, CurrentRace, "Frequencies locked to receivers");
+                Logger.RaceLog.LogCall(this, race, "Frequencies locked to receivers");
             }
             else
             {
-                if (currentRace.Type == EventTypes.CasualPractice)
+                if (race.Type == EventTypes.CasualPractice)
                 {
                     frequencies = EventManager.Channels.Select(c => new ListeningFrequency(c.Frequency, 1)).ToList();
                 }
                 else
                 {
-                    frequencies = currentRace.PilotChannelsSafe.Select(pc => new ListeningFrequency(pc.PilotName, pc.Channel.Frequency, pc.Pilot.TimingSensitivityPercent / 100.0f)).ToList();
+                    frequencies = race.PilotChannelsSafe.Select(pc => new ListeningFrequency(pc.PilotName, pc.Channel.Frequency, pc.Pilot.TimingSensitivityPercent / 100.0f)).ToList();
                 }
 
-                Logger.RaceLog.LogCall(this, CurrentRace, "Frequencies dynamically assigned to receivers");
+                Logger.RaceLog.LogCall(this, race, "Frequencies dynamically assigned to receivers");
             }
 
             if (!TimingSystemManager.SetListeningFrequencies(frequencies))
             {
                 return false;
             }
+            return true;
+        }
 
+        private bool StartDetection(DateTime start)
+        {
             if (!TimingSystemManager.StartDetection(start))
             {
                 return false;
             }
-
             return true;
         }
 
@@ -1716,10 +1736,12 @@ namespace RaceLib
                 SetRace(toResume);
             }
 
+            if (!SetListeningFrequencies(toResume))
+                return false;
+
             if (!StartDetection(toResume.Start))
                 return false;
 
-            
             if (toResume.Ended)
             {
                 toResume.End = default(DateTime);
@@ -1779,7 +1801,10 @@ namespace RaceLib
             if (RaceRunning)
             {
                 Logger.RaceLog.LogCall(this, CurrentRace, "Starting detection again..");
-                StartDetection(DateTime.Now);
+                if (SetListeningFrequencies(CurrentRace))
+                {
+                    StartDetection(DateTime.Now);
+                }
             }
         }
 
