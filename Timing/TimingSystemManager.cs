@@ -252,7 +252,7 @@ namespace Timing
             }
         }
 
-        public bool StartDetection(DateTime start)
+        public bool StartDetection(ref DateTime start)
         {
             Logger.TimingLog.LogCall(this);
 
@@ -265,18 +265,20 @@ namespace Timing
             bool startedDetection = true;
             foreach (ITimingSystem prime in PrimeSystems)
             {
-                startedDetection &= prime.StartDetection(start);
+                startedDetection &= prime.StartDetection(ref start);
                 if (startedDetection)
                 {
                     OnDataReceived?.Invoke(prime);
                 }
             }
 
+            DateTime auxStart = start;
+
             if (startedDetection)
             {
                 foreach (ITimingSystem aux in SplitSystems)
                 {
-                    if (aux.StartDetection(DateTime.Now))
+                    if (aux.StartDetection(ref auxStart))
                     {
                         OnDataReceived?.Invoke(aux);
                     }

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Tools;
 using SocketIOClient;
 using System.Reflection;
+using System.Timers;
 
 namespace Timing.RotorHazard
 {
@@ -114,8 +115,8 @@ namespace Timing.RotorHazard
         private const int MaxTimeSamples = 20;
 
         private DateTime detectionStart;
+        private DateTime rotorhazardStart;
 
-        private Dictionary<int, int> nodeToFrequency;
 
         public RotorHazardTimingSystem()
         {
@@ -124,7 +125,6 @@ namespace Timing.RotorHazard
             TimeOut = TimeSpan.FromSeconds(10);
             CommandTimeOut = TimeSpan.FromSeconds(3);
             responseWait = new AutoResetEvent(false);
-            nodeToFrequency = new Dictionary<int, int>();
         }
         
         public void Dispose()
@@ -160,6 +160,7 @@ namespace Timing.RotorHazard
                 SocketIO socket = (SocketIO)sender;
 
                 socket.On("ts_lap_data", OnLapData);
+                socket.On("stage_ready", OnStageReady);
                 socket.On("frequency_set", (a) => { });
                 socket.On("frequency_data", OnFrequencyData);
                 socket.On("environmental_data", OnEnvironmentData);
@@ -179,7 +180,6 @@ namespace Timing.RotorHazard
                             "race_status",
                             "race_format",
                             "stop_timer",
-                            "stage_ready",
                             "node_crossing_change",
                             "message",
                             "first_pass_registered",
@@ -394,6 +394,17 @@ namespace Timing.RotorHazard
             //Logger.TimingLog.Log(this, "Debug Log: " + response.ToString());
 #endif
         }
+        private void OnStageReady(SocketIOResponse response)
+        {
+            Logger.TimingLog.Log(this, "Device started Race");
+            detecting = true;
+
+            StageReady stageReady = response.GetValue<StageReady>();
+            TimeSpan time = TimeSpan.FromSeconds(stageReady.pi_starts_at_s); ;
+            rotorhazardStart = serverEpoch + time;
+
+            responseWait.Set();
+        }
 
         private void OnLapData(SocketIOResponse response)
         {
@@ -401,16 +412,7 @@ namespace Timing.RotorHazard
             
             Logger.TimingLog.Log(this, "LapData", lapData);
 
-            lock (nodeToFrequency)
-            {
-                int freq;
-                if (nodeToFrequency.TryGetValue(lapData.node, out freq))
-                {
-                    lapData.frequency = freq;
-                }
-            }
-
-            DateTime passingTime = detectionStart + TimeSpan.FromSeconds(lapData.lap_time);
+            DateTime passingTime = rotorhazardStart + TimeSpan.FromSeconds(lapData.lap_time);
             OnDetectionEvent?.Invoke(this, lapData.frequency, passingTime, lapData.peak_rssi);
         }
 
@@ -433,31 +435,13 @@ namespace Timing.RotorHazard
             {
                 FrequencyDatas frequencyDatas = response.GetValue<FrequencyDatas>();
                 Logger.TimingLog.Log(this, "Device listening on " + string.Join(", ", frequencyDatas.fdata.Select(r => r.ToString())));
-
-                int node = 0;
-                foreach (FrequencyData frequencyData in frequencyDatas.fdata)
-                {
-                    lock (nodeToFrequency)
-                    {
-                        if (nodeToFrequency.ContainsKey(node))
-                        {
-                            nodeToFrequency[node] = frequencyData.frequency;
-                        }
-                        else
-                        {
-                            nodeToFrequency.Add(node, frequencyData.frequency);
-                        }
-                    }
-                    
-                    node++;
-                }
             }
             catch (Exception ex)
             {
                 Logger.TimingLog.LogException(this, ex);
             }
         }
-        public bool StartDetection(DateTime time)
+        public bool StartDetection(ref DateTime time)
         {
             if (!Connected)
                 return false;
@@ -467,19 +451,14 @@ namespace Timing.RotorHazard
             TimeSpan serverStartTime = time - serverEpoch;
 
             Logger.TimingLog.Log(this, "Start detection: Server time: " + serverStartTime.TotalSeconds);
-            Task t = socketIOClient.EmitAsync("ts_race_stage", GotRaceStart, new RaceStart { start_time_s = serverStartTime.TotalSeconds }); ;
+            socketIOClient.EmitAsync("ts_race_stage", new RaceStart { start_time_s = serverStartTime.TotalSeconds }); ;
 
             if (!responseWait.WaitOne(CommandTimeOut))
                 return false;
 
-            return detecting;
-        }
+            time = rotorhazardStart;
 
-        protected void GotRaceStart(SocketIOResponse reponse)
-        {
-            Logger.TimingLog.Log(this, "Device started Race");
-            detecting = true;
-            responseWait.Set();
+            return detecting;
         }
 
         public bool EndDetection()

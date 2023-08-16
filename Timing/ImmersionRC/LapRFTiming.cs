@@ -263,7 +263,7 @@ namespace Timing.ImmersionRC
             return Send(laprf.finalize_sendable_packet());
         }
 
-        public bool StartDetection(DateTime time)
+        public bool StartDetection(ref DateTime time)
         {
             if (!SetMinLapTime(settings.MinimumTriggerTime))
                 return false;

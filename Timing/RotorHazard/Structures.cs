@@ -79,17 +79,26 @@ namespace Timing.RotorHazard
         public int frequency { get; set; }
     }
 
+    public struct StageReady
+    {
+        //{[{"hide_stage_timer":false,"pi_staging_at_s":1738.7936714480002,"staging_tones":0.0,"pi_starts_at_s":1738.7936714480002,"unlimited_time":1,"race_time_sec":0}]}
+        public double pi_staging_at_s { get; set; }
+        public double pi_starts_at_s { get; set; }
+    }
+
+
     public struct LapData
     {
-        public int node { get; set; }
+        //{[{"seat":0,"frequency":5658,"peak_rssi":0,"lap_time":4.087026125999955}]}
+
+        public int seat { get; set; }
         public int frequency { get; set; }
         public int peak_rssi { get; set; }
-        public double server_timestamp { get; set; }
         public double lap_time { get; set; }
 
         public override string ToString()
         {
-            return "N" + node + " " + frequency + "mHz" + " " +lap_time + " (" + server_timestamp + ") " + peak_rssi + "rssi";
+            return "N" + seat + " " + frequency + "mHz" + " " +lap_time + peak_rssi + "rssi";
         }
     }
 

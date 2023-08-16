@@ -640,7 +640,7 @@ namespace RaceLib
 
             Logger.RaceLog.LogCall(this, CurrentRace, delay);
 
-            if (!StartDetection(now))
+            if (!StartDetection(ref now))
             {
                 return false;
             }
@@ -718,7 +718,7 @@ namespace RaceLib
             DateTime startTime = now + randomTime;
 
             Logger.RaceLog.LogCall(this, CurrentRace, minDelay, maxDelay, randomTime);
-            if (!StartDetection(startTime))
+            if (!StartDetection(ref startTime))
             {
                 return false;
             }
@@ -858,9 +858,9 @@ namespace RaceLib
             return true;
         }
 
-        private bool StartDetection(DateTime start)
+        private bool StartDetection(ref DateTime start)
         {
-            if (!TimingSystemManager.StartDetection(start))
+            if (!TimingSystemManager.StartDetection(ref start))
             {
                 return false;
             }
@@ -1743,7 +1743,9 @@ namespace RaceLib
             if (!SetListeningFrequencies(toResume))
                 return false;
 
-            if (!StartDetection(toResume.Start))
+            DateTime start = toResume.Start;
+
+            if (!StartDetection(ref start))
                 return false;
 
             if (toResume.Ended)
@@ -1807,7 +1809,8 @@ namespace RaceLib
                 Logger.RaceLog.LogCall(this, CurrentRace, "Starting detection again..");
                 if (SetListeningFrequencies(CurrentRace))
                 {
-                    StartDetection(DateTime.Now);
+                    DateTime now = DateTime.Now;
+                    StartDetection(ref now);
                 }
             }
         }

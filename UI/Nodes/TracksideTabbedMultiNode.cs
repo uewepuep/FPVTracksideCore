@@ -123,7 +123,9 @@ namespace UI.Nodes
                 }
 
                 eventManager.RaceManager.TimingSystemManager.SetListeningFrequencies(lastFrequencies);
-                eventManager.RaceManager.TimingSystemManager.StartDetection(DateTime.Now);
+
+                DateTime now = DateTime.Now;
+                eventManager.RaceManager.TimingSystemManager.StartDetection(ref now);
             }
         }
 

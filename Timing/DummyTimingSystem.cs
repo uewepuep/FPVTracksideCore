@@ -57,7 +57,7 @@ namespace Timing
             EndDetection();
         }
 
-        public bool StartDetection(DateTime time)
+        public bool StartDetection(ref DateTime time)
         {
             lock (threads)
             {
