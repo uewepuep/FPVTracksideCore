@@ -115,6 +115,8 @@ namespace Timing.RotorHazard
 
         private DateTime detectionStart;
 
+        private Dictionary<int, int> nodeToFrequency;
+
         public RotorHazardTimingSystem()
         {
             settings = new RotorHazardSettings();
@@ -122,6 +124,7 @@ namespace Timing.RotorHazard
             TimeOut = TimeSpan.FromSeconds(10);
             CommandTimeOut = TimeSpan.FromSeconds(3);
             responseWait = new AutoResetEvent(false);
+            nodeToFrequency = new Dictionary<int, int>();
         }
         
         public void Dispose()
@@ -156,7 +159,7 @@ namespace Timing.RotorHazard
             {
                 SocketIO socket = (SocketIO)sender;
 
-                socket.On("pass_record", OnPassRecord);
+                socket.On("ts_lap_data", OnLapData);
                 socket.On("frequency_set", (a) => { });
                 socket.On("frequency_data", OnFrequencyData);
                 socket.On("environmental_data", OnEnvironmentData);
@@ -231,11 +234,12 @@ namespace Timing.RotorHazard
                 {
                     SetFrequency sf = new SetFrequency() { node = node, frequency = freqSense.Frequency };
                     socketIOClient.EmitAsync("set_frequency", OnSetFrequency, sf);
-                    node++;
                     if (!responseWait.WaitOne(CommandTimeOut))
                     {
                         return false;
                     }
+
+                    node++;
                 }
 
                 if (!TimeSync())
@@ -277,7 +281,7 @@ namespace Timing.RotorHazard
             serverTimeStart = Monotonic;
             socketIOClient.EmitAsync("ts_server_time", OnServerTime);
 
-            if (!responseWait.WaitOne(CommandTimeOut))
+            if (!responseWait.WaitOne(TimeOut))
             {
                 Logger.TimingLog.Log(this, "Time sync took too long");
                 return false;
@@ -297,7 +301,6 @@ namespace Timing.RotorHazard
         private void OnServerTime(SocketIOResponse response)
         {
             if (response.Count == 0) return;
-
 
             TimeSpan responseTime = Monotonic;
             try
@@ -319,6 +322,7 @@ namespace Timing.RotorHazard
 
                     if (serverTimeSamples.Count < MaxTimeSamples)
                     {
+                        Logger.TimingLog.Log(this, "Server Time Sample " + serverTimeSamples.Count);
                         serverTimeStart = Monotonic;
                         socketIOClient.EmitAsync("ts_server_time", OnServerTime);
                     }
@@ -391,15 +395,23 @@ namespace Timing.RotorHazard
 #endif
         }
 
-        private void OnPassRecord(SocketIOResponse response)
+        private void OnLapData(SocketIOResponse response)
         {
-            PassRecord passRecord = response.GetValue<PassRecord>();
-            Logger.TimingLog.Log(this, "PassRecord", passRecord);
+            LapData lapData = response.GetValue<LapData>();
+            
+            Logger.TimingLog.Log(this, "LapData", lapData);
 
-            //DateTime passingTime = serverEpoch + TimeSpan.FromSeconds(passRecord.monotonic);
-            DateTime passingTime = detectionStart + TimeSpan.FromMilliseconds(passRecord.lap_time_stamp);
+            lock (nodeToFrequency)
+            {
+                int freq;
+                if (nodeToFrequency.TryGetValue(lapData.node, out freq))
+                {
+                    lapData.frequency = freq;
+                }
+            }
 
-            OnDetectionEvent?.Invoke(this, passRecord.frequency, passingTime, passRecord.peak_rssi);
+            DateTime passingTime = detectionStart + TimeSpan.FromSeconds(lapData.lap_time);
+            OnDetectionEvent?.Invoke(this, lapData.frequency, passingTime, lapData.peak_rssi);
         }
 
         public void OnHeartBeat(SocketIOResponse response)
@@ -416,12 +428,29 @@ namespace Timing.RotorHazard
 
         private void OnFrequencyData(SocketIOResponse response)
         {
-            //{[{"fdata":[{"band":null,"channel":null,"frequency":5658},{"band":null,"channel":null,"frequency":5695},{"band":null,"channel":null,"frequency":5760},{"band":null,"channel":null,"frequency":5800}]}]}
+            //{[{"fdata":[{"band":null,"channel":null,"frequency":5658},{"band":null,"channel":null,"frequency":5695},{"band":"R","channel":6,"frequency":5843},{"band":"R","channel":7,"frequency":5880}]}]}
             try
             {
-                FrequencyDatas frequencyData = response.GetValue<FrequencyDatas>();
-                Logger.TimingLog.Log(this, "Device listening on " + string.Join(", ", frequencyData.fdata.Select(r => r.ToString())));
+                FrequencyDatas frequencyDatas = response.GetValue<FrequencyDatas>();
+                Logger.TimingLog.Log(this, "Device listening on " + string.Join(", ", frequencyDatas.fdata.Select(r => r.ToString())));
 
+                int node = 0;
+                foreach (FrequencyData frequencyData in frequencyDatas.fdata)
+                {
+                    lock (nodeToFrequency)
+                    {
+                        if (nodeToFrequency.ContainsKey(node))
+                        {
+                            nodeToFrequency[node] = frequencyData.frequency;
+                        }
+                        else
+                        {
+                            nodeToFrequency.Add(node, frequencyData.frequency);
+                        }
+                    }
+                    
+                    node++;
+                }
             }
             catch (Exception ex)
             {

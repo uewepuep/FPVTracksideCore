@@ -21,7 +21,7 @@ namespace Timing.RotorHazard
     public class FrequencyData
     {
         public string band { get; set; }
-        public string channel { get; set; }
+        public int? channel { get; set; }
         public int frequency { get; set; }
 
         public override string ToString()
@@ -79,18 +79,17 @@ namespace Timing.RotorHazard
         public int frequency { get; set; }
     }
 
-    public struct PassRecord
+    public struct LapData
     {
         public int node { get; set; }
         public int frequency { get; set; }
-        public double timestamp { get; set; }
-        public double monotonic { get; set; }
         public int peak_rssi { get; set; }
-        public double lap_time_stamp { get; set; }
+        public double server_timestamp { get; set; }
+        public double lap_time { get; set; }
 
         public override string ToString()
         {
-            return "N" + node + " " + frequency + "mHz" + " " + timestamp + ". M" + monotonic + " " + peak_rssi + "rssi";
+            return "N" + node + " " + frequency + "mHz" + " " +lap_time + " (" + server_timestamp + ") " + peak_rssi + "rssi";
         }
     }
 

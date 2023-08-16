@@ -712,6 +712,7 @@ namespace Sound
 
         private void RaceManager_OnRaceCancelled(Race arg1, bool failure)
         {
+            StopSound();
             if (failure)
             {
                 TimingSystemFailure();

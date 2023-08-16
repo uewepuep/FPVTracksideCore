@@ -796,13 +796,17 @@ namespace RaceLib
 
         public bool CancelRaceStart(bool failure)
         {
-            Logger.RaceLog.LogCall(this);
+            if (PreRaceStartDelay)
+            {
+                Logger.RaceLog.LogCall(this);
 
-            PreRaceStartDelay = false;
+                PreRaceStartDelay = false;
 
-            OnRaceCancelled?.Invoke(CurrentRace, failure);
+                OnRaceCancelled?.Invoke(CurrentRace, failure);
 
-            return true;
+                return true;
+            }
+            return false;
         }
 
         private bool SetListeningFrequencies(Race race)
