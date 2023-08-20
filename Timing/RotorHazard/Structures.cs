@@ -86,7 +86,6 @@ namespace Timing.RotorHazard
         public double pi_starts_at_s { get; set; }
     }
 
-
     public struct LapData
     {
         //{[{"seat":0,"frequency":5658,"peak_rssi":0,"lap_time":4.087026125999955}]}

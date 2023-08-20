@@ -226,6 +226,11 @@ namespace Timing.RotorHazard
 
             detecting = false;
 
+            int[] freq = newFrequencies.Select(f => f.Frequency).ToArray(); 
+
+            socketIOClient.EmitAsync("ts_frequency_setup", OnSetFrequency, freq);
+
+
             try
             {
                 Logger.TimingLog.Log(this, "SetListeningFrequencies", string.Join(", ", newFrequencies.Select(f => f.ToString())));
