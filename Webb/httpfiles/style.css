@@ -122,12 +122,12 @@ h2
 .position, .pilots, .holeshot, .racetime, .laps, .lap, .t, .p, .r, .e, .c, .f, .a, .total {
     padding: 5px;
     background: #05050599;
-    font-weight: 600;
+    font-weight: 300;
     font-size: 12pt;
     text-align: left;
     display: inline-block;
     height: 20px;
-    width: 60px;
+    width: 100px;
     overflow: hidden;
     white-space: nowrap; /* Don't forget this one */
     text-overflow: ellipsis;

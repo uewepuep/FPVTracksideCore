@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
+using static UI.Nodes.LapRecordsSummaryNode;
 
 namespace UI.Nodes
 {
@@ -269,7 +270,16 @@ namespace UI.Nodes
             int position = 1;
             foreach (PilotResultNode row in GetWebOrdered(rows.Children.OfType<PilotResultNode>())) 
             {
-                yield return row.GetValues(position);
+                string[] output = row.GetValues(position).ToArray();
+                if (row.InCurrentRace)
+                {
+                    for (int i = 0; i < output.Length; i++) 
+                    {
+                        output[i] = "<u>" + output[i] + "</u>";
+                    }
+                }
+
+                yield return output;
                 position++;
             }
         }
@@ -311,6 +321,20 @@ namespace UI.Nodes
 
                     if (positionNode!= null) 
                         positionNode.Text = value.ToStringPosition();
+                }
+            }
+
+            public bool InCurrentRace
+            {
+                get
+                {
+                    if (eventManager == null)
+                        return false;
+
+                    if (eventManager.RaceManager == null)
+                        return false;
+
+                    return eventManager.RaceManager.HasPilot(Pilot);
                 }
             }
 
@@ -386,6 +410,13 @@ namespace UI.Nodes
                         value = output;
                         return true;
                     }
+                }
+
+                LapTimesTextNode lttn = n as LapTimesTextNode;
+                if (lttn != null)
+                {
+                    value = lttn.LapTime.TotalSeconds;
+                    return true;
                 }
 
                 value = 0;

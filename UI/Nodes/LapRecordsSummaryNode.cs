@@ -91,7 +91,7 @@ namespace UI.Nodes
                 eventManager.LapRecordManager.GetBestLaps(pilot, consecutive, out bestLaps, out overalBest);
 
                 LapTimesTextNode napTimesTextNode = new LapTimesTextNode(eventManager);
-                napTimesTextNode.SetLapTimes( bestLaps, overalBest);
+                napTimesTextNode.SetLapTimes(bestLaps, overalBest);
                 nodes.Add(napTimesTextNode);
             }
 
@@ -134,7 +134,7 @@ namespace UI.Nodes
             }
         }
 
-        private class LapTimesTextNode : TextNode
+        public class LapTimesTextNode : TextNode
         {
             private Lap[] laps;
 
@@ -161,6 +161,13 @@ namespace UI.Nodes
                 if (bestLaps.Any())
                 {
                     Text = time.ToStringRaceTime();
+
+                    Race r = bestLaps.First().Race;
+
+                    if (r != null) 
+                    {
+                        Text += " (R" + r.RoundNumber + ")";
+                    }
                 }
                 else
                 {
