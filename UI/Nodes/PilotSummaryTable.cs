@@ -390,7 +390,7 @@ namespace UI.Nodes
 
                     if (diff != 0)
                     {
-                        char sign = diff > 0 ? '+' : '-';
+                        char sign = diff.ToCharSign();
                         output += " (" + sign + Math.Abs(diff) + ")";
                     }
                 }

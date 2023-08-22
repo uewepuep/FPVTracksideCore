@@ -484,7 +484,22 @@ namespace UI.Nodes
 
                     if (behind != TimeSpan.Zero && behindWho != null && !dnf)
                     {
-                        raceSummary2.Text += "(+" + behind.ToStringRaceTime() + " behind " + behindWho.Name + ")";
+                        raceSummary2.Text += "+" + behind.ToStringRaceTime() + " behind " + behindWho.Name + ". ";
+                    }
+
+                    if (race.Type == EventTypes.TimeTrial && !dnf)
+                    {
+                        int? pastPosition = EventManager.LapRecordManager.GetPastPosition(Pilot, EventManager.Event.Laps);
+                        if (pastPosition != null)
+                        {
+                            int diff = position - pastPosition.Value;
+                            char sign = diff.ToCharSign();
+
+                            if (diff != 0)
+                            {
+                                raceSummary2.Text += " Position Δ (" + sign + Math.Abs(diff) + ")";
+                            }
+                        }
                     }
 
                     IEnumerable<Detection> detections = race.GetLaps(Pilot).Select(l => l.Detection);
@@ -689,7 +704,7 @@ namespace UI.Nodes
                                 int diff = position - oldPos.Value;
                                 if (diff < 0) 
                                 { 
-                                    oldTTPositionNode.SetTextAlpha("(" + diff + ")");
+                                    oldTTPositionNode.SetTextAlpha("Δ(" + diff + ")");
                                 }
                             }
                         }

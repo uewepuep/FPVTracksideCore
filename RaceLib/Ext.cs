@@ -82,6 +82,11 @@ namespace RaceLib
             return textPos + post;
         }
 
+        public static char ToCharSign(this int diff)
+        {
+            return diff >= 0 ? '+' : '-';
+        }
+
         public static bool HasResult(this EventTypes eventType)
         {
             switch (eventType)
