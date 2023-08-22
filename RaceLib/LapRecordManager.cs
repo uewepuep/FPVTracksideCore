@@ -8,7 +8,6 @@ namespace RaceLib
 {
     public class LapRecordManager
     {
-        public Dictionary<Pilot, PilotLapRecord> Records { get; private set; }
 
         public int[] ConsecutiveLapsToTrack { get; set; }
 
@@ -19,6 +18,9 @@ namespace RaceLib
         public EventManager EventManager { get; private set; }
 
         private Dictionary<int, Lap[]> overallBest;
+        public Dictionary<Pilot, PilotLapRecord> Records { get; private set; }
+
+        private Dictionary<Pilot, PilotPosition> pastPositions;
 
         public LapRecordManager(RaceManager rm)
         {
@@ -26,7 +28,8 @@ namespace RaceLib
             rm.OnLapDetected += RecordLap;
             rm.OnLapDisqualified += DisqLap;
             rm.OnLapSplit += Rm_OnLapSplit;
-            rm.OnRaceRemoved += Rm_OnRaceRemoved; 
+            rm.OnRaceRemoved += Rm_OnRaceRemoved;
+            rm.OnRaceChanged += (r) => { CachePastPositions(); };
 
             EventManager = RaceManager.EventManager;
             EventManager.OnEventChange += UpdateAll;
@@ -34,6 +37,7 @@ namespace RaceLib
             Records = new Dictionary<Pilot, PilotLapRecord>();
             ConsecutiveLapsToTrack = new int[0];
             overallBest = new Dictionary<int, Lap[]>();
+            pastPositions = new Dictionary<Pilot, PilotPosition>();
         }
 
         private void Rm_OnRaceRemoved(Race race)
@@ -548,6 +552,46 @@ namespace RaceLib
             return Records.Values.Where(r => pilots.Contains(r.Pilot)).OrderBy(pr => pr.GetBestConsecutiveLaps(laps).TotalTime().TotalSeconds).Select(pr => pr.Pilot).ToArray();
         }
 
+        private void CachePastPositions()
+        {
+            lock (pastPositions)
+            {
+                pastPositions.Clear();
+                foreach (int laps in ConsecutiveLapsToTrack)
+                {
+                    IEnumerable<PilotLapRecord> ordered = Records.Values.OrderBy(record => record.GetBestConsecutiveLaps(laps).TotalTime()).ThenBy(plr => plr.Pilot.Name);
+                    int position = 1;
+                    foreach (PilotLapRecord plr in ordered)
+                    {
+                        PilotPosition pp;
+                        if (!pastPositions.TryGetValue(plr.Pilot, out pp))
+                        {
+                            pp = new PilotPosition(plr.Pilot);
+                            pastPositions.Add(plr.Pilot, pp);
+                        }
+
+                        pp.AddPosition(laps, position);
+                        position++;
+                    }
+                }
+            }
+        }
+
+        public int? GetPastPosition(Pilot p, int laps)
+        {
+            PilotPosition pp;
+
+            lock (pastPositions)
+            {
+                if (pastPositions.TryGetValue(p, out pp))
+                {
+                    int value = pp.GetPosition(laps);
+                    if (value > 0)
+                        return value;
+                }
+            }
+            return null;
+        }
     }
 
     public class PilotLapRecord
@@ -664,6 +708,47 @@ namespace RaceLib
         {
             bestRaceTime = new Lap[0];
             best.Clear();
+        }
+
+    }
+
+    public class PilotPosition
+    {
+        public Pilot Pilot { get; private set; }
+
+        private Dictionary<int, int> lapsToPosition;
+
+        public PilotPosition(Pilot pilot)
+        {
+            this.Pilot = pilot;
+            lapsToPosition = new Dictionary<int, int>();
+        }
+
+        public void AddPosition(int laps, int position)
+        {
+            if (lapsToPosition.ContainsKey(laps))
+            {
+                lapsToPosition[laps] = position;
+            }
+            else
+            {
+                lapsToPosition.Add(laps, position);
+            }
+        }
+
+        public int GetPosition(int laps)
+        {
+            int position;
+            if (lapsToPosition.TryGetValue(laps, out position)) 
+            { 
+                return position;
+            }
+            return -1;
+        }
+
+        public override string ToString()
+        {
+            return Pilot.ToString() + " " + string.Join(", ", lapsToPosition.Values.Select(v => v.ToString()));
         }
     }
 }

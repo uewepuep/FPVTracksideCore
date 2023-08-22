@@ -169,19 +169,24 @@ namespace UI.Nodes
 
             if (ShowPositions)
             {
-                for (int i = 0; i < rows.ChildCount; i++)
-                {
-                    PilotResultNode pilotLapsNode = rows.GetChild<PilotResultNode>(i);
-                    if (pilotLapsNode != null)
-                    {
-                        pilotLapsNode.Position = i + 1;
-                    }
-                }
+                CalculatePositions();
             }
 
             rows.RequestLayout();
             RequestLayout();
             RequestRedraw();
+        }
+
+        public virtual void CalculatePositions()
+        {
+            for (int i = 0; i < rows.ChildCount; i++)
+            {
+                PilotResultNode pilotLapsNode = rows.GetChild<PilotResultNode>(i);
+                if (pilotLapsNode != null)
+                {
+                    pilotLapsNode.SetPosition(i + 1);
+                }
+            }
         }
 
         public void SetFilterPilots(IEnumerable<Pilot> pilots)
@@ -275,7 +280,7 @@ namespace UI.Nodes
                 {
                     for (int i = 0; i < output.Length; i++) 
                     {
-                        output[i] = "<u>" + output[i] + "</u>";
+                        output[i] = "<span class='acpi'>" + output[i] + "</span>";
                     }
                 }
 
@@ -315,14 +320,9 @@ namespace UI.Nodes
                 {
                     return position;
                 }
-                set
-                {
-                    position = value;
-
-                    if (positionNode!= null) 
-                        positionNode.Text = value.ToStringPosition();
-                }
             }
+
+            private int? oldPosition;
 
             public bool InCurrentRace
             {
@@ -361,6 +361,33 @@ namespace UI.Nodes
                 cont = new Node();
                 cont.RelativeBounds = new RectangleF(pilotName.RelativeBounds.Right, 0, 1 - pilotName.RelativeBounds.Right, pilotName.RelativeBounds.Height);
                 AddChild(cont);
+            }
+
+            public void SetPosition(int value, int? oldPosition = null)
+            {
+                position = value;
+                this.oldPosition = oldPosition;
+
+                if (positionNode != null)
+                {
+                    positionNode.Text = GetPositionText(position);
+                }
+            }
+
+            private string GetPositionText(int position)
+            {
+                string output = position.ToStringPosition();
+                if (oldPosition != null)
+                {
+                    int diff = position - oldPosition.Value;
+
+                    if (diff != 0)
+                    {
+                        char sign = diff > 0 ? '+' : '-';
+                        output += " (" + sign + Math.Abs(diff) + ")";
+                    }
+                }
+                return output;
             }
 
             public void Set(Pilot p, IEnumerable<Node> resultNodes)
@@ -424,14 +451,32 @@ namespace UI.Nodes
             }
 
             public IEnumerable<string> GetValues(int position) 
-            { 
-                yield return position.ToStringPosition();
+            {
+                yield return GetPositionText(position);
                 yield return pilotName.Text;
 
                 foreach (TextNode n in cont.Children.OfType<TextNode>()) 
                 {
                     yield return n.Text;
                 }
+            }
+
+            public override void Draw(Drawer id, float parentAlpha)
+            {
+                Color tint = Color.White;
+                if (InCurrentRace)
+                {
+                    tint = Theme.Current.InfoPanel.Heading.XNA;
+                }
+
+                positionNode.Tint = tint;
+                pilotName.Tint = tint;
+                foreach (TextNode n in cont.Children.OfType<TextNode>())
+                {
+                    n.Tint = tint;
+                }
+
+                base.Draw(id, parentAlpha);
             }
         }
     }
