@@ -33,8 +33,11 @@ namespace UI.Nodes
         private HeadingNode title;
         public string Name { get { return title.Text; } }
 
+        public bool CanTint { get; set; }
+
         public PilotSummaryTable(EventManager eventManager, string name)
         {
+            CanTint = true;
             ShowPositions = true;
             this.eventManager = eventManager;
 
@@ -227,6 +230,7 @@ namespace UI.Nodes
             while (index >= rows.ChildCount)
             {
                 PilotResultNode tn = new PilotResultNode(eventManager, ShowPositions);
+                tn.CanTint = CanTint;
                 rows.AddChild(tn);
             }
             return (PilotResultNode)rows.GetChild(index);
@@ -337,6 +341,9 @@ namespace UI.Nodes
                     return eventManager.RaceManager.HasPilot(Pilot);
                 }
             }
+
+            public bool CanTint { get; set; }
+
 
             public PilotResultNode(EventManager eventManager, bool position)
             {
@@ -463,17 +470,24 @@ namespace UI.Nodes
 
             public override void Draw(Drawer id, float parentAlpha)
             {
-                Color tint = Color.White;
-                if (InCurrentRace)
+                if (CanTint)
                 {
-                    tint = Theme.Current.InfoPanel.Heading.XNA;
-                }
+                    Color tint = Color.White;
+                    if (InCurrentRace)
+                    {
+                        tint = Theme.Current.InfoPanel.Heading.XNA;
+                    }
 
-                positionNode.Tint = tint;
-                pilotName.Tint = tint;
-                foreach (TextNode n in cont.Children.OfType<TextNode>())
-                {
-                    n.Tint = tint;
+                    if (positionNode != null)
+                    {
+                        positionNode.Tint = tint;
+                    }
+
+                    pilotName.Tint = tint;
+                    foreach (TextNode n in cont.Children.OfType<TextNode>())
+                    {
+                        n.Tint = tint;
+                    }
                 }
 
                 base.Draw(id, parentAlpha);

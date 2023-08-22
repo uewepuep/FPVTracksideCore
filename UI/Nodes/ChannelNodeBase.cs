@@ -56,6 +56,7 @@ namespace UI.Nodes
         public EventManager EventManager { get; private set; }
 
         private ChangeAlphaTextNode recentPositionNode;
+        private ChangeAlphaTextNode oldTTPositionNode;
         private ChangeAlphaTextNode behindTime;
 
         public int Position { get; set; }
@@ -315,17 +316,22 @@ namespace UI.Nodes
             pbBackground.AddChild(PBNode);
 
             recentPositionNode = new ChangeAlphaTextNode("", Theme.Current.PilotViewTheme.PositionText.XNA);
-            recentPositionNode.RelativeBounds = new RectangleF(0.6f, 0, 0.4f, 0.3f);
             recentPositionNode.Alignment = RectangleAlignment.TopRight;
             recentPositionNode.Style.Bold = true;
             recentPositionNode.Style.Border = true;
             recentPositionNode.RelativeBounds = new RectangleF(0.6f, 0, 0.4f, 0.3f);
             DisplayNode.AddChild(recentPositionNode);
 
+
             behindTime = new ChangeAlphaTextNode("", Theme.Current.PilotViewTheme.PositionText.XNA);
-            behindTime.RelativeBounds = new RectangleF(0.7f, recentPositionNode.RelativeBounds.Bottom, 0.3f, 0.07f);
+            behindTime.RelativeBounds = new RectangleF(0.7f, 0.25f, 0.3f, 0.07f);
             behindTime.Alignment = RectangleAlignment.TopRight;
             DisplayNode.AddChild(behindTime);
+
+            oldTTPositionNode = new ChangeAlphaTextNode("", Theme.Current.PilotViewTheme.PositionText.XNA);
+            oldTTPositionNode.RelativeBounds = new RectangleF(0.7f, behindTime.RelativeBounds.Bottom, 0.3f, 0.07f);
+            oldTTPositionNode.Alignment = RectangleAlignment.TopRight;
+            DisplayNode.AddChild(oldTTPositionNode);
 
             crashedOut = new ColorNode(Theme.Current.PilotViewTheme.CrashedOut);
             crashedOut.KeepAspectRatio = false;
@@ -673,6 +679,19 @@ namespace UI.Nodes
                         if (behind != TimeSpan.Zero)
                         {
                             behindTime.SetTextAlpha("+" + behind.ToStringRaceTime());
+                        }
+
+                        if (EventManager.Event.EventType == EventTypes.TimeTrial)
+                        {
+                            int? oldPos = EventManager.LapRecordManager.GetPastPosition(Pilot, EventManager.Event.Laps);
+                            if (oldPos != null) 
+                            {
+                                int diff = position - oldPos.Value;
+                                if (diff < 0) 
+                                { 
+                                    oldTTPositionNode.SetTextAlpha("(" + diff + ")");
+                                }
+                            }
                         }
                     }
                 }
