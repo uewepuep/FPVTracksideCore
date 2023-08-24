@@ -386,8 +386,7 @@ namespace UI.Nodes
                 string output = position.ToStringPosition();
                 if (oldPosition != null)
                 {
-                    int diff = position - oldPosition.Value;
-
+                    int diff = oldPosition.Value - position;
                     if (diff != 0)
                     {
                         char sign = diff.ToCharSign();

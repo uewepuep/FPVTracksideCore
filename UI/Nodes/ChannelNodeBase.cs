@@ -492,7 +492,7 @@ namespace UI.Nodes
                         int? pastPosition = EventManager.LapRecordManager.GetPastPosition(Pilot, EventManager.Event.Laps);
                         if (pastPosition != null)
                         {
-                            int diff = position - pastPosition.Value;
+                            int diff = pastPosition.Value - position;
                             char sign = diff.ToCharSign();
 
                             if (diff != 0)
@@ -701,10 +701,10 @@ namespace UI.Nodes
                             int? oldPos = EventManager.LapRecordManager.GetPastPosition(Pilot, EventManager.Event.Laps);
                             if (oldPos != null) 
                             {
-                                int diff = position - oldPos.Value;
-                                if (diff < 0) 
+                                int diff = oldPos.Value - position;
+                                if (diff > 0) 
                                 { 
-                                    oldTTPositionNode.SetTextAlpha("Δ(" + diff + ")");
+                                    oldTTPositionNode.SetTextAlpha("Δ(+" + diff + ")");
                                 }
                             }
                         }
