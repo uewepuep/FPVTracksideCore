@@ -1294,7 +1294,7 @@ namespace RaceLib
                 }
 
                 //Inside race start ignore window. Which is disabled in the UI for holeshot..
-                if (currentRace.Start + eve.RaceStartIgnoreDetections > detection.Time && eve.PrimaryTimingSystemLocation == PrimaryTimingSystemLocation.EndOfLap)
+                if (currentRace.Start + eve.RaceStartIgnoreDetections > detection.Time)
                 {
                     detection.Valid = false;
                 }

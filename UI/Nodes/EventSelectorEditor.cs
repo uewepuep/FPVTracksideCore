@@ -40,11 +40,6 @@ namespace UI.Nodes
         {
             if (propertyNode == null)
                 return;
-
-            if (propertyNode.PropertyInfo.Name == "RaceStartIgnoreDetections")
-            {
-                propertyNode.Visible = even.PrimaryTimingSystemLocation == PrimaryTimingSystemLocation.EndOfLap;
-            }
         }
 
         protected override PropertyNode<Event> CreatePropertyNode(Event obj, PropertyInfo pi)

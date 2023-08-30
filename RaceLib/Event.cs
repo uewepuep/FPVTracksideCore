@@ -218,7 +218,7 @@ namespace RaceLib
             SyncWith = SyncWith.FPVTrackside;
             Enabled = true;
             PrimaryTimingSystemLocation = PrimaryTimingSystemLocation.Holeshot;
-            RaceStartIgnoreDetections = TimeSpan.FromSeconds(2);
+            RaceStartIgnoreDetections = TimeSpan.FromSeconds(0.5);
             PBLaps = 1;
             PilotChannels = new List<PilotChannel>();
             RemovedPilots = new List<Pilot>();
