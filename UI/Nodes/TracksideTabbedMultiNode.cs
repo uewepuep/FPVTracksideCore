@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Timing;
 using Tools;
 using UI.Video;
 
@@ -295,6 +296,17 @@ namespace UI.Nodes
 
         public override void Show(Node node)
         {
+            if (Showing == rssiNode)
+            {
+                TimingSystemManager tsm = eventManager.RaceManager.TimingSystemManager;
+
+                // if we're detecting and not in a race
+                if (!eventManager.RaceManager.RaceRunning && tsm.IsDetecting)
+                {
+                    tsm.EndDetection();
+                }
+            }
+
             base.Show(node);
             ReplayNode.CleanUp();
             GC.Collect();
