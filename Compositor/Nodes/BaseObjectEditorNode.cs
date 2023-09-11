@@ -1372,6 +1372,11 @@ namespace Composition.Nodes
 
         protected virtual void ShowMouseMenu()
         {
+            if (Options == null)
+            {
+                return;
+            }
+
             MouseMenu mm = new MouseMenu(this);
             foreach (var value in Options)
             {

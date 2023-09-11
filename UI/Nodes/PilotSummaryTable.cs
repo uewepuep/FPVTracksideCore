@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
+using static UI.Nodes.LapRecordsSummaryNode;
 
 namespace UI.Nodes
 {
@@ -32,8 +33,11 @@ namespace UI.Nodes
         private HeadingNode title;
         public string Name { get { return title.Text; } }
 
+        public bool CanTint { get; set; }
+
         public PilotSummaryTable(EventManager eventManager, string name)
         {
+            CanTint = true;
             ShowPositions = true;
             this.eventManager = eventManager;
 
@@ -168,19 +172,24 @@ namespace UI.Nodes
 
             if (ShowPositions)
             {
-                for (int i = 0; i < rows.ChildCount; i++)
-                {
-                    PilotResultNode pilotLapsNode = rows.GetChild<PilotResultNode>(i);
-                    if (pilotLapsNode != null)
-                    {
-                        pilotLapsNode.Position = i + 1;
-                    }
-                }
+                CalculatePositions();
             }
 
             rows.RequestLayout();
             RequestLayout();
             RequestRedraw();
+        }
+
+        public virtual void CalculatePositions()
+        {
+            for (int i = 0; i < rows.ChildCount; i++)
+            {
+                PilotResultNode pilotLapsNode = rows.GetChild<PilotResultNode>(i);
+                if (pilotLapsNode != null)
+                {
+                    pilotLapsNode.SetPosition(i + 1);
+                }
+            }
         }
 
         public void SetFilterPilots(IEnumerable<Pilot> pilots)
@@ -221,6 +230,7 @@ namespace UI.Nodes
             while (index >= rows.ChildCount)
             {
                 PilotResultNode tn = new PilotResultNode(eventManager, ShowPositions);
+                tn.CanTint = CanTint;
                 rows.AddChild(tn);
             }
             return (PilotResultNode)rows.GetChild(index);
@@ -269,7 +279,16 @@ namespace UI.Nodes
             int position = 1;
             foreach (PilotResultNode row in GetWebOrdered(rows.Children.OfType<PilotResultNode>())) 
             {
-                yield return row.GetValues(position);
+                string[] output = row.GetValues(position).ToArray();
+                if (row.InCurrentRace)
+                {
+                    for (int i = 0; i < output.Length; i++) 
+                    {
+                        output[i] = "<span class='acpi'>" + output[i] + "</span>";
+                    }
+                }
+
+                yield return output;
                 position++;
             }
         }
@@ -305,14 +324,26 @@ namespace UI.Nodes
                 {
                     return position;
                 }
-                set
-                {
-                    position = value;
+            }
 
-                    if (positionNode!= null) 
-                        positionNode.Text = value.ToStringPosition();
+            private int? oldPosition;
+
+            public bool InCurrentRace
+            {
+                get
+                {
+                    if (eventManager == null)
+                        return false;
+
+                    if (eventManager.RaceManager == null)
+                        return false;
+
+                    return eventManager.RaceManager.HasPilot(Pilot);
                 }
             }
+
+            public bool CanTint { get; set; }
+
 
             public PilotResultNode(EventManager eventManager, bool position)
             {
@@ -337,6 +368,32 @@ namespace UI.Nodes
                 cont = new Node();
                 cont.RelativeBounds = new RectangleF(pilotName.RelativeBounds.Right, 0, 1 - pilotName.RelativeBounds.Right, pilotName.RelativeBounds.Height);
                 AddChild(cont);
+            }
+
+            public void SetPosition(int value, int? oldPosition = null)
+            {
+                position = value;
+                this.oldPosition = oldPosition;
+
+                if (positionNode != null)
+                {
+                    positionNode.Text = GetPositionText(position);
+                }
+            }
+
+            private string GetPositionText(int position)
+            {
+                string output = position.ToStringPosition();
+                if (oldPosition != null)
+                {
+                    int diff = oldPosition.Value - position;
+                    if (diff != 0)
+                    {
+                        char sign = diff.ToCharSign();
+                        output += " (" + sign + Math.Abs(diff) + ")";
+                    }
+                }
+                return output;
             }
 
             public void Set(Pilot p, IEnumerable<Node> resultNodes)
@@ -388,19 +445,51 @@ namespace UI.Nodes
                     }
                 }
 
+                LapTimesTextNode lttn = n as LapTimesTextNode;
+                if (lttn != null)
+                {
+                    value = lttn.LapTime.TotalSeconds;
+                    return true;
+                }
+
                 value = 0;
                 return false;
             }
 
             public IEnumerable<string> GetValues(int position) 
-            { 
-                yield return position.ToStringPosition();
+            {
+                yield return GetPositionText(position);
                 yield return pilotName.Text;
 
                 foreach (TextNode n in cont.Children.OfType<TextNode>()) 
                 {
                     yield return n.Text;
                 }
+            }
+
+            public override void Draw(Drawer id, float parentAlpha)
+            {
+                if (CanTint)
+                {
+                    Color tint = Color.White;
+                    if (InCurrentRace)
+                    {
+                        tint = Theme.Current.InfoPanel.Heading.XNA;
+                    }
+
+                    if (positionNode != null)
+                    {
+                        positionNode.Tint = tint;
+                    }
+
+                    pilotName.Tint = tint;
+                    foreach (TextNode n in cont.Children.OfType<TextNode>())
+                    {
+                        n.Tint = tint;
+                    }
+                }
+
+                base.Draw(id, parentAlpha);
             }
         }
     }

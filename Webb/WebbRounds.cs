@@ -16,9 +16,9 @@ namespace Webb
             output += "<h2>Rounds</h2>";
             bool newRow = true;
 
-            foreach (Round round in eventManager.RoundManager.Rounds)
+            foreach (Round round in eventManager.RoundManager.Rounds.OrderBy(r => r.Order))
             {
-                IEnumerable<Race> races = eventManager.RaceManager.GetRaces(round);
+                IEnumerable<Race> races = eventManager.RaceManager.GetRaces(round).OrderBy(r => r.RaceOrder);
 
                 if (newRow)
                 {

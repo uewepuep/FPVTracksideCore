@@ -14,7 +14,75 @@ using Tools;
 
 namespace UI.Nodes
 {
-    public class EventSelectorEditor : ObjectEditorNode<Event>
+    public class EventEditor : ObjectEditorNode<Event>
+    {
+        public EventEditor(Event eventa) 
+            :this(new Event[] { eventa }, false, false)
+        { 
+        }
+
+        protected EventEditor(IEnumerable<Event> events, bool addRemove = true, bool cancelButtona = false)
+            :base(events, addRemove, cancelButtona, false)
+        {
+            Text = "Select an event";
+        }
+
+        protected override void ChildValueChanged(Change newChange)
+        {
+            base.ChildValueChanged(newChange);
+            foreach (var propertyNode in GetPropertyNodes)
+            {
+                CheckVisible(propertyNode, Selected);
+            }
+        }
+
+        private void CheckVisible(PropertyNode<Event> propertyNode, Event even)
+        {
+            if (propertyNode == null)
+                return;
+        }
+
+        protected override PropertyNode<Event> CreatePropertyNode(Event obj, PropertyInfo pi)
+        {
+            if (obj.ExternalID == default)
+            {
+                CategoryAttribute ca = pi.GetCustomAttribute<CategoryAttribute>();
+                if (ca != null && ca.Category == "MultiGP")
+                    return null;
+            }
+
+            if (pi.Name == "ClubName")
+            {
+                string name = pi.GetValue(obj) as string;
+                if (!string.IsNullOrEmpty(name))
+                {
+                    var property = new StaticTextPropertyNode<Event>(obj, pi, TextColor);
+
+                    if (obj.SyncWith == SyncWith.MultiGP)
+                    {
+                        property.Name.Text = "Chapter";
+                    }
+
+                    return property;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            PropertyNode<Event> n = base.CreatePropertyNode(obj, pi);
+            if (n != null)
+            {
+                CheckVisible(n, obj);
+            }
+
+            return n;
+        }
+    }
+
+
+    public class EventSelectorEditor : EventEditor
     {
         public override bool GroupItems { get { return true; } }
 
@@ -69,9 +137,8 @@ namespace UI.Nodes
         }
 
         public EventSelectorEditor(IEnumerable<Event> events, bool addRemove = true, bool cancelButtona = false)
-           : base(events.Where(e => e.Enabled), addRemove, cancelButtona, false)
+           : base(events.Where(e => e.Enabled), addRemove, cancelButtona)
         {
-            Text = "Select an event";
             OnOK += EventEditor_OnOK;
 
             Selected = Objects.OrderByDescending(e => e.LastOpened).FirstOrDefault();
@@ -248,62 +315,5 @@ namespace UI.Nodes
             }
         }
 
-        protected override void ChildValueChanged(Change newChange)
-        {
-            base.ChildValueChanged(newChange);
-            foreach (var propertyNode in GetPropertyNodes)
-            {
-                CheckVisible(propertyNode, Selected);
-            }
-        }
-
-        private void CheckVisible(PropertyNode<Event> propertyNode, Event even)
-        {
-            if (propertyNode == null)
-                return;
-
-            if (propertyNode.PropertyInfo.Name == "RaceStartIgnoreDetections")
-            {
-                propertyNode.Visible = even.PrimaryTimingSystemLocation == PrimaryTimingSystemLocation.EndOfLap;
-            }
-        }
-
-        protected override PropertyNode<Event> CreatePropertyNode(Event obj, PropertyInfo pi)
-        {
-            if (obj.ExternalID == default)
-            {
-                CategoryAttribute ca = pi.GetCustomAttribute<CategoryAttribute>();
-                if (ca != null && ca.Category == "MultiGP")
-                    return null;
-            }
-
-            if (pi.Name == "ClubName")
-            {
-                string name = pi.GetValue(obj) as string;
-                if (!string.IsNullOrEmpty(name))
-                {
-                    var property = new StaticTextPropertyNode<Event>(obj, pi, TextColor);
-
-                    if (obj.SyncWith == SyncWith.MultiGP)
-                    {
-                        property.Name.Text = "Chapter";
-                    }
-
-                    return property;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-
-            PropertyNode<Event> n = base.CreatePropertyNode(obj, pi);
-            if (n != null)
-            {
-                CheckVisible(n, obj);
-            }
-
-            return n;
-        }
     }
 }

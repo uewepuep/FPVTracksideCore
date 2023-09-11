@@ -15,6 +15,7 @@ using UI.Nodes;
 using UI.Video;
 using Webb;
 using UI.Sponsor;
+using System.IO;
 
 namespace UI
 {
@@ -676,6 +677,12 @@ namespace UI
             if (workQueueStartRace.QueueLength > 0)
                 return false;
 
+            if (LowDiskSpace())
+            {
+                LayerStack.GetLayer<PopupLayer>().PopupMessage("Race Start Cancelled. Low on disk space (< 1gb)");
+                return false;
+            }
+
             if (ProfileSettings.Instance.AutoHideShowPilotList)
             {
                 ShowPilotList(false);
@@ -1104,6 +1111,25 @@ namespace UI
             }
 
             mainContainer.RelativeBounds = new RectangleF(0, topBar.RelativeBounds.Bottom, 1, 1 - topBar.RelativeBounds.Bottom);
+        }
+
+        private bool LowDiskSpace()
+        {
+            long lowSpace = 1024 * 1024 * 1024; //1gb
+
+            DriveInfo drive = new DriveInfo(Directory.GetCurrentDirectory());
+            try
+            {
+                if (drive.AvailableFreeSpace < lowSpace)
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+                return true;
+            }
+            return false;
         }
     }
 }

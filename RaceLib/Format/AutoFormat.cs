@@ -50,17 +50,18 @@ namespace RaceLib.Format
                     lastRoundPilots = plan.Pilots.ToArray();
                 }
 
-                List<Pilot> pilots = lastRoundPilots.Except(preExistingPilots).Where(p => !p.PracticePilot && plan.Pilots.Contains(p)).ToList();
+                List<Pilot> allPilots = lastRoundPilots.Where(p => !p.PracticePilot && plan.Pilots.Contains(p)).ToList();
+                int totalPilotCount = allPilots.Count;
 
-                if (!pilots.Any())
+                if (!allPilots.Any())
                 {
                     continue;
                 }
 
-                Dictionary<Pilot, Channel> pilotChannels = pilots.ToDictionary(p => p, p => EventManager.GetChannel(p));
+                Dictionary<Pilot, Channel> pilotChannels = allPilots.ToDictionary(p => p, p => EventManager.GetChannel(p));
                 Dictionary<Pilot, Channel> lastHeatChannels = pilotChannels.ToDictionary(p => p.Key, p => p.Value);
 
-                foreach (Pilot p in pilots)
+                foreach (Pilot p in allPilots)
                 {
                     Channel c = p.GetChannelInRound(RaceManager.Races, plan.CallingRound);
 
@@ -70,7 +71,13 @@ namespace RaceLib.Format
                         lastHeatChannels[p] = c;
                     }
                 }
-                int totalPilotCount = preExistingPilots.Count() + pilots.Count;
+
+                List<Pilot> pilots = allPilots.Except(preExistingPilots).ToList();
+                if (!pilots.Any())
+                {
+                    continue;
+                }
+
                 int heats = plan.NumberOfRaces;
 
                 if (plan.NumberOfRaces == 0 || plan.AutoNumberOfRaces)

@@ -492,7 +492,17 @@ namespace UI.Nodes
                 soundManager.SetupSpeaker(PlatformTools, profileSettings.Voice, profileSettings.TextToSpeechVolume);
                 soundManager.WaitForInit();
             }
-            GetLayer<PopupLayer>().Popup(new SoundEditor(soundManager));
+
+            SoundEditor soundEditor = new SoundEditor(soundManager);
+            soundEditor.OnOK += (a) =>
+            {
+                if (soundManager != null)
+                {
+                    soundManager.WriteSettings();
+                }
+            };
+
+            GetLayer<PopupLayer>().Popup(soundEditor);
         }
 
         public void ShowExportSettings()
@@ -531,7 +541,7 @@ namespace UI.Nodes
 
         public void ShowEventSettings()
         {
-            ObjectEditorNode<Event> editor = new ObjectEditorNode<Event>(eventManager.Event, false, false);
+            EventEditor editor = new EventEditor(eventManager.Event);
             GetLayer<PopupLayer>().Popup(editor);
 
             editor.OnOK += (e) =>

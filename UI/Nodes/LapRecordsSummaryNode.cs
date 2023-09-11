@@ -54,11 +54,14 @@ namespace UI.Nodes
             }
             column++;
 
-            TextButtonNode racetimeHeading = new TextButtonNode("Race Time", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
-            racetimeHeading.TextNode.Alignment = RectangleAlignment.TopCenter;
-            container.AddChild(racetimeHeading);
-            int ca2 = column;
-            racetimeHeading.OnClick += (mie) => { columnToOrderBy = ca2; Refresh(); };
+            if (eventManager.Event.EventType == EventTypes.Race)
+            {
+                TextButtonNode racetimeHeading = new TextButtonNode("Race Time", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
+                racetimeHeading.TextNode.Alignment = RectangleAlignment.TopCenter;
+                container.AddChild(racetimeHeading);
+                int ca2 = column;
+                racetimeHeading.OnClick += (mie) => { columnToOrderBy = ca2; Refresh(); };
+            }
         }
 
         public override void SetOrder()
@@ -80,6 +83,30 @@ namespace UI.Nodes
             }
         }
 
+        public override void CalculatePositions()
+        {
+            int index = columnToOrderBy - 1;
+            if (index >= 0 && index < eventManager.LapRecordManager.ConsecutiveLapsToTrack.Length)
+            {
+                int orderLap = eventManager.LapRecordManager.ConsecutiveLapsToTrack[index];
+
+                for (int i = 0; i < rows.ChildCount; i++)
+                {
+                    PilotResultNode pilotLapsNode = rows.GetChild<PilotResultNode>(i);
+                    if (pilotLapsNode != null)
+                    {
+                        int? old = eventManager.LapRecordManager.GetPastPosition(pilotLapsNode.Pilot, orderLap);
+
+                        pilotLapsNode.SetPosition(i + 1, old);
+                    }
+                }
+            }
+            else
+            {
+                base.CalculatePositions();
+            }
+        }
+
         protected override void SetResult(PilotResultNode pilotResNode, Pilot pilot, Round[] rounds)
         {
             List<Node> nodes = new List<Node>();
@@ -91,15 +118,19 @@ namespace UI.Nodes
                 eventManager.LapRecordManager.GetBestLaps(pilot, consecutive, out bestLaps, out overalBest);
 
                 LapTimesTextNode napTimesTextNode = new LapTimesTextNode(eventManager);
-                napTimesTextNode.SetLapTimes( bestLaps, overalBest);
+                napTimesTextNode.SetLapTimes(bestLaps, overalBest);
                 nodes.Add(napTimesTextNode);
             }
 
-            eventManager.LapRecordManager.GetBestRaceTime(pilot, out bestLaps, out overalBest);
+            if (eventManager.Event.EventType == EventTypes.Race)
+            {
+                eventManager.LapRecordManager.GetBestRaceTime(pilot, out bestLaps, out overalBest);
 
-            LapTimesTextNode lapTimesTextNode = new LapTimesTextNode(eventManager);
-            lapTimesTextNode.SetLapTimes(bestLaps, overalBest);
-            nodes.Add(lapTimesTextNode);
+                LapTimesTextNode lapTimesTextNode = new LapTimesTextNode(eventManager);
+                lapTimesTextNode.SetLapTimes(bestLaps, overalBest);
+                nodes.Add(lapTimesTextNode);
+            }
+          
 
             pilotResNode.Set(pilot, nodes);
         }
@@ -134,7 +165,7 @@ namespace UI.Nodes
             }
         }
 
-        private class LapTimesTextNode : TextNode
+        public class LapTimesTextNode : TextNode
         {
             private Lap[] laps;
 
@@ -161,6 +192,13 @@ namespace UI.Nodes
                 if (bestLaps.Any())
                 {
                     Text = time.ToStringRaceTime();
+
+                    Race r = bestLaps.First().Race;
+
+                    if (r != null) 
+                    {
+                        Text += " (R" + r.RoundNumber + ")";
+                    }
                 }
                 else
                 {

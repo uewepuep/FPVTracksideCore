@@ -127,7 +127,7 @@ h2
     text-align: left;
     display: inline-block;
     height: 20px;
-    width: 60px;
+    width: 100px;
     overflow: hidden;
     white-space: nowrap; /* Don't forget this one */
     text-overflow: ellipsis;
@@ -156,4 +156,9 @@ h2
 .t, .p, .r, .e, .c, .f, .a {
     width: 30px;
     text-align: right;
+}
+
+.acpi
+{
+    color:red;
 }
