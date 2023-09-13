@@ -484,9 +484,6 @@ namespace Timing.RotorHazard
             if (!Connected)
                 return false;
 
-            if (!detecting)
-                return false;
-
             detecting = false;
 
             socketIOClient.EmitAsync("ts_race_stop", GotRaceStop);

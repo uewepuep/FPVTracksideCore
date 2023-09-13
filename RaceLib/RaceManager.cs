@@ -802,9 +802,9 @@ namespace RaceLib
 
                 PreRaceStartDelay = false;
 
-                TimingSystemManager.EndDetection();
-
                 OnRaceCancelled?.Invoke(CurrentRace, failure);
+
+                TimingSystemManager.EndDetection();
 
                 return true;
             }

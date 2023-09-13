@@ -725,7 +725,6 @@ namespace Sound
 
         private void StandDown()
         {
-            StopSound();
             PlaySound(SoundKey.StandDownCancelled, new SpeechParameters() { Priority = 10000 });
         }
 
