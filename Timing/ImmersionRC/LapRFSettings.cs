@@ -11,7 +11,32 @@ namespace Timing.ImmersionRC
 {
     public class LapRFSettings : TimingSystemSettings
     {
-        
+        [DisplayName("Gain/Threshold Presets")]
+        public CalibrationValues GainThresholdPresetValues
+        {
+            get
+            {
+                if (GainAll == "59" && ThresholdAll == "800")
+                    return CalibrationValues.Standard5Inch;
+                if (GainAll == "54" && ThresholdAll == "1110")
+                    return CalibrationValues.WhoopsIndoors;
+                return CalibrationValues.Custom;
+            }
+            set
+            {
+                switch (value)
+                {
+                    case CalibrationValues.Standard5Inch:
+                        GainAll = "59";
+                        ThresholdAll = "800";
+                        break;
+                    case CalibrationValues.WhoopsIndoors:
+                        GainAll = "54";
+                        ThresholdAll = "1110";
+                        break;
+                }
+            }
+        }
 
         private double minimumTriggerSeconds;
 
@@ -32,6 +57,12 @@ namespace Timing.ImmersionRC
         [Category("Alerts")]
         public double VoltageAlarm { get; set; }
 
+        public enum CalibrationValues
+        {
+            Standard5Inch,
+            WhoopsIndoors,
+            Custom
+        }
 
 
         [Category("Receiver All")]
