@@ -260,27 +260,52 @@ namespace Timing.ImmersionRC
         {
             laprf.prepare_sendable_packet(LapRF.LapRFProtocol.laprf_type_of_record.LAPRF_TOR_STATE_CONTROL);
             laprf.append_field_of_record_u8(0x20, 0);                // 0 = stop race
-            return Send(laprf.finalize_sendable_packet());
+            if (!Send(laprf.finalize_sendable_packet()))
+            {
+                Logger.TimingLog.Log(this, "Failed End Detection");
+            }
+            return true;
         }
 
         public bool StartDetection(ref DateTime time)
         {
             if (!SetMinLapTime(settings.MinimumTriggerTime))
+            {
+                Logger.TimingLog.Log(this, "Failed Set Min Lap Time");
                 return false;
+            }
+
+            if (!RequestRTCTime())
+            {
+                Logger.TimingLog.Log(this, "Failed RTC Time");
+                return false;
+            }
+
+            int maxAttempts = 10;
+            do
+            {
+                // Give it some time to settle after the previous commands.
+                Thread.Sleep(200);
+
+                laprf.prepare_sendable_packet(LapRF.LapRFProtocol.laprf_type_of_record.LAPRF_TOR_STATE_CONTROL);
+                laprf.append_field_of_record_u8(0x20, 1);   // 1 = start race in normal mode
+                //laprf.append_field_of_record_u8(0x20, 2);   // 1 = start race in crash mode
+                if (Send(laprf.finalize_sendable_packet()))
+                {
+                    break;
+                }
+                maxAttempts--;
+            }
+            while (maxAttempts > 0);
+            if (maxAttempts == 0)
+            {
+                Logger.TimingLog.Log(this, "Failed Start Race");
+                return false;
+            }
 
             detectionStart = DateTime.Now;
 
-            laprf.prepare_sendable_packet(LapRF.LapRFProtocol.laprf_type_of_record.LAPRF_TOR_STATE_CONTROL);
-            laprf.append_field_of_record_u8(0x20, 1);   // 1 = start race in normal mode
-            //laprf.append_field_of_record_u8(0x20, 2);   // 1 = start race in crash mode
-
-            if (!Send(laprf.finalize_sendable_packet()))
-                return false;
-
             laprf.clearPassingRecords();
-
-            if (!RequestRTCTime())
-                return false;
 
             return true;
         }
@@ -366,7 +391,12 @@ namespace Timing.ImmersionRC
                 laprf.append_field_of_record_u16(0x25, freqValue);              // Frequency
             }
 
-            return Send(laprf.finalize_sendable_packet());
+            if (!Send(laprf.finalize_sendable_packet()))
+            {
+                Logger.TimingLog.Log(this, "Failed Set Listening Frequencies");
+                return false;
+            }
+            return true;
         }
 
         public IEnumerable<RSSI> GetRSSI()

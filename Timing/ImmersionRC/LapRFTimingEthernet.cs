@@ -116,7 +116,7 @@ namespace Timing.ImmersionRC
                         if (sent == data.Length)
                         {
                             base.Send(data);
-                            return autoResetEvent.WaitOne(1000);
+                            return autoResetEvent.WaitOne(2000);
                         }
                     }
                     catch
