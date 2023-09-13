@@ -32,21 +32,27 @@ namespace Timing
 
         public string Pilot { get; set; }
 
-        public ListeningFrequency(int frequency, float sensitivityFactor)
-            :this("", frequency, sensitivityFactor)
+        public int Channel { get; set; }
+        public string Band { get; set; }
+
+
+        public ListeningFrequency(string band, int channel, int frequency, float sensitivityFactor)
+            :this("", band, channel, frequency, sensitivityFactor)
         {
         }
 
-        public ListeningFrequency(string pilot, int freq, float sensitivity)
+        public ListeningFrequency(string pilot, string band, int channel, int freq, float sensitivity)
         {
             Frequency = freq;
             SensitivityFactor = sensitivity;
             Pilot = pilot;
+            Band = band;
+            Channel = channel;
         }
 
         public override string ToString()
         {
-            return Frequency + "mhz(" + (SensitivityFactor * 100) + "%)";
+            return Band + " " + Channel + " " + Frequency + "mhz(" + (SensitivityFactor * 100) + "%)";
         }
 
         public override bool Equals(object obj)

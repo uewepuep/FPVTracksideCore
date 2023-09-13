@@ -110,11 +110,9 @@ namespace Timing.RotorHazard
 
         public ServerInfo ServerInfo { get; private set; }
 
-        private AutoResetEvent responseWait;
 
         private const int MaxTimeSamples = 20;
 
-        private DateTime detectionStart;
         private DateTime rotorhazardStart;
 
 
@@ -124,7 +122,6 @@ namespace Timing.RotorHazard
             serverTimeSamples = new List<ServerTimeSample>();
             TimeOut = TimeSpan.FromSeconds(10);
             CommandTimeOut = TimeSpan.FromSeconds(3);
-            responseWait = new AutoResetEvent(false);
         }
         
         public void Dispose()
@@ -219,6 +216,13 @@ namespace Timing.RotorHazard
             return true;
         }
 
+        private struct FrequencySetup
+        {
+            public char[] b { get; set; } //Band
+            public int[] c { get; set; }//Channel (number)
+            public int[] f { get; set; }//frequency
+        }
+
         public bool SetListeningFrequencies(IEnumerable<ListeningFrequency> newFrequencies)
         {
             if (!Connected)
@@ -226,29 +230,30 @@ namespace Timing.RotorHazard
 
             detecting = false;
 
-            int[] freq = newFrequencies.Select(f => f.Frequency).ToArray(); 
+            Logger.TimingLog.Log(this, "SetListeningFrequencies", string.Join(", ", newFrequencies.Select(f => f.ToString())));
 
-            socketIOClient.EmitAsync("ts_frequency_setup", OnSetFrequency, freq);
-
+            FrequencySetup frequencySetup = new FrequencySetup();
+            frequencySetup.b = newFrequencies.Select(nf => nf.Band[0]).ToArray();
+            frequencySetup.c = newFrequencies.Select(nf => nf.Channel).ToArray();
+            frequencySetup.f = newFrequencies.Select(nf => nf.Frequency).ToArray();
 
             try
             {
-                Logger.TimingLog.Log(this, "SetListeningFrequencies", string.Join(", ", newFrequencies.Select(f => f.ToString())));
-                int node = 0;
-                foreach (ListeningFrequency freqSense in newFrequencies)
+                using (AutoResetEvent responseWait = new AutoResetEvent(false))
                 {
-                    SetFrequency sf = new SetFrequency() { node = node, frequency = freqSense.Frequency };
-                    socketIOClient.EmitAsync("set_frequency", OnSetFrequency, sf);
-                    if (!responseWait.WaitOne(CommandTimeOut))
+                    socketIOClient.EmitAsync("ts_frequency_setup", (SocketIOResponse reponse) => { responseWait.Set(); }, frequencySetup);
+                    if (!responseWait.WaitOne(TimeOut))
                     {
+                        Logger.TimingLog.Log(this, "Set Frequencies took too long");
                         return false;
                     }
-
-                    node++;
                 }
 
                 if (!TimeSync())
+                {
+                    Logger.TimingLog.Log(this, "Time Sync Failure");
                     return false;
+                }
 
                 return true;
             }
@@ -258,11 +263,6 @@ namespace Timing.RotorHazard
                 Logger.TimingLog.LogException(this, e);
             }
             return false;
-        }
-
-        protected void OnSetFrequency(SocketIOResponse reponse)
-        {
-            responseWait.Set();
         }
 
         private void OnServerInfo(SocketIOResponse response)
@@ -284,12 +284,16 @@ namespace Timing.RotorHazard
             }
 
             serverTimeStart = Monotonic;
-            socketIOClient.EmitAsync("ts_server_time", OnServerTime);
 
-            if (!responseWait.WaitOne(TimeOut))
+            using (AutoResetEvent responseWait = new AutoResetEvent(false))
             {
-                Logger.TimingLog.Log(this, "Time sync took too long");
-                return false;
+                socketIOClient.EmitAsync("ts_server_time", (response) => OnServerTime(response, responseWait));
+
+                if (!responseWait.WaitOne(TimeOut))
+                {
+                    Logger.TimingLog.Log(this, "Time sync took too long");
+                    return false;
+                }
             }
 
             int count = 0;
@@ -299,11 +303,10 @@ namespace Timing.RotorHazard
             }
 
             Logger.TimingLog.Log(this, "Server Time Samples " + count);
-
             return count > 0;
         }
 
-        private void OnServerTime(SocketIOResponse response)
+        private void OnServerTime(SocketIOResponse response, AutoResetEvent responseWait)
         {
             if (response.Count == 0) return;
 
@@ -329,7 +332,7 @@ namespace Timing.RotorHazard
                     {
                         Logger.TimingLog.Log(this, "Server Time Sample " + serverTimeSamples.Count);
                         serverTimeStart = Monotonic;
-                        socketIOClient.EmitAsync("ts_server_time", OnServerTime);
+                        socketIOClient.EmitAsync("ts_server_time", (response) => OnServerTime(response, responseWait));
                     }
                     else
                     {
@@ -407,8 +410,6 @@ namespace Timing.RotorHazard
             StageReady stageReady = response.GetValue<StageReady>();
             TimeSpan time = TimeSpan.FromSeconds(stageReady.pi_starts_at_s); ;
             rotorhazardStart = serverEpoch + time;
-
-            responseWait.Set();
         }
 
         private void OnLapData(SocketIOResponse response)
@@ -446,25 +447,37 @@ namespace Timing.RotorHazard
                 Logger.TimingLog.LogException(this, ex);
             }
         }
+
         public bool StartDetection(ref DateTime time)
         {
             if (!Connected)
                 return false;
 
-            detectionStart = time;
-
             TimeSpan serverStartTime = time - serverEpoch;
 
             Logger.TimingLog.Log(this, "Start detection: Server time: " + serverStartTime.TotalSeconds);
-            socketIOClient.EmitAsync("ts_race_stage", new RaceStart { start_time_s = serverStartTime.TotalSeconds }); ;
 
-            if (!responseWait.WaitOne(CommandTimeOut))
-                return false;
+            using (AutoResetEvent responseWait = new AutoResetEvent(false))
+            {
+
+                socketIOClient.EmitAsync("ts_race_stage", (r) =>
+                { 
+                    responseWait.Set(); 
+                }, new RaceStart { start_time_s = serverStartTime.TotalSeconds });
+
+                if (!responseWait.WaitOne(CommandTimeOut))
+                {
+                    Logger.TimingLog.Log(this, "Start detection: Timed out, no response from RH.");
+                    return false;
+                }
+
+            }
 
             time = rotorhazardStart;
 
             return detecting;
         }
+
 
         public bool EndDetection()
         {

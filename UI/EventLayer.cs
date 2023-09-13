@@ -114,6 +114,12 @@ namespace UI
                 SoundManager.TimeRemaining(r, t);
             };
 
+            EventManager.RaceManager.OnRacePreStart += (r) =>
+            {
+                // Update the control buttons to to show cancel etc.
+                ControlButtons.UpdateControlButtons();
+            };
+
             EventManager.RaceManager.OnRaceTimesUp += (r) =>
             {
                 SoundManager.TimesUp(r);
@@ -727,7 +733,6 @@ namespace UI
             }
             else if (delayedStart)
             {
-
                 workQueueStartRace.Enqueue(() =>
                 {
                     bool failed = false;

@@ -610,9 +610,9 @@ namespace RaceLib
 
         public bool PreRaceStart()
         {
-            OnRacePreStart?.Invoke(CurrentRace);
-
             PreRaceStartDelay = true;
+
+            OnRacePreStart?.Invoke(CurrentRace);
 
             if (!SetListeningFrequencies(CurrentRace))
             {
@@ -802,6 +802,8 @@ namespace RaceLib
 
                 PreRaceStartDelay = false;
 
+                TimingSystemManager.EndDetection();
+
                 OnRaceCancelled?.Invoke(CurrentRace, failure);
 
                 return true;
@@ -825,11 +827,11 @@ namespace RaceLib
 
                     if (pilotChannel != null)
                     {
-                        listeningFrequency = new ListeningFrequency(pilotChannel.PilotName, eventChannel.Frequency, pilotChannel.Pilot.TimingSensitivityPercent / 100.0f);
+                        listeningFrequency = new ListeningFrequency(pilotChannel.PilotName, eventChannel.Band.ToString(), eventChannel.Number, eventChannel.Frequency, pilotChannel.Pilot.TimingSensitivityPercent / 100.0f);
                     }
                     else
                     {
-                        listeningFrequency = new ListeningFrequency(eventChannel.Frequency, 0);
+                        listeningFrequency = new ListeningFrequency(eventChannel.Band.ToString(), eventChannel.Number, eventChannel.Frequency, 0);
                     }
 
                     frequencies.Add(listeningFrequency);
@@ -841,11 +843,11 @@ namespace RaceLib
             {
                 if (race.Type == EventTypes.CasualPractice)
                 {
-                    frequencies = EventManager.Channels.Select(c => new ListeningFrequency(c.Frequency, 1)).ToList();
+                    frequencies = EventManager.Channels.Select(c => new ListeningFrequency(c.Band.ToString(), c.Number, c.Frequency, 1)).ToList();
                 }
                 else
                 {
-                    frequencies = race.PilotChannelsSafe.Select(pc => new ListeningFrequency(pc.PilotName, pc.Channel.Frequency, pc.Pilot.TimingSensitivityPercent / 100.0f)).ToList();
+                    frequencies = race.PilotChannelsSafe.Select(pc => new ListeningFrequency(pc.PilotName, pc.Channel.Band.ToString(), pc.Channel.Number, pc.Channel.Frequency, pc.Pilot.TimingSensitivityPercent / 100.0f)).ToList();
                 }
 
                 Logger.RaceLog.LogCall(this, race, "Frequencies dynamically assigned to receivers");
