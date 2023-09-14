@@ -163,14 +163,14 @@ namespace UI.Video
 
             if (pi.Name == "RecordResolution")
             {
-                int[] resolutions = new int[] { 240, 480, 720, 1080, 2160 };
+                int[] resolutions = new int[] { 240, 360, 480, 720, 1080, 2160 };
                 ListPropertyNode<VideoConfig> listPropertyNode = new ListPropertyNode<VideoConfig>(obj, pi, ButtonBackground, TextColor, ButtonHover, resolutions);
                 return listPropertyNode;
             }
 
             if (pi.Name == "RecordFrameRate")
             {
-                int[] framerates = new int[] { 15, 25, 30, 50, 60 };
+                int[] framerates = new int[] { 15, 25, 30, 50, 60, 120, 160 };
                 ListPropertyNode<VideoConfig> listPropertyNode = new ListPropertyNode<VideoConfig>(obj, pi, ButtonBackground, TextColor, ButtonHover, framerates);
                 return listPropertyNode;
             }

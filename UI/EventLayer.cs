@@ -755,7 +755,9 @@ namespace UI
                     {
                         failed = true;
                         EventManager.RaceManager.CancelRaceStart(true);
+
                     }
+                    ControlButtons.UpdateControlButtons();
                 });
             }
             else
@@ -764,6 +766,7 @@ namespace UI
                 {
                     EventManager.RaceManager.PreRaceStart();
                     EventManager.RaceManager.StartRaceInLessThan(TimeSpan.Zero, TimeSpan.Zero);
+                    ControlButtons.UpdateControlButtons();
                 });
             }
 
