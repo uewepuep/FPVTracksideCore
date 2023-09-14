@@ -111,7 +111,7 @@ namespace UI.Video
 
             frameSources = new List<FrameSource>();
             VideoConfigs = new List<VideoConfig>();
-            AutoPause = true;
+            AutoPause = false;
         }
 
         private VideoFrameWork GetFramework(FrameWork frameWork)

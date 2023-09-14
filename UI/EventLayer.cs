@@ -95,6 +95,7 @@ namespace UI
             EventManager.RaceManager.RemainingTimesToAnnounce = ProfileSettings.Instance.RemainingSecondsToAnnounce;
 
             videoManager = new VideoManager(GeneralSettings.Instance.VideoStorageLocation, eventManager.Profile);
+            videoManager.AutoPause = true;
 
             SoundManager = new SoundManager(EventManager, eventManager.Profile);
             SoundManager.MuteTTS = !ProfileSettings.Instance.TextToSpeech;
