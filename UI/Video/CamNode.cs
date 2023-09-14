@@ -5,6 +5,7 @@ using Composition.Nodes;
 using ImageServer;
 using Microsoft.Xna.Framework;
 using RaceLib;
+using Sound;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -109,13 +110,15 @@ namespace UI.Video
         }
     }
 
-    public class CamClosableNode : CamNode
+    public class CamGridNode : CamNode
     {
         public CloseNode CloseButton { get; private set; }
 
         public event Action OnCloseClick;
 
-        public CamClosableNode(FrameSource s, VideoBounds videoBounds) 
+        public event Action OnFullscreen;
+        public event Action OnShowAll;
+        public CamGridNode(FrameSource s, VideoBounds videoBounds) 
             : base(s, videoBounds)
         {
             CloseButton = new CloseNode();
@@ -125,6 +128,25 @@ namespace UI.Video
             {
                 OnCloseClick?.Invoke();
             };
+        }
+
+        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
+        {
+            if (mouseInputEvent.Button == MouseButtons.Right && mouseInputEvent.ButtonState == ButtonStates.Released)
+            {
+                MouseMenu mm = new MouseMenu(this);
+                mm.AddItem("Full screen", () =>
+                {
+                    OnFullscreen?.Invoke();
+                });
+
+                mm.AddItem("Show All", () =>
+                {
+                    OnShowAll?.Invoke();
+                });
+                mm.Show(mouseInputEvent);
+            }
+            return base.OnMouseInput(mouseInputEvent);
         }
     }
 

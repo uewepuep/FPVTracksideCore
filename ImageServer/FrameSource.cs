@@ -63,6 +63,7 @@ namespace ImageServer
             FrameCount = 0;
             OnFrameEvent = null;
             Direction = Directions.TopDown;
+            IsVisible = true;
         }
 
         public virtual void CleanUp()
@@ -105,14 +106,9 @@ namespace ImageServer
 
         public void OnFrame(int id)
         {
-            if (State == States.Running)
-            {
-                OnFrameEvent?.Invoke(id);
-                FrameCount++;
-            }
+            OnFrameEvent?.Invoke(id);
+            FrameCount++;
         }
-
-
     }
 
     public interface ICaptureFrameSource

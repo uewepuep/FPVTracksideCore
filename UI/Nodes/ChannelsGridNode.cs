@@ -38,11 +38,11 @@ namespace UI.Nodes
             }
         }
 
-        public IEnumerable<CamClosableNode> CamNodes
+        public IEnumerable<CamGridNode> CamNodes
         {
             get
             {
-                return Children.OfType<CamClosableNode>();
+                return Children.OfType<CamGridNode>();
             }
         }
 
@@ -277,7 +277,7 @@ namespace UI.Nodes
                     }
                 }
 
-                foreach (CamClosableNode camNode in CamNodes)
+                foreach (CamGridNode camNode in CamNodes)
                 {
                     camNode.SetAnimatedVisibility(camNode.VideoBounds.ShowInGrid && extrasVisible);
                 }
@@ -380,7 +380,7 @@ namespace UI.Nodes
                 n.Dispose();
             }
 
-            foreach (CamClosableNode n in CamNodes.ToArray())
+            foreach (CamGridNode n in CamNodes.ToArray())
             {
                 n.Dispose();
             }
@@ -422,7 +422,7 @@ namespace UI.Nodes
         public void MakeExtrasVisible(bool visible)
         {
             extrasVisible = visible;
-            foreach (CamClosableNode camNode in CamNodes)
+            foreach (CamGridNode camNode in CamNodes)
             {
                 camNode.SetAnimatedVisibility(visible);
             }
@@ -640,6 +640,20 @@ namespace UI.Nodes
             }
         }
 
+        public void FullScreen(CamGridNode fullScreen)
+        {
+            if (EventManager.RaceManager.RaceRunning || Replay)
+            {
+                foreach (ChannelNodeBase cn in ChannelNodes)
+                {
+                    cn.SetAnimatedVisibility(false);
+                }
+
+                fullScreen.SetAnimatedVisibility(true);
+                RequestLayout();
+            }
+        }
+
         public void IncreaseChannelVisiblity()
         {
             ForceReOrder = true;
@@ -736,11 +750,22 @@ namespace UI.Nodes
                         FrameSource source = VideoManager.GetFrameSource(vs);
                         if (source != null)
                         {
-                            CamClosableNode camNode = new CamClosableNode(source, videoBounds);
+                            CamGridNode camNode = new CamGridNode(source, videoBounds);
                             camNode.OnCloseClick += () =>
                             {
                                 MakeExtrasVisible(false);
                             };
+
+                            camNode.OnFullscreen += () =>
+                            {
+                                FullScreen(camNode);
+                            };
+
+                            camNode.OnShowAll += () =>
+                            {
+                                IncreaseChannelVisiblity();
+                            };
+
                             AddChild(camNode);
                         }
                     }

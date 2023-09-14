@@ -18,8 +18,6 @@ namespace UI.Video
         public bool NeedsAspectRatioUpdate { get; set; }
         public int FrameNumber { get; private set; }
 
-        private bool request;
-
         public FrameTextureID FrameTextureID { get { return Texture as FrameTextureID; } }
 
         private static Color Blank = new Color(10, 0, 10);
@@ -53,19 +51,16 @@ namespace UI.Video
         {
             if (Visible)
             {
+                if (CompositorLayer != null) 
+                {
+                    CompositorLayer.PreProcess(this, true);
+                }
                 RequestRedraw();
-                request = true;
             }
         }
 
         public override void Draw(Drawer id, float parentAlpha)
         {
-            if (request)
-            {
-                id.PreProcess(this, true);
-                request = false;
-            }
-
             DebugTimer.DebugStartTime(this);
 
             float alpha = parentAlpha * Alpha;

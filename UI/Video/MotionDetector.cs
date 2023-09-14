@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 
 namespace UI.Video
 {
@@ -37,6 +38,9 @@ namespace UI.Video
         public void AddFrame(Color[] frameData)
         {
             float next = Process(frameData);
+
+            //Logger.VideoLog.Log(this, Channel.ToStringShort() + " : " + next);  
+
             lastFrames.Enqueue(new TimeMotionContainer() { Motion = next, Time = DateTime.Now });
 
             // remove old lastframes

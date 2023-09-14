@@ -256,5 +256,12 @@ namespace Composition.Layers
             return zeroedView.Intersects(rectangle);
         }
 
+        public void PreProcess(IPreProcessable toPreProcess, bool forced = false)
+        {
+            if (drawer != null)
+            {
+                drawer.PreProcess(toPreProcess, forced);
+            }
+        }
     }
 }
