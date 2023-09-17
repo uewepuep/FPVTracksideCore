@@ -199,7 +199,7 @@ namespace UI
                     // No next race..
                     if (!hasNextRace)
                     {
-                        if (Config.AutoCreateRounds)
+                        if (!Paused && Config.AutoCreateRounds)
                         {
                             GenerateRound();
                         }

@@ -388,12 +388,15 @@ namespace UI.Video
 
             private IEnumerable<Mode> TrimModes(IEnumerable<Mode> modes)
             {
-                // Seriously, under 15 fps is dumb
-                modes = modes.Where(m => m.FrameRate >= 15);
-
-                var grouped = modes.GroupBy(m => new Tuple<FrameWork, int, int, float>(m.FrameWork, m.Width, m.Height, m.FrameRate)).OrderByDescending(t => t.Key.Item1);
-
                 bool allItems = Keyboard.GetState().IsKeyDown(Keys.LeftControl);
+                if (!allItems)
+                {
+                    // Seriously, under 15 fps is dumb
+                    modes = modes.Where(m => m.FrameRate >= 15);
+                }
+
+                var grouped = modes.GroupBy(m => new Tuple<FrameWork, int, int, float, string>(m.FrameWork, m.Width, m.Height, m.FrameRate, allItems? m.Format : "")).OrderByDescending(t => t.Key.Item1);
+
                 foreach (var group in grouped)
                 {
                     if (allItems)
