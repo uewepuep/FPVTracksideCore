@@ -36,19 +36,22 @@ namespace Composition.Nodes
 
         public override void Snap()
         {
-            if (interpolatedAlpha != null)
+            InterpolatedFloat ia = interpolatedAlpha;
+            if (ia != null)
             {
-                interpolatedAlpha.Snap();
+                ia.Snap();
             }
         }
 
         public void Update(GameTime gametime)
         {
-            if (interpolatedAlpha != null)
-            {
-                Alpha = interpolatedAlpha.Output;
+            InterpolatedFloat ia = interpolatedAlpha;
 
-                if (interpolatedAlpha.Finished)
+            if (ia != null)
+            {
+                Alpha = ia.Output;
+
+                if (ia.Finished)
                 {
                     interpolatedAlpha = null;
                 }

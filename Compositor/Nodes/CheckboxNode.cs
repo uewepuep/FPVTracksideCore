@@ -40,6 +40,7 @@ namespace Composition.Nodes
         {
             TickFilename = @"img/tick.png";
             UnTickFilename = @"img/untick.png";
+            SetFilename(UnTickFilename);
         }
 
         private void UpdateTexture()

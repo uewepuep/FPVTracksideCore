@@ -16,6 +16,9 @@ namespace Composition.Nodes
         public TextButtonNode OK { get; private set; }
         public TextButtonNode Cancel { get; private set; }
 
+        protected Node buttonsContainer;
+        protected TextNode questionNode;
+
         public ConfirmationNode(string question, MenuLayer MenuLayer, System.Action onOk)
             :this(question, MenuLayer.Background, MenuLayer.DisabledText, MenuLayer.Hover, MenuLayer.Text, onOk)
         {
@@ -30,12 +33,12 @@ namespace Composition.Nodes
             ColorNode backgroundNode = new ColorNode(background);
             AddChild(backgroundNode);
 
-            TextNode questionNode = new TextNode(question, text);
+            questionNode = new TextNode(question, text);
             questionNode.RelativeBounds = new RectangleF(0.025f, 0.1f, 0.95f, 0.3f);
             questionNode.Alignment = RectangleAlignment.Center;
             backgroundNode.AddChild(questionNode);
 
-            Node buttonsContainer = new Node();
+            buttonsContainer = new Node();
             buttonsContainer.RelativeBounds = new RectangleF(0.1f, 0.5f, 0.8f, 0.4f);
             backgroundNode.AddChild(buttonsContainer);
 
@@ -56,6 +59,38 @@ namespace Composition.Nodes
             {
                 onOk?.Invoke();
                 Dispose();
+            };
+        }
+    }
+
+    public class ConfirmationDontShowAgainNode : ConfirmationNode
+    {
+        public CheckboxNode DontShowAgain { get; private set; }
+
+        public ConfirmationDontShowAgainNode(string question, MenuLayer MenuLayer, Action<bool> onOkDontShowAgain)
+            : base(question, MenuLayer.Background, MenuLayer.DisabledText, MenuLayer.Hover, MenuLayer.Text, null)
+        {
+            RelativeBounds = new RectangleF(0.4f, 0, 0.3f, 1);
+
+            buttonsContainer.RelativeBounds = new RectangleF(0.1f, 0.6f, 0.8f, 0.275f);
+            questionNode.RelativeBounds = new RectangleF(0.025f, 0.09f, 0.95f, 0.2f);
+
+            Node container = new Node();
+            container.RelativeBounds = new RectangleF(0.1f, 0.38f, 0.8f, 0.125f);
+            AddChild(container);
+
+            DontShowAgain = new CheckboxNode();
+            DontShowAgain.RelativeBounds = new RectangleF(0.55f, 0.0f, 0.1f, 1f);
+            container.AddChild(DontShowAgain);
+
+            TextNode textNode = new TextNode("Don't show again", MenuLayer.Text);
+            textNode.RelativeBounds = new RectangleF(0.325f, 0.0f, 0.9f, 1);
+            textNode.Alignment = RectangleAlignment.CenterLeft;
+            container.AddChild(textNode);
+
+            OK.OnClick += (mie) =>
+            {
+                onOkDontShowAgain(DontShowAgain.Value);
             };
         }
     }

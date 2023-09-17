@@ -35,11 +35,14 @@ namespace Timing
         {
             get
             {
-                float voltage = random.Next(120, 180) / 10.0f;
-                float temperature = random.Next(10, 60);
+                if (DummingSettings.GenerateRandomLaps)
+                {
+                    float voltage = random.Next(120, 180) / 10.0f;
+                    float temperature = random.Next(10, 60);
 
-                yield return new StatusItem() { StatusOK = voltage > 14, Value = voltage + "v" };
-                yield return new StatusItem() { StatusOK = temperature < 50, Value = temperature + "c" };
+                    yield return new StatusItem() { StatusOK = voltage > 14, Value = voltage + "v" };
+                    yield return new StatusItem() { StatusOK = temperature < 50, Value = temperature + "c" };
+                }
             }
         }
 
@@ -59,6 +62,11 @@ namespace Timing
 
         public bool StartDetection(ref DateTime time)
         {
+            if (!DummingSettings.GenerateRandomLaps)
+            {
+                return true;
+            }
+
             lock (threads)
             {
                 float randomPercent = (float)(random.NextDouble() * 100);
@@ -216,6 +224,10 @@ namespace Timing
     public class DummySettings : TimingSystemSettings
     {
         [Category("Random number generation settings")]
+
+        public bool GenerateRandomLaps { get; set; }
+
+        [Category("Random number generation settings")]
         public double TypicalLapTimeSeconds { get; set; }
       
         [Category("Random number generation settings")]
@@ -243,6 +255,7 @@ namespace Timing
 
         public DummySettings()
         {
+            GenerateRandomLaps = false;
             OffsetSeconds = 5;
             TypicalLapTimeSeconds = 15;
             RangeSeconds = 5;

@@ -236,7 +236,10 @@ namespace UI.Nodes
             StatusItem[] statuses = TimingSystem.Status.ToArray();
 
             if (statuses == null || !statuses.Any())
+            {
+                SetStatus("", true);
                 return;
+            }
 
             IEnumerable<StatusItem> alarmed = statuses.Where(s => !s.StatusOK);
             if (alarmed.Any())

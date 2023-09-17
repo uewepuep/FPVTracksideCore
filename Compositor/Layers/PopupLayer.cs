@@ -86,6 +86,14 @@ namespace Composition.Layers
             FocusedNode = cfn;
         }
 
+        public void PopupConfirmationDontShowAgain(string question, Action<bool> onOkDontShow)
+        {
+            ConfirmationDontShowAgainNode cfn = new ConfirmationDontShowAgainNode(question, LayerStack.GetLayer<MenuLayer>(), onOkDontShow);
+            background.AddChild(cfn);
+            RequestLayout();
+            FocusedNode = cfn;
+        }
+
         public void PopupMessage(string message)
         {
             PopupMessage(message, () => { });
