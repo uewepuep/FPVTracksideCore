@@ -145,11 +145,13 @@ namespace UI.Nodes
         public override void EditSettings()
         {
             ObjectEditorNode<TimeSummary> editor = new ObjectEditorNode<TimeSummary>(Round.TimeSummary);
+            editor.Scale(0.6f);
             GetLayer<PopupLayer>().Popup(editor);
             editor.OnOK += (a) =>
             {
                 SaveRound();
-                Recalculate();
+                EventManager.ResultManager.Recalculate(Round);
+                RequestLayout();
             };
         }
 

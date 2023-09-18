@@ -223,23 +223,23 @@ namespace Timing
 
     public class DummySettings : TimingSystemSettings
     {
-        [Category("Random number generation settings")]
+        [Category("Random number generation settings (for testing)")]
 
         public bool GenerateRandomLaps { get; set; }
 
-        [Category("Random number generation settings")]
+        [Category("Random number generation settings (for testing)")]
         public double TypicalLapTimeSeconds { get; set; }
       
-        [Category("Random number generation settings")]
+        [Category("Random number generation settings (for testing)")]
         public double RangeSeconds { get; set; }
 
-        [Category("Random number generation settings")]
+        [Category("Random number generation settings (for testing)")]
         public double OffsetSeconds { get; set; }
 
-        [Category("Failure cases")]
+        [Category("Random number generation settings (for testing)")]
         public double FakeFailureRatePercent { get; set; }
 
-        [Category("Failure cases")]
+        [Category("Random number generation settings (for testing)")]
         public double FalseReadPercent { get; set; }
 
         [Category("Virtual Hardware")]

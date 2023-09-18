@@ -34,13 +34,12 @@ namespace UI.Nodes
             mouseMenu.Show(addButton);
         }
 
-        protected override IEnumerable<PropertyInfo> GetPropertyInfos(TimingSystemSettings obj)
+        protected override IEnumerable<PropertyInfo> GetPropertyInfos()
         {
-
             // Just a little hack to make all the "receiver" setting appear last. 
             List<PropertyInfo> lapRFBaseSettings = new List<PropertyInfo>();
 
-            foreach (var pi in base.GetPropertyInfos(obj))
+            foreach (var pi in base.GetPropertyInfos())
             {
                 if (pi.ReflectedType == typeof(Timing.ImmersionRC.LapRFSettings))
                 {

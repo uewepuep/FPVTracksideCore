@@ -44,6 +44,7 @@ namespace UI.Nodes
         protected override void Recalculate()
         {
             EventManager.ResultManager.Recalculate(Round);
+            EventManager.ResultManager.ReCalculateRaces(Round);
             RequestLayout();
         }
 
@@ -196,11 +197,13 @@ namespace UI.Nodes
         public override void EditSettings()
         {
             ObjectEditorNode<PointSummary> editor = new ObjectEditorNode<PointSummary>(Round.PointSummary);
+            editor.Scale(0.6f);
             GetLayer<PopupLayer>().Popup(editor);
             editor.OnOK += (a) =>
             {
                 SaveRound();
-                Recalculate();
+                EventManager.ResultManager.Recalculate(Round);
+                Refresh();
             };
         }
     }

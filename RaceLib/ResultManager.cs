@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -773,8 +774,13 @@ namespace RaceLib
                     }
                 }
             }
+        }
 
+        public void ReCalculateRaces(Round endRound)
+        {
+            Round start = GetStartRound(endRound);
 
+            IEnumerable<Race> races = GetRoundPointRaces(start.RoundNumber, endRound.RoundNumber);
             foreach (Race race in races)
             {
                 SaveResults(race);
