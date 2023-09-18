@@ -45,6 +45,13 @@ namespace Timing
                 }
             }
         }
+        public string Name
+        {
+            get
+            {
+                return "DMY";
+            }
+        }
 
         public DummyTimingSystem()
         {

@@ -199,7 +199,6 @@ namespace UI.Nodes
             TimingSystem = timingSystem;
             TimingSystemManager.OnDataReceived += TimingSystemManager_OnDataReceived;
 
-            Name = TimingSystemToAcronym(timingSystem.Type);
         }
 
         private void TimingSystemManager_OnDataReceived(ITimingSystem obj)
@@ -210,28 +209,18 @@ namespace UI.Nodes
             }
         }
 
-        private string TimingSystemToAcronym(TimingSystemType type)
-        {
-            switch (type)
-            {
-                case TimingSystemType.Dummy:
-                    return "DMY";
-
-                case TimingSystemType.LapRF:
-                    return "LRF";
-
-                case TimingSystemType.Video:
-                    return "V";
-
-                default:
-                    return Maths.AutoAcronym(type.ToString());
-            }
-
-        }
-
         public override void StatusUpdate()
         {
             base.StatusUpdate();
+
+            if (TimingSystem != null)
+            {
+                Name = TimingSystem.Name;
+            }
+            else
+            {
+                Name = "?";
+            }
 
             StatusItem[] statuses = TimingSystem.Status.ToArray();
 

@@ -73,6 +73,14 @@ namespace Timing.ImmersionRC
 
         protected int connectionCount;
 
+        public string Name
+        {
+            get
+            {
+                return "LRF";
+            }
+        }
+
         public LapRFTiming()
         {
             detections = new List<Tuple<int, DateTime, ushort>>();

@@ -12,7 +12,7 @@ using Timing;
 
 namespace UI.Nodes
 {
-    class TimingSystemEditor : ObjectEditorNode<Timing.TimingSystemSettings>
+    class TimingSystemEditor : ObjectEditorNode<TimingSystemSettings>
     {
         public TimingSystemEditor(IEnumerable<TimingSystemSettings> toEdit)
             : base(toEdit, true, true)
@@ -34,12 +34,12 @@ namespace UI.Nodes
             mouseMenu.Show(addButton);
         }
 
-        protected override IEnumerable<PropertyInfo> GetPropertyInfos()
+        protected override IEnumerable<PropertyInfo> GetPropertyInfos(TimingSystemSettings obj)
         {
             // Just a little hack to make all the "receiver" setting appear last. 
             List<PropertyInfo> lapRFBaseSettings = new List<PropertyInfo>();
 
-            foreach (var pi in base.GetPropertyInfos())
+            foreach (var pi in base.GetPropertyInfos(obj))
             {
                 if (pi.ReflectedType == typeof(Timing.ImmersionRC.LapRFSettings))
                 {

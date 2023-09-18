@@ -18,6 +18,14 @@ namespace Timing
         public int MaxPilots { get { return int.MaxValue; } }
         public IEnumerable<StatusItem> Status { get { return new StatusItem[0]; } }
 
+        public string Name
+        {
+            get
+            {
+                return "Test";
+            }
+        }
+
         public bool Connect()
         {
             return true;

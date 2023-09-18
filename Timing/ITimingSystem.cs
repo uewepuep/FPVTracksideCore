@@ -125,6 +125,8 @@ namespace Timing
         TimingSystemSettings Settings { get; set; }
 
         IEnumerable<StatusItem> Status { get; }
+
+        string Name { get; }
     }
 
     public struct StatusItem

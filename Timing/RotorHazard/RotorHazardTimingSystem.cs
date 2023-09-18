@@ -34,8 +34,6 @@ namespace Timing.RotorHazard
 
         public TimingSystemType Type { get { return TimingSystemType.RotorHazard; } }
 
-        public Version Version { get; private set; }
-
         private double voltage;
         private double temperature;
 
@@ -49,7 +47,7 @@ namespace Timing.RotorHazard
 
         public event DetectionEventDelegate OnDetectionEvent;
 
-        private SocketIO socketIOClient;
+        private SocketIO socket;
 
         private TimeSpan serverTimeStart;
         private List<ServerTimeSample> serverTimeSamples;
@@ -87,18 +85,33 @@ namespace Timing.RotorHazard
         {
             get
             {
-                if (voltage != 0)
+                if (connected)
                 {
-                    yield return new StatusItem() { StatusOK = voltage > settings.VoltageWarning, Value = voltage.ToString("0.0") + "v" };
-                }
+                    if (voltage != 0)
+                    {
+                        yield return new StatusItem() { StatusOK = voltage > settings.VoltageWarning, Value = voltage.ToString("0.0") + "v" };
+                    }
 
-                if (temperature != 0)
+                    if (temperature != 0)
+                    {
+                        yield return new StatusItem() { StatusOK = temperature < settings.TemperatureWarning, Value = temperature.ToString("0.0") + "c" };
+                    }
+
+                    if (connectionCount > 10)
+                        yield return new StatusItem() { StatusOK = false, Value = connectionCount.ToString("0") + " disc" };
+
+                    int len = 5;
+                    if (ServerInfo.release_version.Length > len)
+                    {
+                        yield return new StatusItem() { StatusOK = true, Value = "V" + ServerInfo.release_version.Substring(0, len) };
+                    }
+
+                }
+                else
                 {
-                    yield return new StatusItem() { StatusOK = temperature < settings.TemperatureWarning, Value = temperature.ToString("0.0") + "c" };
+                    yield return new StatusItem() { StatusOK = false, Value = "Discon" };
                 }
-
-                if (connectionCount > 10)
-                    yield return new StatusItem() { StatusOK = false, Value = connectionCount.ToString("0") + " disc" };
+                
             }
         }
 
@@ -115,6 +128,13 @@ namespace Timing.RotorHazard
 
         private DateTime rotorhazardStart;
 
+        public string Name
+        {
+            get
+            {
+                return "RH";
+            }
+        }
 
         public RotorHazardTimingSystem()
         {
@@ -133,14 +153,48 @@ namespace Timing.RotorHazard
         {
             try
             {
-                socketIOClient = new SocketIO("http://" + settings.HostName + ":" + settings.Port);
-                socketIOClient.OnConnected += Socket_OnConnected;
+                bool result = false;
+                using (Waiter reponseWaiter = new Waiter())
+                {
+                    socket = new SocketIO("http://" + settings.HostName + ":" + settings.Port);
+                    socket.OnConnected += (object sender, EventArgs e) =>
+                    {
+                        if (reponseWaiter.IsDisposed)
+                            return;
 
-                lastBeatTime = DateTime.Now;
-                connected = true;
+                        try
+                        {
+                            socket.On("ts_lap_data", OnLapData);
+                            socket.On("stage_ready", OnStageReady);
+                            socket.On("frequency_set", (a) => { });
+                            socket.On("frequency_data", OnFrequencyData);
+                            socket.On("environmental_data", OnEnvironmentData);
+                            socket.On("node_data", OnNodeData);
+                            socket.On("heartbeat", HeartBeat);
+                            socket.On("load_all", e =>
+                            {
+                                Logger.TimingLog.Log(this, "Load All");
+                            });
 
-                socketIOClient.ConnectAsync();
-                return true;
+                            connected = true;
+                            Logger.TimingLog.Log(this, "Connected");
+
+                            socket.EmitAsync("ts_server_info", OnServerInfo);
+
+                            connectionCount++;
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.TimingLog.LogException(this, ex);
+                            connected = false;
+                        }
+                    };
+
+                    lastBeatTime = DateTime.Now;
+                    socket?.ConnectAsync();
+                    result = reponseWaiter.WaitOne(TimeOut);
+                }
+                return result;
             }
             catch (Exception ex)
             {
@@ -150,69 +204,16 @@ namespace Timing.RotorHazard
             return false;
         }
 
-        private void Socket_OnConnected(object sender, EventArgs e)
-        {
-            try
-            {
-                SocketIO socket = (SocketIO)sender;
-
-                socket.On("ts_lap_data", OnLapData);
-                socket.On("stage_ready", OnStageReady);
-                socket.On("frequency_set", (a) => { });
-                socket.On("frequency_data", OnFrequencyData);
-                socket.On("environmental_data", OnEnvironmentData);
-                socket.On("node_data", OnNodeData);
-                socket.On("heartbeat", HeartBeat);
-                socket.On("load_all", e =>
-                {
-                    Logger.TimingLog.Log(this, "Load All");
-                });
-
-                string[] toLog = new string[]
-                {
-                            "cluster_status",
-                            "heat_data",
-                            "current_laps",
-                            "leaderboard",
-                            "race_status",
-                            "race_format",
-                            "stop_timer",
-                            "node_crossing_change",
-                            "message",
-                            "first_pass_registered",
-                            "priority_message"
-                };
-
-                foreach (string tolog in toLog)
-                {
-                    socket.On(tolog, DebugLog);
-                }
-
-                connected = true;
-                Logger.TimingLog.Log(this, "Connected");
-
-                socket.EmitAsync("ts_server_info", OnServerInfo);
-
-                connectionCount++;
-            }
-            catch (Exception ex)
-            {
-                Logger.TimingLog.LogException(this, ex);
-                connected = false;
-            }
-        }
-
         public bool Disconnect()
         {
             connected = false;
 
-            if (socketIOClient == null)
+            if (socket == null)
                 return true;
 
-            if (socketIOClient.Connected)
-            {
-                socketIOClient.DisconnectAsync();
-            }
+            socket?.Dispose();
+            socket = null;
+
             return true;
         }
 
@@ -239,9 +240,16 @@ namespace Timing.RotorHazard
 
             try
             {
-                using (AutoResetEvent responseWait = new AutoResetEvent(false))
+                using (Waiter responseWait = new Waiter())
                 {
-                    socketIOClient.EmitAsync("ts_frequency_setup", (SocketIOResponse reponse) => { responseWait.Set(); }, frequencySetup);
+                    socket?.EmitAsync("ts_frequency_setup", (SocketIOResponse reponse) => 
+                    {
+                        if (responseWait.IsDisposed)
+                            return;
+
+                        responseWait.Set(); 
+
+                    }, frequencySetup);
                     if (!responseWait.WaitOne(TimeOut))
                     {
                         Logger.TimingLog.Log(this, "Set Frequencies took too long");
@@ -259,7 +267,7 @@ namespace Timing.RotorHazard
             }
             catch (Exception e)
             {
-                socketIOClient.DisconnectAsync();
+                socket?.DisconnectAsync();
                 Logger.TimingLog.LogException(this, e);
             }
             return false;
@@ -272,7 +280,7 @@ namespace Timing.RotorHazard
 
         public bool TimeSync()
         {
-            SocketIO socket = socketIOClient;
+            SocketIO socket = this.socket;
             if (socket == null)
                 return false;
 
@@ -285,9 +293,9 @@ namespace Timing.RotorHazard
 
             serverTimeStart = Monotonic;
 
-            using (AutoResetEvent responseWait = new AutoResetEvent(false))
+            using (Waiter responseWait = new Waiter())
             {
-                socketIOClient.EmitAsync("ts_server_time", (response) => OnServerTime(response, responseWait));
+                socket?.EmitAsync("ts_server_time", (response) => OnServerTime(response, responseWait));
 
                 if (!responseWait.WaitOne(TimeOut))
                 {
@@ -306,9 +314,9 @@ namespace Timing.RotorHazard
             return count > 0;
         }
 
-        private void OnServerTime(SocketIOResponse response, AutoResetEvent responseWait)
+        private void OnServerTime(SocketIOResponse response, Waiter responseWait)
         {
-            if (response.Count == 0) return;
+            if (response.Count == 0 || responseWait.IsDisposed) return;
 
             TimeSpan responseTime = Monotonic;
             try
@@ -332,7 +340,7 @@ namespace Timing.RotorHazard
                     {
                         Logger.TimingLog.Log(this, "Server Time Sample " + serverTimeSamples.Count);
                         serverTimeStart = Monotonic;
-                        socketIOClient.EmitAsync("ts_server_time", (response) => OnServerTime(response, responseWait));
+                        socket?.EmitAsync("ts_server_time", (response) => OnServerTime(response, responseWait));
                     }
                     else
                     {
@@ -457,11 +465,13 @@ namespace Timing.RotorHazard
 
             Logger.TimingLog.Log(this, "Start detection: Server time: " + serverStartTime.TotalSeconds);
 
-            using (AutoResetEvent responseWait = new AutoResetEvent(false))
+            using (Waiter responseWait = new Waiter())
             {
-
-                socketIOClient.EmitAsync("ts_race_stage", (r) =>
+                socket?.EmitAsync("ts_race_stage", (r) =>
                 { 
+                    if (responseWait.IsDisposed) 
+                        return; 
+
                     responseWait.Set(); 
                 }, new RaceStart { start_time_s = serverStartTime.TotalSeconds });
 
@@ -486,7 +496,7 @@ namespace Timing.RotorHazard
 
             detecting = false;
 
-            socketIOClient.EmitAsync("ts_race_stop", GotRaceStop);
+            socket?.EmitAsync("ts_race_stop", GotRaceStop);
 
             return true;
         }

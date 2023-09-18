@@ -26,6 +26,14 @@ namespace Timing
 
         public IEnumerable<StatusItem> Status { get { return new StatusItem[0]; } }
 
+        public string Name
+        {
+            get
+            {
+                return "Video";
+            }
+        }
+
         public bool Connect()
         {
             return true;

@@ -361,10 +361,10 @@ namespace Composition.Nodes
             itemName.Text = "";
         }
 
-        protected virtual IEnumerable<PropertyInfo> GetPropertyInfos()
+        protected virtual IEnumerable<PropertyInfo> GetPropertyInfos(T obj)
         {
             // A whole lot of stuff to just make sure Base object fields are first in the list.
-            IEnumerable<Type> orderedBaseTypes = typeof(T).GetBaseTypes();
+            IEnumerable<Type> orderedBaseTypes = obj.GetType().GetBaseTypes();
             List<PropertyInfo> propertyInfos = new List<PropertyInfo>();
             foreach (Type type in orderedBaseTypes)
             {
@@ -391,7 +391,7 @@ namespace Composition.Nodes
 
                 itemName.Text = obj.ToString();
 
-                IEnumerable<PropertyInfo> propertyInfos = GetPropertyInfos();
+                IEnumerable<PropertyInfo> propertyInfos = GetPropertyInfos(obj);
                 CreatePropertyNodes(obj, propertyInfos);
 
                 selected = obj;
