@@ -1066,6 +1066,18 @@ namespace UI
                         }
                         return true;
                 }
+
+                int i = 0;
+                foreach (ShortcutKey shortcut in KeyMapper.ToggleView)
+                {
+                    if (shortcut.Match(inputEvent))
+                    {
+                        Channel[] channel = EventManager.GetChannelGroup(i).ToArray();
+                        ChannelsGridNode.ToggleVisiblity(channel);
+                    }
+                    i++;
+                }
+
             }
             return false;
         }

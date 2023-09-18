@@ -123,6 +123,41 @@ namespace Composition.Input
             }
         }
 
+        [Category("FPV View")]
+        public ShortcutKey ToggleViewChannelGroup1 { get; set; }
+        [Category("FPV View")]
+        public ShortcutKey ToggleViewChannelGroup2 { get; set; }
+        [Category("FPV View")]
+        public ShortcutKey ToggleViewChannelGroup3 { get; set; }
+        [Category("FPV View")]
+        public ShortcutKey ToggleViewChannelGroup4 { get; set; }
+        [Category("FPV View")]
+        public ShortcutKey ToggleViewChannelGroup5 { get; set; }
+        [Category("FPV View")]
+        public ShortcutKey ToggleViewChannelGroup6 { get; set; }
+        [Category("FPV View")]
+        public ShortcutKey ToggleViewChannelGroup7 { get; set; }
+        [Category("FPV View")]
+        public ShortcutKey ToggleViewChannelGroup8 { get; set; }
+
+        [Browsable(false)]
+        public IEnumerable<ShortcutKey> ToggleView
+        {
+            get
+            {
+                yield return ToggleViewChannelGroup1;
+                yield return ToggleViewChannelGroup2;
+                yield return ToggleViewChannelGroup3;
+                yield return ToggleViewChannelGroup4;
+                yield return ToggleViewChannelGroup5;
+                yield return ToggleViewChannelGroup6;
+                yield return ToggleViewChannelGroup7;
+                yield return ToggleViewChannelGroup8;
+            }
+        }
+
+
+
         [Category("Replay")]
         public ShortcutKey ReplayPlayStop { get; set; }
         [Category("Replay")]
@@ -226,6 +261,15 @@ namespace Composition.Input
             Custom3 = new ShortcutKey(Keys.D3, true, true);
             Custom4 = new ShortcutKey(Keys.D4, true, true);
             Custom5 = new ShortcutKey(Keys.D5, true, true);
+
+            ToggleViewChannelGroup1 = new ShortcutKey(Keys.D1, true, true, true);
+            ToggleViewChannelGroup2 = new ShortcutKey(Keys.D2, true, true, true);
+            ToggleViewChannelGroup3 = new ShortcutKey(Keys.D3, true, true, true);
+            ToggleViewChannelGroup4 = new ShortcutKey(Keys.D4, true, true, true);
+            ToggleViewChannelGroup5 = new ShortcutKey(Keys.D5, true, true, true);
+            ToggleViewChannelGroup6 = new ShortcutKey(Keys.D6, true, true, true);
+            ToggleViewChannelGroup7 = new ShortcutKey(Keys.D7, true, true, true);
+            ToggleViewChannelGroup8 = new ShortcutKey(Keys.D8, true, true, true);
         }
 
 

@@ -875,5 +875,17 @@ namespace UI.Nodes
                 nodeBase.SetPlaybackTime(time);
             }
         }
+
+        public void ToggleVisiblity(IEnumerable<Channel> channels)
+        {
+            foreach (ChannelNodeBase channelNode in ChannelNodes)
+            {
+                if (channels.Contains(channelNode.Channel))
+                {
+                    channelNode.Visible = !channelNode.Visible;
+                }
+            }
+            RequestLayout();
+        }
     }
 }
