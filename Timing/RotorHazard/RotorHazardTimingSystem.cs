@@ -309,8 +309,6 @@ namespace Timing.RotorHazard
             {
                 count = serverTimeSamples.Count;
             }
-
-            Logger.TimingLog.Log(this, "Server Time Samples " + count);
             return count > 0;
         }
 
