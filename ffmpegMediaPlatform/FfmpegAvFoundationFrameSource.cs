@@ -39,7 +39,8 @@ namespace FfmpegMediaPlatform
         protected override ProcessStartInfo GetProcessStartInfo()
         {
             string name = VideoConfig.DeviceName;
-            return ffmpegMediaFramework.GetProcessStartInfo("-f avfoundation -i video=\"" + name + "\" -pix_fmt rgb32 -f rawvideo -");
+            string index = VideoConfig.ffmpegId;
+            return ffmpegMediaFramework.GetProcessStartInfo("-f avfoundation -framerate 30 -i \"" + index + ":0\" -pix_fmt rgb32 -f rawvideo -");
         }
     }
 }

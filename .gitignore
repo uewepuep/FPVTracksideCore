@@ -13,3 +13,4 @@ packages/
 *UpgradeLog.htm
 *.DS_Store
 ffmpegMediaPlatform/ffmpeg.exe
+ffmpegMediaPlatform/ffmpeg

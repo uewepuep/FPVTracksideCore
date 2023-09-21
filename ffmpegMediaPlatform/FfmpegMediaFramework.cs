@@ -123,18 +123,38 @@ namespace FfmpegMediaPlatform
 
             if (avfoundation)
             {
-                IEnumerable<string> deviceList = GetFfmpegText("-list_devices true -f avfoundation -i dummy", l => l.Contains("[avfoundation @") && l.Contains("(video)"));
+
+                //"[AVFoundation indev @ 0x7fec24704c00] AVFoundation video devices:"
+                //"	[12]	"[AVFoundation indev @ 0x7fb47c004a00] [0] Razer Kiyo Pro"	
+                IEnumerable<string> deviceList = GetFfmpegText("-list_devices true -f avfoundation -i dummy", l => l.Contains("AVFoundation"));
+
+                bool inVideo = false;
 
                 foreach (string deviceLine in deviceList)
                 {
-                    string[] splits = deviceLine.Split("\"");
-                    if (splits.Length != 3)
+                    if (deviceLine.Contains("video devices:"))
                     {
+                        inVideo = true;
                         continue;
                     }
-                    string name = splits[1];
 
-                    yield return new VideoConfig { FrameWork = FrameWork.ffmpeg, DeviceName = name, ffmpegId = name };
+                    if (deviceLine.Contains("audio devices:"))
+                    {
+                        inVideo = false;
+                        continue;
+                    }
+
+                    if (inVideo)
+                    {
+                        Regex reg = new Regex("\\] \\[([A-z0-9]*)\\] ([A-z0-9 ]*)");
+
+                        Match match = reg.Match(deviceLine);
+                        if (match.Success)
+                        {
+
+                            yield return new VideoConfig { FrameWork = FrameWork.ffmpeg, DeviceName = match.Groups[2].Value, ffmpegId = match.Groups[1].Value };
+                        }
+                    }
                 }
             }
 
