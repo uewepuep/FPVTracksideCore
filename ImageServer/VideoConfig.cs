@@ -74,6 +74,10 @@ namespace ImageServer
 
         [System.ComponentModel.ReadOnly(true)]
         public string MediaFoundationPath { get; set; }
+        
+        [System.ComponentModel.ReadOnly(true)]
+        public string ffmpegId { get; set; }
+
 
         [System.ComponentModel.ReadOnly(true)]
         public string URL { get; set; }
@@ -125,28 +129,7 @@ namespace ImageServer
         public FrameTime[] FrameTimes { get; set; }
 
         [System.ComponentModel.Browsable(false)]
-        public IEnumerable<FrameWork> AvailableFrameworks
-        {
-            get
-            {
-                if (!string.IsNullOrEmpty(MediaFoundationPath)) yield return FrameWork.MediaFoundation;
-                if (!string.IsNullOrEmpty(DirectShowPath)) yield return FrameWork.DirectShow;
-            }
-        }
-        
-        [System.ComponentModel.Browsable(false)]
-        public FrameWork FrameWork
-        {
-            get
-            {
-                if (AvailableFrameworks.Contains(VideoMode.FrameWork))
-                {
-                    return VideoMode.FrameWork;
-                }
-
-                return AvailableFrameworks.FirstOrDefault();
-            }
-        }
+        public FrameWork FrameWork { get; set; }
 
         public VideoBounds[] VideoBounds { get; set; }
 
@@ -194,6 +177,7 @@ namespace ImageServer
             c.VideoMode = VideoMode;
             c.Pauseable = Pauseable;
             c.RecordVideoForReplays = RecordVideoForReplays;
+            c.FrameWork = FrameWork;
             return c;
         }
 

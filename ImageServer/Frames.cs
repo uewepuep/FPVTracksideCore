@@ -83,13 +83,21 @@ namespace ImageServer
             sourceFrameID = frameID;
         }
 
+        public void SetData(char[] bufferToCopy, int frameID)
+        {
+            lock (source)
+            {
+                Buffer.BlockCopy(bufferToCopy, 0, source, 0, source.Length);
+            }
+            sourceFrameID = frameID;
+        }
+
         public bool UpdateTexture(FrameTextureID texture)
         {
             try
             {
                 if (sourceFrameID > texture.FrameID)
                 {
-                    System.Diagnostics.Debug.Assert(texture.Format == SurfaceFormat.Bgr32);
                     System.Diagnostics.Debug.Assert(texture.Width == width);
                     System.Diagnostics.Debug.Assert(texture.Height == height);
 
@@ -113,8 +121,8 @@ namespace ImageServer
     {
         public int FrameID { get; private set; }
 
-        public FrameTextureID(GraphicsDevice graphicsDevice, int width, int height) 
-            : base(graphicsDevice, width, height, false, SurfaceFormat.Bgr32)
+        public FrameTextureID(GraphicsDevice graphicsDevice, int width, int height, SurfaceFormat surfaceFormat) 
+            : base(graphicsDevice, width, height, false, surfaceFormat)
         {
         }
 

@@ -22,9 +22,13 @@ namespace ImageServer
         
         public bool ASync { get; set; }
 
+        public SurfaceFormat SurfaceFormat { get; protected set; }
+
         public TextureFrameSource(VideoConfig videoConfig) 
             : base(videoConfig)
         {
+            SurfaceFormat = SurfaceFormat.Bgr32;
+
             ASync = true;
             FrameCount = 0;
         }
@@ -180,7 +184,7 @@ namespace ImageServer
             {
                 if (!textures.TryGetValue(graphicsDevice, out texture))
                 {
-                    texture = new FrameTextureID(graphicsDevice, FrameWidth, FrameHeight);
+                    texture = new FrameTextureID(graphicsDevice, FrameWidth, FrameHeight, SurfaceFormat);
                     textures.Add(graphicsDevice, texture);
                 }
                 texture2D = texture;

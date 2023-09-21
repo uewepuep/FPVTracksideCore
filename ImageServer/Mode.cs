@@ -17,7 +17,8 @@ namespace ImageServer
     {
         Undecided,
         DirectShow,
-        MediaFoundation
+        MediaFoundation, 
+        ffmpeg
     }
 
     public class Mode

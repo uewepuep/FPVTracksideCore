@@ -6,10 +6,11 @@ using Composition.Nodes;
 using Composition.Text;
 using Tools;
 using System.Linq;
+using ImageServer;
 
 namespace FPVMacsideCore
 {
-    public class MacPlatform : PlatformTools
+    public class MacPlatformTools : PlatformTools
     {
 
         private Maclipboard maclipboard;
@@ -35,7 +36,8 @@ namespace FPVMacsideCore
             {
                 return new PlatformFeature[]
                 {
-                    PlatformFeature.Speech
+                    PlatformFeature.Speech,
+                    PlatformFeature.Video
                 };
             }
         }
@@ -56,7 +58,7 @@ namespace FPVMacsideCore
 
         public override bool ThreadedDrawing { get { return false; } }
 
-        public MacPlatform()
+        public MacPlatformTools()
         {
             Console.WriteLine("Mac Platform Start");
             Console.WriteLine("Working Dir " + Directory.GetCurrentDirectory());
@@ -84,6 +86,11 @@ namespace FPVMacsideCore
 
             todo = new List<Action>();
             maclipboard = new Maclipboard();
+
+            VideoFrameworks.Available = new VideoFrameWork[]
+            {
+                new FfmpegMediaPlatform.FfmpegMediaFramework()
+            };
         }
 
         private void CopyToHomeDir(DirectoryInfo oldWorkDir)

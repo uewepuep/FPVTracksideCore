@@ -9,16 +9,16 @@ namespace FPVMacsideCore
     public class FPVMacsideCoreGame : UI.BaseGame
     {
 
-        public MacPlatform Platform
+        public MacPlatformTools Platform
         {
             get 
             {
-                return (MacPlatform)PlatformTools;
+                return (MacPlatformTools)PlatformTools;
             }
         }
 
         public FPVMacsideCoreGame()
-            :base(new MacPlatform())
+            :base(new MacPlatformTools())
         {
           
         }
