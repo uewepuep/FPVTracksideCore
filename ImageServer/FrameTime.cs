@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 
 namespace ImageServer
 {
@@ -26,7 +27,7 @@ namespace ImageServer
             return default(DateTime);
         }
 
-        public static TimeSpan GetMediaTime(this IEnumerable<FrameTime> frameTimes, DateTime dateTime)
+        public static TimeSpan GetMediaTime(this IEnumerable<FrameTime> frameTimes, DateTime dateTime, TimeSpan latency)
         {
             if (!frameTimes.Any())
             {
@@ -37,10 +38,10 @@ namespace ImageServer
 
             TimeSpan difference = dateTime - closest.Time;
 
-            return TimeSpan.FromSeconds(closest.Seconds) + difference;
+            return TimeSpan.FromSeconds(closest.Seconds) + difference + latency;
         }
 
-        public static DateTime GetRealTime(this IEnumerable<FrameTime> frameTimes, TimeSpan media)
+        public static DateTime GetRealTime(this IEnumerable<FrameTime> frameTimes, TimeSpan media, TimeSpan latency)
         {
             if (!frameTimes.Any())
             {
@@ -51,7 +52,10 @@ namespace ImageServer
 
             double difference = media.TotalSeconds - closest.Seconds;
 
-            return closest.Time + TimeSpan.FromSeconds(difference);
+            DateTime output = closest.Time + TimeSpan.FromSeconds(difference);
+
+            output -= latency;
+            return output;
         }
     }
 }
