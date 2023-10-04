@@ -29,7 +29,6 @@ namespace UI.Video
             set
             {
                 progressBar.Progress = TimeToFactor(value);
-                Logger.VideoLog.Log(this, "Progress " + progressBar.Progress);
             }
         }
 
