@@ -342,11 +342,14 @@ namespace UI.Video
                 {
                     DateTime currentTime = primary.CurrentTime;
 
-                    SeekNode.CurrentTime = currentTime;
-                    SeekNode.RequestLayout();
+                    if (Math.Abs((SeekNode.CurrentTime - currentTime).TotalMilliseconds) > 10)
+                    {
+                        SeekNode.CurrentTime = currentTime;
+                        SeekNode.RequestLayout();
 
-                    ChannelsGridNode.SetPlaybackTime(currentTime);
-                    ChannelsGridNode.SetReorderType(ProfileSettings.Instance.PilotOrderMidRace == GeneralSettings.OrderTypes.Channel ? ChannelsGridNode.ReOrderTypes.ChannelOrder : ChannelsGridNode.ReOrderTypes.PositionOrder);
+                        ChannelsGridNode.SetPlaybackTime(currentTime);
+                        ChannelsGridNode.SetReorderType(ProfileSettings.Instance.PilotOrderMidRace == GeneralSettings.OrderTypes.Channel ? ChannelsGridNode.ReOrderTypes.ChannelOrder : ChannelsGridNode.ReOrderTypes.PositionOrder);
+                    }
                 }
             }
         }

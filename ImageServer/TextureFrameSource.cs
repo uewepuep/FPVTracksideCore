@@ -70,15 +70,8 @@ namespace ImageServer
             {
                 if (!imageProcessor.Join(5000))
                 {
-                    try
-                    {
-#pragma warning disable SYSLIB0006 // Type or member is obsolete
-                        imageProcessor.Abort();
-#pragma warning restore SYSLIB0006 // Type or member is obsolete
-                    }
-                    catch
-                    {
-                    }
+                    imageProcessor = null;
+                    return false && base.Stop();
                 }
                 imageProcessor.Join();
                 imageProcessor = null;

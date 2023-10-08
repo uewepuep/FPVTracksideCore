@@ -123,6 +123,11 @@ namespace ImageServer
         [Category("Video Recording")]
         public int RecordFrameRate { get; set; }
 
+        [Category("Video Recording")]
+        [DisplayName("Device Latency (seconds)")]
+        public float DeviceLatency { get; set; }
+
+
         [System.ComponentModel.Browsable(false)]
         [JsonIgnore]
         [XmlIgnore]
@@ -148,6 +153,7 @@ namespace ImageServer
             RecordResolution = 480;
             RecordFrameRate = 30;
             FrameTimes = new FrameTime[0];
+            DeviceLatency = 0;
         }
 
         public override string ToString()

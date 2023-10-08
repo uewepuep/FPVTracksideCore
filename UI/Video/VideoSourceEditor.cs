@@ -206,7 +206,7 @@ namespace UI.Video
 
             base.SetObjects(toEdit, addRemove, cancelButton);
 
-            preview.RelativeBounds = new RectangleF(objectProperties.RelativeBounds.X, objectProperties.RelativeBounds.Y, objectProperties.RelativeBounds.Width, 0.5f);
+            preview.RelativeBounds = new RectangleF(objectProperties.RelativeBounds.X, objectProperties.RelativeBounds.Y, objectProperties.RelativeBounds.Width, 0.475f);
 
             objectProperties.Translate(0, preview.RelativeBounds.Height);
             objectProperties.AddSize(0, -preview.RelativeBounds.Height);

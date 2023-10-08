@@ -839,7 +839,7 @@ namespace Composition.Nodes
 
         public void RequestUpdateFromObject()
         {
-            if (!Children.Any(c => c.HasFocus))
+            if (!Children.Any(c => c.HasFocus || c.Children.Any(c2 => c2.HasFocus)))
             {
                 UpdateFromObject();
             }
@@ -978,12 +978,6 @@ namespace Composition.Nodes
             {
                 Value.Text = ValueToString(value);
             }
-        }
-
-        protected override void SetValue(object value)
-        {
-            Value.Text = ValueToString(value);
-            base.SetValue(value);
         }
 
         public override bool Focus()
