@@ -87,10 +87,11 @@ namespace RaceLib
 
             if (ChannelPrefix != char.MinValue)
             {
-                return Band.GetCharacter() + ChannelPrefix + Number;
+                string outa = Band.GetCharacter() + ChannelPrefix + Number.ToString();
+                return outa;
             }
 
-            return Band.GetCharacter() + Number;
+            return Band.GetCharacter() + Number.ToString();
         }
 
         public string GetFrequencyText()
@@ -117,10 +118,20 @@ namespace RaceLib
 
             if (ChannelPrefix != char.MinValue)
             {
-                return Band.ToString() + " " + ChannelPrefix + Number;
+                return Band.ToString() + " " + ChannelPrefix + Number.ToString();
             }
 
-            return Band.ToString() + " " + Number;
+            return Band.ToString() + " " + Number.ToString();
+        }
+
+        public string GetSpokenBandLetter()
+        {
+            if (ChannelPrefix != char.MinValue)
+            {
+                return ChannelPrefix.ToString();
+            }
+
+            return Band.GetCharacter();
         }
 
         public bool InterferesWith(Channel channel)

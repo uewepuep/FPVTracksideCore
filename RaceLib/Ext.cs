@@ -147,7 +147,9 @@ namespace RaceLib
                 return "Z";
 
             string bandName = Enum.GetName(typeof(Band), band);
-            return bandName.Substring(0, 1);
+            if (bandName.Length == 0)
+                return "";
+            return bandName[0].ToString();
         }
 
         public static bool AreAllType(this IEnumerable<Race> races, EventTypes type)

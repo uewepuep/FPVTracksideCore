@@ -288,7 +288,7 @@ namespace Sound
 
                 SpeechParameters pilotChannelParameters = new SpeechParameters();
                 pilotChannelParameters.Add(SpeechParameters.Types.pilot, pc.Pilot.Phonetic);
-                pilotChannelParameters.Add(SpeechParameters.Types.band, pc.Channel.Band.GetCharacter());
+                pilotChannelParameters.Add(SpeechParameters.Types.band, pc.Channel.GetSpokenBandLetter());
                 pilotChannelParameters.Add(SpeechParameters.Types.channel, pc.Channel.Number);
 
                 subSoundParameters.Add(pilotChannelParameters);
@@ -369,7 +369,7 @@ namespace Sound
             parameters.Priority = 1000;
             parameters.SecondsExpiry = 30;
             parameters.Add(SpeechParameters.Types.pilot, pilot.Phonetic);
-            parameters.Add(SpeechParameters.Types.band, channel.Band.GetCharacter());
+            parameters.Add(SpeechParameters.Types.band, channel.GetSpokenBandLetter());
             parameters.Add(SpeechParameters.Types.channel, channel.Number);
 
             PlaySound(SoundKey.PilotChannel, parameters);
