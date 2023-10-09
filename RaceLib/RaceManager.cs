@@ -122,7 +122,6 @@ namespace RaceLib
             race.Event = EventManager.Event;
             race.RaceNumber = number;
             race.Round = round;
-            race.Track = Track;
 
             AddRace(race);
             return race;
@@ -287,8 +286,6 @@ namespace RaceLib
         public bool PreRaceStartDelay { get; private set; }
         public bool StaggeredStart { get; private set; }
 
-
-        public Track Track { get; private set; }
         public bool TimesUp
         {
             get
@@ -410,7 +407,6 @@ namespace RaceLib
                 currentRace.RaceNumber = GetRaceCount(round) + 1;
 
                 currentRace.Round = round;
-                currentRace.Track = Track;
                 CurrentRace = currentRace;
 
                 AddRace(currentRace);
@@ -984,7 +980,6 @@ namespace RaceLib
                 .Include(r => r.Detections.Select(d => d.Pilot))
                 .Include(r => r.Round)
                 .Include(r => r.Event)
-                .Include(r => r.Track)
                 .Find(r => r.Event.ID == eve.ID && r.Valid).OrderBy(r => r.Creation).ToArray();
             }
 
@@ -1520,7 +1515,6 @@ namespace RaceLib
                     .Include(r => r.Detections)
                     .Include(r => r.Round)
                     .Include(r => r.Event)
-                    .Include(r => r.Track)
                     .Find(r => r.Event.ID == EventManager.Event.ID && r.Valid == false);
 
                 copy.AddRange(invalid);

@@ -38,7 +38,6 @@ namespace RaceLib
         public ModifiedLiteCollection<Round> Rounds { get { return new ModifiedLiteCollection<Round>(database, "Round"); } }
         public ModifiedLiteCollection<Result> Results { get { return new ModifiedLiteCollection<Result>(database, "Result"); } }
 
-        public ModifiedLiteCollection<Track> Tracks { get { return new ModifiedLiteCollection<Track>(database, "Track"); } }
         public ModifiedLiteCollection<Club> Clubs { get { return new ModifiedLiteCollection<Club>(database, "Club"); } }
         
         public ModifiedLiteCollection<Patreon> Patreons { get { return new ModifiedLiteCollection<Patreon>(database, "Patreon"); } }
@@ -163,7 +162,6 @@ namespace RaceLib
                 Race[] races = Races.FindAll().ToArray();
                 Channel[] cs = Channels.FindAll().ToArray();
                 Detection[] ds = Detections.FindAll().ToArray();
-                Track[] ts = Tracks.FindAll().ToArray();
                 Round[] rns = Rounds.FindAll().ToArray();
                 Result[] results = Results.FindAll().ToArray();
                 Club[] clubs = Clubs.FindAll().ToArray();
@@ -219,7 +217,6 @@ namespace RaceLib
                 Races.Insert(races);
                 Channels.Insert(cs);
                 Detections.Insert(ds);
-                Tracks.Insert(ts);
                 Rounds.Insert(rns);
                 Results.Insert(results);
                 Clubs.Insert(clubs);
@@ -239,7 +236,6 @@ namespace RaceLib
                                                         .Include(r => r.Detections.Select(d => d.Pilot))
                                                         .Include(r => r.Round)
                                                         .Include(r => r.Event)
-                                                        .Include(r => r.Track)
                                                         .FindAll().ToArray();
                         foreach (Race race in toMigrate)
                         {
@@ -309,7 +305,6 @@ namespace RaceLib
                 Races.EnsureIndex("ExternalID");
                 Channels.EnsureIndex("ExternalID");
                 Detections.EnsureIndex("ExternalID");
-                Tracks.EnsureIndex("ExternalID");
                 Rounds.EnsureIndex("ExternalID");
                 Results.EnsureIndex("ExternalID");
                 Clubs.EnsureIndex("ExternalID");

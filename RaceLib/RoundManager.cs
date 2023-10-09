@@ -132,7 +132,6 @@ namespace RaceLib
                         race.Event = Event;
                         race.RaceNumber = startNumber + 1 + races.Count;
                         race.Round = round;
-                        race.Track = RaceManager.Track;
                         races.Add(race);
                     }
 

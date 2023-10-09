@@ -94,7 +94,6 @@ namespace RaceLib.Format
                 race.Event = EventManager.Event;
                 race.RaceNumber = startNumber + 1 + i;
                 race.Round = round;
-                race.Track = RaceManager.Track;
                 race.Bracket = bracket;
                 yield return race;
             }

@@ -111,10 +111,6 @@ namespace RaceLib
         public Event Event { get; set; }
 
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonRef("Track")]
-        public Track Track { get; set; }
-
-        [System.ComponentModel.Browsable(false)]
         [LiteDB.BsonIgnore]
         public bool Running
         {
@@ -292,7 +288,6 @@ namespace RaceLib
             clone.AutoAssignNumbers = AutoAssignNumbers;
             clone.PilotChannels = PilotChannels.Clone().ToList();
             clone.Event = Event;
-            clone.Track = Track;
             clone.Round = Round;
             clone.Bracket = Bracket;
             clone.RaceNumber = RaceNumber;

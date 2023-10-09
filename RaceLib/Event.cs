@@ -150,10 +150,6 @@ namespace RaceLib
         public List<Pilot> RemovedPilots { get; set; }
 
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonRef("Track")]
-        public List<Track> Tracks { get; set; }
-
-        [System.ComponentModel.Browsable(false)]
         [LiteDB.BsonRef("Round")]
         public List<Round> Rounds { get; set; }
 
@@ -228,7 +224,6 @@ namespace RaceLib
             Name = "New Event";
             MinStartDelay = TimeSpan.FromSeconds(0.5f);
             MaxStartDelay = TimeSpan.FromSeconds(5);
-            Tracks = new List<Track>();
 
             Rounds = new List<Round>();
             Channels = new Channel[0];
@@ -256,7 +251,6 @@ namespace RaceLib
 
             newEvent.PilotChannels = this.PilotChannels.ToList();
             newEvent.Channels = this.Channels.ToArray();
-            newEvent.Tracks = this.Tracks.ToList();
 
             newEvent.MinLapTime = this.MinLapTime;
 

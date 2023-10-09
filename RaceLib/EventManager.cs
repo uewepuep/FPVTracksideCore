@@ -220,7 +220,6 @@ namespace RaceLib
                     .Include(e => e.RemovedPilots)
                     .Include(e => e.Rounds)
                     .Include(e => e.Club)
-                    .Include(e => e.Tracks)
                     .Include(e => e.Channels)
                     .FindById(eve.ID);
 

@@ -156,7 +156,6 @@ namespace RaceLib.Format
                     race.Event = EventManager.Event;
                     race.RaceNumber = raceNumber + 1;
                     race.Round = newRound;
-                    race.Track = RaceManager.Track;
                     race.Bracket = bracket;
                     races.Add(race);
                     raceNumber++;
