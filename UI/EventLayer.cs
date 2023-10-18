@@ -272,7 +272,7 @@ namespace UI
                 raceControl = this;
             }
 
-            eventWebServer = new EventWebServer(EventManager, SoundManager, raceControl, new IWebbTable[] { TabbedMultiNode.LapRecordsSummaryNode, TabbedMultiNode.LapCountSummaryNode, TabbedMultiNode.PointsSummaryNode });
+            eventWebServer = new EventWebServer(EventManager, SoundManager, raceControl, new IWebbTable[] { TabbedMultiNode.LapRecordsSummaryNode, TabbedMultiNode.LapCountSummaryNode, TabbedMultiNode.PointsSummaryNode }, Theme.Current.ChannelColors);
 
             if (GeneralSettings.Instance.HTTPServer)
             {

@@ -66,7 +66,7 @@ namespace RaceLib
             if (!mutex.WaitOne(10000))
             {
                 #if DEBUG
-                                throw new Exception("Database wait timeout");
+                    throw new Exception("Database wait timeout");
                 #endif
             }
             waiting--;

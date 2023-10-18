@@ -20,7 +20,7 @@ namespace Timing.RotorHazard
 
     public class FrequencyData
     {
-        public string band { get; set; }
+        public object band { get; set; }
         public int? channel { get; set; }
         public int frequency { get; set; }
 
