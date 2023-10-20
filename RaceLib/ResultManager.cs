@@ -629,11 +629,11 @@ namespace RaceLib
             bool showDNF = PointsSettings.DNFForUnfinishedRaces;
 
             string result = "";
-            foreach (Channel c in EventManager.Channels)
+            foreach (IEnumerable<Channel> channelGroup in EventManager.Channels.GetChannelGroups())
             {
                 List<string> results = new List<string>();
 
-                Pilot p = race.GetPilot(c);
+                Pilot p = race.GetPilot(channelGroup);
                 Result r = GetResult(race, p);
                 if (p != null)
                 {
