@@ -31,6 +31,9 @@ namespace UI.Video
         private ChannelVideoMapperNode mapperNode;
         private object locker;
 
+        private Node physicalLayoutContainer;
+        private Node physicalLayout;
+
         public Profile Profile { get; private set; }    
 
         public static VideoSourceEditor GetVideoSourceEditor(EventManager em, Profile profile)
@@ -204,13 +207,32 @@ namespace UI.Video
                 right.AddChild(preview);
             }
 
+            if (physicalLayoutContainer == null)
+            {
+                physicalLayoutContainer = new AspectNode(16 / 9.0f);
+                physicalLayoutContainer.Visible = false;
+                ColorNode background = new ColorNode(Theme.Current.Editor.Foreground.XNA);
+                physicalLayoutContainer.AddChild(background);
+
+                right.AddChild(physicalLayoutContainer);
+
+                physicalLayout = new ColorNode(Theme.Current.Editor.Text.XNA);
+                physicalLayout.Scale(0.3f);
+                physicalLayoutContainer.AddChild(physicalLayout);
+            }
+
+
             base.SetObjects(toEdit, addRemove, cancelButton);
 
             preview.RelativeBounds = new RectangleF(objectProperties.RelativeBounds.X, objectProperties.RelativeBounds.Y, objectProperties.RelativeBounds.Width, 0.475f);
 
+
             objectProperties.Translate(0, preview.RelativeBounds.Height);
             objectProperties.AddSize(0, -preview.RelativeBounds.Height);
 
+            float top = 0.002f;
+
+            physicalLayoutContainer.RelativeBounds = new RectangleF(1.1f, preview.RelativeBounds.Y, 0.3f, preview.RelativeBounds.Height);
         }
 
         protected override void SetSelected(VideoConfig obj)
@@ -235,11 +257,8 @@ namespace UI.Video
         {
             lock (locker)
             {
-                if (mapperNode != null)
-                {
-                    mapperNode.Dispose();
-                    mapperNode = null;
-                }
+                mapperNode?.Dispose();
+                mapperNode = null;
 
                 if (videoConfig == null)
                     return;
@@ -248,6 +267,7 @@ namespace UI.Video
                 {
                     mapperNode = new ChannelVideoMapperNode(Profile, VideoManager, EventManager, videoConfig, Objects);
                     preview.AddChild(mapperNode);
+
                     RequestLayout();
                 }
             }
@@ -309,6 +329,30 @@ namespace UI.Video
             InitMapperNode(Selected);
 
             base.ChildValueChanged(newChange);
+        }
+
+        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
+        {
+            bool physicalVisible = false;
+
+            if (preview.Contains(mouseInputEvent.Position))
+            {
+                if (mapperNode.ChannelVideoInfos.Count() > 9)
+                {
+                    ChannelVideoMapNode match = mapperNode.ChannelVideoMapNodes.FirstOrDefault(r => r.Contains(mouseInputEvent.Position));
+                    if (match != null)
+                    {
+                        physicalLayout.RelativeBounds = match.ChannelVideoInfo.ScaledRelativeSourceBounds;
+                        physicalLayout.RequestLayout();
+                        physicalVisible = true;
+                    }
+                }
+            }
+
+            physicalLayoutContainer.Visible = physicalVisible;
+
+
+            return base.OnMouseInput(mouseInputEvent);
         }
 
         private class ModePropertyNode : ListPropertyNode<VideoConfig>
@@ -455,9 +499,9 @@ namespace UI.Video
 
         private VideoManager videoManager;
 
-        private ChannelVideoInfo[] channelVideoInfos;
+        public ChannelVideoInfo[] ChannelVideoInfos { get; private set; }
 
-        private List<ChannelVideoMapNode> channelVideoMapNodes;
+        public List<ChannelVideoMapNode> ChannelVideoMapNodes { get; private set; }
 
         private VideoConfig videoConfig;
         private VideoConfig[] others;
@@ -466,7 +510,7 @@ namespace UI.Video
 
         public ChannelVideoMapperNode(Profile profile, VideoManager videoManager, EventManager eventManager, VideoConfig videoConfig, IEnumerable<VideoConfig> others)
         {
-            channelVideoMapNodes = new List<ChannelVideoMapNode>();
+            ChannelVideoMapNodes = new List<ChannelVideoMapNode>();
 
             this.others = others.ToArray();
             this.videoManager = videoManager;
@@ -498,16 +542,16 @@ namespace UI.Video
 
         private void CreateChannelVideoInfos()
         {
-            channelVideoInfos = videoManager.CreateChannelVideoInfos(others).Where(cc => cc.FrameSource.VideoConfig == videoConfig).ToArray();
+            ChannelVideoInfos = videoManager.CreateChannelVideoInfos(others).Where(cc => cc.FrameSource.VideoConfig == videoConfig).ToArray();
 
-            foreach (ChannelVideoInfo cvi in channelVideoInfos)
+            foreach (ChannelVideoInfo cvi in ChannelVideoInfos)
             {
                 Channel channel = cvi.Channel;
 
                 if ((channel == null || channel == Channel.None) && cvi.VideoBounds.SourceType == SourceTypes.FPVFeed)
                 {
                     IEnumerable<Channel> otherDevicesInUse = others.SelectMany(vs => vs.VideoBounds).Select(vb => vb.GetChannel()).Where(ca => ca != null);
-                    IEnumerable<Channel> thisDeviceInUse = channelVideoInfos.Select(c => c.Channel).Where(ca => ca != null);
+                    IEnumerable<Channel> thisDeviceInUse = ChannelVideoInfos.Select(c => c.Channel).Where(ca => ca != null);
 
                     IEnumerable<Channel> inUse = otherDevicesInUse.Concat(thisDeviceInUse).Distinct();
                     Channel next = eventChannels.Where(d => !inUse.Contains(d)).FirstOrDefault();
@@ -534,16 +578,18 @@ namespace UI.Video
                     table.ClearDisposeChildren();
                 }
 
-                int columns = (int)Math.Ceiling(Math.Sqrt(channelVideoInfos.Length));
-                int rows = (int)Math.Ceiling(channelVideoInfos.Length / (float)columns);
+                ChannelVideoMapNodes.Clear();
+
+                int columns = (int)Math.Ceiling(Math.Sqrt(ChannelVideoInfos.Length));
+                int rows = (int)Math.Ceiling(ChannelVideoInfos.Length / (float)columns);
                 table.SetSize(rows, columns);
 
                 Color transparentForeground = new Color(Theme.Current.Editor.Foreground.XNA, 0.5f);
 
-                int count = Math.Min(channelVideoInfos.Length, table.CellCount);
+                int count = Math.Min(ChannelVideoInfos.Length, table.CellCount);
                 for (int i = 0; i < count; i++)
                 {
-                    ChannelVideoInfo channelVideoInfo = channelVideoInfos[i];
+                    ChannelVideoInfo channelVideoInfo = ChannelVideoInfos[i];
                     Node cell = table.GetCell(i);
 
                     if (cell != null && channelVideoInfo.FrameSource != null)
@@ -552,9 +598,9 @@ namespace UI.Video
                         cvmn.OnClick += (m, c) => { ShowChangeMenu(m, c.ChannelVideoInfo); };
                         cell.AddChild(cvmn);
 
-                        lock (channelVideoMapNodes)
+                        lock (ChannelVideoMapNodes)
                         {
-                            channelVideoMapNodes.Add(cvmn);
+                            ChannelVideoMapNodes.Add(cvmn);
                         }
                     }
                 }
@@ -566,9 +612,9 @@ namespace UI.Video
         {
             base.Draw(id, parentAlpha);
 
-            lock (channelVideoMapNodes)
+            lock (ChannelVideoMapNodes)
             {
-                foreach (ChannelVideoMapNode fn in channelVideoMapNodes)
+                foreach (ChannelVideoMapNode fn in ChannelVideoMapNodes)
                 {
                     fn.FrameNode.NeedsAspectRatioUpdate = true;
                 }
@@ -668,10 +714,10 @@ namespace UI.Video
             {
                 Channel[] ordered = channels.OrderBy(c => c.Band.GetBandType()).ThenBy(c => c.Frequency).ToArray();
 
-                int max = Math.Min(channelVideoInfos.Length, ordered.Length);
+                int max = Math.Min(ChannelVideoInfos.Length, ordered.Length);
                 for (int i = 0; i < max; i++)
                 {
-                    AssignChannel(channelVideoInfos[i], ordered[i]);
+                    AssignChannel(ChannelVideoInfos[i], ordered[i]);
                 }
             }
         }
