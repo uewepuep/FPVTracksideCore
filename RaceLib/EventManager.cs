@@ -90,7 +90,7 @@ namespace RaceLib
                 // check the db.
                 if (pc == null)
                 {
-                    p = db.Find<Pilot>().FirstOrDefault(pa => !string.IsNullOrEmpty(pa.Name) && pa.Name.ToLower() == pilotName.ToLower());
+                    p = db.All<Pilot>().FirstOrDefault(pa => !string.IsNullOrEmpty(pa.Name) && pa.Name.ToLower() == pilotName.ToLower());
                 }
 
                 // Create

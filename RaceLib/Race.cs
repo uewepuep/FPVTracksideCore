@@ -366,7 +366,7 @@ namespace RaceLib
                 if (pc != null)
                 {
                     PilotChannels.Remove(pc);
-                    db.Delete(pc.ID);
+                    db.Delete(pc);
                     return pc;
                 }
             }
@@ -386,7 +386,7 @@ namespace RaceLib
                 if (pc != null)
                 {
                     PilotChannels.Remove(pc);
-                    db.Delete(pc.ID);
+                    db.Delete(pc);
                     return pc;
                 }
             }
@@ -521,7 +521,7 @@ namespace RaceLib
             PilotChannels.Clear();
             foreach (var channel in toDelete)
             {
-                db.Delete(channel.ID);
+                db.Delete(channel);
             }
             return true;
         }

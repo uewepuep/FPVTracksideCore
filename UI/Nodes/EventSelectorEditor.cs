@@ -272,7 +272,7 @@ namespace UI.Nodes
             {
                 events = db.GetEvents().ToArray();
 
-                Club club = db.Find<Club>().FirstOrDefault();
+                Club club = db.All<Club>().FirstOrDefault();
                 if (club == null)
                 {
                     club = new Club();

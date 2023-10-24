@@ -68,7 +68,7 @@ namespace UI.Sponsor
 
             using (Database db = new Database())
             {
-                patreons = db.Find<Patreon>().Where(p => p.Active).ToArray();
+                patreons = db.All<Patreon>().Where(p => p.Active).ToArray();
             }
 
             SponsorMedias.Clear();
