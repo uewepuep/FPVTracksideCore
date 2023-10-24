@@ -104,7 +104,7 @@ namespace UI.Nodes
             {
                 foreach (Pilot pa in editedPilots)
                 {
-                    db.Pilots.Upsert(pa);
+                    db.Upsert(pa);
                 }
                 eventManager.RefreshPilots(db);
             }

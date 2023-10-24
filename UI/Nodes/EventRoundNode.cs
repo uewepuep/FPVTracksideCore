@@ -367,7 +367,7 @@ namespace UI.Nodes
                 {
                     using (Database db = new Database())
                     {
-                        db.Rounds.Upsert(editor.Selected);
+                        db.Upsert(editor.Selected);
                     }
                     Refresh(true);
                 }
@@ -484,8 +484,8 @@ namespace UI.Nodes
 
                         Race[] races = RaceNodes.Select(rn => rn.Race).ToArray();
 
-                        db.Races.Update(races);
-                        db.Races.Update(draggedRace);
+                        db.Update(races);
+                        db.Update(draggedRace);
                     }
                 }
                 contentContainer.ClearDisposeChildren();

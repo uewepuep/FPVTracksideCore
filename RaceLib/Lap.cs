@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace RaceLib
 {
-    public class Lap : BaseDBObject
+    public class Lap : BaseObject
     {
         public delegate void LapDelegate(Lap lap);
 
         public Detection Detection { get; set; }
 
-        [LiteDB.BsonIgnore]
+        
         public DateTime Start 
         { 
             get 
@@ -34,7 +34,7 @@ namespace RaceLib
 
         public TimeSpan Length { get; set; }
 
-        [LiteDB.BsonIgnore]
+        
         public TimeSpan EndRaceTime
         {
             get

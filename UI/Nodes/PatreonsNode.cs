@@ -78,7 +78,7 @@ namespace UI.Nodes
 
             using (Database db = new Database())
             {
-                patreons = db.Patreons.Find(p => p.Active).Randomise().ToArray();
+                patreons = db.Find<Patreon>().Where(p => p.Active).Randomise().ToArray();
             }
 
             foreach (Patreon patreon in patreons)

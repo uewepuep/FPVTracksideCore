@@ -248,7 +248,7 @@ namespace UI.Nodes
             using (Database db = new Database())
             {
                 newRound.SheetFormatFilename = sheet.FileInfo.Name;
-                db.Rounds.Update(newRound);
+                db.Update(newRound);
             }
 
             EventManager.RoundManager.SheetFormatManager.LoadSheet(newRound, GetOrderedPilots().ToArray(), true);
@@ -277,7 +277,7 @@ namespace UI.Nodes
         {
             using (Database db = new Database())
             {
-                db.Rounds.Update(Round);
+                db.Update(Round);
             }
         }
 

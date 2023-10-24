@@ -87,7 +87,7 @@ namespace RaceLib
 
             using (Database db = new Database())
             {
-                db.Rounds.Update(round);
+                db.Update(round);
             }
 
             RaceManager.UpdateRaceRoundNumbers();
@@ -292,8 +292,8 @@ namespace RaceLib
 
                     using (Database db = new Database())
                     {
-                        db.Rounds.Insert(round);
-                        db.Events.Update(Event);
+                        db.Insert(round);
+                        db.Update(Event);
                     }
                 }
 
@@ -313,8 +313,8 @@ namespace RaceLib
                     round.ID = ID;
                     Event.Rounds.Add(round);
 
-                    db.Rounds.Insert(round);
-                    db.Events.Update(Event);
+                    db.Insert(round);
+                    db.Update(Event);
                 }
                 return round;
             }
@@ -350,8 +350,8 @@ namespace RaceLib
                 using (Database db = new Database())
                 {
                     round.Valid = false;
-                    db.Rounds.Update(round);
-                    db.Events.Update(Event);
+                    db.Update(round);
+                    db.Update(Event);
                 }
             }
 

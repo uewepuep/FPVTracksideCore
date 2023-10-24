@@ -43,7 +43,7 @@ namespace RaceLib
         XClassRacing
     }
 
-    public class Event : BaseDBObject
+    public class Event : BaseObject
     {
         [System.ComponentModel.Browsable(false)]
         public EventTypes EventType { get; set; }
@@ -78,7 +78,7 @@ namespace RaceLib
 
         [Category("Event Info")]
         [DisplayName("Pilots Registered")]
-        [LiteDB.BsonIgnore]
+        
         public int PilotCount 
         { 
             get 
@@ -95,7 +95,7 @@ namespace RaceLib
         
         [Category("Event Info")]
         [DisplayName("Channels")]
-        [LiteDB.BsonIgnore]
+        
         public string ChannelString 
         { 
             get
@@ -139,7 +139,7 @@ namespace RaceLib
         public DateTime LastOpened { get; set; }
 
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonIgnore]
+        
         public IEnumerable<Pilot> Pilots { get { return PilotChannels.Select(pc => pc.Pilot); } }
 
         [System.ComponentModel.Browsable(false)]
@@ -173,7 +173,7 @@ namespace RaceLib
         [Category("Cloud")]
         public bool Sync { get; set; }
 
-        [LiteDB.BsonIgnore]
+        
         [Category("Cloud")]
         [DisplayName("Sync Service")]
         public string SyncService
@@ -194,7 +194,7 @@ namespace RaceLib
         }
         
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonIgnore]
+        
         public string Month
         {
             get
@@ -279,11 +279,12 @@ namespace RaceLib
             yield return EventTypes.Freestyle;
             yield return EventTypes.CasualPractice;
         }
+
         public void RefreshPilots(Database db)
         {
             foreach (PilotChannel pc in PilotChannels)
             {
-                Pilot p = db.Pilots.GetObject(pc.Pilot.ID);
+                Pilot p = db.GetObject<Pilot>(pc.Pilot.ID);
                 pc.Pilot = p;
             }
         }

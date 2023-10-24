@@ -18,7 +18,7 @@ namespace RaceLib.Format
         public override IEnumerable<Race> GenerateRound(Database db, IEnumerable<Race> preExisting, Round newRound, RoundPlan plan)
         {
             newRound.RoundType = Round.RoundTypes.DoubleElimination;
-            db.Rounds.Upsert(newRound);
+            db.Upsert(newRound);
 
             preExisting.ClearPilots(db);
 

@@ -318,7 +318,7 @@ namespace UI.Nodes
                         {
                             using (Database db = new Database())
                             {
-                                db.Laps.Update(editLaps);
+                                db.Update(editLaps);
                                 currentRace.ReCalculateLaps(db, Pilot);
                             }
 

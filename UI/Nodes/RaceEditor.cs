@@ -27,7 +27,7 @@ namespace UI.Nodes
             {
                 using (Database db = new Database())
                 {
-                    db.Races.Update(race);
+                    db.Update(race);
                 }
             }
         }

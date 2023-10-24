@@ -103,13 +103,7 @@ namespace RaceLib
         {
             using (Database db = new Database())
             {
-                Result[] results;
-                results = db.Results
-                .Include(r => r.Event)
-                .Include(r => r.Pilot)
-                .Include(r => r.Race)
-                .Include(r => r.Round)
-                .Find(r => r.Event.ID == eve.ID).OrderBy(r => r.Creation).ToArray();
+                Result[] results = db.LoadResults(eve.ID).ToArray();
 
                 // Load points
                 Results = results.ToList();
@@ -331,7 +325,7 @@ namespace RaceLib
 
                     using (Database db = new Database())
                     {
-                        db.Results.Update(result);
+                        db.Update(result);
                     }
                 }
             }
@@ -362,7 +356,7 @@ namespace RaceLib
 
             using (Database db = new Database())
             {
-                db.Results.Insert(result);
+                db.Insert(result);
             }
 
             lock (Results)
@@ -464,7 +458,7 @@ namespace RaceLib
 
                 using (Database db = new Database())
                 {
-                    db.Results.Delete(toRemove);
+                    db.Delete(toRemove);
                 }
                 return true;
             }
@@ -512,12 +506,12 @@ namespace RaceLib
             {
                 using (Database db2 = new Database())
                 {
-                    db2.Results.Insert(newResults);
+                    db2.Insert(newResults);
                 }
             }
             else
             {
-                db.Results.Insert(newResults);
+                db.Insert(newResults);
             }
 
             lock (Results)
@@ -542,7 +536,7 @@ namespace RaceLib
                 }
                 using (Database db = new Database())
                 {
-                    db.Races.Update(race);
+                    db.Update(race);
                 }
             }
 
@@ -568,7 +562,7 @@ namespace RaceLib
 
             using (Database db = new Database())
             {
-                db.Results.Upsert(r);
+                db.Upsert(r);
             }
 
             RaceResultsChanged?.Invoke(race);
@@ -747,7 +741,7 @@ namespace RaceLib
             {
                 using (Database db = new Database())
                 {
-                    db.Results.Delete(Results);
+                    db.Delete(Results);
                 }
                 Results.Clear();
             }

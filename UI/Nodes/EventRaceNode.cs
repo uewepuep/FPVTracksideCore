@@ -434,7 +434,7 @@ namespace UI.Nodes
             using (Database db = new Database())
             {
                 Race.Bracket = bracket;
-                db.Races.Update(Race);
+                db.Update(Race);
             }
 
             Refresh();

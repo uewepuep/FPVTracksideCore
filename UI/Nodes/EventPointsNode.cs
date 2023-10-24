@@ -380,7 +380,7 @@ namespace UI.Nodes
 
                 using (Database db = new Database())
                 {
-                    db.Results.Update(Result);
+                    db.Update(Result);
                 }
             }
         }

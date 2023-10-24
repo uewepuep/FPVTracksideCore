@@ -8,7 +8,7 @@ using Timing;
 
 namespace RaceLib
 {
-    public class Race : BaseDBObject
+    public class Race : BaseObject
     {
         public delegate void OnRaceEvent(Race race);
 
@@ -31,7 +31,7 @@ namespace RaceLib
         public List<PilotChannel> PilotChannels { get; set; }
        
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonIgnore]
+        
         public PilotChannel[] PilotChannelsSafe 
         { 
             get 
@@ -61,7 +61,7 @@ namespace RaceLib
         public Round Round { get; set; }
 
         [Category("Editable Details")]
-        [LiteDB.BsonIgnore]
+        
         public int RoundNumber
         {
             get
@@ -85,7 +85,7 @@ namespace RaceLib
         public int TargetLaps { get; set; }
 
         [Category("Editable Details")]
-        [LiteDB.BsonIgnore]
+        
         public EventTypes Type
         {
             get
@@ -111,7 +111,7 @@ namespace RaceLib
         public Event Event { get; set; }
 
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonIgnore]
+        
         public bool Running
         {
             get
@@ -121,7 +121,7 @@ namespace RaceLib
         }
 
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonIgnore]
+        
         public Pilot[] Pilots
         {
             get
@@ -134,7 +134,7 @@ namespace RaceLib
         }
         
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonIgnore]
+        
         public Channel[] Channels
         {
             get
@@ -146,16 +146,16 @@ namespace RaceLib
             }
         }
 
-        [LiteDB.BsonIgnore]
+        
         [Category("Pilots")]
         public string PilotNames { get { return string.Join(", ", Pilots.Select(p => p.Name)); } }
 
-        [LiteDB.BsonIgnore]
+        
         [Category("Pilots")]
         public string ChannelNames { get { return string.Join(", ", Channels.Select(c => c.GetBandChannelText())); } }
 
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonIgnore]
+        
         public bool Started
         {
             get
@@ -165,7 +165,7 @@ namespace RaceLib
         }
 
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonIgnore]
+        
         public bool Ended
         {
             get
@@ -191,7 +191,7 @@ namespace RaceLib
             }
         }
 
-        [LiteDB.BsonIgnore]
+        
         [System.ComponentModel.Browsable(false)]
         public int RaceOrder
         {
@@ -201,7 +201,7 @@ namespace RaceLib
             }
         }
 
-        [LiteDB.BsonIgnore]
+        
         [System.ComponentModel.Browsable(false)]
         public string RoundRaceNumber
         {
@@ -253,7 +253,7 @@ namespace RaceLib
 
         public Brackets Bracket { get; set; }
 
-        [LiteDB.BsonIgnore]
+        
         public string RaceName
         {
             get
@@ -351,9 +351,9 @@ namespace RaceLib
                 PilotChannels.Add(pc);
             }
 
-            db.PilotChannels.Insert(pc);
-            db.Races.Update(this);
-            db.Pilots.Update(p);
+            db.Insert(pc);
+            db.Update(this);
+            db.Update(p);
 
             return pc;
         }
@@ -366,7 +366,7 @@ namespace RaceLib
                 if (pc != null)
                 {
                     PilotChannels.Remove(pc);
-                    db.PilotChannels.Delete(pc.ID);
+                    db.Delete(pc.ID);
                     return pc;
                 }
             }
@@ -386,7 +386,7 @@ namespace RaceLib
                 if (pc != null)
                 {
                     PilotChannels.Remove(pc);
-                    db.PilotChannels.Delete(pc.ID);
+                    db.Delete(pc.ID);
                     return pc;
                 }
             }
@@ -486,13 +486,13 @@ namespace RaceLib
                 Laps.Add(lap);
             }
 
-            db.Detections.Insert(detection);
+            db.Insert(detection);
             lock (Detections)
             {
                 Detections.Add(detection);
             }
-            db.Laps.Insert(lap);
-            db.Races.Update(this);
+            db.Insert(lap);
+            db.Update(this);
 
             return lap;
         }
@@ -521,7 +521,7 @@ namespace RaceLib
             PilotChannels.Clear();
             foreach (var channel in toDelete)
             {
-                db.PilotChannels.Delete(channel.ID);
+                db.Delete(channel.ID);
             }
             return true;
         }
@@ -692,7 +692,7 @@ namespace RaceLib
                 Detections.Clear();
             }
 
-            db.Races.Update(this);
+            db.Update(this);
 
             Start = default(DateTime);
             End = default(DateTime);
@@ -803,7 +803,7 @@ namespace RaceLib
                 if (d.LapNumber != i)
                 {
                     d.LapNumber = i;
-                    db.Detections.Update(d);
+                    db.Update(d);
                 }
 
                 if (d.IsLapEnd)
@@ -819,7 +819,7 @@ namespace RaceLib
                 l.Start = lapStart;
                 lapStart = l.End;
 
-                db.Laps.Update(l);
+                db.Update(l);
             }
         }
 
@@ -903,7 +903,7 @@ namespace RaceLib
         {
             foreach (PilotChannel pc in PilotChannels)
             {
-                Pilot p = db.Pilots.GetObject(pc.Pilot.ID);
+                Pilot p = db.GetObject<Pilot>(pc.Pilot.ID);
                 pc.Pilot = p;
             }
         }

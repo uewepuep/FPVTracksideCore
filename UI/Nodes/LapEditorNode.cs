@@ -441,8 +441,8 @@ namespace UI.Nodes
                 Lap.Detection.Valid = Valid;
                 Lap.End = End;
 
-                db.Detections.Update(Lap.Detection);
-                db.Laps.Update(Lap);
+                db.Update(Lap.Detection);
+                db.Update(Lap);
             }
         }
 

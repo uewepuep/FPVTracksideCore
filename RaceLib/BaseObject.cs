@@ -8,7 +8,7 @@ using System.Xml.Serialization;
 
 namespace RaceLib
 {
-    public class BaseDBObject
+    public class BaseObject
     {
         [System.ComponentModel.Browsable(false)]
         [XmlIgnore]
@@ -24,7 +24,7 @@ namespace RaceLib
         [System.ComponentModel.Browsable(false)]
         public int ExternalID { get; set; }
 
-        public BaseDBObject()
+        public BaseObject()
         {
             Creation = DateTime.Now;
             Modified = Creation;
@@ -41,7 +41,7 @@ namespace RaceLib
 
             if (obj.GetType() == GetType())
             {
-                BaseDBObject baseDBObjectT = obj as BaseDBObject;
+                BaseObject baseDBObjectT = obj as BaseObject;
                 if (baseDBObjectT != null)
                 {
                     if (baseDBObjectT.ID == default(Guid) && ID == default(Guid))
@@ -56,7 +56,7 @@ namespace RaceLib
             return base.Equals(obj);
         }
 
-        public static bool operator ==(BaseDBObject a, BaseDBObject b)
+        public static bool operator ==(BaseObject a, BaseObject b)
         {
             if (ReferenceEquals(a, null))
             {
@@ -66,7 +66,7 @@ namespace RaceLib
             return a.Equals(b);
         }
 
-        public static bool operator !=(BaseDBObject a, BaseDBObject b)
+        public static bool operator !=(BaseObject a, BaseObject b)
         {
             return !(a == b);
         }

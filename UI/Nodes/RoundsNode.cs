@@ -560,7 +560,7 @@ namespace UI.Nodes
 
                 using (Database db = new Database())
                 {
-                    db.Rounds.Update(RoundNodes.Select(r => r.Round));
+                    db.Update(RoundNodes.Select(r => r.Round));
                 }
 
                 RequestLayout();

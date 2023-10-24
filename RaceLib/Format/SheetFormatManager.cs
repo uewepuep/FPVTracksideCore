@@ -375,7 +375,7 @@ namespace RaceLib.Format
                     using (Database db = new Database())
                     {
                         StartRound.EventType = eventType;
-                        db.Rounds.Update(StartRound);
+                        db.Update(StartRound);
                     }
                 }
 

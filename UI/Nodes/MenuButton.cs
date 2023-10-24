@@ -405,7 +405,7 @@ namespace UI.Nodes
                     using (Database db = new Database())
                     {
                         eventManager.Event.Channels = channels;
-                        db.Events.Update(eventManager.Event);
+                        db.Update(eventManager.Event);
                     }
                     eventManager.SetChannelColors(Theme.Current.ChannelColors.XNA());
                 }
@@ -549,7 +549,7 @@ namespace UI.Nodes
                 eventManager.Event = editor.Objects.FirstOrDefault();
                 using (Database db = new Database())
                 {
-                    db.Events.Update(eventManager.Event);
+                    db.Update(eventManager.Event);
                 }
 
                 EventChanged?.Invoke();

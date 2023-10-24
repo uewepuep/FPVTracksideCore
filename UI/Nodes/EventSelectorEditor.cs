@@ -166,7 +166,7 @@ namespace UI.Nodes
                         Event newEvent = Selected.Clone();
                         using (Database db = new Database())
                         {
-                            db.Events.Insert(newEvent);
+                            db.Insert(newEvent);
                         }
 
                         AddNew(newEvent);
@@ -212,7 +212,7 @@ namespace UI.Nodes
                 using (Database db = new Database())
                 {
                     selected.Enabled = false;
-                    db.Events.Update(selected);
+                    db.Update(selected);
                 }
             }
 
@@ -232,7 +232,7 @@ namespace UI.Nodes
                 eve = new Event();
                 eve.Channels = Channel.Read(Profile);
                 eve.Club = club;
-                db.Events.Insert(eve);
+                db.Insert(eve);
             }
 
             AddNew(eve);
@@ -270,20 +270,20 @@ namespace UI.Nodes
             Event[] events;
             using (Database db = new Database())
             {
-                events = db.Events.Include(e => e.Channels).Include(e => e.Club).Include(e => e.PilotChannels).Include(e => e.PilotChannels.Select(p => p.Pilot)).FindAll().OrderBy(e => e.Name).ToArray();
+                events = db.GetEvents().ToArray();
 
-                Club club = db.Clubs.FindAll().FirstOrDefault();
+                Club club = db.Find<Club>().FirstOrDefault();
                 if (club == null)
                 {
                     club = new Club();
                     club.SyncWith = SyncWith.FPVTrackside;
-                    db.Clubs.Insert(club);
+                    db.Insert(club);
                 }
 
                 if (events.Length == 0)
                 {
                     events = new Event[] { new Event() { Club = club, Channels = Channel.Read(profile) } };
-                    db.Events.Insert(events.First());
+                    db.Insert(events.First());
                 }
             }
             return events;
@@ -311,7 +311,7 @@ namespace UI.Nodes
                     o.Enabled = true;
                 }
 
-                db.Events.Upsert(Objects);
+                db.Upsert(Objects);
             }
         }
 

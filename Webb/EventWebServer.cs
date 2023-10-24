@@ -323,18 +323,6 @@ namespace Webb
                         IWebbTable webbTable2 = webbTables.FirstOrDefault(w => w.Name == action);
                         content += HTTPFormat.FormatTable(webbTable2, "");
                         break;
-                    case "JSON":
-                        content = "";
-                        FPVWebsite.Event ev = new FPVWebsite.Event(eventManager.Event, ChannelColors);
-
-                        JsonSerializerSettings serializerSettings = new JsonSerializerSettings
-                        {
-                            Formatting = Formatting.Indented,
-                            DateFormatString = "yyy/MM/dd H:mm:ss"
-                        };
-
-                        content = JsonConvert.SerializeObject(ev, serializerSettings);
-                        break;
 
                     default:
                         IWebbTable webbTable = webbTables.FirstOrDefault(w => w.Name == action);

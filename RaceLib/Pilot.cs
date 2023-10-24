@@ -9,7 +9,7 @@ using System.Xml.Serialization;
 
 namespace RaceLib
 {
-    public class Pilot : BaseDBObject
+    public class Pilot : BaseObject
     {
         public delegate void OnPilotEvent(Pilot pilot);
 

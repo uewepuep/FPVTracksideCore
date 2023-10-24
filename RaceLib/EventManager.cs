@@ -90,14 +90,14 @@ namespace RaceLib
                 // check the db.
                 if (pc == null)
                 {
-                    p = db.Pilots.FindAll().FirstOrDefault(pa => !string.IsNullOrEmpty(pa.Name) && pa.Name.ToLower() == pilotName.ToLower());
+                    p = db.Find<Pilot>().FirstOrDefault(pa => !string.IsNullOrEmpty(pa.Name) && pa.Name.ToLower() == pilotName.ToLower());
                 }
 
                 // Create
                 if (p == null)
                 {
                     p = new Pilot(pilotName);
-                    db.Pilots.Insert(p);
+                    db.Insert(p);
                 }
             }
             return p;
@@ -148,8 +148,8 @@ namespace RaceLib
 
             using (Database db = new Database())
             {
-                db.PilotChannels.Upsert(pc);
-                db.Events.Update(eventObj);
+                db.Upsert(pc);
+                db.Update(eventObj);
             }
 
             OnPilotRefresh?.Invoke();
@@ -167,7 +167,7 @@ namespace RaceLib
 
                 using (Database db = new Database())
                 {
-                    db.Events.Update(eventObj);
+                    db.Update(eventObj);
                 }
                 OnPilotRefresh?.Invoke();
                 return true;
@@ -181,7 +181,7 @@ namespace RaceLib
             using (Database db = new Database())
             {
                 Event.Laps = laps;
-                db.Events.Update(Event);
+                db.Update(Event);
             }
 
             RaceManager.SetTargetLaps(laps);
@@ -194,13 +194,13 @@ namespace RaceLib
             using (Database db = new Database())
             {
                 Event.EventType = type;
-                db.Events.Update(Event);
+                db.Update(Event);
 
                 Race current = RaceManager.CurrentRace;
                 if (current != null)
                 {
                     current.Round.EventType = type;
-                    db.Rounds.Update(current.Round);
+                    db.Update(current.Round);
                 }
             }
 
@@ -213,15 +213,7 @@ namespace RaceLib
             {
                 using (Database db = new Database())
                 {
-                    Event = db.Events
-                    .Include(e => e.PilotChannels)
-                    .Include(e => e.PilotChannels.Select(pc => pc.Pilot))
-                    .Include(e => e.PilotChannels.Select(pc => pc.Channel))
-                    .Include(e => e.RemovedPilots)
-                    .Include(e => e.Rounds)
-                    .Include(e => e.Club)
-                    .Include(e => e.Channels)
-                    .FindById(eve.ID);
+                   
 
                     UpdateRoundOrder(db);
                 }
@@ -253,7 +245,7 @@ namespace RaceLib
                                 using (Database db = new Database())
                                 {
                                     p.PhotoPath = matches.OrderByDescending(f => f.Extension).FirstOrDefault().FullName;
-                                    db.Pilots.Update(p);
+                                    db.Update(p);
                                 }
                             }
                         }
@@ -275,7 +267,7 @@ namespace RaceLib
                     order += 100;
                 }
 
-                db.Rounds.Update(rounds);
+                db.Update(rounds);
             }
         }
 
@@ -368,7 +360,7 @@ namespace RaceLib
 
             using (Database db = new Database())
             {
-                db.Events.Update(eventObj);
+                db.Update(eventObj);
             }
         }
 
@@ -415,7 +407,7 @@ namespace RaceLib
 
                 using (Database db = new Database())
                 {
-                    db.PilotChannels.Update(pc);
+                    db.Update(pc);
                 }
 
                 if (RaceManager.HasPilot(pi) && !RaceManager.RaceRunning)
@@ -440,8 +432,8 @@ namespace RaceLib
 
             using (Database db = new Database())
             {
-                db.Events.Update(Event);
-                db.Rounds.Update(round);
+                db.Update(Event);
+                db.Update(round);
             }
         }
 
@@ -458,8 +450,8 @@ namespace RaceLib
 
             using (Database db = new Database())
             {
-                db.Events.Update(Event);
-                db.Rounds.Update(round);
+                db.Update(Event);
+                db.Update(round);
             }
         }
 
@@ -469,8 +461,8 @@ namespace RaceLib
 
             using (Database db = new Database())
             {
-                db.Events.Update(Event);
-                db.Rounds.Update(round);
+                db.Update(Event);
+                db.Update(round);
             }
         }
 
@@ -542,13 +534,14 @@ namespace RaceLib
 
         public Event[] GetOtherEvents()
         {
-            using (Database db = new Database())
-            {
-                var events = db.Events.Include(a => a.PilotChannels)
-                                             .Include(a => a.PilotChannels.Select(pc => pc.Pilot))
-                                             .Include(a => a.PilotChannels.Select(pc => pc.Channel)).FindAll();
-                return events.Where(e => e != Event).ToArray();
-            }
+            throw new NotImplementedException();
+            //using (Database db = new Database())
+            //{
+            //    var events = db.Events.Include(a => a.PilotChannels)
+            //                                 .Include(a => a.PilotChannels.Select(pc => pc.Pilot))
+            //                                 .Include(a => a.PilotChannels.Select(pc => pc.Channel)).FindAll();
+            //    return events.Where(e => e != Event).ToArray();
+            //}
         }
 
         public Pilot GetPilot(Guid iD)
