@@ -335,7 +335,7 @@ namespace UI.Video
         {
             bool physicalVisible = false;
 
-            if (preview.Contains(mouseInputEvent.Position))
+            if (preview.Contains(mouseInputEvent.Position) && mapperNode != null)
             {
                 if (mapperNode.ChannelVideoInfos.Count() > 9)
                 {
