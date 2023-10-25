@@ -213,12 +213,11 @@ namespace RaceLib
             {
                 using (Database db = new Database())
                 {
-                   
-
+                    Event = db.LoadEvent(eve.ID);
                     UpdateRoundOrder(db);
                 }
 
-                if (eve.Channels == null || !eve.Channels.Any())
+                if (Event.Channels == null || !Event.Channels.Any())
                 {
                     Event.Channels = Channel.Read(Profile);
                 }
@@ -256,7 +255,7 @@ namespace RaceLib
 
         public void UpdateRoundOrder(Database db)
         {
-            if (Event.Rounds.Any(r => r.Order < 0))
+            if (Event.Rounds != null && Event.Rounds.Any(r => r.Order < 0))
             {
                 Round[] rounds = Event.Rounds.OrderBy(r => r.Order).ThenBy(r => r.Creation).ThenBy(r => r.RoundNumber).ToArray();
 

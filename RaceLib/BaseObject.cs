@@ -76,5 +76,4 @@ namespace RaceLib
             return GetType().GetHashCode() + ID.GetHashCode();
         }
     }
-
 }

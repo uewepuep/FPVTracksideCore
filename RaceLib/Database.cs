@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DB;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -14,17 +15,17 @@ namespace RaceLib
 
         public int Version { get; private set; }
 
-        private ConvertedCollection<Event, DB.Event> events;
-        private ConvertedCollection<Pilot, DB.Pilot> pilots;
-        private ConvertedCollection<Channel, DB.Channel> channels;
-        private ConvertedCollection<PilotChannel, DB.PilotChannel> pilotChannels;
-        private ConvertedCollection<Race, DB.Race> races;
-        private ConvertedCollection<Lap, DB.Lap> laps;
-        private ConvertedCollection<Detection, DB.Detection> detections;
-        private ConvertedCollection<Round, DB.Round> rounds;
-        private ConvertedCollection<Result, DB.Result> results;
-        private ConvertedCollection<Club, DB.Club> clubs;
-        private ConvertedCollection<Patreon, DB.Patreon> patreons;
+        private DB.ICollection<Event> events;
+        private DB.ICollection<Pilot> pilots;
+        private DB.ICollection<Channel> channels;
+        private DB.ICollection<PilotChannel> pilotChannels;
+        private DB.ICollection<Race> races;
+        private DB.ICollection<Lap> laps;
+        private DB.ICollection<Detection> detections;
+        private DB.ICollection<Round> rounds;
+        private DB.ICollection<Result> results;
+        private DB.ICollection<Club> clubs;
+        private DB.ICollection<Patreon> patreons;
 
         public Database()
         {
@@ -33,8 +34,8 @@ namespace RaceLib
 
             events = new ConvertedCollection<Event, DB.Event>(database.GetCollection<DB.Event>());
             pilots = new ConvertedCollection<Pilot, DB.Pilot>(database.GetCollection<DB.Pilot>());
-            channels = new ConvertedCollection<Channel, DB.Channel>(database.GetCollection<DB.Channel>());
-            pilotChannels = new ConvertedCollection<PilotChannel, DB.PilotChannel>(database.GetCollection<DB.PilotChannel>());
+            channels = new ConvertedCollection<Channel, DB.Channel>( database.GetCollection<DB.Channel>());
+            pilotChannels = new ConvertedCollection<PilotChannel, DB.PilotChannel>( database.GetCollection<DB.PilotChannel>());
             races = new ConvertedCollection<Race, DB.Race>(database.GetCollection<DB.Race>());
             laps = new ConvertedCollection<Lap, DB.Lap>(database.GetCollection<DB.Lap>());
             detections = new ConvertedCollection<Detection, DB.Detection>(database.GetCollection<DB.Detection>());
@@ -61,12 +62,12 @@ namespace RaceLib
             if (typeof(T) == typeof(Lap)) return laps as DB.ICollection<T>;
             if (typeof(T) == typeof(Detection)) return detections as DB.ICollection<T>;
             if (typeof(T) == typeof(Round)) return rounds as DB.ICollection<T>;
+            if (typeof(T) == typeof(Result)) return results as DB.ICollection<T>;
             if (typeof(T) == typeof(Club)) return clubs as DB.ICollection<T>;
             if (typeof(T) == typeof(Patreon)) return patreons as DB.ICollection<T>;
 
             return default(DB.ICollection<T>);
         }
-
 
         public bool Update<T>(T obj) where T : BaseObject
         {
