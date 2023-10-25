@@ -1160,7 +1160,7 @@ namespace RaceLib
             {
                 string bandChannel = channel.GetBandChannelText();
 
-                Pilot pilot = new Pilot(bandChannel + " (" + race.Round.RoundNumber + "-" + race.RaceNumber + ")");
+                Pilot pilot = Pilot.CreateFromName(bandChannel + " (" + race.Round.RoundNumber + "-" + race.RaceNumber + ")");
                 pilot.Phonetic = bandChannel;
                 pilot.PracticePilot = true;
 

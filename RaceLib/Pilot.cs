@@ -9,7 +9,7 @@ using System.Xml.Serialization;
 
 namespace RaceLib
 {
-    public class Pilot : BaseObject
+    public class Pilot : BaseObjectT<DB.Pilot>
     {
         public delegate void OnPilotEvent(Pilot pilot);
 
@@ -60,17 +60,22 @@ namespace RaceLib
         [Category("Advanced")]
         public string PhotoPath { get; set; }
 
-        public Pilot(string name)
-            :this()
+        public static Pilot CreateFromName(string name)
         {
-            Name = name;
-            AutoPhonetic(Name);
+            Pilot pilot = new Pilot() { Name = name };
+            pilot.AutoPhonetic(name);
+            return pilot;
         }
 
         private void AutoPhonetic(string name)
         {
             name = System.Text.RegularExpressions.Regex.Replace(name, "[^a-zA-Z0-9 ]", " ", System.Text.RegularExpressions.RegexOptions.Compiled);
             phonetic = name.Trim();
+        }
+
+        public Pilot(DB.Pilot obj)
+            : base(obj)
+        {
         }
 
         public Pilot()

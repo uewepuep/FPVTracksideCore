@@ -6,12 +6,11 @@ using System.Threading.Tasks;
 
 namespace RaceLib
 {
-    public class Lap : BaseObject
+    public class Lap : BaseObjectT<DB.Lap>
     {
         public delegate void LapDelegate(Lap lap);
 
         public Detection Detection { get; set; }
-
         
         public DateTime Start 
         { 
@@ -29,7 +28,6 @@ namespace RaceLib
             } 
         }
 
-        [LiteDB.BsonIgnore()]
         public DateTime End { get { return Detection.Time; } set { Detection.Time = value; } }
 
         public TimeSpan Length { get; set; }
@@ -57,11 +55,14 @@ namespace RaceLib
 
         public int Number { get { return Detection.LapNumber; } }
 
-        [LiteDB.BsonIgnore()]
         public Pilot Pilot { get { return Detection.Pilot; } }
 
-        [LiteDB.BsonIgnore()]
         public Race Race { get; set; }
+
+        public Lap(DB.Lap obj)
+            : base(obj)
+        {
+        }
 
         public Lap()
         {
@@ -112,6 +113,13 @@ namespace RaceLib
             {
                 return "L" + number;
             }
+        }
+
+        public override DB.Lap GetDBObject()
+        {
+            DB.Lap lap = base.GetDBObject();
+            lap.Detection = Detection.GetDBObject();
+            return lap;
         }
     }
 }

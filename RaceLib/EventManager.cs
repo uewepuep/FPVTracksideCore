@@ -96,7 +96,7 @@ namespace RaceLib
                 // Create
                 if (p == null)
                 {
-                    p = new Pilot(pilotName);
+                    p = Pilot.CreateFromName(pilotName);
                     db.Insert(p);
                 }
             }
@@ -533,14 +533,10 @@ namespace RaceLib
 
         public Event[] GetOtherEvents()
         {
-            throw new NotImplementedException();
-            //using (Database db = new Database())
-            //{
-            //    var events = db.Events.Include(a => a.PilotChannels)
-            //                                 .Include(a => a.PilotChannels.Select(pc => pc.Pilot))
-            //                                 .Include(a => a.PilotChannels.Select(pc => pc.Channel)).FindAll();
-            //    return events.Where(e => e != Event).ToArray();
-            //}
+            using (Database db = new Database())
+            {
+                return db.GetEvents().ToArray();
+            }
         }
 
         public Pilot GetPilot(Guid iD)

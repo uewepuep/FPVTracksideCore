@@ -220,7 +220,7 @@ namespace RaceLib
         }
     }
 
-    public class ConvertedCollection<L,D> : DB.ICollection<L> where D : DB.BaseDBObject where L : BaseObject
+    public class ConvertedCollection<L,D> : DB.ICollection<L> where D : DB.BaseDBObject where L : BaseObjectT<D>
     {
         private DB.ICollection<D> collection;
 
@@ -241,12 +241,12 @@ namespace RaceLib
 
         public bool Delete(L obj)
         {
-            return collection.Delete(obj.Convert<D>());
+            return collection.Delete(obj.Convert());
         }
 
         public int Delete(IEnumerable<L> objs)
         {
-            return collection.Delete(objs.Convert<D>());
+            return collection.Delete(objs.Convert());
         }
 
         public L GetCreateExternalObject(int id)
@@ -266,55 +266,67 @@ namespace RaceLib
 
         public bool Insert(L obj)
         {
-            return collection.Insert(obj.Convert<D>());
+            return collection.Insert(obj.Convert());
         }
 
         public int Insert(IEnumerable<L> objs)
         {
-            return collection.Insert(objs.Convert<D>());
+            return collection.Insert(objs.Convert());
         }
 
         public bool Update(L obj)
         {
-            return collection.Update(obj.Convert<D>());
+            return collection.Update(obj.Convert());
         }
 
         public int Update(IEnumerable<L> objs)
         {
-            return collection.Update(objs.Convert<D>());
+            return collection.Update(objs.Convert());
         }
 
         public bool Upsert(L obj)
         {
-            return collection.Upsert(obj.Convert<D>());
+            return collection.Upsert(obj.Convert());
         }
 
         public int Upsert(IEnumerable<L> objs)
         {
-            return collection.Upsert(objs.Convert<D>());
+            return collection.Upsert(objs.Convert());
         }
     }
 
     public static class BaseObjectExt
     {
-        public static T Convert<T>(this DB.BaseDBObject baseDBObject)
+        public static T Convert<T>(this DB.BaseDBObject baseDBObject) where T : BaseObject
         {
-            return DB.Converter.CreateConvertOne<DB.BaseDBObject, T>(baseDBObject);
+
+            return (T)Activator.CreateInstance(typeof(T), baseDBObject);
         }
 
-        public static IEnumerable<T> Convert<T>(this IEnumerable<DB.BaseDBObject> baseDBObjects)
+        public static IEnumerable<T> Convert<T>(this IEnumerable<DB.BaseDBObject> baseDBObjects) where T : BaseObject
         {
-            return DB.Converter.CreateConvert<DB.BaseDBObject, T>(baseDBObjects);
+            if (baseDBObjects == null)
+            {
+                yield break;
+            }
+
+            foreach (var obj in baseDBObjects)
+            {
+                yield return Convert<T>(obj);
+            }
         }
 
-        public static T Convert<T>(this BaseObject baseDBObject)
+        public static T Convert<T>(this BaseObjectT<T> baseDBObject) where T : DB.BaseDBObject
         {
-            return DB.Converter.CreateConvertOne<BaseObject, T>(baseDBObject);
+            return baseDBObject.GetDBObject();
         }
 
-        public static IEnumerable<T> Convert<T>(this IEnumerable<BaseObject> baseDBObjects)
+        public static IEnumerable<T> Convert<T>(this IEnumerable<BaseObjectT<T>> baseDBObjects) where T : DB.BaseDBObject
         {
-            return DB.Converter.CreateConvert<BaseObject, T>(baseDBObjects);
+            foreach (var obj in baseDBObjects)
+            {
+                yield return obj.GetDBObject();
+            }
         }
     }
 }

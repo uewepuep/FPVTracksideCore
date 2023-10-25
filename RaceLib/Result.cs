@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RaceLib
 {
-    public class Result : BaseObject
+    public class Result : BaseObjectT<DB.Result>
     {
         public int Points { get; set; }
         public int Position { get; set; }
@@ -14,19 +14,15 @@ namespace RaceLib
         public bool Valid { get; set; }
 
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonRef("Event")]
         public Event Event { get; set; }
 
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonRef("Pilot")]
         public Pilot Pilot { get; set; }
 
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonRef("Race")]
         public Race Race { get; set; }
 
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonRef("Round")]
         public Round Round { get; set; }
 
         public bool DNF { get; set; }
@@ -38,6 +34,11 @@ namespace RaceLib
         }
 
         public ResultTypes ResultType { get; set; }
+
+        public Result(DB.Result obj)
+            : base(obj)
+        {
+        }
 
         public Result()
         {

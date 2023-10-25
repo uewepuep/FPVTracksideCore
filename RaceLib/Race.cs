@@ -1,6 +1,8 @@
-﻿using System;
+﻿using DB;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,14 +10,12 @@ using Timing;
 
 namespace RaceLib
 {
-    public class Race : BaseObject
+    public class Race : BaseObjectT<DB.Race>
     {
         public delegate void OnRaceEvent(Race race);
 
-        [LiteDB.BsonRef("Lap")]
         public List<Lap> Laps { get; set; }
 
-        [LiteDB.BsonRef("Detection")]
         public List<Detection> Detections { get; set; }
 
         [Category("Times")]
@@ -27,7 +27,6 @@ namespace RaceLib
         public TimeSpan TotalPausedTime { get; set; }
 
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonRef("PilotChannel")]
         public List<PilotChannel> PilotChannels { get; set; }
        
         [System.ComponentModel.Browsable(false)]
@@ -57,7 +56,6 @@ namespace RaceLib
         public int RaceNumber { get; set; }
 
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonRef("Round")]
         public Round Round { get; set; }
 
         [Category("Editable Details")]
@@ -107,7 +105,6 @@ namespace RaceLib
         public bool AutoAssignNumbers { get; set; }
 
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonRef("Event")]
         public Event Event { get; set; }
 
         [System.ComponentModel.Browsable(false)]
@@ -267,6 +264,15 @@ namespace RaceLib
                     return RaceStringFormatter.Instance.GetEventTypeText(Type) + " " + RoundRaceNumber + " (" + Bracket + ")";
                 }
             }
+        }
+        public Race(DB.Race obj)
+            : base(obj)
+        {
+            PilotChannels = obj.PilotChannels.Convert<PilotChannel>().ToList();
+            Laps = obj.Laps.Convert<Lap>().ToList();
+
+            Event = obj.Event.Convert<Event>();
+            Round = obj.Round.Convert<Round>();
         }
 
         public Race()
@@ -911,6 +917,19 @@ namespace RaceLib
         public override string ToString()
         {
             return Type + " " + RaceNumber + " (Round " + RoundNumber +  ") with " + PilotChannels.Count + " pilots.";
+        }
+
+        public override DB.Race GetDBObject()
+        {
+            DB.Race race = base.GetDBObject();
+
+            race.Laps = Laps.GetDBObjects().ToList();
+            race.PilotChannels = PilotChannels.GetDBObjects().ToList();
+
+            race.Event = Event.GetDBObject();
+            race.Round = Round.GetDBObject();
+
+            return race;
         }
 
     }

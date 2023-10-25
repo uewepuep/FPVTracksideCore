@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace RaceLib
 {
-    public class Round : BaseObject
+    public class Round : BaseObjectT<DB.Round>
     {
         [Category("Editable Details")]
         public string Name { get; set; }
@@ -62,6 +62,11 @@ namespace RaceLib
                     SheetFormatFilename = null; 
                 }
             }
+        }
+
+        public Round(DB.Round obj)
+            : base(obj)
+        {
         }
 
         public Round()

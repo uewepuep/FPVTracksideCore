@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DB;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -43,7 +44,7 @@ namespace RaceLib
         XClassRacing
     }
 
-    public class Event : BaseObject
+    public class Event : BaseObjectT<DB.Event>
     {
         [System.ComponentModel.Browsable(false)]
         public EventTypes EventType { get; set; }
@@ -143,22 +144,17 @@ namespace RaceLib
         public IEnumerable<Pilot> Pilots { get { return PilotChannels.Select(pc => pc.Pilot); } }
 
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonRef("PilotChannel")]
         public List<PilotChannel> PilotChannels { get; set; }
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonRef("Pilot")]
         public List<Pilot> RemovedPilots { get; set; }
 
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonRef("Round")]
         public List<Round> Rounds { get; set; }
 
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonRef("Club")]
         public Club Club { get; set; }
 
         [System.ComponentModel.Browsable(false)]
-        [LiteDB.BsonRef("Channel")]
         public Channel[] Channels { get; set; }
 
         [System.ComponentModel.Browsable(false)]
@@ -207,6 +203,18 @@ namespace RaceLib
 
         //[DisplayName("ZippyQ")]
         //public bool MultiGPZippyQ { get; set; }
+
+        public Event(DB.Event obj)
+            : base(obj)
+        {
+            Rounds = obj.Rounds.Convert<Round>().ToList();
+            PilotChannels = obj.PilotChannels.Convert<PilotChannel>().ToList();
+
+            Channels = obj.Channels.Convert<Channel>().ToArray();
+            RemovedPilots = obj.RemovedPilots.Convert<Pilot>().ToList();
+
+            Club = obj.Club.Convert<Club>();
+        }
 
         public Event()
         {
@@ -287,6 +295,18 @@ namespace RaceLib
                 Pilot p = db.GetObject<Pilot>(pc.Pilot.ID);
                 pc.Pilot = p;
             }
+        }
+
+        public override DB.Event GetDBObject()
+        {
+            DB.Event ev = base.GetDBObject();
+
+            ev.Channels = Channels.GetDBObjects().ToArray();
+            ev.Club = Club.GetDBObject();
+            ev.PilotChannels = PilotChannels.GetDBObjects().ToList();
+            ev.Rounds = Rounds.GetDBObjects().ToList();
+            ev.RemovedPilots = RemovedPilots.GetDBObjects().ToList();
+            return ev;
         }
     }
 }
