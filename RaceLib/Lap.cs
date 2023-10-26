@@ -62,6 +62,7 @@ namespace RaceLib
         public Lap(DB.Lap obj)
             : base(obj)
         {
+            Detection = obj.Detection.Convert<Detection>();
         }
 
         public Lap()

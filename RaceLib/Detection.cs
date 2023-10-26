@@ -45,6 +45,8 @@ namespace RaceLib
         public Detection(DB.Detection obj)
             : base(obj)
         {
+            Channel = obj.Channel.Convert<Channel>();
+            Pilot = obj.Pilot.Convert<Pilot>();
         }
 
         internal Detection()
@@ -74,6 +76,14 @@ namespace RaceLib
         public static int RaceSectorCalculator(int lapNumber, int timingSystemIndex)
         {
             return (lapNumber * 100) + timingSystemIndex;
+        }
+
+        public override DB.Detection GetDBObject()
+        {
+            DB.Detection detection = base.GetDBObject();
+            detection.Pilot = Pilot.GetDBObject();
+            detection.Channel = Channel.GetDBObject();
+            return detection;
         }
     }
 }

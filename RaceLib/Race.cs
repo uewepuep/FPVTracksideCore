@@ -270,6 +270,13 @@ namespace RaceLib
         {
             PilotChannels = obj.PilotChannels.Convert<PilotChannel>().ToList();
             Laps = obj.Laps.Convert<Lap>().ToList();
+            Detections = obj.Detections.Convert<Detection>().ToList();
+
+            // Back reference for lap to race.
+            foreach (Lap lap in Laps)
+            {
+                lap.Race = this;
+            }
 
             Event = obj.Event.Convert<Event>();
             Round = obj.Round.Convert<Round>();
