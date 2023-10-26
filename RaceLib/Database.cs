@@ -220,7 +220,7 @@ namespace RaceLib
         }
     }
 
-    public class ConvertedCollection<L,D> : DB.ICollection<L> where D : DB.BaseDBObject where L : BaseObjectT<D>
+    public class ConvertedCollection<L,D> : DB.ICollection<L> where D : DB.DatabaseObject where L : BaseObjectT<D>
     {
         private DB.ICollection<D> collection;
 
@@ -297,13 +297,13 @@ namespace RaceLib
 
     public static class BaseObjectExt
     {
-        public static T Convert<T>(this DB.BaseDBObject baseDBObject) where T : BaseObject
+        public static T Convert<T>(this DB.DatabaseObject baseDBObject) where T : BaseObject
         {
 
             return (T)Activator.CreateInstance(typeof(T), baseDBObject);
         }
 
-        public static IEnumerable<T> Convert<T>(this IEnumerable<DB.BaseDBObject> baseDBObjects) where T : BaseObject
+        public static IEnumerable<T> Convert<T>(this IEnumerable<DB.DatabaseObject> baseDBObjects) where T : BaseObject
         {
             if (baseDBObjects == null)
             {
@@ -316,12 +316,12 @@ namespace RaceLib
             }
         }
 
-        public static T Convert<T>(this BaseObjectT<T> baseDBObject) where T : DB.BaseDBObject
+        public static T Convert<T>(this BaseObjectT<T> baseDBObject) where T : DB.DatabaseObject
         {
             return baseDBObject.GetDBObject();
         }
 
-        public static IEnumerable<T> Convert<T>(this IEnumerable<BaseObjectT<T>> baseDBObjects) where T : DB.BaseDBObject
+        public static IEnumerable<T> Convert<T>(this IEnumerable<BaseObjectT<T>> baseDBObjects) where T : DB.DatabaseObject
         {
             foreach (var obj in baseDBObjects)
             {

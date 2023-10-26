@@ -79,7 +79,7 @@ namespace RaceLib
         }
     }
 
-    public class BaseObjectT<T> : BaseObject where T : DB.BaseDBObject
+    public class BaseObjectT<T> : BaseObject where T : DB.DatabaseObject
     {
         public BaseObjectT()
         {
@@ -168,7 +168,7 @@ namespace RaceLib
 
     public static class BaseObjectTExt
     {
-        public static IEnumerable<T> GetDBObjects<T>(this IEnumerable<BaseObjectT<T>> baseObjects) where T : DB.BaseDBObject
+        public static IEnumerable<T> GetDBObjects<T>(this IEnumerable<BaseObjectT<T>> baseObjects) where T : DB.DatabaseObject
         {
             if (baseObjects == null)
                 return null;
