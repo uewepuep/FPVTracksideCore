@@ -227,6 +227,7 @@ namespace RaceLib
         public ConvertedCollection(DB.ICollection<D> collection)
         {
             this.collection = collection;
+            System.Diagnostics.Debug.Assert(collection != null);
         }
 
         public IEnumerable<L> All()
