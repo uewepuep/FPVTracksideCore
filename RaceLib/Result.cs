@@ -38,6 +38,14 @@ namespace RaceLib
         public Result(DB.Result obj)
             : base(obj)
         {
+            if (obj.Event != null)
+                Event = obj.Event.Convert<Event>();
+            if (obj.Pilot != null)
+                Pilot = obj.Pilot.Convert<Pilot>();
+            if (obj.Race != null)
+                Race = obj.Race.Convert<Race>();
+            if (obj.Round != null)
+                Round = obj.Round.Convert<Round>();
         }
 
         public Result()

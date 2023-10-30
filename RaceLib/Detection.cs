@@ -45,8 +45,10 @@ namespace RaceLib
         public Detection(DB.Detection obj)
             : base(obj)
         {
-            Channel = obj.Channel.Convert<Channel>();
-            Pilot = obj.Pilot.Convert<Pilot>();
+            if (obj.Channel != null)
+                Channel = obj.Channel.Convert<Channel>();
+            if (obj.Pilot != null)
+                Pilot = obj.Pilot.Convert<Pilot>();
         }
 
         internal Detection()

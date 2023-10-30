@@ -207,13 +207,20 @@ namespace RaceLib
         public Event(DB.Event obj)
             : base(obj)
         {
-            Rounds = obj.Rounds.Convert<Round>().ToList();
-            PilotChannels = obj.PilotChannels.Convert<PilotChannel>().ToList();
+            if (obj.Rounds != null)
+                Rounds = obj.Rounds.Convert<Round>().ToList();
+            
+            if (obj.PilotChannels != null)
+                PilotChannels = obj.PilotChannels.Convert<PilotChannel>().ToList();
 
-            Channels = obj.Channels.Convert<Channel>().ToArray();
-            RemovedPilots = obj.RemovedPilots.Convert<Pilot>().ToList();
+            if (obj.Channels != null)
+                Channels = obj.Channels.Convert<Channel>().ToArray();
+            
+            if (obj.RemovedPilots != null)
+                RemovedPilots = obj.RemovedPilots.Convert<Pilot>().ToList();
 
-            Club = obj.Club.Convert<Club>();
+            if (obj.Club != null)
+                Club = obj.Club.Convert<Club>();
         }
 
         public Event()

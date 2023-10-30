@@ -268,9 +268,13 @@ namespace RaceLib
         public Race(DB.Race obj)
             : base(obj)
         {
-            PilotChannels = obj.PilotChannels.Convert<PilotChannel>().ToList();
-            Laps = obj.Laps.Convert<Lap>().ToList();
-            Detections = obj.Detections.Convert<Detection>().ToList();
+            
+            if (obj.PilotChannels != null)
+                PilotChannels = obj.PilotChannels.Convert<PilotChannel>().ToList();
+            if (obj.Laps != null)
+                Laps = obj.Laps.Convert<Lap>().ToList();
+            if (obj.Detections != null)
+                Detections = obj.Detections.Convert<Detection>().ToList();
 
             // Back reference for lap to race.
             foreach (Lap lap in Laps)
@@ -278,8 +282,10 @@ namespace RaceLib
                 lap.Race = this;
             }
 
-            Event = obj.Event.Convert<Event>();
-            Round = obj.Round.Convert<Round>();
+            if (obj.Event != null)
+                Event = obj.Event.Convert<Event>();
+            if (obj.Round != null)
+                Round = obj.Round.Convert<Round>();
         }
 
         public Race()

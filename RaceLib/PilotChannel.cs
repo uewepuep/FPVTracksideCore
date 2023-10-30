@@ -29,8 +29,11 @@ namespace RaceLib
         public PilotChannel(DB.PilotChannel obj)
             : base(obj)
         {
-            Pilot = obj.Pilot.Convert<Pilot>();
-            Channel = obj.Channel.Convert<Channel>();
+            if (obj.Pilot != null)
+                Pilot = obj.Pilot.Convert<Pilot>();
+
+            if (obj.Channel != null)
+                Channel = obj.Channel.Convert<Channel>();
         }
 
 
