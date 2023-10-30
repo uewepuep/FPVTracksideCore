@@ -89,7 +89,7 @@ namespace FPVMacsideCore
 
             VideoFrameworks.Available = new VideoFrameWork[]
             {
-                new FfmpegMediaPlatform.FfmpegMediaFramework()
+                //new FfmpegMediaPlatform.FfmpegMediaFramework()
             };
         }
 

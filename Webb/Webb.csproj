@@ -13,9 +13,9 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   
   <ItemGroup>
-    <ProjectReference Include="..\..\FPVTrackside\FPVWebsite\FPVWebsite.csproj" />
     <ProjectReference Include="..\RaceLib\RaceLib.csproj" />
     <ProjectReference Include="..\Sound\Sound.csproj" />
+    <ProjectReference Include="..\ExternalData\ExternalData.csproj" />
   </ItemGroup>
 
   <ItemGroup>

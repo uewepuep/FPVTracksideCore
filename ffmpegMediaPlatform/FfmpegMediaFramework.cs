@@ -1,5 +1,6 @@
 ﻿using ImageServer;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
@@ -57,41 +58,48 @@ namespace FfmpegMediaPlatform
 
         public IEnumerable<string> GetFfmpegText(string args, Func<string, bool> predicate = null)
         {
-            List<string> output = new List<string>();
-
-            ProcessStartInfo processStartInfo = GetProcessStartInfo(args);
-
-            using (Process process = new Process())
+            try
             {
-                process.StartInfo = processStartInfo;
-                process.OutputDataReceived += (s, e) =>
-                {
-                    if (e.Data != null)
-                    {
-                        output.Add(e.Data);
-                    }
-                };
+                List<string> output = new List<string>();
 
-                process.ErrorDataReceived += (s, e) =>
-                {
-                    if (e.Data != null)
-                    {
-                        output.Add(e.Data);
-                    }
-                };
+                ProcessStartInfo processStartInfo = GetProcessStartInfo(args);
 
-                process.Start();
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-                process.WaitForExit();
-                process.CancelOutputRead();
+                using (Process process = new Process())
+                {
+                    process.StartInfo = processStartInfo;
+                    process.OutputDataReceived += (s, e) =>
+                    {
+                        if (e.Data != null)
+                        {
+                            output.Add(e.Data);
+                        }
+                    };
+
+                    process.ErrorDataReceived += (s, e) =>
+                    {
+                        if (e.Data != null)
+                        {
+                            output.Add(e.Data);
+                        }
+                    };
+
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                    process.WaitForExit();
+                    process.CancelOutputRead();
+                }
+
+                if (predicate != null)
+                {
+                    return output.Where(x => predicate(x));
+                }
+                return output;
             }
-
-            if (predicate != null)
+            catch (Exception e)
             {
-                return output.Where(x => predicate(x));
-            }
-            return output;
+                return new string[] { };
+            }            
         }
 
         public FrameSource CreateFrameSource(VideoConfig vc)
