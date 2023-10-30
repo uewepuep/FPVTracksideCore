@@ -154,6 +154,10 @@ namespace RaceLib
 
                         value = valid.First();
                     }
+                    else if (srcProp.PropertyType.IsEnum && targetProperty.PropertyType == typeof(string))
+                    {
+                        value = value.ToString();
+                    }
                     else if (!targetProperty.PropertyType.IsAssignableFrom(srcProp.PropertyType))
                     {
                         continue;

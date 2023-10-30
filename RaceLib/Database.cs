@@ -217,6 +217,13 @@ namespace RaceLib
         public static void Init(DirectoryInfo data)
         {
             DB.LiteDatabase.Init(data);
+            using (DB.LiteDatabase db = new LiteDatabase())
+            {
+                if (!db.Channels.All().Any())
+                {
+                    db.Channels.Insert(Channel.AllChannels.Convert());
+                }
+            }
         }
     }
 
