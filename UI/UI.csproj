@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\FPVTrackside\DB\DB.csproj" />
     <ProjectReference Include="..\Compositor\Composition.csproj" />
     <ProjectReference Include="..\ExternalData\ExternalData.csproj" />
     <ProjectReference Include="..\ImageServer\ImageServer.csproj" />

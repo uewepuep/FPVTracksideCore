@@ -85,7 +85,7 @@ namespace RaceLib
                 return pc.Pilot;
             }
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 // check the db.
                 if (pc == null)
@@ -146,7 +146,7 @@ namespace RaceLib
                 eventObj.RemovedPilots.Remove(pc.Pilot);
             }
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 db.Upsert(pc);
                 db.Update(eventObj);
@@ -165,7 +165,7 @@ namespace RaceLib
                 Event.PilotChannels.Remove(pilotChannel);
                 Event.RemovedPilots.Add(pilotChannel.Pilot);
 
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     db.Update(eventObj);
                 }
@@ -178,7 +178,7 @@ namespace RaceLib
 
         public void SetEventLaps(int laps)
         {
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 Event.Laps = laps;
                 db.Update(Event);
@@ -191,7 +191,7 @@ namespace RaceLib
 
         public void SetEventType(EventTypes type)
         {
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 Event.EventType = type;
                 db.Update(Event);
@@ -211,7 +211,7 @@ namespace RaceLib
         {
             workQueue.Enqueue(workSet, "Loading Event", () =>
             {
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     Event = db.LoadEvent(eve.ID);
                     UpdateRoundOrder(db);
@@ -241,7 +241,7 @@ namespace RaceLib
 
                             if (matches.Any())
                             {
-                                using (Database db = new Database())
+                                using (IDatabase db = DatabaseFactory.Open())
                                 {
                                     p.PhotoPath = matches.OrderByDescending(f => f.Extension).FirstOrDefault().FullName;
                                     db.Update(p);
@@ -253,7 +253,7 @@ namespace RaceLib
             });
         }
 
-        public void UpdateRoundOrder(Database db)
+        public void UpdateRoundOrder(IDatabase db)
         {
             if (Event.Rounds != null && Event.Rounds.Any(r => r.Order < 0))
             {
@@ -357,7 +357,7 @@ namespace RaceLib
             eventObj.RemovedPilots.AddRange(eventObj.PilotChannels.Where(p => !eventObj.RemovedPilots.Contains(p.Pilot)).Select(pc => pc.Pilot));
             eventObj.PilotChannels.Clear();
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 db.Update(eventObj);
             }
@@ -404,7 +404,7 @@ namespace RaceLib
             {
                 pc.Channel = c;
 
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     db.Update(pc);
                 }
@@ -429,7 +429,7 @@ namespace RaceLib
                 round.PointSummary = null;
             }
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 db.Update(Event);
                 db.Update(round);
@@ -447,7 +447,7 @@ namespace RaceLib
                 round.TimeSummary = null;
             }
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 db.Update(Event);
                 db.Update(round);
@@ -458,7 +458,7 @@ namespace RaceLib
         {
             round.LapCountAfterRound = !round.LapCountAfterRound;
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 db.Update(Event);
                 db.Update(round);
@@ -533,7 +533,7 @@ namespace RaceLib
 
         public Event[] GetOtherEvents()
         {
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 return db.GetEvents().ToArray();
             }
@@ -549,7 +549,7 @@ namespace RaceLib
             return Event.Pilots.FirstOrDefault(p => p.Name == name);
         }
 
-        public void RefreshPilots(Database db)
+        public void RefreshPilots(IDatabase db)
         {
             Event.RefreshPilots(db);
             foreach (Race r in RaceManager.Races)

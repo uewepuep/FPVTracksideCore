@@ -8,7 +8,7 @@ using Tools;
 
 namespace RaceLib
 {
-    public class Detection : BaseObjectT<DB.Detection>
+    public class Detection : BaseObject
     {
         public int TimingSystemIndex { get; set; }
 
@@ -41,17 +41,7 @@ namespace RaceLib
 
         public bool IsHoleshot { get { return Valid && IsLapEnd && LapNumber == 0; } }
 
-
-        public Detection(DB.Detection obj)
-            : base(obj)
-        {
-            if (obj.Channel != null)
-                Channel = obj.Channel.Convert<Channel>();
-            if (obj.Pilot != null)
-                Pilot = obj.Pilot.Convert<Pilot>();
-        }
-
-        internal Detection()
+        public Detection()
         {
         }
 
@@ -78,14 +68,6 @@ namespace RaceLib
         public static int RaceSectorCalculator(int lapNumber, int timingSystemIndex)
         {
             return (lapNumber * 100) + timingSystemIndex;
-        }
-
-        public override DB.Detection GetDBObject()
-        {
-            DB.Detection detection = base.GetDBObject();
-            detection.Pilot = Pilot.GetDBObject();
-            detection.Channel = Channel.GetDBObject();
-            return detection;
         }
     }
 }

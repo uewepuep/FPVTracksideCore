@@ -76,7 +76,7 @@ namespace UI.Nodes
 
             Patreon[] patreons;
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 patreons = db.All<Patreon>().Where(p => p.Active).Randomise().ToArray();
             }

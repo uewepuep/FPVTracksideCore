@@ -1,5 +1,4 @@
-﻿using DB;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -44,7 +43,7 @@ namespace RaceLib
         XClassRacing
     }
 
-    public class Event : BaseObjectT<DB.Event>
+    public class Event : BaseObject
     {
         [System.ComponentModel.Browsable(false)]
         public EventTypes EventType { get; set; }
@@ -204,25 +203,6 @@ namespace RaceLib
         //[DisplayName("ZippyQ")]
         //public bool MultiGPZippyQ { get; set; }
 
-        public Event(DB.Event obj)
-            : base(obj)
-        {
-            if (obj.Rounds != null)
-                Rounds = obj.Rounds.Convert<Round>().ToList();
-            
-            if (obj.PilotChannels != null)
-                PilotChannels = obj.PilotChannels.Convert<PilotChannel>().ToList();
-
-            if (obj.Channels != null)
-                Channels = obj.Channels.Convert<Channel>().ToArray();
-            
-            if (obj.RemovedPilots != null)
-                RemovedPilots = obj.RemovedPilots.Convert<Pilot>().ToList();
-
-            if (obj.Club != null)
-                Club = obj.Club.Convert<Club>();
-        }
-
         public Event()
         {
             Sync = false;
@@ -295,25 +275,13 @@ namespace RaceLib
             yield return EventTypes.CasualPractice;
         }
 
-        public void RefreshPilots(Database db)
+        public void RefreshPilots(IDatabase db)
         {
             foreach (PilotChannel pc in PilotChannels)
             {
                 Pilot p = db.GetObject<Pilot>(pc.Pilot.ID);
                 pc.Pilot = p;
             }
-        }
-
-        public override DB.Event GetDBObject()
-        {
-            DB.Event ev = base.GetDBObject();
-
-            ev.Channels = Channels.GetDBObjects().ToArray();
-            ev.Club = Club.GetDBObject();
-            ev.PilotChannels = PilotChannels.GetDBObjects().ToList();
-            ev.Rounds = Rounds.GetDBObjects().ToList();
-            ev.RemovedPilots = RemovedPilots.GetDBObjects().ToList();
-            return ev;
         }
     }
 }

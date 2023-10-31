@@ -346,7 +346,7 @@ namespace UI.Nodes
             {
                 Race race = EventManager.RaceManager.AddRaceToRound(Round);
 
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     foreach (var kvp in pilotChannels)
                     {
@@ -365,7 +365,7 @@ namespace UI.Nodes
             { 
                 if (editor.Selected != null)
                 {
-                    using (Database db = new Database())
+                    using (IDatabase db = DatabaseFactory.Open())
                     {
                         db.Upsert(editor.Selected);
                     }
@@ -448,7 +448,7 @@ namespace UI.Nodes
                 Race draggedRace = draggedRaceNode.Race;
                 if (draggedRace != null)
                 {
-                    using (Database db = new Database())
+                    using (IDatabase db = DatabaseFactory.Open())
                     {
                         draggedRace.Round = Round;
 

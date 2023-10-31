@@ -19,7 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\FPVTrackside\DB\DB.csproj" />
     <ProjectReference Include="..\Spreadsheets\Spreadsheets.csproj" />
     <ProjectReference Include="..\Timing\Timing.csproj" />
     <ProjectReference Include="..\Tools\Tools.csproj" />

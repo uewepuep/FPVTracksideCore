@@ -16,7 +16,7 @@ namespace RaceLib.Format
         {
         }
 
-        public override IEnumerable<Race> GenerateRound(Database db, IEnumerable<Race> preExisting, Round newRound, RoundPlan plan)
+        public override IEnumerable<Race> GenerateRound(IDatabase db, IEnumerable<Race> preExisting, Round newRound, RoundPlan plan)
         {
             newRound.RoundType = Round.RoundTypes.Final;
             db.Upsert(newRound);

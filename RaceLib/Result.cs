@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RaceLib
 {
-    public class Result : BaseObjectT<DB.Result>
+    public class Result : BaseObject
     {
         public int Points { get; set; }
         public int Position { get; set; }
@@ -34,19 +34,6 @@ namespace RaceLib
         }
 
         public ResultTypes ResultType { get; set; }
-
-        public Result(DB.Result obj)
-            : base(obj)
-        {
-            if (obj.Event != null)
-                Event = obj.Event.Convert<Event>();
-            if (obj.Pilot != null)
-                Pilot = obj.Pilot.Convert<Pilot>();
-            if (obj.Race != null)
-                Race = obj.Race.Convert<Race>();
-            if (obj.Round != null)
-                Round = obj.Round.Convert<Round>();
-        }
 
         public Result()
         {

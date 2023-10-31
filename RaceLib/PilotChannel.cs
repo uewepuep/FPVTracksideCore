@@ -8,7 +8,7 @@ namespace RaceLib
 {
     public delegate void PilotChannelDelegate(PilotChannel pilot);
 
-    public class PilotChannel : BaseObjectT<DB.PilotChannel>
+    public class PilotChannel : BaseObject
     {
         public Pilot Pilot { get; set; }
         
@@ -25,15 +25,6 @@ namespace RaceLib
                 }
                 return Pilot.Name;
             }
-        }
-        public PilotChannel(DB.PilotChannel obj)
-            : base(obj)
-        {
-            if (obj.Pilot != null)
-                Pilot = obj.Pilot.Convert<Pilot>();
-
-            if (obj.Channel != null)
-                Channel = obj.Channel.Convert<Channel>();
         }
 
 
@@ -56,14 +47,6 @@ namespace RaceLib
         {
             // This is important, pilot channels cannot be shared between races, events, etc
             return new PilotChannel(Pilot, Channel);
-        }
-
-        public override DB.PilotChannel GetDBObject()
-        {
-            DB.PilotChannel pilotChannel = base.GetDBObject();
-            pilotChannel.Pilot = Pilot.GetDBObject();
-            pilotChannel.Channel = Channel.GetDBObject();
-            return pilotChannel;
         }
     }
 

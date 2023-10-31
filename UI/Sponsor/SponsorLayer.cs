@@ -66,7 +66,7 @@ namespace UI.Sponsor
         {
             Patreon[] patreons;
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 patreons = db.All<Patreon>().Where(p => p.Active).ToArray();
             }

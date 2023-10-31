@@ -9,7 +9,7 @@ using System.Xml.Serialization;
 
 namespace RaceLib
 {
-    public class Pilot : BaseObjectT<DB.Pilot>
+    public class Pilot : BaseObject
     {
         public delegate void OnPilotEvent(Pilot pilot);
 
@@ -71,11 +71,6 @@ namespace RaceLib
         {
             name = System.Text.RegularExpressions.Regex.Replace(name, "[^a-zA-Z0-9 ]", " ", System.Text.RegularExpressions.RegexOptions.Compiled);
             phonetic = name.Trim();
-        }
-
-        public Pilot(DB.Pilot obj)
-            : base(obj)
-        {
         }
 
         public Pilot()

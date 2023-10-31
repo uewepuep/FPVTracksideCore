@@ -25,7 +25,7 @@ namespace UI.Nodes
             Race race = Single;
             if (race != null)
             {
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     db.Update(race);
                 }

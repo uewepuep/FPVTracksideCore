@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RaceLib
 {
-    public class Lap : BaseObjectT<DB.Lap>
+    public class Lap : BaseObject
     {
         public delegate void LapDelegate(Lap lap);
 
@@ -59,13 +59,6 @@ namespace RaceLib
 
         public Race Race { get; set; }
 
-        public Lap(DB.Lap obj)
-            : base(obj)
-        {
-            if (obj.Detection != null)
-                Detection = obj.Detection.Convert<Detection>();
-        }
-
         public Lap()
         {
         }
@@ -115,13 +108,6 @@ namespace RaceLib
             {
                 return "L" + number;
             }
-        }
-
-        public override DB.Lap GetDBObject()
-        {
-            DB.Lap lap = base.GetDBObject();
-            lap.Detection = Detection.GetDBObject();
-            return lap;
         }
     }
 }

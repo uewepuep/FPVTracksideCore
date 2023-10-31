@@ -442,7 +442,7 @@ namespace RaceLib
             }
 
             PilotChannel pc;
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 pc = currentRace.SetPilot(db, channel, p);
             }
@@ -468,7 +468,7 @@ namespace RaceLib
             race.Round = EventManager.RoundManager.GetCreateRound(newRoundNumber, EventType);
             race.RaceNumber = GetRaceNumbers(race.Round).Max() + 1;
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 db.Update(race);
             }
@@ -521,7 +521,7 @@ namespace RaceLib
             }
 
             PilotChannel pc;
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 pc = currentRace.RemovePilot(db, p);
             }
@@ -543,7 +543,7 @@ namespace RaceLib
 
         public PilotChannel RemovePilot(Race race, Pilot pilot)
         {
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 return race.RemovePilot(db, pilot);
             }
@@ -572,7 +572,7 @@ namespace RaceLib
                 return null;
 
             PilotChannel pc;
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 pc = currentRace.ClearChannel(db, channel);
                 db.Update(currentRace);
@@ -682,7 +682,7 @@ namespace RaceLib
                 }
             }
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 db.Upsert(currentRace);
                 CheckEventStart(db);
@@ -768,7 +768,7 @@ namespace RaceLib
                     }
                 }
 
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     db.Upsert(currentRace);
                     CheckEventStart(db);
@@ -781,7 +781,7 @@ namespace RaceLib
             return true;
         }
 
-        private void CheckEventStart(Database db)
+        private void CheckEventStart(IDatabase db)
         {
             if (EventManager.Event.Start == default)
             {
@@ -885,7 +885,7 @@ namespace RaceLib
             currentRace.End = DateTime.Now;
             currentRace.TargetLaps = EventManager.Event.Laps;
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 db.Update(currentRace);
             }
@@ -908,7 +908,7 @@ namespace RaceLib
 
             Race current = currentRace;
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 db.Update(currentRace);
                 CurrentRace = null;
@@ -923,7 +923,7 @@ namespace RaceLib
 
         public void ClearRace(Race race)
         {
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 race.ClearPilots(db);
                 db.Update(race);
@@ -946,7 +946,7 @@ namespace RaceLib
                 races.Add(race);
             }
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 db.Upsert(race.PilotChannelsSafe);
                 db.Upsert(race);
@@ -969,9 +969,9 @@ namespace RaceLib
         public void LoadRaces(Event eve)
         {
             Race[] races;
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
-                races = db.LoadRaces(eve).ToArray();
+                races = db.LoadRaces(eve.ID).ToArray();
             }
 
             LoadRaces(races);
@@ -1040,7 +1040,7 @@ namespace RaceLib
                 races.Remove(remove);
             }
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 remove.Valid = false;
                 db.Update(remove);
@@ -1091,7 +1091,7 @@ namespace RaceLib
             if (current != null)
             {
                 current.TargetLaps = laps;
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     db.Update(current);
                 }
@@ -1165,7 +1165,7 @@ namespace RaceLib
                 pilot.PracticePilot = true;
 
 
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     db.Insert(pilot);
                     race.SetPilot(db, channel, pilot);
@@ -1186,7 +1186,7 @@ namespace RaceLib
 
             if (race != null)
             {
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     race.ResetRace(db);
                 }
@@ -1276,7 +1276,7 @@ namespace RaceLib
             }
             else
             {
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     db.Insert(d);
                 }
@@ -1334,7 +1334,7 @@ namespace RaceLib
             }
 
             Lap lap;
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 lap = currentRace.RecordLap(db, detection);
             }
@@ -1413,7 +1413,7 @@ namespace RaceLib
         {
             Logger.RaceLog.LogCall(this, pilot, race);
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 race.ReCalculateLaps(db, pilot);
             }
@@ -1497,7 +1497,7 @@ namespace RaceLib
             //    copy = races.ToList();
             //}
 
-            //using (Database db = new Database())
+            //using (IDatabase db = DatabaseFactory.Open())
             //{
             //    IEnumerable<Race> invalid = db.Races
             //        .Include(r => r.PilotChannels)
@@ -1528,7 +1528,7 @@ namespace RaceLib
 
                 EventManager.ResultManager.Clear();
 
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     db.Delete(detections);
                     db.Delete(laps);
@@ -1584,7 +1584,7 @@ namespace RaceLib
             lock (races)
             {
                 Logger.RaceLog.LogCall(this);
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     var types = from round in EventManager.Event.Rounds.OrderBy(r => r.Order)
                                 group round by round.EventType into newGroup
@@ -1763,7 +1763,7 @@ namespace RaceLib
 
             bool success = false;
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 success = newRace.SwapPilots(db, newPilot, newChannel, oldRace);
             }
@@ -1877,7 +1877,7 @@ namespace RaceLib
             original.Start = lapEnd;
             original.Detection.LapNumber = lapNumber;
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 db.Insert(newLaps.Select(l => l.Detection));
                 db.Insert(newLaps);
@@ -1933,7 +1933,7 @@ namespace RaceLib
 
             detection.ValidityType = validityType;
             detection.Valid = valid;
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 db.Update(detection);
                 race.ReCalculateLaps(db, detection.Pilot);
@@ -1976,7 +1976,7 @@ namespace RaceLib
             return preferedChannel;
         }
 
-        public void OptimiseChannels(Database db, Race race)
+        public void OptimiseChannels(IDatabase db, Race race)
         {
             if (race.Ended)
             {

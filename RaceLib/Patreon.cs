@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace RaceLib
 {
-    public class Patreon : BaseObjectT<DB.Patreon>
+    public class Patreon : BaseObject
     {
         public string Name { get; set; }
         public string ThumbURL { get; set; }
@@ -18,11 +18,6 @@ namespace RaceLib
         public int Amount { get; set; }
 
         public Patreon()
-        {
-        }
-
-        public Patreon(DB.Patreon obj)
-            : base(obj)
         {
         }
     }

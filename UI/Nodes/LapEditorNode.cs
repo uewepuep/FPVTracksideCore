@@ -280,7 +280,7 @@ namespace UI.Nodes
                 lc.DoSplit(RaceManager);
             }
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 foreach (var lc in lapContainers)
                 {
@@ -434,7 +434,7 @@ namespace UI.Nodes
             }
         }
 
-        public void SaveChanges(Database db)
+        public void SaveChanges(IDatabase db)
         {
             if (Lap != null)
             {

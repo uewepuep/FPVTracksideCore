@@ -17,7 +17,7 @@ namespace RaceLib.Format
             EventManager = em;
         }
 
-        public abstract IEnumerable<Race> GenerateRound(Database db, IEnumerable<Race> preExisting, Round newRound, RoundPlan plan);
+        public abstract IEnumerable<Race> GenerateRound(IDatabase db, IEnumerable<Race> preExisting, Round newRound, RoundPlan plan);
 
         public virtual IEnumerable<Pilot> GetOutputPilots(Round round)
         {

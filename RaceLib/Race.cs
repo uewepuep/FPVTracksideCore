@@ -1,5 +1,4 @@
-﻿using DB;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -10,7 +9,7 @@ using Timing;
 
 namespace RaceLib
 {
-    public class Race : BaseObjectT<DB.Race>
+    public class Race : BaseObject
     {
         public delegate void OnRaceEvent(Race race);
 
@@ -265,28 +264,6 @@ namespace RaceLib
                 }
             }
         }
-        public Race(DB.Race obj)
-            : base(obj)
-        {
-            
-            if (obj.PilotChannels != null)
-                PilotChannels = obj.PilotChannels.Convert<PilotChannel>().ToList();
-            if (obj.Laps != null)
-                Laps = obj.Laps.Convert<Lap>().ToList();
-            if (obj.Detections != null)
-                Detections = obj.Detections.Convert<Detection>().ToList();
-
-            // Back reference for lap to race.
-            foreach (Lap lap in Laps)
-            {
-                lap.Race = this;
-            }
-
-            if (obj.Event != null)
-                Event = obj.Event.Convert<Event>();
-            if (obj.Round != null)
-                Round = obj.Round.Convert<Round>();
-        }
 
         public Race()
         {
@@ -350,7 +327,7 @@ namespace RaceLib
             return Laps.Any(l => l.Pilot == p);
         }
 
-        public PilotChannel SetPilot(Database db, Channel channel, Pilot p)
+        public PilotChannel SetPilot(IDatabase db, Channel channel, Pilot p)
         {
             if (channel == null || p == null)
                 return null;
@@ -377,7 +354,7 @@ namespace RaceLib
             return pc;
         }
 
-        public PilotChannel ClearChannel(Database db, Channel channel)
+        public PilotChannel ClearChannel(IDatabase db, Channel channel)
         {
             lock (PilotChannels)
             {
@@ -392,7 +369,7 @@ namespace RaceLib
             return null;
         }
 
-        public PilotChannel RemovePilot(Database db, Pilot pilot)
+        public PilotChannel RemovePilot(IDatabase db, Pilot pilot)
         {
             if (Ended)
             {
@@ -472,7 +449,7 @@ namespace RaceLib
             return null;
         }
 
-        public Lap RecordLap(Database db, Detection detection)
+        public Lap RecordLap(IDatabase db, Detection detection)
         {
             if (!detection.IsLapEnd)
             {
@@ -531,7 +508,7 @@ namespace RaceLib
             }
         }
 
-        public bool ClearPilots(Database db)
+        public bool ClearPilots(IDatabase db)
         {
             if (Ended)
                 return false;
@@ -694,7 +671,7 @@ namespace RaceLib
         }
 
 
-        public void ResetRace(Database db)
+        public void ResetRace(IDatabase db)
         {
             lock (Laps)
             {
@@ -809,7 +786,7 @@ namespace RaceLib
         }
 
 
-        public void ReCalculateLaps(Database db, Pilot pilot)
+        public void ReCalculateLaps(IDatabase db, Pilot pilot)
         {
             int i = 0;
 
@@ -862,7 +839,7 @@ namespace RaceLib
             }
         }
 
-        public void SwapPilots(Database db, Pilot pilot, Pilot otherPilot)
+        public void SwapPilots(IDatabase db, Pilot pilot, Pilot otherPilot)
         {
             Channel channel = GetChannel(pilot);
             Channel otherChannel = GetChannel(otherPilot);
@@ -874,7 +851,7 @@ namespace RaceLib
             SetPilot(db, channel, otherPilot);
         }
 
-        public bool SwapPilots(Database db, Pilot newPilot, Channel newChannel, Race oldRace)
+        public bool SwapPilots(IDatabase db, Pilot newPilot, Channel newChannel, Race oldRace)
         {
             PilotChannel existingPilotChannel = GetPilotChannel(newChannel.Frequency);
             Pilot existingPilot = null;
@@ -918,7 +895,7 @@ namespace RaceLib
             return SetPilot(db, newChannel, newPilot) != null;
         }
 
-        public void RefreshPilots(Database db)
+        public void RefreshPilots(IDatabase db)
         {
             foreach (PilotChannel pc in PilotChannels)
             {
@@ -931,19 +908,5 @@ namespace RaceLib
         {
             return Type + " " + RaceNumber + " (Round " + RoundNumber +  ") with " + PilotChannels.Count + " pilots.";
         }
-
-        public override DB.Race GetDBObject()
-        {
-            DB.Race race = base.GetDBObject();
-
-            race.Laps = Laps.GetDBObjects().ToList();
-            race.PilotChannels = PilotChannels.GetDBObjects().ToList();
-
-            race.Event = Event.GetDBObject();
-            race.Round = Round.GetDBObject();
-
-            return race;
-        }
-
     }
 }

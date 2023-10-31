@@ -558,7 +558,7 @@ namespace UI.Nodes
                     dropped.Round.Order = order;
                 }
 
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     db.Update(RoundNodes.Select(r => r.Round));
                 }

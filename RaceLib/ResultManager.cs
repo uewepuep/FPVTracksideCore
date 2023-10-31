@@ -101,12 +101,10 @@ namespace RaceLib
 
         public void Load(Event eve)
         {
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
-                Result[] results = db.LoadResults(eve.ID).ToArray();
-
                 // Load points
-                Results = results.ToList();
+                Results = db.LoadResults(eve.ID).ToList();
             }
         }
 
@@ -323,7 +321,7 @@ namespace RaceLib
 
                     result.Points = GetPoints(result.Position);
 
-                    using (Database db = new Database())
+                    using (IDatabase db = DatabaseFactory.Open())
                     {
                         db.Update(result);
                     }
@@ -354,7 +352,7 @@ namespace RaceLib
             result.ResultType = Result.ResultTypes.RoundRollOver;
             result.DNF = false;
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 db.Insert(result);
             }
@@ -456,7 +454,7 @@ namespace RaceLib
 
                 Results.RemoveAll(r => toRemove.Contains(r));
 
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     db.Delete(toRemove);
                 }
@@ -469,7 +467,7 @@ namespace RaceLib
             return SaveResults(null, race);
         }
 
-        public bool SaveResults(Database db, Race race)
+        public bool SaveResults(IDatabase db, Race race)
         {
             if (!race.Ended)
                 return false;
@@ -504,7 +502,7 @@ namespace RaceLib
 
             if (db == null)
             {
-                using (Database db2 = new Database())
+                using (IDatabase db2 = DatabaseFactory.Open())
                 {
                     db2.Insert(newResults);
                 }
@@ -534,7 +532,7 @@ namespace RaceLib
                 {
                     race.Start = DateTime.Now;
                 }
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     db.Update(race);
                 }
@@ -560,7 +558,7 @@ namespace RaceLib
             r.Position = position;
             r.DNF = dnf;
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 db.Upsert(r);
             }
@@ -739,7 +737,7 @@ namespace RaceLib
         {
             lock (Results)
             {
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     db.Delete(Results);
                 }

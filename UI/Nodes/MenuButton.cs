@@ -402,7 +402,7 @@ namespace UI.Nodes
 
                 if (eventManager != null)
                 {
-                    using (Database db = new Database())
+                    using (IDatabase db = DatabaseFactory.Open())
                     {
                         eventManager.Event.Channels = channels;
                         db.Update(eventManager.Event);
@@ -547,7 +547,7 @@ namespace UI.Nodes
             editor.OnOK += (e) =>
             {
                 eventManager.Event = editor.Objects.FirstOrDefault();
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     db.Update(eventManager.Event);
                 }

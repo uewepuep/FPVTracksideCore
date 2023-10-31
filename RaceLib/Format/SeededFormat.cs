@@ -14,7 +14,7 @@ namespace RaceLib.Format
         {
         }
 
-        public override IEnumerable<Race> GenerateRound(Database db, IEnumerable<Race> preExisting, Round newRound, RoundPlan plan)
+        public override IEnumerable<Race> GenerateRound(IDatabase db, IEnumerable<Race> preExisting, Round newRound, RoundPlan plan)
         {
             Pilot[] pilots = plan.Pilots.ToArray();
 

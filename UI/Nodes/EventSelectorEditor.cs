@@ -164,7 +164,7 @@ namespace UI.Nodes
                     if (Selected != null)
                     {
                         Event newEvent = Selected.Clone();
-                        using (Database db = new Database())
+                        using (IDatabase db = DatabaseFactory.Open())
                         {
                             db.Insert(newEvent);
                         }
@@ -209,7 +209,7 @@ namespace UI.Nodes
             Event selected = Selected;
             if (selected != null)
             {
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     selected.Enabled = false;
                     db.Update(selected);
@@ -225,7 +225,7 @@ namespace UI.Nodes
         protected override void AddOnClick(MouseInputEvent mie)
         {
             Event eve;
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 Club club = db.GetDefaultClub();
 
@@ -268,7 +268,7 @@ namespace UI.Nodes
         private static Event[] GetEvents(Profile profile)
         {
             Event[] events;
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 events = db.GetEvents().ToArray();
 
@@ -291,7 +291,7 @@ namespace UI.Nodes
 
         private void EventEditor_OnOK(BaseObjectEditorNode<Event> obj)
         {
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 if (obj.Selected != null)
                 {
@@ -304,7 +304,7 @@ namespace UI.Nodes
 
         public void SaveChanges()
         {
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 foreach (var o in Objects)
                 {
