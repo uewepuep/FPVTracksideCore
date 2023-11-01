@@ -16,9 +16,6 @@ namespace RaceLib
         IEnumerable<Race> LoadRaces(Guid eventId);
         IEnumerable<Result> LoadResults(Guid eventId);
 
-
-        T GetObject<T>(Guid id) where T : BaseObject;
-
         bool Insert<T>(T t) where T : BaseObject;
         int Insert<T>(IEnumerable<T> t) where T : BaseObject;
         

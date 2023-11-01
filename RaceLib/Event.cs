@@ -275,11 +275,11 @@ namespace RaceLib
             yield return EventTypes.CasualPractice;
         }
 
-        public void RefreshPilots(IDatabase db)
+        public void RefreshPilots(IEnumerable<Pilot> editedPilots)
         {
             foreach (PilotChannel pc in PilotChannels)
             {
-                Pilot p = db.GetObject<Pilot>(pc.Pilot.ID);
+                Pilot p = editedPilots.GetObject(pc.Pilot.ID);
                 pc.Pilot = p;
             }
         }

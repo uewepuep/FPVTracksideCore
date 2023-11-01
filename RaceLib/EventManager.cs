@@ -214,6 +214,7 @@ namespace RaceLib
                 using (IDatabase db = DatabaseFactory.Open())
                 {
                     Event = db.LoadEvent(eve.ID);
+                    System.Diagnostics.Debug.Assert(Event != null);
                     UpdateRoundOrder(db);
                 }
 
@@ -549,12 +550,13 @@ namespace RaceLib
             return Event.Pilots.FirstOrDefault(p => p.Name == name);
         }
 
-        public void RefreshPilots(IDatabase db)
+        public void RefreshPilots(IEnumerable<Pilot> editedPilots)
         {
-            Event.RefreshPilots(db);
+
+            Event.RefreshPilots(editedPilots);
             foreach (Race r in RaceManager.Races)
             {
-                r.RefreshPilots(db);
+                r.RefreshPilots(editedPilots);
             }
 
             OnPilotRefresh?.Invoke();
