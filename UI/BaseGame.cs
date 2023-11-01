@@ -75,7 +75,7 @@ namespace UI
             
             Logger.Init(Log);
 
-            DatabaseFactory.Init(new DB.ConvertingDatabaseFactory(Data));
+            DatabaseFactory.Init(new DB.DatabaseFactory(Data));
 
             FileInfo[] oldConfigs = Data.GetFiles("*.xml").Where(r => !r.Name.EndsWith("GeneralSettings.xml")).ToArray();
             if (oldConfigs.Any())

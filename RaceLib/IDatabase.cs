@@ -34,16 +34,16 @@ namespace RaceLib
         T GetCreateObject<T>(Guid id) where T : BaseObject;
     }
 
-    public interface InterfaceDatabaseFactory
+    public interface IDatabaseFactory
     {
         IDatabase Open();
     }
 
     public static class DatabaseFactory
     {
-        private static InterfaceDatabaseFactory databaseFactory;
+        private static IDatabaseFactory databaseFactory;
 
-        public static void Init(InterfaceDatabaseFactory dbf)
+        public static void Init(IDatabaseFactory dbf)
         {
             databaseFactory = dbf;
         }
