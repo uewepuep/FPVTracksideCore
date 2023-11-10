@@ -32,6 +32,9 @@ namespace RaceLib
 
         T GetCreateExternalObject<T>(int externalId) where T : BaseObject, new();
         T GetCreateObject<T>(Guid id) where T : BaseObject, new();
+
+        T GetObject<T>(Guid id) where T : BaseObject, new();
+        IEnumerable<T> GetObjects<T>(IEnumerable<Guid> ids) where T : BaseObject, new();
     }
 
     public interface IDatabaseFactory
