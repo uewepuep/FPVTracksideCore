@@ -16,22 +16,22 @@ namespace RaceLib
         IEnumerable<Race> LoadRaces(Guid eventId);
         IEnumerable<Result> LoadResults(Guid eventId);
 
-        bool Insert<T>(T t) where T : BaseObject;
-        int Insert<T>(IEnumerable<T> t) where T : BaseObject;
+        bool Insert<T>(T t) where T : BaseObject, new();
+        int Insert<T>(IEnumerable<T> t) where T : BaseObject, new();
         
-        bool Update<T>(T t) where T : BaseObject;
-        int Update<T>(IEnumerable<T> t) where T : BaseObject;
+        bool Update<T>(T t) where T : BaseObject, new();
+        int Update<T>(IEnumerable<T> t) where T : BaseObject, new();
         
-        bool Upsert<T>(T t) where T : BaseObject;
-        int Upsert<T>(IEnumerable<T> t) where T : BaseObject;
+        bool Upsert<T>(T t) where T : BaseObject, new();
+        int Upsert<T>(IEnumerable<T> t) where T : BaseObject, new();
 
-        bool Delete<T>(T t) where T : BaseObject;
-        int Delete<T>(IEnumerable<T> t) where T : BaseObject;
+        bool Delete<T>(T t) where T : BaseObject, new();
+        int Delete<T>(IEnumerable<T> t) where T : BaseObject, new();
 
-        IEnumerable<T> All<T>() where T : BaseObject;
+        IEnumerable<T> All<T>() where T : BaseObject, new();
 
-        T GetCreateExternalObject<T>(int externalId) where T : BaseObject;
-        T GetCreateObject<T>(Guid id) where T : BaseObject;
+        T GetCreateExternalObject<T>(int externalId) where T : BaseObject, new();
+        T GetCreateObject<T>(Guid id) where T : BaseObject, new();
     }
 
     public interface IDatabaseFactory
