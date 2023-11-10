@@ -197,6 +197,9 @@ namespace RaceLib
         public void UpdatePilot(Pilot pilot)
         {
             PilotLapRecord plr = GetPilotLapRecord(pilot);
+            if (plr == null)
+                return;
+
             foreach (int consecutive in ConsecutiveLapsToTrack)
             {
                 plr.UpdateBestConsecutiveLaps(consecutive);
