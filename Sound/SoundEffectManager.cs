@@ -111,16 +111,25 @@ namespace Sound
                 return false;
             }
 
-            SoundEffectInstance instance = effect.CreateInstance();
-            instance.Volume = Math.Clamp(volume / 100.0f, 0, 1);
-            instance.Play();
-
-            Logger.SoundLog.Log(this, "Play Sound", filename, Logger.LogType.Notice);
-
-            while (instance.State == SoundState.Playing)
+            try
             {
-                System.Threading.Thread.Sleep(1);
+                SoundEffectInstance instance = effect.CreateInstance();
+                instance.Volume = Math.Clamp(volume / 100.0f, 0, 1);
+                instance.Play();
+
+                Logger.SoundLog.Log(this, "Play Sound", filename, Logger.LogType.Notice);
+
+                while (instance.State == SoundState.Playing)
+                {
+                    System.Threading.Thread.Sleep(1);
+                }
             }
+            catch (Exception e)
+            {
+                Logger.SoundLog.LogException(this, e);
+                return false;
+            }
+           
 
             return true;
         }
