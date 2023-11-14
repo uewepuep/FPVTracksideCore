@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading;
 using System.Web;
@@ -288,30 +289,24 @@ namespace Webb
                     case "httpfiles":
                     case "img":
                     case "themes":
-                        if (requestPath.Length > 1)
+                        string target = string.Join('\\', requestPath);
+                        if (target.Contains("."))
                         {
-                            string filename = string.Join('\\', requestPath);
-                            return File.ReadAllBytes(filename);
+                            return File.ReadAllBytes(target);
                         }
                         else
                         {
-                            DirectoryInfo di = new DirectoryInfo("httpfiles");
-
-                            FileInfo[] files = di.GetFiles();
-                            if (files.Any())
-                            {
-                                content += "<h1>Files</h2>";
-                                content += "<ul>";
-                                foreach (FileInfo filename in files)
-                                {
-                                    content += "<li>";
-                                    content += "<a href=\"httpfiles\\" + filename.Name + " \">" + filename.Name + "</a>";
-                                    content += "</li>";
-                                }
-                                content += "</ul>";
-                            }
+                            DirectoryInfo di = new DirectoryInfo(target);
+                            content += ListDirectory(di);
                         }
                         break;
+                    case "event":
+                        DirectoryInfo directory = new DirectoryInfo(eventManager.Event.ID.ToString());
+                        content += ListDirectory(directory);
+                        break;
+                    case "races":
+                        break;
+
                     case "Rounds":
                         content += WebbRounds.Rounds(eventManager);
                         break;
@@ -338,6 +333,27 @@ namespace Webb
             return Encoding.ASCII.GetBytes(output);
         }
               
+
+        private string ListDirectory(DirectoryInfo target)
+        {
+            string content = "";
+
+            content += "<h1>" + target + "</h2>";
+            content += "<ul>";
+
+            foreach (DirectoryInfo subDir in target.GetDirectories())
+            {
+                content += "<li><a href=\"" + subDir.Name + " \">" + subDir.Name + "</a></li>";
+            }
+
+            foreach (FileInfo filename in target.GetFiles())
+            {
+                content += "<li><a href=\"" + filename.Name + " \">" + filename.Name + "</a></li>";
+            }
+
+            content += "</ul>";
+            return content;
+        }
 
         public bool Stop()
         {
