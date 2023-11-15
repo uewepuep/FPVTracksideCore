@@ -1,4 +1,6 @@
-﻿using ExternalData;
+﻿using DB;
+using DB.JSON;
+using ExternalData;
 using Newtonsoft.Json;
 using RaceLib;
 using Sound;
@@ -114,7 +116,6 @@ namespace Webb
         {
             while (Running)
             {
-
                 if (listener == null)
                 {
                     CreateListener();
@@ -209,7 +210,9 @@ namespace Webb
                     content += "<p>By default this webserver is only accessible from this machine. To access it over the network run in an Adminstrator command prompt:</p><p> netsh http add urlacl url = \"" + url + "\" user=everyone</p><p>Then restart the software</p>";
                 }
 
-                return GetHTML(context, content);
+                content += "<script> const content = document.getElementById(\"content\"); var eventManager = new EventManager(); var formatter = new Formatter(eventManager, content); formatter.ShowRounds(); </script>";
+
+                return GetFormattedHTML(context, content);
             }
             else
             {
@@ -236,7 +239,8 @@ namespace Webb
                     case "httpfiles":
                     case "img":
                     case "themes":
-                        string target1 = string.Join('\\', requestPath);
+                        string target1 =  string.Join('\\', requestPath);
+
                         if (File.Exists(target1))
                         {
                             return File.ReadAllBytes(target1);
@@ -256,6 +260,7 @@ namespace Webb
                             {
                                 return File.ReadAllBytes(target);
                             }
+                            return new byte[0];
                         }
                         else
                         {
@@ -278,8 +283,11 @@ namespace Webb
                             }
                         }
 
-                        string json = JsonConvert.SerializeObject(ids);
-                        return Encoding.ASCII.GetBytes(json);
+                        return SerializeASCII(ids);
+
+                    case "channels":
+                        IEnumerable<DB.Channel> channels = RaceLib.Channel.AllChannels.Convert<DB.Channel>();
+                        return SerializeASCII(channels);
 
                     case "Rounds":
                         content += WebbRounds.Rounds(eventManager);
@@ -302,6 +310,18 @@ namespace Webb
 
                 return GetFormattedHTML(context, content);
             }
+        }
+
+        private byte[] SerializeASCII<T>(IEnumerable<T> ts)
+        {
+            JsonSerializerSettings settings = new JsonSerializerSettings()
+            {
+                Formatting = Formatting.Indented,
+                DateFormatString = "yyyy/MM/dd H:mm:ss.FFF"
+            };
+
+            string json = JsonConvert.SerializeObject(ts, settings);
+            return Encoding.ASCII.GetBytes(json);
         }
               
         private byte[] GetHTML(HttpListenerContext context, string content)
@@ -355,10 +375,10 @@ namespace Webb
 
             if (autoScroll)
                 output += "<script src=\"/httpfiles/scroll.js\"></script>";
+            output += "<script src=\"/httpfiles/EventManager.js\"></script>";
+            output += "<script src=\"/httpfiles/Formatter.js\"></script>";
 
-            output += "<script src=\"/httpfiles/format.js\"></script>";
-
-            output += "<body>";
+            output += "<body id=\"body\">";
 
             output += content;
             
@@ -375,7 +395,7 @@ namespace Webb
             output += "</div>";
 
 
-            output += "<div class=\"content\">";
+            output += "<div id=\"content\" class=\"content\">";
 
             output += content;
 
