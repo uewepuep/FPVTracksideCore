@@ -210,7 +210,14 @@ namespace Webb
                     content += "<p>By default this webserver is only accessible from this machine. To access it over the network run in an Adminstrator command prompt:</p><p> netsh http add urlacl url = \"" + url + "\" user=everyone</p><p>Then restart the software</p>";
                 }
 
-                content += "<script> const content = document.getElementById(\"content\"); var eventManager = new EventManager(); var formatter = new Formatter(eventManager, content); formatter.ShowRounds(); </script>";
+                content += "<script>";
+                content += "const content = document.getElementById(\"content\");";
+                content += "var eventManager = new EventManager();";
+                content += "var formatter = new Formatter(eventManager, content);";
+                content += "</script>";
+
+                content += "<a onclick=\"formatter.ShowRounds()\">Rounds</a>";
+                content += "<a onclick=\"formatter.ShowLapRecords()\">Lap Records</a>";
 
                 return GetFormattedHTML(context, content);
             }
@@ -282,8 +289,16 @@ namespace Webb
                                 ids.Add(id);
                             }
                         }
-
                         return SerializeASCII(ids);
+
+                    case "channelcolors":
+                        List<ColoredChannel> colours = new List<ColoredChannel>();
+                        foreach (RaceLib.Channel channel in eventManager.Channels)
+                        {
+                            string color = eventManager.GetChannelColor(channel).ToHex();
+                            colours.Add(new ColoredChannel(channel, color));
+                        }
+                        return SerializeASCII(colours);
 
                     case "channels":
                         IEnumerable<DB.Channel> channels = RaceLib.Channel.AllChannels.Convert<DB.Channel>();
@@ -375,6 +390,7 @@ namespace Webb
 
             if (autoScroll)
                 output += "<script src=\"/httpfiles/scroll.js\"></script>";
+            output += "<script src=\"/httpfiles/linq.js\"></script>";
             output += "<script src=\"/httpfiles/EventManager.js\"></script>";
             output += "<script src=\"/httpfiles/Formatter.js\"></script>";
 
@@ -395,9 +411,11 @@ namespace Webb
             output += "</div>";
 
 
-            output += "<div id=\"content\" class=\"content\">";
+            output += "<div class=\"content\">";
+            output += "<div id=\"content\"></div>";
 
             output += content;
+
 
             output += "</div>";
 

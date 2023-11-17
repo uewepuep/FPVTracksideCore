@@ -4,13 +4,16 @@ class EventManager
     {
     }
 
+    async GetPilots()
+    {
+        return await this.GetJSON("event/Pilots.json");
+    }
 
     async GetRace(id)
     {
         let raceArray = await this.GetJSON("event/" + id + "/Race.json");
         if (raceArray == null)
             return null;
-
 
         if (raceArray.length > 0)
         {
@@ -21,7 +24,7 @@ class EventManager
 
     async GetRaces(delegate)
     {
-        let races = new Array();
+        let races = [];
 
         let raceIds = await this.GetJSON("races");
         if (raceIds == null)
@@ -38,6 +41,72 @@ class EventManager
         return races;
     }
 
+    RaceHasPilot(race, pilotId)
+    {
+        for (const pilotChannel of race.PilotChannels)
+        {
+            if (pilotChannel.Pilot == pilotId)
+                return true;
+        }
+
+        return false;
+    }
+
+    GetValidLaps(race, pilotId)
+    {
+        let output = [];
+
+        for (const lap of race.Laps)
+        {
+            let detection = this.GetDetection(race, lap);
+            lap.detectionObject = detection;
+
+            if (detection == null)
+                continue;
+
+            if (detection.Valid == false)
+                continue;
+
+            if (lap.Pilot == pilotId)
+            {
+                output.push(lap);
+            }
+        }
+        return output;
+    }
+
+    GetDetection(race, lap)
+    {
+        for (const detection of race.Detections)
+        {
+            if (lap.detection == detection.ID)
+                return detection;
+        }
+        return null;
+    }
+
+    async GetLapRecords()
+    {
+        let records = [];
+
+        let pilots = await this.GetPilots();
+        let races = await this.GetRaces();
+
+        for (const pilot in pilots)
+        {
+            for (const race in races)
+            {
+                if (this.RaceHasPilot(race, pilot.ID))
+                {
+                    let laps = this.GetValidLaps(race, pilot.ID);
+
+                }
+            }
+        }
+    }
+
+
+
     async GetRoundRaces(roundId)
     {
         return await this.GetRaces((r) => { return r.Round == roundId });
@@ -50,7 +119,12 @@ class EventManager
 
     async GetChannel(id)
     {
-        return this.GetObjectByID("channels", id);
+        let colorChannels = await this.GetJSON("channelcolors/");
+
+        for (const colorChannel of colorChannels) {
+            if (colorChannel.ID == id)
+                return colorChannel;
+        }
     }
 
     async GetRounds()
@@ -75,7 +149,6 @@ class EventManager
     {
         return await this.GetJSON("event/" + raceID + "/Result.json");
     }
-
 
     async GetObjectByID(url, id)
     {

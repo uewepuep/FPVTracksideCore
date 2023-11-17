@@ -32,7 +32,7 @@ class Formatter
             output += "<tr>";
             output += "<td class=\"race_pilot\">" + pilotName + "</td>";
             output += "<td class=\"race_channel\">" + this.ChannelToString(channel) + "</td>";
-            //output += "<td class=\"race_channel_color\" style=\"background-color: " + channel.GetStyleColor() + "\"></td>";
+            output += "<td class=\"race_channel_color\" style=\"background-color: " + channel.Color + "\"></td>";
             output += "<td class=\"race_result\">" + this.ResultToString(result) + "</td>";
             output += "</tr>";
         }
@@ -67,7 +67,10 @@ class Formatter
     {
         let output = "<h2>Rounds</h2>";
 
-        const rounds = await eventManager.GetRounds();
+        let rounds = await eventManager.GetRounds();
+
+        rounds.sort((a, b) => { return a.RoundNumber - b.RoundNumber });
+
         for (const round of rounds)
         {
             if (round.Valid)
@@ -76,6 +79,8 @@ class Formatter
                 output += "<h3>" + round.EventType + " Round " + round.RoundNumber + "</h3>";
 
                 let races = await this.eventManager.GetRoundRaces(round.ID);
+                races = races.sort((a, b) => { return a.RaceNumber - b.RaceNumber });
+
                 for (const race of races) {
                     if (race.Valid) {
                         output += await this.RaceTable(race, round);
@@ -85,6 +90,14 @@ class Formatter
                 output += "</div>";
             }
         }
+
+        this.content.innerHTML = output;
+    }
+
+    async ShowLapRecords()
+    {
+        let output = "<h2>Lap Records</h2>";
+
 
         this.content.innerHTML = output;
     }
