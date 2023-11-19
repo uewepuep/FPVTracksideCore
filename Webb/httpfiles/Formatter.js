@@ -16,24 +16,29 @@ class Formatter
         output += "<h4>" + raceName + "</h4>";
 
         output += "<table class=\"race_table\">";
+
+        let pilotChannels = [];
         for (const pilotChannel of race.PilotChannels)
         {
-            let channel = await eventManager.GetChannel(pilotChannel.Channel);
-            let pilotName = "";
-            let result = null;
+            pilotChannel.Channel = await eventManager.GetChannel(pilotChannel.Channel);
+            pilotChannel.Pilot = await eventManager.GetPilot(pilotChannel.Pilot);
+            pilotChannel.Result = await eventManager.GetPilotResult(race.ID, pilotChannel.Pilot.ID);
 
-            let pilot = await eventManager.GetPilot(pilotChannel.Pilot);
-            if (pilot != null)
+            if (pilotChannel.Channel != null && pilotChannel.Pilot != null)
             {
-                pilotName = pilot.Name;
-                result = await eventManager.GetPilotResult(race.ID, pilot.ID);
+                pilotChannels.push(pilotChannel);
             }
+        }
 
+        pilotChannels.sort((a, b) => { return a.Channel.Frequency - b.Channel.Frequency });
+
+        for (const pilotChannel of pilotChannels)
+        {
             output += "<tr>";
-            output += "<td class=\"race_pilot\">" + pilotName + "</td>";
-            output += "<td class=\"race_channel\">" + this.ChannelToString(channel) + "</td>";
-            output += "<td class=\"race_channel_color\" style=\"background-color: " + channel.Color + "\"></td>";
-            output += "<td class=\"race_result\">" + this.ResultToString(result) + "</td>";
+            output += "<td class=\"race_pilot\">" + pilotChannel.Pilot.Name + "</td>";
+            output += "<td class=\"race_channel\">" + this.ChannelToString(pilotChannel.Channel) + "</td>";
+            output += "<td class=\"race_channel_color\" style=\"background-color: " + pilotChannel.Channel.Color + "\"></td>";
+            output += "<td class=\"race_result\">" + this.ResultToString(pilotChannel.Result) + "</td>";
             output += "</tr>";
         }
         output += '</table>';
@@ -106,9 +111,11 @@ class Formatter
     {
         let post = "th";
 
-        if (position.Length == 1 || position[position.Length - 2] != '1')
+        position = position.toString();
+
+        if (position.length == 1 || position[position.length - 2] != '1')
         {
-            let lastChar = position[position.Length - 1]
+            let lastChar = position[position.length - 1]
             switch (lastChar)
             {
                 case '1': post = "st"; break;
