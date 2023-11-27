@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RaceLib;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,12 +12,13 @@ namespace DB
     {
         public DatabaseFactory(DirectoryInfo directoryInfo)
         {
-            CollectionDatabase.Init(directoryInfo);
+            Lite.LiteDatabase.Init(directoryInfo);
         }
 
         public RaceLib.IDatabase Open()
         {
-            return new CollectionDatabase();
+            return new CollectionDatabase(new Lite.LiteDatabase());
+            //return new CollectionDatabase(new JSON.JsonDatabase(this));
         }
     }
 }

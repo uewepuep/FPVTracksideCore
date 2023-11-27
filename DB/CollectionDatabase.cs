@@ -14,9 +14,9 @@ namespace DB
 
         public int Version { get; private set; }
 
-        public CollectionDatabase()
+        public CollectionDatabase(ICollectionDatabase db)
         {
-            database = new JSON.JsonDatabase(this);
+            database = db;
             Version = database.Version;
         }
 
@@ -208,21 +208,6 @@ namespace DB
         public RaceLib.Club GetDefaultClub()
         {
             return database.GetCollection<RaceLib.Club>().All().FirstOrDefault();
-        }
-
-        private static DirectoryInfo directoryInfo;
-        public static void Init(DirectoryInfo data)
-        {
-            directoryInfo = data;
-
-            Lite.LiteDatabase.Init(data);
-            using (Lite.LiteDatabase db = new Lite.LiteDatabase())
-            {
-                if (!db.Channels.All().Any())
-                {
-                    db.Channels.Insert(RaceLib.Channel.AllChannels.Convert<Channel>());
-                }
-            }
         }
     }
 
