@@ -275,7 +275,7 @@ namespace RaceLib
             {
                 lock (races)
                 {
-                    return races.ToArray();
+                    return races.Where(r => r.Valid).ToArray();
                 }
             }
         }
@@ -335,7 +335,7 @@ namespace RaceLib
         {
             lock (races)
             {
-                return races.Count(r => r.Type == type && r.Bracket == bracket);
+                return races.Count(r => r.Valid && r.Type == type && r.Bracket == bracket);
             }
         }
 
@@ -343,7 +343,7 @@ namespace RaceLib
         {
             lock (races)
             {
-                return races.Count(r => r.Round == round && r.Bracket == bracket);
+                return races.Count(r => r.Valid && r.Round == round && r.Bracket == bracket);
             }
         }
 
@@ -351,7 +351,7 @@ namespace RaceLib
         {
             lock (races)
             {
-                return races.Count(r => r.Round == round);
+                return races.Count(r => r.Valid && r.Round == round);
             }
         }
 
@@ -359,7 +359,7 @@ namespace RaceLib
         {
             lock (races)
             {
-                return races.Where(r => r.Round == round).Select(r => r.RaceNumber).OrderBy(i => i);
+                return races.Where(r =>  r.Valid &&r.Round == round).Select(r => r.RaceNumber).OrderBy(i => i);
             }
         }
 
@@ -1035,11 +1035,6 @@ namespace RaceLib
                 SetRace(null);
             }
 
-            lock (races)
-            {
-                races.Remove(remove);
-            }
-
             using (IDatabase db = DatabaseFactory.Open())
             {
                 remove.Valid = false;
@@ -1458,14 +1453,14 @@ namespace RaceLib
         {
             lock (races)
             {
-                return races.Where(r => r.Round == round).ToArray();
+                return races.Where(r => r.Round == round && r.Valid).ToArray();
             }
         }
         public Race[] GetRaces(Pilot p)
         {
             lock (races)
             {
-                return races.Where(r => r.HasPilot(p)).ToArray();
+                return races.Where(r => r.Valid && r.HasPilot(p)).ToArray();
             }
         }
 
@@ -1479,40 +1474,25 @@ namespace RaceLib
 
         public Race[] GetRaces(Round start, Round end) // Inclusive
         {
-            return EventManager.RaceManager.GetRaces(r => r.Round != null 
+            return EventManager.RaceManager.GetRaces(r => r.Valid 
+                                                  && r.Round != null 
                                                   && r.RoundNumber >= start.RoundNumber
                                                   && r.RoundNumber <= end.RoundNumber
                                                   && r.Round.EventType == end.EventType
                                                   && r.Round.RoundType == end.RoundType);
         }
 
-        public IEnumerable<Race> GetRacesIncludingInvalid()
+        public IEnumerable<Race> GetRacesCopyIncludingInvalid()
         {
-            throw new NotImplementedException();
-            //// Copy races
-            //List<Race> copy;
-            
-            //lock (races)
-            //{
-            //    copy = races.ToList();
-            //}
+            // Copy races
+            List<Race> copy;
 
-            //using (IDatabase db = DatabaseFactory.Open())
-            //{
-            //    IEnumerable<Race> invalid = db.Races
-            //        .Include(r => r.PilotChannels)
-            //        .Include(r => r.PilotChannels.Select(pc => pc.Pilot))
-            //        .Include(r => r.PilotChannels.Select(pc => pc.Channel))
-            //        .Include(r => r.Laps)
-            //        .Include(r => r.Detections)
-            //        .Include(r => r.Round)
-            //        .Include(r => r.Event)
-            //        .Find(r => r.Event.ID == EventManager.Event.ID && r.Valid == false);
+            lock (races)
+            {
+                copy = races.ToList();
+            }
 
-            //    copy.AddRange(invalid);
-            //}
-
-            //return copy;
+            return copy;
         }
 
 
@@ -1521,23 +1501,14 @@ namespace RaceLib
             Logger.RaceLog.LogCall(this);
             lock (races)
             {
-                List<Lap> laps = races.SelectMany(r => r.Laps).ToList();
-                List<Detection> detections = races.SelectMany(r => r.Detections).ToList();
-
-                EventManager.Event.Rounds.Clear();
-
-                EventManager.ResultManager.Clear();
-
                 using (IDatabase db = DatabaseFactory.Open())
                 {
-                    db.Delete(detections);
-                    db.Delete(laps);
-                    db.Delete(races);
-
-                    db.Update(EventManager.Event);
+                    foreach (Race race in races)
+                    {
+                        race.Valid = false;
+                        db.Update(race);
+                    }
                 }
-
-                races.Clear();
             }
         }
         
@@ -1550,7 +1521,7 @@ namespace RaceLib
                 Race race = CurrentRace;
                 if (race == null || unfinishedOnly)
                 {
-                    return races.Where(r => !r.Ended && r.PilotChannels.Any() && (r != race || allowCurrent)).OrderBy(r => r.Round.Order).ThenBy(r => r.RaceOrder).FirstOrDefault();
+                    return races.Where(r => r.Valid && !r.Ended && r.PilotChannels.Any() && (r != race || allowCurrent)).OrderBy(r => r.Round.Order).ThenBy(r => r.RaceOrder).FirstOrDefault();
                 }
 
                 if (race != null)
@@ -1558,7 +1529,7 @@ namespace RaceLib
                     currentOrder = race.RaceOrder;
                 }
 
-                return races.Where(r => r.RaceOrder > currentOrder && (r != race || allowCurrent)).OrderBy(r => r.Round.Order).ThenBy(r => r.RaceOrder).FirstOrDefault();
+                return races.Where(r => r.Valid && r.RaceOrder > currentOrder && (r != race || allowCurrent)).OrderBy(r => r.Round.Order).ThenBy(r => r.RaceOrder).FirstOrDefault();
             }
         }
 
@@ -1572,7 +1543,7 @@ namespace RaceLib
                 if (cr != null)
                 {
                     currentOrder = cr.RaceOrder;
-                    return races.Where(r => r.RaceOrder < currentOrder).OrderByDescending(r => r.Round.Creation).ThenByDescending(r => r.RaceOrder).FirstOrDefault();
+                    return races.Where(r => r.Valid && r.RaceOrder < currentOrder).OrderByDescending(r => r.Round.Creation).ThenByDescending(r => r.RaceOrder).FirstOrDefault();
                 }
                 return null;
             }
@@ -1965,9 +1936,9 @@ namespace RaceLib
             PreferedChannel preferedChannel = new PreferedChannel();
 
             Race[] pilotRaces = GetRaces(r => r.HasPilot(pilot) && r.RaceOrder < race.RaceOrder).ToArray();
-            preferedChannel.ChangeCount = pilot.CountChannelChanges(races);
+            preferedChannel.ChangeCount = pilot.CountChannelChanges(pilotRaces);
 
-            preferedChannel.Channel = races.Where(r => r.RaceOrder < race.RaceOrder).OrderByDescending(r => r.RaceOrder).Select(r => r.GetChannel(pilot)).FirstOrDefault();
+            preferedChannel.Channel = pilotRaces.Where(r => r.RaceOrder < race.RaceOrder).OrderByDescending(r => r.RaceOrder).Select(r => r.GetChannel(pilot)).FirstOrDefault();
             if (preferedChannel.Channel == null)
             {
                 preferedChannel.Channel = EventManager.GetChannel(pilot);

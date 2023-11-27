@@ -216,9 +216,10 @@ namespace Webb
                 content += "var formatter = new Formatter(eventManager, content);";
                 content += "</script>";
 
+#if DEBUG
                 content += "<a onclick=\"formatter.ShowRounds()\">Rounds</a>";
                 content += "<a onclick=\"formatter.ShowLapRecords()\">Lap Records</a>";
-
+#endif
                 return GetFormattedHTML(context, content);
             }
             else
