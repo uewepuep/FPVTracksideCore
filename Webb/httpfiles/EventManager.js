@@ -67,11 +67,17 @@ class EventManager
             if (detection.Valid == false)
                 continue;
 
+            if (lap.Length < 0)
+                continue;
+
             if (lap.Pilot == pilotId)
             {
                 output.push(lap);
             }
         }
+
+        output.sort((a, b) => { return a.Start - b.Start });
+
         return output;
     }
 
@@ -105,7 +111,44 @@ class EventManager
         }
     }
 
+    BestConsecutive(validLaps, consecutive)
+    {
+        let best = [];
 
+        for (const lap in validLaps)
+        {
+            
+        }
+
+        laps.Where(l => l.Detection.Valid && !l.Detection.IsHoleshot && l.Length.TotalSeconds > 0).OrderBy(l => l.End).ToArray();
+        for (int i = 0; i <= filtered.Length - consecutive; i++)
+        {
+            IEnumerable < Lap > current = filtered.Skip(i).Take(consecutive);
+            if (!best.Any() || current.TotalTime() < best.TotalTime()) {
+                best = current;
+            }
+        }
+        return best;
+    }
+
+    TotalTime(validLaps)
+    {
+        let start = new Date();
+        let end = new Date();
+
+        for (const lap in validLaps)
+        {
+            let lapStart = new Date(lap.Start);
+            let lapEnd = new Date(lap.End);
+
+            if (start > lapStart)
+                start = lapStart;
+            if (end < lapEnd)
+                end = lapEnd;
+        }
+
+        return end - start;
+    }
 
     async GetRoundRaces(roundId)
     {
