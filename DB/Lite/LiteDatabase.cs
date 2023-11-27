@@ -229,6 +229,7 @@ namespace DB.Lite
                          .Include(e => e.Club)
                          .Include(e => e.PilotChannels)
                          .Include(e => e.PilotChannels.Select(p => p.Pilot))
+                         .Include(e => e.PilotChannels.Select(p => p.Channel))
                          .FindAll()
                          .OrderBy(e => e.Name).ToArray();
             return events.Convert(null);
