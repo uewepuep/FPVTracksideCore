@@ -11,7 +11,7 @@ namespace RaceLib.Format
         {
         }
 
-        public override IEnumerable<Race> GenerateRound(Database db, IEnumerable<Race> preExisting, Round newRound, RoundPlan plan)
+        public override IEnumerable<Race> GenerateRound(IDatabase db, IEnumerable<Race> preExisting, Round newRound, RoundPlan plan)
         {
             Tools.Logger.Generation.LogCall(this, newRound, plan);
             List<Race> races = preExisting.Where(r => !r.Ended).ToList();

@@ -13,13 +13,10 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   
   <ItemGroup>
+    <ProjectReference Include="..\DB\DB.csproj" />
+    <ProjectReference Include="..\..\FPVTrackside\FPVWebsite\FPVWebsite.csproj" />
     <ProjectReference Include="..\RaceLib\RaceLib.csproj" />
     <ProjectReference Include="..\Sound\Sound.csproj" />
-    <ProjectReference Include="..\ExternalData\ExternalData.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="httpfiles\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,12 +25,24 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="httpfiles\EventManager.js" />
+    <None Remove="httpfiles\Formatter.js" />
+    <None Remove="httpfiles\scroll.js" />
     <None Remove="MonoGame.Framework.DesktopGL" />
   </ItemGroup>
+
   <ItemGroup>
-    <None Update="httpfiles\scroll.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <Content Include="httpfiles\EventManager.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="httpfiles\Formatter.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="httpfiles\scroll.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <None Update="httpfiles\style.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

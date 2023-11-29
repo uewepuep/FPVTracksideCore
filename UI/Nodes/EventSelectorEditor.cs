@@ -164,9 +164,9 @@ namespace UI.Nodes
                     if (Selected != null)
                     {
                         Event newEvent = Selected.Clone();
-                        using (Database db = new Database())
+                        using (IDatabase db = DatabaseFactory.Open())
                         {
-                            db.Events.Insert(newEvent);
+                            db.Insert(newEvent);
                         }
 
                         AddNew(newEvent);
@@ -209,10 +209,10 @@ namespace UI.Nodes
             Event selected = Selected;
             if (selected != null)
             {
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     selected.Enabled = false;
-                    db.Events.Update(selected);
+                    db.Update(selected);
                 }
             }
 
@@ -225,14 +225,14 @@ namespace UI.Nodes
         protected override void AddOnClick(MouseInputEvent mie)
         {
             Event eve;
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 Club club = db.GetDefaultClub();
 
                 eve = new Event();
                 eve.Channels = Channel.Read(Profile);
                 eve.Club = club;
-                db.Events.Insert(eve);
+                db.Insert(eve);
             }
 
             AddNew(eve);
@@ -268,22 +268,22 @@ namespace UI.Nodes
         private static Event[] GetEvents(Profile profile)
         {
             Event[] events;
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
-                events = db.Events.Include(e => e.Channels).Include(e => e.Club).Include(e => e.PilotChannels).Include(e => e.PilotChannels.Select(p => p.Pilot)).FindAll().OrderBy(e => e.Name).ToArray();
+                events = db.GetEvents().ToArray();
 
-                Club club = db.Clubs.FindAll().FirstOrDefault();
+                Club club = db.All<Club>().FirstOrDefault();
                 if (club == null)
                 {
                     club = new Club();
                     club.SyncWith = SyncWith.FPVTrackside;
-                    db.Clubs.Insert(club);
+                    db.Insert(club);
                 }
 
                 if (events.Length == 0)
                 {
                     events = new Event[] { new Event() { Club = club, Channels = Channel.Read(profile) } };
-                    db.Events.Insert(events.First());
+                    db.Insert(events.First());
                 }
             }
             return events;
@@ -291,7 +291,7 @@ namespace UI.Nodes
 
         private void EventEditor_OnOK(BaseObjectEditorNode<Event> obj)
         {
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 if (obj.Selected != null)
                 {
@@ -304,14 +304,14 @@ namespace UI.Nodes
 
         public void SaveChanges()
         {
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 foreach (var o in Objects)
                 {
                     o.Enabled = true;
                 }
 
-                db.Events.Upsert(Objects);
+                db.Upsert(Objects);
             }
         }
 

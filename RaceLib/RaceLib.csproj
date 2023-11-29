@@ -13,7 +13,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
 
   <ItemGroup>
-    <PackageReference Include="LiteDB" Version="5.0.12" />
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.303">
 		  <PrivateAssets>all</PrivateAssets>
 	  </PackageReference>

@@ -402,10 +402,10 @@ namespace UI.Nodes
 
                 if (eventManager != null)
                 {
-                    using (Database db = new Database())
+                    using (IDatabase db = DatabaseFactory.Open())
                     {
                         eventManager.Event.Channels = channels;
-                        db.Events.Update(eventManager.Event);
+                        db.Update(eventManager.Event);
                     }
                     eventManager.SetChannelColors(Theme.Current.ChannelColors.XNA());
                 }
@@ -547,9 +547,9 @@ namespace UI.Nodes
             editor.OnOK += (e) =>
             {
                 eventManager.Event = editor.Objects.FirstOrDefault();
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
-                    db.Events.Update(eventManager.Event);
+                    db.Update(eventManager.Event);
                 }
 
                 EventChanged?.Invoke();

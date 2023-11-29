@@ -5,7 +5,8 @@ window.setTimeout(scrollDown, 500);
 
 var lastScroll = 1;
 
-function scrollDown() {
+function scrollDown()
+{
 
     let scroll = window.scrollY;
     window.scrollBy({ top: scrollAmount, behavior: 'smooth' });

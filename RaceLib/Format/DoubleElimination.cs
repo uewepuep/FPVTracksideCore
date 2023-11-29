@@ -15,10 +15,10 @@ namespace RaceLib.Format
         {
         }
 
-        public override IEnumerable<Race> GenerateRound(Database db, IEnumerable<Race> preExisting, Round newRound, RoundPlan plan)
+        public override IEnumerable<Race> GenerateRound(IDatabase db, IEnumerable<Race> preExisting, Round newRound, RoundPlan plan)
         {
             newRound.RoundType = Round.RoundTypes.DoubleElimination;
-            db.Rounds.Upsert(newRound);
+            db.Upsert(newRound);
 
             preExisting.ClearPilots(db);
 
@@ -99,7 +99,7 @@ namespace RaceLib.Format
             }
         }
 
-        private void AssignPilots(Database db, IEnumerable<Race> allRoundRaces, IEnumerable<Race> previousRoundRaces, IEnumerable<Pilot> pilots, Race.Brackets bracket, RoundPlan plan)
+        private void AssignPilots(IDatabase db, IEnumerable<Race> allRoundRaces, IEnumerable<Race> previousRoundRaces, IEnumerable<Pilot> pilots, Race.Brackets bracket, RoundPlan plan)
         {
             Race[] races = allRoundRaces.OfBracket(bracket).ToArray();
 

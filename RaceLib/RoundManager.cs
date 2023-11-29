@@ -85,9 +85,9 @@ namespace RaceLib
             // Update the round number based on creation..
             round.RoundNumber = 1 + Event.Rounds.Where(r => r.EventType == round.EventType && r.Order < round.Order).Count();
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
-                db.Rounds.Update(round);
+                db.Update(round);
             }
 
             RaceManager.UpdateRaceRoundNumbers();
@@ -117,7 +117,7 @@ namespace RaceLib
 
             List<Race> races = new List<Race>();
 
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 foreach (var tup in pilotChannels)
                 {
@@ -224,7 +224,7 @@ namespace RaceLib
             IEnumerable<Race> preExisting = RaceManager.GetRaces(newRound);
 
             Race[] aRound;
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 aRound = roundFormat.GenerateRound(db, preExisting, newRound, roundPlan).ToArray();
             }
@@ -290,10 +290,10 @@ namespace RaceLib
 
                     Event.Rounds.Add(round);
 
-                    using (Database db = new Database())
+                    using (IDatabase db = DatabaseFactory.Open())
                     {
-                        db.Rounds.Insert(round);
-                        db.Events.Update(Event);
+                        db.Insert(round);
+                        db.Update(Event);
                     }
                 }
 
@@ -302,7 +302,7 @@ namespace RaceLib
         }
 
 
-        public Round GetCreateRound(Database db, Guid ID)
+        public Round GetCreateRound(IDatabase db, Guid ID)
         {
             lock (Event.Rounds)
             {
@@ -313,8 +313,8 @@ namespace RaceLib
                     round.ID = ID;
                     Event.Rounds.Add(round);
 
-                    db.Rounds.Insert(round);
-                    db.Events.Update(Event);
+                    db.Insert(round);
+                    db.Update(Event);
                 }
                 return round;
             }
@@ -347,11 +347,11 @@ namespace RaceLib
             lock (Event.Rounds)
             {
                 Event.Rounds.Remove(round);
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
                     round.Valid = false;
-                    db.Rounds.Update(round);
-                    db.Events.Update(Event);
+                    db.Update(round);
+                    db.Update(Event);
                 }
             }
 

@@ -8,7 +8,7 @@ using Tools;
 
 namespace RaceLib
 {
-    public class Detection : BaseDBObject
+    public class Detection : BaseObject
     {
         public int TimingSystemIndex { get; set; }
 
@@ -19,7 +19,6 @@ namespace RaceLib
 
         public TimingSystemType TimingSystemType { get; set; }
 
-        [LiteDB.BsonRef("Pilot")]
         public Pilot Pilot { get; set; }
 
         public int LapNumber { get; set; }
@@ -34,15 +33,15 @@ namespace RaceLib
 
         public bool IsLapEnd { get; set; }
 
-        [LiteDB.BsonIgnore]
+        
         public int RaceSector { get { return RaceSectorCalculator(LapNumber, TimingSystemIndex); } }
 
-        [LiteDB.BsonIgnore]
+        
         public int SectorNumber { get { return TimingSystemIndex + 1; } }
 
         public bool IsHoleshot { get { return Valid && IsLapEnd && LapNumber == 0; } }
 
-        internal Detection()
+        public Detection()
         {
         }
 

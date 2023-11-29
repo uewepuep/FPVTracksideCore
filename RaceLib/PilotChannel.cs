@@ -8,15 +8,13 @@ namespace RaceLib
 {
     public delegate void PilotChannelDelegate(PilotChannel pilot);
 
-    public class PilotChannel : BaseDBObject
+    public class PilotChannel : BaseObject
     {
-        [LiteDB.BsonRef("Pilot")]
         public Pilot Pilot { get; set; }
         
-        [LiteDB.BsonRef("Channel")]
         public Channel Channel { get; set; }
 
-        [LiteDB.BsonIgnore]
+        
         public string PilotName
         {
             get
@@ -28,6 +26,7 @@ namespace RaceLib
                 return Pilot.Name;
             }
         }
+
 
         public PilotChannel()
         {

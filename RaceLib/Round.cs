@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace RaceLib
 {
-    public class Round : BaseDBObject
+    public class Round : BaseObject
     {
         [Category("Editable Details")]
         public string Name { get; set; }
@@ -47,7 +47,7 @@ namespace RaceLib
         [Category("Advanced")]
         public string SheetFormatFilename { get; set; }
 
-        [LiteDB.BsonIgnore]
+        
         [Category("Advanced")]
         public bool HasSheetFormat
         {

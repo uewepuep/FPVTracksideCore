@@ -166,6 +166,21 @@ namespace Composition.Input
         public ShortcutKey ReplayPrevFrame { get; set; }
 
 
+        [Category("Toggle Sound")]
+        public ShortcutKey EnableWAVAudio { get; set; }
+
+        [Category("Toggle Sound")]
+        public ShortcutKey DisableWAVAudio { get; set; }
+
+
+        [Category("Toggle Sound")]
+        public ShortcutKey EnableTTSAudio { get; set; }
+
+        [Category("Toggle Sound")]
+        public ShortcutKey DisableTTSAudio { get; set; }
+
+
+
         [Category("Trigger Sound")]
         public ShortcutKey AnnounceRace { get; set; }
 
@@ -270,6 +285,13 @@ namespace Composition.Input
             ToggleViewChannelGroup6 = new ShortcutKey(Keys.D6, true, true, true);
             ToggleViewChannelGroup7 = new ShortcutKey(Keys.D7, true, true, true);
             ToggleViewChannelGroup8 = new ShortcutKey(Keys.D8, true, true, true);
+
+
+            EnableTTSAudio = new ShortcutKey(Keys.T, true, true, false);
+            DisableTTSAudio = new ShortcutKey(Keys.T, true, true, true);
+
+            EnableWAVAudio = new ShortcutKey(Keys.W, true, true, false);
+            DisableWAVAudio = new ShortcutKey(Keys.W, true, true, true);
         }
 
 

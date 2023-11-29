@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RaceLib
 {
-    public class Club : BaseDBObject
+    public class Club : BaseObject
     {
         public string Name { get; set; }
 

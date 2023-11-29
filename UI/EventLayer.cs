@@ -987,6 +987,30 @@ namespace UI
                 if (KeyMapper.Custom5.Match(inputEvent))
                     SoundManager.PlaySound(SoundKey.Custom5);
 
+                if (KeyMapper.EnableTTSAudio.Match(inputEvent))
+                {
+                    systemStatusNode.MuteTTS.SetMute(false);
+                    return true;
+                }
+
+                if (KeyMapper.DisableTTSAudio.Match(inputEvent))
+                {
+                    systemStatusNode.MuteTTS.SetMute(true);
+                    return true;
+                }
+
+                if (KeyMapper.EnableWAVAudio.Match(inputEvent))
+                {
+                    systemStatusNode.MuteWAV.SetMute(false);
+                    return true;
+                }
+
+                if (KeyMapper.DisableWAVAudio.Match(inputEvent))
+                {
+                    systemStatusNode.MuteWAV.SetMute(true);
+                    return true;
+                }
+
                 if (race != null)
                 {
                     int channelGroupId = 0;

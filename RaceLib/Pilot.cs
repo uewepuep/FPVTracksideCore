@@ -9,7 +9,7 @@ using System.Xml.Serialization;
 
 namespace RaceLib
 {
-    public class Pilot : BaseDBObject
+    public class Pilot : BaseObject
     {
         public delegate void OnPilotEvent(Pilot pilot);
 
@@ -60,11 +60,11 @@ namespace RaceLib
         [Category("Advanced")]
         public string PhotoPath { get; set; }
 
-        public Pilot(string name)
-            :this()
+        public static Pilot CreateFromName(string name)
         {
-            Name = name;
-            AutoPhonetic(Name);
+            Pilot pilot = new Pilot() { Name = name };
+            pilot.AutoPhonetic(name);
+            return pilot;
         }
 
         private void AutoPhonetic(string name)

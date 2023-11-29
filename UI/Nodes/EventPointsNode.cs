@@ -378,9 +378,9 @@ namespace UI.Nodes
                 Result.Points = points;
                 Text = points.ToString();
 
-                using (Database db = new Database())
+                using (IDatabase db = DatabaseFactory.Open())
                 {
-                    db.Results.Update(Result);
+                    db.Update(Result);
                 }
             }
         }

@@ -1,4 +1,6 @@
-﻿using ExternalData;
+﻿using DB;
+using DB.JSON;
+using ExternalData;
 using Newtonsoft.Json;
 using RaceLib;
 using Sound;
@@ -10,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading;
 using System.Web;
@@ -113,7 +116,6 @@ namespace Webb
         {
             while (Running)
             {
-
                 if (listener == null)
                 {
                     CreateListener();
@@ -183,6 +185,163 @@ namespace Webb
             string path = Uri.UnescapeDataString(context.Request.Url.AbsolutePath);
             string[] requestPath = path.Split('/').Where(s => !string.IsNullOrEmpty(s)).ToArray();
 
+            NameValueCollection nameValueCollection;
+            using (Stream receiveStream = context.Request.InputStream)
+            {
+                using (StreamReader readStream = new StreamReader(receiveStream, System.Text.Encoding.UTF8))
+                {
+                    string documentContents = readStream.ReadToEnd();
+                    nameValueCollection = HttpUtility.ParseQueryString(documentContents);
+                }
+            }
+
+            if (requestPath.Length == 0)
+            {
+                string content = "";
+                foreach (string item in GetPages().OrderBy(r =>r))
+                {
+                    content += "<br><a class=\"menu\" href=\"/" + item + "/\">" + item + "</a> ";
+                }
+
+                if (localOnly)
+                {
+                    string url = listener.Prefixes.FirstOrDefault();
+                    url = url.Replace("localhost", "+");
+                    content += "<p>By default this webserver is only accessible from this machine. To access it over the network run in an Adminstrator command prompt:</p><p> netsh http add urlacl url = \"" + url + "\" user=everyone</p><p>Then restart the software</p>";
+                }
+
+                content += "<script>";
+                content += "const content = document.getElementById(\"content\");";
+                content += "var eventManager = new EventManager();";
+                content += "var formatter = new Formatter(eventManager, content);";
+                content += "</script>";
+
+#if DEBUG
+                content += "<a onclick=\"formatter.ShowRounds()\">Rounds</a>";
+                content += "<a onclick=\"formatter.ShowLapRecords()\">Lap Records</a>";
+#endif
+                return GetFormattedHTML(context, content);
+            }
+            else
+            {
+                string action = requestPath[0];
+                string[] parameters = requestPath.Skip(1).ToArray();
+
+                string content = "";
+                DirectoryInfo eventRoot = new DirectoryInfo("events/" + eventManager.Event.ID.ToString());
+                switch (action)
+                {
+                    //case "VariableViewer":
+                    //    VariableViewer vv = new VariableViewer(eventManager, soundManager);
+                    //    content = vv.DumpObject(parameters, refresh, decimalPlaces);
+                    //    break;
+
+                    case "RaceControl":
+                        if (nameValueCollection.Count > 0)
+                        {
+                            WebRaceControl.HandleInput(nameValueCollection);
+                        }
+                        content += WebRaceControl.GetHTML();
+                        break;
+
+                    case "httpfiles":
+                    case "img":
+                    case "themes":
+                        string target1 =  string.Join('\\', requestPath);
+
+                        if (File.Exists(target1))
+                        {
+                            return File.ReadAllBytes(target1);
+                        }
+
+                        break;
+
+                    case "event":
+                        string target = Path.Combine(eventRoot.FullName, string.Join('\\', requestPath.Skip(1)));
+
+                        if (target == "")
+                            target = eventRoot.FullName;
+
+                        if (target.Contains("."))
+                        {
+                            if (File.Exists(target))
+                            {
+                                return File.ReadAllBytes(target);
+                            }
+                            return new byte[0];
+                        }
+                        else
+                        {
+                            DirectoryInfo di = new DirectoryInfo(Path.Combine(eventRoot.FullName, target));
+                            if (eventRoot.Exists && di.Exists)
+                            {
+                                content += ListDirectory(eventRoot, di);
+                            }
+                        }
+                        break;
+
+                    case "races":
+                        List<Guid> ids = new List<Guid>();
+
+                        foreach (DirectoryInfo di in eventRoot.EnumerateDirectories())
+                        {
+                            if (Guid.TryParse(di.Name, out Guid id))
+                            {
+                                ids.Add(id);
+                            }
+                        }
+                        return SerializeASCII(ids);
+
+                    case "channelcolors":
+                        List<ColoredChannel> colours = new List<ColoredChannel>();
+                        foreach (RaceLib.Channel channel in eventManager.Channels)
+                        {
+                            string color = eventManager.GetChannelColor(channel).ToHex();
+                            colours.Add(new ColoredChannel(channel, color));
+                        }
+                        return SerializeASCII(colours);
+
+                    case "channels":
+                        IEnumerable<DB.Channel> channels = RaceLib.Channel.AllChannels.Convert<DB.Channel>();
+                        return SerializeASCII(channels);
+
+                    case "Rounds":
+                        content += WebbRounds.Rounds(eventManager);
+                        break;
+
+                    case "Event Status":
+                        content += WebbRounds.EventStatus(eventManager, webbTables.FirstOrDefault());
+                        break;
+
+                    case "Lap Count":
+                        IWebbTable webbTable2 = webbTables.FirstOrDefault(w => w.Name == action);
+                        content += HTTPFormat.FormatTable(webbTable2, "");
+                        break;
+
+                    default:
+                        IWebbTable webbTable = webbTables.FirstOrDefault(w => w.Name == action);
+                        content += HTTPFormat.FormatTable(webbTable, "columns");
+                        break;
+                }
+
+                return GetFormattedHTML(context, content);
+            }
+        }
+
+        private byte[] SerializeASCII<T>(IEnumerable<T> ts)
+        {
+            JsonSerializerSettings settings = new JsonSerializerSettings()
+            {
+                Formatting = Formatting.Indented,
+                DateFormatString = "yyyy/MM/dd H:mm:ss.FFF"
+            };
+
+            string json = JsonConvert.SerializeObject(ts, settings);
+            return Encoding.ASCII.GetBytes(json);
+        }
+              
+        private byte[] GetHTML(HttpListenerContext context, string content)
+        {
             string refreshText = "";
 
             int decimalPlaces = 2;
@@ -217,15 +376,7 @@ namespace Webb
                     }
                 }
             }
-            NameValueCollection nameValueCollection;
-            using (Stream receiveStream = context.Request.InputStream)
-            {
-                using (StreamReader readStream = new StreamReader(receiveStream, System.Text.Encoding.UTF8))
-                {
-                    string documentContents = readStream.ReadToEnd();
-                    nameValueCollection = HttpUtility.ParseQueryString(documentContents);
-                }
-            }
+            
 
             if (refresh == 0)
             {
@@ -240,104 +391,62 @@ namespace Webb
 
             if (autoScroll)
                 output += "<script src=\"/httpfiles/scroll.js\"></script>";
+            output += "<script src=\"/httpfiles/linq.js\"></script>";
+            output += "<script src=\"/httpfiles/EventManager.js\"></script>";
+            output += "<script src=\"/httpfiles/Formatter.js\"></script>";
+
+            output += "<body id=\"body\">";
+
+            output += content;
             
-            output += "<body>";
-
-            string heading = "<div class=\"top\">";
-            heading += "<img src=\"/img/logo.png\">";
-            heading += "<div class=\"time\">" + DateTime.Now.ToString("h:mm tt").ToLower() + "</div>";
-            heading += "</div>";
-
-            IEnumerable<string> items = GetPages();
-
-            string content = "<div class=\"content\">";
-            if (requestPath.Length == 0)
-            {
-                foreach (string item in items.OrderBy(r =>r))
-                {
-                    content += "<br><a class=\"menu\" href=\"/" + item + "/\">" + item + "</a> ";
-                }
-
-                if (localOnly)
-                {
-                    string url = listener.Prefixes.FirstOrDefault();
-                    url = url.Replace("localhost", "+");
-                    content += "<p>By default this webserver is only accessible from this machine. To access it over the network run in an Adminstrator command prompt:</p><p> netsh http add urlacl url = \"" + url + "\" user=everyone</p><p>Then restart the software</p>";
-                }
-            }
-            else
-            {
-                string action = requestPath[0];
-                string[] parameters = requestPath.Skip(1).ToArray();
-
-                switch (action)
-                {
-                    case "VariableViewer":
-                        heading = "";
-
-                        VariableViewer vv = new VariableViewer(eventManager, soundManager);
-                        content += vv.DumpObject(parameters, refresh, decimalPlaces);
-                        break;
-                    case "RaceControl":
-                        if (nameValueCollection.Count > 0)
-                        {
-                            WebRaceControl.HandleInput(nameValueCollection);
-                        }
-                        content += WebRaceControl.GetHTML();
-                        break;
-                    case "httpfiles":
-                    case "img":
-                    case "themes":
-                        if (requestPath.Length > 1)
-                        {
-                            string filename = string.Join('\\', requestPath);
-                            return File.ReadAllBytes(filename);
-                        }
-                        else
-                        {
-                            DirectoryInfo di = new DirectoryInfo("httpfiles");
-
-                            FileInfo[] files = di.GetFiles();
-                            if (files.Any())
-                            {
-                                content += "<h1>Files</h2>";
-                                content += "<ul>";
-                                foreach (FileInfo filename in files)
-                                {
-                                    content += "<li>";
-                                    content += "<a href=\"httpfiles\\" + filename.Name + " \">" + filename.Name + "</a>";
-                                    content += "</li>";
-                                }
-                                content += "</ul>";
-                            }
-                        }
-                        break;
-                    case "Rounds":
-                        content += WebbRounds.Rounds(eventManager);
-                        break;
-                    case "Event Status":
-                        content += WebbRounds.EventStatus(eventManager, webbTables.FirstOrDefault());
-                        break;
-
-                    case "Lap Count":
-                        IWebbTable webbTable2 = webbTables.FirstOrDefault(w => w.Name == action);
-                        content += HTTPFormat.FormatTable(webbTable2, "");
-                        break;
-
-                    default:
-                        IWebbTable webbTable = webbTables.FirstOrDefault(w => w.Name == action);
-                        content += HTTPFormat.FormatTable(webbTable, "columns");
-                        break;
-                }
-            }
-            content += "</div>";
-
-            output += heading + content;
 
             output += "</body></html>";
             return Encoding.ASCII.GetBytes(output);
         }
-              
+
+        private byte[] GetFormattedHTML(HttpListenerContext context, string content)
+        {
+            string output = "<div class=\"top\">";
+            output += "<img src=\"/img/logo.png\">";
+            output += "<div class=\"time\">" + DateTime.Now.ToString("h:mm tt").ToLower() + "</div>";
+            output += "</div>";
+
+
+            output += "<div class=\"content\">";
+            output += "<div id=\"content\"></div>";
+
+            output += content;
+
+
+            output += "</div>";
+
+            return GetHTML(context, output);
+        }
+
+        private string ListDirectory(DirectoryInfo docRoot, DirectoryInfo target)
+        {
+            string content = "";
+
+            string name = Path.GetRelativePath(docRoot.FullName, target.FullName);
+            if (name == ".")
+                name = "event";
+
+            content += "<h1>" + name + "</h2>";
+            content += "<ul>";
+
+            foreach (DirectoryInfo subDir in target.GetDirectories())
+            {
+                content += "<li><a href=\"" + Path.GetRelativePath(docRoot.FullName, subDir.FullName) + " \">" + subDir.Name + "</a></li>";
+            }
+
+            foreach (FileInfo filename in target.GetFiles())
+            {
+                content += "<li><a href=\"" + Path.GetRelativePath(docRoot.FullName, filename.FullName) + " \">" + filename.Name + "</a></li>";
+            }
+
+            content += "</ul>";
+            return content;
+        }
 
         public bool Stop()
         {

@@ -31,13 +31,12 @@ namespace RaceLib
         HDZeroDigital
     }
 
-    public class Channel : BaseDBObject
+    public class Channel : BaseObject
     {
         public int Number { get; set; }
         public Band Band { get; set; }
         public char ChannelPrefix { get; set; }
-
-        [LiteDB.BsonIgnore]
+        
         public int Frequency { get { return FrequencyLookup(Band, ChannelPrefix, Number); } }
 
         public Channel()

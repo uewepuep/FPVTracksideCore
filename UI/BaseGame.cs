@@ -74,7 +74,8 @@ namespace UI
             this.Window.Title = Assembly.GetEntryAssembly().GetName().Name + " - " + Assembly.GetEntryAssembly().GetName().Version;
             
             Logger.Init(Log);
-            Database.Init(Data);
+
+            DatabaseFactory.Init(new DB.DatabaseFactory(Data));
 
             FileInfo[] oldConfigs = Data.GetFiles("*.xml").Where(r => !r.Name.EndsWith("GeneralSettings.xml")).ToArray();
             if (oldConfigs.Any())
@@ -188,7 +189,7 @@ namespace UI
 
         private void DatabaseUpgrade()
         {
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 Logger.AllLog.LogCall(this, db.Version);
             }

@@ -100,13 +100,13 @@ namespace UI.Nodes
         private void PilotEditor_OnOK(BaseObjectEditorNode<Pilot> obj)
         {
             IEnumerable<Pilot> editedPilots = this.Objects;
-            using (Database db = new Database())
+            using (IDatabase db = DatabaseFactory.Open())
             {
                 foreach (Pilot pa in editedPilots)
                 {
-                    db.Pilots.Upsert(pa);
+                    db.Upsert(pa);
                 }
-                eventManager.RefreshPilots(db);
+                eventManager.RefreshPilots(editedPilots);
             }
 
             foreach (Pilot p in editedPilots)

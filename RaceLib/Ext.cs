@@ -9,6 +9,11 @@ namespace RaceLib
 {
     public static class Ext
     {
+        public static T GetObject<T>(this IEnumerable<T> ts, Guid id) where T : BaseObject
+        {
+            return ts.FirstOrDefault(t => t.ID == id);
+        }
+
         public static TimeSpan TotalTime(this IEnumerable<Lap> laps)
         {
             if (!laps.Any())
@@ -337,7 +342,7 @@ namespace RaceLib
             return pool.Count(r => r.Band.GetBandType() == bandType);
         }
 
-        public static void ClearPilots(this IEnumerable<Race> races, Database db) 
+        public static void ClearPilots(this IEnumerable<Race> races, IDatabase db) 
         {
             foreach (Race race in races)
             {

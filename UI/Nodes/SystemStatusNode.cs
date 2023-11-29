@@ -18,7 +18,8 @@ namespace UI.Nodes
 {
     public class SystemStatusNode : Node
     {
-        private MuteStatusNode tts;
+        public MuteStatusNode MuteTTS { get; private set; }
+        public MuteStatusNode MuteWAV { get; private set; }
 
         public SystemStatusNode()
         {
@@ -28,10 +29,11 @@ namespace UI.Nodes
         {
             ClearDisposeChildren();
 
-            tts = new MuteStatusNode(soundManager, true);
+            MuteTTS = new MuteStatusNode(soundManager, true);
+            MuteWAV = new MuteStatusNode(soundManager, false);
 
-            AddChild(tts);
-            AddChild(new MuteStatusNode(soundManager, false));
+            AddChild(MuteTTS);
+            AddChild(MuteWAV);
 
             foreach (ITimingSystem timingSystem in timingSystemManager.TimingSystems)
             {
@@ -61,7 +63,7 @@ namespace UI.Nodes
             int ItemHeight = 30;
             int width = bounds.Width;
 
-            tts.Visible = tts.SoundManager.HasSpeech();
+            MuteTTS.Visible = MuteTTS.SoundManager.HasSpeech();
 
             Node[] nodes = VisibleChildren.ToArray();
 
@@ -355,10 +357,12 @@ namespace UI.Nodes
             }
         }
 
+        private KeyboardShortcuts keyMapper;
+
         public MuteStatusNode(SoundManager soundManager, bool tts)
             : base("")
         {
-            this.SoundManager = soundManager;
+            SoundManager = soundManager;
             this.tts = tts;
 
             if (tts)
@@ -383,7 +387,7 @@ namespace UI.Nodes
             SetMute(Value);
         }
 
-        private void SetMute(bool mute)
+        public void SetMute(bool mute)
         {
             SetStatus(mute ? "Mute" : "", !mute);
             Value = mute;
