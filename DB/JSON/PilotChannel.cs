@@ -26,7 +26,7 @@ namespace DB.JSON
                 Channel = obj.Channel.ID;
         }
 
-        public override RaceLib.PilotChannel GetRaceLibObject(IDatabase database)
+        public override RaceLib.PilotChannel GetRaceLibObject(ICollectionDatabase database)
         {
             RaceLib.PilotChannel pilotChannel = base.GetRaceLibObject(database);
             pilotChannel.Pilot = Pilot.Convert<RaceLib.Pilot>(database);

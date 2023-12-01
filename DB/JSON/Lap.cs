@@ -34,7 +34,7 @@ namespace DB.JSON
             EndTime = obj.Start;
         }
 
-        public override RaceLib.Lap GetRaceLibObject(IDatabase database)
+        public override RaceLib.Lap GetRaceLibObject(ICollectionDatabase database)
         {
             RaceLib.Lap lap = base.GetRaceLibObject(database);
             lap.Detection = Detection.Convert<RaceLib.Detection>(database);

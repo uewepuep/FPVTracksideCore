@@ -60,7 +60,7 @@ namespace DB.Lite
                 Event = obj.Event.Convert<Event>();
         }
 
-        public override RaceLib.Race GetRaceLibObject(RaceLib.IDatabase database)
+        public override RaceLib.Race GetRaceLibObject(ICollectionDatabase database)
         {
             RaceLib.Race race = base.GetRaceLibObject(database);
 

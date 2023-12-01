@@ -55,8 +55,6 @@ namespace RaceLib
         { 
             return databaseFactory.Open();
         }
+
     }
-        
-
-
 }

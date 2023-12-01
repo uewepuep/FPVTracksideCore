@@ -84,7 +84,7 @@ namespace DB.Lite
                 Club = obj.Club.Convert<Club>();
         }
 
-        public override RaceLib.Event GetRaceLibObject(RaceLib.IDatabase database)
+        public override RaceLib.Event GetRaceLibObject(ICollectionDatabase database)
         {
             RaceLib.Event ev = base.GetRaceLibObject(database);
 

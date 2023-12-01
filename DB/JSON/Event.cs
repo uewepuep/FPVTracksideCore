@@ -80,7 +80,7 @@ namespace DB.JSON
                 Club = obj.Club.ID;
         }
 
-        public override RaceLib.Event GetRaceLibObject(IDatabase database)
+        public override RaceLib.Event GetRaceLibObject(ICollectionDatabase database)
         {
             RaceLib.Event ev = base.GetRaceLibObject(database);
             ev.Channels = Channels.Convert<RaceLib.Channel>(database).ToArray();
@@ -92,7 +92,7 @@ namespace DB.JSON
             return ev;
         }
 
-        public RaceLib.Event GetSimpleRaceLibEvent(IDatabase database)
+        public RaceLib.Event GetSimpleRaceLibEvent(ICollectionDatabase database)
         {
             RaceLib.Event ev = base.GetRaceLibObject(database);
             ev.Channels = Channels.Convert<RaceLib.Channel>(database).ToArray();

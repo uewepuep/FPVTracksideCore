@@ -10,15 +10,34 @@ namespace DB
 {
     public class DatabaseFactory : RaceLib.IDatabaseFactory
     {
-        public DatabaseFactory(DirectoryInfo directoryInfo)
+        public enum DatabaseTypes
         {
-            Lite.LiteDatabase.Init(directoryInfo);
+            Lite,
+            JSON
+        }
+
+        public DatabaseTypes DatabaseType { get; set; }
+
+        public DatabaseFactory(DirectoryInfo directoryInfo, DatabaseTypes databaseType)
+        {
+            this.DatabaseType = databaseType;
+
+            if (databaseType == DatabaseTypes.Lite) 
+            {
+                Lite.LiteDatabase.Init(directoryInfo);
+            }
         }
 
         public RaceLib.IDatabase Open()
         {
-            return new CollectionDatabase(new Lite.LiteDatabase());
-            //return new CollectionDatabase(new JSON.JsonDatabase(this));
+            if (DatabaseType == DatabaseTypes.JSON)
+            {
+                return new CollectionDatabase(new JSON.JsonDatabase());
+            }
+            else
+            {
+                return new CollectionDatabase(new Lite.LiteDatabase());
+            }
         }
     }
 }

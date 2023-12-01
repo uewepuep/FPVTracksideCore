@@ -33,13 +33,10 @@ namespace DB.JSON
         private IDatabaseCollection<Race> races;
         private IDatabaseCollection<Result> results;
 
-        private IDatabase database;
-
         private static Guid eventId;
 
-        public JsonDatabase(IDatabase database)
+        public JsonDatabase()
         {
-            this.database = database;
             dataDirectory = new DirectoryInfo("events");
             Init();
         }
@@ -72,16 +69,16 @@ namespace DB.JSON
         public IDatabaseCollection<T> GetCollection<T>() where T : RaceLib.BaseObject, new()
         {
             if (typeof(T) == typeof(RaceLib.Patreon)) return new ConvertedCollection<RaceLib.Patreon, Patreon>(patreons, null) as IDatabaseCollection<T>;
-            if (typeof(T) == typeof(RaceLib.Event)) return new ConvertedCollection<RaceLib.Event, Event>(events, database) as IDatabaseCollection<T>;
-            if (typeof(T) == typeof(RaceLib.Club)) return new ConvertedCollection<RaceLib.Club, Club>(clubs, database) as IDatabaseCollection<T>;
+            if (typeof(T) == typeof(RaceLib.Event)) return new ConvertedCollection<RaceLib.Event, Event>(events, this) as IDatabaseCollection<T>;
+            if (typeof(T) == typeof(RaceLib.Club)) return new ConvertedCollection<RaceLib.Club, Club>(clubs, this) as IDatabaseCollection<T>;
 
-            if (typeof(T) == typeof(RaceLib.Pilot)) return new ConvertedCollection<RaceLib.Pilot, Pilot>(pilots, database) as IDatabaseCollection<T>;
-            if (typeof(T) == typeof(RaceLib.Channel)) return new ConvertedCollection<RaceLib.Channel, Channel>(channels, database) as IDatabaseCollection<T>;
-            if (typeof(T) == typeof(RaceLib.Race)) return new ConvertedCollection<RaceLib.Race, Race>(races, database) as IDatabaseCollection<T>;
-            if (typeof(T) == typeof(RaceLib.Round)) return new ConvertedCollection<RaceLib.Round, Round>(rounds, database) as IDatabaseCollection<T>;
-            if (typeof(T) == typeof(RaceLib.Result)) return new ConvertedCollection<RaceLib.Result, Result>(results, database) as IDatabaseCollection<T>;
+            if (typeof(T) == typeof(RaceLib.Pilot)) return new ConvertedCollection<RaceLib.Pilot, Pilot>(pilots, this) as IDatabaseCollection<T>;
+            if (typeof(T) == typeof(RaceLib.Channel)) return new ConvertedCollection<RaceLib.Channel, Channel>(channels, this) as IDatabaseCollection<T>;
+            if (typeof(T) == typeof(RaceLib.Race)) return new ConvertedCollection<RaceLib.Race, Race>(races, this) as IDatabaseCollection<T>;
+            if (typeof(T) == typeof(RaceLib.Round)) return new ConvertedCollection<RaceLib.Round, Round>(rounds, this) as IDatabaseCollection<T>;
+            if (typeof(T) == typeof(RaceLib.Result)) return new ConvertedCollection<RaceLib.Result, Result>(results, this) as IDatabaseCollection<T>;
 
-            if (typeof(T) == typeof(RaceLib.Detection)) return new ConvertedCollection<RaceLib.Detection, Detection>(new DetectionCollection(races), database) as IDatabaseCollection<T>;
+            if (typeof(T) == typeof(RaceLib.Detection)) return new ConvertedCollection<RaceLib.Detection, Detection>(new DetectionCollection(races), this) as IDatabaseCollection<T>;
             if (typeof(T) == typeof(RaceLib.PilotChannel)) return new DummyCollection<T>();
             if (typeof(T) == typeof(RaceLib.Lap)) return new DummyCollection<T>();
 
@@ -97,7 +94,7 @@ namespace DB.JSON
         {
             foreach (Event even in events.All())
             {
-                yield return even.GetSimpleRaceLibEvent(database);
+                yield return even.GetSimpleRaceLibEvent(this);
             }
         }
 
@@ -106,17 +103,17 @@ namespace DB.JSON
             eventId = id;
             Init();
 
-            return events.GetObject(id).Convert(database);
+            return events.GetObject(id).Convert(this);
         }
 
         IEnumerable<RaceLib.Race> ICollectionDatabase.LoadRaces(Guid eventId)
         {
-            return races.All().Where(r => r.Event == eventId).Convert(database);
+            return races.All().Where(r => r.Event == eventId).Convert(this);
         }
 
         IEnumerable<RaceLib.Result> ICollectionDatabase.LoadResults(Guid eventId)
         {
-            return results.All().Where(r => r.Event == eventId).Convert(database);
+            return results.All().Where(r => r.Event == eventId).Convert(this);
         }
     }
 

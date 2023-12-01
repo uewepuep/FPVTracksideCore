@@ -38,7 +38,7 @@ namespace UI.Video
 
         public static VideoSourceEditor GetVideoSourceEditor(EventManager em, Profile profile)
         {
-            VideoManager videoManager = new VideoManager(GeneralSettings.Instance.VideoStorageLocation, profile);
+            VideoManager videoManager = new VideoManager(GeneralSettings.Instance.VideoStorageLocation, VideoManager.DirectoryStructures.RaceDirectories, profile);
 
             videoManager.LoadDevices();
             videoManager.MaintainConnections = true;

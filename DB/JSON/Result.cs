@@ -41,7 +41,7 @@ namespace DB.JSON
                 Round = obj.Round.ID;
         }
 
-        public override RaceLib.Result GetRaceLibObject(RaceLib.IDatabase database)
+        public override RaceLib.Result GetRaceLibObject(ICollectionDatabase database)
         {
             RaceLib.Result result = base.GetRaceLibObject(database);
 

@@ -27,7 +27,7 @@ namespace DB.Lite
                 Channel = obj.Channel.Convert<Channel>();
         }
 
-        public override RaceLib.PilotChannel GetRaceLibObject(RaceLib.IDatabase database)
+        public override RaceLib.PilotChannel GetRaceLibObject(ICollectionDatabase database)
         {
             RaceLib.PilotChannel pilotChannel = base.GetRaceLibObject(database);
             pilotChannel.Pilot = Pilot.Convert(database);

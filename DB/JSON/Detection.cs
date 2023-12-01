@@ -39,7 +39,7 @@ namespace DB.JSON
                 Pilot = obj.Pilot.ID;
         }
 
-        public override RaceLib.Detection GetRaceLibObject(IDatabase database)
+        public override RaceLib.Detection GetRaceLibObject(ICollectionDatabase database)
         {
             RaceLib.Detection detection = base.GetRaceLibObject(database);
             detection.Pilot = Pilot.Convert<RaceLib.Pilot>(database);

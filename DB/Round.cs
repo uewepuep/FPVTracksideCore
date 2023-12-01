@@ -47,7 +47,7 @@ namespace DB
             }
         }
 
-        public override RaceLib.Round GetRaceLibObject(RaceLib.IDatabase database)
+        public override RaceLib.Round GetRaceLibObject(ICollectionDatabase database)
         {
             RaceLib.Round round = base.GetRaceLibObject(database);
 

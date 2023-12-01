@@ -10,9 +10,9 @@ namespace DB
     public class ConvertedCollection<R, D> : IDatabaseCollection<R> where R : RaceLib.BaseObject, new() where D : DatabaseObjectT<R>
     {
         private IDatabaseCollection<D> collection;
-        private IDatabase database;
+        private ICollectionDatabase database;
 
-        public ConvertedCollection(IDatabaseCollection<D> collection, IDatabase database)
+        public ConvertedCollection(IDatabaseCollection<D> collection, ICollectionDatabase database)
         {
             this.collection = collection;
             this.database = database;

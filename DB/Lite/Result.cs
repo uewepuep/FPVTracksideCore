@@ -45,7 +45,7 @@ namespace DB.Lite
                 Round = obj.Round.Convert<Round>();
         }
 
-        public override RaceLib.Result GetRaceLibObject(RaceLib.IDatabase database)
+        public override RaceLib.Result GetRaceLibObject(ICollectionDatabase database)
         {
             RaceLib.Result result = base.GetRaceLibObject(database);
 

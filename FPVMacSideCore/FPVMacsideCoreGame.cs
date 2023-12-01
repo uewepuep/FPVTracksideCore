@@ -31,7 +31,6 @@ namespace FPVMacsideCore
 
         protected override void LoadContent()
         {
-            GeneralSettings.Initialise();
             Theme.Initialise(PlatformTools.WorkingDirectory, "Dark");
 
             base.LoadContent();

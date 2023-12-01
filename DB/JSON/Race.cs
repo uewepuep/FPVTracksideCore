@@ -54,7 +54,7 @@ namespace DB.JSON
                 Event = obj.Event.ID;
         }
 
-        public override RaceLib.Race GetRaceLibObject(IDatabase database)
+        public override RaceLib.Race GetRaceLibObject(ICollectionDatabase database)
         {
             RaceLib.Race race = base.GetRaceLibObject(database);
 

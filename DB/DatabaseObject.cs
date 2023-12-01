@@ -88,7 +88,7 @@ namespace DB
             Copy(obj, this);
         }
 
-        public virtual T GetRaceLibObject(IDatabase database)
+        public virtual T GetRaceLibObject(ICollectionDatabase database)
         {
             T t = Activator.CreateInstance<T>();
             Copy(this, t);
@@ -162,7 +162,7 @@ namespace DB
 
     public static class DatabaseObjectExt
     {
-        public static T Convert<T>(this DatabaseObjectT<T> baseDBObject, IDatabase database) where T : RaceLib.BaseObject
+        public static T Convert<T>(this DatabaseObjectT<T> baseDBObject, ICollectionDatabase database) where T : RaceLib.BaseObject
         {
             if (baseDBObject == null)
                 return null;
@@ -170,7 +170,7 @@ namespace DB
             return baseDBObject.GetRaceLibObject(database);
         }
 
-        public static IEnumerable<T> Convert<T>(this IEnumerable<DatabaseObjectT<T>> baseDBObjects, IDatabase database) where T : RaceLib.BaseObject
+        public static IEnumerable<T> Convert<T>(this IEnumerable<DatabaseObjectT<T>> baseDBObjects, ICollectionDatabase database) where T : RaceLib.BaseObject
         {
             if (baseDBObjects == null)
             {
@@ -183,14 +183,14 @@ namespace DB
             }
         }
 
-        public static T Convert<T>(this Guid id, IDatabase database) where T : RaceLib.BaseObject, new()
+        public static T Convert<T>(this Guid id, ICollectionDatabase database) where T : RaceLib.BaseObject, new()
         {
-            return database.GetObject<T>(id);
+            return database.GetCollection<T>().GetObject(id);
         }
 
-        public static IEnumerable<T> Convert<T>(this IEnumerable<Guid> ids, IDatabase database) where T : RaceLib.BaseObject, new()
+        public static IEnumerable<T> Convert<T>(this IEnumerable<Guid> ids, ICollectionDatabase database) where T : RaceLib.BaseObject, new()
         {
-            return database.GetObjects<T>(ids);
+            return database.GetCollection<T>().GetObjects(ids);
         }
 
         public static T Convert<T>(this RaceLib.BaseObject baseDBObject) where T : DatabaseObject

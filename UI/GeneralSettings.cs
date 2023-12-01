@@ -85,6 +85,10 @@ namespace UI
         [DisplayName("HTTP Server race controls enabled")]
         public bool HTTPServerRaceControl { get; set; }
 
+
+        [Category("Experimental")]
+        public bool JSONDB { get; set; }
+
         public GeneralSettings()
         {
             InverseResolutionScalePercent = 100;

@@ -202,7 +202,7 @@ namespace UI.Video
 
                 this.race = race;
 
-                PlaybackVideoManager = new VideoManager(GeneralSettings.Instance.VideoStorageLocation, EventManager.Profile);
+                PlaybackVideoManager = VideoManagerFactory.CreateVideoManager();
                 PlaybackVideoManager.OnStart += PlaybackVideoManager_OnStart;
 
                 ChannelsGridNode = new ChannelsGridNode(EventManager, PlaybackVideoManager);

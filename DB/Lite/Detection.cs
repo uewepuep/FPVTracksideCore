@@ -40,7 +40,7 @@ namespace DB.Lite
                 Pilot = obj.Pilot.Convert<Pilot>();
         }
 
-        public override RaceLib.Detection GetRaceLibObject(IDatabase database)
+        public override RaceLib.Detection GetRaceLibObject(ICollectionDatabase database)
         {
             RaceLib.Detection detection = base.GetRaceLibObject(database);
             detection.Pilot = Pilot.Convert(database);

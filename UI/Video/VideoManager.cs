@@ -14,6 +14,7 @@ using Microsoft.Xna.Framework.Media;
 using Composition;
 using System.Text.RegularExpressions;
 using UI;
+using static UI.Video.VideoManager;
 
 namespace UI.Video
 {
@@ -82,10 +83,19 @@ namespace UI.Video
 
         public Profile Profile { get; private set; }
 
-        public VideoManager(string directory, Profile profile)
+        public enum DirectoryStructures
+        {
+            OneDirectory,
+            RaceDirectories
+        }
+
+        public DirectoryStructures DirectoryStructure { get; private set; }
+
+        public VideoManager(string directory, DirectoryStructures directoryStructure, Profile profile)
         {
             Profile = profile;
             VideoDirectory = new DirectoryInfo(directory);
+            DirectoryStructure = directoryStructure;
 
             try
             {
@@ -549,7 +559,16 @@ namespace UI.Video
         private string GetRecordingFilename(Race race, FrameSource source)
         {
             int index = frameSources.IndexOf(source);
-            return VideoDirectory.FullName + "\\" + race.ID + "_" + index;
+
+            switch (DirectoryStructure)
+            {
+                case DirectoryStructures.RaceDirectories:
+                    return Path.Combine(VideoDirectory.FullName, race.ID.ToString(), index.ToString());
+
+                case DirectoryStructures.OneDirectory:
+                default:
+                    return VideoDirectory.FullName + "\\" + race.ID + "_" + index;
+            }
         }
 
         public void LoadRecordings(Race race, FrameSourcesDelegate frameSourcesDelegate)
@@ -568,16 +587,41 @@ namespace UI.Video
 
             if (VideoDirectory.Exists)
             {
-                foreach (FileInfo file in VideoDirectory.GetFiles(race.ID + "*.recordinfo.xml"))
+                switch (DirectoryStructure)
                 {
-                    RecodingInfo videoInfo = IOTools.ReadSingle<RecodingInfo>(VideoDirectory.FullName, file.Name);
-                    if (videoInfo != null)
-                    {
-                        if (File.Exists(videoInfo.FilePath))
+                    case DirectoryStructures.RaceDirectories:
+                        foreach (DirectoryInfo directory in VideoDirectory.GetDirectories())
                         {
-                            yield return videoInfo.GetVideoConfig();
+                            if (Guid.TryParse(directory.Name, out Guid id))
+                            {
+                                foreach (FileInfo file in directory.GetFiles("*.recordinfo.xml"))
+                                {
+                                    RecodingInfo videoInfo = IOTools.ReadSingle<RecodingInfo>(directory.FullName, file.Name);
+                                    if (videoInfo != null)
+                                    {
+                                        if (File.Exists(videoInfo.FilePath))
+                                        {
+                                            yield return videoInfo.GetVideoConfig();
+                                        }
+                                    }
+                                }
+                            }
                         }
-                    }
+                        break;
+
+                    case DirectoryStructures.OneDirectory:
+                        foreach (FileInfo file in VideoDirectory.GetFiles(race.ID + "*.recordinfo.xml"))
+                        {
+                            RecodingInfo videoInfo = IOTools.ReadSingle<RecodingInfo>(VideoDirectory.FullName, file.Name);
+                            if (videoInfo != null)
+                            {
+                                if (File.Exists(videoInfo.FilePath))
+                                {
+                                    yield return videoInfo.GetVideoConfig();
+                                }
+                            }
+                        }
+                        break;
                 }
             }
         }
@@ -757,7 +801,7 @@ namespace UI.Video
                                     RecodingInfo vi = new RecodingInfo(source);
 
                                     FileInfo fileinfo = new FileInfo(vi.FilePath.Replace(".wmv", "") + ".recordinfo.xml");
-                                    IOTools.Write(VideoDirectory.FullName, fileinfo.Name, vi);
+                                    IOTools.Write(fileinfo.Directory.FullName, fileinfo.Name, vi);
                                     needsVideoInfoWrite.Remove((FrameSource)source);
                                 }
                             }
@@ -948,6 +992,25 @@ namespace UI.Video
         {
             public Mode[] Modes { get; set; }
             public bool RebootRequired { get; set; }
+        }
+    }
+
+    public static class VideoManagerFactory
+    {
+        private static string directory;
+        private static DirectoryStructures directoryStructure;
+        private static Profile profile;
+
+        public static void Init(string di, DirectoryStructures dStructure, Profile p)
+        {
+            directory = di;
+            directoryStructure = dStructure;
+            profile = p;
+        }
+
+        public static VideoManager CreateVideoManager()
+        {
+            return new VideoManager(directory, directoryStructure, profile);
         }
     }
 }

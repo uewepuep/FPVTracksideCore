@@ -22,7 +22,7 @@ namespace DB.Lite
                 Detection = obj.Detection.Convert<Detection>();
         }
 
-        public override RaceLib.Lap GetRaceLibObject(IDatabase database)
+        public override RaceLib.Lap GetRaceLibObject(ICollectionDatabase database)
         {
             RaceLib.Lap lap = base.GetRaceLibObject(database);
             lap.Detection = Detection.Convert(database);
