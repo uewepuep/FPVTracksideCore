@@ -18,14 +18,20 @@ namespace UI.Nodes
 
         private LapRecordsSummaryNode pBList;
 
+        private RenderTargetNode renderTargetNode;
+
         public GridStatsNode(EventManager eventManager)
         {
             EventManager = eventManager;
 
+            renderTargetNode = new RenderTargetNode();
+            AddChild(renderTargetNode);
+
+
             if (ProfileSettings.Instance.GridShowPBs)
             {
                 ColorNode background = new ColorNode(Theme.Current.PanelAlt.XNA);
-                AddChild(background);
+                renderTargetNode.AddChild(background);
 
                 pBList = new LapRecordsSummaryNode(eventManager);
                 pBList.ShowPositions = false;

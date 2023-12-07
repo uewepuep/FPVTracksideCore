@@ -16,6 +16,7 @@ namespace UI.Nodes
     {
         protected EventManager eventManager;
 
+
         protected ListNode<PilotResultNode> rows;
 
         protected Node headings;
@@ -86,6 +87,7 @@ namespace UI.Nodes
         public void Refresh()
         {
             needsRefresh = true;
+            RequestRedraw();
         }
 
         public override void Draw(Drawer id, float parentAlpha)

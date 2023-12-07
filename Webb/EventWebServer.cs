@@ -43,6 +43,8 @@ namespace Webb
 
         public ToolColor[] ChannelColors { get; private set; }
 
+        public bool JavascriptMode { get; set; }
+
         public EventWebServer(EventManager eventManager, SoundManager soundManager, IRaceControl raceControl, IEnumerable<IWebbTable> tables, IEnumerable<Tools.ToolColor> channelColors)
         {
             CSSStyleSheet = new FileInfo("httpfiles/style.css");
@@ -210,16 +212,16 @@ namespace Webb
                     content += "<p>By default this webserver is only accessible from this machine. To access it over the network run in an Adminstrator command prompt:</p><p> netsh http add urlacl url = \"" + url + "\" user=everyone</p><p>Then restart the software</p>";
                 }
 
-                content += "<script>";
-                content += "const content = document.getElementById(\"content\");";
-                content += "var eventManager = new EventManager();";
-                content += "var formatter = new Formatter(eventManager, content);";
-                content += "</script>";
-
-#if DEBUG
-                content += "<a onclick=\"formatter.ShowRounds()\">Rounds</a>";
-                content += "<a onclick=\"formatter.ShowLapRecords()\">Lap Records</a>";
-#endif
+                if (JavascriptMode)
+                {
+                    content += "<script>";
+                    content += "const content = document.getElementById(\"content\");";
+                    content += "var eventManager = new EventManager();";
+                    content += "var formatter = new Formatter(eventManager, content);";
+                    content += "</script>";
+                    content += "<a onclick=\"formatter.ShowRounds()\">Rounds</a>";
+                    content += "<a onclick=\"formatter.ShowLapRecords()\">Lap Records</a>";
+                }
                 return GetFormattedHTML(context, content);
             }
             else

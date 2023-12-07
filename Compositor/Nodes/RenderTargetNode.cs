@@ -313,10 +313,10 @@ namespace Composition.Nodes
                     // Set the render target
                     id.GraphicsDevice.SetRenderTarget(renderTarget);
                     id.GraphicsDevice.Clear(Color.Transparent);
-                    //#if DEBUG
-                    //                    Random r = new Random(lastDrawFrame);
-                    //                    id.GraphicsDevice.Clear(new Color((float)r.NextDouble(), (float)r.NextDouble(), (float)r.NextDouble()));
-                    //#endif
+//#if DEBUG
+//                    Random r = new Random(lastDrawFrame);
+//                    id.GraphicsDevice.Clear(new Color((float)r.NextDouble(), (float)r.NextDouble(), (float)r.NextDouble()));
+//#endif
                     if (id != null)
                     {
                         id.Begin();

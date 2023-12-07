@@ -97,11 +97,6 @@ namespace Composition.Input
             if (caller != null)
             {
                 Rectangle callArea = caller.Bounds;
-
-                //Translate for rendernode..
-                callArea.X += listNode.Bounds.X;
-                callArea.Y += listNode.Bounds.Y;
-
                 submenu.Show(callArea);
             }
         }

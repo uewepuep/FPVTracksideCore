@@ -176,7 +176,8 @@ namespace UI.Nodes
             if (base.OnMouseInput(mouseInputEvent))
                 return true;
             
-            MouseInputEvent translated = pilotListNode.Translate(mouseInputEvent);
+            //MouseInputEvent translated = pilotListNode.Translate(mouseInputEvent);
+            MouseInputEvent translated = mouseInputEvent;
 
             PilotChannelNode pcn = GetPilotChannelNodeFromMouseInputEvent(translated);
             if (translated.Button == MouseButtons.Right && translated.ButtonState == ButtonStates.Released)

@@ -289,6 +289,8 @@ namespace UI
                 eventWebServer.Start();
             }
 
+            eventWebServer.JavascriptMode = GeneralSettings.Instance.JSONDB;
+
             MenuButton = new MenuButton(Profile, EventManager, videoManager, SoundManager, eventWebServer, TabbedMultiNode, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
             MenuButton.RelativeBounds = new RectangleF(0.7f, 0, 0.3f, 0.03f);
             MenuButton.ImageNode.Tint = Theme.Current.RightControls.Text.XNA;
@@ -618,6 +620,9 @@ namespace UI
 
         protected override void OnDraw()
         {
+            // Only draw the pilot list if its visible
+            leftContainer.Visible = leftContainer.HasAnimation || leftContainer.RelativeBounds.X >= 0;
+
             if (videoManager != null)
             {
                 videoManager.UpdateAutoPause();

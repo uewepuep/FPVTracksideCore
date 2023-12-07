@@ -1377,9 +1377,7 @@ namespace Composition.Nodes
                 mm.AddItem(ValueToString(value), () => { SetValue(value); });
             }
 
-            Point screenPosition = GetScreenPosition();
-
-            screenPosition.X += Value.Bounds.X;
+            Point screenPosition = Value.GetScreenPosition();
 
             // Drop from the bottom..
             screenPosition.Y += Value.Bounds.Height;
