@@ -43,6 +43,9 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <None Update="httpfiles\linq.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="httpfiles\style.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

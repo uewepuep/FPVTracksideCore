@@ -22,7 +22,7 @@ class EventManager
         return null;
     }
 
-    async GetRaces(delegate)
+    async GetRaces(delegate = null)
     {
         let races = [];
 
@@ -33,7 +33,7 @@ class EventManager
         for (const raceId of raceIds)
         {
             let race = await this.GetRace(raceId);
-            if (delegate(race))
+            if (delegate == null || delegate(race))
             {
                 races.push(race);
             }
@@ -52,31 +52,47 @@ class EventManager
         return false;
     }
 
+    GetPilotRaces(races, pilotID)
+    {
+        let output = [];
+        for (const race of races)
+        {
+            if (this.RaceHasPilot(race, pilotID))
+            {
+                output.push(race);
+            }
+        }
+        return output;
+    }
+
     GetValidLaps(race, pilotId)
     {
         let output = [];
 
         for (const lap of race.Laps)
         {
-            let detection = this.GetDetection(race, lap);
-            lap.detectionObject = detection;
+            if (lap.detectionObject == null)
+            {
+                let detection = this.GetDetection(race, lap);
+                lap.detectionObject = detection;
+            }
 
-            if (detection == null)
+            if (lap.detectionObject == null)
                 continue;
 
-            if (detection.Valid == false)
+            if (lap.detectionObject.Valid == false)
                 continue;
 
-            if (lap.Length < 0)
+            if (lap.LengthSeconds < 0)
                 continue;
 
-            if (lap.Pilot == pilotId)
+            if (lap.detectionObject.Pilot == pilotId)
             {
                 output.push(lap);
             }
         }
 
-        output.sort((a, b) => { return a.Start - b.Start });
+        output.sort((a, b) => { return a.EndTime - b.EndTime });
 
         return output;
     }
@@ -85,7 +101,7 @@ class EventManager
     {
         for (const detection of race.Detections)
         {
-            if (lap.detection == detection.ID)
+            if (lap.Detection == detection.ID)
                 return detection;
         }
         return null;
@@ -96,36 +112,72 @@ class EventManager
         let records = [];
 
         let pilots = await this.GetPilots();
-        let races = await this.GetRaces();
+        let races = await this.GetRaces((r) => { return r.Valid; });
 
-        for (const pilot in pilots)
+        let eventLaps = 4;
+
+        for (const pilotIndex in pilots)
         {
-            for (const race in races)
+            const pilot = pilots[pilotIndex];
+
+            const pilotRecord =
             {
+                pilot: pilot,
+                holeshot: [],
+                lap: [],
+                laps: [],
+                racetime: []
+            };
+
+            for (const raceIndex in races)
+            {
+                const race = races[raceIndex];
+
                 if (this.RaceHasPilot(race, pilot.ID))
                 {
-                    let laps = this.GetValidLaps(race, pilot.ID);
+                    let raceLaps = this.GetValidLaps(race, pilot.ID);
 
+                    let holeshot = this.BestConsecutive(raceLaps, 0);
+                    let lap = this.BestConsecutive(raceLaps, 1);
+                    let laps = this.BestConsecutive(raceLaps, eventLaps);
+                    let raceTime = this.BestConsecutive(raceLaps, eventLaps);
+
+                    if (this.TotalTime(holeshot) < this.TotalTime(pilotRecord.holeshot))
+                        pilotRecord.holeshot = holeshot;
+
+                    if (this.TotalTime(lap) < this.TotalTime(pilotRecord.lap))
+                        pilotRecord.lap = lap;
+
+                    if (this.TotalTime(laps) < this.TotalTime(pilotRecord.laps))
+                        pilotRecord.laps = laps;
+
+                    if (this.TotalTime(raceTime) < this.TotalTime(pilotRecord.raceTime))
+                        pilotRecord.raceTime = raceTime;
                 }
             }
+            records.push(pilotRecord);
         }
+        return records;
     }
 
     BestConsecutive(validLaps, consecutive)
     {
         let best = [];
+        let bestTime = 10000;
 
-        for (const lap in validLaps)
+        for (let i = 0; i <= validLaps.length - consecutive; i++)
         {
+            //let current = validLaps.Skip(i).Take(consecutive);
+            let current = [];
+            for (let j = i; j < i + consecutive; j++)
+            {
+                current.push(validLaps[j]);
+            }
             
-        }
-
-        laps.Where(l => l.Detection.Valid && !l.Detection.IsHoleshot && l.Length.TotalSeconds > 0).OrderBy(l => l.End).ToArray();
-        for (int i = 0; i <= filtered.Length - consecutive; i++)
-        {
-            IEnumerable < Lap > current = filtered.Skip(i).Take(consecutive);
-            if (!best.Any() || current.TotalTime() < best.TotalTime()) {
+            if (best.length == 0 || this.TotalTime(current) < bestTime)
+            {
                 best = current;
+                bestTime = this.TotalTime(best);
             }
         }
         return best;
@@ -133,21 +185,19 @@ class EventManager
 
     TotalTime(validLaps)
     {
-        let start = new Date();
-        let end = new Date();
+        if (validLaps == null || validLaps.length == 0)
+            return Number.MAX_SAFE_INTEGER;
 
-        for (const lap in validLaps)
+        let total = 0;
+
+        for (const lapIndex in validLaps)
         {
-            let lapStart = new Date(lap.Start);
-            let lapEnd = new Date(lap.End);
+            const lap = validLaps[lapIndex];
 
-            if (start > lapStart)
-                start = lapStart;
-            if (end < lapEnd)
-                end = lapEnd;
+            total += lap.LengthSeconds;
         }
 
-        return end - start;
+        return total;
     }
 
     async GetRoundRaces(roundId)

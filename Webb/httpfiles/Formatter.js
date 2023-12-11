@@ -101,10 +101,47 @@ class Formatter
 
     async ShowLapRecords()
     {
-        let output = "<h2>Lap Records</h2>";
+        let pilotRecords = await this.eventManager.GetLapRecords();
 
+        const lapCount = 4;
+
+        let output = "<h2>Lap Records</h2>";
+        output += "<div class=\"columns\">";
+        output += "<div class=\"row\" >";
+        output += "<div class=\"position\">Position</div>";
+        output += "<div class=\"pilots\">Pilots</div>";
+        output += "<div class=\"holeshot\">Holeshot</div>";
+        output += "<div class=\"lap\">1 Lap</div>";
+        output += "<div class=\"laps\">" + lapCount + " Laps</div>";
+        output += "<div class=\"racetime\">Race Time</div>";
+        output += "</div>";
+
+        let i = 1;
+        for (const pilotRecord of pilotRecords)
+        {
+            output += "<div class=\"row\">";
+            output += "<div class=\"position\">" + this.ToStringPosition(i) + "</div>";
+            output += "<div class=\"pilots\">" + pilotRecord.pilot.Name + "</div>";
+            output += "<div class=\"holeshot\">" + this.LapsToTime(pilotRecord.holeshot) + "</div>";
+            output += "<div class=\"lap\">" + this.LapsToTime(pilotRecord.lap) + "</div>";
+            output += "<div class=\"laps\">" + this.LapsToTime(pilotRecord.laps) + "</div>";
+            output += "<div class=\"racetime\">" + this.LapsToTime(pilotRecord.racetime) + "</div>";
+
+            output += "</div>";
+            i++;
+        }
+        output += "</div>";
 
         this.content.innerHTML = output;
+    }
+
+    LapsToTime(laps)
+    {
+        if (laps.length == 0)
+            return "";
+        let time = this.eventManager.TotalTime(laps);
+
+        return Math.round(time * 100) / 100
     }
 
     ToStringPosition(position)
