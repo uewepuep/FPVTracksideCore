@@ -9,6 +9,11 @@ class EventManager
         return await this.GetJSON("event/Pilots.json");
     }
 
+    async GetRounds()
+    {
+        return await this.GetJSON("event/Rounds.json");
+    }
+
     async GetRace(id)
     {
         let raceArray = await this.GetJSON("event/" + id + "/Race.json");
@@ -114,7 +119,12 @@ class EventManager
         let pilots = await this.GetPilots();
         let races = await this.GetRaces((r) => { return r.Valid; });
 
-        let eventLaps = 4;
+        let eventLapsTarget = 4;
+        let hasHoleshot = true;
+
+        let raceLapsTarget = eventLapsTarget;
+        if (hasHoleshot)
+            raceLapsTarget++;
 
         for (const pilotIndex in pilots)
         {
@@ -126,7 +136,7 @@ class EventManager
                 holeshot: [],
                 lap: [],
                 laps: [],
-                racetime: []
+                race: []
             };
 
             for (const raceIndex in races)
@@ -137,12 +147,19 @@ class EventManager
                 {
                     let raceLaps = this.GetValidLaps(race, pilot.ID);
 
-                    let holeshot = this.BestConsecutive(raceLaps, 0);
-                    let lap = this.BestConsecutive(raceLaps, 1);
-                    let laps = this.BestConsecutive(raceLaps, eventLaps);
-                    let raceTime = this.BestConsecutive(raceLaps, eventLaps);
+                    let nonHoleshots = this.ExcludeHoleshot(raceLaps);
 
-                    if (this.TotalTime(holeshot) < this.TotalTime(pilotRecord.holeshot))
+                    let holeshot = [this.GetHoleshot(raceLaps)];
+                    let lap = this.BestConsecutive(nonHoleshots, 1);
+                    let laps = this.BestConsecutive(nonHoleshots, eventLapsTarget);
+
+                    let raceTime = [];
+                    if (raceLaps.length == raceLapsTarget)
+                    {
+                        raceTime = raceLaps;
+                    }
+
+                    if (this.TotalTime(holeshot) < this.TotalTime(pilotRecord.holeshot) && holeshot != null)
                         pilotRecord.holeshot = holeshot;
 
                     if (this.TotalTime(lap) < this.TotalTime(pilotRecord.lap))
@@ -151,13 +168,93 @@ class EventManager
                     if (this.TotalTime(laps) < this.TotalTime(pilotRecord.laps))
                         pilotRecord.laps = laps;
 
-                    if (this.TotalTime(raceTime) < this.TotalTime(pilotRecord.raceTime))
-                        pilotRecord.raceTime = raceTime;
+                    if (this.TotalTime(raceTime) < this.TotalTime(pilotRecord.race))
+                        pilotRecord.race = raceTime;
                 }
             }
             records.push(pilotRecord);
         }
         return records;
+    }
+
+    async GetLapCounts()
+    {
+        let records = [];
+
+        let pilots = await this.GetPilots();
+        let races = await this.GetRaces((r) => { return r.Valid; });
+        let rounds = await this.GetRounds();
+
+        for (const pilotIndex in pilots)
+        {
+            const pilot = pilots[pilotIndex];
+
+            const pilotRecord =
+            {
+                pilot: pilot,
+                total: 0
+            };
+
+            for (const roundIndex in rounds)
+            {
+                const round = rounds[roundIndex];
+                let roundName = round.EventType[0] + round.RoundNumber;
+
+                let roundRaces = []
+                for (const raceIndex in races)
+                {
+                    const race = races[raceIndex];
+
+                    if (round.ID == race.Round)
+                    {
+                        roundRaces.push(race);
+                    }
+                }
+
+                for (const raceIndex in roundRaces)
+                {
+                    const race = roundRaces[raceIndex];
+
+                    if (this.RaceHasPilot(race, pilot.ID))
+                    {
+                        let raceLaps = this.GetValidLaps(race, pilot.ID);
+                        const count = raceLaps.length;
+                        pilotRecord[roundName] = count;
+                        pilotRecord.total += count;
+                    }
+                }
+            }
+            records.push(pilotRecord);
+        }
+        return records;
+    }
+
+    GetHoleshot(validLaps)
+    {
+        for (let i = 0; i < validLaps.length; i++)
+        {
+            let lap = validLaps[i];
+            if (lap.LapNumber == 0)
+            {
+                return lap;
+            }
+        }
+
+        return null;
+    }
+
+    ExcludeHoleshot(validLaps)
+    {
+        let nonHoleshot = [];
+        for (let i = 0; i < validLaps.length; i++)
+        {
+            let lap = validLaps[i];
+            if (lap.LapNumber != 0)
+            {
+                nonHoleshot.push(lap);
+            }
+        }
+        return nonHoleshot;
     }
 
     BestConsecutive(validLaps, consecutive)
@@ -171,7 +268,8 @@ class EventManager
             let current = [];
             for (let j = i; j < i + consecutive; j++)
             {
-                current.push(validLaps[j]);
+                let lap = validLaps[j];
+                current.push(lap);
             }
             
             if (best.length == 0 || this.TotalTime(current) < bestTime)

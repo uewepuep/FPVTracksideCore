@@ -103,6 +103,8 @@ class Formatter
     {
         let pilotRecords = await this.eventManager.GetLapRecords();
 
+        pilotRecords.sort((a, b) => { return this.eventManager.TotalTime(a.laps) - this.eventManager.TotalTime(b.laps) });
+
         const lapCount = 4;
 
         let output = "<h2>Lap Records</h2>";
@@ -125,7 +127,54 @@ class Formatter
             output += "<div class=\"holeshot\">" + this.LapsToTime(pilotRecord.holeshot) + "</div>";
             output += "<div class=\"lap\">" + this.LapsToTime(pilotRecord.lap) + "</div>";
             output += "<div class=\"laps\">" + this.LapsToTime(pilotRecord.laps) + "</div>";
-            output += "<div class=\"racetime\">" + this.LapsToTime(pilotRecord.racetime) + "</div>";
+            output += "<div class=\"racetime\">" + this.LapsToTime(pilotRecord.race) + "</div>";
+
+            output += "</div>";
+            i++;
+        }
+        output += "</div>";
+
+        this.content.innerHTML = output;
+    }
+
+    async ShowLapCounts()
+    {
+        let pilotRecords = await this.eventManager.GetLapCounts();
+
+        pilotRecords.sort((a, b) => { return b.total - a.total });
+
+        let rounds = await this.eventManager.GetRounds();
+
+        let output = "<h2>Lap Counts</h2>";
+        output += "<div class=\"columns\">";
+        output += "<div class=\"row\" >";
+        output += "<div class=\"pilots\">Pilots</div>";
+
+        for (const round of rounds)
+        {
+            let roundName = round.EventType[0] + round.RoundNumber;
+            output += "<div class=\"r\">" + roundName + "</div>";
+        }
+
+        output += "<div class=\"total\">Total</div>";
+        output += "</div>";
+
+        let i = 1;
+        for (const pilotRecord of pilotRecords)
+        {
+            output += "<div class=\"row\">";
+            output += "<div class=\"pilots\">" + pilotRecord.pilot.Name + "</div>";
+
+            for (const round of rounds)
+            {
+                let roundName = round.EventType[0] + round.RoundNumber;
+                let value = pilotRecord[roundName];
+                if (value == null)
+                    value = " ";
+
+                output += "<div class=\"r\">" + value + "</div>";
+            }
+            output += "<div class=\"total\">" + pilotRecord.total +  "</div>";
 
             output += "</div>";
             i++;
@@ -137,11 +186,12 @@ class Formatter
 
     LapsToTime(laps)
     {
-        if (laps.length == 0)
+        if (laps == null || laps.length == 0)
             return "";
         let time = this.eventManager.TotalTime(laps);
 
-        return Math.round(time * 100) / 100
+        let value = Math.round(time * 100) / 100
+        return value.toFixed(2);
     }
 
     ToStringPosition(position)

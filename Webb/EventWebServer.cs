@@ -219,8 +219,9 @@ namespace Webb
                     content += "var eventManager = new EventManager();";
                     content += "var formatter = new Formatter(eventManager, content);";
                     content += "</script>";
-                    content += "<a onclick=\"formatter.ShowRounds()\">Rounds</a>";
-                    content += "<a onclick=\"formatter.ShowLapRecords()\">Lap Records</a>";
+                    content += "<br><a onclick=\"formatter.ShowRounds()\">Rounds</a>";
+                    content += "<br><a onclick=\"formatter.ShowLapRecords()\">Lap Records</a>";
+                    content += "<br><a onclick=\"formatter.ShowLapCounts()\">Lap Counts</a>";
                 }
                 return GetFormattedHTML(context, content);
             }
