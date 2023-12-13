@@ -68,14 +68,55 @@ class Formatter
         return channel.Band.substring(0, 1) + channel.Number;
     }
 
+    async ShowEventStatus()
+    {
+        let output = "<h2>Event Status</h2><br>";
+        output += "<div class=\"race_status\">";
+
+        const prevcurrentnext = await this.eventManager.GetPrevCurrentNextRace();
+
+        for (let i = 0; i < prevcurrentnext.length; i++)
+        {
+            output += "<div class=\"round\">";
+            const race = prevcurrentnext[i];
+            if (race != null)
+            {
+                let round = await this.eventManager.GetRound(race.Round);
+                if (round != null)
+                {
+                    output += "<h3>";
+                    switch (i)
+                    {
+                        case 0:
+                            output += "Previous Race";
+                            break;
+                        case 1:
+                            output += "Current Race";
+                            break;
+                        case 2:
+                            output += "Next Race";
+                            break;
+                    }
+                    output += "</h3>";
+
+
+                    output += await this.RaceTable(race, round);
+                }
+            }
+            output += "</div>";
+        }
+        output += "</div><br>";
+
+        output += await this.GetLapRecords();
+
+        this.content.innerHTML = output;
+    }
+
     async ShowRounds()
     {
         let output = "<h2>Rounds</h2>";
 
         let rounds = await eventManager.GetRounds();
-
-        rounds.sort((a, b) => { return a.RoundNumber - b.RoundNumber });
-
         for (const round of rounds)
         {
             if (round.Valid)
@@ -86,8 +127,10 @@ class Formatter
                 let races = await this.eventManager.GetRoundRaces(round.ID);
                 races = races.sort((a, b) => { return a.RaceNumber - b.RaceNumber });
 
-                for (const race of races) {
-                    if (race.Valid) {
+                for (const race of races)
+                {
+                    if (race.Valid)
+                    {
                         output += await this.RaceTable(race, round);
                     }
                 }
@@ -100,6 +143,12 @@ class Formatter
     }
 
     async ShowLapRecords()
+    {
+        let output = await this.GetLapRecords();
+        this.content.innerHTML = output;
+    }
+
+    async GetLapRecords()
     {
         let pilotRecords = await this.eventManager.GetLapRecords();
 
@@ -133,8 +182,7 @@ class Formatter
             i++;
         }
         output += "</div>";
-
-        this.content.innerHTML = output;
+        return output;
     }
 
     async ShowLapCounts()
@@ -146,7 +194,30 @@ class Formatter
         let rounds = await this.eventManager.GetRounds();
 
         let output = "<h2>Lap Counts</h2>";
-        output += "<div class=\"columns\">";
+
+        output += this.FormatRoundsTable(rounds, pilotRecords);
+
+        this.content.innerHTML = output;
+    }
+
+    async ShowPoints()
+    {
+        let pilotRecords = await this.eventManager.GetPoints();
+
+        pilotRecords.sort((a, b) => { return b.total - a.total });
+
+        let rounds = await this.eventManager.GetRounds();
+
+        let output = "<h2>Points</h2>";
+
+        output += this.FormatRoundsTable(rounds, pilotRecords);
+
+        this.content.innerHTML = output;
+    }
+
+    FormatRoundsTable(rounds, pilotRecords)
+    {
+        let output = "<div class=\"columns\">";
         output += "<div class=\"row\" >";
         output += "<div class=\"pilots\">Pilots</div>";
 
@@ -174,15 +245,15 @@ class Formatter
 
                 output += "<div class=\"r\">" + value + "</div>";
             }
-            output += "<div class=\"total\">" + pilotRecord.total +  "</div>";
+            output += "<div class=\"total\">" + pilotRecord.total + "</div>";
 
             output += "</div>";
             i++;
         }
         output += "</div>";
-
-        this.content.innerHTML = output;
+        return output;
     }
+
 
     LapsToTime(laps)
     {

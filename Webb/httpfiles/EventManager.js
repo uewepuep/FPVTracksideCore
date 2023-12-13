@@ -229,6 +229,60 @@ class EventManager
         return records;
     }
 
+    async GetPoints()
+    {
+        let records = [];
+
+        let pilots = await this.GetPilots();
+        let races = await this.GetRaces((r) => { return r.Valid; });
+        let rounds = await this.GetRounds();
+
+        for (const pilotIndex in pilots)
+        {
+            const pilot = pilots[pilotIndex];
+
+            const pilotRecord =
+            {
+                pilot: pilot,
+                total: 0
+            };
+
+            for (const roundIndex in rounds)
+            {
+                const round = rounds[roundIndex];
+                let roundName = round.EventType[0] + round.RoundNumber;
+
+                let roundRaces = []
+                for (const raceIndex in races)
+                {
+                    const race = races[raceIndex];
+
+                    if (round.ID == race.Round)
+                    {
+                        roundRaces.push(race);
+                    }
+                }
+
+                for (const raceIndex in roundRaces)
+                {
+                    const race = roundRaces[raceIndex];
+
+                    if (this.RaceHasPilot(race, pilot.ID))
+                    {
+                        let result = await this.GetPilotResult(race.ID, pilot.ID);
+                        if (result != null)
+                        {
+                            pilotRecord[roundName] = result.Points;
+                            pilotRecord.total += result.Points;
+                        }
+                    }
+                }
+            }
+            records.push(pilotRecord);
+        }
+        return records;
+    }
+
     GetHoleshot(validLaps)
     {
         for (let i = 0; i < validLaps.length; i++)
@@ -291,16 +345,32 @@ class EventManager
         for (const lapIndex in validLaps)
         {
             const lap = validLaps[lapIndex];
-
-            total += lap.LengthSeconds;
+            if (lap != null)
+            {
+                total += lap.LengthSeconds;
+            }
         }
 
         return total;
     }
 
+    async GetRound(roundId)
+    {
+        let rounds = await this.GetRounds();
+        for (const roundIndex in rounds)
+        {
+            const round = rounds[roundIndex];
+            if (round.ID == roundId)
+                return round;
+        }
+        return null;
+    }
+
     async GetRoundRaces(roundId)
     {
-        return await this.GetRaces((r) => { return r.Round == roundId });
+        let races = await this.GetRaces((r) => { return r.Round == roundId });
+        races.sort((a, b) => { return a.RaceNumber - b.RaceNumber });
+        return races;
     }
 
     async GetPilot(id)
@@ -320,7 +390,9 @@ class EventManager
 
     async GetRounds()
     {
-        return await this.GetJSON("event/Rounds.json");
+        let rounds = await this.GetJSON("event/Rounds.json");
+        rounds.sort((a, b) => { return a.RoundNumber - b.RoundNumber });
+        return rounds;
     }
 
     async GetPilotResult(raceID, pilotID)
@@ -334,6 +406,38 @@ class EventManager
             if (result.Pilot == pilotID && result.Valid)
                 return result;
         }
+    }
+
+    async GetPrevCurrentNextRace()
+    {
+        let outputRaces = [];
+        let rounds = await this.GetRounds();
+        for (const round of rounds)
+        {
+            if (round.Valid)
+            {
+                let races = await this.GetRoundRaces(round.ID);
+
+                let last = null;
+                let lastLast = null;
+                for (const race of races)
+                {
+                    if (race.Valid)
+                    {
+                        if (race.End == null || race.End == "0001/01/01 0:00:00")
+                        {
+                            outputRaces.push(lastLast);
+                            outputRaces.push(last);
+                            outputRaces.push(race);
+                            return outputRaces;
+                        }
+                        lastLast = last;
+                        last = race;
+                    }
+                }
+            }
+        }
+        return outputRaces;
     }
 
     async GetResults(raceID)
