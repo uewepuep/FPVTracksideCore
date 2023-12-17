@@ -110,12 +110,12 @@ namespace DB
 
         public IEnumerable<Race> LoadRaces(Guid eventId)
         {
-            IEnumerable<Race> races = jsondb.LoadRaces(eventId);
+            Race[] races = jsondb.LoadRaces(eventId).ToArray();
             if (races.Any())
             {
                 return races;
             }
-            races = litedb.LoadRaces(eventId);
+            races = litedb.LoadRaces(eventId).ToArray();
 
             // Quick little fix as event isn't loaded here, its normally applied in race manager.
             Event eve = jsondb.LoadEvent(eventId);
@@ -124,6 +124,9 @@ namespace DB
                 race.Event = eve;
             }
 
+            RaceLib.Round[] rounds = races.Select(ra => ra.Round).Distinct().OrderBy(r => r.Order).ToArray();   
+
+            jsondb.Upsert(rounds);
             jsondb.Upsert(races);
             return races;
         }

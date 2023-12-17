@@ -405,7 +405,7 @@ namespace UI.Nodes
             if (MenuButton != null)
                 MenuButton.Scale(0.6f);
 
-            canRemove = !Races.Any(r => r.Ended) && !(EventManager.Event.Rounds.Count == 1 && !Races.Any());
+            canRemove = !Races.Any(r => r.Ended) && EventManager.Event.Rounds.Where(r => r.Valid).Count() > 1;
             canPasteAll = !Races.Any(r => r.Ended);
 
             canFill = !EventManager.RoundManager.DoesRoundHaveAllPilots(Round);

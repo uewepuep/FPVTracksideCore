@@ -974,6 +974,12 @@ namespace RaceLib
                 races = db.LoadRaces(eve.ID).ToArray();
             }
 
+            foreach (Race race in races)
+            {
+                // Keep the event object synced in memory
+                race.Event = eve;
+            }
+
             LoadRaces(races);
         }
 
@@ -992,9 +998,6 @@ namespace RaceLib
                 {
                     foreach (Race race in races)
                     {
-                        // Keep the event object synced in memory
-                        race.Event = EventManager.Event;
-
                         if (race.TargetLaps == 0)
                         {
                             race.TargetLaps = EventManager.Event.Laps;
