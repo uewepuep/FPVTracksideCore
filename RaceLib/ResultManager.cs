@@ -101,7 +101,7 @@ namespace RaceLib
 
         public void Load(Event eve)
         {
-            using (IDatabase db = DatabaseFactory.Open())
+            using (IDatabase db = DatabaseFactory.OpenLegacyLoad())
             {
                 // Load points
                 Results = db.LoadResults(eve.ID).ToList();

@@ -40,6 +40,7 @@ namespace RaceLib
     public interface IDatabaseFactory
     {
         IDatabase Open();
+        IDatabase OpenLegacyLoad();
     }
 
     public static class DatabaseFactory
@@ -56,5 +57,9 @@ namespace RaceLib
             return databaseFactory.Open();
         }
 
+        public static IDatabase OpenLegacyLoad() 
+        {
+            return databaseFactory.OpenLegacyLoad();
+        }
     }
 }

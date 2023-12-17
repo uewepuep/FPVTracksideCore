@@ -98,22 +98,37 @@ namespace DB.JSON
             }
         }
 
-        RaceLib.Event ICollectionDatabase.LoadEvent(Guid id)
+        RaceLib.Event ICollectionDatabase.LoadEvent(Guid eventId)
         {
-            eventId = id;
-            Init();
+            if (JsonDatabase.eventId != eventId)
+            {
+                JsonDatabase.eventId = eventId;
+                Init();
+            }
 
-            return events.GetObject(id).Convert(this);
+            return events.GetObject(eventId).Convert(this);
         }
 
         IEnumerable<RaceLib.Race> ICollectionDatabase.LoadRaces(Guid eventId)
         {
-            return races.All().Where(r => r.Event == eventId).Convert(this);
+            if (JsonDatabase.eventId != eventId)
+            {
+                JsonDatabase.eventId = eventId;
+                Init();
+            }
+
+            return races.All().Convert(this);
         }
 
         IEnumerable<RaceLib.Result> ICollectionDatabase.LoadResults(Guid eventId)
         {
-            return results.All().Where(r => r.Event == eventId).Convert(this);
+            if (JsonDatabase.eventId != eventId)
+            {
+                JsonDatabase.eventId = eventId;
+                Init();
+            }
+
+            return results.All().Convert(this);
         }
     }
 

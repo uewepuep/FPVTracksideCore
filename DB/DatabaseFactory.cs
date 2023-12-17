@@ -21,11 +21,7 @@ namespace DB
         public DatabaseFactory(DirectoryInfo directoryInfo, DatabaseTypes databaseType)
         {
             this.DatabaseType = databaseType;
-
-            if (databaseType == DatabaseTypes.Lite) 
-            {
-                Lite.LiteDatabase.Init(directoryInfo);
-            }
+            Lite.LiteDatabase.Init(directoryInfo);
         }
 
         public RaceLib.IDatabase Open()
@@ -33,6 +29,18 @@ namespace DB
             if (DatabaseType == DatabaseTypes.JSON)
             {
                 return new CollectionDatabase(new JSON.JsonDatabase());
+            }
+            else
+            {
+                return new CollectionDatabase(new Lite.LiteDatabase());
+            }
+        }
+
+        public RaceLib.IDatabase OpenLegacyLoad()
+        {
+            if (DatabaseType == DatabaseTypes.JSON)
+            {
+                return new BothDatabase();
             }
             else
             {

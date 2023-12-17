@@ -171,7 +171,7 @@ namespace DB
 
         public IEnumerable<Race> LoadRaces(Guid eventId)
         {
-            IEnumerable<Race> races = database.LoadRaces(eventId).ToArray();
+            IEnumerable<Race> races = database.LoadRaces(eventId);
             return races;
 
             //if (races.Any())

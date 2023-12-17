@@ -969,7 +969,7 @@ namespace RaceLib
         public void LoadRaces(Event eve)
         {
             Race[] races;
-            using (IDatabase db = DatabaseFactory.Open())
+            using (IDatabase db = DatabaseFactory.OpenLegacyLoad())
             {
                 races = db.LoadRaces(eve.ID).ToArray();
             }

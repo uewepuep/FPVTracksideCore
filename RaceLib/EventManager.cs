@@ -211,7 +211,7 @@ namespace RaceLib
         {
             workQueue.Enqueue(workSet, "Loading Event", () =>
             {
-                using (IDatabase db = DatabaseFactory.Open())
+                using (IDatabase db = DatabaseFactory.OpenLegacyLoad())
                 {
                     Event = db.LoadEvent(eve.ID);
                     System.Diagnostics.Debug.Assert(Event != null);
@@ -235,7 +235,7 @@ namespace RaceLib
                     FileInfo[] files = photoDir.GetFiles();
                     foreach (Pilot p in Event.Pilots)
                     {
-                        if (string.IsNullOrEmpty(p.PhotoPath))
+                        if (p != null && string.IsNullOrEmpty(p.PhotoPath))
                         {
                             IEnumerable<FileInfo> matches = files.Where(f => f.Name.ToLower().Contains(p.Name.ToLower()));
                             matches = matches.Where(f => extensions.Contains(f.Extension.ToLower()));

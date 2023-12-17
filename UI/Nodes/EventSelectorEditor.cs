@@ -268,7 +268,7 @@ namespace UI.Nodes
         private static Event[] GetEvents(Profile profile)
         {
             Event[] events;
-            using (IDatabase db = DatabaseFactory.Open())
+            using (IDatabase db = DatabaseFactory.OpenLegacyLoad())
             {
                 events = db.GetEvents().ToArray();
 
