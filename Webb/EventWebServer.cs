@@ -35,23 +35,18 @@ namespace Webb
 
         public FileInfo CSSStyleSheet { get; private set; }
 
-        public WebRaceControl WebRaceControl { get; private set; }
-
         private bool localOnly;
-
-        private IWebbTable[] webbTables;
 
         public ToolColor[] ChannelColors { get; private set; }
 
         public bool JavascriptMode { get; set; }
 
-        public EventWebServer(EventManager eventManager, SoundManager soundManager, IRaceControl raceControl, IEnumerable<IWebbTable> tables, IEnumerable<Tools.ToolColor> channelColors)
+        public EventWebServer(EventManager eventManager, SoundManager soundManager, IRaceControl raceControl, IEnumerable<Tools.ToolColor> channelColors)
         {
             CSSStyleSheet = new FileInfo("httpfiles/style.css");
             this.eventManager = eventManager;
             this.soundManager = soundManager;
             this.raceControl = raceControl;
-            WebRaceControl = new WebRaceControl(eventManager, soundManager, raceControl);
             Url = "http://localhost:8080/";
 
             if (!CSSStyleSheet.Exists)
@@ -60,32 +55,12 @@ namespace Webb
                 fileStream.Dispose();
             }
 
-            webbTables = tables.ToArray();
-
             ChannelColors = channelColors.ToArray();
         }
 
         public void Dispose() 
         {
             Stop();
-        }
-
-
-        public IEnumerable<string> GetPages()
-        {
-            yield return "Rounds";
-            yield return "Event Status";
-
-            foreach (IWebbTable table in webbTables)
-            {
-                yield return table.Name;
-            }
-
-            if (raceControl != null) 
-            {
-                yield return "RaceControl";
-                yield return "Variable Viewer";
-            }
         }
 
         public bool Start()
@@ -200,10 +175,6 @@ namespace Webb
             if (requestPath.Length == 0)
             {
                 string content = "";
-                foreach (string item in GetPages().OrderBy(r =>r))
-                {
-                    content += "<br><a class=\"menu\" href=\"/" + item + "/\">" + item + "</a> ";
-                }
 
                 if (localOnly)
                 {
@@ -240,14 +211,6 @@ namespace Webb
                     //    VariableViewer vv = new VariableViewer(eventManager, soundManager);
                     //    content = vv.DumpObject(parameters, refresh, decimalPlaces);
                     //    break;
-
-                    case "RaceControl":
-                        if (nameValueCollection.Count > 0)
-                        {
-                            WebRaceControl.HandleInput(nameValueCollection);
-                        }
-                        content += WebRaceControl.GetHTML();
-                        break;
 
                     case "httpfiles":
                     case "img":
@@ -309,24 +272,6 @@ namespace Webb
                     case "channels":
                         IEnumerable<DB.Channel> channels = RaceLib.Channel.AllChannels.Convert<DB.Channel>();
                         return SerializeASCII(channels);
-
-                    case "Rounds":
-                        content += WebbRounds.Rounds(eventManager);
-                        break;
-
-                    case "Event Status":
-                        content += WebbRounds.EventStatus(eventManager, webbTables.FirstOrDefault());
-                        break;
-
-                    case "Lap Count":
-                        IWebbTable webbTable2 = webbTables.FirstOrDefault(w => w.Name == action);
-                        content += HTTPFormat.FormatTable(webbTable2, "");
-                        break;
-
-                    default:
-                        IWebbTable webbTable = webbTables.FirstOrDefault(w => w.Name == action);
-                        content += HTTPFormat.FormatTable(webbTable, "columns");
-                        break;
                 }
 
                 return GetFormattedHTML(context, content);

@@ -12,7 +12,7 @@ using static UI.Nodes.LapRecordsSummaryNode;
 
 namespace UI.Nodes
 {
-    public class PilotSummaryTable : Node, IWebbTable
+    public class PilotSummaryTable : Node
     {
         protected EventManager eventManager;
 
@@ -32,7 +32,6 @@ namespace UI.Nodes
         public Pilot[] FilterPilots { get; private set; }
 
         private HeadingNode title;
-        public string Name { get { return title.Text; } }
 
         public bool CanTint { get; set; }
 
@@ -269,44 +268,6 @@ namespace UI.Nodes
                     }
                 }
             }
-        }
-
-
-        public IEnumerable<IEnumerable<string>> GetTable()
-        {
-            DoRefresh();
-
-            yield return GetHeadings();
-
-            int position = 1;
-            foreach (PilotResultNode row in GetWebOrdered(rows.Children.OfType<PilotResultNode>())) 
-            {
-                string[] output = row.GetValues(position).ToArray();
-                if (row.InCurrentRace)
-                {
-                    for (int i = 0; i < output.Length; i++) 
-                    {
-                        output[i] = "<span class='acpi'>" + output[i] + "</span>";
-                    }
-                }
-
-                yield return output;
-                position++;
-            }
-        }
-
-        protected virtual IEnumerable<PilotResultNode> GetWebOrdered(IEnumerable<PilotResultNode> nodes)
-        {
-            return nodes.OrderBy(r => 
-            {
-                double value;
-                if (r.GetLastValue(out value))
-                {
-                    return value;
-                }
-
-                return int.MaxValue;
-            });
         }
 
         protected class PilotResultNode : Node

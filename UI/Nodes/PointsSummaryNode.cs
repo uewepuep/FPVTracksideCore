@@ -79,12 +79,6 @@ namespace UI.Nodes
                 anyTotal = true;
             }
         }
-
-        protected override IEnumerable<PilotResultNode> GetWebOrdered(IEnumerable<PilotResultNode> nodes)
-        {
-            return base.GetWebOrdered(nodes).Reverse();
-        }
-
         public override void SetOrder()
         {
             // order them

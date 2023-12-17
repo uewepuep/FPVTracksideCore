@@ -155,18 +155,10 @@ namespace UI.Nodes
 
             if (eventWebServer != null)
             {
-                MouseMenu openWebPage = root.AddSubmenu("Open Local Web page");
-                foreach (string page in eventWebServer.GetPages())
-                {
-                    string t = page;
-                    openWebPage.AddItem(t, () =>
-                    {
-                        OpenWebServer(t);
-                    });
-                }
+                root.AddItem("Open Local Web page", OpenWebServer);
             }
+            
             MouseMenu openWindow = root.AddSubmenu("Open New Window");
-
             if (eventManager == null)
             {
                 root.AddBlank();
@@ -631,7 +623,7 @@ namespace UI.Nodes
             PlatformTools.OpenFileManager(System.IO.Directory.GetCurrentDirectory());
         }
 
-        public void OpenWebServer(string page)
+        public void OpenWebServer()
         {
             if (eventWebServer != null)
             {
@@ -645,7 +637,7 @@ namespace UI.Nodes
                     eventWebServer.Start();
                 }
 
-                DataTools.StartBrowser(eventWebServer.Url + page);
+                DataTools.StartBrowser(eventWebServer.Url);
             }
         }
 

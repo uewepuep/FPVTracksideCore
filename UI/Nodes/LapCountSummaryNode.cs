@@ -100,9 +100,5 @@ namespace UI.Nodes
 
             pilotResNode.Set(pilot, nodes);
         }
-        protected override IEnumerable<PilotResultNode> GetWebOrdered(IEnumerable<PilotResultNode> nodes)
-        {
-            return base.GetWebOrdered(nodes).Reverse();
-        }
     }
 }
