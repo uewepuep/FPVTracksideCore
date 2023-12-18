@@ -39,8 +39,6 @@ namespace Webb
 
         public ToolColor[] ChannelColors { get; private set; }
 
-        public bool JavascriptMode { get; set; }
-
         public EventWebServer(EventManager eventManager, SoundManager soundManager, IRaceControl raceControl, IEnumerable<Tools.ToolColor> channelColors)
         {
             CSSStyleSheet = new FileInfo("httpfiles/style.css");
@@ -172,110 +170,102 @@ namespace Webb
                 }
             }
 
+            //if (localOnly)
+            //{
+            //    string url = listener.Prefixes.FirstOrDefault();
+            //    url = url.Replace("localhost", "+");
+            //    content += "<p>By default this webserver is only accessible from this machine. To access it over the network run in an Adminstrator command prompt:</p><p> netsh http add urlacl url = \"" + url + "\" user=everyone</p><p>Then restart the software</p>";
+            //}
+
             if (requestPath.Length == 0)
             {
-                string content = "";
-
-                if (localOnly)
-                {
-                    string url = listener.Prefixes.FirstOrDefault();
-                    url = url.Replace("localhost", "+");
-                    content += "<p>By default this webserver is only accessible from this machine. To access it over the network run in an Adminstrator command prompt:</p><p> netsh http add urlacl url = \"" + url + "\" user=everyone</p><p>Then restart the software</p>";
-                }
-
-                if (JavascriptMode)
-                {
-                    content += "<script>";
-                    content += "const content = document.getElementById(\"content\");";
-                    content += "var eventManager = new EventManager();";
-                    content += "var formatter = new Formatter(eventManager, content);";
-                    content += "</script>";
-                    content += "<br><a onclick=\"formatter.ShowEventStatus()\">Event Status</a>";
-                    content += "<br><a onclick=\"formatter.ShowRounds()\">Rounds</a>";
-                    content += "<br><a onclick=\"formatter.ShowLapRecords()\">Lap Records</a>";
-                    content += "<br><a onclick=\"formatter.ShowLapCounts()\">Lap Counts</a>";
-                    content += "<br><a onclick=\"formatter.ShowPoints()\">Points</a>";
-                }
-                return GetFormattedHTML(context, content);
+                requestPath = new string[] { "httpfiles", "index.html" };
             }
-            else
+           
+            string action = requestPath[0];
+            string[] parameters = requestPath.Skip(1).ToArray();
+
+            string content = "";
+            DirectoryInfo eventRoot = new DirectoryInfo("events/" + eventManager.Event.ID.ToString());
+            switch (action)
             {
-                string action = requestPath[0];
-                string[] parameters = requestPath.Skip(1).ToArray();
+                //case "VariableViewer":
+                //    VariableViewer vv = new VariableViewer(eventManager, soundManager);
+                //    content = vv.DumpObject(parameters, refresh, decimalPlaces);
+                //    break;
 
-                string content = "";
-                DirectoryInfo eventRoot = new DirectoryInfo("events/" + eventManager.Event.ID.ToString());
-                switch (action)
-                {
-                    //case "VariableViewer":
-                    //    VariableViewer vv = new VariableViewer(eventManager, soundManager);
-                    //    content = vv.DumpObject(parameters, refresh, decimalPlaces);
-                    //    break;
+                case "httpfiles":
+                case "img":
+                case "themes":
+                    string target1 =  string.Join('\\', requestPath);
 
-                    case "httpfiles":
-                    case "img":
-                    case "themes":
-                        string target1 =  string.Join('\\', requestPath);
-
-                        if (File.Exists(target1))
+                    FileInfo file = new FileInfo(target1);
+                    if (file.Exists)
+                    {
+                        HttpListenerResponse response = context.Response;
+                        switch (file.Extension)
                         {
-                            return File.ReadAllBytes(target1);
+                            case ".html":
+                            case ".htm":
+                                response.ContentType = "text/html";
+                                break;
+                            case ".json":
+                                response.ContentType = "text/json";
+                                break;
                         }
 
-                        break;
+                        return File.ReadAllBytes(target1);
+                    }
 
-                    case "event":
-                        string target = Path.Combine(eventRoot.FullName, string.Join('\\', requestPath.Skip(1)));
+                    break;
 
-                        if (target == "")
-                            target = eventRoot.FullName;
+                case "event":
+                    string target = Path.Combine(eventRoot.FullName, string.Join('\\', requestPath.Skip(1)));
 
-                        if (target.Contains("."))
+                    if (target == "")
+                        target = eventRoot.FullName;
+
+                    if (target.Contains("."))
+                    {
+                        if (File.Exists(target))
                         {
-                            if (File.Exists(target))
-                            {
-                                return File.ReadAllBytes(target);
-                            }
-                            return new byte[0];
+                            return File.ReadAllBytes(target);
                         }
-                        else
+                        return new byte[0];
+                    }
+                    else
+                    {
+                        DirectoryInfo di = new DirectoryInfo(Path.Combine(eventRoot.FullName, target));
+                        if (eventRoot.Exists && di.Exists)
                         {
-                            DirectoryInfo di = new DirectoryInfo(Path.Combine(eventRoot.FullName, target));
-                            if (eventRoot.Exists && di.Exists)
-                            {
-                                content += ListDirectory(eventRoot, di);
-                            }
+                            content += ListDirectory(eventRoot, di);
                         }
-                        break;
+                    }
+                    break;
 
-                    case "races":
-                        List<Guid> ids = new List<Guid>();
+                case "races":
+                    List<Guid> ids = new List<Guid>();
 
-                        foreach (DirectoryInfo di in eventRoot.EnumerateDirectories())
+                    foreach (DirectoryInfo di in eventRoot.EnumerateDirectories())
+                    {
+                        if (Guid.TryParse(di.Name, out Guid id))
                         {
-                            if (Guid.TryParse(di.Name, out Guid id))
-                            {
-                                ids.Add(id);
-                            }
+                            ids.Add(id);
                         }
-                        return SerializeASCII(ids);
+                    }
+                    return SerializeASCII(ids);
 
-                    case "channelcolors":
-                        List<ColoredChannel> colours = new List<ColoredChannel>();
-                        foreach (RaceLib.Channel channel in eventManager.Channels)
-                        {
-                            string color = eventManager.GetChannelColor(channel).ToHex();
-                            colours.Add(new ColoredChannel(channel, color));
-                        }
-                        return SerializeASCII(colours);
-
-                    case "channels":
-                        IEnumerable<DB.Channel> channels = RaceLib.Channel.AllChannels.Convert<DB.Channel>();
-                        return SerializeASCII(channels);
-                }
-
-                return GetFormattedHTML(context, content);
+                case "channelcolors":
+                    List<ColoredChannel> colours = new List<ColoredChannel>();
+                    foreach (RaceLib.Channel channel in eventManager.Channels)
+                    {
+                        string color = eventManager.GetChannelColor(channel).ToHex();
+                        colours.Add(new ColoredChannel(channel, color));
+                    }
+                    return SerializeASCII(colours);
             }
+
+            return GetFormattedHTML(context, content);
         }
 
         private byte[] SerializeASCII<T>(IEnumerable<T> ts)

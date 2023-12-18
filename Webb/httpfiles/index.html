@@ -1,0 +1,25 @@
+﻿<!DOCTYPE>
+<html>
+<head>
+    <link rel="stylesheet" href="/httpfiles/style.css">
+    <script src="/httpfiles/linq.js"></script>
+    <script src="/httpfiles/EventManager.js"></script>
+    <script src="/httpfiles/Formatter.js"></script>
+
+    <script>
+        var eventManager = new EventManager();
+        var formatter = new Formatter(eventManager, document, "content");
+    </script>
+</head>
+<body id="body">
+    <div class="top"><img src="/img/logo.png"><div class="time"></div></div>
+    <div class="content">
+        <div class="toplink"><a onclick="formatter.ShowEventStatus()">Event Status</a></div>
+        <div class="toplink"><a onclick="formatter.ShowRounds()">Rounds</a></div>
+        <div class="toplink"><a onclick="formatter.ShowLapRecords()">Lap Records</a></div>
+        <div class="toplink"><a onclick="formatter.ShowLapCounts()">Lap Counts</a></div>
+        <div class="toplink"><a onclick="formatter.ShowPoints()">Points</a></div>
+        <div id="content"></div>
+    </div>
+</body>
+</html>

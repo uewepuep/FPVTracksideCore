@@ -60,36 +60,26 @@ namespace DB.JSON
 
         public bool Update(T obj)
         {
-            IEnumerable<T> except = All().Where(r => r.ID != obj.ID);
-            IEnumerable<T> added = except.Append(obj);
-            
             cacheValid = false;
-            return Write(added) > 1;
+            return Write(obj);
         }
 
         public int Update(IEnumerable<T> objs)
         {
-            IEnumerable<T> except = All().Where(r => !objs.Select(a => a.ID).Contains(r.ID));
-            IEnumerable<T> added = except.Union(objs);
-            
             cacheValid = false;
-            return Write(added);
+            return Write(objs);
         }
 
         public bool Insert(T obj)
         {
-            IEnumerable<T> appended = All().Append(obj);
-
             cacheValid = false;
-            return Write(appended) > 1;
+            return Write(obj);
         }
 
         public int Insert(IEnumerable<T> objs)
         {
-            IEnumerable<T> appended = All().Union(objs);
-
             cacheValid = false;
-            return Write(appended);
+            return Write(objs);
         }
 
         public bool Upsert(T obj)
@@ -171,6 +161,11 @@ namespace DB.JSON
                     }
                 }
             }
+        }
+
+        private bool Write(T value)
+        {
+            return Write(new T[] { value }) > 0;
         }
 
         private int Write(IEnumerable<T> values)

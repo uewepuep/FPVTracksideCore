@@ -1,10 +1,11 @@
 
 class Formatter
 {
-    constructor(eventManager, content)
+    constructor(eventManager, document, contentName)
     {
         this.eventManager = eventManager;
-        this.content = content;
+        this.document = document;
+        this.contentName = contentName;
     }
 
     async RaceTable(race, round)
@@ -109,7 +110,8 @@ class Formatter
 
         output += await this.GetLapRecords();
 
-        this.content.innerHTML = output;
+        const content = document.getElementById(this.contentName);
+        content.innerHTML = output;
     }
 
     async ShowRounds()
@@ -139,13 +141,16 @@ class Formatter
             }
         }
 
-        this.content.innerHTML = output;
+        const content = document.getElementById(this.contentName);
+        content.innerHTML = output;
     }
 
     async ShowLapRecords()
     {
         let output = await this.GetLapRecords();
-        this.content.innerHTML = output;
+
+        const content = document.getElementById(this.contentName);
+        content.innerHTML = output;
     }
 
     async GetLapRecords()
@@ -197,7 +202,8 @@ class Formatter
 
         output += this.FormatRoundsTable(rounds, pilotRecords);
 
-        this.content.innerHTML = output;
+        const content = document.getElementById(this.contentName);
+        content.innerHTML = output;
     }
 
     async ShowPoints()
@@ -212,7 +218,8 @@ class Formatter
 
         output += this.FormatRoundsTable(rounds, pilotRecords);
 
-        this.content.innerHTML = output;
+        const content = document.getElementById(this.contentName);
+        content.innerHTML = output;
     }
 
     FormatRoundsTable(rounds, pilotRecords)
