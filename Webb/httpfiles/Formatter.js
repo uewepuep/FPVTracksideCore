@@ -234,7 +234,6 @@ class Formatter
 
     async ShowRace(raceid)
     {
-
         const race = await this.eventManager.GetRace(raceid);
         const round = await this.eventManager.GetRound(race.Round);
 
@@ -253,7 +252,9 @@ class Formatter
 
         const epoch = 1000000000000; //ms since 70
 
-        output += "<div class=\"times\">";
+        output += "<div class=\"details\">";
+        output += "Target Laps - " + race.TargetLaps + "<br>";
+
         if (start.getTime() < epoch)
         {
             output += "Not Started<br>";
@@ -273,15 +274,21 @@ class Formatter
         output += "</div>";
 
         const pilots = [];
+        const colors = [];
         output += "<h3>Pilots</h3>";
         output += "<ul>";
         for (const pilotChannel of race.PilotChannels)
         {
             var pilot = await eventManager.GetPilot(pilotChannel.Pilot);
+            var channel = await eventManager.GetChannel(pilotChannel.Channel);
             output += "<li>" + pilot.Name +"</li>";
 
             pilots[pilot.ID] = pilot;
+            colors[pilot.ID] = channel.Color
         }
+
+        const pilotCount = Object.keys(pilots).length;
+
         output += "</ul>";
 
         output += "<h3>Results</h3>";
@@ -294,17 +301,32 @@ class Formatter
         output += "<h3>Laps</h3>";
         output += "<div class=\"race_laps\">";
 
+        let maxLapNumber = 99;
+        if (round.EventType == "Race")
+        {
+            maxLapNumber = race.TargetLaps;
+        }
+
+        let hasHoleshot = false;
         let grouped = [];
         const allLaps = this.eventManager.GetValidLaps(race);
         for (const lap of allLaps)
         {
             const i = lap.LapNumber;
+            if (i > maxLapNumber)
+                continue;
+
+            if (lap.LapNumber == 0)
+                hasHoleshot = true;
+
             if (grouped[i] == null)
             {
                 grouped[i] = [];
             }
             grouped[i].push(lap);
         }
+
+        let graph = new Graph(this.document, "posgraph");
 
         for (let lapNumber = 0; lapNumber < grouped.length; lapNumber++)
         {
@@ -341,11 +363,11 @@ class Formatter
             let position = 1;
             let lastLap = null;
 
-
             for (const lap of laps)
             {
                 const pilotID = lap.detectionObject.Pilot;
                 const pilot = pilots[pilotID];
+                const color = colors[pilotID];
 
                 const length = lap.LengthSeconds;
                 let behind = 0;
@@ -365,12 +387,8 @@ class Formatter
                 output += "<td class=\"cell_numeric\">" + this.ToStringTime(behind) +  "</td>";
                 output += "<td class=\"cell_numeric\">" + this.ToStringPosition(position) +  "</td>";
     
-                // $graph[$pilot->GetID()][$lapNumber]["behind"] = $behind;
-                // $graph[$pilot->GetID()][$lapNumber]["position"] = $position;
-                // $graph[$pilot->GetID()][$lapNumber]["pilot"] = $pilot;
-    
-                // $positionGraph->GetPath($pilot->GetID())->AddPoint($lapNumber, $position);
-                // $positionGraph->GetPath($pilot->GetID())->SetName($pilot->GetName());
+                const path = graph.GetPath(pilot.Name, color);
+                path.AddPoint(lapNumber, position);
     
                 output += "</tr>";
     
@@ -386,9 +404,39 @@ class Formatter
             }
             output += '</table>';
             output += "</div>";
+
         }
-        
+        output += "</div>";
+
+        output += "<div class=\"graph\">";
+        output += "<h2>Position Graph</h2><br>";
+
+        output += "<canvas id=\"posgraph\" width=\"600\" height=\"300\"> </canvas>";
+        output += "</div>";
+
+        let lapCount = Math.min(maxLapNumber, grouped.length);
+        for (let p = 1; p <= pilotCount; p++)
+        {
+            graph.AddYLabel(this.ToStringPosition(p), p);
+        }
+
+        for (let l = hasHoleshot ? 0 : 1; l <= lapCount; l++)
+        {
+            if (l == 0)
+            {
+                graph.AddXLabel("Holeshot", l);
+            }
+            else
+            {
+                graph.AddXLabel("Lap " + l, l);
+            }
+        }
+
         this.SetContent(output);
+
+        const canvas = document.getElementById("posgraph");
+        graph.SetView(hasHoleshot ? -0.5 : 0.5, 0, lapCount + 0.25, pilotCount + 1);
+        graph.MakeGraph(canvas);
     }
 
     FormatRoundsTable(rounds, pilotRecords)
@@ -483,13 +531,20 @@ class Formatter
         this.document.documentElement.style.setProperty('--menu-columns', menu_columns);
     }
 
-    SetContent(content)
+    AppendContent(content)
     {
         const contentElement = document.getElementById(this.contentName);
         if (contentElement == null)
             return;
 
-        contentElement.innerHTML = content;
+        if (typeof content === 'string' || content instanceof String)
+        {
+            contentElement.innerHTML += content;
+        }
+        else
+        {
+            contentElement.append(content);
+        }
 
         const timeElement = document.getElementById("time");
 
@@ -499,7 +554,16 @@ class Formatter
             const date = new Date(time);
             timeElement.innerHTML = date.toLocaleTimeString();
         }
+    }
 
+    SetContent(content)
+    {
+        const contentElement = document.getElementById(this.contentName);
+        if (contentElement == null)
+            return;
+
+        contentElement.innerHTML = "";
+        this.AppendContent(content);
     }
 }
 

@@ -70,7 +70,7 @@ class EventManager
         return output;
     }
 
-    GetValidLaps(race, pilotId)
+    GetValidLaps(race, pilotId, maxLapNumber = 999)
     {
         let output = [];
 
@@ -78,7 +78,7 @@ class EventManager
 
         for (const lap of race.Laps)
         {
-            if (lap.detectionObject.Pilot == pilotId)
+            if (lap.detectionObject.Pilot == pilotId && lap.LapNumber <= maxLapNumber)
             {
                 output.push(lap);
             }

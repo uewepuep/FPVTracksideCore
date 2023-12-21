@@ -262,3 +262,7 @@ h2
 {
     column-count: var(--lap-columns);
 }
+canvas
+{
+    padding:50px;
+}
