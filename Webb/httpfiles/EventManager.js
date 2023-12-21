@@ -74,6 +74,22 @@ class EventManager
     {
         let output = [];
 
+        const laps = this.GetValidLaps(race);
+
+        for (const lap of race.Laps)
+        {
+            if (lap.detectionObject.Pilot == pilotId)
+            {
+                output.push(lap);
+            }
+        }
+        return output;
+    }
+
+    GetValidLaps(race)
+    {
+        let output = [];
+
         for (const lap of race.Laps)
         {
             if (lap.detectionObject == null)
@@ -88,13 +104,10 @@ class EventManager
             if (lap.detectionObject.Valid == false)
                 continue;
 
-            if (lap.LengthSeconds < 0)
+            if (lap.LengthSeconds <= 0)
                 continue;
 
-            if (lap.detectionObject.Pilot == pilotId)
-            {
-                output.push(lap);
-            }
+            output.push(lap);
         }
 
         output.sort((a, b) => { return a.EndTime - b.EndTime });
@@ -463,6 +476,8 @@ class EventManager
         {
             const response = await fetch(url);
             const json = await response.json();
+
+            this.time = Date.now();
             return json;
         }
         catch

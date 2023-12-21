@@ -195,6 +195,9 @@ namespace DB
 
         public static T Convert<T>(this RaceLib.BaseObject baseDBObject) where T : DatabaseObject
         {
+            if (baseDBObject == null)
+                return null;
+
             if (baseDBObject.ID == Guid.Empty)
             {
                 baseDBObject.ID = Guid.NewGuid();

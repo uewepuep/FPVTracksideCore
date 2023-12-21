@@ -18,7 +18,7 @@ namespace DB
 
         public DatabaseTypes DatabaseType { get; set; }
 
-        public DatabaseFactory(DirectoryInfo directoryInfo, DatabaseTypes databaseType)
+        public DatabaseFactory(DirectoryInfo directoryInfo, DatabaseTypes databaseType = DatabaseTypes.JSON)
         {
             this.DatabaseType = databaseType;
             Lite.LiteDatabase.Init(directoryInfo);

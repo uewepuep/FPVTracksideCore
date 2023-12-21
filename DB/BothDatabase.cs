@@ -102,9 +102,15 @@ namespace DB
             {
                 return eve;
             }
-            eve = litedb.LoadEvent(eventId);
-            jsondb.Upsert(eve);
-            jsondb.Upsert(eve.Pilots);
+
+            Event eve2 = litedb.LoadEvent(eventId);
+            if (eve2 != null)
+            {
+                jsondb.Upsert(eve2);
+                jsondb.Upsert(eve2.Pilots);
+                return eve2;
+            }
+
             return eve;
         }
 

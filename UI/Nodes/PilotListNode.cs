@@ -207,7 +207,7 @@ namespace UI.Nodes
                 AddPilot();
             });
 
-            bool anyPilots = eventManager.Event.Pilots.Any();
+            bool anyPilots = eventManager.Event.Pilots.Where(p => p != null).Any();
             if (anyPilots)
             {
                 if (pilot != null)

@@ -29,8 +29,8 @@ namespace DB.JSON
             }
 
             LapNumber = obj.Number;
-            StartTime = obj.End;
-            EndTime = obj.Start;
+            StartTime = obj.Start;
+            EndTime = obj.End;
             LengthSeconds = obj.Length.TotalSeconds;
         }
 

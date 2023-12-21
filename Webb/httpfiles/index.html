@@ -8,18 +8,20 @@
 
     <script>
         var eventManager = new EventManager();
-        var formatter = new Formatter(eventManager, document, "content");
+        var formatter = new Formatter(eventManager, document, window, "content");
     </script>
 </head>
 <body id="body">
-    <div class="top"><img src="/img/logo.png"><div class="time"></div></div>
-    <div class="content">
-        <div class="toplink"><a onclick="formatter.ShowEventStatus()">Event Status</a></div>
-        <div class="toplink"><a onclick="formatter.ShowRounds()">Rounds</a></div>
-        <div class="toplink"><a onclick="formatter.ShowLapRecords()">Lap Records</a></div>
-        <div class="toplink"><a onclick="formatter.ShowLapCounts()">Lap Counts</a></div>
-        <div class="toplink"><a onclick="formatter.ShowPoints()">Points</a></div>
-        <div id="content"></div>
+    <div class="top"><img src="/img/logo.png"><div id="time" class="time"></div></div>
+    <div class="menu">
+        <div class="menu-item"><a href="#" onclick="formatter.ShowEventStatus()">Event Status</a></div>
+        <div class="menu-item"><a href="#" onclick="formatter.ShowRounds()">Rounds</a></div>
+        <div class="menu-item"><a href="#" onclick="formatter.ShowLapRecords()">Lap Records</a></div>
+        <div class="menu-item"><a href="#" onclick="formatter.ShowLapCounts()">Lap Counts</a></div>
+        <div class="menu-item"><a href="#" onclick="formatter.ShowPoints()">Points</a></div>
+    </div>
+
+    <div class="content" id="content">
     </div>
 </body>
 </html>

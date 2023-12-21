@@ -94,15 +94,8 @@ namespace UI
 
             EventManager.RaceManager.RemainingTimesToAnnounce = ProfileSettings.Instance.RemainingSecondsToAnnounce;
 
-
-            if (GeneralSettings.Instance.JSONDB)
-            {
-                VideoManagerFactory.Init(Path.Combine("events", eventManager.Event.ID.ToString()), VideoManager.DirectoryStructures.RaceDirectories, eventManager.Profile);
-            }
-            else
-            {
-                VideoManagerFactory.Init(GeneralSettings.Instance.VideoStorageLocation, VideoManager.DirectoryStructures.OneDirectory, eventManager.Profile);
-            }
+            // Init the videos into the video directories.
+            VideoManagerFactory.Init(Path.Combine("events", eventManager.Event.ID.ToString()), VideoManager.DirectoryStructures.RaceDirectories, eventManager.Profile);
 
             videoManager = VideoManagerFactory.CreateVideoManager();
             videoManager.AutoPause = true;

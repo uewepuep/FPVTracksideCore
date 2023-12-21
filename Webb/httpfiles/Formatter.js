@@ -1,20 +1,34 @@
 
 class Formatter
 {
-    constructor(eventManager, document, contentName)
+    constructor(eventManager, document, window, contentName)
     {
         this.eventManager = eventManager;
         this.document = document;
+        this.window = window;
         this.contentName = contentName;
+
+        var formatter = this;
+        window.onresize = function(event)
+        {
+            formatter.ResizeWindow();
+        };
+        window.onload = function(event)
+        {
+            formatter.ResizeWindow();
+        };
     }
 
-    async RaceTable(race, round)
+    async RaceTable(race, round, showName = true)
     {
         let output = "<div id=\"" + race.RaceNumber + "\" class=\"race_status\">";
 
         let raceName = round.EventType + " " + round.RoundNumber + "-" + race.RaceNumber;
 
-        output += "<h4>" + raceName + "</h4>";
+        if (showName)
+        {
+            output += "<h4><a href=\"#\" onclick=\"formatter.ShowRace('" + race.ID + "')\">" + raceName + "</a></h4>";
+        }
 
         output += "<table class=\"race_table\">";
 
@@ -72,16 +86,16 @@ class Formatter
     async ShowEventStatus()
     {
         let output = "<h2>Event Status</h2><br>";
-        output += "<div class=\"race_status\">";
+        output += "<div class=\"current_status\">";
 
         const prevcurrentnext = await this.eventManager.GetPrevCurrentNextRace();
 
         for (let i = 0; i < prevcurrentnext.length; i++)
         {
-            output += "<div class=\"round\">";
             const race = prevcurrentnext[i];
             if (race != null)
             {
+                output += "<div class=\"round\">";
                 let round = await this.eventManager.GetRound(race.Round);
                 if (round != null)
                 {
@@ -103,20 +117,20 @@ class Formatter
 
                     output += await this.RaceTable(race, round);
                 }
+                output += "</div>";
             }
-            output += "</div>";
         }
         output += "</div><br>";
 
         output += await this.GetLapRecords();
 
-        const content = document.getElementById(this.contentName);
-        content.innerHTML = output;
+        this.SetContent(output);
     }
 
     async ShowRounds()
     {
         let output = "<h2>Rounds</h2>";
+        output += "<div class=\"rounds\">";
 
         let rounds = await eventManager.GetRounds();
         for (const round of rounds)
@@ -141,16 +155,14 @@ class Formatter
             }
         }
 
-        const content = document.getElementById(this.contentName);
-        content.innerHTML = output;
+        output += "</div>";
+        this.SetContent(output);
     }
 
     async ShowLapRecords()
     {
         let output = await this.GetLapRecords();
-
-        const content = document.getElementById(this.contentName);
-        content.innerHTML = output;
+        this.SetContent(output);
     }
 
     async GetLapRecords()
@@ -202,8 +214,7 @@ class Formatter
 
         output += this.FormatRoundsTable(rounds, pilotRecords);
 
-        const content = document.getElementById(this.contentName);
-        content.innerHTML = output;
+        this.SetContent(output);
     }
 
     async ShowPoints()
@@ -218,8 +229,166 @@ class Formatter
 
         output += this.FormatRoundsTable(rounds, pilotRecords);
 
-        const content = document.getElementById(this.contentName);
-        content.innerHTML = output;
+        this.SetContent(output);
+    }
+
+    async ShowRace(raceid)
+    {
+
+        const race = await this.eventManager.GetRace(raceid);
+        const round = await this.eventManager.GetRound(race.Round);
+
+        if (!race.Valid)
+        {
+            return;
+        }
+        let raceName = round.EventType + " " + round.RoundNumber + "-" + race.RaceNumber;
+
+        let output = "<h2>" + raceName + "</h2><br>";
+
+        let start = new Date(race.Start);
+        let end = new Date(race.End);
+
+        let time = start.getTime();
+
+        const epoch = 1000000000000; //ms since 70
+
+        output += "<div class=\"times\">";
+        if (start.getTime() < epoch)
+        {
+            output += "Not Started<br>";
+        }
+        else
+        {
+            output += "Start -  " + start.toLocaleTimeString() + "<br>";
+            
+            if (end.getTime() > epoch)
+            {
+                const length = this.ToStringTime((end.getTime() - start.getTime()) / 1000);
+                output += "End - " + end.toLocaleTimeString() + "<br>";
+                output += "Length - " + length + "s<br>";
+            }
+        }
+
+        output += "</div>";
+
+        const pilots = [];
+        output += "<h3>Pilots</h3>";
+        output += "<ul>";
+        for (const pilotChannel of race.PilotChannels)
+        {
+            var pilot = await eventManager.GetPilot(pilotChannel.Pilot);
+            output += "<li>" + pilot.Name +"</li>";
+
+            pilots[pilot.ID] = pilot;
+        }
+        output += "</ul>";
+
+        output += "<h3>Results</h3>";
+        output += "<div class=\"race_container\">";
+
+        output += await this.RaceTable(race, round, false);
+
+        output += "</div>";
+
+        output += "<h3>Laps</h3>";
+        output += "<div class=\"race_laps\">";
+
+        let grouped = [];
+        const allLaps = this.eventManager.GetValidLaps(race);
+        for (const lap of allLaps)
+        {
+            const i = lap.LapNumber;
+            if (grouped[i] == null)
+            {
+                grouped[i] = [];
+            }
+            grouped[i].push(lap);
+        }
+
+        for (let lapNumber = 0; lapNumber < grouped.length; lapNumber++)
+        {
+            let laps = grouped[lapNumber];
+            if (laps == null)
+                continue;
+
+            // sort by detection time.
+            laps.sort((a, b) => 
+            { 
+                return Date.parse(a.detectionObject.Time) - Date.parse(b.detectionObject.Time)
+            });
+
+            output += "<div class=\"race_lap\">";
+
+            if (lapNumber == 0)
+            {
+                output += "<h3>Holeshot</h3>";
+            }
+            else
+            {
+                output += "<h3>Lap " + lapNumber + "</h3>";
+            }
+    
+            output += '<table class=\"race_table\">';
+            output += "<tr class=\"heading\">";
+    
+            output += "<td class=\"lap_pilot\">Pilot</td>";
+            output += "<td class=\"lap_time\">Time</td>";
+            output += "<td class=\"lap_behind\">Behind</td>";
+            output += "<td class=\"lap_position\">Position</td>";
+            output += "</tr>";
+    
+            let position = 1;
+            let lastLap = null;
+
+
+            for (const lap of laps)
+            {
+                const pilotID = lap.detectionObject.Pilot;
+                const pilot = pilots[pilotID];
+
+                const length = lap.LengthSeconds;
+                let behind = 0;
+
+                if (lastLap != null)
+                {
+                    behind = (Date.parse(lap.EndTime) - Date.parse(lastLap.EndTime)) / 1000;
+                }
+
+                if (pilot == null)
+                    continue;
+
+                //$behind = FormatTime($lap->GetEnd() - $last_lap->GetEnd());
+                output += "<tr>";
+                output += "<td class=\"cell_text\">" + pilot.Name +  "</td>";
+                output += "<td class=\"cell_numeric\">" + this.ToStringTime(length) +  "</td>";
+                output += "<td class=\"cell_numeric\">" + this.ToStringTime(behind) +  "</td>";
+                output += "<td class=\"cell_numeric\">" + this.ToStringPosition(position) +  "</td>";
+    
+                // $graph[$pilot->GetID()][$lapNumber]["behind"] = $behind;
+                // $graph[$pilot->GetID()][$lapNumber]["position"] = $position;
+                // $graph[$pilot->GetID()][$lapNumber]["pilot"] = $pilot;
+    
+                // $positionGraph->GetPath($pilot->GetID())->AddPoint($lapNumber, $position);
+                // $positionGraph->GetPath($pilot->GetID())->SetName($pilot->GetName());
+    
+                output += "</tr>";
+    
+                if (lastLap != null && lastLap.LapNumber != lap.LapNumber)
+                {
+                    output += "<tr>";
+                    output += "<td> </td>";
+                    output += "</tr>";
+                }
+    
+                position++;
+                lastLap = lap;
+            }
+            output += '</table>';
+            output += "</div>";
+        }
+        
+        this.SetContent(output);
     }
 
     FormatRoundsTable(rounds, pilotRecords)
@@ -266,9 +435,13 @@ class Formatter
     {
         if (laps == null || laps.length == 0)
             return "";
-        let time = this.eventManager.TotalTime(laps);
+        const time = this.eventManager.TotalTime(laps);
+        return this.ToStringTime(time);
+    }
 
-        let value = Math.round(time * 100) / 100
+    ToStringTime(time)
+    {
+        const value = Math.round(time * 100) / 100
         return value.toFixed(2);
     }
 
@@ -289,6 +462,44 @@ class Formatter
             }
         }
         return position + post;
+    }
+
+    ResizeWindow()
+    {
+        const width = this.document.body.clientWidth;
+
+        var columns = (width / 900);
+        columns = Math.min(Math.max(Math.floor(columns), 1), 5);
+
+        var lapcolumns = (width / 500);
+        lapcolumns = Math.min(Math.max(Math.floor(lapcolumns), 1), 10);
+
+        var menu_columns = 5;
+        if (width < 900)
+            menu_columns = 1;
+
+        this.document.documentElement.style.setProperty('--data-columns', columns);
+        this.document.documentElement.style.setProperty('--lap-columns', lapcolumns);
+        this.document.documentElement.style.setProperty('--menu-columns', menu_columns);
+    }
+
+    SetContent(content)
+    {
+        const contentElement = document.getElementById(this.contentName);
+        if (contentElement == null)
+            return;
+
+        contentElement.innerHTML = content;
+
+        const timeElement = document.getElementById("time");
+
+        let time = this.eventManager.time;
+        if (time != null && timeElement != null)
+        {
+            const date = new Date(time);
+            timeElement.innerHTML = date.toLocaleTimeString();
+        }
+
     }
 }
 
