@@ -167,11 +167,15 @@ class Formatter
 
     async GetLapRecords()
     {
-        let pilotRecords = await this.eventManager.GetLapRecords();
+        const eventDetails = await this.eventManager.GetEvent();
+
+        const lapCount = eventDetails.Laps;
+        const pbLaps = eventDetails.PBLaps;
+
+        let pilotRecords = await this.eventManager.GetLapRecords(pbLaps, lapCount);
 
         pilotRecords.sort((a, b) => { return this.eventManager.TotalTime(a.laps) - this.eventManager.TotalTime(b.laps) });
 
-        const lapCount = 4;
 
         let output = "<h2>Lap Records</h2>";
         output += "<div class=\"columns\">";
@@ -179,8 +183,8 @@ class Formatter
         output += "<div class=\"position\">Position</div>";
         output += "<div class=\"pilots\">Pilots</div>";
         output += "<div class=\"holeshot\">Holeshot</div>";
-        output += "<div class=\"lap\">1 Lap</div>";
-        output += "<div class=\"laps\">" + lapCount + " Laps</div>";
+        output += "<div class=\"lap\">" + pbLaps + " Lap" + this.Plural(pbLaps) + " </div>";
+        output += "<div class=\"laps\">" + lapCount + " Lap" + this.Plural(lapCount) + " </div>";
         output += "<div class=\"racetime\">Race Time</div>";
         output += "</div>";
 
@@ -564,6 +568,13 @@ class Formatter
 
         contentElement.innerHTML = "";
         this.AppendContent(content);
+    }
+
+    Plural(value)
+    {
+        if (value > 1)
+            return "s";
+        return "";
     }
 }
 

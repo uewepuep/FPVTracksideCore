@@ -2,21 +2,27 @@ class EventManager
 {
     constructor()
     {
+        this.accessor = new Accessor();
+    }
+
+    async GetEvent()
+    {
+        return (await this.accessor.GetJSON("event/Event.json"))[0];
     }
 
     async GetPilots()
     {
-        return await this.GetJSON("event/Pilots.json");
+        return await this.accessor.GetJSON("event/Pilots.json");
     }
 
     async GetRounds()
     {
-        return await this.GetJSON("event/Rounds.json");
+        return await this.accessor.GetJSON("event/Rounds.json");
     }
 
     async GetRace(id)
     {
-        let raceArray = await this.GetJSON("event/" + id + "/Race.json");
+        let raceArray = await this.accessor.GetJSON("event/" + id + "/Race.json");
         if (raceArray == null)
             return null;
 
@@ -31,7 +37,7 @@ class EventManager
     {
         let races = [];
 
-        let raceIds = await this.GetJSON("races");
+        let raceIds = await this.accessor.GetJSON("races");
         if (raceIds == null)
             return null;
 
@@ -70,13 +76,13 @@ class EventManager
         return output;
     }
 
-    GetValidLaps(race, pilotId, maxLapNumber = 999)
+    GetValidLapsPilot(race, pilotId, maxLapNumber = 999)
     {
         let output = [];
 
         const laps = this.GetValidLaps(race);
 
-        for (const lap of race.Laps)
+        for (const lap of laps)
         {
             if (lap.detectionObject.Pilot == pilotId && lap.LapNumber <= maxLapNumber)
             {
@@ -125,17 +131,16 @@ class EventManager
         return null;
     }
 
-    async GetLapRecords()
+    async GetLapRecords(pbLabs, lapCount)
     {
         let records = [];
 
         let pilots = await this.GetPilots();
         let races = await this.GetRaces((r) => { return r.Valid; });
 
-        let eventLapsTarget = 4;
         let hasHoleshot = true;
 
-        let raceLapsTarget = eventLapsTarget;
+        let raceLapsTarget = lapCount;
         if (hasHoleshot)
             raceLapsTarget++;
 
@@ -158,13 +163,13 @@ class EventManager
 
                 if (this.RaceHasPilot(race, pilot.ID))
                 {
-                    let raceLaps = this.GetValidLaps(race, pilot.ID);
+                    let raceLaps = this.GetValidLapsPilot(race, pilot.ID);
 
                     let nonHoleshots = this.ExcludeHoleshot(raceLaps);
 
                     let holeshot = [this.GetHoleshot(raceLaps)];
-                    let lap = this.BestConsecutive(nonHoleshots, 1);
-                    let laps = this.BestConsecutive(nonHoleshots, eventLapsTarget);
+                    let lap = this.BestConsecutive(nonHoleshots, pbLabs);
+                    let laps = this.BestConsecutive(nonHoleshots, lapCount);
 
                     let raceTime = [];
                     if (raceLaps.length == raceLapsTarget)
@@ -230,7 +235,7 @@ class EventManager
 
                     if (this.RaceHasPilot(race, pilot.ID))
                     {
-                        let raceLaps = this.GetValidLaps(race, pilot.ID);
+                        let raceLaps = this.GetValidLapsPilot(race, pilot.ID);
                         const count = raceLaps.length;
                         pilotRecord[roundName] = count;
                         pilotRecord.total += count;
@@ -331,13 +336,15 @@ class EventManager
 
         for (let i = 0; i <= validLaps.length - consecutive; i++)
         {
-            //let current = validLaps.Skip(i).Take(consecutive);
             let current = [];
             for (let j = i; j < i + consecutive; j++)
             {
                 let lap = validLaps[j];
                 current.push(lap);
             }
+
+            if (current.length != consecutive)
+                continue;
             
             if (best.length == 0 || this.TotalTime(current) < bestTime)
             {
@@ -393,7 +400,7 @@ class EventManager
 
     async GetChannel(id)
     {
-        let colorChannels = await this.GetJSON("channelcolors/");
+        let colorChannels = await this.accessor.GetJSON("channelcolors/");
 
         for (const colorChannel of colorChannels) {
             if (colorChannel.ID == id)
@@ -403,7 +410,7 @@ class EventManager
 
     async GetRounds()
     {
-        let rounds = await this.GetJSON("event/Rounds.json");
+        let rounds = await this.accessor.GetJSON("event/Rounds.json");
         rounds.sort((a, b) => { return a.RoundNumber - b.RoundNumber });
         return rounds;
     }
@@ -455,12 +462,12 @@ class EventManager
 
     async GetResults(raceID)
     {
-        return await this.GetJSON("event/" + raceID + "/Result.json");
+        return await this.accessor.GetJSON("event/" + raceID + "/Result.json");
     }
 
     async GetObjectByID(url, id)
     {
-        let objects = await this.GetJSON(url);
+        let objects = await this.accessor.GetJSON(url);
         for (const object of objects) {
             if (object.ID == id) {
                 return object;
@@ -468,22 +475,5 @@ class EventManager
         }
 
         return null;
-    }
-
-    async GetJSON(url)
-    {
-        try
-        {
-            const response = await fetch(url);
-            const json = await response.json();
-
-            this.time = Date.now();
-            return json;
-        }
-        catch
-        {
-            return null;
-        }
-        
     }
 }
