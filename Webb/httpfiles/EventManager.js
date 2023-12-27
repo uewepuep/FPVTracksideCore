@@ -369,6 +369,10 @@ class EventManager
             {
                 total += lap.LengthSeconds;
             }
+            else
+            {
+                return Number.MAX_SAFE_INTEGER;
+            }
         }
 
         return total;

@@ -43,6 +43,9 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <None Update="httpfiles\Accessor.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="httpfiles\index.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

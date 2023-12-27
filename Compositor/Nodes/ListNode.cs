@@ -125,7 +125,7 @@ namespace Composition.Nodes
 
             id.Offset = offset;
 
-            Scroller.Draw(id, parentAlpha);
+            Scroller?.Draw(id, parentAlpha);
         }
 
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)

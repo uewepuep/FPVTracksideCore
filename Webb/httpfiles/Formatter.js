@@ -37,10 +37,10 @@ class Formatter
         {
             pilotChannel.Channel = await eventManager.GetChannel(pilotChannel.Channel);
             pilotChannel.Pilot = await eventManager.GetPilot(pilotChannel.Pilot);
-            pilotChannel.Result = await eventManager.GetPilotResult(race.ID, pilotChannel.Pilot.ID);
 
             if (pilotChannel.Channel != null && pilotChannel.Pilot != null)
             {
+                pilotChannel.Result = await eventManager.GetPilotResult(race.ID, pilotChannel.Pilot.ID);
                 pilotChannels.push(pilotChannel);
             }
         }
