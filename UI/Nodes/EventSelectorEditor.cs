@@ -163,13 +163,20 @@ namespace UI.Nodes
                 {
                     if (Selected != null)
                     {
-                        Event newEvent = Selected.Clone();
                         using (IDatabase db = DatabaseFactory.Open())
                         {
-                            db.Insert(newEvent);
-                        }
+                            Event loaded = db.LoadEvent(Selected.ID);
+                            if (loaded != null)
+                            {
+                                Event newEvent = loaded.Clone();
+                                db.Insert(newEvent);
 
-                        AddNew(newEvent);
+                                db.LoadEvent(newEvent.ID);
+                                db.Insert(newEvent.Pilots);
+
+                                AddNew(newEvent);
+                            }
+                        }
                     }
                 };
                 buttonContainer.AddChild(CloneButton);
