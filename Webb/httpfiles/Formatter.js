@@ -7,6 +7,7 @@ class Formatter
         this.document = document;
         this.window = window;
         this.contentName = contentName;
+        this.lastAction = null;
 
         var formatter = this;
         window.onresize = function(event)
@@ -17,6 +18,20 @@ class Formatter
         {
             formatter.ResizeWindow();
         };
+
+        const self = this;
+        window.setInterval(() =>
+        {
+            self.RepeatLastAction();
+        }, 10000);
+    }
+
+    RepeatLastAction()
+    {
+        if (this.lastAction != null)
+        {
+            this.lastAction();
+        }
     }
 
     async RaceTable(race, round, showName = true)
@@ -125,6 +140,8 @@ class Formatter
         output += await this.GetLapRecords();
 
         this.SetContent(output);
+
+        this.lastAction = this.ShowEventStatus;
     }
 
     async ShowRounds()
@@ -157,12 +174,16 @@ class Formatter
 
         output += "</div>";
         this.SetContent(output);
+
+        this.lastAction = this.ShowRounds;
     }
 
     async ShowLapRecords()
     {
         let output = await this.GetLapRecords();
         this.SetContent(output);
+
+        this.lastAction = this.ShowLapRecords;
     }
 
     async GetLapRecords()
@@ -219,6 +240,8 @@ class Formatter
         output += this.FormatRoundsTable(rounds, pilotRecords);
 
         this.SetContent(output);
+
+        this.lastAction = this.ShowLapCounts;
     }
 
     async ShowPoints()
@@ -234,6 +257,7 @@ class Formatter
         output += this.FormatRoundsTable(rounds, pilotRecords);
 
         this.SetContent(output);
+        this.lastAction = this.ShowPoints;
     }
 
     async ShowRace(raceid)
@@ -441,6 +465,8 @@ class Formatter
         const canvas = document.getElementById("posgraph");
         graph.SetView(hasHoleshot ? -0.5 : 0.5, 0, lapCount + 0.25, pilotCount + 1);
         graph.MakeGraph(canvas);
+
+        this.lastAction = () => { this.ShowRace(raceid); }
     }
 
     FormatRoundsTable(rounds, pilotRecords)
@@ -481,7 +507,6 @@ class Formatter
         output += "</div>";
         return output;
     }
-
 
     LapsToTime(laps)
     {
