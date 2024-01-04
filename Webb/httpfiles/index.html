@@ -7,28 +7,56 @@
     <script src="/httpfiles/EventManager.js"></script>
     <script src="/httpfiles/Formatter.js"></script>
     <script src="/httpfiles/Graph.js"></script>
-
-    <script>
-        var eventManager = new EventManager();
-        var formatter = new Formatter(eventManager, document, window, "content");
-        formatter.ShowEventStatus();
-
-    </script>
 </head>
 <body id="body">
     <div class="top"><img src="/img/logo.png"><div id="time" class="time"></div></div>
-    <div class="menu">
-        <div class="menu-item"><a href="#" onclick="formatter.ShowEventStatus()">Event Status</a></div>
-        <div class="menu-item"><a href="#" onclick="formatter.ShowRounds()">Rounds</a></div>
-        <div class="menu-item"><a href="#" onclick="formatter.ShowLapRecords()">Lap Records</a></div>
-        <div class="menu-item"><a href="#" onclick="formatter.ShowLapCounts()">Lap Counts</a></div>
-        <div class="menu-item"><a href="#" onclick="formatter.ShowPoints()">Points</a></div>
+    <div id="menu" class="menu">
     </div>
 
     <div class="content" id="content">
         <canvas id="posgraph" width="600" height="300"></canvas>
     </div>
 
-    
+    <script>
+
+        var eventManager = new EventManager();
+        var formatter = new Formatter(eventManager, document, window, history, "content");
+
+        let menuItems = formatter.GetOptions();
+
+        const menuElement = document.getElementById("menu");
+
+        menuElement.innerHTML = "";
+
+        let url = new URL(this.window.location.href.replace("#", ""));
+
+        let shown = false;
+
+        for (const item of menuItems)
+        {
+            const div = document.createElement("div");
+            div.className = "menu-item";
+            menuElement.appendChild(div);
+
+            const link = document.createElement("a");
+            link.setAttribute('href', "#");
+            link.onclick = function () { formatter.Show(item); };
+            link.innerText = item;
+            div.appendChild(link);
+
+            if (url.pathname == "/" + item)
+            {
+                formatter.Show(item);
+                shown = true;
+            }
+        }
+
+        if (!shown)
+        {
+            formatter.ShowEventStatus();
+        }
+        
+
+    </script>
 </body>
 </html>

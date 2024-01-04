@@ -1,11 +1,12 @@
 
 class Formatter
 {
-    constructor(eventManager, document, window, contentName)
+    constructor(eventManager, document, window, history, contentName)
     {
         this.eventManager = eventManager;
         this.document = document;
         this.window = window;
+        this.history = history;
         this.contentName = contentName;
         this.lastAction = null;
 
@@ -25,6 +26,43 @@ class Formatter
             self.RepeatLastAction();
         }, 10000);
     }
+
+    GetOptions()
+    {
+        return ["Event Status", "Rounds", "Lap Records", "Lap Counts", "Points"];
+    }
+
+    Show(name)
+    {
+        switch (name)
+        {
+            case "Event Status":
+                this.ShowEventStatus();
+                break;
+
+            case "Rounds":
+                this.ShowRounds();
+                break;
+
+            case "Lap Records":
+                this.ShowLapRecords();
+                break;
+
+            case "Lap Counts":
+                this.ShowLapCounts();
+                break;
+
+            case "Points":
+                this.ShowPoints();
+                break;
+        }
+
+        let url = new URL(this.window.location.href);
+        url.pathname = name;
+
+        history.pushState({}, null, url.toString());
+    }
+
 
     RepeatLastAction()
     {

@@ -170,18 +170,6 @@ namespace Webb
                 }
             }
 
-            //if (localOnly)
-            //{
-            //    string url = listener.Prefixes.FirstOrDefault();
-            //    url = url.Replace("localhost", "+");
-            //    content += "<p>By default this webserver is only accessible from this machine. To access it over the network run in an Adminstrator command prompt:</p><p> netsh http add urlacl url = \"" + url + "\" user=everyone</p><p>Then restart the software</p>";
-            //}
-
-            if (requestPath.Length == 0)
-            {
-                requestPath = new string[] { "httpfiles", "index.html" };
-            }
-           
             string action = requestPath[0];
             string[] parameters = requestPath.Skip(1).ToArray();
 
@@ -189,36 +177,6 @@ namespace Webb
             DirectoryInfo eventRoot = new DirectoryInfo("events/" + eventManager.Event.ID.ToString());
             switch (action)
             {
-                //case "VariableViewer":
-                //    VariableViewer vv = new VariableViewer(eventManager, soundManager);
-                //    content = vv.DumpObject(parameters, refresh, decimalPlaces);
-                //    break;
-
-                case "httpfiles":
-                case "img":
-                case "themes":
-                    string target1 =  string.Join('\\', requestPath);
-
-                    FileInfo file = new FileInfo(target1);
-                    if (file.Exists)
-                    {
-                        HttpListenerResponse response = context.Response;
-                        switch (file.Extension)
-                        {
-                            case ".html":
-                            case ".htm":
-                                response.ContentType = "text/html";
-                                break;
-                            case ".json":
-                                response.ContentType = "text/json";
-                                break;
-                        }
-
-                        return File.ReadAllBytes(target1);
-                    }
-
-                    break;
-
                 case "event":
                     string target = Path.Combine(eventRoot.FullName, string.Join('\\', requestPath.Skip(1)));
 
@@ -265,7 +223,30 @@ namespace Webb
                     return SerializeASCII(colours);
             }
 
-            return GetFormattedHTML(context, content);
+            FileInfo file = new FileInfo(string.Join('\\', requestPath));
+            if (!file.Exists)
+            {
+                requestPath = new string[] { "httpfiles", "index.html" };
+                file = new FileInfo(string.Join('\\', requestPath));
+                if (!file.Exists)
+                {
+                    return new byte[0]; 
+                }
+            }
+
+            HttpListenerResponse response = context.Response;
+            switch (file.Extension)
+            {
+                case ".html":
+                case ".htm":
+                    response.ContentType = "text/html";
+                    break;
+                case ".json":
+                    response.ContentType = "text/json";
+                    break;
+            }
+
+            return File.ReadAllBytes(file.FullName);
         }
 
         private byte[] SerializeASCII<T>(IEnumerable<T> ts)
