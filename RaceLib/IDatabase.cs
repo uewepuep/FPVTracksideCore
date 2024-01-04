@@ -12,9 +12,12 @@ namespace RaceLib
 
         Club GetDefaultClub();
         IEnumerable<Event> GetEvents();
-        Event LoadEvent(Guid eventId);
-        IEnumerable<Race> LoadRaces(Guid eventId);
-        IEnumerable<Result> LoadResults(Guid eventId);
+
+        void Init(Guid eventId);
+
+        Event LoadEvent();
+        IEnumerable<Race> LoadRaces();
+        IEnumerable<Result> LoadResults();
 
         bool Insert<T>(T t) where T : BaseObject, new();
         int Insert<T>(IEnumerable<T> t) where T : BaseObject, new();
@@ -39,8 +42,8 @@ namespace RaceLib
 
     public interface IDatabaseFactory
     {
-        IDatabase Open();
-        IDatabase OpenLegacyLoad();
+        IDatabase Open(Guid eventId);
+        IDatabase OpenLegacyLoad(Guid eventId);
     }
 
     public static class DatabaseFactory
@@ -52,14 +55,14 @@ namespace RaceLib
             databaseFactory = dbf;
         }
 
-        public static IDatabase Open() 
+        public static IDatabase Open(Guid eventId) 
         { 
-            return databaseFactory.Open();
+            return databaseFactory.Open(eventId);
         }
 
-        public static IDatabase OpenLegacyLoad() 
+        public static IDatabase OpenLegacyLoad(Guid eventId) 
         {
-            return databaseFactory.OpenLegacyLoad();
+            return databaseFactory.OpenLegacyLoad(eventId);
         }
     }
 }

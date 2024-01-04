@@ -85,7 +85,7 @@ namespace DB.JSON
             RaceLib.Event ev = base.GetRaceLibObject(database);
             ev.Channels = Channels.Convert<RaceLib.Channel>(database).ToArray();
             ev.Club = Club.Convert<RaceLib.Club>(database);
-            ev.PilotChannels = PilotChannels.Convert(database).ToList();
+            ev.PilotChannels = PilotChannels.Convert(database).Where(pc => pc != null && pc.Pilot != null).ToList();
             ev.Rounds = Rounds.Convert<RaceLib.Round>(database).ToList();
             ev.RemovedPilots = RemovedPilots.Convert<RaceLib.Pilot>(database).ToList();
            
@@ -99,7 +99,7 @@ namespace DB.JSON
             ev.Club = Club.Convert<RaceLib.Club>(database);
             ev.Rounds = Rounds.Select(id => new RaceLib.Round() { ID = id }).ToList();
 
-            ev.PilotChannels = PilotChannels.Select(pc => new RaceLib.PilotChannel() { Pilot = new RaceLib.Pilot() { ID = pc.Pilot }, Channel = new RaceLib.Channel() { ID = pc.Channel } }).ToList();
+            ev.PilotChannels = PilotChannels.Where(pc => pc != null && pc.Pilot != Guid.Empty).Select(pc => new RaceLib.PilotChannel() { Pilot = new RaceLib.Pilot() { ID = pc.Pilot }, Channel = new RaceLib.Channel() { ID = pc.Channel } }).ToList();
             ev.RemovedPilots = RemovedPilots.Select(id => new RaceLib.Pilot() { ID = id }).ToList();
 
             return ev;

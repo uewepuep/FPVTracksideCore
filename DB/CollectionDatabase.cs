@@ -26,6 +26,11 @@ namespace DB
             database = null;
         }
 
+        public void Init(Guid eventId)
+        {
+            database.Init(eventId);
+        }
+
         public IDatabaseCollection<T> GetCollection<T>() where T : BaseObject, new()
         {
             return database.GetCollection<T>();
@@ -164,14 +169,14 @@ namespace DB
             return database.GetEvents();
         }
 
-        public Event LoadEvent(Guid id) 
+        public Event LoadEvent() 
         {
-            return database.LoadEvent(id);
+            return database.LoadEvent();
         }
 
-        public IEnumerable<Race> LoadRaces(Guid eventId)
+        public IEnumerable<Race> LoadRaces()
         {
-            IEnumerable<Race> races = database.LoadRaces(eventId);
+            IEnumerable<Race> races = database.LoadRaces();
             return races;
 
             //if (races.Any())
@@ -200,9 +205,9 @@ namespace DB
             //}
         }
 
-        public IEnumerable<Result> LoadResults(Guid eventId)
+        public IEnumerable<Result> LoadResults()
         {
-            return database.LoadResults(eventId);
+            return database.LoadResults();
         }
 
         public RaceLib.Club GetDefaultClub()
@@ -215,11 +220,13 @@ namespace DB
     {
         int Version { get; }
 
+        void Init(Guid eventId);
+
         IDatabaseCollection<T> GetCollection<T>() where T : BaseObject, new();
         IEnumerable<Event> GetEvents();
-        Event LoadEvent(Guid id);
-        IEnumerable<Race> LoadRaces(Guid eventId);
-        IEnumerable<Result> LoadResults(Guid eventId);
+        Event LoadEvent();
+        IEnumerable<Race> LoadRaces();
+        IEnumerable<Result> LoadResults();
     }
 
     public interface IDatabaseCollection<T>

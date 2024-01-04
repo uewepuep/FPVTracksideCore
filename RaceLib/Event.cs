@@ -140,7 +140,7 @@ namespace RaceLib
 
         [System.ComponentModel.Browsable(false)]
         
-        public IEnumerable<Pilot> Pilots { get { return PilotChannels.Select(pc => pc.Pilot); } }
+        public IEnumerable<Pilot> Pilots { get { return PilotChannels.Select(pc => pc.Pilot).Where(p => p != null); } }
 
         [System.ComponentModel.Browsable(false)]
         public List<PilotChannel> PilotChannels { get; set; }
@@ -229,6 +229,7 @@ namespace RaceLib
         public Event Clone()
         {
             Event newEvent = new Event();
+            newEvent.ID = Guid.NewGuid();
             newEvent.Club = this.Club;
             newEvent.MinStartDelay = this.MinStartDelay;
             newEvent.MaxStartDelay = this.MaxStartDelay;
@@ -279,8 +280,11 @@ namespace RaceLib
         {
             foreach (PilotChannel pc in PilotChannels)
             {
-                Pilot p = editedPilots.GetObject(pc.Pilot.ID);
-                pc.Pilot = p;
+                if (pc != null && pc.Pilot != null)
+                {
+                    Pilot p = editedPilots.GetObject(pc.Pilot.ID);
+                    pc.Pilot = p;
+                }
             }
         }
     }

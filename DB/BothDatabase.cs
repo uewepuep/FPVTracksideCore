@@ -20,6 +20,8 @@ namespace DB
         private CollectionDatabase jsondb;
         private CollectionDatabase litedb;
 
+        private Guid eventId;
+
         public BothDatabase()
         {
             jsondb = new CollectionDatabase(new JSON.JsonDatabase());
@@ -33,6 +35,13 @@ namespace DB
 
             jsondb = null;
             litedb = null;
+        }
+
+        public void Init(Guid eventId)
+        {
+            this.eventId = eventId;
+            jsondb.Init(eventId);
+            litedb.Init(eventId);
         }
 
         public IEnumerable<T> All<T>() where T : BaseObject, new()
@@ -95,15 +104,15 @@ namespace DB
             return jsondb.Insert(t);
         }
 
-        public Event LoadEvent(Guid eventId)
+        public Event LoadEvent()
         {
-            Event eve = jsondb.LoadEvent(eventId);
+            Event eve = jsondb.LoadEvent();
             if (eve.Pilots.Any(p => p != null))
             {
                 return eve;
             }
 
-            Event eve2 = litedb.LoadEvent(eventId);
+            Event eve2 = litedb.LoadEvent();
             if (eve2 != null)
             {
                 jsondb.Upsert(eve2);
@@ -114,17 +123,17 @@ namespace DB
             return eve;
         }
 
-        public IEnumerable<Race> LoadRaces(Guid eventId)
+        public IEnumerable<Race> LoadRaces()
         {
-            Race[] races = jsondb.LoadRaces(eventId).ToArray();
+            Race[] races = jsondb.LoadRaces().ToArray();
             if (races.Any())
             {
                 return races;
             }
-            races = litedb.LoadRaces(eventId).ToArray();
+            races = litedb.LoadRaces().ToArray();
 
             // Quick little fix as event isn't loaded here, its normally applied in race manager.
-            Event eve = jsondb.LoadEvent(eventId);
+            Event eve = jsondb.LoadEvent();
             foreach (Race race in races)
             {
                 race.Event = eve;
@@ -137,14 +146,14 @@ namespace DB
             return races;
         }
 
-        public IEnumerable<Result> LoadResults(Guid eventId)
+        public IEnumerable<Result> LoadResults()
         {
-            IEnumerable<Result> results = jsondb.LoadResults(eventId);
+            IEnumerable<Result> results = jsondb.LoadResults();
             if (results.Any())
             {
                 return results;
             }
-            results = litedb.LoadResults(eventId);
+            results = litedb.LoadResults();
 
             jsondb.Upsert(results);
             return results;

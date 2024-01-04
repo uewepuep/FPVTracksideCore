@@ -33,21 +33,21 @@ namespace DB.JSON
         private IDatabaseCollection<Race> races;
         private IDatabaseCollection<Result> results;
 
-        private static Guid eventId;
+        private Guid eventId;
 
         public JsonDatabase()
         {
             dataDirectory = new DirectoryInfo("events");
-            Init();
-        }
-
-
-        private void Init()
-        {
             events = new SplitDirJsonCollection<Event>(dataDirectory);
             patreons = new JsonCollection<Patreon>(dataDirectory);
             clubs = new JsonCollection<Club>(dataDirectory);
+            channels = new Channels();
+        }
 
+
+        public void Init(Guid eventId)
+        {
+            this.eventId = eventId;
             if (eventId != Guid.Empty)
             {
                 DirectoryInfo eventDirectory = new DirectoryInfo(Path.Combine(dataDirectory.FullName, eventId.ToString()));
@@ -57,8 +57,6 @@ namespace DB.JSON
                 races = new SplitDirJsonCollection<Race>(eventDirectory);
                 results = new ResultCollection(eventDirectory);
             }
-
-            channels = new Channels();
         }
 
 
@@ -98,36 +96,18 @@ namespace DB.JSON
             }
         }
 
-        RaceLib.Event ICollectionDatabase.LoadEvent(Guid eventId)
+        RaceLib.Event ICollectionDatabase.LoadEvent()
         {
-            if (JsonDatabase.eventId != eventId)
-            {
-                JsonDatabase.eventId = eventId;
-                Init();
-            }
-
             return events.GetObject(eventId).Convert(this);
         }
 
-        IEnumerable<RaceLib.Race> ICollectionDatabase.LoadRaces(Guid eventId)
+        IEnumerable<RaceLib.Race> ICollectionDatabase.LoadRaces()
         {
-            if (JsonDatabase.eventId != eventId)
-            {
-                JsonDatabase.eventId = eventId;
-                Init();
-            }
-
             return races.All().Convert(this);
         }
 
-        IEnumerable<RaceLib.Result> ICollectionDatabase.LoadResults(Guid eventId)
+        IEnumerable<RaceLib.Result> ICollectionDatabase.LoadResults()
         {
-            if (JsonDatabase.eventId != eventId)
-            {
-                JsonDatabase.eventId = eventId;
-                Init();
-            }
-
             return results.All().Convert(this);
         }
     }

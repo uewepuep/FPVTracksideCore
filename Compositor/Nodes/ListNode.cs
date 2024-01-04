@@ -135,7 +135,9 @@ namespace Composition.Nodes
                 return true;
             }
 
-            return base.OnMouseInput(mouseInputEvent);
+            MouseInputEvent translated = new MouseInputEvent(mouseInputEvent, new Point(0, (int)Scroller.CurrentScrollPixels));
+
+            return base.OnMouseInput(translated);
         }
 
         public override void Layout(Rectangle parentBounds)

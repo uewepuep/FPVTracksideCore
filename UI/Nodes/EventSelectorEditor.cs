@@ -163,15 +163,20 @@ namespace UI.Nodes
                 {
                     if (Selected != null)
                     {
-                        using (IDatabase db = DatabaseFactory.Open())
+                        Event loaded = null;
+
+                        using (IDatabase db = DatabaseFactory.Open(Selected.ID))
                         {
-                            Event loaded = db.LoadEvent(Selected.ID);
-                            if (loaded != null)
+                            loaded = db.LoadEvent();
+                        }
+                        if (loaded != null)
+                        {
+                            Event newEvent = loaded.Clone();
+                            using (IDatabase db = DatabaseFactory.Open(newEvent.ID))
                             {
-                                Event newEvent = loaded.Clone();
                                 db.Insert(newEvent);
 
-                                db.LoadEvent(newEvent.ID);
+                                db.LoadEvent();
                                 db.Insert(newEvent.Pilots);
 
                                 AddNew(newEvent);
@@ -216,7 +221,7 @@ namespace UI.Nodes
             Event selected = Selected;
             if (selected != null)
             {
-                using (IDatabase db = DatabaseFactory.Open())
+                using (IDatabase db = DatabaseFactory.Open(selected.ID))
                 {
                     selected.Enabled = false;
                     db.Update(selected);
@@ -232,7 +237,7 @@ namespace UI.Nodes
         protected override void AddOnClick(MouseInputEvent mie)
         {
             Event eve;
-            using (IDatabase db = DatabaseFactory.Open())
+            using (IDatabase db = DatabaseFactory.Open(Guid.Empty))
             {
                 Club club = db.GetDefaultClub();
 
@@ -275,7 +280,7 @@ namespace UI.Nodes
         private static Event[] GetEvents(Profile profile)
         {
             Event[] events;
-            using (IDatabase db = DatabaseFactory.OpenLegacyLoad())
+            using (IDatabase db = DatabaseFactory.OpenLegacyLoad(Guid.Empty))
             {
                 events = db.GetEvents().ToArray();
 
@@ -298,7 +303,7 @@ namespace UI.Nodes
 
         private void EventEditor_OnOK(BaseObjectEditorNode<Event> obj)
         {
-            using (IDatabase db = DatabaseFactory.Open())
+            using (IDatabase db = DatabaseFactory.Open(obj.Selected.ID))
             {
                 if (obj.Selected != null)
                 {
@@ -311,7 +316,7 @@ namespace UI.Nodes
 
         public void SaveChanges()
         {
-            using (IDatabase db = DatabaseFactory.Open())
+            using (IDatabase db = DatabaseFactory.Open(Guid.Empty))
             {
                 foreach (var o in Objects)
                 {

@@ -347,6 +347,14 @@ namespace UI.Nodes
                 OpenDirectory();
             });
 
+            if (hasEvent)
+            {
+                root.AddItem("Open Event Data Directory", () =>
+                {
+                    OpenEventDirectory();
+                });
+            }
+
             root.AddBlank();
 
             root.AddItem("About", () =>
@@ -394,7 +402,7 @@ namespace UI.Nodes
 
                 if (eventManager != null)
                 {
-                    using (IDatabase db = DatabaseFactory.Open())
+                    using (IDatabase db = DatabaseFactory.Open(eventManager.EventId))
                     {
                         eventManager.Event.Channels = channels;
                         db.Update(eventManager.Event);
@@ -539,7 +547,7 @@ namespace UI.Nodes
             editor.OnOK += (e) =>
             {
                 eventManager.Event = editor.Objects.FirstOrDefault();
-                using (IDatabase db = DatabaseFactory.Open())
+                using (IDatabase db = DatabaseFactory.Open(eventManager.EventId))
                 {
                     db.Update(eventManager.Event);
                 }
@@ -621,6 +629,11 @@ namespace UI.Nodes
         public void OpenDirectory()
         {
             PlatformTools.OpenFileManager(System.IO.Directory.GetCurrentDirectory());
+        }
+
+        public void OpenEventDirectory()
+        {
+            PlatformTools.OpenFileManager(System.IO.Directory.GetCurrentDirectory() + "\\events\\" + eventManager.EventId + "\\");
         }
 
         public void OpenWebServer()

@@ -100,7 +100,7 @@ namespace UI.Nodes
         private void PilotEditor_OnOK(BaseObjectEditorNode<Pilot> obj)
         {
             IEnumerable<Pilot> editedPilots = this.Objects;
-            using (IDatabase db = DatabaseFactory.Open())
+            using (IDatabase db = DatabaseFactory.Open(eventManager.EventId))
             {
                 foreach (Pilot pa in editedPilots)
                 {

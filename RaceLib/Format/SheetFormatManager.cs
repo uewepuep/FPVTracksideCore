@@ -372,7 +372,7 @@ namespace RaceLib.Format
             {
                 if (round == 1 && StartRound.EventType != eventType)
                 {
-                    using (IDatabase db = DatabaseFactory.Open())
+                    using (IDatabase db = DatabaseFactory.Open(SheetFormatManager.EventManager.EventId))
                     {
                         StartRound.EventType = eventType;
                         db.Update(StartRound);
@@ -432,7 +432,7 @@ namespace RaceLib.Format
                 return race;
             }
 
-            using (IDatabase db = DatabaseFactory.Open())
+            using (IDatabase db = DatabaseFactory.Open(SheetFormatManager.EventManager.EventId))
             {
                 race.ClearPilots(db);
 

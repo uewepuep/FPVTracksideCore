@@ -280,7 +280,7 @@ namespace UI.Nodes
                 lc.DoSplit(RaceManager);
             }
 
-            using (IDatabase db = DatabaseFactory.Open())
+            using (IDatabase db = DatabaseFactory.Open(Race.Event.ID))
             {
                 foreach (var lc in lapContainers)
                 {

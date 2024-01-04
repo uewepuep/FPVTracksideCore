@@ -370,7 +370,7 @@ namespace UI.Nodes
 
         private void SetChannel(Channel c, Pilot p)
         {
-            using (IDatabase db = DatabaseFactory.Open())
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
                 Race.RemovePilot(db, p);
                 Race.SetPilot(db, c, p);
@@ -403,7 +403,7 @@ namespace UI.Nodes
             var lines = PlatformTools.Clipboard.GetLines();
             IEnumerable<Tuple<Pilot, Channel>> pcs = EventManager.GetPilotsFromLines(lines, assign);
 
-            using (IDatabase db = DatabaseFactory.Open())
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
                 foreach (Tuple<Pilot, Channel> pc in pcs)
                 {
@@ -431,7 +431,7 @@ namespace UI.Nodes
 
         private void SetBracket(Race.Brackets bracket)
         {
-            using (IDatabase db = DatabaseFactory.Open())
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
                 Race.Bracket = bracket;
                 db.Update(Race);
@@ -569,7 +569,7 @@ namespace UI.Nodes
                 }
             }
 
-            using (IDatabase db = DatabaseFactory.Open())
+            using (IDatabase db = DatabaseFactory.Open(EventRaceNode.EventManager.EventId))
             {
                 if (prin != null)
                 {

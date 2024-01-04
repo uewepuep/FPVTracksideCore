@@ -137,7 +137,8 @@ namespace DB.JSON
 
         public T GetObject(Guid id)
         {
-            return All().FirstOrDefault(r => r.ID == id);
+            IEnumerable<T> all = All();
+            return all.FirstOrDefault(r => r.ID == id);
         }
 
         public IEnumerable<T> GetObjects(IEnumerable<Guid> ids)

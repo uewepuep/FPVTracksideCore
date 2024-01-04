@@ -245,7 +245,7 @@ namespace UI.Nodes
                 newRound = Round;
             }
 
-            using (IDatabase db = DatabaseFactory.Open())
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
                 newRound.SheetFormatFilename = sheet.FileInfo.Name;
                 db.Update(newRound);
@@ -275,7 +275,7 @@ namespace UI.Nodes
 
         protected void SaveRound()
         {
-            using (IDatabase db = DatabaseFactory.Open())
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
                 db.Update(Round);
             }

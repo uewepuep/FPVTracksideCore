@@ -24,28 +24,38 @@ namespace DB
             Lite.LiteDatabase.Init(directoryInfo);
         }
 
-        public RaceLib.IDatabase Open()
+        public RaceLib.IDatabase Open(Guid eventId)
         {
+            RaceLib.IDatabase db = null;
+
             if (DatabaseType == DatabaseTypes.JSON)
             {
-                return new CollectionDatabase(new JSON.JsonDatabase());
+                db = new CollectionDatabase(new JSON.JsonDatabase());
             }
             else
             {
-                return new CollectionDatabase(new Lite.LiteDatabase());
+                db = new CollectionDatabase(new Lite.LiteDatabase());
             }
+
+            db.Init(eventId);
+            return db;
         }
 
-        public RaceLib.IDatabase OpenLegacyLoad()
+        public RaceLib.IDatabase OpenLegacyLoad(Guid eventId)
         {
+            RaceLib.IDatabase db = null;
+
             if (DatabaseType == DatabaseTypes.JSON)
             {
-                return new BothDatabase();
+                db = new BothDatabase();
             }
             else
             {
-                return new CollectionDatabase(new Lite.LiteDatabase());
+                db = new CollectionDatabase(new Lite.LiteDatabase());
             }
+
+            db.Init(eventId);
+            return db;
         }
     }
 }

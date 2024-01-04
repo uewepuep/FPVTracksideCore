@@ -316,7 +316,7 @@ namespace UI.Nodes
                         GetLayer<PopupLayer>().Popup(editor);
                         editor.OnOK += (v) =>
                         {
-                            using (IDatabase db = DatabaseFactory.Open())
+                            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
                             {
                                 db.Update(editLaps);
                                 currentRace.ReCalculateLaps(db, Pilot);

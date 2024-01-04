@@ -328,7 +328,7 @@ namespace UI.Nodes
         private void ImportFromOtherEvent(Event evente)
         {
             List<Pilot> newPilots = new List<Pilot>();
-            foreach (Pilot p in evente.Pilots)
+            foreach (Pilot p in eventManager.GetOtherEventPilots(evente))
             {
                 Pilot existing = pilots.FirstOrDefault(ep => ep.Name == p.Name);
                 if (existing != null)

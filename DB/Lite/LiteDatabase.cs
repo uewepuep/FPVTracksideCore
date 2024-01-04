@@ -50,6 +50,8 @@ namespace DB.Lite
 
         private static string directory;
 
+        private Guid eventId;
+
         public static void Init(DirectoryInfo directoryInfo)
         {
             directory = directoryInfo.FullName;
@@ -235,7 +237,7 @@ namespace DB.Lite
             return events.Convert(null);
         }
 
-        RaceLib.Event ICollectionDatabase.LoadEvent(Guid id)
+        RaceLib.Event ICollectionDatabase.LoadEvent()
         {
             Event eve = Events
                   .Include(e => e.PilotChannels)
@@ -245,11 +247,11 @@ namespace DB.Lite
                   .Include(e => e.Rounds)
                   .Include(e => e.Club)
                   .Include(e => e.Channels)
-                  .FindById(id);
+                  .FindById(eventId);
             return eve.Convert(null);
         }
 
-        IEnumerable<RaceLib.Race> ICollectionDatabase.LoadRaces(Guid eventId)
+        IEnumerable<RaceLib.Race> ICollectionDatabase.LoadRaces()
         {
             return Races.Include(r => r.PilotChannels)
                         .Include(r => r.PilotChannels.Select(pc => pc.Pilot))
@@ -262,7 +264,7 @@ namespace DB.Lite
                         .Find(r => r.Event.ID == eventId && r.Valid).OrderBy(r => r.Creation).Convert(null);
         }
 
-        IEnumerable<RaceLib.Result> ICollectionDatabase.LoadResults(Guid eventId)
+        IEnumerable<RaceLib.Result> ICollectionDatabase.LoadResults()
         {
 
             return Results.Include(r => r.Event)
@@ -270,6 +272,11 @@ namespace DB.Lite
                           .Include(r => r.Race)
                           .Include(r => r.Round)
                           .Find(r => r.Event.ID == eventId).OrderBy(r => r.Creation).Convert(null);
+        }
+
+        public void Init(Guid eventId)
+        {
+            this.eventId = eventId;
         }
     }
 

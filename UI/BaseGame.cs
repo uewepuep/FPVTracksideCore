@@ -188,7 +188,7 @@ namespace UI
 
         private void DatabaseUpgrade()
         {
-            using (IDatabase db = DatabaseFactory.Open())
+            using (IDatabase db = DatabaseFactory.Open(Guid.Empty))
             {
                 Logger.AllLog.LogCall(this, db.Version);
             }
