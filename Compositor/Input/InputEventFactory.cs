@@ -369,8 +369,14 @@ namespace Composition.Input
         public void OnMouseInput(ButtonState xnaButtonState, MouseButtons button, Point position)
         {
             ButtonStates state = ButtonStates.None;
-            if (xnaButtonState == ButtonState.Pressed) state = ButtonStates.Pressed;
-            if (xnaButtonState == ButtonState.Released) state = ButtonStates.Released;
+            if (xnaButtonState == ButtonState.Pressed)
+            {
+                state = ButtonStates.Pressed;
+            }
+            if (xnaButtonState == ButtonState.Released)
+            {
+                state = ButtonStates.Released;
+            }
 
             MouseInputEvent mouseEvent = new MouseInputEvent(state, button, position);
             OnMouseInput(mouseEvent);

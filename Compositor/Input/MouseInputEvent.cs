@@ -30,6 +30,8 @@ namespace Composition.Input
 
         public Point ScreenPosition { get { return Position - Translation; } }
 
+        public Guid id;
+
         public MouseInputEvent(MouseInputEvent mouseInputEvent, Point translation)
         {
             Creation = mouseInputEvent.Creation;
@@ -40,6 +42,8 @@ namespace Composition.Input
             ButtonState = mouseInputEvent.ButtonState;
             EventType = mouseInputEvent.EventType;
             Translation = translation + mouseInputEvent.Translation;
+
+            id = Guid.NewGuid();    
         }
 
         public MouseInputEvent(ButtonStates buttonState, MouseButtons button, Point position)
@@ -51,6 +55,9 @@ namespace Composition.Input
             Position = position;
             EventType = EventTypes.Button;
             Translation = Point.Zero;
+
+            id = Guid.NewGuid();
+
         }
 
         public MouseInputEvent(int wheelChange, Point position)
@@ -62,6 +69,9 @@ namespace Composition.Input
             Position = position;
             EventType = EventTypes.Wheel;
             Translation = Point.Zero;
+
+            id = Guid.NewGuid();
+
         }
 
         public MouseInputEvent(Point newPosition, Point oldPosition)
@@ -73,6 +83,9 @@ namespace Composition.Input
             Position = newPosition;
             Translation = Point.Zero;
             EventType = EventTypes.Move;
+
+            id = Guid.NewGuid();
+
         }
 
         protected MouseInputEvent(MouseInputEvent bee)
@@ -85,6 +98,14 @@ namespace Composition.Input
             Position = bee.Position;
             Translation = Point.Zero;
             EventType = bee.EventType;
+
+            id = Guid.NewGuid();
+
+        }
+
+        public override string ToString()
+        {
+            return Button.ToString() + " " + ButtonState.ToString() + " " + Position.ToString() + " " + id.ToString();
         }
     }
 

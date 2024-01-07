@@ -583,33 +583,31 @@ namespace UI.Video
 
         public IEnumerable<VideoConfig> GetRecordings(Race race)
         {
-            VideoDirectory.Refresh();
-
-            if (VideoDirectory.Exists)
+            switch (DirectoryStructure)
             {
-                switch (DirectoryStructure)
-                {
-                    case DirectoryStructures.RaceDirectories:
-                        foreach (DirectoryInfo directory in VideoDirectory.GetDirectories())
+                case DirectoryStructures.RaceDirectories:
+
+                    DirectoryInfo raceDirectory = new DirectoryInfo(Path.Combine(VideoDirectory.FullName, race.ID.ToString()));
+                    if (raceDirectory.Exists)
+                    {
+                        foreach (FileInfo file in raceDirectory.GetFiles("*.recordinfo.xml"))
                         {
-                            if (Guid.TryParse(directory.Name, out Guid id))
+                            RecodingInfo videoInfo = IOTools.ReadSingle<RecodingInfo>(raceDirectory.FullName, file.Name);
+                            if (videoInfo != null)
                             {
-                                foreach (FileInfo file in directory.GetFiles("*.recordinfo.xml"))
+                                if (File.Exists(videoInfo.FilePath))
                                 {
-                                    RecodingInfo videoInfo = IOTools.ReadSingle<RecodingInfo>(directory.FullName, file.Name);
-                                    if (videoInfo != null)
-                                    {
-                                        if (File.Exists(videoInfo.FilePath))
-                                        {
-                                            yield return videoInfo.GetVideoConfig();
-                                        }
-                                    }
+                                    yield return videoInfo.GetVideoConfig();
                                 }
                             }
                         }
-                        break;
+                    }
+                    break;
 
-                    case DirectoryStructures.OneDirectory:
+                case DirectoryStructures.OneDirectory:
+                    VideoDirectory.Refresh();
+                    if (VideoDirectory.Exists)
+                    {
                         foreach (FileInfo file in VideoDirectory.GetFiles(race.ID + "*.recordinfo.xml"))
                         {
                             RecodingInfo videoInfo = IOTools.ReadSingle<RecodingInfo>(VideoDirectory.FullName, file.Name);
@@ -621,8 +619,8 @@ namespace UI.Video
                                 }
                             }
                         }
-                        break;
-                }
+                    }
+                    break;
             }
         }
 

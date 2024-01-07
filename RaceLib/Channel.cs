@@ -21,7 +21,9 @@ namespace RaceLib
         SharkByte = 7,
         HDZero = 7,
         LowBand = 8,
-        Diatone = 9
+        Diatone = 9,
+
+        DJIO3 = 10
     }
 
     public enum BandType
@@ -269,6 +271,17 @@ namespace RaceLib
             new Channel(74, 8, Band.Diatone)
         };
 
+
+        public static Channel[] DJIO3 = new Channel[] {
+            new Channel(75, 1, Band.DJIO3),
+            new Channel(76, 2, Band.DJIO3),
+            new Channel(77, 3, Band.DJIO3),
+            new Channel(78, 4, Band.DJIO3),
+            new Channel(79, 5, Band.DJIO3),
+            new Channel(80, 6, Band.DJIO3),
+            new Channel(81, 7, Band.DJIO3),
+        };
+
         public static Channel[] IMD6C = new Channel[] {
             RaceBand[0],
             RaceBand[1],
@@ -309,6 +322,18 @@ namespace RaceLib
                         case 7: return 5914;
                     }
                     break;
+                case Band.DJIO3:
+                    switch (channel)
+                    {
+                        case 1: return 5669;
+                        case 2: return 5705;
+                        case 3: return 5768;
+                        case 4: return 5804;
+                        case 5: return 5839;
+                        case 6: return 5876;
+                        case 7: return 5912;
+                    }
+                    break;
 
                 case Band.E:
                     switch (channel)
@@ -338,6 +363,7 @@ namespace RaceLib
                     return 5333 + ((channel - 1) * 40);
                 case Band.Diatone:
                     return 5362 + ((channel - 1) * 37);
+
 
             }
             return 0;

@@ -56,6 +56,7 @@ namespace UI.Nodes
                 if (heading == null)
                 {
                     heading = new TextButtonNode(Race.RaceName, Theme.Current.Rounds.RaceTitle, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
+                    heading.OnClick += Heading_OnClick;
                     AddChild(heading);
                 }
                 float headingHeight = 0.15f;
@@ -65,8 +66,6 @@ namespace UI.Nodes
 
                 heading.RelativeBounds = new RectangleF(0, 0.0f, 1, headingHeight);
                 heading.TextNode.Alignment = RectangleAlignment.BottomLeft;
-
-                heading.OnClick += Heading_OnClick;
 
                 float headingBottom = heading.RelativeBounds.Bottom + 0.01f;
 
@@ -133,7 +132,10 @@ namespace UI.Nodes
             }
             if (!isDragging)
             {
-                EventManager.RaceManager.SetRace(Race);
+                if (mie.ButtonState == ButtonStates.Released)
+                {
+                    EventManager.RaceManager.SetRace(Race);
+                }
             }
         }
 
