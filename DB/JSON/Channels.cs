@@ -45,6 +45,9 @@ namespace DB.JSON
 
         public IEnumerable<Channel> GetObjects(IEnumerable<Guid> ids)
         {
+            if (ids == null)
+                return null;
+
             return All().Where(r => ids.Contains(r.ID));
         }
 

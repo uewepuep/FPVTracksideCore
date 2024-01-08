@@ -57,6 +57,8 @@ namespace DB.JSON
 
         public bool Sync { get; set; }
 
+        public int ExternalID { get; set; }
+
         public Event()
         {
         }
@@ -78,6 +80,8 @@ namespace DB.JSON
 
             if (obj.Club != null)
                 Club = obj.Club.ID;
+
+            ExternalID = obj.ExternalID;
         }
 
         public override RaceLib.Event GetRaceLibObject(ICollectionDatabase database)
@@ -88,7 +92,6 @@ namespace DB.JSON
             ev.PilotChannels = PilotChannels.Convert(database).Where(pc => pc != null && pc.Pilot != null).ToList();
             ev.Rounds = Rounds.Convert<RaceLib.Round>(database).ToList();
             ev.RemovedPilots = RemovedPilots.Convert<RaceLib.Pilot>(database).ToList();
-           
             return ev;
         }
 
