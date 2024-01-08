@@ -102,7 +102,14 @@ namespace DB.JSON
             ev.Club = Club.Convert<RaceLib.Club>(database);
             ev.Rounds = Rounds.Select(id => new RaceLib.Round() { ID = id }).ToList();
 
-            ev.PilotChannels = PilotChannels.Where(pc => pc != null && pc.Pilot != Guid.Empty).Select(pc => new RaceLib.PilotChannel() { Pilot = new RaceLib.Pilot() { ID = pc.Pilot }, Channel = new RaceLib.Channel() { ID = pc.Channel } }).ToList();
+            IEnumerable<PilotChannel> invalid = PilotChannels.Where(pc => pc == null || pc.Pilot == Guid.Empty && pc.Channel == Guid.Empty);
+
+            if (invalid.Any()) 
+            {
+                Logger.Input.LogCall(this, "invalid", invalid);
+            }
+
+            ev.PilotChannels = PilotChannels.Except(invalid).Select(pc => new RaceLib.PilotChannel() { Pilot = new RaceLib.Pilot() { ID = pc.Pilot }, Channel = new RaceLib.Channel() { ID = pc.Channel } }).ToList();
             ev.RemovedPilots = RemovedPilots.Select(id => new RaceLib.Pilot() { ID = id }).ToList();
 
             return ev;
