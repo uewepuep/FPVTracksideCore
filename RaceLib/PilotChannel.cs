@@ -69,7 +69,7 @@ namespace RaceLib
 
         public static PilotChannel Get(this IEnumerable<PilotChannel> pilotChannels, Channel channel)
         {
-            return pilotChannels.FirstOrDefault(pc =>  pc.Channel.InterferesWith(channel));
+            return pilotChannels.FirstOrDefault(pc => pc != null && pc.Channel != null && pc.Channel.InterferesWith(channel));
         }
 
         public static PilotChannel Get(this IEnumerable<PilotChannel> pilotChannels, Pilot pilot)
