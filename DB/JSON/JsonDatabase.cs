@@ -38,7 +38,7 @@ namespace DB.JSON
         public JsonDatabase()
         {
             dataDirectory = new DirectoryInfo("events");
-            events = new SplitDirJsonCollection<Event>(dataDirectory);
+            events = new EventCollection(dataDirectory);
             patreons = new JsonCollection<Patreon>(dataDirectory);
             clubs = new JsonCollection<Club>(dataDirectory);
             channels = new Channels();

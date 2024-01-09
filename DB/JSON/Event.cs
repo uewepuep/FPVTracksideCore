@@ -10,6 +10,7 @@ using Tools;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json;
 using RaceLib;
+using static Microsoft.IO.RecyclableMemoryStreamManager;
 
 namespace DB.JSON
 {
@@ -51,6 +52,7 @@ namespace DB.JSON
         public bool Enabled { get; set; }
 
         public string MultiGPRaceFormat { get; set; }
+        public Guid[] Races { get; set; }
 
         [Browsable(false)]
         public string SyncWith { get; set; }
@@ -104,14 +106,13 @@ namespace DB.JSON
 
             IEnumerable<PilotChannel> invalid = PilotChannels.Where(pc => pc == null || pc.Pilot == Guid.Empty && pc.Channel == Guid.Empty);
 
-            if (invalid.Any()) 
+            if (invalid.Any())
             {
                 Logger.Input.LogCall(this, "invalid", invalid);
             }
 
             ev.PilotChannels = PilotChannels.Except(invalid).Select(pc => new RaceLib.PilotChannel() { Pilot = new RaceLib.Pilot() { ID = pc.Pilot }, Channel = new RaceLib.Channel() { ID = pc.Channel } }).ToList();
             ev.RemovedPilots = RemovedPilots.Select(id => new RaceLib.Pilot() { ID = id }).ToList();
-
             return ev;
         }
     }
