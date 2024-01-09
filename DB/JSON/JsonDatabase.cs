@@ -41,7 +41,7 @@ namespace DB.JSON
             events = new EventCollection(dataDirectory);
             patreons = new JsonCollection<Patreon>(dataDirectory);
             clubs = new JsonCollection<Club>(dataDirectory);
-            channels = new Channels();
+            channels = new ChannelCollections();
         }
 
 

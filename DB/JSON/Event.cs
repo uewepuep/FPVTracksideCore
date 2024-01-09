@@ -48,10 +48,12 @@ namespace DB.JSON
         public Guid Club { get; set; }
 
         public Guid[] Channels { get; set; }
+        public string[] ChannelColors { get; set; }
 
         public bool Enabled { get; set; }
 
         public string MultiGPRaceFormat { get; set; }
+
         public Guid[] Races { get; set; }
 
         [Browsable(false)]
@@ -84,6 +86,8 @@ namespace DB.JSON
                 Club = obj.Club.ID;
 
             ExternalID = obj.ExternalID;
+
+            ChannelColors = obj.ChannelColors;
         }
 
         public override RaceLib.Event GetRaceLibObject(ICollectionDatabase database)

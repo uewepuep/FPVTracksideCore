@@ -170,57 +170,43 @@ namespace Webb
                 }
             }
 
-            string action = requestPath[0];
-            string[] parameters = requestPath.Skip(1).ToArray();
-
-            string content = "";
-            DirectoryInfo eventRoot = new DirectoryInfo("events/" + eventManager.Event.ID.ToString());
-            switch (action)
+            if (requestPath.Length > 0)
             {
-                case "event":
-                    string target = Path.Combine(eventRoot.FullName, string.Join('\\', requestPath.Skip(1)));
+                string action = requestPath[0];
+                string[] parameters = requestPath.Skip(1).ToArray();
 
-                    if (target == "")
-                        target = eventRoot.FullName;
+                string content = "";
+                DirectoryInfo eventRoot = new DirectoryInfo("events/" + eventManager.Event.ID.ToString());
+                switch (action)
+                {
+                    case "event":
+                        string target = Path.Combine(eventRoot.FullName, string.Join('\\', requestPath.Skip(1)));
 
-                    if (target.Contains("."))
-                    {
-                        if (File.Exists(target))
+                        if (target == "")
+                            target = eventRoot.FullName;
+
+                        if (target.Contains("."))
                         {
-                            return File.ReadAllBytes(target);
+                            if (File.Exists(target))
+                            {
+                                return File.ReadAllBytes(target);
+                            }
+                            return new byte[0];
                         }
-                        return new byte[0];
-                    }
-                    else
-                    {
-                        DirectoryInfo di = new DirectoryInfo(Path.Combine(eventRoot.FullName, target));
-                        if (eventRoot.Exists && di.Exists)
+                        else
                         {
-                            content += ListDirectory(eventRoot, di);
+                            DirectoryInfo di = new DirectoryInfo(Path.Combine(eventRoot.FullName, target));
+                            if (eventRoot.Exists && di.Exists)
+                            {
+                                content += ListDirectory(eventRoot, di);
+                            }
                         }
-                    }
-                    break;
-
-                case "races":
-                    List<Guid> ids = new List<Guid>();
-
-                    foreach (DirectoryInfo di in eventRoot.EnumerateDirectories())
-                    {
-                        if (Guid.TryParse(di.Name, out Guid id))
-                        {
-                            ids.Add(id);
-                        }
-                    }
-                    return SerializeASCII(ids);
-
-                case "channelcolors":
-                    List<ColoredChannel> colours = new List<ColoredChannel>();
-                    foreach (RaceLib.Channel channel in eventManager.Channels)
-                    {
-                        string color = eventManager.GetChannelColor(channel).ToHex();
-                        colours.Add(new ColoredChannel(channel, color));
-                    }
-                    return SerializeASCII(colours);
+                        break;
+                }
+            }
+            else
+            {
+                requestPath = new string[] { "httpfiles", "index.html" };
             }
 
             FileInfo file = new FileInfo(string.Join('\\', requestPath));

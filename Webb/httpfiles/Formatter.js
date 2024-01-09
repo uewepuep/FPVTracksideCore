@@ -347,10 +347,14 @@ class Formatter
         {
             var pilot = await eventManager.GetPilot(pilotChannel.Pilot);
             var channel = await eventManager.GetChannel(pilotChannel.Channel);
-            output += "<li>" + pilot.Name +"</li>";
 
-            pilots[pilot.ID] = pilot;
-            colors[pilot.ID] = channel.Color
+            if (pilot != null && channel != null)
+            {
+                output += "<li>" + pilot.Name + "</li>";
+
+                pilots[pilot.ID] = pilot;
+                colors[pilot.ID] = channel.Color;
+            }
         }
 
         const pilotCount = Object.keys(pilots).length;

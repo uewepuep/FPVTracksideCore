@@ -258,6 +258,14 @@ namespace RaceLib
                     }
                 }
             });
+
+            workQueue.Enqueue(workSet, "Updating event object", () =>
+            {
+                using (IDatabase db = DatabaseFactory.Open(EventId))
+                {
+                    db.Update(Event);
+                }
+            });
         }
 
         public void UpdateRoundOrder(IDatabase db)
@@ -344,6 +352,13 @@ namespace RaceLib
                     channelColour.Add(channel, color);
                 }
                 last = channel;
+            }
+
+            Event.ChannelColors = colors.Select(c => "#" + c.R.ToString("X2") + c.G.ToString("X2") + c.B.ToString("X2")).ToArray();
+
+            using (IDatabase db = DatabaseFactory.Open(EventId))
+            {
+                db.Update(Event);
             }
 
             OnChannelsChanged?.Invoke();

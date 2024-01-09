@@ -6,8 +6,20 @@ using System.Threading.Tasks;
 
 namespace DB.JSON
 {
-    public class Channels : IDatabaseCollection<Channel>
+    public class ChannelCollections : IDatabaseCollection<Channel>
     {
+        private static bool firstRun = true;
+
+        public ChannelCollections() 
+        {
+            if (firstRun)
+            {
+                JsonIO<Channel> io = new JsonIO<Channel>();
+                io.Write("httpfiles/Channels.json", All());
+                firstRun = false;
+            }
+        }
+
         public IEnumerable<Channel> All()
         {
             return RaceLib.Channel.AllChannels.Convert<Channel>();

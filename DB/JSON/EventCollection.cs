@@ -66,11 +66,12 @@ namespace DB.JSON
 
         public int Insert(IEnumerable<Event> objs)
         {
-            foreach (Event obj in objs)
+            Event[] events = objs.ToArray();
+            foreach (Event obj in events)
             {
                 obj.Races = GetRaceIDs(obj).ToArray();
             }
-            return collection.Insert(objs);
+            return collection.Insert(events);
         }
 
         public bool Update(Event obj)
@@ -81,12 +82,13 @@ namespace DB.JSON
 
         public int Update(IEnumerable<Event> objs)
         {
-            foreach (Event obj in objs)
+            Event[] events = objs.ToArray();
+            foreach (Event obj in events)
             {
                 obj.Races = GetRaceIDs(obj).ToArray();
             }
 
-            return collection.Update(objs);
+            return collection.Update(events);
         }
 
         public bool Upsert(Event obj)
@@ -97,23 +99,27 @@ namespace DB.JSON
 
         public int Upsert(IEnumerable<Event> objs)
         {
-            foreach (Event obj in objs)
+            Event[] events = objs.ToArray();
+            foreach (Event obj in events)
             {
                 obj.Races = GetRaceIDs(obj).ToArray();
             }
-            return collection.Upsert(objs);
+            return collection.Upsert(events);
         }
 
 
         private IEnumerable<Guid> GetRaceIDs(Event even)
         {
             DirectoryInfo dir = collection.GetDirectoryInfo(even.ID);
-            foreach (DirectoryInfo raceDir in dir.EnumerateDirectories())
+            if (dir.Exists)
             {
-                Guid output;
-                if (Guid.TryParse(raceDir.Name, out output))
+                foreach (DirectoryInfo raceDir in dir.EnumerateDirectories())
                 {
-                    yield return output;
+                    Guid output;
+                    if (Guid.TryParse(raceDir.Name, out output))
+                    {
+                        yield return output;
+                    }
                 }
             }
         }

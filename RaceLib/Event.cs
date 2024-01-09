@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -164,6 +165,8 @@ namespace RaceLib
         
         [System.ComponentModel.Browsable(false)]
         public SyncWith SyncWith { get; set; }
+
+        public string[] ChannelColors { get; set; }
 
         [Category("Cloud")]
         public bool Sync { get; set; }

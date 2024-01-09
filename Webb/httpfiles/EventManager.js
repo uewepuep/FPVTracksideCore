@@ -37,7 +37,9 @@ class EventManager
     {
         let races = [];
 
-        let raceIds = await this.accessor.GetJSON("races");
+        let event = await this.GetEvent();
+
+        let raceIds = event.Races;
         if (raceIds == null)
             return null;
 
@@ -402,14 +404,35 @@ class EventManager
         return this.GetObjectByID("event/Pilots.json", id);
     }
 
+    async GetChannels()
+    {
+        return await this.accessor.GetJSON("httpfiles/Channels.json");
+    }
+
     async GetChannel(id)
     {
-        let colorChannels = await this.accessor.GetJSON("channelcolors/");
+        let event = await this.GetEvent();
+        let channels = await this.GetChannels();
 
-        for (const colorChannel of colorChannels) {
-            if (colorChannel.ID == id)
-                return colorChannel;
+        let max = Math.max(event.Channels.length, event.ChannelColors.length);
+        for (let i = 0; i < max; i++)
+        {
+            if (event.Channels[i] == id)
+            {
+                for (let j = 0; j < channels.length; j++)
+                {
+                    if (channels[j].ID == id)
+                    {
+                        let channel = channels[j];
+                        channel.Color = event.ChannelColors[i];
+
+                        return channel;
+                    }
+                }
+            }
         }
+
+        return null;
     }
 
     async GetRounds()
