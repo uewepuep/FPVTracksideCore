@@ -505,7 +505,7 @@ class Formatter
         this.SetContent(output);
 
         const canvas = document.getElementById("posgraph");
-        graph.SetView(hasHoleshot ? -0.5 : 0.5, 0, lapCount + 0.25, pilotCount + 1);
+        graph.SetView(hasHoleshot ? -0.5 : 0.5, 0, lapCount + 1.5, pilotCount + 1);
         graph.MakeGraph(canvas);
 
         this.lastAction = () => { this.ShowRace(raceid); }

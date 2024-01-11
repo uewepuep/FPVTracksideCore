@@ -16,14 +16,14 @@ class Accessor
             if (tryCache != null)
             {
                 const age = now - tryCache.time;
-                if (age < this.tooOld)
+                if (age < this.tooOld && tryCache.response != null)
                 {
-                    return tryCache.json;
+                    return await tryCache.getJSON();
                 }
             }
 
-            const response = await fetch(url);
-            const json = await response.json();
+            let response = await fetch(url);
+            let json = await response.json();
 
             let newCache = new CacheItem(json);
             this.cache[url] = newCache;
@@ -31,7 +31,7 @@ class Accessor
             this.lastTime = newCache.time;
             return json;
         }
-        catch
+        catch (e)
         {
             return null;
         }
@@ -44,7 +44,12 @@ class CacheItem
 {
     constructor(json)
     {
-        this.json = json;
+        this.string = JSON.stringify(json);
         this.time = Date.now();
+    }
+
+    getJSON()
+    {
+        JSON.parse(this.string);
     }
 }
