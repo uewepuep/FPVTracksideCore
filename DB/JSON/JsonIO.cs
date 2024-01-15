@@ -36,9 +36,6 @@ namespace DB.JSON
                     return result;
                 }
             }
-#if DEBUG
-            Logger.Input.Log(null, filename);
-#endif
             if (!File.Exists(filename))
                 return new T[0];
 
@@ -65,6 +62,10 @@ namespace DB.JSON
             
             if (!success)
                 return new T[0];
+
+#if DEBUG
+            Logger.Input.Log(null, filename);
+#endif
 
             try
             {

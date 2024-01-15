@@ -66,19 +66,39 @@ namespace DB.JSON
 
         public IDatabaseCollection<T> GetCollection<T>() where T : RaceLib.BaseObject, new()
         {
-            if (typeof(T) == typeof(RaceLib.Patreon)) return new ConvertedCollection<RaceLib.Patreon, Patreon>(patreons, null) as IDatabaseCollection<T>;
-            if (typeof(T) == typeof(RaceLib.Event)) return new ConvertedCollection<RaceLib.Event, Event>(events, this) as IDatabaseCollection<T>;
-            if (typeof(T) == typeof(RaceLib.Club)) return new ConvertedCollection<RaceLib.Club, Club>(clubs, this) as IDatabaseCollection<T>;
+            if (typeof(T) == typeof(RaceLib.Patreon)) 
+                return new ConvertedCollection<RaceLib.Patreon, Patreon>(patreons, null) as IDatabaseCollection<T>;
 
-            if (typeof(T) == typeof(RaceLib.Pilot)) return new ConvertedCollection<RaceLib.Pilot, Pilot>(pilots, this) as IDatabaseCollection<T>;
-            if (typeof(T) == typeof(RaceLib.Channel)) return new ConvertedCollection<RaceLib.Channel, Channel>(channels, this) as IDatabaseCollection<T>;
-            if (typeof(T) == typeof(RaceLib.Race)) return new ConvertedCollection<RaceLib.Race, Race>(races, this) as IDatabaseCollection<T>;
-            if (typeof(T) == typeof(RaceLib.Round)) return new ConvertedCollection<RaceLib.Round, Round>(rounds, this) as IDatabaseCollection<T>;
-            if (typeof(T) == typeof(RaceLib.Result)) return new ConvertedCollection<RaceLib.Result, Result>(results, this) as IDatabaseCollection<T>;
+            if (typeof(T) == typeof(RaceLib.Event))
+                return new ConvertedCollection<RaceLib.Event, Event>(events, this) as IDatabaseCollection<T>;
 
-            if (typeof(T) == typeof(RaceLib.Detection)) return new ConvertedCollection<RaceLib.Detection, Detection>(new DetectionCollection(races), this) as IDatabaseCollection<T>;
-            if (typeof(T) == typeof(RaceLib.PilotChannel)) return new DummyCollection<T>();
-            if (typeof(T) == typeof(RaceLib.Lap)) return new DummyCollection<T>();
+            if (typeof(T) == typeof(RaceLib.Club)) 
+                return new ConvertedCollection<RaceLib.Club, Club>(clubs, this) as IDatabaseCollection<T>;
+
+
+            if (typeof(T) == typeof(RaceLib.Pilot)) 
+                return new ConvertedCollection<RaceLib.Pilot, Pilot>(pilots, this) as IDatabaseCollection<T>;
+
+            if (typeof(T) == typeof(RaceLib.Channel)) 
+                return new ConvertedCollection<RaceLib.Channel, Channel>(channels, this) as IDatabaseCollection<T>;
+
+            if (typeof(T) == typeof(RaceLib.Race)) 
+                return new ConvertedCollection<RaceLib.Race, Race>(races, this) as IDatabaseCollection<T>;
+
+            if (typeof(T) == typeof(RaceLib.Round)) 
+                return new ConvertedCollection<RaceLib.Round, Round>(rounds, this) as IDatabaseCollection<T>;
+
+            if (typeof(T) == typeof(RaceLib.Result)) 
+                return new ConvertedCollection<RaceLib.Result, Result>(results, this) as IDatabaseCollection<T>;
+
+            if (typeof(T) == typeof(RaceLib.Detection)) 
+                return new ConvertedCollection<RaceLib.Detection, Detection>(new DetectionCollection(races), this) as IDatabaseCollection<T>;
+
+            if (typeof(T) == typeof(RaceLib.PilotChannel)) 
+                return new DummyCollection<T>();
+
+            if (typeof(T) == typeof(RaceLib.Lap)) 
+                return new DummyCollection<T>();
 
             throw new NotImplementedException();
         }

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Transactions;
 
 namespace Composition.Nodes
 {
@@ -260,21 +261,25 @@ namespace Composition.Nodes
             return "ScrollBar " + ScrollType;
         }
 
-        public MouseInputEvent Translate(MouseInputEvent input)
+        public Point Translate(Point point)
         {
-            Point translation = Point.Zero;
-
             // Scroller
             switch (ScrollType)
             {
                 case Types.Horizontal:
-                    translation.X += (int)CurrentScrollPixels;
+                    point.X += (int)CurrentScrollPixels;
                     break;
                 case Types.VerticalLeft:
                 case Types.VerticalRight:
-                    translation.Y += (int)CurrentScrollPixels;
+                    point.Y += (int)CurrentScrollPixels;
                     break;
             }
+            return point;
+        }
+
+        public MouseInputEvent Translate(MouseInputEvent input)
+        {
+            Point translation = Translate(Point.Zero);
 
             MouseInputEvent output = new MouseInputEvent(input, translation);
             if (input is MouseInputEnterEvent)

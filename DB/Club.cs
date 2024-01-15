@@ -12,7 +12,9 @@ namespace DB
 
         public string SyncWith { get; set; }
 
-        public Club() { }
+        public Club()
+        {
+        }
 
         public Club(RaceLib.Club obj)
             : base(obj)
