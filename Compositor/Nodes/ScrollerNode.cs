@@ -259,5 +259,33 @@ namespace Composition.Nodes
         {
             return "ScrollBar " + ScrollType;
         }
+
+        public MouseInputEvent Translate(MouseInputEvent input)
+        {
+            Point translation = Point.Zero;
+
+            // Scroller
+            switch (ScrollType)
+            {
+                case Types.Horizontal:
+                    translation.X += (int)CurrentScrollPixels;
+                    break;
+                case Types.VerticalLeft:
+                case Types.VerticalRight:
+                    translation.Y += (int)CurrentScrollPixels;
+                    break;
+            }
+
+            MouseInputEvent output = new MouseInputEvent(input, translation);
+            if (input is MouseInputEnterEvent)
+            {
+                output = new MouseInputEnterEvent(output);
+            }
+            else if (input is MouseInputEnterEvent)
+            {
+                output = new MouseInputEnterEvent(output);
+            }
+            return output;
+        }
     }
 }

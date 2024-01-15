@@ -16,7 +16,7 @@ namespace UI.Nodes
     {
         private List<Pilot> pilots;
 
-        private ListNode<PilotChannelNode> pilotListNode;
+        private ListNode<PilotChannelNode> listNode;
 
         public event PilotClickDelegate OnPilotClick;
         public event PilotClickDelegate OnPilotChannelClick;
@@ -38,10 +38,10 @@ namespace UI.Nodes
             heading.Enabled = false;
             AddChild(heading);
 
-            pilotListNode = new ListNode<PilotChannelNode>(Theme.Current.ScrollBar.XNA);
-            pilotListNode.RelativeBounds = new RectangleF(0, heading.RelativeBounds.Bottom, 1, 1 - heading.RelativeBounds.Bottom);
-            pilotListNode.ItemHeight = 30;
-            pilotListNode.NodeName = "PilotListNode";
+            listNode = new ListNode<PilotChannelNode>(Theme.Current.ScrollBar.XNA);
+            listNode.RelativeBounds = new RectangleF(0, heading.RelativeBounds.Bottom, 1, 1 - heading.RelativeBounds.Bottom);
+            listNode.ItemHeight = 30;
+            listNode.NodeName = "PilotListNode";
 
             instructionNode = new Node();
             instructionNode.RelativeBounds = new RectangleF(0.05f, 0.4f, 0.8f, 0.05f);
@@ -50,7 +50,7 @@ namespace UI.Nodes
             text.Alignment = RectangleAlignment.Center;
             instructionNode.AddChild(text);
 
-            AddChild(pilotListNode);
+            AddChild(listNode);
 
             AddChild(instructionNode);
 
@@ -80,14 +80,14 @@ namespace UI.Nodes
 
         public void UpdatePilotChannel(PilotChannel pc)
         {
-            foreach (var pl in pilotListNode.Children.OfType<PilotChannelNode>())
+            foreach (var pl in listNode.Children.OfType<PilotChannelNode>())
             {
                 if (pl.Pilot == pc.Pilot)
                 {
                     pl.SetPilotChannel(pc);
                 }
             }
-            pilotListNode.RequestRedraw();
+            listNode.RequestRedraw();
         }
 
         private void AddPilot()
@@ -129,27 +129,27 @@ namespace UI.Nodes
             };
             pn.OnPilotChannelClick += (mie, ap) => { OnPilotChannelClick?.Invoke(mie, ap); };
 
-            pilotListNode.AddChild(pn);
-            pilotListNode.SetOrder<PilotChannelNode, string>(pa => pa.Pilot.Name);
+            listNode.AddChild(pn);
+            listNode.SetOrder<PilotChannelNode, string>(pa => pa.Pilot.Name);
 
             instructionNode.Visible = false;
-            pilotListNode.RequestLayout();
+            listNode.RequestLayout();
 
             UpdateHeading();
         }
 
         private void UpdateHeading()
         {
-            heading.Text = pilotListNode.ChildCount + " Pilots in event";
+            heading.Text = listNode.ChildCount + " Pilots in event";
         }
 
         public void ClearList()
         {
             pilots.Clear();
-            pilotListNode.ClearDisposeChildren();
+            listNode.ClearDisposeChildren();
 
             instructionNode.Visible = true;
-            pilotListNode.RequestLayout();
+            listNode.RequestLayout();
         }
 
         public void RebuildList()
@@ -161,7 +161,7 @@ namespace UI.Nodes
         private PilotChannelNode GetPilotChannelNodeFromMouseInputEvent(MouseInputEvent mouseInputEvent)
         {
 
-            foreach (var pcn in pilotListNode.ChildrenOfType)
+            foreach (var pcn in listNode.ChildrenOfType)
             {
                 if (pcn.Bounds.Contains(mouseInputEvent.Position))
                 {
@@ -176,8 +176,7 @@ namespace UI.Nodes
             if (base.OnMouseInput(mouseInputEvent))
                 return true;
             
-            //MouseInputEvent translated = pilotListNode.Translate(mouseInputEvent);
-            MouseInputEvent translated = mouseInputEvent;
+            MouseInputEvent translated = listNode.Translate(mouseInputEvent);
 
             PilotChannelNode pcn = GetPilotChannelNodeFromMouseInputEvent(translated);
             if (translated.Button == MouseButtons.Right && translated.ButtonState == ButtonStates.Released)

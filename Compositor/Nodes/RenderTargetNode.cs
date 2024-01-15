@@ -400,31 +400,12 @@ namespace Composition.Nodes
 
         public MouseInputEvent Translate(MouseInputEvent input)
         {
-            Point translation = new Point(-Bounds.X, -Bounds.Y);
-
-            // Scroller
-            switch (Scroller.ScrollType)
+            if (Scroller == null)
             {
-                case ScrollerNode.Types.Horizontal:
-                    translation.X += (int)Scroller.CurrentScrollPixels;
-                    break;
-                case ScrollerNode.Types.VerticalLeft:
-                case ScrollerNode.Types.VerticalRight:
-                    translation.Y += (int)Scroller.CurrentScrollPixels;
-                    break;
+                return input;
             }
 
-            MouseInputEvent output = new MouseInputEvent(input, translation);
-
-            if (input is MouseInputEnterEvent)
-            {
-                output = new MouseInputEnterEvent(output);
-            }
-            else if (input is MouseInputEnterEvent)
-            {
-                output = new MouseInputEnterEvent(output);
-            }
-            return output;
+            return Scroller.Translate(input);
         }
 
         public override bool OnDrop(MouseInputEvent mouseInputEvent, Node node)

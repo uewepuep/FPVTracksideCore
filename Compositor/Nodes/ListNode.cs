@@ -135,7 +135,7 @@ namespace Composition.Nodes
                 return true;
             }
 
-            MouseInputEvent translated = new MouseInputEvent(mouseInputEvent, new Point(0, (int)Scroller.CurrentScrollPixels));
+            MouseInputEvent translated = Translate(mouseInputEvent);
 
             return base.OnMouseInput(translated);
         }
@@ -206,6 +206,15 @@ namespace Composition.Nodes
                 }
             }
         }
-    }
 
+        public MouseInputEvent Translate(MouseInputEvent input)
+        {
+            if (Scroller == null)
+            {
+                return input;
+            }
+
+            return Scroller.Translate(input);
+        }
+    }
 }
