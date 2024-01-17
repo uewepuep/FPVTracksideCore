@@ -9,7 +9,7 @@
     <script src="/httpfiles/Graph.js"></script>
 </head>
 <body id="body">
-    <div class="top"><img src="/img/logo.png"><div id="time" class="time"></div></div>
+    <div class="top"><img src="httpfiles/logo.png"><div id="time" class="time"></div></div>
     <div id="menu" class="menu">
     </div>
 
@@ -19,7 +19,7 @@
 
     <script>
 
-        var eventManager = new EventManager();
+        var eventManager = new EventManager("%eventDirectory%");
         var formatter = new Formatter(eventManager, document, window, history, "content");
 
         let menuItems = formatter.GetOptions();

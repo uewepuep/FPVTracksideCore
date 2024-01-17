@@ -1,28 +1,30 @@
 class EventManager
 {
-    constructor()
+
+    constructor(eventDirectory)
     {
+        this.eventDirectory = eventDirectory;
         this.accessor = new Accessor();
     }
 
     async GetEvent()
     {
-        return (await this.accessor.GetJSON("event/Event.json"))[0];
+        return (await this.accessor.GetJSON(this.eventDirectory + "/Event.json"))[0];
     }
 
     async GetPilots()
     {
-        return await this.accessor.GetJSON("event/Pilots.json");
+        return await this.accessor.GetJSON(this.eventDirectory + "/Pilots.json");
     }
 
     async GetRounds()
     {
-        return await this.accessor.GetJSON("event/Rounds.json");
+        return await this.accessor.GetJSON(this.eventDirectory + "/Rounds.json");
     }
 
     async GetRace(id)
     {
-        let raceArray = await this.accessor.GetJSON("event/" + id + "/Race.json");
+        let raceArray = await this.accessor.GetJSON(this.eventDirectory + "/" + id + "/Race.json");
         if (raceArray == null)
             return null;
 
@@ -401,7 +403,7 @@ class EventManager
 
     async GetPilot(id)
     {
-        return this.GetObjectByID("event/Pilots.json", id);
+        return this.GetObjectByID(this.eventDirectory + "/Pilots.json", id);
     }
 
     async GetChannels()
@@ -437,7 +439,7 @@ class EventManager
 
     async GetRounds()
     {
-        let rounds = await this.accessor.GetJSON("event/Rounds.json");
+        let rounds = await this.accessor.GetJSON(this.eventDirectory + "/Rounds.json");
         rounds.sort((a, b) => { return a.RoundNumber - b.RoundNumber });
         return rounds;
     }
@@ -489,7 +491,7 @@ class EventManager
 
     async GetResults(raceID)
     {
-        return await this.accessor.GetJSON("event/" + raceID + "/Result.json");
+        return await this.accessor.GetJSON(this.eventDirectory + "/" + raceID + "/Result.json");
     }
 
     async GetObjectByID(url, id)

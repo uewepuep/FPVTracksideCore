@@ -10,7 +10,7 @@ body
 {
     font-family: 'Roboto', sans-serif;
     background-color: black;
-    background: url(/themes/Dark/background.png);
+    background: url(background.png);
     color: white;
     margin: 0px;
     padding: 0px;

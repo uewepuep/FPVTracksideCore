@@ -179,8 +179,8 @@ namespace Webb
                 DirectoryInfo eventRoot = new DirectoryInfo("events/" + eventManager.Event.ID.ToString());
                 switch (action)
                 {
-                    case "event":
-                        string target = Path.Combine(eventRoot.FullName, string.Join('\\', requestPath.Skip(1)));
+                    case "events":
+                        string target = string.Join('\\', requestPath);
 
                         if (target == "")
                             target = eventRoot.FullName;
@@ -195,7 +195,7 @@ namespace Webb
                         }
                         else
                         {
-                            DirectoryInfo di = new DirectoryInfo(Path.Combine(eventRoot.FullName, target));
+                            DirectoryInfo di = new DirectoryInfo(target);
                             if (eventRoot.Exists && di.Exists)
                             {
                                 content += ListDirectory(eventRoot, di);
@@ -230,6 +230,15 @@ namespace Webb
                 case ".json":
                     response.ContentType = "text/json";
                     break;
+            }
+
+            if (file.Name == "index.html")
+            {
+                string text = File.ReadAllText(file.FullName);
+
+                string replaced = text.Replace("%eventDirectory%", "events/" + eventManager.EventId.ToString());
+
+                return Encoding.ASCII.GetBytes(replaced);
             }
 
             return File.ReadAllBytes(file.FullName);
@@ -305,7 +314,6 @@ namespace Webb
             output += "<body id=\"body\">";
 
             output += content;
-            
 
             output += "</body></html>";
             return Encoding.ASCII.GetBytes(output);
