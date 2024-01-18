@@ -900,7 +900,10 @@ namespace RaceLib
             foreach (PilotChannel pc in PilotChannels)
             {
                 Pilot p = editedPilots.GetObject(pc.Pilot.ID);
-                pc.Pilot = p;
+                if (p != null)
+                {
+                    pc.Pilot = p;
+                }
             }
         }
 

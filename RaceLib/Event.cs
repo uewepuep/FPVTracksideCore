@@ -286,7 +286,10 @@ namespace RaceLib
                 if (pc != null && pc.Pilot != null)
                 {
                     Pilot p = editedPilots.GetObject(pc.Pilot.ID);
-                    pc.Pilot = p;
+                    if (p != null)
+                    {
+                        pc.Pilot = p;
+                    }
                 }
             }
         }
