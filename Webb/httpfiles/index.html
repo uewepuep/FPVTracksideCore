@@ -28,7 +28,10 @@
 
         menuElement.innerHTML = "";
 
-        let url = new URL(this.window.location.href.replace("#", ""));
+        let url = (new URL(this.window.location.href)).pathname;
+        url = url.replace("#", "");
+        url = url.replace("/", "");
+        url = url.replace("%20", " ");
 
         let shown = false;
 
@@ -38,15 +41,14 @@
             div.className = "menu-item";
             menuElement.appendChild(div);
 
-            const link = document.createElement("a");
-            link.setAttribute('href', "#");
-            link.onclick = function () { formatter.Show(item); };
+            const link = document.createElement("span");
+            link.onclick = function () { Show(item); };
             link.innerText = item;
             div.appendChild(link);
 
-            if (url.pathname == "/" + item)
+            if (url == item)
             {
-                formatter.Show(item);
+                Show(item);
                 shown = true;
             }
         }
@@ -56,6 +58,15 @@
             formatter.ShowEventStatus();
         }
         
+        function Show(name)
+        {
+            formatter.Show(name);
+
+            let url = new URL(this.window.location.href);
+            url.pathname = name;
+
+            history.pushState({}, null, url.toString());
+        }
 
     </script>
 </body>
