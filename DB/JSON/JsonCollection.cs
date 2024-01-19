@@ -20,6 +20,7 @@ namespace DB.JSON
         {
             jsonIO = new JsonIO<T>();
             Directory = directoryInfo;
+
             if (!directoryInfo.Exists)
             {
                 directoryInfo.Create();
@@ -33,7 +34,7 @@ namespace DB.JSON
             Prefix = prefix;
         }
 
-        protected virtual string GetFileName(Guid? id = null)
+        public virtual string GetFileName(Guid? id = null)
         {
             string filename = Prefix;
 

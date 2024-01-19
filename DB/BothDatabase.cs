@@ -24,7 +24,7 @@ namespace DB
 
         public BothDatabase()
         {
-            jsondb = new CollectionDatabase(new JSON.JsonDatabase());
+            jsondb = new CollectionDatabase(new JSON.JSONDatabaseConverted());
             litedb = new CollectionDatabase(new Lite.LiteDatabase());
         }
 

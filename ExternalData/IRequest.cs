@@ -17,5 +17,10 @@ namespace ExternalData
         public bool Success { get { return Code == 100; } }
         public string Error { get; set; }
         public int Code { get; set; }
+
+        public override string ToString()
+        {
+            return Code.ToString() + " " + Error.ToString();    
+        }
     }
 }

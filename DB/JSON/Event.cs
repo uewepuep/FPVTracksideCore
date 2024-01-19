@@ -57,7 +57,7 @@ namespace DB.JSON
         public Guid[] Races { get; set; }
 
         [Browsable(false)]
-        public string SyncWith { get; set; }
+        public SyncWith SyncWith { get; set; }
 
         public bool Sync { get; set; }
 
@@ -88,6 +88,8 @@ namespace DB.JSON
             ExternalID = obj.ExternalID;
 
             ChannelColors = obj.ChannelColors;
+            SyncWith = obj.SyncWith;
+            Sync = obj.Sync;
         }
 
         public override RaceLib.Event GetRaceLibObject(ICollectionDatabase database)
@@ -98,6 +100,8 @@ namespace DB.JSON
             ev.PilotChannels = PilotChannels.Convert(database).Where(pc => pc != null && pc.Pilot != null).ToList();
             ev.Rounds = Rounds.Convert<RaceLib.Round>(database).ToList();
             ev.RemovedPilots = RemovedPilots.Convert<RaceLib.Pilot>(database).ToList();
+            ev.SyncWith = SyncWith;
+            ev.Sync = Sync;
             return ev;
         }
 

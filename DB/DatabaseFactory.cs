@@ -30,7 +30,7 @@ namespace DB
 
             if (DatabaseType == DatabaseTypes.JSON)
             {
-                db = new CollectionDatabase(new JSON.JsonDatabase());
+                db = new CollectionDatabase(new JSON.JSONDatabaseConverted());
             }
             else
             {

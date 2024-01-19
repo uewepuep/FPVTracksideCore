@@ -48,7 +48,7 @@ namespace DB.JSON
             return new DirectoryInfo(Path.Combine(Directory.FullName, id.ToString()));
         }
 
-        protected virtual string GetFilename(Guid id)
+        public virtual string GetFilename(Guid id)
         {
             DirectoryInfo di = GetDirectoryInfo(id);
             if (!di.Exists)

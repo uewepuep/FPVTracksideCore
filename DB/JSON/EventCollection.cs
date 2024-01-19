@@ -12,7 +12,6 @@ namespace DB.JSON
         private SplitDirJsonCollection<Event> collection;
 
 
-
         public EventCollection(DirectoryInfo dataDirectory)
         {
             collection = new SplitDirJsonCollection<Event>(dataDirectory);
@@ -107,6 +106,10 @@ namespace DB.JSON
             return collection.Upsert(events);
         }
 
+        public string GetFilename(Guid id)
+        {
+            return collection.GetFilename(id);
+        }
 
         private IEnumerable<Guid> GetRaceIDs(Event even)
         {
