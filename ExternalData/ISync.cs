@@ -15,7 +15,8 @@ namespace ExternalData
         void SyncEvents(WorkSet workSet, WorkQueue queue, CallBacks<RaceLib.Event> callBack);
         void SyncDownRoundRaces(WorkSet workSet, WorkQueue queue, EventManager eventManager);
         void SyncUpResults(WorkSet workSet, WorkQueue queue, EventManager eventManager);
-     
+        void SyncUpResults(WorkSet workSet, WorkQueue queue, IEnumerable<Guid> eventIDs, Action callBack);
+
         bool Login(string username, string password);
         void CreateAccount();
         void ForgotPassword();

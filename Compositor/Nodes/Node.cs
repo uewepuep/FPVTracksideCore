@@ -191,6 +191,11 @@ namespace Composition.Nodes
         {
             Disposed = true;
 
+            if (HasFocus)
+            {
+                HasFocus = false;
+            }
+
             // Remove from parent. Not done via normal remove command for easier debugging.
             if (Parent != null)
             {

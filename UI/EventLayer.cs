@@ -890,7 +890,6 @@ namespace UI
                     ResumeRace();
                 }
 
-
                 if (KeyMapper.NextRace.Match(inputEvent))
                 {
                     NextRace(false);

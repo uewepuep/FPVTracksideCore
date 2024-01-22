@@ -19,6 +19,8 @@ namespace Composition.Nodes
         protected Node buttonsContainer;
         protected TextNode questionNode;
 
+        protected System.Action onOK;
+
         public ConfirmationNode(string question, MenuLayer MenuLayer, System.Action onOk)
             :this(question, MenuLayer.Background, MenuLayer.DisabledText, MenuLayer.Hover, MenuLayer.Text, onOk)
         {
@@ -27,6 +29,8 @@ namespace Composition.Nodes
         public ConfirmationNode(string question, Color background, Color buttonBG, Color hover, Color text, System.Action onOk)
             : base(4)
         {
+            onOK = onOk;
+
             Alignment = RectangleAlignment.Center;
             RelativeBounds = new RectangleF(0.4f, 0, 0.2f, 1);
 
@@ -50,16 +54,45 @@ namespace Composition.Nodes
 
             AlignHorizontally(0.1f, buttonsContainer.Children.ToArray());
 
-            Cancel.OnClick += (mie) =>
-            {
-                Dispose();
-            };
+            Cancel.OnClick += Cancel_OnClick;
 
-            OK.OnClick += (mie) =>
+            OK.OnClick += OK_OnClick;
+        }
+
+        private void OK_OnClick(MouseInputEvent mie)
+        {
+            onOK?.Invoke();
+            Dispose();
+        }
+
+        private void Cancel_OnClick(MouseInputEvent mie)
+        {
+            Dispose();
+        }
+
+        public override bool OnKeyboardInput(KeyboardInputEvent inputEvent)
+        {
+            if (base.OnKeyboardInput(inputEvent))
             {
-                onOk?.Invoke();
-                Dispose();
-            };
+                return true;
+            }
+
+            if (inputEvent.ButtonState == ButtonStates.Pressed)
+            {
+                if (inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.Enter)
+                {
+                    OK_OnClick(null);
+                    return true;
+                }
+
+                if (inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.Escape)
+                {
+                    Cancel_OnClick(null);
+                    return true;
+                }
+            }
+            
+            return false;
         }
     }
 

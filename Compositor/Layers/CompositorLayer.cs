@@ -50,6 +50,9 @@ namespace Composition.Layers
         {
             get
             {
+                if (LayerStack == null)
+                    return null;
+
                 return LayerStack.PlatformTools;
             }
         }
