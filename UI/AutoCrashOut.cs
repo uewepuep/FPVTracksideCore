@@ -105,84 +105,91 @@ namespace UI
 
         private void Process()
         {
-            int lastFrame = 0;
-
-            while (run)
+            try
             {
-                lock (toProcess)
+                int lastFrame = 0;
+
+                while (run)
                 {
-                    ChannelVideoNode first = toProcess.Keys.FirstOrDefault();
-                    if (first == null)
+                    lock (toProcess)
                     {
-                        Thread.Sleep(1);
-                        continue;
-                    }
+                        ChannelVideoNode first = toProcess.Keys.FirstOrDefault();
+                        if (first == null)
+                        {
+                            Thread.Sleep(1);
+                            continue;
+                        }
 
-                    int frame = first.FrameNode.Source.FrameCount;
-                    if (lastFrame == frame)
-                    {
-                        Thread.Sleep(1);
-                        continue;
-                    }
-                    lastFrame = frame;
+                        int frame = first.FrameNode.Source.FrameCount;
+                        if (lastFrame == frame)
+                        {
+                            Thread.Sleep(1);
+                            continue;
+                        }
+                        lastFrame = frame;
 
-                    if (needsClear)
-                    {
-                        needsClear = false;
+                        if (needsClear)
+                        {
+                            needsClear = false;
+                            foreach (var kvp in toProcess)
+                            {
+                                MotionDetector motionDetector = kvp.Value;
+                                motionDetector.Clear();
+                            }
+                            lock (channelHasMotion)
+                            {
+                                channelHasMotion.Clear();
+                            }
+                        }
+
                         foreach (var kvp in toProcess)
                         {
+                            if (!run)
+                                break;
+
+                            ChannelVideoNode channelNode = kvp.Key;
                             MotionDetector motionDetector = kvp.Value;
-                            motionDetector.Clear();
-                        }
-                        lock (channelHasMotion)
-                        {
-                            channelHasMotion.Clear();
-                        }
-                    }
 
-                    foreach (var kvp in toProcess)
-                    {
-                        if (!run)
-                            break;
+                            Color[] colors = channelNode.FrameNode.GetColorData();
+                            if (colors == null)
+                                continue;
 
-                        ChannelVideoNode channelNode = kvp.Key;
-                        MotionDetector motionDetector = kvp.Value;
+                            motionDetector.AddFrame(colors);
 
-                        Color[] colors = channelNode.FrameNode.GetColorData();
-                        if (colors == null)
-                            continue;
+                            float motionValue;
+                            bool motion;
+                            motionDetector.DetectMotion(out motionValue, out motion);
 
-                        motionDetector.AddFrame(colors);
-
-                        float motionValue;
-                        bool motion;
-                        motionDetector.DetectMotion(out motionValue, out motion);
-
-                        lock (channelHasMotion)
-                        {
-                            if (channelHasMotion.ContainsKey(channelNode.Channel))
+                            lock (channelHasMotion)
                             {
-                                channelHasMotion[channelNode.Channel] = motion;
+                                if (channelHasMotion.ContainsKey(channelNode.Channel))
+                                {
+                                    channelHasMotion[channelNode.Channel] = motion;
+                                }
+                                else
+                                {
+                                    channelHasMotion.Add(channelNode.Channel, motion);
+                                }
                             }
-                            else
-                            {
-                                channelHasMotion.Add(channelNode.Channel, motion);
-                            }
-                        }
 
-                        if (eventManager.RaceManager.RaceRunning && DateTime.Now > waitTill)
-                        {
-                            if (motion == channelNode.CrashedOut)
+                            if (eventManager.RaceManager.RaceRunning && DateTime.Now > waitTill)
                             {
-                                channelsGridNode.AutomaticSetCrashed(channelNode, !motion);
+                                if (motion == channelNode.CrashedOut)
+                                {
+                                    channelsGridNode.AutomaticSetCrashed(channelNode, !motion);
+                                }
                             }
                         }
                     }
+
+                    if (!run)
+                        break;
+                    Thread.Sleep(10);
                 }
-
-                if (!run)
-                    break;
-                Thread.Sleep(10);
+            }
+            catch (Exception e) 
+            {
+                Tools.Logger.VideoLog.LogException(this, e);
             }
         }
     }

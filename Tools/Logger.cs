@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static Tools.Logger;
 
 namespace Tools
 {
@@ -26,6 +27,8 @@ namespace Tools
         public static Logger OBS { get; private set; }
         public static Logger AutoRunner { get; private set; }
         public static Logger AllLog { get; private set; }
+
+        public static CrashLogger CrashLogger { get; private set; }
 
         public static IEnumerable<Logger> Logs
         {
@@ -74,6 +77,8 @@ namespace Tools
             Sheets = new Logger(logDir, "Sheets", AllLog);
             OBS = new Logger(logDir, "OBS", AllLog);
             AutoRunner = new Logger(logDir, "AutoRunner", AllLog);
+
+            CrashLogger = new CrashLogger(logDir);
 
             AllLog.LogCall("\n\n\nLog Startup");
         }
@@ -324,60 +329,6 @@ namespace Tools
             Flush();
         }
 
-        private class LogItem
-        {
-            public string LogName { get; private set; }
-            public DateTime DateTime { get; private set; }
-
-            public string Caller { get; private set; }
-            public string Target { get; private set; }
-
-            public string Message { get; private set; }
-            public LogType Type { get; private set; }
-
-            public string Version { get; private set; }
-
-            public LogItem(string logName, object caller, string message, object target, LogType type, Version version)
-            {
-                LogName = logName;
-                DateTime = DateTime.Now;
-
-                if (caller != null)
-                {
-                    Caller = caller.GetType().Name;
-                }
-
-                if (target != null)
-                {
-                    Target = target.ToString();
-                }
-
-                Message = message;
-                Type = type;
-                Version = version.ToString();
-            }
-
-            public override string ToString()
-            {
-                string output = DateTime.ToString("yyyy/MM/dd HH:mm:ss.FFF") + " " + LogName + " (" + Type.ToString() + ")";
-                if (Caller != null)
-                {
-                    output += " - " + Caller;
-                }
-
-                if (!string.IsNullOrEmpty(Message))
-                {
-                    output += ": " + Message;
-                }
-
-                if (!string.IsNullOrEmpty(Target))
-                {
-                    output += " (" + Target + ")"; 
-                }
-                return output;
-            }
-        }
-
         public string GetContents(int length)
         {
             lock (fileLocker)
@@ -391,4 +342,103 @@ namespace Tools
             }
         }
     }
+    public class LogItem
+    {
+        public string LogName { get; private set; }
+        public DateTime DateTime { get; private set; }
+
+        public string Caller { get; private set; }
+        public string Target { get; private set; }
+
+        public string Message { get; private set; }
+        public LogType Type { get; private set; }
+
+        public string Version { get; private set; }
+
+        public LogItem(string logName, object caller, string message, object target, LogType type, Version version)
+        {
+            LogName = logName;
+            DateTime = DateTime.Now;
+
+            if (caller != null)
+            {
+                Caller = caller.GetType().Name;
+            }
+
+            if (target != null)
+            {
+                Target = target.ToString();
+            }
+
+            Message = message;
+            Type = type;
+            Version = version.ToString();
+        }
+
+        public override string ToString()
+        {
+            string output = DateTime.ToString("yyyy/MM/dd HH:mm:ss.FFF") + " " + LogName + " (" + Type.ToString() + ")";
+            if (Caller != null)
+            {
+                output += " - " + Caller;
+            }
+
+            if (!string.IsNullOrEmpty(Message))
+            {
+                output += ": " + Message;
+            }
+
+            if (!string.IsNullOrEmpty(Target))
+            {
+                output += " (" + Target + ")";
+            }
+            return output;
+        }
+    }
+
+    public class CrashLogger
+    {
+        private FileInfo file;
+        private Version logVersion;
+
+        public CrashLogger(DirectoryInfo logDir)
+        {
+            file = new FileInfo(Path.Combine(logDir.FullName, "Crash.log"));
+
+            logVersion = Assembly.GetEntryAssembly().GetName().Version;
+        }
+
+        public void Log(Exception ex)
+        {
+            LogItem logItem = new LogItem("Crash", "", ex.Message, ex, LogType.Exception, logVersion);
+
+            using (StreamWriter stream = new StreamWriter(file.FullName, true))
+            {
+                string line = logItem.ToString();
+                Debug.WriteLine(line);
+                Console.WriteLine(line);
+                stream.WriteLine(line);
+            }
+        }
+
+        public void Clear()
+        {
+            file.Refresh();
+            if (file.Exists)
+            {
+                file.Delete();
+            }
+        }
+
+        public string GetContents()
+        {
+            file.Refresh();
+            if (file.Exists)
+            {
+                return File.ReadAllText(file.FullName);
+            }
+            return "";
+        }
+    }
+
 }

@@ -896,11 +896,18 @@ namespace UI.Video
                 }
             }
 
-            // Remove any zombies sitting around..
-            Clear();
+            try
+            {
+                // Remove any zombies sitting around..
+                Clear();
 
-            // Run the clean up tasks one last time...
-            WorkerThreadCleanupTasks();
+                // Run the clean up tasks one last time...
+                WorkerThreadCleanupTasks();
+            }
+            catch (Exception e)
+            {
+                Logger.VideoLog.LogException(this, e);
+            }
         }
 
         private void WorkerThreadCleanupTasks()

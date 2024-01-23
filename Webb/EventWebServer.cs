@@ -100,7 +100,6 @@ namespace Webb
                 {
                     HttpListenerContext context = listener.GetContext();
                     HandleRequest(context);
-
                 }
                 catch (Exception ex)
                 {

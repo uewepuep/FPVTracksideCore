@@ -129,24 +129,32 @@ namespace Composition.Input
 
         private void PollInputs()
         {
-            while (CreateMouseEvents || CreateKeyboardEvents)
+            try
             {
-                autoResetEvent.WaitOne(1000);
-
-                if (PlatformTools.Focused)
+                while (CreateMouseEvents || CreateKeyboardEvents)
                 {
-                    if (CreateKeyboardEvents)
+                    autoResetEvent.WaitOne(1000);
+
+                    if (PlatformTools.Focused)
                     {
-                        UpdateKeyboard();
+                        if (CreateKeyboardEvents)
+                        {
+                            UpdateKeyboard();
+                        }
+
+                        if (CreateMouseEvents)
+                        {
+                            UpdateMouse();
+                        }
                     }
 
-                    if (CreateMouseEvents)
-                    {
-                        UpdateMouse();
-                    }
+                    ProcessInputs();
                 }
-
-                ProcessInputs();
+            }
+            catch (Exception ex) 
+            {
+                Tools.Logger.CrashLogger.Log(ex);
+                throw ex;
             }
         }
 

@@ -207,48 +207,55 @@ namespace Timing
             bool lastLoopState = false;
             while (!disposing)
             {
-                Thread.Sleep(1000);
-
-                if (PrimeSystems == null || !PrimeSystems.Any())
-                    continue;
-
-                int newlyConnected = 0;
-
-                foreach (ITimingSystem timingSystem in TimingSystems)
+                try
                 {
-                    if (!timingSystem.Connected && !disposing)
-                    {
-                        if (timingSystem.Connect())
-                        {
-                            newlyConnected++;
-                            Logger.TimingLog.Log(this, "Connected", timingSystem, Logger.LogType.Notice);
-                            lastLoopState = true;
+                    Thread.Sleep(1000);
 
-                            if (!detectionRunning)
+                    if (PrimeSystems == null || !PrimeSystems.Any())
+                        continue;
+
+                    int newlyConnected = 0;
+
+                    foreach (ITimingSystem timingSystem in TimingSystems)
+                    {
+                        if (!timingSystem.Connected && !disposing)
+                        {
+                            if (timingSystem.Connect())
                             {
-                                timingSystem.EndDetection();
+                                newlyConnected++;
+                                Logger.TimingLog.Log(this, "Connected", timingSystem, Logger.LogType.Notice);
+                                lastLoopState = true;
+
+                                if (!detectionRunning)
+                                {
+                                    timingSystem.EndDetection();
+                                }
                             }
                         }
                     }
-                }
 
-                if (newlyConnected > 0)
-                {
-                    OnConnected?.Invoke(newlyConnected);
-                }
-
-                bool primesConnected = PrimeSystems.All(t => t.Connected);
-
-                if (lastLoopState != primesConnected && !primesConnected)
-                {
-                    foreach (ITimingSystem prime in PrimeSystems.Where(r => !r.Connected))
+                    if (newlyConnected > 0)
                     {
-                        Logger.TimingLog.Log(this, "Disconnected", prime, Logger.LogType.Notice);
+                        OnConnected?.Invoke(newlyConnected);
                     }
-                    OnDisconnected?.Invoke();
-                }
 
-                lastLoopState = primesConnected;
+                    bool primesConnected = PrimeSystems.All(t => t.Connected);
+
+                    if (lastLoopState != primesConnected && !primesConnected)
+                    {
+                        foreach (ITimingSystem prime in PrimeSystems.Where(r => !r.Connected))
+                        {
+                            Logger.TimingLog.Log(this, "Disconnected", prime, Logger.LogType.Notice);
+                        }
+                        OnDisconnected?.Invoke();
+                    }
+
+                    lastLoopState = primesConnected;
+                }
+                catch (Exception e) 
+                {
+                    Logger.TimingLog.LogException(this, e);
+                }
             }
         }
 

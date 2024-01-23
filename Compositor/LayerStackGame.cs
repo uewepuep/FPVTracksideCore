@@ -163,21 +163,29 @@ namespace Composition
 
         private void Background()
         {
-            while (runBackground)
+            try
             {
-                drawSet.WaitOne();
-
-                if (!runBackground)
+                while (runBackground)
                 {
-                    break;
-                }
+                    drawSet.WaitOne();
 
-                base.DoBackground();
+                    if (!runBackground)
+                    {
+                        break;
+                    }
+
+                    base.DoBackground();
+
+                    backgroundSet.Set();
+                }
 
                 backgroundSet.Set();
             }
-
-            backgroundSet.Set();
+            catch (Exception ex) 
+            {
+                Tools.Logger.CrashLogger.Log(ex);
+                throw ex;
+            }
         }
 
         protected override bool BeginDraw()
