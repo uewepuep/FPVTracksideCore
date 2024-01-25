@@ -235,8 +235,10 @@ namespace UI
         {
             Logger.UI.LogCall(this);
 
+            Profile profile = new Profile(GeneralSettings.Instance.Profile);
+
             CompositorLayer welcomeLayer = new CompositorLayer(GraphicsDevice);
-            WelcomeSetupNode welcomeSetupNode = new WelcomeSetupNode(Banner);
+            WelcomeSetupNode welcomeSetupNode = new WelcomeSetupNode(Banner, profile);
             welcomeSetupNode.OnOK += () =>
             {
                 if (welcomeLayer != null)

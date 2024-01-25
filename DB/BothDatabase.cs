@@ -22,9 +22,9 @@ namespace DB
 
         private Guid eventId;
 
-        public BothDatabase()
+        public BothDatabase(DirectoryInfo dataDir)
         {
-            jsondb = new CollectionDatabase(new JSON.JSONDatabaseConverted());
+            jsondb = new CollectionDatabase(new JSON.JSONDatabaseConverted(dataDir));
             litedb = new CollectionDatabase(new Lite.LiteDatabase());
         }
 

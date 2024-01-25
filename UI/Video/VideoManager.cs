@@ -79,37 +79,14 @@ namespace UI.Video
 
         private AutoResetEvent mutex;
 
-        public DirectoryInfo VideoDirectory { get; private set; }
+        public DirectoryInfo EventDirectory { get; private set; }
 
         public Profile Profile { get; private set; }
 
-        public enum DirectoryStructures
-        {
-            OneDirectory,
-            RaceDirectories
-        }
-
-        public DirectoryStructures DirectoryStructure { get; private set; }
-
-        public VideoManager(string directory, DirectoryStructures directoryStructure, Profile profile)
+        public VideoManager(string eventDirectory, Profile profile)
         {
             Profile = profile;
-            VideoDirectory = new DirectoryInfo(directory);
-            DirectoryStructure = directoryStructure;
-
-            try
-            {
-                if (!VideoDirectory.Exists)
-                    VideoDirectory.Create();
-            }
-            catch (Exception e)
-            {
-                Logger.VideoLog.LogException(this, e);
-                VideoDirectory = new DirectoryInfo("video");
-
-                if (!VideoDirectory.Exists)
-                    VideoDirectory.Create();
-            }
+            EventDirectory = new DirectoryInfo(eventDirectory);
 
             todo = new List<Action>();
             mutex = new AutoResetEvent(false);
@@ -559,16 +536,7 @@ namespace UI.Video
         private string GetRecordingFilename(Race race, FrameSource source)
         {
             int index = frameSources.IndexOf(source);
-
-            switch (DirectoryStructure)
-            {
-                case DirectoryStructures.RaceDirectories:
-                    return Path.Combine(VideoDirectory.FullName, race.ID.ToString(), index.ToString());
-
-                case DirectoryStructures.OneDirectory:
-                default:
-                    return VideoDirectory.FullName + "\\" + race.ID + "_" + index;
-            }
+            return Path.Combine(EventDirectory.FullName, race.ID.ToString(), index.ToString());
         }
 
         public void LoadRecordings(Race race, FrameSourcesDelegate frameSourcesDelegate)
@@ -583,44 +551,20 @@ namespace UI.Video
 
         public IEnumerable<VideoConfig> GetRecordings(Race race)
         {
-            switch (DirectoryStructure)
+            DirectoryInfo raceDirectory = new DirectoryInfo(Path.Combine(EventDirectory.FullName, race.ID.ToString()));
+            if (raceDirectory.Exists)
             {
-                case DirectoryStructures.RaceDirectories:
-
-                    DirectoryInfo raceDirectory = new DirectoryInfo(Path.Combine(VideoDirectory.FullName, race.ID.ToString()));
-                    if (raceDirectory.Exists)
+                foreach (FileInfo file in raceDirectory.GetFiles("*.recordinfo.xml"))
+                {
+                    RecodingInfo videoInfo = IOTools.ReadSingle<RecodingInfo>(raceDirectory.FullName, file.Name);
+                    if (videoInfo != null)
                     {
-                        foreach (FileInfo file in raceDirectory.GetFiles("*.recordinfo.xml"))
+                        if (File.Exists(videoInfo.FilePath))
                         {
-                            RecodingInfo videoInfo = IOTools.ReadSingle<RecodingInfo>(raceDirectory.FullName, file.Name);
-                            if (videoInfo != null)
-                            {
-                                if (File.Exists(videoInfo.FilePath))
-                                {
-                                    yield return videoInfo.GetVideoConfig();
-                                }
-                            }
+                            yield return videoInfo.GetVideoConfig();
                         }
                     }
-                    break;
-
-                case DirectoryStructures.OneDirectory:
-                    VideoDirectory.Refresh();
-                    if (VideoDirectory.Exists)
-                    {
-                        foreach (FileInfo file in VideoDirectory.GetFiles(race.ID + "*.recordinfo.xml"))
-                        {
-                            RecodingInfo videoInfo = IOTools.ReadSingle<RecodingInfo>(VideoDirectory.FullName, file.Name);
-                            if (videoInfo != null)
-                            {
-                                if (File.Exists(videoInfo.FilePath))
-                                {
-                                    yield return videoInfo.GetVideoConfig();
-                                }
-                            }
-                        }
-                    }
-                    break;
+                }
             }
         }
 
@@ -666,9 +610,9 @@ namespace UI.Video
             try
             {
                 int maxCount = GeneralSettings.Instance.VideosToKeep;
-                VideoDirectory.Refresh();
+                EventDirectory.Refresh();
 
-                FileInfo[] files = VideoDirectory.GetFiles("*.wmv");
+                FileInfo[] files = EventDirectory.GetFiles("*.wmv");
 
                 int toDelete = files.Count() - maxCount;
 
@@ -1003,19 +947,17 @@ namespace UI.Video
     public static class VideoManagerFactory
     {
         private static string directory;
-        private static DirectoryStructures directoryStructure;
         private static Profile profile;
 
-        public static void Init(string di, DirectoryStructures dStructure, Profile p)
+        public static void Init(string di, Profile p)
         {
             directory = di;
-            directoryStructure = dStructure;
             profile = p;
         }
 
         public static VideoManager CreateVideoManager()
         {
-            return new VideoManager(directory, directoryStructure, profile);
+            return new VideoManager(directory, profile);
         }
     }
 }

@@ -34,17 +34,17 @@ namespace DB.JSON
 
         public Guid EventId { get; private set; }
 
-        public JsonDatabase()
+        public JsonDatabase(DirectoryInfo dataDirectory)
         {
-            DataDirectory = new DirectoryInfo("events");
+            DataDirectory = dataDirectory;
             Events = new EventCollection(DataDirectory);
             Patreons = new JsonCollection<Patreon>(DataDirectory);
             Clubs = new JsonCollection<Club>(DataDirectory);
             Channels = new ChannelCollections();
         }
 
-        public JsonDatabase(Guid eventId)
-            :this()
+        public JsonDatabase(DirectoryInfo dataDirectory, Guid eventId)
+            :this(dataDirectory)
         {
             Init(eventId);
         }
@@ -70,8 +70,8 @@ namespace DB.JSON
 
     public class JSONDatabaseConverted : JsonDatabase, ICollectionDatabase
     {
-        public JSONDatabaseConverted() 
-            :base()
+        public JSONDatabaseConverted(DirectoryInfo dataDirectory) 
+            :base(dataDirectory)
         { 
         }
         

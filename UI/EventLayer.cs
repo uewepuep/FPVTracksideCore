@@ -77,6 +77,7 @@ namespace UI
         public EventLayer(BaseGame game, GraphicsDevice graphicsDevice, EventManager eventManager)
             : base(graphicsDevice)
         {
+            DirectoryInfo eventDirectory = new DirectoryInfo(Path.Combine(GeneralSettings.Instance.EventStorageLocation, eventManager.Event.ID.ToString()));
 
             workQueueStartRace = new WorkQueue("Event Layer - Start Race");
 
@@ -95,7 +96,7 @@ namespace UI
             EventManager.RaceManager.RemainingTimesToAnnounce = ProfileSettings.Instance.RemainingSecondsToAnnounce;
 
             // Init the videos into the video directories.
-            VideoManagerFactory.Init(Path.Combine("events", eventManager.Event.ID.ToString()), VideoManager.DirectoryStructures.RaceDirectories, eventManager.Profile);
+            VideoManagerFactory.Init(eventDirectory.FullName, eventManager.Profile);
 
             videoManager = VideoManagerFactory.CreateVideoManager();
             videoManager.AutoPause = true;

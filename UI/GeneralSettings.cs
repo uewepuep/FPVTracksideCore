@@ -55,11 +55,9 @@ namespace UI
         [DisplayName("Video recordings to keep")]
         [Category("Video")]
         public int VideosToKeep { get; set; }
-        [Category("Video")]
+        [Category("Data")]
         [NeedsRestart]
-        public string VideoStorageLocation { get; set; }
-
-
+        public string EventStorageLocation { get; set; }
 
         [Category("Static Detector")]
         [NeedsRestart]
@@ -97,7 +95,7 @@ namespace UI
             VideosToKeep = 50;
             HTTPServer = false;
 
-            VideoStorageLocation = @"Video/";
+            EventStorageLocation = @"events/";
 
             VideoStaticDetector = true;
             CrashThreshold = 4;

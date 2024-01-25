@@ -24,7 +24,7 @@ namespace UI.Nodes
 
         private MenuButton menuButton;
 
-        public WelcomeSetupNode(Texture2D logo)
+        public WelcomeSetupNode(Texture2D logo, Profile profile)
         {
             Scale(0.5f, 0.9f);
 
@@ -138,7 +138,7 @@ namespace UI.Nodes
             p4.RelativeBounds = new RectangleF(0, currentY, 1, oneItem);
             content.AddChild(p4);
 
-            menuButton = new MenuButton(null, Color.White, Color.White);
+            menuButton = new MenuButton(profile, Color.White, Color.White);
             menuButton.Visible = false;
             menuButton.Restart += MenuButton_Restart;
             content.AddChild(menuButton);

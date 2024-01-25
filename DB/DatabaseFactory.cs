@@ -18,10 +18,13 @@ namespace DB
 
         public DatabaseTypes DatabaseType { get; set; }
 
-        public DatabaseFactory(DirectoryInfo directoryInfo, DatabaseTypes databaseType = DatabaseTypes.JSON)
+        private DirectoryInfo EventDirectory { get; set; }
+
+        public DatabaseFactory(DirectoryInfo LiteDBDirectory, DirectoryInfo eventDirectory, DatabaseTypes databaseType = DatabaseTypes.JSON)
         {
             this.DatabaseType = databaseType;
-            Lite.LiteDatabase.Init(directoryInfo);
+            Lite.LiteDatabase.Init(LiteDBDirectory);
+            EventDirectory = eventDirectory;
         }
 
         public RaceLib.IDatabase Open(Guid eventId)
@@ -30,7 +33,7 @@ namespace DB
 
             if (DatabaseType == DatabaseTypes.JSON)
             {
-                db = new CollectionDatabase(new JSON.JSONDatabaseConverted());
+                db = new CollectionDatabase(new JSON.JSONDatabaseConverted(EventDirectory));
             }
             else
             {
@@ -47,7 +50,7 @@ namespace DB
 
             if (DatabaseType == DatabaseTypes.JSON)
             {
-                db = new BothDatabase();
+                db = new BothDatabase(EventDirectory);
             }
             else
             {
