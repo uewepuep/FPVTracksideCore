@@ -35,9 +35,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowsPlatform", "WindowsP
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WinFormsGraphicsDevice", "WinFormsGraphicsDevice\WinFormsGraphicsDevice.csproj", "{63519E86-37F1-4BC0-9DC9-8FB350D1B319}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DB", "..\..\FPVTracksideCore\DB\DB.csproj", "{44328973-0008-46B9-AED0-FC5601ED6E4B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DB", "DB\DB.csproj", "{44328973-0008-46B9-AED0-FC5601ED6E4B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FfmpegMediaPlatform", "..\..\FPVTracksideCore\ffmpegMediaPlatform\FfmpegMediaPlatform.csproj", "{312966DE-7E94-494C-A7E6-42ED28E073A8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FfmpegMediaPlatform", "ffmpegMediaPlatform\FfmpegMediaPlatform.csproj", "{312966DE-7E94-494C-A7E6-42ED28E073A8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -24,6 +24,12 @@ namespace DB
         {
             this.DatabaseType = databaseType;
             Lite.LiteDatabase.Init(LiteDBDirectory);
+
+            if (!eventDirectory.Exists)
+            {
+                eventDirectory.Create();
+            }
+
             EventDirectory = eventDirectory;
         }
 

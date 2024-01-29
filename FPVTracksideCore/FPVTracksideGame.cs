@@ -50,7 +50,8 @@ namespace FPVTracksideCore
         {
             GeneralSettings.Initialise();
 
-            DatabaseFactory.Init(new DB.DatabaseFactory(Data));
+            DirectoryInfo eventDir = new DirectoryInfo(GeneralSettings.Instance.EventStorageLocation);
+            DatabaseFactory.Init(new DB.DatabaseFactory(Data, eventDir));
 
             Theme.Initialise(PlatformTools.WorkingDirectory, "Dark");
 
