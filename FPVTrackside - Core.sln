@@ -21,19 +21,23 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExternalData", "ExternalDat
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FPVMacsideCore", "FPVMacSideCore\FPVMacsideCore.csproj", "{F4D1C563-AF7A-403D-B28A-6E30EFF8577C}"
 EndProject
-Project("{9344BDBB-3E7F-41FC-A0DD-8665D75EE146}") = "FPVTracksideCore", "FPVTracksideCore\FPVTracksideCore.csproj", "{390E4593-C40C-4ABB-9EBA-45A7424A0942}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FPVTracksideCore", "FPVTracksideCore\FPVTracksideCore.csproj", "{390E4593-C40C-4ABB-9EBA-45A7424A0942}"
 EndProject
-Project("{9344BDBB-3E7F-41FC-A0DD-8665D75EE146}") = "ImageServer", "ImageServer\ImageServer.csproj", "{3F469E42-747E-47EE-B7CD-8A0A462F6893}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImageServer", "ImageServer\ImageServer.csproj", "{3F469E42-747E-47EE-B7CD-8A0A462F6893}"
 EndProject
-Project("{9344BDBB-3E7F-41FC-A0DD-8665D75EE146}") = "TimingTesting", "TimingTesting\TimingTesting.csproj", "{F70A19FE-BA40-475C-A5C9-8A311A03B014}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimingTesting", "TimingTesting\TimingTesting.csproj", "{AAC6268B-C0C5-447C-9D5E-5F3089BE41BE}"
 EndProject
-Project("{9344BDBB-3E7F-41FC-A0DD-8665D75EE146}") = "Web2BMP", "Web2BMP\Web2BMP.csproj", "{23062DEA-E57D-4D4B-8D55-B803934675C9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web2BMP", "Web2BMP\Web2BMP.csproj", "{23062DEA-E57D-4D4B-8D55-B803934675C9}"
 EndProject
-Project("{9344BDBB-3E7F-41FC-A0DD-8665D75EE146}") = "Webb", "Webb\Webb.csproj", "{00EFDE77-AC4C-45B2-9ABF-F0050989ADF1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Webb", "Webb\Webb.csproj", "{00EFDE77-AC4C-45B2-9ABF-F0050989ADF1}"
 EndProject
-Project("{9344BDBB-3E7F-41FC-A0DD-8665D75EE146}") = "WindowsPlatform", "WindowsPlatform\WindowsPlatform.csproj", "{1F986931-C150-424B-9E73-4B84DB424661}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowsPlatform", "WindowsPlatform\WindowsPlatform.csproj", "{1F986931-C150-424B-9E73-4B84DB424661}"
 EndProject
-Project("{9344BDBB-3E7F-41FC-A0DD-8665D75EE146}") = "WinFormsGraphicsDevice", "WinFormsGraphicsDevice\WinFormsGraphicsDevice.csproj", "{63519E86-37F1-4BC0-9DC9-8FB350D1B319}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WinFormsGraphicsDevice", "WinFormsGraphicsDevice\WinFormsGraphicsDevice.csproj", "{63519E86-37F1-4BC0-9DC9-8FB350D1B319}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DB", "..\..\FPVTracksideCore\DB\DB.csproj", "{44328973-0008-46B9-AED0-FC5601ED6E4B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FfmpegMediaPlatform", "..\..\FPVTracksideCore\ffmpegMediaPlatform\FfmpegMediaPlatform.csproj", "{312966DE-7E94-494C-A7E6-42ED28E073A8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -85,10 +89,10 @@ Global
 		{3F469E42-747E-47EE-B7CD-8A0A462F6893}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3F469E42-747E-47EE-B7CD-8A0A462F6893}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3F469E42-747E-47EE-B7CD-8A0A462F6893}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F70A19FE-BA40-475C-A5C9-8A311A03B014}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F70A19FE-BA40-475C-A5C9-8A311A03B014}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F70A19FE-BA40-475C-A5C9-8A311A03B014}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F70A19FE-BA40-475C-A5C9-8A311A03B014}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AAC6268B-C0C5-447C-9D5E-5F3089BE41BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AAC6268B-C0C5-447C-9D5E-5F3089BE41BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AAC6268B-C0C5-447C-9D5E-5F3089BE41BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AAC6268B-C0C5-447C-9D5E-5F3089BE41BE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{23062DEA-E57D-4D4B-8D55-B803934675C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{23062DEA-E57D-4D4B-8D55-B803934675C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{23062DEA-E57D-4D4B-8D55-B803934675C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -105,6 +109,14 @@ Global
 		{63519E86-37F1-4BC0-9DC9-8FB350D1B319}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{63519E86-37F1-4BC0-9DC9-8FB350D1B319}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{63519E86-37F1-4BC0-9DC9-8FB350D1B319}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44328973-0008-46B9-AED0-FC5601ED6E4B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44328973-0008-46B9-AED0-FC5601ED6E4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44328973-0008-46B9-AED0-FC5601ED6E4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44328973-0008-46B9-AED0-FC5601ED6E4B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{312966DE-7E94-494C-A7E6-42ED28E073A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{312966DE-7E94-494C-A7E6-42ED28E073A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{312966DE-7E94-494C-A7E6-42ED28E073A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{312966DE-7E94-494C-A7E6-42ED28E073A8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

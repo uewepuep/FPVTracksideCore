@@ -49,6 +49,9 @@ namespace FPVTracksideCore
         protected override void LoadContent()
         {
             GeneralSettings.Initialise();
+
+            DatabaseFactory.Init(new DB.DatabaseFactory(Data));
+
             Theme.Initialise(PlatformTools.WorkingDirectory, "Dark");
 
             Form form = (Form)Form.FromHandle(Window.Handle);

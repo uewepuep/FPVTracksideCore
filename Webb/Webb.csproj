@@ -14,7 +14,6 @@
   
   <ItemGroup>
     <ProjectReference Include="..\DB\DB.csproj" />
-    <ProjectReference Include="..\..\FPVTrackside\FPVWebsite\FPVWebsite.csproj" />
     <ProjectReference Include="..\RaceLib\RaceLib.csproj" />
     <ProjectReference Include="..\Sound\Sound.csproj" />
   </ItemGroup>

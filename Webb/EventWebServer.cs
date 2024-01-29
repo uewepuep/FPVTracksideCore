@@ -1,6 +1,5 @@
 ﻿using DB;
 using DB.JSON;
-using ExternalData;
 using Newtonsoft.Json;
 using RaceLib;
 using Sound;

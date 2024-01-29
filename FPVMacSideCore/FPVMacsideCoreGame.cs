@@ -2,6 +2,7 @@
 using Composition.Text;
 using Microsoft.Xna.Framework;
 using UI;
+using RaceLib;
 
 namespace FPVMacsideCore
 {
@@ -32,6 +33,8 @@ namespace FPVMacsideCore
         protected override void LoadContent()
         {
             Theme.Initialise(PlatformTools.WorkingDirectory, "Dark");
+
+            DatabaseFactory.Init(new DB.DatabaseFactory(Data));
 
             base.LoadContent();
             BitmapFontLibrary.Init(PlatformTools.WorkingDirectory);
