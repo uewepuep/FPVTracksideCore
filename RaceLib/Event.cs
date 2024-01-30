@@ -190,10 +190,7 @@ namespace RaceLib
                 }
             }
         }
-
-        [Category("Fun Stuff")]
-        public float SillyNameChance { get; set; }
-
+        
         [System.ComponentModel.Browsable(false)]
         
         public string Month
@@ -230,7 +227,6 @@ namespace RaceLib
             Channels = new Channel[0];
             MinLapTime = TimeSpan.FromSeconds(5);
             Start = DateTime.Today;
-            SillyNameChance = 0.05f;
         }
 
         public Event Clone()

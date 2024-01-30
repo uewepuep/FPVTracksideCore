@@ -61,8 +61,6 @@ namespace DB.JSON
 
         public bool Sync { get; set; }
 
-        public float SillyNameChance { get; set; }
-
         public int ExternalID { get; set; }
 
         public Event()
