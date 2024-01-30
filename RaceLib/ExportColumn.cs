@@ -18,6 +18,8 @@ namespace RaceLib
             FastestLapTime,
             RaceTime,
             PBTime,
+            RoundNumber, 
+            RaceNumber
         }
 
         [Browsable(false)]

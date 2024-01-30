@@ -234,10 +234,7 @@ namespace UI.Nodes
 
             mm.AddItem("Add Race", AddRace);
 
-            if (pastePilotCount > 0)
-            {
-                mm.AddItem("Paste Race", PasteRace);
-            }
+            
 
             if (canFill)
             {
@@ -249,9 +246,19 @@ namespace UI.Nodes
                 AddFormatMenu(mm, "Set Format");
             }
 
+            if (hasRace)
+            {
+                mm.AddItem("Copy Round", CopyPilots);
+            }
+
+            if (pastePilotCount > 0 && pastePilotCount <= EventManager.Channels.Length)
+            {
+                mm.AddItem("Paste Race", PasteRace);
+            }
+
             if (canPasteAll && pastePilotCount > EventManager.Channels.Length)
             {
-                mm.AddItem("Paste Pilots", () => { PastePilot?.Invoke(Round); });
+                mm.AddItem("Paste Round", () => { PastePilot?.Invoke(Round); });
             }
 
             if (Races.Any())
@@ -319,6 +326,28 @@ namespace UI.Nodes
             }
 
             mm.Show(position - mie.Translation);
+        }
+
+        private void CopyPilots()
+        {
+            List<string> lines = new List<string>();
+            foreach (Race race in Races)
+            {
+                foreach (var c in EventManager.Channels.GetChannelGroups())
+                {
+                    Pilot p = race.GetPilot(c);
+                    if (p == null)
+                    {
+                        lines.Add("");
+                    }
+                    else
+                    {
+                        lines.Add(p.Name);
+                    }
+                }
+            }
+
+            PlatformTools.Clipboard.SetLines(lines);
         }
 
         private void SetType(EventTypes type, Round round)

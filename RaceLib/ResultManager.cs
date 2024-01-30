@@ -714,7 +714,7 @@ namespace RaceLib
                                 }
                                 break;
                             case ExportColumn.ColumnTypes.RaceTime:
-                                if(raceTime == TimeSpan.MaxValue)
+                                if (raceTime == TimeSpan.MaxValue)
                                 {
                                     results.Add("");
                                 }
@@ -722,6 +722,12 @@ namespace RaceLib
                                 {
                                     results.Add(raceTimeString);
                                 }
+                                break;
+                            case ExportColumn.ColumnTypes.RoundNumber:
+                                results.Add(race.RoundNumber.ToString());
+                                break;
+                            case ExportColumn.ColumnTypes.RaceNumber:
+                                results.Add(race.RaceNumber.ToString());
                                 break;
                         }
                     }

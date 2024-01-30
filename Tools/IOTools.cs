@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 
@@ -36,14 +37,32 @@ namespace Tools
 
             T[] os = null;
 
-            string contents = File.ReadAllText(file.FullName);
+            string contents = null;
 
-            if (replacements != null)
+            for (int i = 0; i < 5; i++)
             {
-                foreach (var kvp in replacements)
+                try
                 {
-                    contents = contents.Replace(kvp.Key, kvp.Value);
+                    contents = File.ReadAllText(file.FullName);
+                    if (replacements != null)
+                    {
+                        foreach (var kvp in replacements)
+                        {
+                            contents = contents.Replace(kvp.Key, kvp.Value);
+                        }
+                    }
+                    break;
                 }
+                catch (Exception e)
+                {
+                    Logger.Input.LogException("IOToolsRead", e);
+                    Thread.Sleep(1000);
+                }
+            }
+
+            if (contents == null)
+            {
+                throw new FormatException();
             }
 
             if (file.Extension.ToLower() == ".json")
@@ -64,17 +83,6 @@ namespace Tools
                     os = (T[])serializer.Deserialize(reader);
                 }
             }
-
-            //if (file.Extension.ToLower() == ".csv")
-            //{
-            //    CSVSerializer<T> serializer = new CSVSerializer<T>();
-            //    serializer.UseLineNumbers = false;
-
-            //    using (FileStream reader = new FileStream(file.FullName, FileMode.Open))
-            //    {
-            //       os = serializer.Deserialize(reader).ToArray();
-            //    }
-            //}
 
             if (os != null)
             {
@@ -107,35 +115,36 @@ namespace Tools
                 file.Directory.Create();
             }
 
-            if (file.Extension.ToLower() == ".json")
+            for (int i = 0; i < 5; i++)
             {
-                JsonSerializerSettings settings = new JsonSerializerSettings();
-                settings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-                settings.Formatting = Formatting.Indented;
-
-                string contents = JsonConvert.SerializeObject(items, settings);
-                File.WriteAllText(file.FullName, contents);
-            }
-
-            if (file.Extension.ToLower() == ".xml")
-            {
-                XmlSerializer serializer = new XmlSerializer(typeof(T[]));
-                using (TextWriter writer = new StreamWriter(file.FullName))
+                try
                 {
-                    serializer.Serialize(writer, items);
+                    if (file.Extension.ToLower() == ".json")
+                    {
+                        JsonSerializerSettings settings = new JsonSerializerSettings();
+                        settings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+                        settings.Formatting = Formatting.Indented;
+
+                        string contents = JsonConvert.SerializeObject(items, settings);
+                        File.WriteAllText(file.FullName, contents);
+                    }
+
+                    if (file.Extension.ToLower() == ".xml")
+                    {
+                        XmlSerializer serializer = new XmlSerializer(typeof(T[]));
+                        using (TextWriter writer = new StreamWriter(file.FullName))
+                        {
+                            serializer.Serialize(writer, items);
+                        }
+                    }
+                    break;
+                }
+                catch (Exception e)
+                {
+                    Logger.Input.LogException("IOToolsWrite", e);
+                    Thread.Sleep(1000);
                 }
             }
-
-            //if (file.Extension.ToLower() == ".csv")
-            //{
-            //    CSVSerializer<T> serializer = new CSVSerializer<T>();
-            //    serializer.UseLineNumbers = false;
-
-            //    using (FileStream writer = new FileStream(filename, FileMode.Create))
-            //    {
-            //        serializer.Serialize(writer, items);
-            //    }
-            //}
         }
 
         public enum Overwrite

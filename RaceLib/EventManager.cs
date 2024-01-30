@@ -501,7 +501,15 @@ namespace RaceLib
 
             foreach (string untrimmed in pilots)
             {
-                string pilotname = untrimmed.Trim();
+                string pilotname = untrimmed;
+
+                string[] csv = pilotname.Split(',');    
+                if (csv.Length > 0)
+                {
+                    pilotname = csv[0];
+                }
+
+                pilotname = pilotname.Trim();
 
                 Pilot p = Event.Pilots.FirstOrDefault(pa => pa != null && pa.Name.ToLower() == pilotname.ToLower());
                 if (p != null)

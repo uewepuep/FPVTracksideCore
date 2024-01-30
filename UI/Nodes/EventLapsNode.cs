@@ -190,25 +190,22 @@ namespace UI.Nodes
             Laps = new Lap[0];
         }
 
-        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
+        public override void AddMenu(MouseInputEvent mouseInputEvent, MouseMenu mouseMenu)
         {
-            if (mouseInputEvent.Button == MouseButtons.Right && Laps.Any())
+            if (Laps.Any())
             {
                 Race race = Laps.First().Race;
 
-                MouseMenu mm = new MouseMenu(this);
                 if (!eventManager.RaceManager.RaceRunning)
                 {
-                    mm.AddItem("Jump to Race", () =>
+                    mouseMenu.AddItem("Jump to Race", () =>
                     {
                         eventManager.RaceManager.SetRace(race);
                     });
                 }
-
-                mm.Show(mouseInputEvent);
             }
 
-            return base.OnMouseInput(mouseInputEvent);
+            base.AddMenu(mouseInputEvent, mouseMenu);
         }
 
         public void SetLaps(IEnumerable<Lap> laps)

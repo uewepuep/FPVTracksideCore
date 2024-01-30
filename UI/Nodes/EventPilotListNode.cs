@@ -91,7 +91,7 @@ namespace UI.Nodes
         public void MakeMenu(MouseMenu mm)
         {
             mm.AddItem("Edit Settings", EditSettings);
-            mm.AddItem("Copy to Clipboard", CopyPointsToClipboard);
+            mm.AddItem("Copy to Clipboard", CopyToClipboard);
             mm.AddItem("Export CSV", ExportCSV);
             mm.AddItemConfirm("Re-calculate", Recalculate);
 
@@ -129,7 +129,7 @@ namespace UI.Nodes
             
         }
 
-        private void CopyPointsToClipboard()
+        private void CopyToClipboard()
         {
             string csv = MakeCSV();
             if (!string.IsNullOrEmpty(csv))
@@ -309,6 +309,31 @@ namespace UI.Nodes
                 });
             }
         }
+
+        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
+        {
+            MouseInputEvent translated = Translate(mouseInputEvent);
+
+            if (translated.EventType == MouseInputEvent.EventTypes.Button && translated.Button == MouseButtons.Right && translated.ButtonState == ButtonStates.Released)
+            {
+                MouseMenu mouseMenu = new MouseMenu(this);
+                mouseMenu.AddItem("Copy Pilots", CopyToClipboard);
+
+                foreach (EventPilotNode pilotResultNode in PilotNodes)
+                {
+                    if (pilotResultNode.Contains(translated.Position))
+                    {
+                        pilotResultNode.AddMenu(translated, mouseMenu);
+                    }
+                }
+
+
+                mouseMenu.Show(mouseInputEvent.Position);
+                return true;
+            }
+
+            return base.OnMouseInput(mouseInputEvent);
+        }
     }
 
     public class EventPilotNode : Node, IPilot
@@ -458,6 +483,10 @@ namespace UI.Nodes
                 GetLayer<DragLayer>()?.RegisterDrag(this, mouseInputEvent);
             }
             return base.OnMouseInput(mouseInputEvent);
+        }
+
+        public virtual void AddMenu(MouseInputEvent mouseInputEvent, MouseMenu mouseMenu)
+        {
         }
     }
 }
