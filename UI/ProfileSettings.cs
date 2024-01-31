@@ -164,6 +164,7 @@ namespace UI
         public bool NotificationEnabled { get; set; }
 
         [Category("Fun Stuff")]
+        [NeedsRestart]
         public float SillyNameChance { get; set; }
 
         public ProfileSettings()
