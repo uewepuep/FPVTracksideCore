@@ -18,6 +18,8 @@ namespace DB
 
         public string LastName { get; set; }
 
+        public string SillyName { get; set; }
+
         public string Aircraft { get; set; }
 
         public string CatchPhrase { get; set; }

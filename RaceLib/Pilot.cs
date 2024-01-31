@@ -42,6 +42,9 @@ namespace RaceLib
         [Category("Name")]
         public string LastName { get; set; }
 
+        [Category("Name")]
+        public string SillyName { get; set; }
+
         [Category("Profile")]
         public string Aircraft { get; set; }
         

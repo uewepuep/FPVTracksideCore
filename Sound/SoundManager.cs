@@ -46,6 +46,8 @@ namespace Sound
 
         public static SoundManager Instance { get; private set; }
 
+        public float SillyNameChance;
+
         public bool MuteTTS
         {
             get
@@ -562,7 +564,14 @@ namespace Sound
 
             SpeechParameters parameters = new SpeechParameters();
             parameters.Priority = 0;
-            parameters.Add(SpeechParameters.Types.pilot, lap.Pilot.Phonetic);
+            if (lap.Pilot.SillyName == null)
+            {
+                parameters.Add(SpeechParameters.Types.pilot, lap.Pilot.Phonetic);
+            }
+            else
+            {
+                parameters.Add(SpeechParameters.Types.pilot, new Random().NextDouble() < SillyNameChance ? lap.Pilot.SillyName : lap.Pilot.Phonetic);
+            }
             parameters.Add(SpeechParameters.Types.lapnumber, lap.Number.ToString());
             parameters.Add(SpeechParameters.Types.count, validLaps.Length);
             parameters.AddRaceTime(SpeechParameters.Types.laptime, lap.Length);

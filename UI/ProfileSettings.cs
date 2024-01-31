@@ -163,6 +163,9 @@ namespace UI
         [NeedsRestart]
         public bool NotificationEnabled { get; set; }
 
+        [Category("Fun Stuff")]
+        public float SillyNameChance { get; set; }
+
         public ProfileSettings()
         {
             Theme = "Dark";
@@ -215,6 +218,7 @@ namespace UI
             NotificationSerialPort = "";
 
             CropContent16by9 = true;
+            SillyNameChance = 0.05f;
         }
 
         protected const string filename = "ProfileSettings.xml";
