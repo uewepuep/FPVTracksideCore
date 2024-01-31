@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Tools;
 using WinFormsGraphicsDevice;
 
 namespace WindowsPlatform
@@ -35,6 +36,7 @@ namespace WindowsPlatform
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
+            LayerStack.OnRequestRedraw -= LayerStack_OnRequestRedraw;
             LayerStack?.Dispose();
             LayerStack = null;
         }
@@ -67,7 +69,17 @@ namespace WindowsPlatform
 
         private void Redraw()
         {
-            BeginInvoke(new Action(Invalidate));
+            try
+            {
+                if (Handle != null)
+                {
+                    BeginInvoke(new Action(Invalidate));
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.UI.LogException(this, e);
+            }
         }
 
         protected override void OnMouseDown(MouseEventArgs e)
