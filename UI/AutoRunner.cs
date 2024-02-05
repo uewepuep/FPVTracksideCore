@@ -441,12 +441,15 @@ namespace UI
     public class AutoRunnerConfig
     {
         [Category("Auto Runner")]
+        [DisplayName("Seconds to show results")]
         public int SecondsToShowResults { get; set; }
 
         [Category("Auto Runner")]
+        [DisplayName("Seconds to next race (inc. results)")]
         public int SecondsToNextRace { get; set; }
 
         [Category("Auto Runner")]
+        [DisplayName("Seconds to finish lap after timer runs out")]
         public int SecondsToFinishFinalLapAfterTimesUp { get; set; }
 
 
