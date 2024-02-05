@@ -184,6 +184,8 @@ namespace UI
             {
                 Logger.UI.Log(null, "No Themes");
             }
+
+            Composition.Text.Style.DefaultFont = Current.FontFamily;
         }
 
         private void Repair()

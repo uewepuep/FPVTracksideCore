@@ -131,7 +131,10 @@ namespace UI.Sponsor
             }
 
             if (chosen == null)
+            {
+                afterTrigger?.Invoke();
                 return;
+            }
 
             triggered = DateTime.Now;
             triggerCount++;

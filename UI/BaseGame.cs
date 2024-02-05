@@ -134,8 +134,6 @@ namespace UI
 
             ClearColor = Theme.Current.Background.XNA;
 
-            Composition.Text.Style.DefaultFont = Theme.Current.FontFamily;
-
             Banner = TextureHelper.GetEmbeddedTexture(GraphicsDevice, System.Reflection.Assembly.GetAssembly(typeof(BaseGame)), @"UI.img.banner.png");
 
             BackgroundLayer backgroundLayer = new BackgroundLayer(GraphicsDevice, Theme.Current.Background);
