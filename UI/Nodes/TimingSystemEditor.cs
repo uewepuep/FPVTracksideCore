@@ -1,4 +1,5 @@
 ﻿using Composition.Input;
+using Composition.Layers;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using System;
@@ -9,15 +10,47 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Timing;
+using Tools;
 
 namespace UI.Nodes
 {
     class TimingSystemEditor : ObjectEditorNode<TimingSystemSettings>
     {
+        public TextButtonNode ScanButton { get; private set; }
+
         public TimingSystemEditor(IEnumerable<TimingSystemSettings> toEdit)
             : base(toEdit, true, true)
         {
             Text = "Timing Settings";
+
+            ScanButton = new TextButtonNode("Scan Network", ButtonBackground, ButtonHover, TextColor);
+            buttonContainer.AddChild(ScanButton);
+
+            Node[] buttons = new Node[] { ScanButton, addButton, removeButton, cancelButton, okButton };
+            buttonContainer.SetOrder(buttons);
+
+            ScanButton.OnClick += ScanButton_OnClick;
+
+            AlignVisibleButtons();
+        }
+
+        private void ScanButton_OnClick(MouseInputEvent mie)
+        {
+            LoadingLayer ll = CompositorLayer.LayerStack.GetLayer<LoadingLayer>();
+            if (ll != null)
+            {
+                ll.WorkQueue.Enqueue("Scanning Network", () =>
+                {
+                    SubnetScanner ss = new SubnetScanner();
+
+                    int[] defaultPorts = new int[] { (new Timing.ImmersionRC.LapRFSettingsEthernet()).Port,
+                                              (new Timing.RotorHazard.RotorHazardSettings()).Port };
+
+                    SubnetScanner.OpenPortsStruct[] openPorts =  ss.AliveWithOpenPorts(defaultPorts).ToArray();
+
+                    CompositorLayer.LayerStack.GetLayer<PopupLayer>().PopupMessage(string.Join(", ", openPorts.Select(s => s.ToString())));
+                });
+            }
         }
 
         protected override void AddOnClick(MouseInputEvent mie)

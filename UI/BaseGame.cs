@@ -147,10 +147,11 @@ namespace UI
             MenuLayer menuLayer = new MenuLayer(GraphicsDevice, Theme.Current.MenuBackground.XNA, Theme.Current.Hover.XNA, Theme.Current.MenuText.XNA, Theme.Current.MenuTextInactive.XNA, Theme.Current.ScrollBar.XNA);
             DragLayer dragLayer = new DragLayer(GraphicsDevice);
 
-            LayerStack.Add(loadingLayer);
             LayerStack.Add(popupLayer);
+
             LayerStack.Add(menuLayer);
             LayerStack.Add(dragLayer);
+            LayerStack.Add(loadingLayer);
 
             LayerStack.Add(new SponsorLayer(GraphicsDevice));
 #if DEBUG
