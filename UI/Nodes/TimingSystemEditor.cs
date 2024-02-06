@@ -6,10 +6,13 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Timing;
+using Timing.ImmersionRC;
+using Timing.RotorHazard;
 using Tools;
 
 namespace UI.Nodes
@@ -17,6 +20,28 @@ namespace UI.Nodes
     class TimingSystemEditor : ObjectEditorNode<TimingSystemSettings>
     {
         public TextButtonNode ScanButton { get; private set; }
+
+
+        public IEnumerable<string> Hostnames
+        {
+            get
+            {
+                if (Objects == null)
+                    yield break;
+
+                foreach (TimingSystemSettings timingSystemSetting in Objects)
+                {
+                    if (timingSystemSetting is RotorHazardSettings)
+                    {
+                        yield return ((RotorHazardSettings)timingSystemSetting).HostName;
+                    }
+                    if (timingSystemSetting is LapRFSettingsEthernet)
+                    {
+                        yield return ((LapRFSettingsEthernet)timingSystemSetting).HostName;
+                    }
+                }
+            }
+        }
 
         public TimingSystemEditor(IEnumerable<TimingSystemSettings> toEdit)
             : base(toEdit, true, true)
@@ -42,13 +67,44 @@ namespace UI.Nodes
                 ll.WorkQueue.Enqueue("Scanning Network", () =>
                 {
                     SubnetScanner ss = new SubnetScanner();
+                    ss.Exceptions = Hostnames.ToArray();
 
-                    int[] defaultPorts = new int[] { (new Timing.ImmersionRC.LapRFSettingsEthernet()).Port,
-                                              (new Timing.RotorHazard.RotorHazardSettings()).Port };
+                    int lapRFPort = (new LapRFSettingsEthernet()).Port;
+                    int rhPort = (new RotorHazardSettings()).Port;
 
-                    SubnetScanner.OpenPortsStruct[] openPorts =  ss.AliveWithOpenPorts(defaultPorts).ToArray();
 
-                    CompositorLayer.LayerStack.GetLayer<PopupLayer>().PopupMessage(string.Join(", ", openPorts.Select(s => s.ToString())));
+                    MouseMenu mouseMenu = new MouseMenu(ScanButton);
+                    foreach(SubnetScanner.OpenPortsStruct openPort in ss.AliveWithOpenPorts(lapRFPort, rhPort))
+                    {
+                        foreach (int port in openPort.Ports)
+                        {
+                            IPAddress copy = openPort.Address;
+
+                            if (port == lapRFPort)
+                            {
+                                mouseMenu.AddItem("Add LapRF 8way - " + copy, () => 
+                                {
+                                    var laprf = new LapRFSettingsEthernet();
+                                    laprf.HostName = copy.ToString();
+                                    AddNew(laprf);
+                                });
+                            }
+
+                            if (port == rhPort)
+                            {
+                                mouseMenu.AddItem("Add RotorHazard - " + copy, () => 
+                                {
+                                    var rotorhazard = new RotorHazardSettings();
+                                    rotorhazard.HostName = copy.ToString();
+                                    AddNew(rotorhazard);
+                                });
+                            }
+                        }
+                    }
+
+                    mouseMenu.TopToBottom = false;
+                    mouseMenu.Show(ScanButton);
+
                 });
             }
         }
@@ -160,5 +216,4 @@ namespace UI.Nodes
             }
         }
     }
-
 }

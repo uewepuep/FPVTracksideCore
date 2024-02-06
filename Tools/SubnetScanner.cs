@@ -15,6 +15,7 @@ namespace Tools
         public IPAddress[] LocalIPAddresses { get; private set; }
 
         public int Timeout { get; set; }
+        public string[] Exceptions { get; set; }
 
         public SubnetScanner() 
         {
@@ -51,6 +52,13 @@ namespace Tools
                 Ping ping = new Ping();
 
                 IPAddress copy = IPAddress.Parse(string.Join('.', thisIP));
+
+
+                if (Exceptions.Contains(copy.ToString()) || LocalIPAddresses.Contains(copy))
+                {
+                    return;
+                }
+
                 if (ping.Send(copy, Timeout).Status == IPStatus.Success)
                 {
                     action(copy);
