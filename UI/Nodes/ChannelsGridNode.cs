@@ -133,10 +133,7 @@ namespace UI.Nodes
             withOutLaps = new Size(400, 300);
             SingleSize = withLaps;
 
-            if (ProfileSettings.Instance.AlignChannelsTop)
-            {
-                Alignment = RectangleAlignment.TopCenter;
-            }
+            Alignment = ProfileSettings.Instance.AlignChannels;
 
             RequestLayout();
 

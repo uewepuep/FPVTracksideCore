@@ -23,8 +23,8 @@ namespace UI
 
         [Category("Layout")]
         [NeedsRestart]
-        [DisplayName("Align FPV feeds to the top")]
-        public bool AlignChannelsTop { get; set; }
+        [DisplayName("FPV Feeds Alignment")]
+        public RectangleAlignment AlignChannels { get; set; }
 
         [Category("Layout")]
         [DisplayName("Make content 16 by 9 and crop out right side buttons")]
@@ -170,6 +170,8 @@ namespace UI
         public ProfileSettings()
         {
             Theme = "Dark";
+
+            AlignChannels = RectangleAlignment.Center;
 
             ReOrderDelaySeconds = 3;
             ReOrderAnimationSeconds = 2;

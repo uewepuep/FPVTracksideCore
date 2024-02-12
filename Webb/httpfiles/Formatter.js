@@ -235,6 +235,8 @@ class Formatter
 
         pilotRecords.sort((a, b) => { return this.eventManager.TotalTime(a.laps) - this.eventManager.TotalTime(b.laps) });
 
+        const isRace = eventDetails.EventType == "Race";
+
 
         let output = "<h2>Lap Records</h2>";
         output += "<div class=\"columns\">";
@@ -244,7 +246,11 @@ class Formatter
         output += "<div class=\"holeshot\">Holeshot</div>";
         output += "<div class=\"lap\">" + pbLaps + " Lap" + this.Plural(pbLaps) + " </div>";
         output += "<div class=\"laps\">" + lapCount + " Lap" + this.Plural(lapCount) + " </div>";
-        output += "<div class=\"racetime\">Race Time</div>";
+
+        if (isRace)
+        {
+            output += "<div class=\"racetime\">Race Time</div>";
+        }
         output += "</div>";
 
         let i = 1;
@@ -256,7 +262,11 @@ class Formatter
             output += "<div class=\"holeshot\">" + this.LapsToTime(pilotRecord.holeshot) + "</div>";
             output += "<div class=\"lap\">" + this.LapsToTime(pilotRecord.lap) + "</div>";
             output += "<div class=\"laps\">" + this.LapsToTime(pilotRecord.laps) + "</div>";
-            output += "<div class=\"racetime\">" + this.LapsToTime(pilotRecord.race) + "</div>";
+
+            if (isRace)
+            {
+                output += "<div class=\"racetime\">" + this.LapsToTime(pilotRecord.race) + "</div>";
+            }
 
             output += "</div>";
             i++;
