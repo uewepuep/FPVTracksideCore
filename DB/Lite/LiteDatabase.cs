@@ -55,14 +55,6 @@ namespace DB.Lite
         public static void Init(DirectoryInfo directoryInfo)
         {
             directory = directoryInfo.FullName;
-
-            using (LiteDatabase db = new LiteDatabase())
-            {
-                if (!db.Channels.All().Any())
-                {
-                    db.Channels.Insert(RaceLib.Channel.AllChannels.Convert<Channel>());
-                }
-            }
         }
 
         public LiteDatabase()
@@ -76,7 +68,7 @@ namespace DB.Lite
                 mutex = new AutoResetEvent(true);
 
             waiting++;
-            if (!mutex.WaitOne(10000))
+            if (!mutex.WaitOne(1000))
             {
 #if DEBUG
                 throw new Exception("Database wait timeout");
@@ -121,6 +113,11 @@ namespace DB.Lite
                 }
                 database.UserVersion = version;
                 InitTables();
+
+                if (!Channels.All().Any())
+                {
+                    Channels.Insert(RaceLib.Channel.AllChannels.Convert<Channel>());
+                }
             }
         }
 

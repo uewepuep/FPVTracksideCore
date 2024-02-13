@@ -56,7 +56,15 @@ namespace DB
 
             if (DatabaseType == DatabaseTypes.JSON)
             {
-                db = new BothDatabase(EventDirectory);
+                try
+                {
+                    db = new BothDatabase(EventDirectory);
+                }
+                catch
+                {
+                    // try just regular json db if the litedb is failing.
+                    db = new CollectionDatabase(new JSON.JSONDatabaseConverted(EventDirectory));
+                }
             }
             else
             {

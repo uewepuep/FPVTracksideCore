@@ -927,9 +927,16 @@ namespace Composition.Nodes
 
         protected override void SetValue(object value)
         {
-            Value.Text = ValueToString(value); 
-            base.SetValue(value);
-            RequestRedraw();
+            try
+            {
+                Value.Text = ValueToString(value);
+                base.SetValue(value);
+                RequestRedraw();
+            }
+            catch (Exception ex) 
+            {
+                Logger.Input.LogException(this, ex);
+            }
         }
 
         public virtual string ValueToString(object value)
@@ -1034,11 +1041,6 @@ namespace Composition.Nodes
             }
         }
 
-        protected override void SetValue(object value)
-        {
-            base.SetValue(value);
-        }
-
         public override bool Focus()
         {
             Value.HasFocus = true;
@@ -1117,20 +1119,28 @@ namespace Composition.Nodes
 
         protected override void SetValue(object value)
         {
-            string str = value.ToString();
-            double d;
-            int i;
-            if (PropertyInfo.PropertyType == typeof(double) && double.TryParse(str, out d))
+            try
             {
-                base.SetValue(d);
+                string str = value.ToString();
+                double d;
+                int i;
+                if (PropertyInfo.PropertyType == typeof(double) && double.TryParse(str, out d))
+                {
+                    base.SetValue(d);
+                }
+                if (PropertyInfo.PropertyType == typeof(float) && double.TryParse(str, out d))
+                {
+                    base.SetValue((float)d);
+                }
+                else if (PropertyInfo.PropertyType == typeof(int) && int.TryParse(str, out i))
+                {
+                    base.SetValue(i);
+                }
             }
-            if (PropertyInfo.PropertyType == typeof(float) && double.TryParse(str, out d))
+            catch (Exception ex)
             {
-                base.SetValue((float)d);
-            }
-            else if (PropertyInfo.PropertyType == typeof(int) && int.TryParse(str, out i))
-            {
-                base.SetValue(i);
+                Logger.Input.LogException(this, ex);
+                UpdateFromObject();
             }
         }
     }
@@ -1155,8 +1165,16 @@ namespace Composition.Nodes
 
         protected override void SetValue(object value)
         {
-            string noPercentage = value.ToString().Replace("%", "");
-            base.SetValue(noPercentage);
+            try
+            {
+                string noPercentage = value.ToString().Replace("%", "");
+                base.SetValue(noPercentage);
+            }
+            catch (Exception ex)
+            {
+                Logger.Input.LogException(this, ex);
+                UpdateFromObject();
+            }
         }
     }
 
@@ -1176,24 +1194,32 @@ namespace Composition.Nodes
 
         protected override void SetValue(object value)
         {
-            string[] splits = value.ToString().Split(',');
-
-            int i;
-
-            List<int> values = new List<int>();
-            foreach (string str in splits)
+            try
             {
-                if (int.TryParse(str, out i))
-                {
-                    values.Add(i);
-                }
-                else
-                {
-                    return;
-                }
-            }
+                string[] splits = value.ToString().Split(',');
 
-            base.SetValue(values.ToArray());
+                int i;
+
+                List<int> values = new List<int>();
+                foreach (string str in splits)
+                {
+                    if (int.TryParse(str, out i))
+                    {
+                        values.Add(i);
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+
+                base.SetValue(values.ToArray());
+            }
+            catch (Exception ex)
+            {
+                Logger.Input.LogException(this, ex);
+                UpdateFromObject();
+            }
         }
     }
 
@@ -1208,16 +1234,23 @@ namespace Composition.Nodes
         {
             string str = value.ToString();
 
-            TimeSpan timeSpan;
-            double d;
-            if (double.TryParse(str, out d))
+            try
             {
-                timeSpan = TimeSpan.FromSeconds(d);
-                base.SetValue(timeSpan);
+                TimeSpan timeSpan;
+                double d;
+                if (double.TryParse(str, out d))
+                {
+                    timeSpan = TimeSpan.FromSeconds(d);
+                    base.SetValue(timeSpan);
+                }
+                else if (TimeSpan.TryParse(str, out timeSpan))
+                {
+                    base.SetValue(timeSpan);
+                }
             }
-            else if (TimeSpan.TryParse(str, out timeSpan))
+            catch (Exception ex) 
             {
-                base.SetValue(timeSpan);
+                Logger.Input.LogException(this, ex);
             }
         }
 
@@ -1281,30 +1314,29 @@ namespace Composition.Nodes
 
         protected override void SetValue(object value)
         {
-            string str = value.ToString();
-
-            DateTime temp;
-            string[] splits = str.Split('/', '-','\\');
-            if (splits.Length == 3 && DateTime.TryParse(str, out temp))
+            try
             {
-                int y, m, d;
-
-                if (int.TryParse(splits[0], out y) &&
-                    int.TryParse(splits[1], out m) &&
-                    int.TryParse(splits[2], out d))
+                string str = value.ToString();
+                DateTime temp;
+                string[] splits = str.Split('/', '-','\\');
+                if (splits.Length == 3 && DateTime.TryParse(str, out temp))
                 {
-                    try
+                    int y, m, d;
+
+                    if (int.TryParse(splits[0], out y) &&
+                        int.TryParse(splits[1], out m) &&
+                        int.TryParse(splits[2], out d))
                     {
-
-                        DateTime dateTime = new DateTime(y, m, d);
-                        base.SetValue(dateTime);
-                    }
-                    catch
-                    {
+                            DateTime dateTime = new DateTime(y, m, d);
+                            base.SetValue(dateTime);
 
                     }
-
                 }
+            }
+            catch (Exception e)
+            {
+                Logger.Input.LogException(this, e);
+                UpdateFromObject();
             }
         }
     }
@@ -1358,10 +1390,18 @@ namespace Composition.Nodes
 
         protected override void SetValue(object value)
         {
-            base.SetValue(value);
-            Value.Text = ValueToString(value);
+            try
+            {
+                base.SetValue(value);
+                Value.Text = ValueToString(value);
 
-            onChanged?.Invoke(value);
+                onChanged?.Invoke(value);
+            }
+            catch (Exception ex) 
+            {
+                UpdateFromObject();
+                Logger.Input.LogException(this, ex);
+            }
         }
 
         protected virtual void ShowMouseMenu()
