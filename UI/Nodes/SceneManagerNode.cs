@@ -349,7 +349,7 @@ namespace UI.Nodes
                         channelsGridNode.MakeExtrasVisible(false);
                     }
 
-                    channelsGridNode.SetBiggerChannelInfo(true);
+                    channelsGridNode.SetBiggerInfo(true, false);
                     channelsGridNode.SetProfileVisible(true, true);
 
                     launchCamsNode.SetAnimatedVisibility(true);
@@ -393,7 +393,7 @@ namespace UI.Nodes
 
                     resultsRaceNode.SetAnimatedVisibility(false);
                     nextRaceNode.SetAnimatedVisibility(false);
-                    channelsGridNode.SetBiggerChannelInfo(!eventManager.RaceManager.RaceRunning);
+                    channelsGridNode.SetBiggerInfo(!eventManager.RaceManager.RaceRunning, false);
                     channelsGridNode.MakeExtrasVisible(true);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
                     break;
@@ -409,7 +409,7 @@ namespace UI.Nodes
                     resultsRaceNode.SetAnimatedVisibility(false);
                     nextRaceNode.SetAnimatedVisibility(false);
 
-                    channelsGridNode.SetBiggerChannelInfo(false);
+                    channelsGridNode.SetBiggerInfo(false, false);
                     channelsGridNode.MakeExtrasVisible(false);
                     channelsGridNode.SetProfileVisible(false, true);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
@@ -426,17 +426,31 @@ namespace UI.Nodes
                     channelsGridNode.SingleRow = true;
                     channelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 1, channelGridHeight);
 
-                    commentatorsAndSummary.SetAnimatedVisibility(true);
-                    commentatorsAndSummary.RelativeBounds = new RectangleF(0.33f, channelGridHeight, 0.33f, nonChannelGridHeight);
-                    AlignVertically(0, commentatorsAndSummary.Children);
+                    if (commentatorsAndSummary.ChildCount > 0)
+                    {
+                        float commentatorsize = 0.48f;
+                        float halfRemainder = (1 - commentatorsize) / 2.0f;
 
-                    float only2Fudge = commentatorsAndSummary.ChildCount > 0 ? 0 : 0.125f;
+                        commentatorsAndSummary.SetAnimatedVisibility(true);
+                        commentatorsAndSummary.RelativeBounds = new RectangleF(halfRemainder, channelGridHeight, commentatorsize, nonChannelGridHeight);
+                        AlignVertically(0, commentatorsAndSummary.Children);
 
-                    resultsRaceNode.RelativeBounds = new RectangleF(0 + only2Fudge, channelGridHeight, 0.33f, nonChannelGridHeight);
-                    resultsRaceNode.Scale(0.8f);
-                    
-                    nextRaceNode.RelativeBounds = new RectangleF(0.66f - only2Fudge, channelGridHeight, 0.33f, nonChannelGridHeight);
-                    nextRaceNode.Scale(0.8f);
+                        resultsRaceNode.RelativeBounds = new RectangleF(0, channelGridHeight, halfRemainder, nonChannelGridHeight);
+                        resultsRaceNode.Scale(0.95f, 0.8f);
+
+                        nextRaceNode.RelativeBounds = new RectangleF(halfRemainder + commentatorsize, channelGridHeight, halfRemainder, nonChannelGridHeight);
+                        nextRaceNode.Scale(0.95f, 0.8f);
+                    }
+                    else
+                    {
+                        commentatorsAndSummary.SetAnimatedVisibility(false);
+
+                        resultsRaceNode.RelativeBounds = new RectangleF(0.125f, channelGridHeight, 0.33f, nonChannelGridHeight);
+                        resultsRaceNode.Scale(0.8f);
+
+                        nextRaceNode.RelativeBounds = new RectangleF(0.535f, channelGridHeight, 0.33f, nonChannelGridHeight);
+                        nextRaceNode.Scale(0.8f);
+                    }
 
                     nextRaceNode.SetAnimatedVisibility(true);
 
@@ -452,7 +466,7 @@ namespace UI.Nodes
 
                     UpdateNextRaceNode();
 
-                    channelsGridNode.SetBiggerChannelInfo(true);
+                    channelsGridNode.SetBiggerInfo(true, true);
                     channelsGridNode.MakeExtrasVisible(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
                     break;
@@ -501,7 +515,7 @@ namespace UI.Nodes
                         channelsGridNode.MakeExtrasVisible(true);
                     }
 
-                    channelsGridNode.SetBiggerChannelInfo(true);
+                    channelsGridNode.SetBiggerInfo(true, false);
                     channelsGridNode.SetProfileVisible(true, true);
 
                     finishLineNode.SetAnimatedVisibility(true);

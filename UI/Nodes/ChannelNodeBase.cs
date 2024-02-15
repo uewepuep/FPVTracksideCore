@@ -80,20 +80,7 @@ namespace UI.Nodes
 
         public CrashOutType CrashedOutType { get; set; }
         public bool Finished { get { return resultBackground.Visible; } }
-
-        public bool BiggerChannelInfo 
-        { 
-            get 
-            { 
-                return channelInfo.RelativeBounds.Height > 0.05f; 
-            } 
-            set
-            {
-                float height = value ? 0.12f : 0.05f; 
-                channelInfo.RelativeBounds = new RectangleF(0.0f, 0.01f, 0.99f, height);
-            } 
-        }
-
+           
         private ColorNode crashedOut;
 
         private bool needUpdatePosition;
@@ -247,7 +234,6 @@ namespace UI.Nodes
             }
 
             pilotNameNode = new ChannelPilotNameNode(this, ChannelColor, pilotAlpha);
-            pilotNameNode.RelativeBounds = new RectangleF(0, 0.03f, 0.4f, 0.12f);
             DisplayNode.AddChild(pilotNameNode);
 
             channelInfo = new TextNode(Channel.GetBandChannelText(), Color.White);
@@ -268,7 +254,7 @@ namespace UI.Nodes
 
             resultBackground = new ColorNode(Theme.Current.PilotViewTheme.PilotOverlayPanel);
             resultBackground.Alpha = pilotAlpha;
-            resultBackground.RelativeBounds = new RectangleF(0, 0.3f, 1, 0.4f);
+            // Size set in set bigger info
             DisplayNode.AddChild(resultBackground);
 
             finalPosition = new TextNode("", Theme.Current.PilotViewTheme.PilotOverlayText.XNA);
@@ -305,7 +291,6 @@ namespace UI.Nodes
             resultBackground.Visible = false;
 
             pbBackground = new ColorNode(Theme.Current.PilotViewTheme.PBBackground);
-            pbBackground.RelativeBounds = new RectangleF(0.0f, pilotNameNode.RelativeBounds.Bottom, pilotNameNode.RelativeBounds.Width * 0.66f, 0.065f);
             pbBackground.KeepAspectRatio = false;
             pbBackground.Alpha = pilotAlpha;
             DisplayNode.AddChild(pbBackground);
@@ -340,6 +325,8 @@ namespace UI.Nodes
 
             AddChild(new ShadowNode());
             SetPilot(null);
+
+            SetBiggerInfo(false, false);
         }
 
         private void Close()
@@ -814,6 +801,32 @@ namespace UI.Nodes
 
             LapsNode.SetPlaybackTime(time);
         }
+
+        public virtual void SetBiggerInfo(bool biggerChannel, bool biggerResults)
+        {
+            if (biggerChannel)
+            {
+                channelInfo.RelativeBounds = new RectangleF(0.0f, 0.01f, 0.99f, 0.12f);
+            }
+            else
+            {
+                channelInfo.RelativeBounds = new RectangleF(0.0f, 0.01f, 0.99f, 0.05f);
+            }
+
+
+            if (biggerResults)
+            {
+                pilotNameNode.RelativeBounds = new RectangleF(0, 0.03f, 0.6f, 0.2f);
+                resultBackground.RelativeBounds = new RectangleF(0, 0.3f, 1, 0.6f);
+            }
+            else
+            {
+                pilotNameNode.RelativeBounds = new RectangleF(0, 0.03f, 0.4f, 0.12f);
+                resultBackground.RelativeBounds = new RectangleF(0, 0.3f, 1, 0.4f);
+            }
+
+            pbBackground.RelativeBounds = new RectangleF(0.0f, pilotNameNode.RelativeBounds.Bottom, pilotNameNode.RelativeBounds.Width * 0.66f, 0.065f);
+        }
     }
 
     public class ChannelPilotNameNode : ColorNode, IPilot
@@ -862,6 +875,5 @@ namespace UI.Nodes
 
             return base.OnMouseInput(mouseInputEvent);
         }
-
     }
 }

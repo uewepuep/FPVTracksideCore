@@ -132,7 +132,7 @@ namespace Composition.Nodes
             }
             catch
             {
-                textRenderer.Reset();
+                textRenderer?.Reset();
             }
             DebugTimer.DebugEndTime(this);
 

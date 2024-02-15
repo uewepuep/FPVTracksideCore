@@ -427,12 +427,12 @@ namespace UI.Nodes
             gridStatsNode.SetAnimatedVisibility(visible);
         }
 
-        public void SetBiggerChannelInfo(bool tall)
+        public void SetBiggerInfo(bool biggerChannel, bool biggerResults)
         {
             ChannelNodeBase[] nodes = ChannelNodes.ToArray();
             foreach (ChannelNodeBase n in nodes)
             {
-                n.BiggerChannelInfo = tall;
+                n.SetBiggerInfo(biggerChannel, biggerResults);
             }
         }
 
