@@ -213,7 +213,7 @@ namespace UI.Nodes
             PilotProfile.SetAnimatedVisibility(false);
 
             LapsNode = new LapsNode(EventManager);
-            LapsNode.LapLines = 4;
+            LapsNode.LapLines = 3;
             LapsNode.ChannelColor = ChannelColor;
             LapsNode.RelativeBounds = new RectangleF(0, 1 - (LapsNode.LapLines * LapLineHeight), 1, LapLineHeight * LapsNode.LapLines);
 
@@ -813,18 +813,16 @@ namespace UI.Nodes
                 channelInfo.RelativeBounds = new RectangleF(0.0f, 0.01f, 0.99f, 0.05f);
             }
 
-
             if (biggerResults)
             {
-                pilotNameNode.RelativeBounds = new RectangleF(0, 0.03f, 0.6f, 0.2f);
-                resultBackground.RelativeBounds = new RectangleF(0, 0.3f, 1, 0.6f);
+                resultBackground.RelativeBounds = new RectangleF(0, 0.25f, 1, 0.5f);
             }
             else
             {
-                pilotNameNode.RelativeBounds = new RectangleF(0, 0.03f, 0.4f, 0.12f);
                 resultBackground.RelativeBounds = new RectangleF(0, 0.3f, 1, 0.4f);
             }
 
+            pilotNameNode.RelativeBounds = new RectangleF(0, 0.03f, 0.4f, 0.12f);
             pbBackground.RelativeBounds = new RectangleF(0.0f, pilotNameNode.RelativeBounds.Bottom, pilotNameNode.RelativeBounds.Width * 0.66f, 0.065f);
         }
     }
