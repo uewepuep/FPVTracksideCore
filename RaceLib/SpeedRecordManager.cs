@@ -212,7 +212,7 @@ namespace RaceLib
                 {
                     float metersPerSecond = (float)(distance / split.Time.TotalSeconds);
 
-                    if (metersPerSecond > maxSpeed)
+                    if (metersPerSecond > MaxValidSpeed)
                     {
                         return 0;
                     }

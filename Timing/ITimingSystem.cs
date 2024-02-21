@@ -146,8 +146,8 @@ namespace Timing
         [Category("System Settings")]
         public TimingSystemRole Role { get; set; }
 
-        [Category("Speed Calculation (0 to disable)")]
-        [DisplayName("Sector Length (Meters)")]
+        [Category("Speed Calculation. (0 to disable)")]
+        [DisplayName("Preceding Sector Length (Meters)")]
         public float SectorLengthMeters { get; set; }
 
         private const string timingSystemFilename = "TimingSystemSettings.xml";
