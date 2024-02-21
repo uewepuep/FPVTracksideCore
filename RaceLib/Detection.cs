@@ -62,7 +62,7 @@ namespace RaceLib
 
         public override string ToString()
         {
-            return "Detection " + Pilot.Name + " L" + LapNumber + " I" + TimingSystemIndex + " RS" + RaceSector + " T" + Time.ToLogFormat();
+            return "Detection " + Pilot.Name + " L" + LapNumber + " I" + TimingSystemIndex + " RS" + RaceSector + " T" + Time.ToLogFormat() + " s" + RaceSectorCalculator(LapNumber, TimingSystemIndex);
         }
 
         public static int RaceSectorCalculator(int lapNumber, int timingSystemIndex)

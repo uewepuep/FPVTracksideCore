@@ -46,6 +46,8 @@ namespace Sound
         NewLapRecord,
         NewHoleshotRecord,
 
+        Speed,
+
         NameTest,
         HurryUp,
         PilotChannel,
@@ -55,6 +57,7 @@ namespace Sound
         StaggeredPilot,
 
         Detection,
+        DetectionSplit,
 
         NoVideoDelayingRace,
 

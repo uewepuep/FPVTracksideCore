@@ -69,9 +69,18 @@ namespace UI.Nodes
             {
                 int index = detection.TimingSystemIndex;
 
-                if (index < splitNodes.Count)
+                SplitTimeNode splitNode = null;
+                if (index < splitNodes.Count && index > 0)
                 {
-                    SplitTimeNode splitNode = splitNodes[index];
+                    splitNode = splitNodes[index - 1];
+                }
+                else
+                {
+                    splitNode = splitNodes.Last();
+                }
+
+                if (splitNode != null)
+                {
                     splitNode.SetTime(split);
 
                     if (detection.IsLapEnd)

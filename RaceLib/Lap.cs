@@ -69,6 +69,9 @@ namespace RaceLib
             Race = race;
             Detection = detection;
             Start = startTime;
+
+            System.Diagnostics.Debug.Assert(Detection.TimingSystemIndex == 0);  
+            System.Diagnostics.Debug.Assert(Detection.IsLapEnd);
         }
 
         public void UpdateLength()

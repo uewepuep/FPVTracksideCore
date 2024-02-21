@@ -1275,6 +1275,14 @@ namespace RaceLib
             }
             else
             {
+                if (currentRace.PrimaryTimingSystemLocation == PrimaryTimingSystemLocation.Holeshot)
+                {
+                    if (!currentRace.HasLap(d.Pilot))
+                    {
+                        d.Valid = false;
+                    }
+                }
+
                 using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
                 {
                     db.Insert(d);
@@ -1284,8 +1292,11 @@ namespace RaceLib
                 {
                     currentRace.Detections.Add(d);
                 }
-
-                OnSplitDetection?.Invoke(d);
+                
+                if (d.Valid)
+                {
+                    OnSplitDetection?.Invoke(d);
+                }
             }
         }
 

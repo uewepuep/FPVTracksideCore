@@ -28,6 +28,7 @@ namespace RaceLib
 
         public event Action<Split, float> OnNewPersonalBest;
         public event Action<Split, float> OnNewOveralBest;
+        public event Action<Split, float> OnSpeedCalculated;
 
         const int MaxValidSpeed = 200; // m/s
 
@@ -148,6 +149,8 @@ namespace RaceLib
                 speedRecord = new SpeedRecord() { Split = split, Speed = 0.0f };
             }
 
+            OnSpeedCalculated?.Invoke(split, newSpeed);
+
             if (newSpeed > speedRecord.Speed)
             {
                 speedRecord.Speed = newSpeed;
@@ -208,6 +211,12 @@ namespace RaceLib
                 if (distance > 0)
                 {
                     float metersPerSecond = (float)(distance / split.Time.TotalSeconds);
+
+                    if (metersPerSecond > maxSpeed)
+                    {
+                        return 0;
+                    }
+
                     return metersPerSecond;
                 }
             }
@@ -222,18 +231,33 @@ namespace RaceLib
             }
         }
 
-        public string SpeedToString(float speed, Units unit)
+        public int SpeedToUnit(float speed, Units unit)
         {
             switch (unit)
             {
                 case Units.Imperial:
                     float miles = speed * 2.237f;
-                    return miles.ToString("0") + " mph";
+                    return (int)miles;
 
                 case Units.Metric:
                 default:
                     float km = speed * 3.6f;
-                    return km.ToString("0") + "km/h";
+                    return (int)km;
+            }
+        }
+
+        public string SpeedToString(float speed, Units unit)
+        {
+            float unitized = SpeedToUnit(speed, unit);
+
+            switch (unit)
+            {
+                case Units.Imperial:
+                    return unitized.ToString("0") + " mph";
+
+                case Units.Metric:
+                default:
+                    return unitized.ToString("0") + "km/h";
             }
         }
 

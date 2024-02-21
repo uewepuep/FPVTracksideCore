@@ -86,10 +86,13 @@ namespace Sound
 
         public Profile Profile { get; private set; }
 
+        public Units Units { get; set; }
+
         public SoundManager(EventManager eventManager, Profile profile)
         {
             this.eventManager = eventManager;
             Profile = profile;
+            Units = Units.Metric;
 
             announceConnection = false;
             Instance = this;
@@ -105,21 +108,42 @@ namespace Sound
 
             if (eventManager != null)
             {
-                eventManager.RaceManager.OnRaceStart += (r) =>
-                {
-                    if (!eventManager.RaceManager.StaggeredStart)
-                    {
-                        Start();
-                    }
-                };
-                eventManager.RaceManager.OnRaceEnd += (r) => { RaceOver(); };
-                eventManager.RaceManager.OnLapDetected += (lap) => { Lap(lap); };
+                eventManager.RaceManager.OnRaceStart += RaceManager_OnRaceStart;
+                eventManager.RaceManager.OnRaceEnd += RaceOver;
+                eventManager.RaceManager.OnLapDetected += Lap;
                 eventManager.RaceManager.OnSplitDetection += Sector;
                 eventManager.LapRecordManager.OnNewOveralBest += OnNewRecord;
                 eventManager.RaceManager.OnRaceChanged += OnRaceChanged;
                 eventManager.RaceManager.OnRaceCancelled += RaceManager_OnRaceCancelled;
+                eventManager.SpeedRecordManager.OnSpeedCalculated += OnSpeed;
+                eventManager.RaceManager.OnSplitDetection += OnSplit;
             }
         }
+
+        public void Dispose()
+        {
+            if (eventManager != null)
+            {
+                eventManager.RaceManager.OnRaceStart -= RaceManager_OnRaceStart;
+                eventManager.RaceManager.OnRaceEnd -= RaceOver;
+                eventManager.RaceManager.OnLapDetected -= Lap;
+                eventManager.RaceManager.OnSplitDetection -= Sector;
+                eventManager.LapRecordManager.OnNewOveralBest -= OnNewRecord;
+                eventManager.RaceManager.OnRaceChanged -= OnRaceChanged;
+                eventManager.RaceManager.OnRaceCancelled -= RaceManager_OnRaceCancelled;
+                eventManager.SpeedRecordManager.OnSpeedCalculated -= OnSpeed;
+                eventManager.RaceManager.OnSplitDetection -= OnSplit;
+
+            }
+
+            Logger.SoundLog.LogCall(this);
+            speechManager?.Dispose();
+            speechManager = null;
+
+            soundEffectManager?.Dispose();
+            soundEffectManager = null;
+        }
+
 
         public void SetupSpeaker(PlatformTools platformTools, string voice, int volume)
         {
@@ -183,6 +207,7 @@ namespace Sound
                     new Sound() { Key = SoundKey.PilotResult, TextToSpeech = "{pilot} {position}", Category = Sound.SoundCategories.Announcements },
 
                     new Sound() { Key = SoundKey.Detection, TextToSpeech = "beep", Filename = @"sounds/detection.wav", Category = Sound.SoundCategories.Detection },
+                    new Sound() { Key = SoundKey.DetectionSplit, TextToSpeech = "beep", Filename = @"sounds/detection.wav", Category = Sound.SoundCategories.Detection },
                     new Sound() { Key = SoundKey.Sector, TextToSpeech = "{pilot} sector {count} in {position}", Enabled = false, Category = Sound.SoundCategories.Detection },
 
                     new Sound() { Key = SoundKey.RaceDone, TextToSpeech = "{pilot} finished in {position}", Category = Sound.SoundCategories.Detection },
@@ -197,6 +222,7 @@ namespace Sound
                     new Sound() { Key = SoundKey.NewLapRecord, TextToSpeech = "{pilot} new record {count} lap{s} in {lapstime}", Enabled = false, Category = Sound.SoundCategories.Records },
                     new Sound() { Key = SoundKey.NewHoleshotRecord, TextToSpeech = "{pilot} new record holeshot in {time}", Enabled = false, Category = Sound.SoundCategories.Records },
 
+                    new Sound() { Key = SoundKey.Speed, TextToSpeech = "{pilot} {speed} {speedunits}", Enabled = false, Category = Sound.SoundCategories.Detection },
 
                     new Sound() { Key = SoundKey.StandDownCancelled, TextToSpeech = "Stand down and disarm, Race Start Cancelled", Category = Sound.SoundCategories.Status},
                     new Sound() { Key = SoundKey.StandDownTimingSystem, TextToSpeech = "Stand down and disarm, Timing system failure", Category = Sound.SoundCategories.Status },
@@ -207,6 +233,8 @@ namespace Sound
                     new Sound() { Key = SoundKey.NoVideoDelayingRace, TextToSpeech = " Race start delayed as {pilot} has no video. Race starts in {time}", Category = Sound.SoundCategories.Race },
 
                     new Sound() { Key = SoundKey.UntilRaceStart, TextToSpeech = "{time} until the race start", Category = Sound.SoundCategories.Announcements },
+                    
+
 
                     new Sound() { Key = SoundKey.Custom1, TextToSpeech = "Custom sound 1", Category = Sound.SoundCategories.Announcements },
                     new Sound() { Key = SoundKey.Custom2, TextToSpeech = "Custom sound 2", Category = Sound.SoundCategories.Announcements },
@@ -247,6 +275,18 @@ namespace Sound
         public void Reset()
         {
             InitSounds(true);
+        }
+        private void OnSplit(Detection detection)
+        {
+            PlaySound(SoundKey.DetectionSplit, new SpeechParameters());
+        }
+
+        private void RaceManager_OnRaceStart(Race race)
+        {
+            if (!eventManager.RaceManager.StaggeredStart)
+            {
+                Start();
+            }
         }
 
         private void OnRaceChanged(Race race)
@@ -413,14 +453,32 @@ namespace Sound
             speechManager?.EnqueueSpeech(speechRequest);
         }
 
-        public void Dispose()
-        {
-            Logger.SoundLog.LogCall(this);
-            speechManager?.Dispose();
-            speechManager = null;
 
-            soundEffectManager?.Dispose();
-            soundEffectManager = null;
+
+        private void OnSpeed(Split split, float speedms)
+        {
+            int speed = eventManager.SpeedRecordManager.SpeedToUnit(speedms, Units);
+            string units = UnitToWords();
+
+            SpeechParameters parameters = new SpeechParameters();
+            parameters.Priority = 0;
+            parameters.Add(SpeechParameters.Types.speedunits, units);
+            parameters.Add(SpeechParameters.Types.speed, speed);
+            parameters.Add(SpeechParameters.Types.pilot, split.Pilot.Phonetic);
+
+            PlaySound(SoundKey.Speed, parameters);
+        }
+
+        public string UnitToWords()
+        {
+            switch (Units)
+            {
+                case Units.Imperial:
+                    return "miles per hour";
+                case Units.Metric:
+                default:
+                    return "kilometers per hour";
+            }
         }
 
         public void StopSound()
@@ -505,6 +563,12 @@ namespace Sound
         public void Start()
         {
             PlaySound(SoundKey.RaceStart, new SpeechParameters() { Priority = 10000 });
+        }
+
+
+        public void RaceOver(Race race)
+        {
+            RaceOver();
         }
 
         public void RaceOver()

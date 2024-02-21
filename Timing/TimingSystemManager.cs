@@ -36,7 +36,7 @@ namespace Timing
         {
             get
             {
-                return SplitSystems.Union(PrimeSystems);
+                return PrimeSystems.Union(SplitSystems);
             }
         }
 
@@ -354,18 +354,31 @@ namespace Timing
             DetectionEvent?.Invoke(timingSystem.Type, index, frequency, time, isLapEnd, peak);
         }
 
+
+        // 0 Primary, 1,2,3 etc secondary. 
         public int GetIndex(ITimingSystem timingSystem)
         {
             int index = 0;
-            foreach (ITimingSystem t in TimingSystems)
+
+            foreach (ITimingSystem t in PrimeSystems)
             {
                 if (t == timingSystem)
-                    break;
+                {
+                    return index;
+                }
+                index++;
+            }
+
+            foreach (ITimingSystem t in SplitSystems)
+            {
+                if (t == timingSystem)
+                {
+                    return index;
+                }
                 index++;
             }
             return index;
         }
-
         public bool SetListeningFrequencies(IEnumerable<ListeningFrequency> newFrequencies)
         {
             if (PrimeSystems.Length == 0)

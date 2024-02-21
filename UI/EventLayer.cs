@@ -104,6 +104,7 @@ namespace UI
             SoundManager = new SoundManager(EventManager, eventManager.Profile);
             SoundManager.MuteTTS = !ProfileSettings.Instance.TextToSpeech;
             SoundManager.SillyNameChance = ProfileSettings.Instance.SillyNameChance;
+            SoundManager.Units = GeneralSettings.Instance.Units;
 
             EventManager.RaceManager.TimingSystemManager.OnConnected += (int count) =>
             {

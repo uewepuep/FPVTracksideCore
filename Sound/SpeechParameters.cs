@@ -29,7 +29,9 @@ namespace Sound
             laptime,
             lapstime,
             racetime,
-            s
+            s,
+            speedunits,
+            speed
         }
 
         Dictionary<Types, string> parameters;
@@ -187,6 +189,7 @@ namespace Sound
             string s = count > 1 ? "s" : "";
             Band band = (new Band[] { Band.DJIFPVHD, Band.Fatshark, Band.Raceband, Band.HDZero }).Random();
             int channel = r.Next(1, 8);
+            int speed = r.Next(1, 120);
 
             string[] pilotNames = new string[]
             {
@@ -234,6 +237,8 @@ namespace Sound
             parameters.Add(Types.band, band.GetCharacter());
             parameters.Add(Types.channel, channel);
             parameters.Add(Types.lapnumber, count);
+            parameters.Add(Types.speed, speed);
+            parameters.Add(Types.speedunits, soundManager.UnitToWords());
 
             int pilotcount = r.Next(2, 6);
 

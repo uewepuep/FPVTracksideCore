@@ -489,6 +489,8 @@ namespace UI.Nodes
                 ProfileSettings profileSettings = ProfileSettings.Read(Profile);
 
                 soundManager = new SoundManager(null, Profile);
+                soundManager.Units = GeneralSettings.Instance.Units;
+
                 soundManager.SetupSpeaker(PlatformTools, profileSettings.Voice, profileSettings.TextToSpeechVolume);
                 soundManager.WaitForInit();
             }

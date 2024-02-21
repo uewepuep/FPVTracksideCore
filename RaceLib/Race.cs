@@ -324,7 +324,7 @@ namespace RaceLib
 
         public bool HasLap(Pilot p)
         {
-            return Laps.Any(l => l.Pilot == p);
+            return Laps.Any(l => l.Pilot == p && l.Detection.Valid);
         }
 
         public PilotChannel SetPilot(IDatabase db, Channel channel, Pilot p)
