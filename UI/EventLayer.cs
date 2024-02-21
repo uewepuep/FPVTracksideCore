@@ -32,7 +32,7 @@ namespace UI
 
         public SoundManager SoundManager { get; private set; }
 
-        private Node mainContainer;
+        private AnimatedRelativeNode mainContainer;
         private AnimatedRelativeNode leftContainer;
         private AnimatedRelativeNode centreContainer;
 
@@ -161,7 +161,7 @@ namespace UI
             ColorNode rightSideColor = new ColorNode(Theme.Current.RightControls.Background);
             rightBar.AddChild(rightSideColor);
                         
-            mainContainer = new Node();
+            mainContainer = new AnimatedRelativeNode();
             mainContainer.RelativeBounds = new RectangleF(0, topBar.RelativeBounds.Bottom, 1, 1 - topBar.RelativeBounds.Bottom);
             centralAspectNode.AddChild(mainContainer);
 
@@ -229,7 +229,7 @@ namespace UI
             AutoRunner = new AutoRunner(this);
 
             ChannelsGridNode = new ChannelsGridNode(EventManager, videoManager);
-            sceneManagerNode = new SceneManagerNode(EventManager, videoManager, ChannelsGridNode, topBar, AutoRunner);
+            sceneManagerNode = new SceneManagerNode(EventManager, videoManager, ChannelsGridNode, topBar, mainContainer, AutoRunner);
             sceneManagerNode.OnSceneChange += SceneManagerNode_OnSceneChange;
             sceneManagerNode.OnVideoSettingsChange += LoadVideo;
 

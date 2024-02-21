@@ -25,6 +25,7 @@ namespace UI.Nodes
 
         private ChannelsGridNode channelsGridNode;
         private TopBarNode topBarNode;
+        private AnimatedRelativeNode mainContainer;
 
         private NamedRaceNode resultsRaceNode;
         private NamedRaceNode nextRaceNode;
@@ -60,7 +61,7 @@ namespace UI.Nodes
 
         private AutoRunnerTimerNode autoRunnerTimerNode;
 
-        public SceneManagerNode(EventManager eventManager, VideoManager videoManager, ChannelsGridNode channelsGridNode, TopBarNode topBarNode, AutoRunner autoRunner)
+        public SceneManagerNode(EventManager eventManager, VideoManager videoManager, ChannelsGridNode channelsGridNode, TopBarNode topBarNode, AnimatedRelativeNode mainContainer, AutoRunner autoRunner)
         {
             AfterRaceStart = TimeSpan.FromSeconds(2);
 
@@ -68,6 +69,7 @@ namespace UI.Nodes
             this.videoManager = videoManager;
             this.channelsGridNode = channelsGridNode;
             this.topBarNode = topBarNode;
+            this.mainContainer = mainContainer;
 
             eventStatusNodeContainer = new AnimatedNode();
             eventStatusNodeContainer.Visible = false;
@@ -271,6 +273,7 @@ namespace UI.Nodes
             nextRaceNode.AnimationTime = time;
             channelsGridNode.SetAnimationTime(time);
             topBarNode.SetAnimationTime(time);
+            mainContainer.AnimationTime = time;
         }
 
         private void SetChannelGridReordering(Scenes scene)
