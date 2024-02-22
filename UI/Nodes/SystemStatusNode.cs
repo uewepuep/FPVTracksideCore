@@ -29,8 +29,8 @@ namespace UI.Nodes
         {
             ClearDisposeChildren();
 
-            MuteTTS = new MuteStatusNode(soundManager, true);
-            MuteWAV = new MuteStatusNode(soundManager, false);
+            MuteTTS = new MuteStatusNode(soundManager, MuteStatusNode.MuteStatusTypes.TTS);
+            MuteWAV = new MuteStatusNode(soundManager, MuteStatusNode.MuteStatusTypes.WAV);
 
             AddChild(MuteTTS);
             AddChild(MuteWAV);
@@ -217,7 +217,15 @@ namespace UI.Nodes
 
             if (TimingSystem != null)
             {
-                Name = TimingSystem.Name;
+                if (TimingSystemManager.TimingSystemCount > 1)
+                {
+                    string[] nameOptions = new string[] { TimingSystem.Name, TimingSystem.Settings.Role.ToString().Substring(0, 3).ToUpper() };
+                    Name = nameOptions.GetFromCurrentTime(updateEverySeconds);
+                }
+                else
+                {
+                    Name = TimingSystem.Name;
+                }
             }
             else
             {
@@ -329,49 +337,62 @@ namespace UI.Nodes
 
         private CheckboxNode cbn;
 
-        private bool tts;
+        public enum MuteStatusTypes
+        {
+            TTS,
+            WAV
+        }
+
+        private MuteStatusTypes type;
 
         public bool Value
         {
             get
             {
-                if (tts)
+                switch (type)
                 {
-                    return SoundManager.MuteTTS;
-                }
-                else
-                {
-                    return SoundManager.MuteWAV;
+                    case MuteStatusTypes.TTS:
+                    default:
+                        return SoundManager.MuteTTS;
+
+                    case MuteStatusTypes.WAV:
+                        return SoundManager.MuteWAV;
                 }
             }
             set
             {
-                if (tts)
+                switch (type)
                 {
-                    SoundManager.MuteTTS = value;
-                }
-                else
-                {
-                    SoundManager.MuteWAV = value;
+                    case MuteStatusTypes.TTS:
+                    default:
+                        SoundManager.MuteTTS = value;
+                    break;
+
+                    case MuteStatusTypes.WAV:
+                        SoundManager.MuteWAV = value;
+                    break;
                 }
             }
         }
 
         private KeyboardShortcuts keyMapper;
 
-        public MuteStatusNode(SoundManager soundManager, bool tts)
+        public MuteStatusNode(SoundManager soundManager, MuteStatusTypes type)
             : base("")
         {
             SoundManager = soundManager;
-            this.tts = tts;
+            this.type = type;
 
-            if (tts)
+            switch (type)
             {
-                name.Text = "TTS";
-            }
-            else
-            {
-                name.Text = "WAV";
+                case MuteStatusTypes.TTS:
+                default:
+                    name.Text = "TTS";
+                    break;
+
+                case MuteStatusTypes.WAV:
+                    name.Text = "WAV";
+                    break;
             }
 
             cbn = new CheckboxNode();

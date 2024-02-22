@@ -214,7 +214,8 @@ namespace DB
                 yield break;
             }
 
-            foreach (var obj in baseDBObjects)
+            RaceLib.BaseObject[] array = baseDBObjects.ToArray();
+            foreach (var obj in array)
             {
                 yield return obj.Convert<T>();
             }
