@@ -32,7 +32,16 @@ namespace UI
             LiveTab,
             RoundsTab,
             ReplayTab,
-            StatsTab
+            StatsTab,
+
+            ChannelGrid1,
+            ChannelGrid2,
+            ChannelGrid3,
+            ChannelGrid4,
+            ChannelGrid5,
+            ChannelGrid6,
+            ChannelGrid7,
+            ChannelGrid8
         }
 
         private OBSRemoteControlConfig config;
@@ -65,6 +74,21 @@ namespace UI
 
         }
 
+        public IEnumerable<Triggers> ChannelGrids
+        {
+            get
+            {
+                yield return Triggers.ChannelGrid1;
+                yield return Triggers.ChannelGrid2;
+                yield return Triggers.ChannelGrid3;
+                yield return Triggers.ChannelGrid4;
+                yield return Triggers.ChannelGrid5;
+                yield return Triggers.ChannelGrid6;
+                yield return Triggers.ChannelGrid7;
+                yield return Triggers.ChannelGrid8;
+            }
+        }
+
         public OBSRemoteControlManager(SceneManagerNode sceneManagerNode, TabbedMultiNode tabbedMultiNode, EventManager eventManager)
         {
             this.sceneManagerNode = sceneManagerNode;
@@ -82,11 +106,25 @@ namespace UI
                 eventManager.RaceManager.OnRaceCancelled += RaceManager_OnRaceCancelled;
                 eventManager.RaceManager.OnRaceResumed += OnRaceStart;
                 tabbedMultiNode.OnTabChange += OnTabChange;
+                sceneManagerNode.ChannelsGridNode.OnGridCountChanged += OnGridCountChanged;
+
                 eventsHooked = true;
 
                 remoteControl = new OBSRemoteControl(config.Host, config.Port, config.Password);
                 remoteControl.Activity += RemoteControl_Activity;
                 remoteControl.Connect();
+            }
+        }
+
+        private void OnGridCountChanged(int count)
+        {
+            Triggers[] triggers = ChannelGrids.ToArray();
+
+            int index = count - 1;
+
+            if (index >= 0 && index < triggers.Length)
+            {
+                Trigger(triggers[index]);
             }
         }
 
@@ -107,6 +145,7 @@ namespace UI
                 eventManager.RaceManager.OnRacePreStart -= OnRacePreStart;
                 eventManager.RaceManager.OnRaceEnd -= RaceManager_OnRaceEnd;
                 tabbedMultiNode.OnTabChange -= OnTabChange;
+                sceneManagerNode.ChannelsGridNode.OnGridCountChanged -= OnGridCountChanged;
             }
         }
 

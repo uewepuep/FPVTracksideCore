@@ -329,7 +329,7 @@ namespace UI.Nodes
             SetBiggerInfo(false, false);
         }
 
-        private void Close()
+        public void Close()
         {
             if (CrashedOut || Finished || EventManager.RaceManager.CanRunRace)
             {

@@ -3,6 +3,7 @@ using Composition.Input;
 using Composition.Nodes;
 using ImageServer;
 using Microsoft.Xna.Framework;
+using OfficeOpenXml.Style;
 using RaceLib;
 using System;
 using System.Collections.Generic;
@@ -873,15 +874,23 @@ namespace UI.Nodes
             }
         }
 
-        public void ToggleVisiblity(IEnumerable<Channel> channels)
+        public void ToggleCrashedOut(IEnumerable<Channel> channels)
         {
             foreach (ChannelNodeBase channelNode in ChannelNodes)
             {
                 if (channels.Contains(channelNode.Channel))
                 {
-                    channelNode.Visible = !channelNode.Visible;
+                    if (channelNode.Visible)
+                    {
+                        channelNode.Close();
+                    }
+                    else
+                    {
+                        channelNode.CrashedOutType = ChannelNodeBase.CrashOutType.None;
+                    }
                 }
             }
+            Reorder(true);
             RequestLayout();
         }
     }

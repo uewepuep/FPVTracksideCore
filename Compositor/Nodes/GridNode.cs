@@ -36,7 +36,8 @@ namespace Composition.Nodes
         private Size singleSize;
         public Size SingleSize { get => singleSize; set { singleSize = value; ForceUpdate = true; } }
 
-        public event System.Action OnGridTypeChanged;
+        public event System.Action<GridTypes> OnGridTypeChanged;
+        public event System.Action<int> OnGridCountChanged;
 
         private Node[] childrenAtTypeChange;
 
@@ -76,6 +77,8 @@ namespace Composition.Nodes
 
             int visibleChildrenCount = VisibleChildren.Count();
 
+            OnGridCountChanged?.Invoke(visibleChildrenCount);
+
             GridTypes newType = DecideLayout(visibleChildrenCount);
             if (newType != GridType
              || oldVisibleChildrenCount < visibleChildrenCount
@@ -88,7 +91,7 @@ namespace Composition.Nodes
                 // Cache the children, we don't want them to move around within the same layout grid.
                 childrenAtTypeChange = Children.ToArray();
 
-                OnGridTypeChanged?.Invoke();
+                OnGridTypeChanged?.Invoke(newType);
 
                 IEnumerable<Node> nodes = OrderedChildren(childrenAtTypeChange).Where(n => n.Visible);
 

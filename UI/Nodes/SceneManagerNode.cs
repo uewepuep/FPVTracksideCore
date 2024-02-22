@@ -23,7 +23,7 @@ namespace UI.Nodes
         private VideoManager videoManager;
         private EventManager eventManager;
 
-        private ChannelsGridNode channelsGridNode;
+        public ChannelsGridNode ChannelsGridNode { get; private set; }
         private TopBarNode topBarNode;
         private AnimatedRelativeNode mainContainer;
 
@@ -67,7 +67,7 @@ namespace UI.Nodes
 
             this.eventManager = eventManager;
             this.videoManager = videoManager;
-            this.channelsGridNode = channelsGridNode;
+            this.ChannelsGridNode = channelsGridNode;
             this.topBarNode = topBarNode;
             this.mainContainer = mainContainer;
 
@@ -136,7 +136,7 @@ namespace UI.Nodes
 
         private void RaceManager_OnRacePreStart(Race race)
         {
-            channelsGridNode.SetProfileVisible(false, false);
+            ChannelsGridNode.SetProfileVisible(false, false);
         }
 
         private void UpdateNextRaceNode()
@@ -258,7 +258,7 @@ namespace UI.Nodes
             }
 
             // Need to make this visible again :)
-            channelsGridNode.Visible = true;
+            ChannelsGridNode.Visible = true;
 
             RequestLayout();
 
@@ -271,7 +271,7 @@ namespace UI.Nodes
             commentatorsAndSummary.AnimationTime = time;
             resultsRaceNode.AnimationTime = time;
             nextRaceNode.AnimationTime = time;
-            channelsGridNode.SetAnimationTime(time);
+            ChannelsGridNode.SetAnimationTime(time);
             topBarNode.SetAnimationTime(time);
             mainContainer.AnimationTime = time;
         }
@@ -284,31 +284,31 @@ namespace UI.Nodes
                 case Scenes.PreRace:
                     if (ProfileSettings.Instance.PilotOrderPreRace == GeneralSettings.OrderTypes.PositionAndPB)
                     {
-                        channelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.PositionOrder);
+                        ChannelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.PositionOrder);
                     }
                     else
                     {
-                        channelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.ChannelOrder);
+                        ChannelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.ChannelOrder);
                     }
                     break;
                 case Scenes.Race:
                     if (ProfileSettings.Instance.PilotOrderMidRace == GeneralSettings.OrderTypes.PositionAndPB)
                     {
-                        channelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.PositionOrder);
+                        ChannelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.PositionOrder);
                     }
                     else
                     {
-                        channelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.ChannelOrder);
+                        ChannelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.ChannelOrder);
                     }
                     break;
                 case Scenes.RaceResults:
                     if (ProfileSettings.Instance.PilotOrderPostRace == GeneralSettings.OrderTypes.PositionAndPB)
                     {
-                        channelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.PositionOrder);
+                        ChannelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.PositionOrder);
                     }
                     else
                     {
-                        channelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.ChannelOrder);
+                        ChannelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.ChannelOrder);
                     }
                     break;
             }
@@ -333,12 +333,12 @@ namespace UI.Nodes
                         channelGridHeight = 1;
                         nonChannelGridHeight = 0;
 
-                        channelsGridNode.SingleRow = false;
-                        channelsGridNode.MakeExtrasVisible(true);
+                        ChannelsGridNode.SingleRow = false;
+                        ChannelsGridNode.MakeExtrasVisible(true);
                     }
                     else
                     {
-                        channelsGridNode.SingleRow = true;
+                        ChannelsGridNode.SingleRow = true;
 
                         if (!launchCams.Any())
                         {
@@ -349,11 +349,11 @@ namespace UI.Nodes
                         {
                             launchWidth = 1;
                         }
-                        channelsGridNode.MakeExtrasVisible(false);
+                        ChannelsGridNode.MakeExtrasVisible(false);
                     }
 
-                    channelsGridNode.SetBiggerInfo(true, false);
-                    channelsGridNode.SetProfileVisible(true, true);
+                    ChannelsGridNode.SetBiggerInfo(true, false);
+                    ChannelsGridNode.SetProfileVisible(true, true);
 
                     launchCamsNode.SetAnimatedVisibility(true);
                     launchCamsNode.RelativeBounds = new RectangleF(0, 0, launchWidth, nonChannelGridHeight);
@@ -372,7 +372,7 @@ namespace UI.Nodes
                         Node.AlignHorizontally(0, commentatorsAndSummary.VisibleChildren.ToArray());
                     }
 
-                    channelsGridNode.RelativeBounds = new RectangleF(0, nonChannelGridHeight, 1, channelGridHeight);
+                    ChannelsGridNode.RelativeBounds = new RectangleF(0, nonChannelGridHeight, 1, channelGridHeight);
 
                     resultsRaceNode.SetAnimatedVisibility(false);
                     nextRaceNode.SetAnimatedVisibility(false);
@@ -383,12 +383,12 @@ namespace UI.Nodes
                     break;
 
                 case Scenes.Race:
-                    channelsGridNode.SetProfileVisible(false, true);
+                    ChannelsGridNode.SetProfileVisible(false, true);
 
                     SetAnimationTime(MidRaceAnimationTime);
                     
-                    channelsGridNode.SingleRow = false;
-                    channelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 1, 1);
+                    ChannelsGridNode.SingleRow = false;
+                    ChannelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 1, 1);
 
                     commentatorsAndSummary.SetAnimatedVisibility(false);
                     launchCamsNode.SetAnimatedVisibility(false);
@@ -396,15 +396,15 @@ namespace UI.Nodes
 
                     resultsRaceNode.SetAnimatedVisibility(false);
                     nextRaceNode.SetAnimatedVisibility(false);
-                    channelsGridNode.SetBiggerInfo(!eventManager.RaceManager.RaceRunning, false);
-                    channelsGridNode.MakeExtrasVisible(true);
+                    ChannelsGridNode.SetBiggerInfo(!eventManager.RaceManager.RaceRunning, false);
+                    ChannelsGridNode.MakeExtrasVisible(true);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
                     break;
 
                 case Scenes.Clear:
                     SetAnimationTime(SetupAnimationTime);
 
-                    channelsGridNode.AllVisible(false);
+                    ChannelsGridNode.AllVisible(false);
                     commentatorsAndSummary.SetAnimatedVisibility(false);
                     launchCamsNode.SetAnimatedVisibility(false);
                     finishLineNode.SetAnimatedVisibility(false);
@@ -412,22 +412,22 @@ namespace UI.Nodes
                     resultsRaceNode.SetAnimatedVisibility(false);
                     nextRaceNode.SetAnimatedVisibility(false);
 
-                    channelsGridNode.SetBiggerInfo(false, false);
-                    channelsGridNode.MakeExtrasVisible(false);
-                    channelsGridNode.SetProfileVisible(false, true);
+                    ChannelsGridNode.SetBiggerInfo(false, false);
+                    ChannelsGridNode.MakeExtrasVisible(false);
+                    ChannelsGridNode.SetProfileVisible(false, true);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
                     break;
 
                 case Scenes.RaceResults:
                     SetAnimationTime(SetupAnimationTime);
 
-                    channelsGridNode.SetProfileVisible(false, true);
+                    ChannelsGridNode.SetProfileVisible(false, true);
 
                     launchCamsNode.SetAnimatedVisibility(false);
                     finishLineNode.SetAnimatedVisibility(false);
 
-                    channelsGridNode.SingleRow = true;
-                    channelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 1, channelGridHeight);
+                    ChannelsGridNode.SingleRow = true;
+                    ChannelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 1, channelGridHeight);
 
                     if (commentatorsAndSummary.ChildCount > 0)
                     {
@@ -469,8 +469,8 @@ namespace UI.Nodes
 
                     UpdateNextRaceNode();
 
-                    channelsGridNode.SetBiggerInfo(true, true);
-                    channelsGridNode.MakeExtrasVisible(false);
+                    ChannelsGridNode.SetBiggerInfo(true, true);
+                    ChannelsGridNode.MakeExtrasVisible(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
                     break;
 
@@ -482,7 +482,7 @@ namespace UI.Nodes
                     commentatorsAndSummary.SetAnimatedVisibility(true);
                     Node.AlignHorizontally(0, commentatorsAndSummary.VisibleChildren.ToArray());
 
-                    channelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 0, 0);
+                    ChannelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 0, 0);
 
                     nextRaceNode.SetAnimatedVisibility(false);
                     resultsRaceNode.SetAnimatedVisibility(false);
@@ -492,7 +492,7 @@ namespace UI.Nodes
                 case Scenes.EventStatus:
                     launchCamsNode.SetAnimatedVisibility(false);
                     commentatorsAndSummary.SetAnimatedVisibility(false);
-                    channelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 0, 0);
+                    ChannelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 0, 0);
 
                     nextRaceNode.SetAnimatedVisibility(false);
                     resultsRaceNode.SetAnimatedVisibility(false);
@@ -506,25 +506,25 @@ namespace UI.Nodes
 
                     if (finishCam.Any())
                     {
-                        channelsGridNode.SingleRow = true;
-                        channelsGridNode.MakeExtrasVisible(false);
+                        ChannelsGridNode.SingleRow = true;
+                        ChannelsGridNode.MakeExtrasVisible(false);
                     }
                     else
                     {
                         channelGridHeight = 1;
                         nonChannelGridHeight = 0;
 
-                        channelsGridNode.SingleRow = false;
-                        channelsGridNode.MakeExtrasVisible(true);
+                        ChannelsGridNode.SingleRow = false;
+                        ChannelsGridNode.MakeExtrasVisible(true);
                     }
 
-                    channelsGridNode.SetBiggerInfo(true, false);
-                    channelsGridNode.SetProfileVisible(true, true);
+                    ChannelsGridNode.SetBiggerInfo(true, false);
+                    ChannelsGridNode.SetProfileVisible(true, true);
 
                     finishLineNode.SetAnimatedVisibility(true);
                     finishLineNode.RelativeBounds = new RectangleF(0, 0, 1, nonChannelGridHeight);
 
-                    channelsGridNode.RelativeBounds = new RectangleF(0, nonChannelGridHeight, 1, channelGridHeight);
+                    ChannelsGridNode.RelativeBounds = new RectangleF(0, nonChannelGridHeight, 1, channelGridHeight);
 
                     resultsRaceNode.SetAnimatedVisibility(false);
                     nextRaceNode.SetAnimatedVisibility(false);
@@ -541,7 +541,7 @@ namespace UI.Nodes
             resultsRaceNode.SetAnimatedVisibility(false);
             nextRaceNode.SetAnimatedVisibility(false);
 
-            channelsGridNode.Visible = false;
+            ChannelsGridNode.Visible = false;
         }
 
         public void Show()
@@ -608,7 +608,7 @@ namespace UI.Nodes
             if (wormNode.RelativeBounds.Height > 0)
             {
                 wormNode.RelativeBounds = new RectangleF(0.0f, 1f, 1, 0.0f);
-                channelsGridNode.RelativeBounds = new RectangleF(0, 0, 1, 1);
+                ChannelsGridNode.RelativeBounds = new RectangleF(0, 0, 1, 1);
             }
             else
             { 
@@ -616,7 +616,7 @@ namespace UI.Nodes
                 float height = 0.2f * (eventManager.RaceManager.PilotCount / 6.0f);
 
                 wormNode.RelativeBounds = new RectangleF(0.0f, 1 - height, 1, height);
-                channelsGridNode.RelativeBounds = new RectangleF(0, 0, 1, 1 - height);
+                ChannelsGridNode.RelativeBounds = new RectangleF(0, 0, 1, 1 - height);
             }
             RequestLayout();
         }

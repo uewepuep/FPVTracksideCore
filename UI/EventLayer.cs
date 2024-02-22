@@ -1105,7 +1105,7 @@ namespace UI
                     if (shortcut.Match(inputEvent))
                     {
                         Channel[] channel = EventManager.GetChannelGroup(i).ToArray();
-                        ChannelsGridNode.ToggleVisiblity(channel);
+                        ChannelsGridNode.ToggleCrashedOut(channel);
                     }
                     i++;
                 }
