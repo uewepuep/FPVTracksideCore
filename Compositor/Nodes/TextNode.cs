@@ -25,7 +25,7 @@ namespace Composition.Nodes
                 if (text != value)
                 {
                     text = value;
-                    needsGeometryUpdate = true;
+                    needsUpdate = UpdateTypes.Geometry;
                 }
             }
         }
@@ -34,8 +34,15 @@ namespace Composition.Nodes
 
         public virtual string DrawingText { get { return text; } }
 
-        protected bool needsGeometryUpdate;
-        protected bool needsTextureUpdate;
+        protected enum UpdateTypes
+        {
+            None,
+            Geometry,
+            Size,
+            Texture
+        }
+
+        protected UpdateTypes needsUpdate;
 
         public Style Style { get; private set; }
 
@@ -58,7 +65,7 @@ namespace Composition.Nodes
             Tint = Color.White;
 
             Text = text;
-            needsGeometryUpdate = true;
+            needsUpdate = UpdateTypes.Geometry;
             height = 0;
             CanScale = true;
         }
@@ -93,21 +100,29 @@ namespace Composition.Nodes
                     return;
                 }
 
-                if (needsGeometryUpdate)
-                {
-                    if (!IsAnimatingInvisiblity() && !isAnimatingSize && Alpha > 0)
-                    {
-                        UpdateGeometry();
+                bool updateGeomety = false;
 
-                        if (textRenderer.CanCreateTextures)
-                        {
-                            id.PreProcess(this);
-                        }
-                        else
-                        {
-                            textRenderer.Reset();
-                            RequestRedraw();
-                        }
+                if (needsUpdate == UpdateTypes.Geometry)
+                {
+                    updateGeomety = true;
+                }
+                else if (needsUpdate == UpdateTypes.Size && !IsAnimatingInvisiblity() && !isAnimatingSize && Alpha > 0)
+                {
+                    updateGeomety = true;
+                }
+
+                if (updateGeomety)
+                {
+                    UpdateGeometry();
+
+                    if (textRenderer.CanCreateTextures)
+                    {
+                        id.PreProcess(this);
+                    }
+                    else
+                    {
+                        textRenderer.Reset();
+                        RequestRedraw();
                     }
                 }
 
@@ -138,6 +153,11 @@ namespace Composition.Nodes
 
             // Has to be done because drawing children normally happens in base.
             DrawChildren(id, parentAlpha);
+
+            if (!OverrideHeight.HasValue && needsUpdate == UpdateTypes.None && height != Bounds.Height)
+            {
+                needsUpdate = UpdateTypes.Size;
+            }
         }
 
 
@@ -145,11 +165,14 @@ namespace Composition.Nodes
         {
             if (textRenderer != null)
             {
-                needsTextureUpdate = false;
-                textRenderer.CreateTextures(id);
-                if (id.CanMultiThread)
+                if (needsUpdate == UpdateTypes.Texture)
                 {
-                    RequestRedraw();
+                    needsUpdate = UpdateTypes.None;
+                    textRenderer.CreateTextures(id);
+                    if (id.CanMultiThread)
+                    {
+                        RequestRedraw();
+                    }
                 }
             }
         }
@@ -159,9 +182,10 @@ namespace Composition.Nodes
             if (textRenderer == null)
                 return;
 
-            if (needsGeometryUpdate)
+            if (needsUpdate == UpdateTypes.Geometry || needsUpdate == UpdateTypes.Size)
             {
-                needsGeometryUpdate = false;
+                needsUpdate = UpdateTypes.Texture;
+
                 int newHeight = height;
 
                 if (height == 0 || !IsAnimatingSize())
@@ -183,8 +207,6 @@ namespace Composition.Nodes
                 }
 
                 textRenderer.CreateGeometry(width, newHeight, DrawingText, Style);
-                needsTextureUpdate = true;
-
                 height = newHeight;
             }
         }
@@ -193,9 +215,9 @@ namespace Composition.Nodes
         {
             Microsoft.Xna.Framework.Rectangle oldBounds = Bounds;
             base.Layout(parentBounds);
-            if (oldBounds.Height != Bounds.Height)
+            if (oldBounds.Height != Bounds.Height && needsUpdate != UpdateTypes.Geometry)
             {
-                needsGeometryUpdate = true;
+                needsUpdate = UpdateTypes.Size;
             }
         }
 
