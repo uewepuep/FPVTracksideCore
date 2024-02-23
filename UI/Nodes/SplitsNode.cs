@@ -76,7 +76,7 @@ namespace UI.Nodes
                 }
                 else
                 {
-                    splitNode = splitNodes.Last();
+                    splitNode = splitNodes.LastOrDefault();
                 }
 
                 if (splitNode != null)
