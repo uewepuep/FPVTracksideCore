@@ -217,5 +217,10 @@ namespace Tools
             }
             Console.WriteLine(string.Join(", ", list.Select(l => l.ToString())));
         }
+
+        public static string MakeCSVLine(params string[] parameters)
+        {
+            return string.Join(",", parameters.Select(l => l.ReplaceCommas())) + "\n";
+        }
     }
 }

@@ -206,8 +206,8 @@ namespace Sound
 
                     new Sound() { Key = SoundKey.PilotResult, TextToSpeech = "{pilot} {position}", Category = Sound.SoundCategories.Announcements },
 
-                    new Sound() { Key = SoundKey.Detection, TextToSpeech = "beep", Filename = @"sounds/detection.wav", Category = Sound.SoundCategories.Detection },
-                    new Sound() { Key = SoundKey.DetectionSplit, TextToSpeech = "beep", Filename = @"sounds/detection.wav", Category = Sound.SoundCategories.Detection },
+                    new Sound() { Key = SoundKey.Detection, TextToSpeech = "BEEP", Filename = @"sounds/detection.wav", Category = Sound.SoundCategories.Detection },
+                    new Sound() { Key = SoundKey.DetectionSplit, TextToSpeech = "beep", Filename = @"sounds/split.wav", Category = Sound.SoundCategories.Detection },
                     new Sound() { Key = SoundKey.Sector, TextToSpeech = "{pilot} sector {count} in {position}", Enabled = false, Category = Sound.SoundCategories.Detection },
 
                     new Sound() { Key = SoundKey.RaceDone, TextToSpeech = "{pilot} finished in {position}", Category = Sound.SoundCategories.Detection },

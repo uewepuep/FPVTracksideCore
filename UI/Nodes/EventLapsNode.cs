@@ -162,7 +162,7 @@ namespace UI.Nodes
             {
                 if (pn.Pilot != null)
                 {
-                    csv += pn.Pilot.Name + "," + pn.TimeNode.Text + "\n";
+                    csv += Maths.MakeCSVLine(pn.Pilot.Name, pn.TimeNode.Text);
                 }
             }
             return csv;

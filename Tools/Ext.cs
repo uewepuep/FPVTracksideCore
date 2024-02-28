@@ -119,6 +119,11 @@ namespace Tools
             yield return type;
         }
 
+        public static string ReplaceCommas(this string csv, char with = '.')
+        {
+            return csv.Replace(',', with);
+        }
+
     }
 
     public class DateOnlyAttribute : Attribute

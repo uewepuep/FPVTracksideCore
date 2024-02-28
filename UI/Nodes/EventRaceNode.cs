@@ -220,7 +220,7 @@ namespace UI.Nodes
                         }
                     }
 
-                    copyMenu.AddItem("Copy Results (CSV)", () =>
+                    copyMenu.AddItem("Copy Results", () =>
                     {
                         string textResults = EventManager.ResultManager.GetResultsText(Race);
                         PlatformTools.Clipboard.SetText(textResults);

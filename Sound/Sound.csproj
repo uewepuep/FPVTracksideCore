@@ -32,4 +32,10 @@
     </Content>
   </ItemGroup>
 
+
+
+  <ItemGroup>
+    <None Remove="sounds\split.wav" />
+  </ItemGroup>
+
 </Project>

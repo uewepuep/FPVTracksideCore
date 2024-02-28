@@ -1629,10 +1629,7 @@ namespace RaceLib
         {
             string output = "";
 
-            string[] titles = new string[] { "Round", "Race", "Race Start", "Pilot", "Lap Number", "Length", "Race Time", "Valid"};
-
-            output += string.Join(",", titles) + "\n";
-
+            output += Maths.MakeCSVLine("Round", "Race", "Race Start", "Pilot", "Lap Number", "Length", "Race Time", "Valid");
             foreach (Race race in Races.OrderBy(r => r.Start))
             {
                 foreach (Lap lap in race.Laps.OrderBy(l => l.End))
@@ -1650,7 +1647,7 @@ namespace RaceLib
                         line.Add(lap.Length.TotalSeconds.ToString("0.000"));
                         line.Add(lap.EndRaceTime.TotalSeconds.ToString("0.000"));
                         line.Add(lap.Detection.Valid.ToString());
-                        output += string.Join(",", line) + "\n";
+                        output += Maths.MakeCSVLine(line.ToArray());
                     }
                     
                 }

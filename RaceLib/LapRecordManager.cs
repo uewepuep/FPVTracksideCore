@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 
 namespace RaceLib
 {
@@ -421,7 +422,7 @@ namespace RaceLib
                 line.Add("");
             }
 
-            output += string.Join(",", line.ToArray()) + "\n";
+            output += Maths.MakeCSVLine(line.ToArray());
 
             lock (Records)
             {
@@ -458,7 +459,7 @@ namespace RaceLib
                         line.Add("");
                     }
 
-                    output += string.Join(",", line.ToArray()) + "\n";
+                    output += Maths.MakeCSVLine(line.ToArray());
                 }
             }
             return output;
