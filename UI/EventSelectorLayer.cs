@@ -47,7 +47,7 @@ namespace UI
 
         private void Editor_OnOK(BaseObjectEditorNode<Event> obj)
         {
-            LayerStack.Remove(this);
+            LayerStack?.Remove(this);
             Dispose();
 
             OnOK?.Invoke(obj);
