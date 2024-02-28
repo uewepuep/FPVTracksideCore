@@ -489,8 +489,6 @@ namespace UI.Nodes
                 ProfileSettings profileSettings = ProfileSettings.Read(Profile);
 
                 soundManager = new SoundManager(null, Profile);
-                soundManager.Units = GeneralSettings.Instance.Units;
-
                 soundManager.SetupSpeaker(PlatformTools, profileSettings.Voice, profileSettings.TextToSpeechVolume);
                 soundManager.WaitForInit();
             }
@@ -596,7 +594,7 @@ namespace UI.Nodes
 
         public void ShowThemeSettings()
         {
-            ThemeSettingsEditor editor = new ThemeSettingsEditor(Profile, Theme.Themes);
+            ThemeEditor editor = new ThemeEditor(Profile, Theme.Themes);
             editor.Selected = Theme.Current;
             GetLayer<PopupLayer>().Popup(editor);
 

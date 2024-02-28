@@ -141,13 +141,16 @@ namespace UI.Nodes
 
             if (!anyTotal)
             {
-                Round last = rounds.Last();
+                Round last = rounds.LastOrDefault();
 
-                int points = PointsManager.GetPointsTotal(last, pilot);
-                TextNode tn = new TextNode(points.ToString(), Theme.Current.Rounds.Text.XNA);
-                tn.Alignment = RectangleAlignment.CenterRight;
-                tn.Style.Bold = true;
-                nodes.Add(tn);
+                if (last != null)
+                {
+                    int points = PointsManager.GetPointsTotal(last, pilot);
+                    TextNode tn = new TextNode(points.ToString(), Theme.Current.Rounds.Text.XNA);
+                    tn.Alignment = RectangleAlignment.CenterRight;
+                    tn.Style.Bold = true;
+                    nodes.Add(tn);
+                }
             }
 
             pilotResNode.Set(pilot, nodes);

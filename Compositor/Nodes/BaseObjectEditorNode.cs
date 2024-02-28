@@ -792,8 +792,6 @@ namespace Composition.Nodes
 
     public class PropertyNode<T> : Node
     {
-        public TextNode Name { get; private set; }
-
         public T Object { get; private set; }
         public PropertyInfo PropertyInfo { get; private set; }
 
@@ -804,37 +802,17 @@ namespace Composition.Nodes
 
         public string Category { get; set; }
 
-        public PropertyNode(T obj, PropertyInfo pi, Color textColor)
+        public PropertyNode(T obj, PropertyInfo pi)
         {
             Category = "";
 
             PropertyInfo = pi;
             Object = obj;
 
-            string name = "";
             if (pi != null)
             {
                 originalValue = pi.GetValue(Object, null);
-
-                DisplayNameAttribute dna = pi.GetCustomAttribute<DisplayNameAttribute>();
-                if (dna != null)
-                {
-                    name = dna.DisplayName;
-                }
-                else
-                {
-                    name = pi.Name.CamelCaseToHuman();
-                }
             }
-
-            Name = new TextNode(name, textColor);
-            Name.Alignment = RectangleAlignment.BottomLeft;
-            AddChild(Name);
-        }
-
-        public void SetName(string name)
-        {
-            Name.Text = name;
         }
 
         public void RequestUpdateFromObject()
@@ -879,6 +857,43 @@ namespace Composition.Nodes
         }
     }
 
+    public class NamedPropertyNode<T> : PropertyNode<T>
+    {
+        public TextNode Name { get; private set; }
+
+        public NamedPropertyNode(T obj, PropertyInfo pi, Color textColor) : base(obj, pi)
+        {
+            string name = "";
+            if (pi != null)
+            {
+                DisplayNameAttribute dna = pi.GetCustomAttribute<DisplayNameAttribute>();
+                if (dna != null)
+                {
+                    name = dna.DisplayName;
+                }
+                else
+                {
+                    name = pi.Name.CamelCaseToHuman();
+                }
+            }
+
+            Name = new TextNode(name, textColor);
+            Name.Alignment = RectangleAlignment.BottomLeft;
+            AddChild(Name);
+        }
+    }
+
+    public class SubPropertyNode<T, J> : PropertyNode<T>
+    {
+        public PropertyNode<J> SubProperty { get; private set; }
+
+        public SubPropertyNode(T obj, PropertyInfo pi, PropertyNode<J> subProperty) : base(obj, pi)
+        {
+            SubProperty = subProperty;
+            AddChild(SubProperty);
+        }
+    }
+
     public class CategoryNode : Node
     {
         public TextNode Title { get; private set; }
@@ -899,7 +914,7 @@ namespace Composition.Nodes
         }
     }
 
-    public class StaticTextPropertyNode<T> : PropertyNode<T>
+    public class StaticTextPropertyNode<T> : NamedPropertyNode<T>
     {
         public TextNode Value { get; private set; }
 
@@ -945,7 +960,7 @@ namespace Composition.Nodes
         }
     }
 
-    public class TextPropertyNode<T> : PropertyNode<T>
+    public class TextPropertyNode<T> : NamedPropertyNode<T>
     {
         public TextEditNode Value { get; private set; }
 
@@ -999,7 +1014,7 @@ namespace Composition.Nodes
         }
     }
 
-    public class PasswordPropertyNode<T> : PropertyNode<T>
+    public class PasswordPropertyNode<T> : NamedPropertyNode<T>
     {
         public PasswordNode Value { get; private set; }
 
@@ -1459,7 +1474,7 @@ namespace Composition.Nodes
     }
 
 
-    public class ButtonPropertyNode<T> : PropertyNode<T>
+    public class ButtonPropertyNode<T> : NamedPropertyNode<T>
     {
         private TextButtonNode button;
 
@@ -1481,7 +1496,7 @@ namespace Composition.Nodes
     }
 
 
-    public class BoolPropertyNode<T> : PropertyNode<T>
+    public class BoolPropertyNode<T> : NamedPropertyNode<T>
     {
         private CheckboxNode checkbox;
 
@@ -1519,7 +1534,7 @@ namespace Composition.Nodes
         }
     }
 
-    public class ArrayContainsPropertyNode<T, V> : PropertyNode<T>
+    public class ArrayContainsPropertyNode<T, V> : NamedPropertyNode<T>
     {
         private CheckboxNode checkbox;
 

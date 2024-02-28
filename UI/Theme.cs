@@ -53,6 +53,9 @@ namespace UI
         public ToolColor NewPersonalBest { get; set; }
         public ToolColor BehindTime { get; set; }
         public ToolColor AheadTime { get; set; }
+        public ToolColor InCurrentRace { get; set; }
+
+        public ToolColor[] ChannelColors { get; set; }
 
         public PilotTheme PilotViewTheme { get; set; }
 
@@ -64,7 +67,6 @@ namespace UI
         public BorderPanelTheme Login { get; set; }
         public PanelTheme Replay { get; set; }
 
-        public ToolColor[] ChannelColors { get; set; }
 
         public static Theme Current { get; set; }
 
@@ -98,6 +100,8 @@ namespace UI
             PilotViewTheme.PBBackground = new ToolTexture(@"pbbg.png", 0,0,0);
             PilotViewTheme.NoVideoBackground = new ToolTexture(@"static.png", 22, 22, 22);
             PilotViewTheme.CrashedOut = new ToolTexture(@"crashed.png", 22, 22, 22);
+
+            InCurrentRace = new ToolColor(255, 216, 0);
 
             FontFamily = "Roboto";
 

@@ -437,7 +437,7 @@ namespace UI.Nodes
                     Color tint = Color.White;
                     if (InCurrentRace)
                     {
-                        tint = Theme.Current.InfoPanel.Heading.XNA;
+                        tint = Theme.Current.InCurrentRace.XNA;
                     }
 
                     if (positionNode != null)

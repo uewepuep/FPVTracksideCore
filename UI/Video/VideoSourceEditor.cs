@@ -475,7 +475,7 @@ namespace UI.Video
             }
         }
 
-        class VideoChannelAssigner : PropertyNode<VideoConfig>
+        class VideoChannelAssigner : NamedPropertyNode<VideoConfig>
         {
             public VideoChannelAssigner(VideoConfig obj, PropertyInfo pi, Color textColor) : base(obj, pi, textColor)
             {
