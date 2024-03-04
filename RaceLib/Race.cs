@@ -495,6 +495,9 @@ namespace RaceLib
 
         public Lap[] GetValidLaps(Pilot pilot, bool includeHoleshot)
         {
+            if (!Valid)
+                return new Lap[0];
+
             lock (Laps)
             {
                 if (includeHoleshot)

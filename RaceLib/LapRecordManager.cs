@@ -535,6 +535,9 @@ namespace RaceLib
 
             foreach (Race race in races)
             {
+                if (!race.Valid)
+                    continue;
+
                 Lap holeShot = race.GetHoleshot(pilot);
                 if (holeShot == null)
                     continue;
@@ -657,7 +660,7 @@ namespace RaceLib
         {
             Lap[] bestLaps;
 
-            Race[] races = RecordManager.RaceManager.GetRaces(r => r.HasPilot(Pilot) && r.Type != EventTypes.Practice).ToArray();
+            Race[] races = RecordManager.RaceManager.GetRaces(r => r.HasPilot(Pilot) && r.Type != EventTypes.Practice && r.Valid).ToArray();
 
             if (lapCount == 0)
             {

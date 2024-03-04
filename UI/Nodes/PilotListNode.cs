@@ -233,7 +233,7 @@ namespace UI.Nodes
 
                 mm.AddItem("Copy Pilots", () =>
                 {
-                    IEnumerable<string> pilotNames = pilots.Select(p => p.Name);
+                    IEnumerable<string> pilotNames = pilots.Select(p => p.Name).OrderBy(r => r);
                     PlatformTools.Clipboard.SetLines(pilotNames);
                 });
             }
