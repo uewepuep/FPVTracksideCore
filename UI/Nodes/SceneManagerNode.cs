@@ -128,6 +128,14 @@ namespace UI.Nodes
             AddChild(autoRunnerTimerNode);
         }
 
+        public void SyncFinished()
+        {
+            if (Scene != Scenes.Race)
+            {
+                UpdateNextRaceNode();
+            }
+        }
+
         private void EventManager_OnPilotRefresh()
         {
             UpdateNextRaceNode();
@@ -139,7 +147,7 @@ namespace UI.Nodes
             ChannelsGridNode.SetProfileVisible(false, false);
         }
 
-        private void UpdateNextRaceNode()
+        public void UpdateNextRaceNode()
         {
             Race nextRace = eventManager.RaceManager.GetNextRace(true);
             if (nextRace == null)

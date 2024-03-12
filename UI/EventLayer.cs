@@ -27,7 +27,7 @@ namespace UI
 
         private VideoManager videoManager;
 
-        private PilotListNode pilotList;
+        protected PilotListNode pilotList;
         public MenuButton MenuButton { get; private set; }
 
         public SoundManager SoundManager { get; private set; }
@@ -45,7 +45,7 @@ namespace UI
 
         public TracksideTabbedMultiNode TabbedMultiNode { get; private set; }
 
-        private SceneManagerNode sceneManagerNode;
+        protected SceneManagerNode sceneManagerNode;
 
         private TopBarNode topBar;
         private AspectNode centralAspectNode;
