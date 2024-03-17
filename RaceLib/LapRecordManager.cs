@@ -141,8 +141,10 @@ namespace RaceLib
             if (race == null)
                 return;
 
-            Lap[] laps = race.GetLaps(lap.Pilot);
-            
+            if (!race.Valid)
+                return;
+
+            Lap[] laps = race.GetLaps(l => l.Pilot == lap.Pilot && l.Detection.Valid);
             if (IsRecord(lap.Pilot, laps))
             {
                 UpdatePilot(lap.Pilot);
@@ -151,7 +153,7 @@ namespace RaceLib
 
         private bool IsRecord(Pilot pilot, Lap[] laps)
         {
-            if (laps.Where(l => l.Detection.Valid).Any())
+            if (laps.All(l => l.Detection.Valid))
             {
                 PilotLapRecord plr = GetPilotLapRecord(pilot);
                 foreach (int consecutive in ConsecutiveLapsToTrack)

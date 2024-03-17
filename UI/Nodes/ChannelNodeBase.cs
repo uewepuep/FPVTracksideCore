@@ -489,7 +489,7 @@ namespace UI.Nodes
                         }
                     }
 
-                    IEnumerable<Detection> detections = race.GetLaps(Pilot).Select(l => l.Detection);
+                    IEnumerable<Detection> detections = race.GetLaps(l => l.Pilot == Pilot).Select(l => l.Detection);
                     if (detections.Any())
                     {
                         double averagePower = detections.Select(d => d.Peak).Average();
