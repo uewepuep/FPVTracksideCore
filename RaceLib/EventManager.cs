@@ -293,6 +293,8 @@ namespace RaceLib
                 RaceManager.LoadRaces(eve);
             });
 
+            workQueue.Enqueue(workSet, "RoundRepair", RoundRepair);
+
             workQueue.Enqueue(workSet, "Loading Results", () =>
             {
                 // Load points
@@ -309,6 +311,16 @@ namespace RaceLib
             {
                 RoundManager.SheetFormatManager.Load();
             });
+        }
+
+        private void RoundRepair()
+        {
+            IEnumerable<Round> allRounds = Event.Rounds.Union(RaceManager.Races.Select(r => r.Round)).Distinct();
+
+            if (allRounds.Count() > Event.Rounds.Count)
+            {
+                Event.Rounds = allRounds.OrderBy(r => r.Order).ToList();
+            }
         }
 
         public void Update(GameTime gameTime)

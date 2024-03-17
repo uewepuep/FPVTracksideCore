@@ -30,6 +30,7 @@ namespace RaceLib
                 }
             }
         }
+
         public RoundManager(EventManager eventManager)
         {
             EventManager = eventManager;
@@ -38,7 +39,6 @@ namespace RaceLib
             RaceManager.OnRaceReset += OnRaceResultsChange;
             ResultManager.RaceResultsChanged += OnRaceResultsChange;
         }
-
 
         private void OnRaceResultsChange(Race race)
         {
@@ -143,6 +143,21 @@ namespace RaceLib
             {
                 RaceManager.AddRace(r);
             }
+        }
+
+        public IEnumerable<Round> GetRoundsBetween(Round start, Round end)
+        {
+            if (start == null || end == null)
+            {
+                return Enumerable.Empty<Round>();
+            }
+
+            if (start.RoundType != end.RoundType)
+            {
+                return Enumerable.Empty<Round>();
+            }
+
+            return Event.Rounds.Where(r => r.Order <= end.Order && r.Order >= start.Order && r.RoundType == end.RoundType).OrderBy(r => r.Order);
         }
 
         public Round PreviousRound(Round current)

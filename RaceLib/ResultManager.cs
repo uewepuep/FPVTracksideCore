@@ -110,7 +110,7 @@ namespace RaceLib
 
         public Round GetStartRound(Round endRound)
         {
-            if (endRound.RoundType == Round.RoundTypes.Final)
+            if (endRound.RoundType != Round.RoundTypes.Round)
             {
                 Round current = endRound;
                 Round best = current;
@@ -118,7 +118,7 @@ namespace RaceLib
                 while (current != null)
                 {
                     current = EventManager.RoundManager.PreviousRound(current);
-                    if (current == null || current.RoundType != Round.RoundTypes.Final || current.PointSummary != null)
+                    if (current == null || current.RoundType != endRound.RoundType || current.PointSummary != null)
                     {
                         return best;
                     }
@@ -141,10 +141,12 @@ namespace RaceLib
             }
         }
 
-        private IEnumerable<Race> GetRoundPointRaces(int startRoundNumber, int endRoundNumber)
+        private IEnumerable<Race> GetRoundPointRaces(Round startRound, Round endRound)
         {
-            Race[] races = EventManager.RaceManager.GetRaces(r => r.RoundNumber >= startRoundNumber && r.RoundNumber <= endRoundNumber && r.Type.HasPoints());
-            for (int i = startRoundNumber; i <= endRoundNumber; i++)
+            Round[] rounds = EventManager.RoundManager.GetRoundsBetween(startRound, endRound).ToArray();
+
+            Race[] races = EventManager.RaceManager.GetRaces(r => r.Type.HasPoints() && rounds.Contains(r.Round));
+            for (int i = startRound.RoundNumber; i <= endRound.RoundNumber; i++)
             {
                 foreach (Race r in races.Where(ra => ra.RoundNumber == i))
                 {
@@ -156,7 +158,7 @@ namespace RaceLib
         public IEnumerable<Race> GetRoundPointRaces(Round endRound)
         {
             Round start = GetStartRound(endRound);
-            return GetRoundPointRaces(start.RoundNumber, endRound.RoundNumber);
+            return GetRoundPointRaces(start, endRound);
         }
 
         public int GetPositionTotal(Round endRound, Pilot pilot)
@@ -230,7 +232,7 @@ namespace RaceLib
         {
             Round start = GetStartRound(endRound);
 
-            IEnumerable<Race> races = GetRoundPointRaces(start.RoundNumber, endRound.RoundNumber).Where(r => r.HasPilot(pilot));
+            IEnumerable<Race> races = GetRoundPointRaces(start, endRound).Where(r => r.HasPilot(pilot));
 
             bool rollover = RollOver(endRound);
 
@@ -757,7 +759,7 @@ namespace RaceLib
 
             bool rollOver = RollOver(endRound);
 
-            IEnumerable<Race> races = GetRoundPointRaces(start.RoundNumber, endRound.RoundNumber);
+            IEnumerable<Race> races = GetRoundPointRaces(start, endRound);
             if (endRound.RoundType == Round.RoundTypes.Final && rollOver)
             {
                 Round lastOfRounds = EventManager.ResultManager.GetLastRoundBeforeFinals(start);
@@ -778,7 +780,7 @@ namespace RaceLib
         {
             Round start = GetStartRound(endRound);
 
-            IEnumerable<Race> races = GetRoundPointRaces(start.RoundNumber, endRound.RoundNumber);
+            IEnumerable<Race> races = GetRoundPointRaces(start, endRound);
             foreach (Race race in races)
             {
                 SaveResults(race);
@@ -812,11 +814,13 @@ namespace RaceLib
 
         public Dictionary<Pilot, int> GetPilotPoints(IEnumerable<Pilot> pilots, Round lastRound)
         {
-            IEnumerable<Race> races = GetRoundPointRaces(1, lastRound.RoundNumber);
+            Dictionary<Pilot, int> pilotPoints = new Dictionary<Pilot, int>();
+            Round firstRound = EventManager.RoundManager.Rounds.FirstOrDefault();
+
+            IEnumerable<Race> races = GetRoundPointRaces(firstRound, lastRound);
 
             bool rollOver = RollOver(lastRound);
 
-            Dictionary<Pilot, int> pilotPoints = new Dictionary<Pilot, int>();
             foreach (Pilot p in pilots.Distinct())
             {
                 IEnumerable<Race> pilotRaces = races.Where(r => r.HasPilot(p));
