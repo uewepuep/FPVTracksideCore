@@ -34,6 +34,11 @@ namespace UI.Nodes
 
         private AnimatedNode eventStatusNodeContainer;
 
+        private Scenes preFullScreenScene;
+        private FullScreenAspectClosable fullScreenContainer;
+        private Node fullscreenNode;
+        private Node fullscreenNodeParent;
+
         public enum Scenes
         {
             Clear,
@@ -43,7 +48,7 @@ namespace UI.Nodes
             RaceResults,
 
             EventStatus,
-            Commentators,
+            Fullscreen,
         }
 
         public Scenes Scene { get; private set; }
@@ -67,9 +72,11 @@ namespace UI.Nodes
 
             this.eventManager = eventManager;
             this.videoManager = videoManager;
-            this.ChannelsGridNode = channelsGridNode;
+            ChannelsGridNode = channelsGridNode;
             this.topBarNode = topBarNode;
             this.mainContainer = mainContainer;
+
+            channelsGridNode.OnFullScreen += OnChannelsGridNodeFullScreen;
 
             eventStatusNodeContainer = new AnimatedNode();
             eventStatusNodeContainer.Visible = false;
@@ -126,6 +133,10 @@ namespace UI.Nodes
             autoRunnerTimerNode.RelativeBounds = new RectangleF(0, 0.96f, 0.97f, 0.04f);
             autoRunnerTimerNode.Alignment = RectangleAlignment.BottomRight;
             AddChild(autoRunnerTimerNode);
+
+            fullScreenContainer = new FullScreenAspectClosable();
+            fullScreenContainer.Close += UnFullScreen;
+            AddChild(fullScreenContainer);
         }
 
         public void SyncFinished()
@@ -252,6 +263,11 @@ namespace UI.Nodes
                 return;
 
             Scene = s;
+
+            if (Scene != Scenes.Fullscreen)
+            {
+                UnFullScreen();
+            }
 
             SetChannelGridReordering(s);
 
@@ -482,19 +498,22 @@ namespace UI.Nodes
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
                     break;
 
-                case Scenes.Commentators:
-                    launchCamsNode.SetAnimatedVisibility(false);
-                    finishLineNode.SetAnimatedVisibility(false);
+                case Scenes.Fullscreen:
+                    Node fsNode = fullscreenNode;
 
-                    commentatorsAndSummary.RelativeBounds = new RectangleF(0.0f, 0.0f, 1, 1);
-                    commentatorsAndSummary.SetAnimatedVisibility(true);
-                    Node.AlignHorizontally(0, commentatorsAndSummary.VisibleChildren.ToArray());
+                    if (fsNode == null)
+                    {
+                        break;
+                    }
 
-                    ChannelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 0, 0);
+                    if (fsNode is AnimatedNode)
+                    {
+                        AnimatedNode an = fsNode as AnimatedNode;
+                        an.AnimationTime = mainContainer.AnimationTime;
+                        an.SetAnimatedVisibility(true);
+                    }
 
-                    nextRaceNode.SetAnimatedVisibility(false);
-                    resultsRaceNode.SetAnimatedVisibility(false);
-                    eventStatusNodeContainer.SetAnimatedVisibility(false);
+                    fsNode.RelativeBounds = new RectangleF(0, 0, 1, 1);
                     break;
 
                 case Scenes.EventStatus:
@@ -571,12 +590,13 @@ namespace UI.Nodes
                     {
                         case SourceTypes.Commentators:
                             node = new CamNode(source, videoBounds);
-                            node.OnFullScreenRequest += Node_OnFullScreenRequest;
+                            node.OnFullScreenRequest += FullScreen;
                             commentatorsAndSummary.AddChild(node);
                             break;
 
                         case SourceTypes.Launch:
                             node = new CamNode(source, videoBounds);
+                            node.OnFullScreenRequest += FullScreen;
                             node.FrameNode.KeepAspectRatio = false;
                             node.FrameNode.CropToFit = true;
                             node.FrameNode.Alignment = RectangleAlignment.Center;
@@ -585,6 +605,7 @@ namespace UI.Nodes
 
                         case SourceTypes.FinishLine:
                             node = new CamNode(source, videoBounds);
+                            node.OnFullScreenRequest += FullScreen;
                             node.FrameNode.KeepAspectRatio = false;
                             node.FrameNode.CropToFit = true;
                             node.FrameNode.Alignment = RectangleAlignment.Center;
@@ -600,15 +621,50 @@ namespace UI.Nodes
             }
         }
 
-        private void Node_OnFullScreenRequest()
-        {
-            SetScene(Scenes.Commentators);
-        }
-
         private void Node_OnVideoBoundsChange(VideoBounds obj)
         {
             videoManager.WriteCurrentDeviceConfig();
             OnVideoSettingsChange?.Invoke();
+        }
+
+        public void UnFullScreen()
+        {
+            if (fullscreenNode != null && fullscreenNodeParent != null)
+            {
+                fullscreenNode.Remove();
+                fullscreenNodeParent.AddChild(fullscreenNode);
+
+                fullscreenNode = null;
+                fullscreenNodeParent = null;
+                SetScene(preFullScreenScene);
+            }
+        }
+
+        private void OnChannelsGridNodeFullScreen(Node node)
+        {
+            FullScreen(node);
+            fullScreenContainer.KeepAspectRatio = true;
+        }
+
+        public void FullScreen(Node node)
+        {
+            preFullScreenScene = Scene;
+
+            UnFullScreen();
+
+            fullscreenNode = node;
+            fullscreenNodeParent = node.Parent;
+
+            fullscreenNode.Remove();
+            fullScreenContainer.AddChild(fullscreenNode, 0);
+            fullScreenContainer.KeepAspectRatio = false;
+
+            SetScene(Scenes.Fullscreen);
+        }
+
+        public void ShowCommentators()
+        {
+            FullScreen(commentatorsAndSummary);
         }
 
         public void ToggleWorm()
@@ -627,6 +683,43 @@ namespace UI.Nodes
                 ChannelsGridNode.RelativeBounds = new RectangleF(0, 0, 1, 1 - height);
             }
             RequestLayout();
+        }
+
+        private class FullScreenAspectClosable : AspectNode
+        {
+            private CloseNode closeNode;
+
+            public event Action Close;
+
+            public FullScreenAspectClosable()
+                :base(4 / 3.0f)
+            {
+                closeNode = new CloseNode();
+                closeNode.OnClick += CloseNode_OnClick;
+                AddChild(closeNode);    
+            }
+
+            private void CloseNode_OnClick(MouseInputEvent mie)
+            {
+                Close?.Invoke();
+            }
+
+            public override void Draw(Drawer id, float parentAlpha)
+            {
+                if (Children.Length == 2)
+                {
+                    base.Draw(id, parentAlpha);
+                }
+            }
+
+            public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
+            {
+                if (Children.Length == 2)
+                {
+                    return base.OnMouseInput(mouseInputEvent);
+                }
+                return false;
+            }
         }
     }
 }

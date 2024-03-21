@@ -46,9 +46,8 @@ namespace UI.Nodes
             if (mouseInputEvent.ButtonState == ButtonStates.Released)
             {
                 OnClick?.Invoke(mouseInputEvent);
-                return true;
             }
-            return base.OnMouseInput(mouseInputEvent);
+            return true;
         }
     }
 }

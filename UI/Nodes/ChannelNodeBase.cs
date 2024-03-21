@@ -572,6 +572,11 @@ namespace UI.Nodes
                         });
                     }
 
+                    mm.AddItem("Full screen", () =>
+                    {
+                        OnFullscreen?.Invoke();
+                    });
+
                     Race r = EventManager.RaceManager.CurrentRace;
                     if (r != null)
                     {

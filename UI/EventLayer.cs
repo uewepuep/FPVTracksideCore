@@ -932,7 +932,7 @@ namespace UI
 
                 if (KeyMapper.SceneCommentators.Match(inputEvent))
                 {
-                    TabbedMultiNode.ShowLive(SceneManagerNode.Scenes.Commentators);
+                    TabbedMultiNode.ShowCommentators();
                     return true;
                 }
 

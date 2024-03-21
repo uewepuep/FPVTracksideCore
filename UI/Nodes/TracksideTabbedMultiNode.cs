@@ -222,6 +222,11 @@ namespace UI.Nodes
             Show(pilotChanelList);
         }
 
+        public void ShowCommentators()
+        {
+            sceneManagerNode.ShowCommentators();
+        }
+
         public void ShowLive(SceneManagerNode.Scenes scene)
         {
             sceneManagerNode.SetScene(scene);

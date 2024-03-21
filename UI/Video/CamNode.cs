@@ -26,7 +26,7 @@ namespace UI.Video
         private OverlayTextNode launchText;
 
         public event Action<VideoBounds> OnVideoBoundsChange;
-        public event Action OnFullScreenRequest;
+        public event Action<CamNode> OnFullScreenRequest;
 
         public CamNode(FrameSource s, VideoBounds videoBounds)
         {
@@ -84,7 +84,7 @@ namespace UI.Video
                     {
                         mouseMenu.AddItem("Full Screen", () =>
                         {
-                            OnFullScreenRequest();
+                            OnFullScreenRequest(this);
                         });
                     }
 

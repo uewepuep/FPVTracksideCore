@@ -205,6 +205,43 @@ namespace UI.Nodes
             {
                 AddPilot();
             });
+#if DEBUG
+            mm.AddItem("Add Debug Pilots", () =>
+            {
+                string[] pilotNames = new string[]
+                {
+                   "Alfa",
+                   "Bravo",
+                   "Charlie",
+                   "Delta",
+                   "Echo",
+                   "Foxtrot",
+                   "Golf",
+                   "Hotel",
+                   "India",
+                   "Juliett",
+                   "Kilo",
+                   "Lima",
+                   "Mike",
+                   "November",
+                   "Oscar",
+                   "Papa",
+                   "Quebec",
+                   "Romeo",
+                   "Sierra",
+                   "Tango",
+                   "Uniform",
+                   "Victor",
+                   "Whiskey",
+                   "X-ray",
+                   "Yankee",
+                   "Zulu",
+                };
+                IEnumerable<PilotChannel> newPilots = ImportFromNames(pilotNames);
+                EditPilotChannels(newPilots, null);
+                RebuildList();
+            });
+#endif
 
             bool anyPilots = eventManager.Event.Pilots.Where(p => p != null).Any();
             if (anyPilots)

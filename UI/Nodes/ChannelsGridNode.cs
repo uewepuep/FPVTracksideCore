@@ -80,6 +80,8 @@ namespace UI.Nodes
 
         private bool extrasVisible;
 
+        public event Action<Node> OnFullScreen;
+
         public enum ReOrderTypes
         {
             None, 
@@ -447,6 +449,18 @@ namespace UI.Nodes
                     return channelNodeBase;
                 }
 
+                channelNodeBase = CreateChannelNode(c);
+                AddChild(channelNodeBase);
+                return channelNodeBase;
+            }
+        }
+
+        private ChannelNodeBase CreateChannelNode(Channel c)
+        {
+            lock (channelCreationLock)
+            {
+                ChannelNodeBase channelNodeBase = null;
+
                 ChannelVideoInfo ci = channelInfos.FirstOrDefault(cia => cia.Channel == c);
                 Color color = EventManager.GetChannelColor(c);
 
@@ -495,8 +509,6 @@ namespace UI.Nodes
 
                 channelNodeBase.OnPBChange += Reorder;
                 channelNodeBase.RequestReorder += Reorder;
-
-                AddChild(channelNodeBase);
 
                 channelNodeBase.RelativeBounds = new RectangleF(0.45f, 0.45f, 0.1f, 0.1f);
                 channelNodeBase.Layout(Bounds);
@@ -617,39 +629,9 @@ namespace UI.Nodes
             }
         }
 
-        public void FullScreen(ChannelNodeBase fullScreen)
+        private void FullScreen(Node node)
         {
-            if (EventManager.RaceManager.RaceRunning || Replay)
-            {
-                IEnumerable<ChannelNodeBase> pilotNodes = ChannelNodes.Where(cn => cn.Pilot != null && cn != fullScreen);
-                if (pilotNodes.Any())
-                {
-                    foreach (ChannelNodeBase cn in pilotNodes)
-                    {
-                        cn.SetAnimatedVisibility(false);
-                        cn.CrashedOutType = ChannelNodeBase.CrashOutType.Manual;
-                    }
-                }
-
-                fullScreen.SetAnimatedVisibility(true);
-                fullScreen.CrashedOutType = ChannelNodeBase.CrashOutType.None;
-
-                RequestLayout();
-            }
-        }
-
-        public void FullScreen(CamGridNode fullScreen)
-        {
-            if (EventManager.RaceManager.RaceRunning || Replay)
-            {
-                foreach (ChannelNodeBase cn in ChannelNodes)
-                {
-                    cn.SetAnimatedVisibility(false);
-                }
-
-                fullScreen.SetAnimatedVisibility(true);
-                RequestLayout();
-            }
+            OnFullScreen?.Invoke(node);
         }
 
         public void IncreaseChannelVisiblity()
