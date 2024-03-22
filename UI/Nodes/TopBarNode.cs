@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -29,47 +30,54 @@ namespace UI.Nodes
 
         private Node lower;
         private Node upper;
+        public AlphaAnimatedNode TabContainer { get; private set; }
 
         private AnimatedRelativeNode logoContainerNode;
-        private ColorNode background;
+        private Node container;
 
         public TopBarNode()
         {
-        }
-
-        public void Init(EventManager eventManager, ReplayNode replayNode)
-        {
             lastMinute = -1;
-            EventManager = eventManager;
             AnimationTime = TimeSpan.FromSeconds(ProfileSettings.Instance.ReOrderAnimationSeconds);
 
-            bool border = Theme.Current.TopPanelTextBorder;
-
-            background = new ColorNode(Theme.Current.TopPanel);
-            AddChild(background);
+            container = new ColorNode(Theme.Current.TopPanel);
+            container.RelativeBounds = new RectangleF(0, 0, 1, 0.76f);
+            AddChild(container);
 
             logoContainerNode = new AnimatedRelativeNode();
             logoContainerNode.AnimationTime = AnimationTime;
             logoContainerNode.RelativeBounds = new RectangleF(0, 0, 0.3f, 1f);
-            AddChild(logoContainerNode);
+            container.AddChild(logoContainerNode);
 
             ImageNode logoNode = new ColorNode(Theme.Current.FPVTracksideLogo);
             logoNode.Alignment = RectangleAlignment.CenterLeft;
             logoNode.KeepAspectRatio = true;
             logoContainerNode.AddChild(logoNode);
 
+            float height = 0.5f;
             upper = new Node();
-            upper.RelativeBounds = new RectangleF(logoContainerNode.RelativeBounds.Right, 0, 1 - logoContainerNode.RelativeBounds.Right, 0.5f);
+            upper.RelativeBounds = new RectangleF(logoContainerNode.RelativeBounds.Right, 0, 1 - logoContainerNode.RelativeBounds.Right, height);
             upper.Scale(0.98f, 0.95f);
-            AddChild(upper);
-
+            
             lower = new Node();
-            lower.RelativeBounds = new RectangleF(logoContainerNode.RelativeBounds.Right, 0.50f, 1 - logoContainerNode.RelativeBounds.Right, 0.5f);
+            lower.RelativeBounds = new RectangleF(logoContainerNode.RelativeBounds.Right, height, 1 - logoContainerNode.RelativeBounds.Right, height);
             lower.Scale(0.98f, 0.95f);
 
-            AddChild(lower);
+            TabContainer = new AlphaAnimatedNode();
+            TabContainer.RelativeBounds = new RectangleF(0, container.RelativeBounds.Bottom, 1, 1 - container.RelativeBounds.Bottom);
 
-            background.RelativeBounds = new RectangleF(0, 0, 1, 1);
+            container.AddChild(upper);
+            container.AddChild(lower);
+            AddChild(TabContainer);
+
+            LogoOnBottomLine(false);
+        }
+
+        public void Init(EventManager eventManager, ReplayNode replayNode)
+        {
+            EventManager = eventManager;
+
+            bool border = Theme.Current.TopPanelTextBorder;
 
             eventName = new TextNode("", Theme.Current.TopPanelText.XNA);
             eventName.Alignment = RectangleAlignment.CenterLeft;
@@ -86,8 +94,6 @@ namespace UI.Nodes
             type = new EventTypeSummaryNode(EventManager, Theme.Current.TopPanelText.XNA);
             type.Style.Border = border;
             lower.AddChild(type);
-
-            UpdateDetails();
 
             lapSummaryNode = new LapSummaryNode(eventManager, replayNode, Theme.Current.TopPanelText.XNA);
             lapSummaryNode.Alignment = RectangleAlignment.CenterLeft;
@@ -112,6 +118,8 @@ namespace UI.Nodes
             EventManager.RaceManager.OnRaceClear += UpdateDetails;
             EventManager.RaceManager.OnRaceChanged += UpdateDetails;
             EventManager.RaceManager.OnRaceReset += UpdateDetails;
+
+            UpdateDetails();
         }
 
         public void DisableTimeNodes()
@@ -196,11 +204,13 @@ namespace UI.Nodes
         {
             if (bottom)
             {
+                TabContainer.SetAnimatedVisibility(false);
                 logoContainerNode.RelativeBounds = new RectangleF(0, 0.5f, 0.3f, 0.5f);
             }
             else
             {
                 logoContainerNode.RelativeBounds = new RectangleF(0, 0, 0.3f, 1f);
+                TabContainer.SetAnimatedVisibility(true);
             }
         }
 
@@ -208,6 +218,7 @@ namespace UI.Nodes
         {
             AnimationTime = time;
             logoContainerNode.AnimationTime = time;
+            TabContainer.AnimationTime = AnimationTime;
         }
     }
 }

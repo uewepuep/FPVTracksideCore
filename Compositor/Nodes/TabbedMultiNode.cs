@@ -16,7 +16,6 @@ namespace Composition.Nodes
         private MultiNode multiNode;
         public Action<string, Node> OnTabChange { get; set; }
 
-        private AlphaAnimatedNode tabContainer;
         private ColorNode tabBack;
 
         private Color tabButtonBackground;
@@ -39,19 +38,13 @@ namespace Composition.Nodes
             }
         }
 
-        private bool tabVisible;
-
-        public TabbedMultiNode(TimeSpan animation, Color tabBackground, Color tabButtonBackground, Color hover, Color text)
+        public TabbedMultiNode(TimeSpan animation, Node tabContainer, Color tabBackground, Color tabButtonBackground, Color hover, Color text)
         {
             mapBack = new Dictionary<Node, TextButtonNode>();
 
             this.tabButtonBackground = tabButtonBackground;
             hoverColor = hover;
             textColor = text;
-
-            tabContainer = new AlphaAnimatedNode();
-            tabContainer.AnimationTime = animation;
-            tabContainer.RelativeBounds = new RectangleF(0, 0, 1, 0.035f);
 
             tabBack = new ColorNode(tabBackground);
             tabContainer.AddChild(tabBack);
@@ -60,28 +53,7 @@ namespace Composition.Nodes
             multiNode.OnShowChange += MultiNode_OnShowChange;
             multiNode.Direction = MultiNode.Directions.Horizontal;
 
-            AddChild(tabContainer);
             AddChild(multiNode);
-
-            SetTabsVisible(true);
-        }
-
-        public void SetTabsVisible(bool visible)
-        {
-            if (tabVisible != visible)
-            {
-                if (visible)
-                {
-                    multiNode.RelativeBounds = new RectangleF(0, tabContainer.RelativeBounds.Bottom, 1, 1 - tabContainer.RelativeBounds.Bottom);
-                    tabContainer.SetAnimatedVisibility(true);
-                }
-                else
-                {
-                    tabContainer.SetAnimatedVisibility(false);
-                    multiNode.RelativeBounds = new RectangleF(0, 0, 1, 1);
-                }
-                tabVisible = visible;
-            }
         }
 
         public TextButtonNode AddTab(string text, Node node)

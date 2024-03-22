@@ -16,9 +16,9 @@ namespace UI.Nodes
 {
     public class SceneManagerNode : Node
     {
-        private AnimatedRelativeNode launchCamsNode;
-        private AnimatedRelativeNode commentatorsAndSummary;
-        private AnimatedRelativeNode finishLineNode;
+        private AnimatedNode launchCamsNode;
+        private AnimatedNode commentatorsAndSummary;
+        private AnimatedNode finishLineNode;
 
         private VideoManager videoManager;
         private EventManager eventManager;
@@ -84,13 +84,13 @@ namespace UI.Nodes
             EventStatusNode eventStatusNode = new EventStatusNode(eventManager);
             eventStatusNodeContainer.AddChild(eventStatusNode);
 
-            launchCamsNode = new AnimatedRelativeNode();
+            launchCamsNode = new AnimatedNode();
             launchCamsNode.SetAnimatedVisibility(false);
 
-            finishLineNode = new AnimatedRelativeNode();
+            finishLineNode = new AnimatedNode();
             finishLineNode.SetAnimatedVisibility(false);
 
-            commentatorsAndSummary = new AnimatedRelativeNode();
+            commentatorsAndSummary = new AnimatedNode();
             commentatorsAndSummary.SetAnimatedVisibility(false);
 
             resultsRaceNode = new NamedRaceNode("Results", eventManager);

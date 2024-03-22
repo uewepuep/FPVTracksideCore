@@ -143,9 +143,8 @@ namespace UI
                 ShowPilotList(r == null || r.PilotCount == 0);
             };
 
-
             topBar = new TopBarNode();
-            topBar.RelativeBounds = new RectangleF(0, 0, 1, 0.1f); 
+            topBar.RelativeBounds = new RectangleF(0, 0, 1, 0.13f); 
             Root.AddChild(topBar);
 
             rightBar = new AnimatedNode();
@@ -234,7 +233,7 @@ namespace UI
 
             RoundsNode = new RoundsNode(EventManager);
 
-            TabbedMultiNode = new TracksideTabbedMultiNode(eventManager, videoManager, RoundsNode, sceneManagerNode);
+            TabbedMultiNode = new TracksideTabbedMultiNode(eventManager, videoManager, RoundsNode, sceneManagerNode, topBar.TabContainer);
             TabbedMultiNode.RelativeBounds = new RectangleF(0, 0, 1, 0.99f);
             TabbedMultiNode.OnTabChange += OnTabChange;
             centreContainer.AddChild(TabbedMultiNode);
@@ -1142,29 +1141,37 @@ namespace UI
 
         private void UpdateTopBar()
         {
+            // ignoring tabs 
+            float topBarBottom = 0.1f;
+
             if (TabbedMultiNode != null)
             {
+                float topBarHeight = topBar.RelativeBounds.Height;
+
                 if (TabbedMultiNode.Showing == sceneManagerNode && sceneManagerNode.Scene == SceneManagerNode.Scenes.Race)
                 {
+                    // shrunken
+                    topBarBottom = topBarBottom / 2;
+
                     topBar.LogoOnBottomLine(true);
-                    TabbedMultiNode.SetTabsVisible(false);
-                    topBar.RelativeBounds = new RectangleF(0, -0.05f, 1, 0.1f);
+                    topBar.RelativeBounds = new RectangleF(0, -topBarBottom, 1, topBarHeight);
                 }
                 else
                 {
-                    TabbedMultiNode.SetTabsVisible(true);
+                    // including tabs
+                    topBarBottom = topBarHeight;
                     topBar.LogoOnBottomLine(false);
-                    topBar.RelativeBounds = new RectangleF(0, 0, 1, 0.1f);
+                    topBar.RelativeBounds = new RectangleF(0, 0, 1, topBarHeight);
                 }
             }
 
             bool crop = centralAspectNode.KeepAspectRatio;
             if (!crop)
             {
-                rightBar.RelativeBounds = new RectangleF(1 - rightBarWidth, topBar.RelativeBounds.Bottom, rightBarWidth, 1 - topBar.RelativeBounds.Bottom);
+                rightBar.RelativeBounds = new RectangleF(1 - rightBarWidth, topBarBottom, rightBarWidth, 1 - topBarBottom);
             }
 
-            mainContainer.RelativeBounds = new RectangleF(0, topBar.RelativeBounds.Bottom, 1, 1 - topBar.RelativeBounds.Bottom);
+            mainContainer.RelativeBounds = new RectangleF(0, topBarBottom, 1, 1 - topBarBottom);
         }
 
         private bool LowDiskSpace()

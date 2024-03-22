@@ -41,8 +41,8 @@ namespace UI.Nodes
         private TextButtonNode rssiButton;
 
 
-        public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, RoundsNode rounds, SceneManagerNode sceneManagerContent)
-            : base(TimeSpan.FromSeconds(0.6f), Theme.Current.Panel.XNA, Theme.Current.PanelAlt.XNA, Theme.Current.Hover.XNA, Theme.Current.TextMain.XNA)
+        public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, RoundsNode rounds, SceneManagerNode sceneManagerContent, Node tabContainer)
+            : base(TimeSpan.FromSeconds(0.6f), tabContainer, Theme.Current.Panel.XNA, Theme.Current.PanelAlt.XNA, Theme.Current.Hover.XNA, Theme.Current.TextMain.XNA)
         {
             this.eventManager = eventManager;
             VideoManager = videoManager;

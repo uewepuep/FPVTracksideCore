@@ -17,7 +17,7 @@ using static UI.Nodes.ChannelNodeBase;
 
 namespace UI.Video
 {
-    public class CamNode : AnimatedRelativeNode
+    public class CamNode : AnimatedNode
     {
         public FrameNode FrameNode { get; private set; }
 
