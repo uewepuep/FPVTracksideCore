@@ -128,7 +128,7 @@ namespace Composition.Nodes
                     }
                     else if (interpolatedBounds.Target != newBounds)
                     {
-                        interpolatedBounds.SetTarget(Bounds, newBounds, AnimationTime);
+                        interpolatedBounds.SetTarget(Bounds, newBounds);
                     }
                 }
             }

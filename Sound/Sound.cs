@@ -19,8 +19,11 @@ namespace Sound
         TimesUp,
         TimeRemaining,
         AfterTimesUp,
-        AnnounceRace,
-        AnnounceRaceResults,
+        
+        RaceAnnounce,
+
+        RaceAnnounceResults,
+
         UntilRaceStart,
 
         Sector,

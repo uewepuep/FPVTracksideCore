@@ -9,7 +9,7 @@ using Tools;
 
 namespace Composition.Nodes
 {
-    public class TabbedMultiNode : Node, IUpdateableNode
+    public class TabbedMultiNode : Node
     {
         public Node Showing { get { return multiNode.Showing; } }
 
@@ -73,11 +73,11 @@ namespace Composition.Nodes
                 if (visible)
                 {
                     multiNode.RelativeBounds = new RectangleF(0, tabContainer.RelativeBounds.Bottom, 1, 1 - tabContainer.RelativeBounds.Bottom);
-                    tabContainer.SetAnimatedAlpha(1);
+                    tabContainer.SetAnimatedVisibility(true);
                 }
                 else
                 {
-                    tabContainer.SetAnimatedAlpha(0);
+                    tabContainer.SetAnimatedVisibility(false);
                     multiNode.RelativeBounds = new RectangleF(0, 0, 1, 1);
                 }
                 tabVisible = visible;
@@ -123,11 +123,6 @@ namespace Composition.Nodes
             {
                 OnTabChange?.Invoke(textButtonNode.Text, obj);
             }
-        }
-
-        public virtual void Update(GameTime gameTime)
-        {
-            tabContainer.Visible = tabContainer.Alpha != 0.0f;
         }
 
         public virtual void Show(Node node)

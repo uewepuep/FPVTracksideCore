@@ -25,7 +25,6 @@ namespace UI.Nodes
 
         public ChannelsGridNode ChannelsGridNode { get; private set; }
         private TopBarNode topBarNode;
-        private AnimatedRelativeNode mainContainer;
 
         private NamedRaceNode resultsRaceNode;
         private NamedRaceNode nextRaceNode;
@@ -66,7 +65,7 @@ namespace UI.Nodes
 
         private AutoRunnerTimerNode autoRunnerTimerNode;
 
-        public SceneManagerNode(EventManager eventManager, VideoManager videoManager, ChannelsGridNode channelsGridNode, TopBarNode topBarNode, AnimatedRelativeNode mainContainer, AutoRunner autoRunner)
+        public SceneManagerNode(EventManager eventManager, VideoManager videoManager, ChannelsGridNode channelsGridNode, TopBarNode topBarNode, AutoRunner autoRunner)
         {
             AfterRaceStart = TimeSpan.FromSeconds(2);
 
@@ -74,7 +73,6 @@ namespace UI.Nodes
             this.videoManager = videoManager;
             ChannelsGridNode = channelsGridNode;
             this.topBarNode = topBarNode;
-            this.mainContainer = mainContainer;
 
             channelsGridNode.OnFullScreen += OnChannelsGridNodeFullScreen;
 
@@ -297,7 +295,6 @@ namespace UI.Nodes
             nextRaceNode.AnimationTime = time;
             ChannelsGridNode.SetAnimationTime(time);
             topBarNode.SetAnimationTime(time);
-            mainContainer.AnimationTime = time;
         }
 
         private void SetChannelGridReordering(Scenes scene)
@@ -509,7 +506,6 @@ namespace UI.Nodes
                     if (fsNode is AnimatedNode)
                     {
                         AnimatedNode an = fsNode as AnimatedNode;
-                        an.AnimationTime = mainContainer.AnimationTime;
                         an.SetAnimatedVisibility(true);
                     }
 
@@ -648,7 +644,10 @@ namespace UI.Nodes
 
         public void FullScreen(Node node)
         {
-            preFullScreenScene = Scene;
+            if (Scene != Scenes.Fullscreen)
+            {
+                preFullScreenScene = Scene;
+            }
 
             UnFullScreen();
 
@@ -660,6 +659,20 @@ namespace UI.Nodes
             fullScreenContainer.KeepAspectRatio = false;
 
             SetScene(Scenes.Fullscreen);
+        }
+
+        public void FullScreen(Pilot pilot)
+        {
+            ChannelNodeBase channelNodeBase = ChannelsGridNode.GetChannelNode(pilot);
+            if (channelNodeBase != null && pilot != null)
+            {
+                FullScreen(channelNodeBase);
+                fullScreenContainer.KeepAspectRatio = true;
+            }
+            else
+            {
+                UnFullScreen();
+            }
         }
 
         public void ShowCommentators()

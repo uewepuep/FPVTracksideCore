@@ -88,11 +88,18 @@ namespace Sound
 
         public Units Units { get; set; }
 
+        public event Action<Pilot> OnHighlightPilot;
+
+        private WorkQueue backgroundQueue;
+
         public SoundManager(EventManager eventManager, Profile profile)
         {
             this.eventManager = eventManager;
             Profile = profile;
             Units = Units.Metric;
+
+            backgroundQueue = new WorkQueue("Sound Manager Background");
+
 
             announceConnection = false;
             Instance = this;
@@ -104,7 +111,6 @@ namespace Sound
             InitSounds();
 
             Logger.SoundLog.LogCall(this);
-
 
             if (eventManager != null)
             {
@@ -122,6 +128,9 @@ namespace Sound
 
         public void Dispose()
         {
+            backgroundQueue?.Dispose();
+            backgroundQueue = null;
+
             if (eventManager != null)
             {
                 eventManager.RaceManager.OnRaceStart -= RaceManager_OnRaceStart;
@@ -198,14 +207,16 @@ namespace Sound
                     new Sound() { Key = SoundKey.StaggeredStart, TextToSpeech = "Arm your quads. Start on your name", Category = Sound.SoundCategories.Race },
                     new Sound() { Key = SoundKey.StaggeredPilot, TextToSpeech = "{pilot}", Category = Sound.SoundCategories.Race },
 
-                    new Sound() { Key = SoundKey.AnnounceRace, TextToSpeech = "Next up Round {round} {type} {race} {bracket}, With {pilots}", Category = Sound.SoundCategories.Announcements },
-                    new Sound() { Key = SoundKey.AnnounceRaceResults, TextToSpeech = "Results of Round {round} {type} {race} {bracket}. {pilots}", Category = Sound.SoundCategories.Announcements },
-                    new Sound() { Key = SoundKey.NameTest, TextToSpeech = "{pilot}", Category = Sound.SoundCategories.Announcements },
-                    new Sound() { Key = SoundKey.HurryUp, TextToSpeech = "Hurry Up {pilot}", Category = Sound.SoundCategories.Announcements },
-                    new Sound() { Key = SoundKey.PilotChannel, TextToSpeech = "{pilot} on {band}{channel}", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.RaceAnnounce, TextToSpeech = "Next up Round {round} {type} {race} {bracket}. ", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.RaceAnnounceResults, TextToSpeech = "Results of Round {round} {type} {race} {bracket}. ", Category = Sound.SoundCategories.Announcements },
 
+                    new Sound() { Key = SoundKey.PilotChannel, TextToSpeech = "{pilot} on {band}{channel}", Category = Sound.SoundCategories.Announcements },
                     new Sound() { Key = SoundKey.PilotResult, TextToSpeech = "{pilot} {position}", Category = Sound.SoundCategories.Announcements },
 
+                    new Sound() { Key = SoundKey.NameTest, TextToSpeech = "{pilot}", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.HurryUp, TextToSpeech = "Hurry Up {pilot}", Category = Sound.SoundCategories.Announcements },
+                    
+                    
                     new Sound() { Key = SoundKey.Detection, TextToSpeech = "BEEP", Filename = @"sounds/detection.wav", Category = Sound.SoundCategories.Detection },
                     new Sound() { Key = SoundKey.DetectionSplit, TextToSpeech = "beep", Filename = @"sounds/split.wav", Category = Sound.SoundCategories.Detection },
                     new Sound() { Key = SoundKey.Sector, TextToSpeech = "{pilot} sector {count} in {position}", Enabled = false, Category = Sound.SoundCategories.Detection },
@@ -322,38 +333,49 @@ namespace Sound
             if (!race.Pilots.Any())
                 return;
 
-            List<SpeechParameters> subSoundParameters = new List<SpeechParameters>();
-            foreach (PilotChannel pc in race.PilotChannels.OrderBy(a => a.Channel.Frequency))
+            backgroundQueue.Clear();
+            backgroundQueue.Enqueue(() =>
             {
-                if (pc.Pilot == null || pc.Channel == null)
-                    continue;
+                SpeechParameters parameters = new SpeechParameters();
+                parameters.Priority = 1000;
+                parameters.SecondsExpiry = 10;
+                parameters.Add(SpeechParameters.Types.round, race.RoundNumber);
+                parameters.Add(SpeechParameters.Types.race, race.RaceNumber);
+                parameters.Add(SpeechParameters.Types.type, RaceStringFormatter.Instance.GetEventTypeText(race.Type));
 
-                SpeechParameters pilotChannelParameters = new SpeechParameters();
-                pilotChannelParameters.Add(SpeechParameters.Types.pilot, pc.Pilot.Phonetic);
-                pilotChannelParameters.Add(SpeechParameters.Types.band, pc.Channel.GetSpokenBandLetter());
-                pilotChannelParameters.Add(SpeechParameters.Types.channel, pc.Channel.Number);
+                if (race.Bracket == Race.Brackets.None)
+                {
+                    parameters.Add(SpeechParameters.Types.bracket, "");
+                }
+                else
+                {
+                    parameters.Add(SpeechParameters.Types.bracket, race.Bracket);
+                }
 
-                subSoundParameters.Add(pilotChannelParameters);
-            }
+                PlaySoundBlocking(SoundKey.RaceAnnounce, parameters);
 
-            SpeechParameters parameters = new SpeechParameters();
-            parameters.Priority = 1000;
-            parameters.SecondsExpiry = 10;
-            parameters.AddSubParameters(SpeechParameters.Types.pilots, soundPilotChannel, subSoundParameters);
-            parameters.Add(SpeechParameters.Types.round, race.RoundNumber);
-            parameters.Add(SpeechParameters.Types.race, race.RaceNumber);
-            parameters.Add(SpeechParameters.Types.type, RaceStringFormatter.Instance.GetEventTypeText(race.Type));
+                foreach (PilotChannel pc in race.PilotChannels.OrderBy(a => a.Channel.Frequency))
+                {
+                    if (pc.Pilot == null || pc.Channel == null)
+                        continue;
 
-            if (race.Bracket == Race.Brackets.None)
-            {
-                parameters.Add(SpeechParameters.Types.bracket, "");
-            }
-            else
-            {
-                parameters.Add(SpeechParameters.Types.bracket, race.Bracket);
-            }
+                    SpeechParameters pilotChannelParameters = new SpeechParameters();
+                    pilotChannelParameters.Priority = 1000;
+                    pilotChannelParameters.SecondsExpiry = 60;
+                    pilotChannelParameters.Add(SpeechParameters.Types.pilot, pc.Pilot.Phonetic);
+                    pilotChannelParameters.Add(SpeechParameters.Types.band, pc.Channel.GetSpokenBandLetter());
+                    pilotChannelParameters.Add(SpeechParameters.Types.channel, pc.Channel.Number);
 
-            PlaySound(SoundKey.AnnounceRace, parameters);
+                    HighlightPilot(pc.Pilot);
+                    PlaySoundBlocking(SoundKey.PilotChannel, pilotChannelParameters);
+                }
+                HighlightPilot(null);
+            });
+        }
+
+        private void HighlightPilot(Pilot pilot)
+        {
+            OnHighlightPilot?.Invoke(pilot);
         }
 
         public void AnnounceResults(Race race)
@@ -371,38 +393,45 @@ namespace Sound
             if (!race.Pilots.Any())
                 return;
 
-            Result[] results = eventManager.ResultManager.GetResults(race).OrderBy(r => r.Position).ToArray();
-
-            List<SpeechParameters> subSoundParameters = new List<SpeechParameters>();
-            foreach (Result result in results)
+            backgroundQueue.Clear();
+            backgroundQueue.Enqueue(() =>
             {
-                if (result.Pilot == null)
-                    continue;
+                Result[] results = eventManager.ResultManager.GetResults(race).OrderBy(r => r.Position).ToArray();
 
-                SpeechParameters pilotChannelParameters = new SpeechParameters();
-                pilotChannelParameters.Add(SpeechParameters.Types.pilot, result.Pilot.Phonetic);
-                pilotChannelParameters.Add(SpeechParameters.Types.position, result.DNF ? "DNF" : result.Position);
-                subSoundParameters.Add(pilotChannelParameters);
-            }
+               
+                SpeechParameters parameters = new SpeechParameters();
+                parameters.Priority = 1000;
+                parameters.SecondsExpiry = 10;
+                parameters.Add(SpeechParameters.Types.round, race.RoundNumber);
+                parameters.Add(SpeechParameters.Types.race, race.RaceNumber);
+                parameters.Add(SpeechParameters.Types.type, RaceStringFormatter.Instance.GetEventTypeText(race.Type));
 
-            SpeechParameters parameters = new SpeechParameters();
-            parameters.Priority = 1000;
-            parameters.SecondsExpiry = 10;
-            parameters.AddSubParameters(SpeechParameters.Types.pilots, soundPilotChannel, subSoundParameters);
-            parameters.Add(SpeechParameters.Types.round, race.RoundNumber);
-            parameters.Add(SpeechParameters.Types.race, race.RaceNumber);
-            parameters.Add(SpeechParameters.Types.type, RaceStringFormatter.Instance.GetEventTypeText(race.Type));
+                if (race.Bracket == Race.Brackets.None)
+                {
+                    parameters.Add(SpeechParameters.Types.bracket, "");
+                }
+                else
+                {
+                    parameters.Add(SpeechParameters.Types.bracket, race.Bracket);
+                }
 
-            if (race.Bracket == Race.Brackets.None)
-            {
-                parameters.Add(SpeechParameters.Types.bracket, "");
-            }
-            else
-            {
-                parameters.Add(SpeechParameters.Types.bracket, race.Bracket);
-            }
+                PlaySoundBlocking(SoundKey.RaceAnnounceResults, parameters);
 
-            PlaySound(SoundKey.AnnounceRaceResults, parameters);
+                foreach (Result result in results)
+                {
+                    if (result == null || result.Pilot == null)
+                        continue;
+
+                    SpeechParameters pilotChannelParameters = new SpeechParameters();
+                    pilotChannelParameters.Add(SpeechParameters.Types.pilot, result.Pilot.Phonetic);
+                    pilotChannelParameters.Add(SpeechParameters.Types.position, result.DNF ? "DNF" : result.Position);
+
+                    HighlightPilot(result.Pilot);
+                    PlaySoundBlocking(SoundKey.PilotResult, pilotChannelParameters);
+                }
+
+                HighlightPilot(null);
+            });
         }
 
         public void PilotChannel(Pilot pilot, Channel channel)
@@ -452,8 +481,6 @@ namespace Sound
             SpeechRequest speechRequest = new SpeechRequest(text, 0, 100, new SpeechParameters(), DateTime.Now + expiry, null);
             speechManager?.EnqueueSpeech(speechRequest);
         }
-
-
 
         private void OnSpeed(Split split, float speedms)
         {
@@ -550,6 +577,17 @@ namespace Sound
 
             return request;
         }
+
+        public void PlaySoundBlocking(SoundKey soundKey, SpeechParameters soundParameters)
+        {
+            using (AutoResetEvent autoResetEvent = new AutoResetEvent(false))
+            {
+                PlaySound(soundKey, () => { autoResetEvent.Set(); }, soundParameters);
+
+                autoResetEvent.WaitOne(TimeSpan.FromSeconds(soundParameters.SecondsExpiry));
+            }
+        }
+
 
         public void StartRaceIn(TimeSpan timeSpan, System.Action onFinishedSpeech)
         {

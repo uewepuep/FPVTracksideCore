@@ -32,7 +32,7 @@ namespace UI
 
         public SoundManager SoundManager { get; private set; }
 
-        private AnimatedRelativeNode mainContainer;
+        private Node mainContainer;
         private AnimatedRelativeNode leftContainer;
         private AnimatedRelativeNode centreContainer;
 
@@ -161,10 +161,9 @@ namespace UI
             ColorNode rightSideColor = new ColorNode(Theme.Current.RightControls.Background);
             rightBar.AddChild(rightSideColor);
                         
-            mainContainer = new AnimatedRelativeNode();
+            mainContainer = new Node();
             mainContainer.RelativeBounds = new RectangleF(0, topBar.RelativeBounds.Bottom, 1, 1 - topBar.RelativeBounds.Bottom);
             centralAspectNode.AddChild(mainContainer);
-
 
             leftContainer = new AnimatedRelativeNode();
             ColorNode leftBg = new ColorNode(Theme.Current.LeftPilotList.Background);
@@ -229,7 +228,7 @@ namespace UI
             AutoRunner = new AutoRunner(this);
 
             ChannelsGridNode = new ChannelsGridNode(EventManager, videoManager);
-            sceneManagerNode = new SceneManagerNode(EventManager, videoManager, ChannelsGridNode, topBar, mainContainer, AutoRunner);
+            sceneManagerNode = new SceneManagerNode(EventManager, videoManager, ChannelsGridNode, topBar, AutoRunner);
             sceneManagerNode.OnSceneChange += SceneManagerNode_OnSceneChange;
             sceneManagerNode.OnVideoSettingsChange += LoadVideo;
 
@@ -370,6 +369,8 @@ namespace UI
             KeyMapper = KeyboardShortcuts.Read(Profile);
 
             ReloadOBSRemoteControl();
+
+            SoundManager.OnHighlightPilot += sceneManagerNode.FullScreen;
         }
 
         private void ReloadAutoRunnerConfig()
