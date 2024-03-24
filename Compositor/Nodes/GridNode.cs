@@ -71,11 +71,16 @@ namespace Composition.Nodes
         {
         }
 
+        protected virtual int VisibleChildCount()
+        {
+            return VisibleChildren.Count();
+        }
+
         public override void Layout(Rectangle parentBounds)
         {
             UpdateVisibility(Children);
 
-            int visibleChildrenCount = VisibleChildren.Count();
+            int visibleChildrenCount = VisibleChildCount();
 
             OnGridCountChanged?.Invoke(visibleChildrenCount);
 
@@ -118,8 +123,6 @@ namespace Composition.Nodes
                 }
 
                 SetOrder(nodes);
-
-                UpdateVisibility(Children);
             }
 
             base.Layout(parentBounds);

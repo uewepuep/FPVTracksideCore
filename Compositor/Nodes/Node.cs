@@ -39,7 +39,7 @@ namespace Composition.Nodes
         {
             get
             {
-                return Visible && Bounds.Width != 0 && Bounds.Height != 0;
+                return Visible && Bounds.Width != 0 && Bounds.Height != 0 && Alpha != 0;
             }
         }
 

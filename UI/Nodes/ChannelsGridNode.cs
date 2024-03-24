@@ -221,12 +221,6 @@ namespace UI.Nodes
                 return GridTypes.SingleRow;
             }
 
-            // remove one for gridstatsnode
-            if (gridStatsNode.Visible)
-            {
-                count -= 1;
-            }
-
             return base.DecideLayout(count);
         }
 
@@ -244,6 +238,16 @@ namespace UI.Nodes
 
             ForceUpdate = true;
             RequestLayout();
+        }
+
+        protected override int VisibleChildCount()
+        {
+            int count = base.VisibleChildCount();
+            if (gridStatsNode.Visible && gridStatsNode.Alpha == 1)
+            {
+                count--;
+            }
+            return count;
         }
 
         public override void UpdateVisibility(IEnumerable<Node> input)
@@ -272,10 +276,10 @@ namespace UI.Nodes
                     camNode.SetAnimatedVisibility(camNode.VideoBounds.ShowInGrid && extrasVisible);
                 }
 
-                int visibleCount = input.Count(r => r.Visible && r != gridStatsNode);
+                int visibleCount = VisibleChildCount();
+                int gridItemCount = GridTypeItemCount(DecideLayout(visibleCount));
 
-
-                if (GridTypeItemCount(GridType) > visibleCount && !Replay)
+                if (gridItemCount > visibleCount && !Replay)
                 {
                     gridStatsNode.SetAnimatedVisibility(true);
                 }
