@@ -128,6 +128,19 @@ namespace Composition.Nodes
                     }
                     else if (interpolatedBounds.Target != newBounds)
                     {
+                        Rectangle diff = new Rectangle(
+                            interpolatedBounds.Target.X - interpolatedBounds.Initial.X,
+                            interpolatedBounds.Target.Y - interpolatedBounds.Initial.Y,
+                            interpolatedBounds.Target.Width - interpolatedBounds.Initial.Width,
+                            interpolatedBounds.Target.Height - interpolatedBounds.Initial.Height);
+
+                        float seconds = (float)interpolatedBounds.TimeToTake.TotalSeconds;
+
+                        RectangleF velocity = new RectangleF(diff.X / seconds,
+                                                             diff.Y / seconds,
+                                                             diff.Width / seconds,
+                                                             diff.Height / seconds);
+
                         interpolatedBounds.SetTarget(Bounds, newBounds);
                     }
                 }

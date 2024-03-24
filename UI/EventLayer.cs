@@ -803,6 +803,7 @@ namespace UI
 
         public void Clear()
         {
+            SoundManager.StopSound();   
             if (ProfileSettings.Instance.AutoHideShowPilotList)
             {
                 ShowPilotList(true);
@@ -1017,6 +1018,11 @@ namespace UI
                 {
                     systemStatusNode.MuteWAV.SetMute(true);
                     return true;
+                }
+
+                if (KeyMapper.StopSound.Match(inputEvent))
+                {
+                    SoundManager.StopSound();
                 }
 
                 if (race != null)

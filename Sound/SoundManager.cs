@@ -91,6 +91,7 @@ namespace Sound
         public event Action<Pilot> OnHighlightPilot;
 
         private WorkQueue backgroundQueue;
+        private bool backgroundQueueStopping;
 
         public SoundManager(EventManager eventManager, Profile profile)
         {
@@ -244,7 +245,6 @@ namespace Sound
                     new Sound() { Key = SoundKey.NoVideoDelayingRace, TextToSpeech = " Race start delayed as {pilot} has no video. Race starts in {time}", Category = Sound.SoundCategories.Race },
 
                     new Sound() { Key = SoundKey.UntilRaceStart, TextToSpeech = "{time} until the race start", Category = Sound.SoundCategories.Announcements },
-                    
 
 
                     new Sound() { Key = SoundKey.Custom1, TextToSpeech = "Custom sound 1", Category = Sound.SoundCategories.Announcements },
@@ -333,6 +333,7 @@ namespace Sound
             if (!race.Pilots.Any())
                 return;
 
+            backgroundQueueStopping = false;
             backgroundQueue.Clear();
             backgroundQueue.Enqueue(() =>
             {
@@ -351,6 +352,12 @@ namespace Sound
                 {
                     parameters.Add(SpeechParameters.Types.bracket, race.Bracket);
                 }
+                
+                if (backgroundQueueStopping)
+                {
+                    HighlightPilot(null);
+                    return;
+                }
 
                 PlaySoundBlocking(SoundKey.RaceAnnounce, parameters);
 
@@ -365,6 +372,9 @@ namespace Sound
                     pilotChannelParameters.Add(SpeechParameters.Types.pilot, pc.Pilot.Phonetic);
                     pilotChannelParameters.Add(SpeechParameters.Types.band, pc.Channel.GetSpokenBandLetter());
                     pilotChannelParameters.Add(SpeechParameters.Types.channel, pc.Channel.Number);
+
+                    if (backgroundQueueStopping)
+                        break;
 
                     HighlightPilot(pc.Pilot);
                     PlaySoundBlocking(SoundKey.PilotChannel, pilotChannelParameters);
@@ -393,9 +403,16 @@ namespace Sound
             if (!race.Pilots.Any())
                 return;
 
+            backgroundQueueStopping = false;
             backgroundQueue.Clear();
             backgroundQueue.Enqueue(() =>
             {
+                if (backgroundQueueStopping)
+                {
+                    HighlightPilot(null);
+                    return;
+                }
+
                 Result[] results = eventManager.ResultManager.GetResults(race).OrderBy(r => r.Position).ToArray();
 
                
@@ -416,6 +433,8 @@ namespace Sound
                 }
 
                 PlaySoundBlocking(SoundKey.RaceAnnounceResults, parameters);
+                if (backgroundQueueStopping)
+                    return;
 
                 foreach (Result result in results)
                 {
@@ -425,6 +444,9 @@ namespace Sound
                     SpeechParameters pilotChannelParameters = new SpeechParameters();
                     pilotChannelParameters.Add(SpeechParameters.Types.pilot, result.Pilot.Phonetic);
                     pilotChannelParameters.Add(SpeechParameters.Types.position, result.DNF ? "DNF" : result.Position);
+
+                    if (backgroundQueueStopping)
+                        break;
 
                     HighlightPilot(result.Pilot);
                     PlaySoundBlocking(SoundKey.PilotResult, pilotChannelParameters);
@@ -510,6 +532,7 @@ namespace Sound
 
         public void StopSound()
         {
+            backgroundQueueStopping = true;
             speechManager?.StopSpeech();
         }
 
