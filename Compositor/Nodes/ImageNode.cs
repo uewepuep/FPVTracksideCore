@@ -42,6 +42,7 @@ namespace Composition.Nodes
         protected bool sharedTexture;
 
         public bool CanScale { get; set; }
+
         public bool CropToFit { get; set; }
 
         public ImageNode()

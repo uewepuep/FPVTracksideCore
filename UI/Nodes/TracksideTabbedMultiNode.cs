@@ -41,8 +41,8 @@ namespace UI.Nodes
         private TextButtonNode rssiButton;
 
 
-        public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, RoundsNode rounds, SceneManagerNode sceneManagerContent, Node tabContainer)
-            : base(TimeSpan.FromSeconds(0.6f), tabContainer, Theme.Current.Panel.XNA, Theme.Current.PanelAlt.XNA, Theme.Current.Hover.XNA, Theme.Current.TextMain.XNA)
+        public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, RoundsNode rounds, SceneManagerNode sceneManagerContent, TabButtonsNode tabContainer)
+            : base(TimeSpan.FromSeconds(0.6f), tabContainer)
         {
             this.eventManager = eventManager;
             VideoManager = videoManager;
@@ -58,6 +58,14 @@ namespace UI.Nodes
 
             ReplayNode = new ReplayNode(eventManager);
 
+            
+            eventManager.RaceManager.OnRaceChanged += UpdateReplayButton;
+            eventManager.RaceManager.OnRaceEnd += UpdateReplayButton;
+            eventManager.RaceManager.TimingSystemManager.OnInitialise += UpdateRSSIVisible;
+        }
+
+        public void Init()
+        {
             AddTab("Rounds", this.rounds, ShowRounds);
             liveButton = AddTab("Live", sceneManagerNode, ShowLive);
             replayButton = AddTab("Replay", ReplayNode, ShowReplay);
@@ -70,10 +78,6 @@ namespace UI.Nodes
             AddTab("Patreons", patreonsNode, ShowPatreons);
 
             replayButton.Enabled = false;
-
-            eventManager.RaceManager.OnRaceChanged += UpdateReplayButton;
-            eventManager.RaceManager.OnRaceEnd += UpdateReplayButton;
-            eventManager.RaceManager.TimingSystemManager.OnInitialise += UpdateRSSIVisible;
 
             UpdateRSSIVisible();
 

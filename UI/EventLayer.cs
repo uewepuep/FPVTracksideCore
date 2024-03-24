@@ -36,8 +36,6 @@ namespace UI
         private AnimatedRelativeNode leftContainer;
         private AnimatedRelativeNode centreContainer;
 
-        private TextNode hideLeftNode;
-
         private EventWebServer eventWebServer;
 
         public ChannelsGridNode ChannelsGridNode { get; private set; }
@@ -50,6 +48,8 @@ namespace UI
         private TopBarNode topBar;
         private AspectNode centralAspectNode;
         private AnimatedNode rightBar;
+        private TabButtonsNode tabButtonsNode;
+        private TextButtonNode pilotListButton;
 
         private float rightBarWidth = 0.035f;
         private float leftContainerWidth = 0.15f;
@@ -139,9 +139,9 @@ namespace UI
                 {
                     TabbedMultiNode.ShowLive();
                 }
-
-                ShowPilotList(r == null || r.PilotCount == 0);
             };
+
+            EventManager.OnPilotRefresh += OnPilotRefresh;
 
             topBar = new TopBarNode();
             topBar.RelativeBounds = new RectangleF(0, 0, 1, 0.13f); 
@@ -210,20 +210,6 @@ namespace UI
 
             Node.SplitHorizontally(leftContainer, centreContainer, leftContainerWidth);
 
-            float btnSize = 0.03f;
-            AnimatedNode hideButtonNode = new AnimatedNode();
-            hideButtonNode.RelativeBounds = new RectangleF(0, 1 - btnSize, btnSize, btnSize);
-            centreContainer.AddChild(hideButtonNode);
-
-            hideLeftNode = new TextNode("<", Color.Gray);
-            hideButtonNode.AddChild(hideLeftNode);
-            ButtonNode hideButton = new ButtonNode();
-            hideButton.OnClick += (mie) =>
-            {
-                ShowPilotList(!showPilotList);
-            };
-            hideLeftNode.AddChild(hideButton);
-
             AutoRunner = new AutoRunner(this);
 
             ChannelsGridNode = new ChannelsGridNode(EventManager, videoManager);
@@ -233,12 +219,19 @@ namespace UI
 
             RoundsNode = new RoundsNode(EventManager);
 
-            TabbedMultiNode = new TracksideTabbedMultiNode(eventManager, videoManager, RoundsNode, sceneManagerNode, topBar.TabContainer);
+            tabButtonsNode = new TabButtonsNode(Theme.Current.Panel.XNA, Theme.Current.PanelAlt.XNA, Theme.Current.Hover.XNA, Theme.Current.TextMain.XNA);
+            pilotListButton = tabButtonsNode.AddTab("Pilots");
+            pilotListButton.OnClick += TogglePilotList;
+            OnPilotRefresh();
+
+            TabbedMultiNode = new TracksideTabbedMultiNode(eventManager, videoManager, RoundsNode, sceneManagerNode, tabButtonsNode);
             TabbedMultiNode.RelativeBounds = new RectangleF(0, 0, 1, 0.99f);
             TabbedMultiNode.OnTabChange += OnTabChange;
             centreContainer.AddChild(TabbedMultiNode);
 
             topBar.Init(EventManager, TabbedMultiNode.ReplayNode);
+            topBar.TabContainer.AddChild(tabButtonsNode);
+            TabbedMultiNode.Init();
 
             ControlButtons = new ControlButtonsNode(EventManager, ChannelsGridNode, TabbedMultiNode, AutoRunner);
             ControlButtons.RelativeBounds = new RectangleF(0, 0.0f, 1, 1);
@@ -263,11 +256,6 @@ namespace UI
             ControlButtons.CopyResultsClipboard.OnClick += (mie) =>
             {
                 PlatformTools.Clipboard.SetText(EventManager.GetResultsText());
-            };
-
-            ControlButtons.PilotList.OnClick += (mie) =>
-            {
-                ShowPilotList(!showPilotList);
             };
 
             IRaceControl raceControl = null;
@@ -370,6 +358,14 @@ namespace UI
             ReloadOBSRemoteControl();
 
             SoundManager.OnHighlightPilot += sceneManagerNode.FullScreen;
+        }
+
+        private void OnPilotRefresh()
+        {
+            if (pilotListButton != null)
+            {
+                pilotListButton.Text = EventManager.Event.PilotCount + " Pilots";
+            }
         }
 
         private void ReloadAutoRunnerConfig()
@@ -585,24 +581,24 @@ namespace UI
             }
         }
 
+        private void TogglePilotList(object mie = null)
+        {
+            ShowPilotList(!showPilotList);
+        }
+
         private void ShowPilotList(bool show)
         {
             if (show)
             {
                 leftContainer.RelativeBounds = new RectangleF(0, 0, leftContainerWidth, 1);
                 centreContainer.RelativeBounds = new RectangleF(leftContainerWidth, 0, 1 - leftContainerWidth, 1);
-                hideLeftNode.Text = "<";
             }
             else
             {
-                hideLeftNode.Text = ">";
                 leftContainer.RelativeBounds = new RectangleF(-leftContainerWidth, 0, leftContainerWidth, 1);
                 centreContainer.RelativeBounds = new RectangleF(0, 0, 1, 1);
             }
-
             showPilotList = show;
-
-            hideLeftNode.RequestLayout();
         }
 
         protected override void OnUpdate(GameTime gameTime)

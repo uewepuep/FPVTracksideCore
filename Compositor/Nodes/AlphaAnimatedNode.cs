@@ -43,7 +43,7 @@ namespace Composition.Nodes
             }
         }
 
-        public void Update(GameTime gametime)
+        public virtual void Update(GameTime gametime)
         {
             InterpolatedFloat ia = interpolatedAlpha;
 
@@ -56,10 +56,9 @@ namespace Composition.Nodes
                     interpolatedAlpha = null;
                 }
             }
-
         }
 
-        public void SetAnimatedVisibility(bool visible)
+        public virtual void SetAnimatedVisibility(bool visible)
         {
             SetAnimatedAlpha(visible ? 1 : 0);
         }

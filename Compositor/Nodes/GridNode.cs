@@ -118,6 +118,8 @@ namespace Composition.Nodes
                 }
 
                 SetOrder(nodes);
+
+                UpdateVisibility(Children);
             }
 
             base.Layout(parentBounds);

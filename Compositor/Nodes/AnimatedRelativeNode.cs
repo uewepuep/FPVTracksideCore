@@ -31,7 +31,12 @@ namespace Composition.Nodes
         {
             get
             {
-                return interpolatedRelativeBounds != null;
+                if (interpolatedRelativeBounds != null)
+                {
+                    if (!interpolatedRelativeBounds.Finished)
+                        return true;
+                }
+                return false;
             }
         }
 
@@ -189,6 +194,22 @@ namespace Composition.Nodes
                     animatingInvisiblity = true;
                 }
                 Visible = false;
+            }
+        }
+    }
+
+    public class DebugAnimatedRelativeNode : AnimatedRelativeNode
+    {
+        public override RectangleF RelativeBounds
+        {
+            get
+            {
+                return base.RelativeBounds;
+            }
+            set
+            {
+                base.RelativeBounds = value;
+                Logger.UI.LogCall(this, value.ToString());
             }
         }
     }

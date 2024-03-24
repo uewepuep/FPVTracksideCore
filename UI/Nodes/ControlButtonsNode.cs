@@ -22,7 +22,6 @@ namespace UI.Nodes
         public IconButtonNode ResetButton { get; private set; }
         public IconButtonNode ResumeButton { get; private set; }
 
-        public IconButtonNode PilotList { get; private set; }
         public IconButtonNode SyncButton { get; private set; }
 
         public AutoRunnerControls AutoRunnerControls { get; private set; }
@@ -82,9 +81,6 @@ namespace UI.Nodes
             ClearButton.NodeName = "ClearRace";
             AddChild(ClearButton);
             
-            PilotList = new IconButtonNode(@"img\pilotlist.png", "Pilots", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
-            AddChild(PilotList);
-
             AutoRunnerControls = new AutoRunnerControls(autoRunner);
             AddChild(AutoRunnerControls);
 
@@ -150,8 +146,6 @@ namespace UI.Nodes
                 ResumeButton.Visible = false;
             }
             
-            PilotList.Visible = !inRaceOrPreRace;
-
             if (SyncButton != null)
             {
                 SyncButton.Visible = !inRaceOrPreRace;

@@ -16,9 +16,9 @@ namespace UI.Nodes
 {
     public class SceneManagerNode : Node
     {
-        private AnimatedNode launchCamsNode;
-        private AnimatedNode commentatorsAndSummary;
-        private AnimatedNode finishLineNode;
+        private CamContainerNode launchCamsNode;
+        private CamContainerNode commentatorsAndSummary;
+        private CamContainerNode finishLineNode;
 
         private VideoManager videoManager;
         private EventManager eventManager;
@@ -84,13 +84,13 @@ namespace UI.Nodes
             EventStatusNode eventStatusNode = new EventStatusNode(eventManager);
             eventStatusNodeContainer.AddChild(eventStatusNode);
 
-            launchCamsNode = new AnimatedNode();
+            launchCamsNode = new CamContainerNode();
             launchCamsNode.SetAnimatedVisibility(false);
 
-            finishLineNode = new AnimatedNode();
+            finishLineNode = new CamContainerNode();
             finishLineNode.SetAnimatedVisibility(false);
 
-            commentatorsAndSummary = new AnimatedNode();
+            commentatorsAndSummary = new CamContainerNode();
             commentatorsAndSummary.SetAnimatedVisibility(false);
 
             resultsRaceNode = new NamedRaceNode("Results", eventManager);
@@ -102,7 +102,6 @@ namespace UI.Nodes
 
             wormNode = new WormNode(eventManager);
             wormNode.RelativeBounds = new RectangleF(0.0f, 1f, 1, 0.0f);
-
 
             AddChild(resultsRaceNode);
             AddChild(nextRaceNode);
@@ -287,12 +286,14 @@ namespace UI.Nodes
             OnSceneChange?.Invoke(s);
         }
 
-        public void SetAnimationTime(TimeSpan time)
+        private void SetAnimationTime(TimeSpan time)
         {
-            launchCamsNode.AnimationTime = time;
-            commentatorsAndSummary.AnimationTime = time;
             resultsRaceNode.AnimationTime = time;
             nextRaceNode.AnimationTime = time;
+
+            launchCamsNode.SetAnimationTime(time);
+            commentatorsAndSummary.SetAnimationTime(time);
+            finishLineNode.SetAnimationTime(time);
             ChannelsGridNode.SetAnimationTime(time);
             topBarNode.SetAnimationTime(time);
         }
@@ -343,8 +344,12 @@ namespace UI.Nodes
             switch (scene)
             {
                 case Scenes.PreRace:
-                    float launchWidth = 0.7f;
                     SetAnimationTime(SetupAnimationTime);
+
+                    float launchWidth = 0.7f;
+
+                    launchCamsNode.SetAnimatedVisibility(true);
+                    commentatorsAndSummary.SetAnimatedVisibility(true);
 
                     IEnumerable<Node> launchCams = launchCamsNode.VisibleChildren;
                     IEnumerable<Node> commentatorCams = commentatorsAndSummary.VisibleChildren;
@@ -376,12 +381,10 @@ namespace UI.Nodes
                     ChannelsGridNode.SetBiggerInfo(true, false);
                     ChannelsGridNode.SetProfileVisible(true, true);
 
-                    launchCamsNode.SetAnimatedVisibility(true);
                     launchCamsNode.RelativeBounds = new RectangleF(0, 0, launchWidth, nonChannelGridHeight);
 
                     Node.AlignHorizontally(0, launchCams.ToArray());
 
-                    commentatorsAndSummary.SetAnimatedVisibility(true);
                     commentatorsAndSummary.RelativeBounds = new RectangleF(launchWidth, 0, 1 - launchWidth, nonChannelGridHeight);
 
                     if (launchCams.Any())
@@ -404,9 +407,9 @@ namespace UI.Nodes
                     break;
 
                 case Scenes.Race:
-                    ChannelsGridNode.SetProfileVisible(false, true);
-
                     SetAnimationTime(MidRaceAnimationTime);
+
+                    ChannelsGridNode.SetProfileVisible(false, true);
                     
                     ChannelsGridNode.SingleRow = false;
                     ChannelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 1, 1);
@@ -493,6 +496,7 @@ namespace UI.Nodes
                     ChannelsGridNode.SetBiggerInfo(true, true);
                     ChannelsGridNode.MakeExtrasVisible(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
+
                     break;
 
                 case Scenes.Fullscreen:

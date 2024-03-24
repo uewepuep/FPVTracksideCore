@@ -50,6 +50,21 @@ namespace Composition.Nodes
 
         public ScrollerNode Scroller { get; private set; }
 
+        public bool CanScroll
+        {
+            get
+            {
+                return Scroller.Visible;
+            }
+            set
+            {
+                if (Scroller != null)
+                {
+                    Scroller.Visible = value;
+                }
+            }
+        }
+
         private bool disposed;
 
         public HoverNode HoverNode { get; set; }

@@ -194,4 +194,31 @@ namespace UI.Video
             Scale(0.95f);
         }
     }
+
+    public class CamContainerNode : Node
+    {
+        public IEnumerable<CamNode> CamNodes
+        {
+            get
+            {
+                return Children.OfType<CamNode>();
+            }
+        }
+
+        public void SetAnimatedVisibility(bool visible)
+        {
+            foreach (var camNode in CamNodes)
+            {
+                camNode.SetAnimatedVisibility(visible);
+            }
+        }
+
+        public void SetAnimationTime(TimeSpan time)
+        {
+            foreach (var camNode in CamNodes)
+            {
+                camNode.AnimationTime = time;
+            }
+        }
+    }
 }

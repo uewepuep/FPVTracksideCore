@@ -49,7 +49,7 @@ namespace Composition.Nodes
             {
                 lock (children)
                 {
-                    return children.Where(c => c.Visible);
+                    return children.Where(c => c.Visible && c.Alpha != 0);
                 }
             }
         }

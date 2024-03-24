@@ -99,18 +99,13 @@ namespace Composition.Nodes
             return bounds;
         }
 
-        private Rectangle oldRelativeBounds;
 
         public override void Layout(Rectangle parentBounds)
         {
             Rectangle newBounds = CalculateRelativeBounds(parentBounds);
 
-            Rectangle newRelativeBounds = newBounds;
-            newRelativeBounds.X -= parentBounds.X;
-            newRelativeBounds.Y -= parentBounds.Y;
-
             Node parent = Parent;
-            if (newRelativeBounds != oldRelativeBounds && parent != null)
+            if (newBounds != Bounds && parent != null)
             {
                 if (!parent.IsAnimating()) // Hate
                 {
@@ -144,10 +139,22 @@ namespace Composition.Nodes
                         interpolatedBounds.SetTarget(Bounds, newBounds);
                     }
                 }
+                else
+                {
+                    //parent is animating
+
+#if DEBUG
+                    Node animating;
+                    foreach (var a in ParentChain)
+                    {
+                        if (a.IsAnimating())
+                            animating = a;
+                    }
+#endif
+
+                }
             }
             base.Layout(parentBounds);
-
-            oldRelativeBounds = newRelativeBounds;
         }
 
         public virtual void OnAnimationFinished()
@@ -196,6 +203,9 @@ namespace Composition.Nodes
 
         public void SetAnimatedVisibility(bool visible)
         {
+            if (visible == Visible)
+                return;
+
             if (interpolatedBounds != null)
             {
                 interpolatedBounds = null;

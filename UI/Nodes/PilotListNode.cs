@@ -4,6 +4,7 @@ using Composition.Layers;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Tools;
@@ -25,21 +26,14 @@ namespace UI.Nodes
 
         private Node instructionNode;
 
-        private TextButtonNode heading;
-
         public PilotListNode(EventManager eventManager)
         {
             this.eventManager = eventManager;
 
             pilots = new List<Pilot>();
 
-            heading = new TextButtonNode("", Theme.Current.Panel.XNA, Color.Transparent, Theme.Current.LeftPilotList.PilotCount.XNA);
-            heading.RelativeBounds = new RectangleF(0, 0, 1, 0.035f);
-            heading.Enabled = false;
-            AddChild(heading);
-
             listNode = new ListNode<PilotChannelNode>(Theme.Current.ScrollBar.XNA);
-            listNode.RelativeBounds = new RectangleF(0, heading.RelativeBounds.Bottom, 1, 1 - heading.RelativeBounds.Bottom);
+            listNode.RelativeBounds = new RectangleF(0, 0, 1, 1);
             listNode.ItemHeight = 30;
             listNode.NodeName = "PilotListNode";
 
@@ -58,8 +52,6 @@ namespace UI.Nodes
 
             eventManager.OnPilotChangedChannels += UpdatePilotChannel;
             eventManager.OnPilotRefresh += RebuildList;
-
-            UpdateHeading();
 
             RequestLayout();
         }
@@ -134,13 +126,6 @@ namespace UI.Nodes
 
             instructionNode.Visible = false;
             listNode.RequestLayout();
-
-            UpdateHeading();
-        }
-
-        private void UpdateHeading()
-        {
-            heading.Text = listNode.ChildCount + " Pilots in event";
         }
 
         public void ClearList()

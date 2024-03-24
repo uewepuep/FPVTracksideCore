@@ -8,6 +8,7 @@ using RaceLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Tools;
 using UI.Video;
 
@@ -216,7 +217,7 @@ namespace UI.Nodes
         {
             if (SingleRow)
             {
-                gridStatsNode.Visible = false;
+                gridStatsNode.SetAnimatedVisibility(false);
                 return GridTypes.SingleRow;
             }
 
@@ -226,18 +227,7 @@ namespace UI.Nodes
                 count -= 1;
             }
 
-            GridTypes decided = base.DecideLayout(count);
-
-            if (GridTypeItemCount(decided) > count && !Replay)
-            {
-                gridStatsNode.Visible = true;
-            }
-            else
-            {
-                gridStatsNode.Visible = false;
-            }
-
-            return decided;
+            return base.DecideLayout(count);
         }
 
         public void Reorder()
@@ -280,6 +270,18 @@ namespace UI.Nodes
                 foreach (CamGridNode camNode in CamNodes)
                 {
                     camNode.SetAnimatedVisibility(camNode.VideoBounds.ShowInGrid && extrasVisible);
+                }
+
+                int visibleCount = input.Count(r => r.Visible && r != gridStatsNode);
+
+
+                if (GridTypeItemCount(GridType) > visibleCount && !Replay)
+                {
+                    gridStatsNode.SetAnimatedVisibility(true);
+                }
+                else
+                {
+                    gridStatsNode.SetAnimatedVisibility(false);
                 }
             }
 

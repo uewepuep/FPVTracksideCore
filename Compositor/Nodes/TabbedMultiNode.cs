@@ -16,11 +16,7 @@ namespace Composition.Nodes
         private MultiNode multiNode;
         public Action<string, Node> OnTabChange { get; set; }
 
-        private ColorNode tabBack;
-
-        private Color tabButtonBackground;
-        private Color hoverColor;
-        private Color textColor;
+        public TabButtonsNode TabButtonsNode { get; private set; }  
 
         private Dictionary<Node, TextButtonNode> mapBack;
 
@@ -38,55 +34,41 @@ namespace Composition.Nodes
             }
         }
 
-        public TabbedMultiNode(TimeSpan animation, Node tabContainer, Color tabBackground, Color tabButtonBackground, Color hover, Color text)
+        public TabbedMultiNode(TimeSpan animation, TabButtonsNode tabContainer)
         {
             mapBack = new Dictionary<Node, TextButtonNode>();
-
-            this.tabButtonBackground = tabButtonBackground;
-            hoverColor = hover;
-            textColor = text;
-
-            tabBack = new ColorNode(tabBackground);
-            tabContainer.AddChild(tabBack);
 
             multiNode = new MultiNode(animation);
             multiNode.OnShowChange += MultiNode_OnShowChange;
             multiNode.Direction = MultiNode.Directions.Horizontal;
+
+            TabButtonsNode = tabContainer;
 
             AddChild(multiNode);
         }
 
         public TextButtonNode AddTab(string text, Node node)
         {
-            TextButtonNode textButtonNode = new TextButtonNode(text, tabButtonBackground, hoverColor, textColor);
+            TextButtonNode textButtonNode = TabButtonsNode.AddTab(text);
             textButtonNode.OnClick += (mie) => { Show(node); };
-            tabBack.AddChild(textButtonNode);
 
-            multiNode.AddChild(node);
-
-            mapBack.Add(node, textButtonNode);
+            if (node != null)
+            {
+                multiNode.AddChild(node);
+                mapBack.Add(node, textButtonNode);
+            }
 
             return textButtonNode;
         }
 
         public TextButtonNode AddTab(string text, Node node, MouseInputDelegate action)
         {
-            TextButtonNode textButtonNode = new TextButtonNode(text, tabButtonBackground, hoverColor, textColor);
-            textButtonNode.OnClick += action;
-            tabBack.AddChild(textButtonNode);
-
+            TextButtonNode textButtonNode = TabButtonsNode.AddTab(text, action);
             multiNode.AddChild(node);
 
             mapBack.Add(node, textButtonNode);
 
             return textButtonNode;
-        }
-
-        public override void Layout(Rectangle parentBounds)
-        {
-            AlignHorizontally(0.01f, tabBack.VisibleChildren.ToArray());
-
-            base.Layout(parentBounds);
         }
 
         private void MultiNode_OnShowChange(Node obj)
@@ -104,10 +86,9 @@ namespace Composition.Nodes
                 TextButtonNode oldtbn;
                 if (mapBack.TryGetValue(Showing, out oldtbn))
                 {
-                    oldtbn.Background = tabButtonBackground;
+                    oldtbn.Background = TabButtonsNode.Background;
                 }
             }
-            
 
             multiNode.Show(node);
 
@@ -116,9 +97,48 @@ namespace Composition.Nodes
                 TextButtonNode newtbn;
                 if (mapBack.TryGetValue(node, out newtbn))
                 {
-                    newtbn.Background = hoverColor;
+                    newtbn.Background = TabButtonsNode.HoverCover;
                 }
             }
+        }
+    }
+
+    public class TabButtonsNode : Node
+    {
+        private ColorNode tabBack;
+
+        public Color Background { get; private set; }
+        public Color HoverCover { get; private set; }
+        private Color textColor;
+
+        public TabButtonsNode(Color tabBackground, Color tabButtonBackground, Color hover, Color text) 
+        {
+            Background = tabButtonBackground;
+            HoverCover = hover;
+            textColor = text;
+
+            tabBack = new ColorNode(tabBackground);
+            AddChild(tabBack);
+        }
+
+        public TextButtonNode AddTab(string text)
+        {
+            TextButtonNode textButtonNode = new TextButtonNode(text, Background, HoverCover, textColor);
+            tabBack.AddChild(textButtonNode);
+            return textButtonNode;
+        }
+
+        public TextButtonNode AddTab(string text, MouseInputDelegate action)
+        {
+            TextButtonNode textButtonNode = AddTab(text);
+            textButtonNode.OnClick += action;
+            return textButtonNode;
+        }
+
+        public override void Layout(Rectangle parentBounds)
+        {
+            AlignHorizontally(0.01f, tabBack.VisibleChildren.ToArray());
+            base.Layout(parentBounds);
         }
     }
 }
