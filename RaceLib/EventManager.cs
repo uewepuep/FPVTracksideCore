@@ -157,6 +157,8 @@ namespace RaceLib
 
             OnPilotRefresh?.Invoke();
 
+            FindProfilePicture(pc.Pilot);
+
             return true;
         }
 
@@ -232,31 +234,7 @@ namespace RaceLib
 
             workQueue.Enqueue(workSet, "Finding Profile Pictures", () =>
             {
-                DirectoryInfo photoDir = new DirectoryInfo("pilots");
-
-                string[] extensions = new string[] { ".png", ".jpg" };
-
-                if (photoDir.Exists)
-                {
-                    FileInfo[] files = photoDir.GetFiles();
-                    foreach (Pilot p in Event.Pilots)
-                    {
-                        if (p != null && string.IsNullOrEmpty(p.PhotoPath))
-                        {
-                            IEnumerable<FileInfo> matches = files.Where(f => f.Name.ToLower().Contains(p.Name.ToLower()));
-                            matches = matches.Where(f => extensions.Contains(f.Extension.ToLower()));
-
-                            if (matches.Any())
-                            {
-                                using (IDatabase db = DatabaseFactory.Open(EventId))
-                                {
-                                    p.PhotoPath = matches.OrderByDescending(f => f.Extension).FirstOrDefault().FullName;
-                                    db.Update(p);
-                                }
-                            }
-                        }
-                    }
-                }
+                FindProfilePictures(Event.Pilots);
             });
 
             workQueue.Enqueue(workSet, "Updating event object", () =>
@@ -266,6 +244,40 @@ namespace RaceLib
                     db.Update(Event);
                 }
             });
+        }
+
+        public void FindProfilePicture(Pilot pilot)
+        {
+            FindProfilePictures(new[] { pilot });
+        }
+
+        public void FindProfilePictures(IEnumerable<Pilot> pilots)
+        {
+            DirectoryInfo photoDir = new DirectoryInfo("pilots");
+
+            string[] extensions = new string[] { ".png", ".jpg" };
+
+            if (photoDir.Exists)
+            {
+                FileInfo[] files = photoDir.GetFiles();
+                foreach (Pilot p in pilots)
+                {
+                    if (p != null && string.IsNullOrEmpty(p.PhotoPath))
+                    {
+                        IEnumerable<FileInfo> matches = files.Where(f => f.Name.ToLower().Contains(p.Name.ToLower()));
+                        matches = matches.Where(f => extensions.Contains(f.Extension.ToLower()));
+
+                        if (matches.Any())
+                        {
+                            using (IDatabase db = DatabaseFactory.Open(EventId))
+                            {
+                                p.PhotoPath = matches.OrderByDescending(f => f.Extension).FirstOrDefault().FullName;
+                                db.Update(p);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         public void UpdateRoundOrder(IDatabase db)
