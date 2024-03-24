@@ -361,6 +361,11 @@ namespace Timing.ImmersionRC
 
         public bool SetListeningFrequencies(IEnumerable<ListeningFrequency> newFrequencies)
         {
+            if (settings.IgnoreFrequencies)
+            {
+                return true;
+            }
+
             IEnumerator<ListeningFrequency> enumerator = newFrequencies.GetEnumerator();
             idToFreq.Clear();
 
@@ -387,14 +392,19 @@ namespace Timing.ImmersionRC
                     }
                 }
 
+                if (settings.AlwaysEnableReceivers)
+                {
+                    enabled = true;
+                }
+
                 Byte slotEnabled = enabled ? (Byte)1 : (Byte)0;
                 UInt16 freqValue = (UInt16)frequency;
                 float threshValue = settings.Thresholds[index] * inverseSensitivity;
                 UInt16 gainValue = (UInt16)settings.Gains[index];
 
-                laprf.append_field_of_record_u8(0x01, slotID);                // slot ID
-                laprf.append_field_of_record_u16(0x20, slotEnabled);      // Enable
-                laprf.append_field_of_record_fl32(0x23, threshValue);   // Threshold
+                laprf.append_field_of_record_u8(0x01, slotID);                  // slot ID
+                laprf.append_field_of_record_u16(0x20, slotEnabled);            // Enable
+                laprf.append_field_of_record_fl32(0x23, threshValue);           // Threshold
                 laprf.append_field_of_record_u16(0x24, gainValue);              // Gain
                 laprf.append_field_of_record_u16(0x25, freqValue);              // Frequency
             }
