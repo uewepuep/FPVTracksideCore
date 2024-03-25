@@ -10,7 +10,7 @@ namespace Composition.Nodes
     public class AlphaAnimatedNode : Node, IUpdateableNode
     {
         private InterpolatedFloat interpolatedAlpha;
-        public TimeSpan AnimationTime { get; set; }
+        public TimeSpan AnimationTime { get; protected set; }
 
         public override bool IsAnimating()
         {
@@ -40,6 +40,8 @@ namespace Composition.Nodes
             if (ia != null)
             {
                 ia.Snap();
+                Alpha = ia.Output;
+                interpolatedAlpha = null;
             }
         }
 
@@ -57,10 +59,29 @@ namespace Composition.Nodes
                 }
             }
         }
+        public virtual void SetAnimationTime(TimeSpan time)
+        {
+            AnimationTime = time;
+        }
 
         public virtual void SetAnimatedVisibility(bool visible)
         {
             SetAnimatedAlpha(visible ? 1 : 0);
+        }
+
+        public void ToggleAnimatedVisibility()
+        {
+            float alpha = Alpha;
+
+            InterpolatedFloat ia = interpolatedAlpha;
+            if (ia != null)
+            {
+                alpha = ia.Target;
+            }
+
+            bool visible = alpha != 0;
+
+            SetAnimatedVisibility(!visible);
         }
     }
 }

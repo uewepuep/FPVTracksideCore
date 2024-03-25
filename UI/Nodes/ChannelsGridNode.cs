@@ -9,8 +9,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Xml;
 using Tools;
 using UI.Video;
+using static UI.Nodes.ChannelNodeBase;
 
 namespace UI.Nodes
 {
@@ -116,6 +118,14 @@ namespace UI.Nodes
                     yield return GridTypes.Sixteen;
 
                 yield return GridTypes.SingleRow;
+            }
+        }
+
+        public bool ShowingPilotPhotos
+        {
+            get
+            {
+                return ChannelNodes.Any(c => c.ShowingPilotPhoto);
             }
         }
 
@@ -405,9 +415,9 @@ namespace UI.Nodes
                 return null;
 
             channelNode.SetPilot(pilotChannel.Pilot);
-            channelNode.AnimationTime = CurrentAnimationTime;
+            channelNode.SetAnimationTime(CurrentAnimationTime);
             channelNode.SetAnimatedVisibility(true);
-            channelNode.CrashedOutType = ChannelNodeBase.CrashOutType.None;
+            channelNode.CrashedOutType = CrashOutType.None;
 
             bool isRace = EventManager.RaceManager.EventType != EventTypes.Freestyle;
             channelNode.SetLapsVisible(isRace);
@@ -562,11 +572,11 @@ namespace UI.Nodes
             RequestLayout();
         }
 
-        public void SetProfileVisible(bool visible, bool snap)
+        public void SetProfileVisible(PilotProfileOptions options, bool snap)
         {
             foreach (ChannelNodeBase channelNode in ChannelNodes)
             {
-                channelNode.SetProfileVisible(visible, snap);
+                channelNode.SetProfileVisible(options, snap);
             }
         }
 
@@ -769,17 +779,17 @@ namespace UI.Nodes
 
             foreach (AnimatedNode cn in Children.OfType<AnimatedNode>())
             {
-                cn.AnimationTime = timeSpan;
+                cn.SetAnimationTime(timeSpan);
             }
 
             foreach (AnimatedRelativeNode cn in Children.OfType<AnimatedRelativeNode>())
             {
-                cn.AnimationTime = timeSpan;
+                cn.SetAnimationTime(timeSpan);
             }
 
             if (gridStatsNode != null)
             {
-                gridStatsNode.AnimationTime = CurrentAnimationTime;
+                gridStatsNode.SetAnimationTime(timeSpan);
             }
         }
 

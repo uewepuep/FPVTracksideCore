@@ -38,14 +38,12 @@ namespace UI.Nodes
         public TopBarNode()
         {
             lastMinute = -1;
-            AnimationTime = TimeSpan.FromSeconds(ProfileSettings.Instance.ReOrderAnimationSeconds);
 
             container = new ColorNode(Theme.Current.TopPanel);
             container.RelativeBounds = new RectangleF(0, 0, 1, 0.76f);
             AddChild(container);
 
             logoContainerNode = new AnimatedRelativeNode();
-            logoContainerNode.AnimationTime = AnimationTime;
             logoContainerNode.RelativeBounds = new RectangleF(0, 0, 0.3f, 1f);
             container.AddChild(logoContainerNode);
 
@@ -120,6 +118,7 @@ namespace UI.Nodes
             EventManager.RaceManager.OnRaceReset += UpdateDetails;
 
             UpdateDetails();
+            SetAnimationTime(TimeSpan.FromSeconds(ProfileSettings.Instance.ReOrderAnimationSeconds));
         }
 
         public void DisableTimeNodes()
@@ -214,11 +213,11 @@ namespace UI.Nodes
             }
         }
 
-        public void SetAnimationTime(TimeSpan time)
+        public override void SetAnimationTime(TimeSpan time)
         {
-            AnimationTime = time;
-            logoContainerNode.AnimationTime = time;
-            TabContainer.AnimationTime = AnimationTime;
+            logoContainerNode.SetAnimationTime(time);
+            TabContainer.SetAnimationTime(AnimationTime);
+            base.SetAnimationTime(time);
         }
     }
 }

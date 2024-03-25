@@ -152,7 +152,7 @@ namespace UI.Nodes
 
         private void RaceManager_OnRacePreStart(Race race)
         {
-            ChannelsGridNode.SetProfileVisible(false, false);
+            ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small, false);
         }
 
         public void UpdateNextRaceNode()
@@ -288,8 +288,8 @@ namespace UI.Nodes
 
         private void SetAnimationTime(TimeSpan time)
         {
-            resultsRaceNode.AnimationTime = time;
-            nextRaceNode.AnimationTime = time;
+            resultsRaceNode.SetAnimationTime(time);
+            nextRaceNode.SetAnimationTime(time);
 
             launchCamsNode.SetAnimationTime(time);
             commentatorsAndSummary.SetAnimationTime(time);
@@ -379,7 +379,7 @@ namespace UI.Nodes
                     }
 
                     ChannelsGridNode.SetBiggerInfo(true, false);
-                    ChannelsGridNode.SetProfileVisible(true, true);
+                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Large, true);
 
                     launchCamsNode.RelativeBounds = new RectangleF(0, 0, launchWidth, nonChannelGridHeight);
 
@@ -409,7 +409,7 @@ namespace UI.Nodes
                 case Scenes.Race:
                     SetAnimationTime(MidRaceAnimationTime);
 
-                    ChannelsGridNode.SetProfileVisible(false, true);
+                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small, false);
                     
                     ChannelsGridNode.SingleRow = false;
                     ChannelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 1, 1);
@@ -438,14 +438,14 @@ namespace UI.Nodes
 
                     ChannelsGridNode.SetBiggerInfo(false, false);
                     ChannelsGridNode.MakeExtrasVisible(false);
-                    ChannelsGridNode.SetProfileVisible(false, true);
+                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.None, true);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
                     break;
 
                 case Scenes.RaceResults:
                     SetAnimationTime(SetupAnimationTime);
 
-                    ChannelsGridNode.SetProfileVisible(false, true);
+                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small, true);
 
                     launchCamsNode.SetAnimatedVisibility(false);
                     finishLineNode.SetAnimatedVisibility(false);
@@ -546,7 +546,7 @@ namespace UI.Nodes
                     }
 
                     ChannelsGridNode.SetBiggerInfo(true, false);
-                    ChannelsGridNode.SetProfileVisible(true, true);
+                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small, true);
 
                     finishLineNode.SetAnimatedVisibility(true);
                     finishLineNode.RelativeBounds = new RectangleF(0, 0, 1, nonChannelGridHeight);
@@ -670,6 +670,8 @@ namespace UI.Nodes
             ChannelNodeBase channelNodeBase = ChannelsGridNode.GetChannelNode(pilot);
             if (channelNodeBase != null && pilot != null)
             {
+                channelNodeBase.PilotProfile.SetAnimatedAlpha(1);
+
                 FullScreen(channelNodeBase);
                 fullScreenContainer.KeepAspectRatio = true;
             }
@@ -704,38 +706,24 @@ namespace UI.Nodes
 
         private class FullScreenAspectClosable : AspectNode
         {
-            private CloseNode closeNode;
-
             public event Action Close;
 
             public FullScreenAspectClosable()
                 :base(4 / 3.0f)
             {
-                closeNode = new CloseNode();
-                closeNode.OnClick += CloseNode_OnClick;
-                AddChild(closeNode);    
-            }
-
-            private void CloseNode_OnClick(MouseInputEvent mie)
-            {
-                Close?.Invoke();
-            }
-
-            public override void Draw(Drawer id, float parentAlpha)
-            {
-                if (Children.Length == 2)
-                {
-                    base.Draw(id, parentAlpha);
-                }
             }
 
             public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
             {
-                if (Children.Length == 2)
+                if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Pressed)
                 {
-                    return base.OnMouseInput(mouseInputEvent);
+                    if (Children.Any())
+                    {
+                        Close?.Invoke();
+                        return true;
+                    }
                 }
-                return false;
+                return base.OnMouseInput(mouseInputEvent);
             }
         }
     }

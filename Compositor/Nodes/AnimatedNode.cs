@@ -12,7 +12,7 @@ namespace Composition.Nodes
     {
         private InterpolatedRelativeRectangle interpolatedBounds;
 
-        public TimeSpan AnimationTime { get; set; }
+        public TimeSpan AnimationTime { get; protected set; }
 
         private bool animatingInvisiblity;
 
@@ -184,10 +184,11 @@ namespace Composition.Nodes
 
         public override bool IsAnimatingSize()
         {
-            if (interpolatedBounds != null)
+            InterpolatedRelativeRectangle ib = interpolatedBounds;
+            if (ib != null)
             {
-                return interpolatedBounds.Initial.Width != interpolatedBounds.Target.Width || 
-                       interpolatedBounds.Initial.Height != interpolatedBounds.Target.Height;
+                return ib.Initial.Width != ib.Target.Width ||
+                       ib.Initial.Height != ib.Target.Height;
             }
 
             return base.IsAnimatingSize();
@@ -225,6 +226,11 @@ namespace Composition.Nodes
                 }
             }
             RequestLayout();
+        }
+
+        public virtual void SetAnimationTime(TimeSpan time)
+        {
+            AnimationTime = time;
         }
 
         public override Rectangle ParentChainTargetBounds()

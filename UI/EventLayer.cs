@@ -148,7 +148,7 @@ namespace UI
             Root.AddChild(topBar);
 
             rightBar = new AnimatedNode();
-            rightBar.AnimationTime = TimeSpan.FromSeconds(ProfileSettings.Instance.ReOrderAnimationSeconds);
+            rightBar.SetAnimationTime(TimeSpan.FromSeconds(ProfileSettings.Instance.ReOrderAnimationSeconds));
 
             centralAspectNode = new AspectNode();
             centralAspectNode.SetAspectRatio(16, 9);

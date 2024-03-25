@@ -12,7 +12,7 @@ namespace Composition.Nodes
     {
         private InterpolatedRectangleF interpolatedRelativeBounds;
 
-        public TimeSpan AnimationTime { get; set; }
+        public TimeSpan AnimationTime { get; protected set; }
 
         private bool animatingInvisiblity;
 
@@ -195,6 +195,10 @@ namespace Composition.Nodes
                 }
                 Visible = false;
             }
+        }
+        public virtual void SetAnimationTime(TimeSpan time)
+        {
+            AnimationTime = time;
         }
     }
 

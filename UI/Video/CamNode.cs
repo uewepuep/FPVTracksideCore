@@ -217,7 +217,7 @@ namespace UI.Video
         {
             foreach (var camNode in CamNodes)
             {
-                camNode.AnimationTime = time;
+                camNode.SetAnimationTime(time);
             }
         }
     }
