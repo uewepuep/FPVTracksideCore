@@ -12,9 +12,9 @@ using Tools;
 
 namespace UI.Nodes
 {
-    public class EventLapsNode : EventPilotListNode<EventPilotTimeNode>
+    public class EventLapsTimesNode : EventPilotListNode<EventPilotTimeNode>
     {
-        public EventLapsNode(EventManager ev, Round round) 
+        public EventLapsTimesNode(EventManager ev, Round round) 
             : base(ev, round)
         {
         }
@@ -133,13 +133,20 @@ namespace UI.Nodes
                 {
                     laps = LapRecordManager.GetBestLaps(pilotInRaces, pilotNode.Pilot, lapsToCount);
                 }
-                pilotNode.SetLaps(laps);
+                Race.Brackets bracket = Race.Brackets.None;
+                var brackets = pilotInRaces.Select(r => r.Bracket).Distinct();
+                if (brackets.Count() == 1)
+                {
+                    bracket = brackets.First();
+                }
+
+                pilotNode.SetLaps(laps, bracket);
             }
         }
 
         public override IEnumerable<EventPilotTimeNode> Order(IEnumerable<EventPilotTimeNode> nodes)
         {
-            return nodes.OrderByDescending(t => t.Heading).ThenBy(t => t.Time);
+            return nodes.OrderByDescending(t => t.Heading).ThenBy(t => t.Bracket).ThenBy(t => t.Time);
         }
 
         public override void EditSettings()
@@ -208,10 +215,12 @@ namespace UI.Nodes
             base.AddMenu(mouseInputEvent, mouseMenu);
         }
 
-        public void SetLaps(IEnumerable<Lap> laps)
+        public void SetLaps(IEnumerable<Lap> laps, Race.Brackets bracket)
         {
             if (Heading)
                 return;
+
+            Bracket = bracket;
 
             Laps = laps.ToArray();
             Time = Laps.TotalTime();

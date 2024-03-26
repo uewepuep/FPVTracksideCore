@@ -145,7 +145,7 @@ namespace RaceLib
         {
             Round[] rounds = EventManager.RoundManager.GetRoundsBetween(startRound, endRound).ToArray();
 
-            Race[] races = EventManager.RaceManager.GetRaces(r => r.Type.HasPoints() && rounds.Contains(r.Round));
+            Race[] races = EventManager.RaceManager.GetRaces(r => r.Type.HasPoints() && rounds.Contains(r.Round) && r.Valid);
             for (int i = startRound.RoundNumber; i <= endRound.RoundNumber; i++)
             {
                 foreach (Race r in races.Where(ra => ra.RoundNumber == i))
