@@ -2,6 +2,8 @@
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System.Linq;
+using System;
 using Tools;
 
 namespace UI.Nodes
@@ -77,5 +79,4 @@ namespace UI.Nodes
             base.Setup(panel, borderColor);
         }
     }
-
 }

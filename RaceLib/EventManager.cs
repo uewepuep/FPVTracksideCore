@@ -255,7 +255,7 @@ namespace RaceLib
         {
             DirectoryInfo photoDir = new DirectoryInfo("pilots");
 
-            string[] extensions = new string[] { ".png", ".jpg" };
+            string[] extensions = new string[] { ".png", ".jpg", ".mp4", ".wmv", ".mkv" };
 
             if (photoDir.Exists)
             {

@@ -185,5 +185,10 @@ namespace FfmpegMediaPlatform
         {
             throw new NotImplementedException();
         }
+
+        public FrameSource CreateFrameSource(string filename)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

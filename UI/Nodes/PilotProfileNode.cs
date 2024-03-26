@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
+using UI.Video;
 
 namespace UI.Nodes
 {
@@ -27,6 +28,7 @@ namespace UI.Nodes
         public AnimatedRelativeNode ProfileImageContainer;
 
         public AlphaAnimatedNode Background { get; private set; }
+        private InsideOutBorderRelativeNode insideOutBorderRelativeNode;
 
         public PilotProfileNode(Color channelColour, float pilotAlpha)
         {
@@ -39,19 +41,15 @@ namespace UI.Nodes
             Background = new AlphaAnimatedNode();
             ProfileImageContainer.AddChild(Background);
 
+            insideOutBorderRelativeNode = new InsideOutBorderRelativeNode(new Color(channelColour, pilotAlpha));
+            Background.AddChild(insideOutBorderRelativeNode);
+
             TextNode = new TextNode("", Theme.Current.PilotViewTheme.PilotOverlayText.XNA);
             TextNode.Style.Italic = true;
             TextNode.Style.Border = true;
             AddChild(TextNode);
 
-            PilotPhoto = new ImageNode();
-                        
-            PilotPhoto.Alignment = RectangleAlignment.Center;
-            PilotPhoto.KeepAspectRatio = false;
-            PilotPhoto.CropToFit = true;
-            PilotPhoto.Scale(0.95f);
-
-            Background.AddChild(PilotPhoto);
+            PilotPhoto = null;
 
             TextNode.Scale(0.9f);
 
@@ -73,30 +71,53 @@ namespace UI.Nodes
                     filename = pilot.PhotoPath;
                 }
 
-                string justFilename = System.Text.RegularExpressions.Regex.Replace(filename, @"[^\w\-. \\:]", "");
-                if (File.Exists(justFilename))
+                FileInfo fileInfo = new FileInfo(System.Text.RegularExpressions.Regex.Replace(filename, @"[^\w\-. \\:]", ""));
+                if (fileInfo.Exists)
                 {
-                    PilotPhoto.SetFilename(justFilename);
+                    string[] videoFileTypes = new[] { ".mp4", ".wmv", ".mkv" };
+                    string[] imageFileTypes = new[] { ".png", ".jpg" };
+
+                    if (videoFileTypes.Contains(fileInfo.Extension))
+                    {
+                        FileFrameNode videoPlayer = new FileFrameNode(fileInfo.FullName);
+                        videoPlayer.Repeat = true;
+                        videoPlayer.Play();
+
+                        PilotPhoto = videoPlayer;
+                    }
+
+                    if (imageFileTypes.Contains(fileInfo.Extension))
+                    {
+                        PilotPhoto = new ImageNode(fileInfo.FullName);
+                    }
+
+                    PilotPhoto.Alignment = RectangleAlignment.Center;
+                    PilotPhoto.KeepAspectRatio = false;
+                    PilotPhoto.CropToFit = true;
+                    PilotPhoto.Scale(0.95f);
+                    insideOutBorderRelativeNode.AddChild(PilotPhoto, 0);
+
+                    if (string.IsNullOrEmpty(TextNode.Text))
+                    {
+                        PilotPhoto.RelativeBounds = new RectangleF(0, 0, 1, 1);
+                    }
+                    else
+                    {
+                        TextNode.RelativeBounds = new RectangleF(0, 0.9f, 1, 0.1f);
+                        PilotPhoto.RelativeBounds = new RectangleF(0, 0, 1, TextNode.RelativeBounds.Y);
+                    }
+
                     HasProfileImage = true;
                 }
                 else
                 {
                     HasProfileImage = false;
                 }
-
-                if (string.IsNullOrEmpty(TextNode.Text))
-                {
-                    PilotPhoto.RelativeBounds = new RectangleF(0, 0, 1, 1);
-                }
-                else
-                {
-                    TextNode.RelativeBounds = new RectangleF(0, 0.9f, 1, 0.1f);
-                    PilotPhoto.RelativeBounds = new RectangleF(0, 0, 1, TextNode.RelativeBounds.Y);
-                }
             }
             else
             {
-                PilotPhoto.SetFilename(null);
+                PilotPhoto?.Dispose();
+                PilotPhoto = null;
                 TextNode.Text = "";
             }
 

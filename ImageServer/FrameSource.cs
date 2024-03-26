@@ -133,8 +133,10 @@ namespace ImageServer
         bool SlowMotion { get; set; }
         TimeSpan MediaTime { get; }
         TimeSpan Length { get; }
+        bool Repeat { get; set; }
 
         void SetPosition(DateTime seekTime);
+        void SetPosition(TimeSpan seekTime);
         void Play();
         bool Pause();
         bool Start();

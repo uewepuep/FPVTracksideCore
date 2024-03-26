@@ -10,12 +10,15 @@ namespace Composition.Nodes
 {
     public class InsideOutBorderRelativeNode : ColorNode
     {
-        public float Offset { get; set; }
+        private BorderNode borderNode;
+
+        public int Offset { get; set; }
 
         public InsideOutBorderRelativeNode(Color color) 
             : base(color)
         {
-            Offset = 0.04f;
+            borderNode = new BorderNode(color);
+            Offset = -1;
         }
 
         public override void Layout(Rectangle parentBounds)
@@ -27,19 +30,20 @@ namespace Composition.Nodes
             {
                 Rectangle childBounds = child.Bounds;
 
-                int offsetX = (int)(childBounds.Width * Offset);
-                int offsetY = (int)(childBounds.Height * Offset);
+                borderNode.Width = Offset;
 
-                int offset = Math.Max(offsetX, offsetY);
-
-                Bounds = new Rectangle(
-                    childBounds.X - offset,
-                    childBounds.Y - offset,
-                    childBounds.Width + (offset * 2),
-                    childBounds.Height + (offset * 2));
+                borderNode.Bounds = new Rectangle(
+                    childBounds.X - Offset,
+                    childBounds.Y - Offset,
+                    childBounds.Width + (Offset * 2),
+                    childBounds.Height + (Offset * 2));
             }
         }
 
-
+        public override void Draw(Drawer id, float parentAlpha)
+        {
+            base.Draw(id, parentAlpha);
+            borderNode.Draw(id, parentAlpha);
+        }
     }
 }

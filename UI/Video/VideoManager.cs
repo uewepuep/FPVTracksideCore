@@ -373,7 +373,7 @@ namespace UI.Video
                         }
                         else
                         {
-                            VideoFrameWork mediaFoundation = GetFramework(FrameWork.MediaFoundation);
+                            VideoFrameWork mediaFoundation = VideoFrameworks.GetFramework(FrameWork.MediaFoundation);
                             if (mediaFoundation != null)
                             {
                                 source = mediaFoundation.CreateFrameSource(videoConfig);
