@@ -56,7 +56,7 @@ namespace Composition.Nodes
 
                 if (!string.IsNullOrEmpty(FileName) && System.IO.File.Exists(FileName))
                 {
-                    Texture = id.TextureCache.GetTextureFromFilename(FileName, Color);
+                    Texture = id.TextureCache.GetTextureFromFilename(FileName, Color, false);
                     SourceBounds = new Rectangle(0, 0, Texture.Width, Texture.Height);
                     sharedTexture = true;
                     UpdateAspectRatioFromTexture();

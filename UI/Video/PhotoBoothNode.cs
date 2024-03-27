@@ -301,6 +301,7 @@ namespace UI.Video
             Node container = new Node();
 
             ImageNode imageNode = new ImageNode(file.FullName);
+            imageNode.ReloadFromFile = true;
             imageNode.RelativeBounds = new RectangleF(0, 0, 1, 0.9f);
             container.AddChild(imageNode);
 

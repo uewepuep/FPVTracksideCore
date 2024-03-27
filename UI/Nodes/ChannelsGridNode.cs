@@ -891,5 +891,13 @@ namespace UI.Nodes
             Reorder(true);
             RequestLayout();
         }
+
+        public void ReloadPilotProfileImages()
+        {
+            foreach (ChannelNodeBase channelNode in ChannelNodes)
+            {
+                channelNode.PilotProfile.Reload();
+            }
+        }
     }
 }

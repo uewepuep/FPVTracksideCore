@@ -121,6 +121,7 @@ namespace UI.Nodes
                     PilotPhoto.KeepAspectRatio = false;
                     PilotPhoto.CropToFit = true;
                     PilotPhoto.Scale(0.95f);
+                    PilotPhoto.ReloadFromFile = true;
                     insideOutBorderRelativeNode.AddChild(PilotPhoto, 0);
 
                     if (string.IsNullOrEmpty(TextNode.Text))
@@ -170,6 +171,14 @@ namespace UI.Nodes
         {
             ProfileImageContainer.Snap();   
             base.Snap();
+        }
+
+        internal void Reload()
+        {
+            if (PilotPhoto != null)
+            {
+                PilotPhoto.ReloadFromFile = true;
+            }
         }
     }
 }

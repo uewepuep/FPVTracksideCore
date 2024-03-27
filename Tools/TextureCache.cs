@@ -41,12 +41,12 @@ namespace Tools
             return texture;
         }
 
-        public Texture2D GetTextureFromFilename(string filename)
+        public Texture2D GetTextureFromFilename(string filename, bool forceRefresh)
         {
-            return GetTextureFromFilename(filename, Color.Transparent);
+            return GetTextureFromFilename(filename, Color.Transparent, forceRefresh);
         }
 
-        public Texture2D GetTextureFromFilename(string filename, Color fallback)
+        public Texture2D GetTextureFromFilename(string filename, Color fallback, bool forceRefresh)
         {
             if (stringToTexture == null)
             {
@@ -59,6 +59,14 @@ namespace Tools
             Texture2D texture;
             lock (stringToTexture)
             {
+                if (forceRefresh)
+                {
+                    if (stringToTexture.ContainsKey(filename))
+                    {
+                        stringToTexture.Remove(filename);
+                    }
+                }
+
                 if (!stringToTexture.TryGetValue(filename, out texture))
                 {
                     try
