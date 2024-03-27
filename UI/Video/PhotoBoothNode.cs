@@ -5,6 +5,7 @@ using RaceLib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reactive;
 using System.Text;
@@ -20,11 +21,11 @@ namespace UI.Video
 
         public Pilot Pilot { get; private set; }
 
-        private AspectNode cameraAspectNode;
 
         private VideoManager videoManager;
         private EventManager eventManager;
 
+        private AspectNode cameraAspectNode;
         private CamNode camNode;
         private ChannelPilotNameNode pilotNameNode;
 
@@ -41,8 +42,16 @@ namespace UI.Video
                 return;
             }
 
+            Node cameraContainer = new Node();
+            cameraContainer.RelativeBounds = new RectangleF(0, 0, 1, 0.9f);
+            AddChild(cameraContainer);
+
+            Node buttonContainer = new Node();
+            buttonContainer.RelativeBounds = new RectangleF(0, cameraContainer.RelativeBounds.Bottom, 1, 1 - cameraContainer.RelativeBounds.Bottom);
+            AddChild(buttonContainer);
+
             cameraAspectNode = new AspectNode(4 / 3.0f);
-            AddChild(cameraAspectNode);
+            cameraContainer.AddChild(cameraAspectNode);
 
             camNode = CreateCamNode();
             cameraAspectNode.AddChild(camNode);
@@ -75,8 +84,6 @@ namespace UI.Video
 
         public void SetPilot(Pilot pilot)
         {
-            ClearPilot();
-
             Pilot = pilot;
 
             Color color = eventManager.GetPilotColor(pilot);
@@ -87,11 +94,30 @@ namespace UI.Video
             RequestLayout();
         }
 
-        public void ClearPilot()
+        public void Load()
         {
             Init();
 
-            Pilot = null;
+            foreach (Pilot p in eventManager.Event.Pilots)
+            {
+                if (!File.Exists(p.PhotoPath))
+                {
+                    SetPilot(p);
+                    break;
+                }
+            }
+
+            Pilot pa = eventManager.Event.Pilots.FirstOrDefault();
+            SetPilot(pa);
+        }
+
+        public void Clean()
+        {
+            ClearDisposeChildren();
+
+            cameraAspectNode = null;
+            camNode = null;
+            pilotNameNode = null;
         }
     }
 }

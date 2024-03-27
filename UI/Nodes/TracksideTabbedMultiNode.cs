@@ -219,7 +219,7 @@ namespace UI.Nodes
         }
         public void ShowPhotoBooth(MouseInputEvent mie)
         {
-            PhotoBooth.ClearPilot();
+            PhotoBooth.Load();
             Show(PhotoBooth);
         }
 
@@ -323,6 +323,11 @@ namespace UI.Nodes
                 {
                     tsm.EndDetection();
                 }
+            }
+
+            if (Showing == PhotoBooth)
+            {
+                PhotoBooth.Clean();
             }
 
             base.Show(node);

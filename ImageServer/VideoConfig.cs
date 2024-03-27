@@ -160,7 +160,7 @@ namespace ImageServer
         {
             string name = DeviceName;
 
-            if (VideoBounds != null)
+            if (VideoBounds != null && VideoMode.Index >= 0)
             {
                 IEnumerable<SourceTypes> sourceTypesUsed = VideoBounds.Select(vb => vb.SourceType).Distinct();
                 if (sourceTypesUsed.Count() == 1)
