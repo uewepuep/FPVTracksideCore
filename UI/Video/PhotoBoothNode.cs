@@ -1,4 +1,5 @@
 ﻿using Composition;
+using Composition.Layers;
 using Composition.Nodes;
 using ImageServer;
 using Microsoft.Xna.Framework;
@@ -28,18 +29,12 @@ namespace UI.Video
         private CamNode camNode;
         private ChannelPilotNameNode pilotNameNode;
 
-
-        private Action whatDo;
-        private DateTime when;
-        private TextNode countDown;
-
-        public TimeSpan Delay { get; set; }
+        private CameraCountdownNode countDown;
 
         public PhotoBoothNode(VideoManager videoManager, EventManager eventManager) 
         {
             this.videoManager = videoManager;
             this.eventManager = eventManager;
-            Delay = TimeSpan.FromSeconds(3);
         }
 
         private void Init()
@@ -50,7 +45,6 @@ namespace UI.Video
             }
                         
             ClearDisposeChildren();
-
 
             Node cameraContainer = new Node();
             cameraContainer.RelativeBounds = new RectangleF(0, 0, 1, 0.95f);
@@ -64,9 +58,9 @@ namespace UI.Video
             takePhoto.OnClick += TakePhoto_OnClick;
             buttonContainer.AddChild(takePhoto);
 
-            TextButtonNode recordClip = new TextButtonNode("Record Clip", Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
-            recordClip.OnClick += RecordClip_OnClick;
-            buttonContainer.AddChild(recordClip);
+            //TextButtonNode recordClip = new TextButtonNode("Record Clip", Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
+            //recordClip.OnClick += RecordClip_OnClick;
+            //buttonContainer.AddChild(recordClip);
 
             AlignHorizontally(0.1f, buttonContainer.Children);
 
@@ -88,8 +82,7 @@ namespace UI.Video
             }
             else
             {
-                countDown = new TextNode("", Color.White);
-                countDown.Scale(0.3f);
+                countDown = new CameraCountdownNode();
                 camNode.AddChild(countDown);
 
                 cameraAspectNode.AddChild(camNode);
@@ -105,38 +98,35 @@ namespace UI.Video
 
         private void RecordClip_OnClick(Composition.Input.MouseInputEvent mie)
         {
-            whatDo = RecordClip;
-            when = DateTime.Now + Delay;
+            countDown.Take(RecordClip);
         }
 
         private void TakePhoto_OnClick(Composition.Input.MouseInputEvent mie)
         {
-            whatDo = TakePhoto;
-            when = DateTime.Now + Delay;
+            countDown.Take(TakePhoto);
         }
 
         private void TakePhoto()
         {
-            whatDo = null;
-
-            string path = Pilot.PhotoPath;
-            if (string.IsNullOrEmpty(path))
+            if (string.IsNullOrEmpty(Pilot.PhotoPath))
             {
-                path = "pilots/" + Pilot.Name + ".jpg";
+                Pilot.PhotoPath = "pilots/" + Pilot.Name + ".jpg";
+
+                using (IDatabase db = DatabaseFactory.Open(eventManager.EventId))
+                {
+                    db.Update(Pilot);
+                }
             }
 
-            camNode.FrameNode.SaveImage(path);
-            Pilot.PhotoPath = path;
+            string newPath = "pilots/" + Pilot.Name + "_temp.jpg";
+            camNode.FrameNode.SaveImage(newPath);
 
-            using (IDatabase db = DatabaseFactory.Open(eventManager.EventId))
-            {
-                db.Update(Pilot);
-            }
+            ConfirmPictureNode confirmPictureNode = new ConfirmPictureNode(Pilot.PhotoPath, newPath);
+            GetLayer<PopupLayer>().Popup(confirmPictureNode);
         }
 
         private void RecordClip()
         {
-            whatDo = null;
         }
 
         private CamNode CreateCamNode()
@@ -201,21 +191,129 @@ namespace UI.Video
 
         public override void Draw(Drawer id, float parentAlpha)
         {
-            if (countDown != null && whatDo != null)
+            
+
+            base.Draw(id, parentAlpha);
+        }
+    }
+
+    public class CameraCountdownNode : Node, IUpdateableNode
+    {
+        private Action action;
+        private DateTime when;
+        private TextNode text;
+        public TimeSpan Delay { get; set; }
+
+        private AlphaAnimatedNode flash;
+
+        public CameraCountdownNode() 
+        {
+            Delay = TimeSpan.FromSeconds(3);
+
+            text = new TextNode("", Color.White);
+            text.Scale(0.3f);
+
+            AddChild(text);
+
+            flash = new AlphaAnimatedNode();
+            flash.Alpha = 0;
+            AddChild(flash);
+
+            flash.AddChild(new ColorNode(Color.White));
+        }
+
+        public void Update(GameTime gameTime)
+        {
+            if (action != null)
             {
                 TimeSpan remaining = when - DateTime.Now;
-                if (remaining > TimeSpan.Zero && remaining < Delay) 
-                { 
-                    countDown.Text = ((int)Math.Ceiling(remaining.TotalSeconds)).ToString();
+                if (remaining > TimeSpan.Zero && remaining < Delay)
+                {
+                    text.Text = ((int)Math.Ceiling(remaining.TotalSeconds)).ToString();
                 }
                 else
                 {
-                    whatDo();
-                    countDown.Text = "";
+                    flash.Alpha = 1;
+                    flash.SetAnimatedAlpha(0);
+                    action();
+                    text.Text = "";
+                    action = null;
                 }
             }
+        }
 
-            base.Draw(id, parentAlpha);
+        public void Take(Action action)
+        {
+            when = DateTime.Now + Delay;
+            this.action = action;
+        }
+    }
+
+    public class ConfirmPictureNode : BorderPanelNode
+    {
+        private FileInfo existingPhoto;
+        private FileInfo newPhoto;
+
+        public ConfirmPictureNode(string existingFilename, string newFilename)
+        {
+            existingPhoto = new FileInfo(existingFilename);
+            newPhoto = new FileInfo(newFilename);
+
+            Scale(0.8f, 0.6f);
+            Node photoContainer = new Node();
+            photoContainer.Scale(0.9f);
+            AddChild(photoContainer);   
+            if (existingPhoto.Exists)
+            {
+                photoContainer.AddChild(CreateChoice(existingPhoto, "Old Photo", "Keep old photo", KeepOld));
+            }
+
+            if (newPhoto.Exists)
+            {
+                photoContainer.AddChild(CreateChoice(newPhoto, "New Photo", "Use new photo", UseNew));
+            }
+
+            AlignHorizontally(0.1f, photoContainer.Children);
+        }
+
+        private void KeepOld()
+        {
+            Dispose();
+        }
+
+        private void UseNew()
+        {
+            try
+            {
+                existingPhoto.Delete();
+                newPhoto.MoveTo(existingPhoto.FullName);
+            }
+            catch (Exception ex) 
+            { 
+                GetLayer<PopupLayer>().PopupMessage(ex.Message);
+            }
+            
+            Dispose();
+        }
+
+        private Node CreateChoice(FileInfo file, string name, string question, Action action)
+        {
+            Node container = new Node();
+
+            ImageNode imageNode = new ImageNode(file.FullName);
+            imageNode.RelativeBounds = new RectangleF(0, 0, 1, 0.9f);
+            container.AddChild(imageNode);
+
+            TextNode textNode = new TextNode(name, Color.White);
+            textNode.RelativeBounds = new RectangleF(0, 0, 1, 0.1f);
+            imageNode.AddChild(textNode);
+
+            TextButtonNode textButtonNode = new TextButtonNode(question, Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
+            textButtonNode.RelativeBounds = new RectangleF(0, imageNode.RelativeBounds.Bottom, 1, 1 - imageNode.RelativeBounds.Bottom);
+            container.AddChild(textButtonNode);
+            textButtonNode.OnClick += m => { action(); };
+
+            return container;
         }
     }
 }
