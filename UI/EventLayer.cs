@@ -171,38 +171,8 @@ namespace UI
             pilotList = new PilotListNode(EventManager);
             leftContainer.AddChild(pilotList);
 
-            pilotList.OnPilotClick += (mouseInputEvent, pilot) =>
-            {
-                var dl = LayerStack.GetLayer<DragLayer>();
-                if (dl != null && dl.IsDragging)
-                {
-                    return;
-                }
-
-                if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Released)
-                {
-                    TogglePilot(pilot);
-                    pilotList.UpdatePilotChannel(pilot);
-                }
-            };
-            pilotList.OnPilotChannelClick += (mie, p) =>
-            {
-                MouseMenu mm = new MouseMenu(LayerStack.GetLayer<MenuLayer>());
-
-                foreach (var cg in EventManager.Channels.GetChannelGroups())
-                {
-                    foreach (Channel c in cg)
-                    {
-                        mm.AddItem(c.ToString(), () => { EventManager.SetPilotChannel(p, c); });
-                    }
-                    mm.AddBlank();
-                }
-
-                mm.Show(mie);
-
-                RequestLayout();
-            };
-
+            pilotList.OnPilotClick += PilotList_OnPilotClick;
+            pilotList.OnPilotChannelClick += PilotList_OnPilotChannelClick;
 
             centreContainer = new AnimatedRelativeNode();
             mainContainer.AddChild(centreContainer);
@@ -358,6 +328,45 @@ namespace UI
             ReloadOBSRemoteControl();
 
             SoundManager.OnHighlightPilot += sceneManagerNode.FullScreen;
+        }
+
+        private void PilotList_OnPilotChannelClick(MouseInputEvent mie, Pilot p)
+        {
+            MouseMenu mm = new MouseMenu(LayerStack.GetLayer<MenuLayer>());
+
+            foreach (var cg in EventManager.Channels.GetChannelGroups())
+            {
+                foreach (Channel c in cg)
+                {
+                    mm.AddItem(c.ToString(), () => { EventManager.SetPilotChannel(p, c); });
+                }
+                mm.AddBlank();
+            }
+
+            mm.Show(mie);
+
+            RequestLayout();
+        }
+
+        private void PilotList_OnPilotClick(MouseInputEvent mouseInputEvent, Pilot pilot)
+        {
+            if (TabbedMultiNode.IsOnPhotoBooth)
+            {
+                TabbedMultiNode.PhotoBooth.SetPilot(pilot);
+                return;
+            }
+
+            var dl = LayerStack.GetLayer<DragLayer>();
+            if (dl != null && dl.IsDragging)
+            {
+                return;
+            }
+
+            if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Released)
+            {
+                TogglePilot(pilot);
+                pilotList.UpdatePilotChannel(pilot);
+            }
         }
 
         private void OnPilotRefresh()
@@ -1124,6 +1133,11 @@ namespace UI
                 if (TabbedMultiNode.IsOnLive)
                 {
                     ShowPilotList(!EventManager.RaceManager.HasPilots);
+                }
+
+                if (TabbedMultiNode.IsOnPhotoBooth)
+                {
+                    ShowPilotList(true);
                 }
 
                 if (TabbedMultiNode.IsOnRounds)

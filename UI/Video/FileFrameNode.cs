@@ -9,6 +9,7 @@ using System.Drawing.Imaging;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 
 namespace UI.Video
 {
@@ -96,13 +97,11 @@ namespace UI.Video
 
         public bool Enabled { get; set; }
 
-        public byte Limit { get; set; }
 
         public ChromaKeyFileFrameNode(string filename) 
             : base(filename)
         {
             Enabled = true;
-            Limit = 10;
         }
 
         public override void PreProcess(Drawer id)
@@ -115,23 +114,8 @@ namespace UI.Video
             if (texture == replacementTexture)
                 return;
 
-            if (replacementTexture == null || texture.Width != replacementTexture.Width || texture.Height != replacementTexture.Height)
-            {
-                replacementTexture?.Dispose();
-                replacementTexture = new Texture2D(id.GraphicsDevice, texture.Width, texture.Height, false, SurfaceFormat.Bgra32);
-                data = new Color[texture.Width * texture.Height];
-            }
+            Maths.ChromaKey(texture, ref data, ref replacementTexture);
 
-            texture.GetData(data);
-            for (int i = 0; i < data.Length; i++)
-            {
-                if (data[i].G > data[i].B + Limit &&
-                    data[i].G > data[i].R + Limit)
-                {
-                    data[i] = Color.Transparent;
-                }
-            }
-            replacementTexture.SetData(data);
             texture = replacementTexture;
         }
     }

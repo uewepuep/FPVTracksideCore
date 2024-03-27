@@ -228,33 +228,34 @@ namespace WindowsPlatform
 
         public void Draw(Drawer id, Microsoft.Xna.Framework.Rectangle target, RectangleAlignment alignment, Scale scale, Microsoft.Xna.Framework.Color tint, float alpha)
         {
-            if (texture != null)
+            Texture2D t = texture;
+            if (t == null)
+                return;
+
+            Microsoft.Xna.Framework.Rectangle sourceBounds = new Microsoft.Xna.Framework.Rectangle(0, 0, t.Width, t.Height);
+
+            scaleFactor = 1;
+
+            bool scaleImage = Math.Abs(target.Height - t.Height) > 10 || target.Width < t.Width || scale == Scale.Force;
+            if (scaleImage && scale != Scale.Disallowed)
             {
-                Microsoft.Xna.Framework.Rectangle sourceBounds = new Microsoft.Xna.Framework.Rectangle(0, 0, texture.Width, texture.Height);
-
-                scaleFactor = 1;
-
-                bool scaleImage = Math.Abs(target.Height - texture.Height) > 10 || target.Width < texture.Width || scale == Scale.Force;
-                if (scaleImage && scale != Scale.Disallowed)
-                {
-                   scaleFactor = Maths.ScaleFactor(target, sourceBounds, FitType.FitBoth);
-                }
-
-                Microsoft.Xna.Framework.Rectangle bounds = Maths.FitBoxMaintainAspectRatio(target, sourceBounds, scaleFactor, alignment);
-
-                offsetX = target.X - bounds.X;
-                offsetY = target.Y - bounds.Y;
-
-                //if (text == "Finished in 76.74 - Fastest lap 12.96 - 38km/h")
-                //{
-                //    id.QuickDraw(bounds);
-                //    System.Diagnostics.Debug.WriteLine(target + " " + bounds);
-                //}
-
-                id.Draw(texture, sourceBounds, bounds, tint, alpha);
-
-                //BitmapFontCreator.Create(id, new System.IO.DirectoryInfo("bitmapfonts"));
+                scaleFactor = Maths.ScaleFactor(target, sourceBounds, FitType.FitBoth);
             }
+
+            Microsoft.Xna.Framework.Rectangle bounds = Maths.FitBoxMaintainAspectRatio(target, sourceBounds, scaleFactor, alignment);
+
+            offsetX = target.X - bounds.X;
+            offsetY = target.Y - bounds.Y;
+
+            //if (text == "Finished in 76.74 - Fastest lap 12.96 - 38km/h")
+            //{
+            //    id.QuickDraw(bounds);
+            //    System.Diagnostics.Debug.WriteLine(target + " " + bounds);
+            //}
+
+            id.Draw(t, sourceBounds, bounds, tint, alpha);
+
+            //BitmapFontCreator.Create(id, new System.IO.DirectoryInfo("bitmapfonts"));
         }
 
         public static BitmapFont QuickCreateBitmapFont(Drawer drawer, int width, int height, Style style)

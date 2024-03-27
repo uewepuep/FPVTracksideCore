@@ -903,7 +903,16 @@ namespace UI.Nodes
     public class ChannelPilotNameNode : ColorNode, IPilot
     {
         public Pilot Pilot { get; set; }
-        public Channel Channel { get { return ChannelNodeBase.Channel; } }
+        public Channel Channel 
+        { 
+            get 
+            { 
+                if (ChannelNodeBase == null)
+                    return Channel.None; 
+
+                return ChannelNodeBase.Channel; 
+            } 
+        }
 
         private TextNode pilotName;
         public ChannelNodeBase ChannelNodeBase { get; private set; }
@@ -939,9 +948,12 @@ namespace UI.Nodes
 
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
         {
-            if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Pressed && ChannelNodeBase.EventManager.RaceManager.CanRunRace)
+            if (ChannelNodeBase != null)
             {
-                GetLayer<DragLayer>()?.RegisterDrag(this, mouseInputEvent);
+                if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Pressed && ChannelNodeBase.EventManager.RaceManager.CanRunRace)
+                {
+                    GetLayer<DragLayer>()?.RegisterDrag(this, mouseInputEvent);
+                }
             }
 
             return base.OnMouseInput(mouseInputEvent);

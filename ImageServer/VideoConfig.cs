@@ -158,14 +158,25 @@ namespace ImageServer
 
         public override string ToString()
         {
+            string name = DeviceName;
+
+            if (VideoBounds != null)
+            {
+                IEnumerable<SourceTypes> sourceTypesUsed = VideoBounds.Select(vb => vb.SourceType).Distinct();
+                if (sourceTypesUsed.Count() == 1)
+                {
+                    name = name + " (" + sourceTypesUsed.First().ToString() + ")";
+                }
+            }
+
             if (AnyUSBPort || DirectShowPath == null)
             {
-                return DeviceName;
+                return name;
             }
             else
             {
                 string hashCode = DirectShowPath.GetHashCode().ToString("X8");
-                return DeviceName + " (" + hashCode.Substring(0, 2) + ")";
+                return name + " #" + hashCode.Substring(0, 2);
             }
         }
 
@@ -258,7 +269,8 @@ namespace ImageServer
         FPVFeed,
         Commentators,
         Launch = 3,
-        FinishLine
+        FinishLine,
+        PhotoBooth
     }
 
     public class VideoBounds

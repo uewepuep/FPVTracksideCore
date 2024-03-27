@@ -388,6 +388,12 @@ namespace RaceLib
             OnChannelsChanged?.Invoke();
         }
         
+        public Microsoft.Xna.Framework.Color GetPilotColor(Pilot p)
+        {
+            Channel channel = GetChannel(p);
+            return GetChannelColor(channel);
+        }
+
         public Microsoft.Xna.Framework.Color GetChannelColor(Channel c)
         {
             Microsoft.Xna.Framework.Color color;

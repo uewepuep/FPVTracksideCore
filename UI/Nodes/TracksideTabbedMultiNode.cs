@@ -18,11 +18,13 @@ namespace UI.Nodes
     {
         public bool IsOnLive { get { return sceneManagerNode == Showing; } }
         public bool IsOnRounds { get { return rounds == Showing; } }
+        public bool IsOnPhotoBooth { get { return PhotoBooth == Showing; } }
 
         private RoundsNode rounds;
         private SceneManagerNode sceneManagerNode;
         private PilotChanelList pilotChanelList;
         private PatreonsNode patreonsNode;
+        public PhotoBoothNode PhotoBooth { get; private set; }
 
         public ReplayNode ReplayNode { get; private set; }
 
@@ -55,6 +57,7 @@ namespace UI.Nodes
             LapCountSummaryNode = new LapCountSummaryNode(eventManager);
             LapRecordsSummaryNode = new LapRecordsSummaryNode(eventManager);
             pilotChanelList = new PilotChanelList(eventManager);
+            PhotoBooth = new PhotoBoothNode(videoManager, eventManager);
 
             ReplayNode = new ReplayNode(eventManager);
 
@@ -75,6 +78,7 @@ namespace UI.Nodes
             AddTab("Points", PointsSummaryNode, ShowPoints);
             AddTab("Channel List", pilotChanelList, ShowPilotChannelList);
             rssiButton = AddTab("RSSI Analyser", rssiNode, ShowAnalyser);
+            AddTab("Photo Booth", PhotoBooth, ShowPhotoBooth);
             AddTab("Patreons", patreonsNode, ShowPatreons);
 
             replayButton.Enabled = false;
@@ -212,6 +216,11 @@ namespace UI.Nodes
             }
 
             Show(rounds);
+        }
+        public void ShowPhotoBooth(MouseInputEvent mie)
+        {
+            PhotoBooth.ClearPilot();
+            Show(PhotoBooth);
         }
 
         public void ShowPilotChannelList(MouseInputEvent mie)
