@@ -395,7 +395,7 @@ namespace Composition.Nodes
                     System.Text.RegularExpressions.Regex rgx = new System.Text.RegularExpressions.Regex("[^a-zA-Z0-9 -]");
                     filename = rgx.Replace(filename, "");
 
-                    texture.SaveAsPng(filename + ".png");
+                    texture.SaveAs(filename + ".png");
                 }
             }
 #endif

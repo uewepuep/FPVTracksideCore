@@ -19,9 +19,7 @@ namespace UI.Video
 {
     public class PhotoBoothNode : Node
     {
-
         public Pilot Pilot { get; private set; }
-
 
         private VideoManager videoManager;
         private EventManager eventManager;
@@ -124,10 +122,10 @@ namespace UI.Video
             string path = Pilot.PhotoPath;
             if (string.IsNullOrEmpty(path))
             {
-                path = "pilots/" + Pilot.Name + ".png";
+                path = "pilots/" + Pilot.Name + ".jpg";
             }
 
-            TextureHelper.SaveAsPng(camNode.FrameNode.Texture, path, true);
+            camNode.FrameNode.SaveImage(path);
             Pilot.PhotoPath = path;
 
             using (IDatabase db = DatabaseFactory.Open(eventManager.EventId))

@@ -89,6 +89,24 @@ namespace ImageServer
         [DisplayName("Flipped / Mirrored")]
         public FlipMirroreds FlipMirrored { get; set; }
 
+        [Browsable(false)]
+        public bool Flipped
+        {
+            get
+            {
+                return FlipMirrored == FlipMirroreds.Flipped || FlipMirrored == FlipMirroreds.FlippedAndMirrored;
+            }
+        }
+        
+        [Browsable(false)]
+        public bool Mirrored
+        {
+            get
+            {
+                return FlipMirrored == FlipMirroreds.Mirrored || FlipMirrored == FlipMirroreds.FlippedAndMirrored;
+            }
+        }
+
         [Category("Device")]
         [DisplayName("Stop feed when not in use")]
         public bool Pauseable { get; set; }

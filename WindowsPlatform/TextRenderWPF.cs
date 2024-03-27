@@ -371,7 +371,7 @@ namespace WindowsPlatform
         {
             if (texture != null)
             {
-                texture.SaveAsPng(filename + ".png");
+                texture.SaveAs(filename + ".png");
             }
         }
     }

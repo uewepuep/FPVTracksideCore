@@ -114,7 +114,7 @@ namespace UI.Video
             if (texture == replacementTexture)
                 return;
 
-            Maths.ChromaKey(texture, ref data, ref replacementTexture);
+            TextureHelper.ChromaKey(texture, ref data, ref replacementTexture);
 
             texture = replacementTexture;
         }

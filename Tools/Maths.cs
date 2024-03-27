@@ -224,28 +224,18 @@ namespace Tools
             return string.Join(",", parameters.Select(l => l.ReplaceCommas())) + "\n";
         }
 
-        public static void ChromaKey(Texture2D texture, ref Color[] data, ref Texture2D replacementTexture, byte limit = 10)
+        public static Rectangle Flip(this Rectangle src)
         {
-            if (texture == null)
-                return;
+            src.Y = src.Height - src.Y;
+            src.Height = -src.Height;
+            return src;
+        }
 
-            if (replacementTexture == null || texture.Width != replacementTexture.Width || texture.Height != replacementTexture.Height)
-            {
-                replacementTexture?.Dispose();
-                replacementTexture = new Texture2D(texture.GraphicsDevice, texture.Width, texture.Height, false, SurfaceFormat.Bgra32);
-                data = new Color[texture.Width * texture.Height];
-            }
-
-            texture.GetData(data);
-            for (int i = 0; i < data.Length; i++)
-            {
-                if (data[i].G > data[i].B + limit &&
-                    data[i].G > data[i].R + limit)
-                {
-                    data[i] = Color.Transparent;
-                }
-            }
-            replacementTexture.SetData(data);
+        public static Rectangle Mirror(this Rectangle src)
+        {
+            src.X = src.Width - src.X;
+            src.Width = -src.Width;
+            return src;
         }
     }
 }

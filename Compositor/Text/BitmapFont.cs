@@ -60,7 +60,7 @@ namespace Composition.Text
         {
             string filename = directory.Name + "/" + ToString() + ".png";
 
-            texture.SaveAsPng(filename);
+            texture.SaveAs(filename);
 
             return filename;
         }

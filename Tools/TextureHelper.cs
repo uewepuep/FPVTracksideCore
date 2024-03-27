@@ -169,24 +169,36 @@ namespace Tools
             return newTexture;
         }
 
-        public static void SaveAsPng(this Texture2D texture, string filename, bool flip = false)
+
+        public static void SaveAs(this Texture2D texture, string filename, bool mirrored = false, bool flipped = false)
         {
             if (File.Exists(filename))
                 File.Delete(filename);
 
+            Rectangle src = new Rectangle(0, 0, texture.Width, texture.Height);
+            Rectangle dest = new Rectangle(0, 0, texture.Width, texture.Height);
+
             Texture2D cloned;
-            if (flip)
-            {
-                cloned = ResizeTexture(texture, new Rectangle(0, texture.Height, texture.Width, -texture.Height), new Rectangle(0, 0, texture.Width, texture.Height));
-            }
-            else
-            {
-                cloned = ResizeTexture(texture, texture.Width, texture.Height);
-            }
+
+            if (flipped)
+                src = src.Flip();
+
+            if (mirrored)
+                src = src.Mirror();
+
+            cloned = ResizeTexture(texture, src, dest);
 
             using (FileStream fs = new FileStream(filename, FileMode.CreateNew))
             {
-                cloned.SaveAsPng(fs, cloned.Width, cloned.Height);
+                if (filename.EndsWith(".png"))
+                {
+                    cloned.SaveAsPng(fs, cloned.Width, cloned.Height);
+                }
+
+                if (filename.EndsWith(".jpg"))
+                {
+                    cloned.SaveAsJpeg(fs, cloned.Width, cloned.Height);
+                }
             }
             cloned.Dispose();
         }
@@ -246,6 +258,30 @@ namespace Tools
         {
             Texture2D sourceImage = LoadTexture(graphicsDevice, sourceImagePath);
             return ResizeTexture(sourceImage, width, height);
+        }
+
+        public static void ChromaKey(Texture2D texture, ref Color[] data, ref Texture2D replacementTexture, byte limit = 10)
+        {
+            if (texture == null)
+                return;
+
+            if (replacementTexture == null || texture.Width != replacementTexture.Width || texture.Height != replacementTexture.Height)
+            {
+                replacementTexture?.Dispose();
+                replacementTexture = new Texture2D(texture.GraphicsDevice, texture.Width, texture.Height, false, SurfaceFormat.Bgra32);
+                data = new Color[texture.Width * texture.Height];
+            }
+
+            texture.GetData(data);
+            for (int i = 0; i < data.Length; i++)
+            {
+                if (data[i].G > data[i].B + limit &&
+                    data[i].G > data[i].R + limit)
+                {
+                    data[i] = Color.Transparent;
+                }
+            }
+            replacementTexture.SetData(data);
         }
 
         public static void TextureCombiner(GraphicsDevice device, int height, IEnumerable<Texture2D> ts, out Rectangle[] bounds, out Texture2D texture)

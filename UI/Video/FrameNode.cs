@@ -72,7 +72,7 @@ namespace UI.Video
             if (texture == null)
             {
                 Texture2D tempTexture = id.TextureCache.GetTextureFromColor(Blank);
-                id.Draw(tempTexture, new Rectangle(0,0, tempTexture.Width, tempTexture.Height), Bounds, Tint, alpha);
+                id.Draw(tempTexture, new Rectangle(0, 0, tempTexture.Width, tempTexture.Height), Bounds, Tint, alpha);
             }
             else
             {
@@ -92,33 +92,15 @@ namespace UI.Video
         public Rectangle Flip(Rectangle src)
         {
             bool flipped = Source.Direction == FrameSource.Directions.TopDown;
-            bool mirrored = false;
 
-            switch (Source.VideoConfig.FlipMirrored)
-            {
-                case FlipMirroreds.Flipped:
-                    flipped = !flipped;
-                    break;
-                case FlipMirroreds.Mirrored:
-                    mirrored = true;
-                    break;
-                case FlipMirroreds.FlippedAndMirrored:
-                    flipped = !flipped;
-                    mirrored = true;
-                    break;
-            }
+            if (Source.VideoConfig.Flipped)
+                flipped = !flipped;
 
             if (flipped)
-            {
-                src.Y = texture.Height - src.Y;
-                src.Height = -src.Height;
-            }
+                src = src.Flip();
 
-            if (mirrored)
-            {
-                src.X = texture.Width - src.X;
-                src.Width = -src.Width;
-            }
+            if (Source.VideoConfig.Mirrored)
+                src = src.Mirror();
 
             return src;
         }
@@ -139,6 +121,17 @@ namespace UI.Video
                 FrameNumber = Source.FrameCount;
             }
             texture = tryTexture;
+        }
+
+        public void SaveImage(string filename)
+        {
+            bool flipped = Source.Direction == FrameSource.Directions.TopDown;
+
+            if (Source.VideoConfig.Flipped)
+                flipped = !flipped;
+
+
+            texture.SaveAs(filename, Source.VideoConfig.Mirrored, flipped);
         }
     }
 }

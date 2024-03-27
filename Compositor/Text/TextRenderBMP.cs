@@ -209,7 +209,7 @@ namespace Composition.Text
                 drawer.End();
             }
 
-            renderTarget.SaveAsPng("test.png");
+            renderTarget.SaveAs("test.png");
 
             return renderTarget;
         }
