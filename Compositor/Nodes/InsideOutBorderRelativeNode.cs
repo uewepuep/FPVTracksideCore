@@ -8,17 +8,16 @@ using Tools;
 
 namespace Composition.Nodes
 {
-    public class InsideOutBorderRelativeNode : ColorNode
+    public class InsideOutBorderRelativeNode : Node
     {
         private BorderNode borderNode;
 
         public int Offset { get; set; }
 
         public InsideOutBorderRelativeNode(Color color) 
-            : base(color)
         {
             borderNode = new BorderNode(color);
-            Offset = -1;
+            Offset = -2;
         }
 
         public override void Layout(Rectangle parentBounds)

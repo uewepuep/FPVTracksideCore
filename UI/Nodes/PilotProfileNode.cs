@@ -30,6 +30,27 @@ namespace UI.Nodes
         public AlphaAnimatedNode Background { get; private set; }
         private InsideOutBorderRelativeNode insideOutBorderRelativeNode;
 
+        public bool RepeatVideo
+        {
+            get
+            {
+                FileFrameNode fileFrameNode = PilotPhoto as FileFrameNode;
+                if (fileFrameNode != null)
+                {
+                    return fileFrameNode.Repeat;
+                }
+                return false;
+            }
+            set
+            {
+                FileFrameNode fileFrameNode = PilotPhoto as FileFrameNode;
+                if (fileFrameNode != null)
+                {
+                    fileFrameNode.Repeat = value;
+                }
+            }
+        }
+
         public PilotProfileNode(Color channelColour, float pilotAlpha)
         {
             Alpha = 0;
@@ -79,7 +100,7 @@ namespace UI.Nodes
 
                     if (videoFileTypes.Contains(fileInfo.Extension))
                     {
-                        FileFrameNode videoPlayer = new FileFrameNode(fileInfo.FullName);
+                        FileFrameNode videoPlayer = new ChromaKeyFileFrameNode(fileInfo.FullName);
                         videoPlayer.Repeat = true;
                         videoPlayer.Play();
 

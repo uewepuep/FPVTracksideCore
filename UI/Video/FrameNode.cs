@@ -14,7 +14,7 @@ namespace UI.Video
 {
     public class FrameNode : ImageNode, IPreProcessable
     {
-        public FrameSource Source { get; private set; }
+        public FrameSource Source { get; protected set; }
         public bool NeedsAspectRatioUpdate { get; set; }
         public int FrameNumber { get; private set; }
 

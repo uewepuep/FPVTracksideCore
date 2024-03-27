@@ -13,6 +13,7 @@ using Microsoft.Xna.Framework.Graphics;
 using RaceLib;
 using Sound;
 using Tools;
+using UI.Video;
 using UI.Widgets;
 
 namespace UI.Nodes
@@ -408,9 +409,15 @@ namespace UI.Nodes
 
         private PilotProfileOptions pilotProfileOptions;
 
-        public void SetProfileVisible(PilotProfileOptions options, bool snap)
+        public void SetProfileVisible(PilotProfileOptions options)
         {
             pilotProfileOptions = options;
+
+            // Don't do the small option if we're not a video node.
+            if (this is not ChannelVideoNode)
+            {
+                options = PilotProfileOptions.Large;
+            }
 
             if (!PilotProfile.HasProfileImage)
             {
@@ -422,12 +429,14 @@ namespace UI.Nodes
                 case PilotProfileOptions.None:
                     pilotInfoContainer.RelativeBounds = new RectangleF(0, 0.03f, 0.4f, 0.185f);
                     PilotProfile.SetAnimatedVisibility(false);
+                    PilotProfile.RepeatVideo = false;
                     break;
 
                 case PilotProfileOptions.Small:
                     PilotProfile.ProfileImageContainer.RelativeBounds = new RectangleF(0, 0.03f, 0.12f, 0.185f);
                     pilotInfoContainer.RelativeBounds = new RectangleF(PilotProfile.ProfileImageContainer.RelativeBounds.Right, 0.03f, 0.4f, 0.185f);
                     PilotProfile.SetAnimatedVisibility(true);
+                    PilotProfile.RepeatVideo = false;
                     break;
 
                 case PilotProfileOptions.Large:
@@ -437,13 +446,9 @@ namespace UI.Nodes
                     float bottomOfName = pilotInfoContainer.RelativeBounds.Bottom + 0.01f;
 
                     PilotProfile.ProfileImageContainer.RelativeBounds = new RectangleF(0.4f, bottomOfName, 0.6f, 1 - bottomOfName);
-                    PilotProfile.ProfileImageContainer.RelativeBounds = new RectangleF(0.15f, 0, 0.7f, 1);
+                    PilotProfile.ProfileImageContainer.RelativeBounds = new RectangleF(0, 0, 1, 1);
+                    PilotProfile.RepeatVideo = true;
                     break;
-            }
-
-            if (snap)
-            {
-                //PilotProfile.Snap();
             }
         }
 

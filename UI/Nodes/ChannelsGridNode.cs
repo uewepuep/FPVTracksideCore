@@ -572,11 +572,11 @@ namespace UI.Nodes
             RequestLayout();
         }
 
-        public void SetProfileVisible(PilotProfileOptions options, bool snap)
+        public void SetProfileVisible(PilotProfileOptions options)
         {
             foreach (ChannelNodeBase channelNode in ChannelNodes)
             {
-                channelNode.SetProfileVisible(options, snap);
+                channelNode.SetProfileVisible(options);
             }
         }
 

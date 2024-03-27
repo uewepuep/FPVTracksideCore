@@ -152,7 +152,7 @@ namespace UI.Nodes
 
         private void RaceManager_OnRacePreStart(Race race)
         {
-            ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small, false);
+            ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
         }
 
         public void UpdateNextRaceNode()
@@ -379,7 +379,7 @@ namespace UI.Nodes
                     }
 
                     ChannelsGridNode.SetBiggerInfo(true, false);
-                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Large, true);
+                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Large);
 
                     launchCamsNode.RelativeBounds = new RectangleF(0, 0, launchWidth, nonChannelGridHeight);
 
@@ -409,7 +409,7 @@ namespace UI.Nodes
                 case Scenes.Race:
                     SetAnimationTime(MidRaceAnimationTime);
 
-                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small, false);
+                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
                     
                     ChannelsGridNode.SingleRow = false;
                     ChannelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 1, 1);
@@ -438,14 +438,14 @@ namespace UI.Nodes
 
                     ChannelsGridNode.SetBiggerInfo(false, false);
                     ChannelsGridNode.MakeExtrasVisible(false);
-                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.None, true);
+                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.None);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
                     break;
 
                 case Scenes.RaceResults:
                     SetAnimationTime(SetupAnimationTime);
 
-                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small, true);
+                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
 
                     launchCamsNode.SetAnimatedVisibility(false);
                     finishLineNode.SetAnimatedVisibility(false);
@@ -546,7 +546,7 @@ namespace UI.Nodes
                     }
 
                     ChannelsGridNode.SetBiggerInfo(true, false);
-                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small, true);
+                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
 
                     finishLineNode.SetAnimatedVisibility(true);
                     finishLineNode.RelativeBounds = new RectangleF(0, 0, 1, nonChannelGridHeight);
