@@ -219,8 +219,8 @@ namespace UI.Nodes
         }
         public void ShowPhotoBooth(MouseInputEvent mie)
         {
-            PhotoBooth.Load();
             Show(PhotoBooth);
+            PhotoBooth.Load();
         }
 
         public void ShowPilotChannelList(MouseInputEvent mie)

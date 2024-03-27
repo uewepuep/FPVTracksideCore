@@ -529,6 +529,12 @@ namespace UI
 
                 waiter.WaitOne();
             }
+
+            if (TabbedMultiNode.IsOnPhotoBooth)
+            {
+                TabbedMultiNode.PhotoBooth.Clean();
+                TabbedMultiNode.ShowPhotoBooth(null);
+            }
         }
 
         public override void SetLayerStack(LayerStack layerStack)

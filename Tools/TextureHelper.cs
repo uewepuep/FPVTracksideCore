@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace Tools
 {
@@ -112,7 +113,7 @@ namespace Tools
 
         public static Texture2D FlipHorizontal(Texture2D original)
         {
-            Texture2D flipped = new Texture2D(original.GraphicsDevice, original.Width, original.Height);
+            Texture2D flipped = new Texture2D(original.GraphicsDevice, original.Width, original.Height, false, original.Format);
 
             Color[] sourceData = new Color[original.Height * original.Width];
             original.GetData<Color>(sourceData);
@@ -133,6 +134,29 @@ namespace Tools
             return flipped;
         }
 
+        public static Texture2D FlipVertical(Texture2D original)
+        {
+            Texture2D flipped = new Texture2D(original.GraphicsDevice, original.Width, original.Height, false, original.Format);
+
+            Color[] sourceData = new Color[original.Height * original.Width];
+            original.GetData<Color>(sourceData);
+
+            Color[] destData = new Color[original.Height * original.Width];
+
+            for (int y = 0; y < original.Height; y++)
+            {
+                for (int x = 0; x < original.Width; x++)
+                {
+                    int i = y * original.Width + x;
+                    int j = ((original.Height - 1) - y) * original.Width + x;
+                    destData[j] = sourceData[i];
+                }
+            }
+
+            flipped.SetData<Color>(destData);
+            return flipped;
+        }
+
         public static Texture2D Clone(this Texture2D texture)
         {
             if (texture == null)
@@ -145,18 +169,26 @@ namespace Tools
             return newTexture;
         }
 
-        public static void SaveAsPng(this Texture2D texture, string filename)
+        public static void SaveAsPng(this Texture2D texture, string filename, bool flip = false)
         {
             if (File.Exists(filename))
                 File.Delete(filename);
 
-            using (Texture2D cloned = ResizeTexture(texture, texture.Width, texture.Height))
+            Texture2D cloned;
+            if (flip)
             {
-                using (FileStream fs = new FileStream(filename, FileMode.CreateNew))
-                {
-                    cloned.SaveAsPng(fs, cloned.Width, cloned.Height);
-                }
+                cloned = ResizeTexture(texture, new Rectangle(0, texture.Height, texture.Width, -texture.Height), new Rectangle(0, 0, texture.Width, texture.Height));
             }
+            else
+            {
+                cloned = ResizeTexture(texture, texture.Width, texture.Height);
+            }
+
+            using (FileStream fs = new FileStream(filename, FileMode.CreateNew))
+            {
+                cloned.SaveAsPng(fs, cloned.Width, cloned.Height);
+            }
+            cloned.Dispose();
         }
 
         public static Texture2D GetEmbeddedTexture(GraphicsDevice graphics, System.Reflection.Assembly assembly, string name)

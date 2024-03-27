@@ -92,6 +92,11 @@ namespace UI.Nodes
                     filename = pilot.PhotoPath;
                 }
 
+                if (string.IsNullOrEmpty(filename))
+                {
+                    return;
+                }
+
                 FileInfo fileInfo = new FileInfo(System.Text.RegularExpressions.Regex.Replace(filename, @"[^\w\-. \\:]", ""));
                 if (fileInfo.Exists)
                 {
