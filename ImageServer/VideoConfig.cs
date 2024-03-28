@@ -156,6 +156,17 @@ namespace ImageServer
 
         public VideoBounds[] VideoBounds { get; set; }
 
+        [System.ComponentModel.Browsable(false)]
+        [JsonIgnore]
+        [XmlIgnore]
+        public bool HasPhotoBooth 
+        { 
+            get
+            {
+                return VideoBounds.Any(vb => vb.SourceType == SourceTypes.PhotoBooth);
+            }
+        }
+
         public VideoConfig()
         {
             VideoMode = new Mode();

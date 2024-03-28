@@ -31,10 +31,15 @@ namespace UI.Video
 
         private CameraCountdownNode countDown;
 
+        public ICaptureFrameSource CaptureFrameSource { get; private set; }
+
+        public DirectoryInfo PilotsDirectory { get; private set; }
+
         public PhotoBoothNode(VideoManager videoManager, EventManager eventManager) 
         {
             this.videoManager = videoManager;
             this.eventManager = eventManager;
+            PilotsDirectory = new DirectoryInfo("pilots/");
         }
 
         private void Init()
@@ -58,11 +63,6 @@ namespace UI.Video
             takePhoto.OnClick += TakePhoto_OnClick;
             buttonContainer.AddChild(takePhoto);
 
-            //TextButtonNode recordClip = new TextButtonNode("Record Clip", Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
-            //recordClip.OnClick += RecordClip_OnClick;
-            //buttonContainer.AddChild(recordClip);
-
-            AlignHorizontally(0.1f, buttonContainer.Children);
 
             foreach (Node node in buttonContainer.Children)
             {
@@ -82,6 +82,15 @@ namespace UI.Video
             }
             else
             {
+                if (camNode.FrameNode.Source is ICaptureFrameSource)
+                {
+                    CaptureFrameSource = camNode.FrameNode.Source as ICaptureFrameSource;
+
+                    TextButtonNode recordClip = new TextButtonNode("Record Clip", Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
+                    recordClip.OnClick += RecordClip_OnClick;
+                    buttonContainer.AddChild(recordClip);
+                }
+
                 countDown = new CameraCountdownNode();
                 camNode.AddChild(countDown);
 
@@ -93,24 +102,27 @@ namespace UI.Video
             pilotNameNode = new ChannelPilotNameNode(null, Color.Transparent, pilotAlpha);
             cameraAspectNode.AddChild(pilotNameNode);
             pilotNameNode.RelativeBounds = new RectangleF(0, 0.03f, 0.4f, 0.125f);
+
+            AlignHorizontally(0.1f, buttonContainer.Children);
+
             RequestLayout();
         }
 
         private void RecordClip_OnClick(Composition.Input.MouseInputEvent mie)
         {
-            countDown.Take(RecordClip);
+            countDown.StartRecording(StartRecording, StopRecording);
         }
 
         private void TakePhoto_OnClick(Composition.Input.MouseInputEvent mie)
         {
-            countDown.Take(TakePhoto);
+            countDown.TakePhoto(TakePhoto);
         }
 
         private void TakePhoto()
         {
             if (string.IsNullOrEmpty(Pilot.PhotoPath))
             {
-                Pilot.PhotoPath = "pilots/" + Pilot.Name + ".jpg";
+                Pilot.PhotoPath = Path.Combine(PilotsDirectory.FullName, Pilot.Name + ".jpg");
 
                 using (IDatabase db = DatabaseFactory.Open(eventManager.EventId))
                 {
@@ -118,15 +130,29 @@ namespace UI.Video
                 }
             }
 
-            string newPath = "pilots/" + Pilot.Name + "_temp.jpg";
+            string newPath = Path.Combine(PilotsDirectory.FullName, Pilot.Name + "_temp.jpg");
             camNode.FrameNode.SaveImage(newPath);
 
             ConfirmPictureNode confirmPictureNode = new ConfirmPictureNode(Pilot.PhotoPath, newPath);
             GetLayer<PopupLayer>().Popup(confirmPictureNode);
         }
 
-        private void RecordClip()
+        private void StartRecording()
         {
+            string newPath = Path.Combine(PilotsDirectory.FullName, Pilot.Name + "_temp.mp4");
+            CaptureFrameSource.ManualRecording = true;
+            CaptureFrameSource.StartRecording(newPath);
+        }
+
+        private void StopRecording()
+        {
+            CaptureFrameSource.StopRecording();
+            CaptureFrameSource.ManualRecording = false;
+
+            string newPath = Path.Combine(PilotsDirectory.FullName, Pilot.Name + "_temp.mp4");
+
+            //ConfirmPictureNode confirmPictureNode = new ConfirmPictureNode(Pilot.PhotoPath, newPath);
+            //GetLayer<PopupLayer>().Popup(confirmPictureNode);
         }
 
         private CamNode CreateCamNode()
@@ -188,32 +214,38 @@ namespace UI.Video
             camNode = null;
             pilotNameNode = null;
         }
-
-        public override void Draw(Drawer id, float parentAlpha)
-        {
-            
-
-            base.Draw(id, parentAlpha);
-        }
     }
 
     public class CameraCountdownNode : Node, IUpdateableNode
     {
         private Action action;
+        private Action stop;
         private DateTime when;
-        private TextNode text;
+        private TextNode countdownText;
+        private TextNode recordingText;
         public TimeSpan Delay { get; set; }
+        public TimeSpan RecordingLength { get; set; }
 
         private AlphaAnimatedNode flash;
+
+        private bool showRecording;
+        private bool showFlash;
 
         public CameraCountdownNode() 
         {
             Delay = TimeSpan.FromSeconds(3);
+            RecordingLength = TimeSpan.FromSeconds(6);
 
-            text = new TextNode("", Color.White);
-            text.Scale(0.3f);
+            countdownText = new TextNode("", Color.White);
+            countdownText.Scale(0.3f);
 
-            AddChild(text);
+            AddChild(countdownText);
+
+            recordingText = new TextNode("REC", Color.Red);
+            recordingText.RelativeBounds = new RectangleF(0, 0.9f, 1, 0.1f);
+            recordingText.Alignment = RectangleAlignment.BottomRight;
+            recordingText.Visible = false;
+            AddChild(recordingText);
 
             flash = new AlphaAnimatedNode();
             flash.Alpha = 0;
@@ -224,28 +256,66 @@ namespace UI.Video
 
         public void Update(GameTime gameTime)
         {
-            if (action != null)
+            if (action != null || stop != null)
             {
                 TimeSpan remaining = when - DateTime.Now;
-                if (remaining > TimeSpan.Zero && remaining < Delay)
+                if (remaining > TimeSpan.Zero && remaining < TimeSpan.FromMinutes(1))
                 {
-                    text.Text = ((int)Math.Ceiling(remaining.TotalSeconds)).ToString();
+                    countdownText.Text = ((int)Math.Ceiling(remaining.TotalSeconds)).ToString();
                 }
                 else
                 {
-                    flash.Alpha = 1;
-                    flash.SetAnimatedAlpha(0);
-                    action();
-                    text.Text = "";
-                    action = null;
+                    if (showFlash)
+                    {
+                        flash.Alpha = 1;
+                        flash.SetAnimatedAlpha(0);
+                        action();
+                        action = null;
+                    }
+
+                    //Start Recording
+                    if (action != null && stop != null)
+                    {
+                        action();
+                        action = null;
+                        recordingText.Visible = true;
+                        when = DateTime.Now + RecordingLength;
+                        countdownText.Tint = Color.Red;
+                    }
+                    //Stop Recording
+                    else if (action == null && stop != null)
+                    {
+                        stop();
+                        stop = null;
+                        recordingText.Visible = false;
+                    }
+
+                    countdownText.Text = "";
                 }
             }
         }
 
-        public void Take(Action action)
+        public void TakePhoto(Action action)
         {
+            countdownText.Tint = Color.White;
+
             when = DateTime.Now + Delay;
             this.action = action;
+
+            showRecording = false;
+            showFlash = true;
+        }
+
+        public void StartRecording(Action start, Action stop)
+        {
+            countdownText.Tint = Color.White;
+
+            when = DateTime.Now + Delay;
+            action = start;
+            this.stop = stop;
+
+            showRecording = true;
+            showFlash = false;
         }
     }
 

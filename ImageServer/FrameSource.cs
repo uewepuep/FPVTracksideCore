@@ -122,6 +122,7 @@ namespace ImageServer
         VideoConfig VideoConfig { get; }
 
         bool RecordNextFrameTime { set; }
+        bool ManualRecording { get; set; }
     }
 
     public interface IPlaybackFrameSource

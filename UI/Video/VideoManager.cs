@@ -711,7 +711,7 @@ namespace UI.Video
 
                                 lock (frameSources)
                                 {
-                                    stopRecording = frameSources.OfType<ICaptureFrameSource>().ToArray();
+                                    stopRecording = frameSources.OfType<ICaptureFrameSource>().Where(r => !r.ManualRecording).ToArray();
                                 }
 
                                 foreach (ICaptureFrameSource source in stopRecording)
