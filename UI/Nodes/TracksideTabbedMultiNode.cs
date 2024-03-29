@@ -65,6 +65,16 @@ namespace UI.Nodes
             eventManager.RaceManager.OnRaceChanged += UpdateReplayButton;
             eventManager.RaceManager.OnRaceEnd += UpdateReplayButton;
             eventManager.RaceManager.TimingSystemManager.OnInitialise += UpdateRSSIVisible;
+            videoManager.OnFinishedFinalizing += VideoManager_OnFinishedFinalizing;
+        }
+
+        private void VideoManager_OnFinishedFinalizing()
+        {
+            Race race = eventManager.RaceManager.CurrentRace;
+            if (race != null)
+            {
+                UpdateReplayButton(race);   
+            }
         }
 
         public void Init()
@@ -108,11 +118,19 @@ namespace UI.Nodes
         {
             if (race != null && race.Ended)
             {
-                replayButton.Enabled = VideoManager.HasReplay(race);
+                replayButton.Enabled = VideoManager.HasReplay(race) && !VideoManager.Finalising;
             }
             else
             {
                 replayButton.Enabled = false;
+            }
+
+            if (race == null)
+            {
+                if (Showing == ReplayNode)
+                {
+                    ShowLive();
+                }
             }
         }
 

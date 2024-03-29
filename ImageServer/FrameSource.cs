@@ -123,6 +123,7 @@ namespace ImageServer
 
         bool RecordNextFrameTime { set; }
         bool ManualRecording { get; set; }
+        bool Finalising { get; }
     }
 
     public interface IPlaybackFrameSource

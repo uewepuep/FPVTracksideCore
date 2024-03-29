@@ -234,7 +234,12 @@ namespace UI.Video
                     {
                         foreach(VideoBounds videoBounds in frameSource.VideoConfig.VideoBounds)
                         {
-                            videoBounds.ShowInGrid = true;
+                            if (videoBounds.SourceType == SourceTypes.Commentators 
+                             || videoBounds.SourceType == SourceTypes.Launch 
+                             || videoBounds.SourceType == SourceTypes.FinishLine)
+                            {
+                                videoBounds.ShowInGrid = true;
+                            }
                         }
                     }
 

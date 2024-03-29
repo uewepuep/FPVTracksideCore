@@ -97,10 +97,10 @@ namespace UI.Video
                 flipped = !flipped;
 
             if (flipped)
-                src = src.Flip();
+                src = src.Flip(texture.Height);
 
             if (Source.VideoConfig.Mirrored)
-                src = src.Mirror();
+                src = src.Mirror(texture.Width);
 
             return src;
         }

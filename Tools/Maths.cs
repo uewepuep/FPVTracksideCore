@@ -224,16 +224,16 @@ namespace Tools
             return string.Join(",", parameters.Select(l => l.ReplaceCommas())) + "\n";
         }
 
-        public static Rectangle Flip(this Rectangle src)
+        public static Rectangle Flip(this Rectangle src, int sourceHeight)
         {
-            src.Y = src.Height - src.Y;
+            src.Y = sourceHeight - src.Y;
             src.Height = -src.Height;
             return src;
         }
 
-        public static Rectangle Mirror(this Rectangle src)
+        public static Rectangle Mirror(this Rectangle src, int sourceWidth)
         {
-            src.X = src.Width - src.X;
+            src.X = sourceWidth - src.X;
             src.Width = -src.Width;
             return src;
         }

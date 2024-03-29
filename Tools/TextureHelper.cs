@@ -181,10 +181,10 @@ namespace Tools
             Texture2D cloned;
 
             if (flipped)
-                src = src.Flip();
+                src = src.Flip(texture.Height);
 
             if (mirrored)
-                src = src.Mirror();
+                src = src.Mirror(texture.Width);
 
             cloned = ResizeTexture(texture, src, dest);
 
