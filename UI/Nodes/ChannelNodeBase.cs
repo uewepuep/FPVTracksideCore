@@ -223,6 +223,7 @@ namespace UI.Nodes
             float pilotAlpha = Theme.Current.PilotViewTheme.PilotTitleAlpha / 255.0f;
 
             PilotProfile = new PilotProfileNode(ChannelColor, pilotAlpha);
+            PilotProfile.Alpha = 0;
             PilotProfile.SetAnimatedVisibility(false);
 
             LapsNode = new LapsNode(EventManager);

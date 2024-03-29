@@ -17,8 +17,10 @@ namespace Composition.Nodes
         public InsideOutBorderRelativeNode(Color color) 
         {
             borderNode = new BorderNode(color);
+            AddChild(borderNode);
             Offset = -2;
         }
+
 
         public override void Layout(Rectangle parentBounds)
         {
@@ -39,10 +41,27 @@ namespace Composition.Nodes
             }
         }
 
+
         public override void Draw(Drawer id, float parentAlpha)
         {
-            base.Draw(id, parentAlpha);
-            borderNode.Draw(id, parentAlpha);
+            NeedsDraw = false;
+
+            Node[] t = Children;
+            foreach (Node n in t)
+            {
+                if (n == borderNode)
+                    continue;
+
+                if (n.Drawable)
+                {
+                    n.Draw(id, parentAlpha * Alpha);
+                }
+            }
+
+            if (Visible) 
+            { 
+                borderNode.Draw(id, parentAlpha);
+            }
         }
     }
 }

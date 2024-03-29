@@ -380,8 +380,6 @@ namespace Composition.Nodes
 
         public virtual void Draw(Drawer id, float parentAlpha)
         {
-            NeedsDraw = false;
-            DrawChildren(id, parentAlpha);
         }
 
         public void DrawChildren(Drawer id, float parentAlpha)

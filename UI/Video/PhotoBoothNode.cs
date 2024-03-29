@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Reactive;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Tools;
@@ -120,39 +121,36 @@ namespace UI.Video
 
         private void TakePhoto()
         {
-            if (string.IsNullOrEmpty(Pilot.PhotoPath))
-            {
-                Pilot.PhotoPath = Path.Combine(PilotsDirectory.FullName, Pilot.Name + ".jpg");
-
-                using (IDatabase db = DatabaseFactory.Open(eventManager.EventId))
-                {
-                    db.Update(Pilot);
-                }
-            }
-
             string newPath = Path.Combine(PilotsDirectory.FullName, Pilot.Name + "_temp.jpg");
             camNode.FrameNode.SaveImage(newPath);
 
-            ConfirmPictureNode confirmPictureNode = new ConfirmPictureNode(Pilot.PhotoPath, newPath);
+            ConfirmPictureNode confirmPictureNode = new ConfirmPictureNode(eventManager.EventId, Pilot, Pilot.PhotoPath, newPath);
             GetLayer<PopupLayer>().Popup(confirmPictureNode);
         }
 
         private void StartRecording()
         {
-            string newPath = Path.Combine(PilotsDirectory.FullName, Pilot.Name + "_temp.mp4");
+            string newPath = Path.Combine(PilotsDirectory.FullName, Pilot.Name + "_temp");
             CaptureFrameSource.ManualRecording = true;
             CaptureFrameSource.StartRecording(newPath);
         }
 
         private void StopRecording()
         {
+            string filename = CaptureFrameSource.Filename;
             CaptureFrameSource.StopRecording();
             CaptureFrameSource.ManualRecording = false;
 
-            string newPath = Path.Combine(PilotsDirectory.FullName, Pilot.Name + "_temp.mp4");
+            while (CaptureFrameSource.Finalising)
+            {
+                Thread.Sleep(10);
+            }
 
-            //ConfirmPictureNode confirmPictureNode = new ConfirmPictureNode(Pilot.PhotoPath, newPath);
-            //GetLayer<PopupLayer>().Popup(confirmPictureNode);
+            if (File.Exists(filename))
+            {
+                ConfirmPictureNode confirmPictureNode = new ConfirmPictureNode(eventManager.EventId, Pilot, Pilot.PhotoPath, filename);
+                GetLayer<PopupLayer>().Popup(confirmPictureNode);
+            }
         }
 
         private CamNode CreateCamNode()
@@ -228,7 +226,6 @@ namespace UI.Video
 
         private AlphaAnimatedNode flash;
 
-        private bool showRecording;
         private bool showFlash;
 
         public CameraCountdownNode() 
@@ -276,8 +273,10 @@ namespace UI.Video
                     //Start Recording
                     if (action != null && stop != null)
                     {
-                        action();
+                        Action cached = action;
                         action = null;
+                        cached();
+
                         recordingText.Visible = true;
                         when = DateTime.Now + RecordingLength;
                         countdownText.Tint = Color.Red;
@@ -285,8 +284,10 @@ namespace UI.Video
                     //Stop Recording
                     else if (action == null && stop != null)
                     {
-                        stop();
+                        Action cached = stop;
                         stop = null;
+
+                        cached();
                         recordingText.Visible = false;
                     }
 
@@ -302,7 +303,6 @@ namespace UI.Video
             when = DateTime.Now + Delay;
             this.action = action;
 
-            showRecording = false;
             showFlash = true;
         }
 
@@ -314,7 +314,6 @@ namespace UI.Video
             action = start;
             this.stop = stop;
 
-            showRecording = true;
             showFlash = false;
         }
     }
@@ -324,8 +323,13 @@ namespace UI.Video
         private FileInfo existingPhoto;
         private FileInfo newPhoto;
 
-        public ConfirmPictureNode(string existingFilename, string newFilename)
+        private Pilot pilot;
+        private Guid eventId;
+
+        public ConfirmPictureNode(Guid eventId, Pilot pilot, string existingFilename, string newFilename)
         {
+            this.eventId = eventId;
+            this.pilot = pilot; 
             existingPhoto = new FileInfo(existingFilename);
             newPhoto = new FileInfo(newFilename);
 
@@ -344,6 +348,7 @@ namespace UI.Video
             }
 
             AlignHorizontally(0.1f, photoContainer.Children);
+            RequestLayout();
         }
 
         private void KeepOld()
@@ -356,7 +361,20 @@ namespace UI.Video
             try
             {
                 existingPhoto.Delete();
-                newPhoto.MoveTo(existingPhoto.FullName);
+
+                FileInfo newFileName = new FileInfo(newPhoto.FullName.Replace("_temp", ""));
+                if (newFileName.Exists)
+                {
+                    newFileName.Delete();
+                }
+
+                newPhoto.MoveTo(newFileName.FullName);
+
+                pilot.PhotoPath = newFileName.FullName;
+                using (IDatabase db = DatabaseFactory.Open(eventId))
+                {
+                    db.Upsert(pilot);
+                }
             }
             catch (Exception ex) 
             { 
@@ -370,17 +388,17 @@ namespace UI.Video
         {
             Node container = new Node();
 
-            ImageNode imageNode = new ImageNode(file.FullName);
-            imageNode.ReloadFromFile = true;
-            imageNode.RelativeBounds = new RectangleF(0, 0, 1, 0.9f);
-            container.AddChild(imageNode);
+            PilotProfileNode profileNode = new PilotProfileNode(Color.Transparent, 1);
+            profileNode.RelativeBounds = new RectangleF(0, 0, 1, 0.9f);
+            profileNode.SetPilot(pilot, file.FullName, false);
+            container.AddChild(profileNode);
 
             TextNode textNode = new TextNode(name, Color.White);
             textNode.RelativeBounds = new RectangleF(0, 0, 1, 0.1f);
-            imageNode.AddChild(textNode);
+            profileNode.AddChild(textNode);
 
             TextButtonNode textButtonNode = new TextButtonNode(question, Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
-            textButtonNode.RelativeBounds = new RectangleF(0, imageNode.RelativeBounds.Bottom, 1, 1 - imageNode.RelativeBounds.Bottom);
+            textButtonNode.RelativeBounds = new RectangleF(0, profileNode.RelativeBounds.Bottom, 1, 1 - profileNode.RelativeBounds.Bottom);
             container.AddChild(textButtonNode);
             textButtonNode.OnClick += m => { action(); };
 

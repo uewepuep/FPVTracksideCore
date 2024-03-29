@@ -53,7 +53,6 @@ namespace UI.Nodes
 
         public PilotProfileNode(Color channelColour, float pilotAlpha)
         {
-            Alpha = 0;
             HasProfileImage = false;
 
             ProfileImageContainer = new AnimatedRelativeNode();
@@ -77,17 +76,16 @@ namespace UI.Nodes
             SetAnimationTime(TimeSpan.FromSeconds(1));
         }
 
-        public void SetPilot(Pilot pilot)
+        public void SetPilot(Pilot pilot, string filename = "", bool showText = true)
         {
             Pilot = pilot;
 
-            string filename = "";
-
             if (pilot != null)
             {
-                TextNode.Text = PickAThing(pilot);
+                if (showText)
+                    TextNode.Text = PickAThing(pilot);
 
-                if (pilot.PhotoPath != null)
+                if (string.IsNullOrEmpty(filename) && !string.IsNullOrEmpty(pilot.PhotoPath))
                 {
                     filename = pilot.PhotoPath;
                 }
@@ -105,16 +103,21 @@ namespace UI.Nodes
 
                     if (videoFileTypes.Contains(fileInfo.Extension))
                     {
+                        PilotPhoto?.Dispose();
+
                         FileFrameNode videoPlayer = new ChromaKeyFileFrameNode(fileInfo.FullName);
                         videoPlayer.Repeat = true;
                         videoPlayer.Play();
 
                         PilotPhoto = videoPlayer;
+                        insideOutBorderRelativeNode.AddChild(PilotPhoto, 0);
                     }
-
-                    if (imageFileTypes.Contains(fileInfo.Extension))
+                    else if (imageFileTypes.Contains(fileInfo.Extension))
                     {
+                        PilotPhoto?.Dispose();
+
                         PilotPhoto = new ImageNode(fileInfo.FullName);
+                        insideOutBorderRelativeNode.AddChild(PilotPhoto, 0);
                     }
 
                     PilotPhoto.Alignment = RectangleAlignment.Center;
@@ -122,7 +125,6 @@ namespace UI.Nodes
                     PilotPhoto.CropToFit = true;
                     PilotPhoto.Scale(0.95f);
                     PilotPhoto.ReloadFromFile = true;
-                    insideOutBorderRelativeNode.AddChild(PilotPhoto, 0);
 
                     if (string.IsNullOrEmpty(TextNode.Text))
                     {

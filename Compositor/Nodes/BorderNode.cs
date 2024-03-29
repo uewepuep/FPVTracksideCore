@@ -24,6 +24,11 @@ namespace Composition.Nodes
             BorderColor = color;
         }
 
+        public override void Dispose()
+        {
+            base.Dispose();
+        }
+
         public override void Draw(Drawer id, float parentAlpha)
         {
             if (borderTexture == null)
