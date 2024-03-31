@@ -27,16 +27,14 @@ namespace UI
 
         private VideoManager videoManager;
 
-        private PilotListNode pilotList;
+        protected PilotListNode pilotList;
         public MenuButton MenuButton { get; private set; }
 
         public SoundManager SoundManager { get; private set; }
 
-        private AnimatedRelativeNode mainContainer;
+        private Node mainContainer;
         private AnimatedRelativeNode leftContainer;
         private AnimatedRelativeNode centreContainer;
-
-        private TextNode hideLeftNode;
 
         private EventWebServer eventWebServer;
 
@@ -45,11 +43,13 @@ namespace UI
 
         public TracksideTabbedMultiNode TabbedMultiNode { get; private set; }
 
-        private SceneManagerNode sceneManagerNode;
+        protected SceneManagerNode sceneManagerNode;
 
         private TopBarNode topBar;
         private AspectNode centralAspectNode;
         private AnimatedNode rightBar;
+        private TabButtonsNode tabButtonsNode;
+        private TextButtonNode pilotListButton;
 
         private float rightBarWidth = 0.035f;
         private float leftContainerWidth = 0.15f;
@@ -139,17 +139,16 @@ namespace UI
                 {
                     TabbedMultiNode.ShowLive();
                 }
-
-                ShowPilotList(r == null || r.PilotCount == 0);
             };
 
+            EventManager.OnPilotRefresh += OnPilotRefresh;
 
             topBar = new TopBarNode();
-            topBar.RelativeBounds = new RectangleF(0, 0, 1, 0.1f); 
+            topBar.RelativeBounds = new RectangleF(0, 0, 1, 0.13f); 
             Root.AddChild(topBar);
 
             rightBar = new AnimatedNode();
-            rightBar.AnimationTime = TimeSpan.FromSeconds(ProfileSettings.Instance.ReOrderAnimationSeconds);
+            rightBar.SetAnimationTime(TimeSpan.FromSeconds(ProfileSettings.Instance.ReOrderAnimationSeconds));
 
             centralAspectNode = new AspectNode();
             centralAspectNode.SetAspectRatio(16, 9);
@@ -161,10 +160,9 @@ namespace UI
             ColorNode rightSideColor = new ColorNode(Theme.Current.RightControls.Background);
             rightBar.AddChild(rightSideColor);
                         
-            mainContainer = new AnimatedRelativeNode();
+            mainContainer = new Node();
             mainContainer.RelativeBounds = new RectangleF(0, topBar.RelativeBounds.Bottom, 1, 1 - topBar.RelativeBounds.Bottom);
             centralAspectNode.AddChild(mainContainer);
-
 
             leftContainer = new AnimatedRelativeNode();
             ColorNode leftBg = new ColorNode(Theme.Current.LeftPilotList.Background);
@@ -173,38 +171,8 @@ namespace UI
             pilotList = new PilotListNode(EventManager);
             leftContainer.AddChild(pilotList);
 
-            pilotList.OnPilotClick += (mouseInputEvent, pilot) =>
-            {
-                var dl = LayerStack.GetLayer<DragLayer>();
-                if (dl != null && dl.IsDragging)
-                {
-                    return;
-                }
-
-                if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Released)
-                {
-                    TogglePilot(pilot);
-                    pilotList.UpdatePilotChannel(pilot);
-                }
-            };
-            pilotList.OnPilotChannelClick += (mie, p) =>
-            {
-                MouseMenu mm = new MouseMenu(LayerStack.GetLayer<MenuLayer>());
-
-                foreach (var cg in EventManager.Channels.GetChannelGroups())
-                {
-                    foreach (Channel c in cg)
-                    {
-                        mm.AddItem(c.ToString(), () => { EventManager.SetPilotChannel(p, c); });
-                    }
-                    mm.AddBlank();
-                }
-
-                mm.Show(mie);
-
-                RequestLayout();
-            };
-
+            pilotList.OnPilotClick += PilotList_OnPilotClick;
+            pilotList.OnPilotChannelClick += PilotList_OnPilotChannelClick;
 
             centreContainer = new AnimatedRelativeNode();
             mainContainer.AddChild(centreContainer);
@@ -212,35 +180,28 @@ namespace UI
 
             Node.SplitHorizontally(leftContainer, centreContainer, leftContainerWidth);
 
-            float btnSize = 0.03f;
-            AnimatedNode hideButtonNode = new AnimatedNode();
-            hideButtonNode.RelativeBounds = new RectangleF(0, 1 - btnSize, btnSize, btnSize);
-            centreContainer.AddChild(hideButtonNode);
-
-            hideLeftNode = new TextNode("<", Color.Gray);
-            hideButtonNode.AddChild(hideLeftNode);
-            ButtonNode hideButton = new ButtonNode();
-            hideButton.OnClick += (mie) =>
-            {
-                ShowPilotList(!showPilotList);
-            };
-            hideLeftNode.AddChild(hideButton);
-
             AutoRunner = new AutoRunner(this);
 
             ChannelsGridNode = new ChannelsGridNode(EventManager, videoManager);
-            sceneManagerNode = new SceneManagerNode(EventManager, videoManager, ChannelsGridNode, topBar, mainContainer, AutoRunner);
+            sceneManagerNode = new SceneManagerNode(EventManager, videoManager, ChannelsGridNode, topBar, AutoRunner);
             sceneManagerNode.OnSceneChange += SceneManagerNode_OnSceneChange;
             sceneManagerNode.OnVideoSettingsChange += LoadVideo;
 
             RoundsNode = new RoundsNode(EventManager);
 
-            TabbedMultiNode = new TracksideTabbedMultiNode(eventManager, videoManager, RoundsNode, sceneManagerNode);
+            tabButtonsNode = new TabButtonsNode(Theme.Current.Panel.XNA, Theme.Current.PanelAlt.XNA, Theme.Current.Hover.XNA, Theme.Current.TextMain.XNA);
+            pilotListButton = tabButtonsNode.AddTab("Pilots");
+            pilotListButton.OnClick += TogglePilotList;
+            OnPilotRefresh();
+
+            TabbedMultiNode = new TracksideTabbedMultiNode(eventManager, videoManager, RoundsNode, sceneManagerNode, tabButtonsNode);
             TabbedMultiNode.RelativeBounds = new RectangleF(0, 0, 1, 0.99f);
             TabbedMultiNode.OnTabChange += OnTabChange;
             centreContainer.AddChild(TabbedMultiNode);
 
             topBar.Init(EventManager, TabbedMultiNode.ReplayNode);
+            topBar.TabContainer.AddChild(tabButtonsNode);
+            TabbedMultiNode.Init();
 
             ControlButtons = new ControlButtonsNode(EventManager, ChannelsGridNode, TabbedMultiNode, AutoRunner);
             ControlButtons.RelativeBounds = new RectangleF(0, 0.0f, 1, 1);
@@ -265,11 +226,6 @@ namespace UI
             ControlButtons.CopyResultsClipboard.OnClick += (mie) =>
             {
                 PlatformTools.Clipboard.SetText(EventManager.GetResultsText());
-            };
-
-            ControlButtons.PilotList.OnClick += (mie) =>
-            {
-                ShowPilotList(!showPilotList);
             };
 
             IRaceControl raceControl = null;
@@ -370,6 +326,55 @@ namespace UI
             KeyMapper = KeyboardShortcuts.Read(Profile);
 
             ReloadOBSRemoteControl();
+
+            SoundManager.OnHighlightPilot += sceneManagerNode.FullScreen;
+        }
+
+        private void PilotList_OnPilotChannelClick(MouseInputEvent mie, Pilot p)
+        {
+            MouseMenu mm = new MouseMenu(LayerStack.GetLayer<MenuLayer>());
+
+            foreach (var cg in EventManager.Channels.GetChannelGroups())
+            {
+                foreach (Channel c in cg)
+                {
+                    mm.AddItem(c.ToString(), () => { EventManager.SetPilotChannel(p, c); });
+                }
+                mm.AddBlank();
+            }
+
+            mm.Show(mie);
+
+            RequestLayout();
+        }
+
+        private void PilotList_OnPilotClick(MouseInputEvent mouseInputEvent, Pilot pilot)
+        {
+            if (TabbedMultiNode.IsOnPhotoBooth)
+            {
+                TabbedMultiNode.PhotoBooth.SetPilot(pilot);
+                return;
+            }
+
+            var dl = LayerStack.GetLayer<DragLayer>();
+            if (dl != null && dl.IsDragging)
+            {
+                return;
+            }
+
+            if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Released)
+            {
+                TogglePilot(pilot);
+                pilotList.UpdatePilotChannel(pilot);
+            }
+        }
+
+        private void OnPilotRefresh()
+        {
+            if (pilotListButton != null)
+            {
+                pilotListButton.Text = EventManager.Event.PilotCount + " Pilots";
+            }
         }
 
         private void ReloadAutoRunnerConfig()
@@ -524,6 +529,12 @@ namespace UI
 
                 waiter.WaitOne();
             }
+
+            if (TabbedMultiNode.IsOnPhotoBooth)
+            {
+                TabbedMultiNode.PhotoBooth.Clean();
+                TabbedMultiNode.ShowPhotoBooth(null);
+            }
         }
 
         public override void SetLayerStack(LayerStack layerStack)
@@ -585,24 +596,24 @@ namespace UI
             }
         }
 
+        private void TogglePilotList(object mie = null)
+        {
+            ShowPilotList(!showPilotList);
+        }
+
         private void ShowPilotList(bool show)
         {
             if (show)
             {
                 leftContainer.RelativeBounds = new RectangleF(0, 0, leftContainerWidth, 1);
                 centreContainer.RelativeBounds = new RectangleF(leftContainerWidth, 0, 1 - leftContainerWidth, 1);
-                hideLeftNode.Text = "<";
             }
             else
             {
-                hideLeftNode.Text = ">";
                 leftContainer.RelativeBounds = new RectangleF(-leftContainerWidth, 0, leftContainerWidth, 1);
                 centreContainer.RelativeBounds = new RectangleF(0, 0, 1, 1);
             }
-
             showPilotList = show;
-
-            hideLeftNode.RequestLayout();
         }
 
         protected override void OnUpdate(GameTime gameTime)
@@ -803,6 +814,7 @@ namespace UI
 
         public void Clear()
         {
+            SoundManager.StopSound();   
             if (ProfileSettings.Instance.AutoHideShowPilotList)
             {
                 ShowPilotList(true);
@@ -932,7 +944,7 @@ namespace UI
 
                 if (KeyMapper.SceneCommentators.Match(inputEvent))
                 {
-                    TabbedMultiNode.ShowLive(SceneManagerNode.Scenes.Commentators);
+                    TabbedMultiNode.ShowCommentators();
                     return true;
                 }
 
@@ -1017,6 +1029,11 @@ namespace UI
                 {
                     systemStatusNode.MuteWAV.SetMute(true);
                     return true;
+                }
+
+                if (KeyMapper.StopSound.Match(inputEvent))
+                {
+                    SoundManager.StopSound();
                 }
 
                 if (race != null)
@@ -1124,6 +1141,11 @@ namespace UI
                     ShowPilotList(!EventManager.RaceManager.HasPilots);
                 }
 
+                if (TabbedMultiNode.IsOnPhotoBooth)
+                {
+                    ShowPilotList(true);
+                }
+
                 if (TabbedMultiNode.IsOnRounds)
                 {
                     ShowPilotList(true);
@@ -1141,29 +1163,37 @@ namespace UI
 
         private void UpdateTopBar()
         {
+            // ignoring tabs 
+            float topBarBottom = 0.1f;
+
             if (TabbedMultiNode != null)
             {
+                float topBarHeight = topBar.RelativeBounds.Height;
+
                 if (TabbedMultiNode.Showing == sceneManagerNode && sceneManagerNode.Scene == SceneManagerNode.Scenes.Race)
                 {
+                    // shrunken
+                    topBarBottom = topBarBottom / 2;
+
                     topBar.LogoOnBottomLine(true);
-                    TabbedMultiNode.SetTabsVisible(false);
-                    topBar.RelativeBounds = new RectangleF(0, -0.05f, 1, 0.1f);
+                    topBar.RelativeBounds = new RectangleF(0, -topBarBottom, 1, topBarHeight);
                 }
                 else
                 {
-                    TabbedMultiNode.SetTabsVisible(true);
+                    // including tabs
+                    topBarBottom = topBarHeight;
                     topBar.LogoOnBottomLine(false);
-                    topBar.RelativeBounds = new RectangleF(0, 0, 1, 0.1f);
+                    topBar.RelativeBounds = new RectangleF(0, 0, 1, topBarHeight);
                 }
             }
 
             bool crop = centralAspectNode.KeepAspectRatio;
             if (!crop)
             {
-                rightBar.RelativeBounds = new RectangleF(1 - rightBarWidth, topBar.RelativeBounds.Bottom, rightBarWidth, 1 - topBar.RelativeBounds.Bottom);
+                rightBar.RelativeBounds = new RectangleF(1 - rightBarWidth, topBarBottom, rightBarWidth, 1 - topBarBottom);
             }
 
-            mainContainer.RelativeBounds = new RectangleF(0, topBar.RelativeBounds.Bottom, 1, 1 - topBar.RelativeBounds.Bottom);
+            mainContainer.RelativeBounds = new RectangleF(0, topBarBottom, 1, 1 - topBarBottom);
         }
 
         private bool LowDiskSpace()

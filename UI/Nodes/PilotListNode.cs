@@ -4,7 +4,9 @@ using Composition.Layers;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Tools;
 
@@ -25,21 +27,14 @@ namespace UI.Nodes
 
         private Node instructionNode;
 
-        private TextButtonNode heading;
-
         public PilotListNode(EventManager eventManager)
         {
             this.eventManager = eventManager;
 
             pilots = new List<Pilot>();
 
-            heading = new TextButtonNode("", Theme.Current.Panel.XNA, Color.Transparent, Theme.Current.LeftPilotList.PilotCount.XNA);
-            heading.RelativeBounds = new RectangleF(0, 0, 1, 0.035f);
-            heading.Enabled = false;
-            AddChild(heading);
-
             listNode = new ListNode<PilotChannelNode>(Theme.Current.ScrollBar.XNA);
-            listNode.RelativeBounds = new RectangleF(0, heading.RelativeBounds.Bottom, 1, 1 - heading.RelativeBounds.Bottom);
+            listNode.RelativeBounds = new RectangleF(0, 0, 1, 1);
             listNode.ItemHeight = 30;
             listNode.NodeName = "PilotListNode";
 
@@ -58,8 +53,6 @@ namespace UI.Nodes
 
             eventManager.OnPilotChangedChannels += UpdatePilotChannel;
             eventManager.OnPilotRefresh += RebuildList;
-
-            UpdateHeading();
 
             RequestLayout();
         }
@@ -134,13 +127,6 @@ namespace UI.Nodes
 
             instructionNode.Visible = false;
             listNode.RequestLayout();
-
-            UpdateHeading();
-        }
-
-        private void UpdateHeading()
-        {
-            heading.Text = listNode.ChildCount + " Pilots in event";
         }
 
         public void ClearList()
@@ -160,7 +146,6 @@ namespace UI.Nodes
 
         private PilotChannelNode GetPilotChannelNodeFromMouseInputEvent(MouseInputEvent mouseInputEvent)
         {
-
             foreach (var pcn in listNode.ChildrenOfType)
             {
                 if (pcn.Bounds.Contains(mouseInputEvent.Position))
@@ -205,6 +190,43 @@ namespace UI.Nodes
             {
                 AddPilot();
             });
+#if DEBUG
+            mm.AddItem("Add Debug Pilots", () =>
+            {
+                string[] pilotNames = new string[]
+                {
+                   "Alfa",
+                   "Bravo",
+                   "Charlie",
+                   "Delta",
+                   "Echo",
+                   "Foxtrot",
+                   "Golf",
+                   "Hotel",
+                   "India",
+                   "Juliett",
+                   "Kilo",
+                   "Lima",
+                   "Mike",
+                   "November",
+                   "Oscar",
+                   "Papa",
+                   "Quebec",
+                   "Romeo",
+                   "Sierra",
+                   "Tango",
+                   "Uniform",
+                   "Victor",
+                   "Whiskey",
+                   "X-ray",
+                   "Yankee",
+                   "Zulu",
+                };
+                IEnumerable<PilotChannel> newPilots = ImportFromNames(pilotNames);
+                EditPilotChannels(newPilots, null);
+                RebuildList();
+            });
+#endif
 
             bool anyPilots = eventManager.Event.Pilots.Where(p => p != null).Any();
             if (anyPilots)
@@ -252,11 +274,13 @@ namespace UI.Nodes
                 mm.AddSubmenu("Restore Removed Pilots", (c) => { eventManager.AddPilot(c); RebuildList(); }, eventManager.Event.RemovedPilots.ToArray());
             }
 
+            MouseMenu importMenu = mm.AddSubmenu("Import"); 
+
             Event[] others = eventManager.GetOtherEvents();
             if (others.Any())
             {
                 mm.AddBlank();
-                MouseMenu otherEvents = mm.AddSubmenu("Import from another event");
+                MouseMenu otherEvents = importMenu.AddSubmenu("Import from another event");
                 foreach (Event e in others)
                 {
                     if (e.Enabled && e.PilotCount > 0)
@@ -265,6 +289,24 @@ namespace UI.Nodes
                     }
                 }
             }
+
+            importMenu.AddItem("Import from profile picture filenames", () =>
+            {
+                List<string> names = new List<string>();
+                foreach (FileInfo fileInfo in eventManager.GetPilotProfileMedia())
+                {
+                    string name = fileInfo.Name.Replace(fileInfo.Extension, "");
+                    if (!names.Contains(name))
+                    {
+                        names.Add(name);
+                    }
+                }
+
+                IEnumerable<PilotChannel> newPilots = ImportFromNames(names);
+                EditPilotChannels(newPilots, null);
+                RebuildList();
+            });
+
 
             if (anyPilots)
             {

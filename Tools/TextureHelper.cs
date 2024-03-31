@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace Tools
 {
@@ -112,7 +113,7 @@ namespace Tools
 
         public static Texture2D FlipHorizontal(Texture2D original)
         {
-            Texture2D flipped = new Texture2D(original.GraphicsDevice, original.Width, original.Height);
+            Texture2D flipped = new Texture2D(original.GraphicsDevice, original.Width, original.Height, false, original.Format);
 
             Color[] sourceData = new Color[original.Height * original.Width];
             original.GetData<Color>(sourceData);
@@ -133,6 +134,29 @@ namespace Tools
             return flipped;
         }
 
+        public static Texture2D FlipVertical(Texture2D original)
+        {
+            Texture2D flipped = new Texture2D(original.GraphicsDevice, original.Width, original.Height, false, original.Format);
+
+            Color[] sourceData = new Color[original.Height * original.Width];
+            original.GetData<Color>(sourceData);
+
+            Color[] destData = new Color[original.Height * original.Width];
+
+            for (int y = 0; y < original.Height; y++)
+            {
+                for (int x = 0; x < original.Width; x++)
+                {
+                    int i = y * original.Width + x;
+                    int j = ((original.Height - 1) - y) * original.Width + x;
+                    destData[j] = sourceData[i];
+                }
+            }
+
+            flipped.SetData<Color>(destData);
+            return flipped;
+        }
+
         public static Texture2D Clone(this Texture2D texture)
         {
             if (texture == null)
@@ -145,18 +169,38 @@ namespace Tools
             return newTexture;
         }
 
-        public static void SaveAsPng(this Texture2D texture, string filename)
+
+        public static void SaveAs(this Texture2D texture, string filename, bool mirrored = false, bool flipped = false)
         {
             if (File.Exists(filename))
                 File.Delete(filename);
 
-            using (Texture2D cloned = ResizeTexture(texture, texture.Width, texture.Height))
+            Rectangle src = new Rectangle(0, 0, texture.Width, texture.Height);
+            Rectangle dest = new Rectangle(0, 0, texture.Width, texture.Height);
+
+            Texture2D cloned;
+
+            if (flipped)
+                src = src.Flip(texture.Height);
+
+            if (mirrored)
+                src = src.Mirror(texture.Width);
+
+            cloned = ResizeTexture(texture, src, dest);
+
+            using (FileStream fs = new FileStream(filename, FileMode.CreateNew))
             {
-                using (FileStream fs = new FileStream(filename, FileMode.CreateNew))
+                if (filename.EndsWith(".png"))
                 {
                     cloned.SaveAsPng(fs, cloned.Width, cloned.Height);
                 }
+
+                if (filename.EndsWith(".jpg"))
+                {
+                    cloned.SaveAsJpeg(fs, cloned.Width, cloned.Height);
+                }
             }
+            cloned.Dispose();
         }
 
         public static Texture2D GetEmbeddedTexture(GraphicsDevice graphics, System.Reflection.Assembly assembly, string name)
@@ -214,6 +258,30 @@ namespace Tools
         {
             Texture2D sourceImage = LoadTexture(graphicsDevice, sourceImagePath);
             return ResizeTexture(sourceImage, width, height);
+        }
+
+        public static void ChromaKey(Texture2D texture, ref Color[] data, ref Texture2D replacementTexture, byte limit = 10)
+        {
+            if (texture == null)
+                return;
+
+            if (replacementTexture == null || texture.Width != replacementTexture.Width || texture.Height != replacementTexture.Height)
+            {
+                replacementTexture?.Dispose();
+                replacementTexture = new Texture2D(texture.GraphicsDevice, texture.Width, texture.Height, false, SurfaceFormat.Bgra32);
+                data = new Color[texture.Width * texture.Height];
+            }
+
+            texture.GetData(data);
+            for (int i = 0; i < data.Length; i++)
+            {
+                if (data[i].G > data[i].B + limit &&
+                    data[i].G > data[i].R + limit)
+                {
+                    data[i] = Color.Transparent;
+                }
+            }
+            replacementTexture.SetData(data);
         }
 
         public static void TextureCombiner(GraphicsDevice device, int height, IEnumerable<Texture2D> ts, out Rectangle[] bounds, out Texture2D texture)

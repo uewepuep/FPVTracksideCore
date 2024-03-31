@@ -8,8 +8,11 @@ using RaceLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Xml;
 using Tools;
 using UI.Video;
+using static UI.Nodes.ChannelNodeBase;
 
 namespace UI.Nodes
 {
@@ -80,6 +83,8 @@ namespace UI.Nodes
 
         private bool extrasVisible;
 
+        public event Action<Node> OnFullScreen;
+
         public enum ReOrderTypes
         {
             None, 
@@ -113,6 +118,14 @@ namespace UI.Nodes
                     yield return GridTypes.Sixteen;
 
                 yield return GridTypes.SingleRow;
+            }
+        }
+
+        public bool ShowingPilotPhotos
+        {
+            get
+            {
+                return ChannelNodes.Any(c => c.ShowingPilotPhoto);
             }
         }
 
@@ -214,28 +227,11 @@ namespace UI.Nodes
         {
             if (SingleRow)
             {
-                gridStatsNode.Visible = false;
+                gridStatsNode.SetAnimatedVisibility(false);
                 return GridTypes.SingleRow;
             }
 
-            // remove one for gridstatsnode
-            if (gridStatsNode.Visible)
-            {
-                count -= 1;
-            }
-
-            GridTypes decided = base.DecideLayout(count);
-
-            if (GridTypeItemCount(decided) > count && !Replay)
-            {
-                gridStatsNode.Visible = true;
-            }
-            else
-            {
-                gridStatsNode.Visible = false;
-            }
-
-            return decided;
+            return base.DecideLayout(count);
         }
 
         public void Reorder()
@@ -252,6 +248,16 @@ namespace UI.Nodes
 
             ForceUpdate = true;
             RequestLayout();
+        }
+
+        protected override int VisibleChildCount()
+        {
+            int count = base.VisibleChildCount();
+            if (gridStatsNode.Visible && gridStatsNode.Alpha == 1)
+            {
+                count--;
+            }
+            return count;
         }
 
         public override void UpdateVisibility(IEnumerable<Node> input)
@@ -278,6 +284,18 @@ namespace UI.Nodes
                 foreach (CamGridNode camNode in CamNodes)
                 {
                     camNode.SetAnimatedVisibility(camNode.VideoBounds.ShowInGrid && extrasVisible);
+                }
+
+                int visibleCount = VisibleChildCount();
+                int gridItemCount = GridTypeItemCount(DecideLayout(visibleCount));
+
+                if (gridItemCount > visibleCount && !Replay && !LockGridType)
+                {
+                    gridStatsNode.SetAnimatedVisibility(true);
+                }
+                else
+                {
+                    gridStatsNode.SetAnimatedVisibility(false);
                 }
             }
 
@@ -397,9 +415,9 @@ namespace UI.Nodes
                 return null;
 
             channelNode.SetPilot(pilotChannel.Pilot);
-            channelNode.AnimationTime = CurrentAnimationTime;
+            channelNode.SetAnimationTime(CurrentAnimationTime);
             channelNode.SetAnimatedVisibility(true);
-            channelNode.CrashedOutType = ChannelNodeBase.CrashOutType.None;
+            channelNode.CrashedOutType = CrashOutType.None;
 
             bool isRace = EventManager.RaceManager.EventType != EventTypes.Freestyle;
             channelNode.SetLapsVisible(isRace);
@@ -446,6 +464,18 @@ namespace UI.Nodes
                 {
                     return channelNodeBase;
                 }
+
+                channelNodeBase = CreateChannelNode(c);
+                AddChild(channelNodeBase);
+                return channelNodeBase;
+            }
+        }
+
+        private ChannelNodeBase CreateChannelNode(Channel c)
+        {
+            lock (channelCreationLock)
+            {
+                ChannelNodeBase channelNodeBase = null;
 
                 ChannelVideoInfo ci = channelInfos.FirstOrDefault(cia => cia.Channel == c);
                 Color color = EventManager.GetChannelColor(c);
@@ -496,8 +526,6 @@ namespace UI.Nodes
                 channelNodeBase.OnPBChange += Reorder;
                 channelNodeBase.RequestReorder += Reorder;
 
-                AddChild(channelNodeBase);
-
                 channelNodeBase.RelativeBounds = new RectangleF(0.45f, 0.45f, 0.1f, 0.1f);
                 channelNodeBase.Layout(Bounds);
                 channelNodeBase.Snap();
@@ -544,11 +572,11 @@ namespace UI.Nodes
             RequestLayout();
         }
 
-        public void SetProfileVisible(bool visible, bool snap)
+        public void SetProfileVisible(PilotProfileOptions options)
         {
             foreach (ChannelNodeBase channelNode in ChannelNodes)
             {
-                channelNode.SetProfileVisible(visible, snap);
+                channelNode.SetProfileVisible(options);
             }
         }
 
@@ -617,39 +645,9 @@ namespace UI.Nodes
             }
         }
 
-        public void FullScreen(ChannelNodeBase fullScreen)
+        private void FullScreen(Node node)
         {
-            if (EventManager.RaceManager.RaceRunning || Replay)
-            {
-                IEnumerable<ChannelNodeBase> pilotNodes = ChannelNodes.Where(cn => cn.Pilot != null && cn != fullScreen);
-                if (pilotNodes.Any())
-                {
-                    foreach (ChannelNodeBase cn in pilotNodes)
-                    {
-                        cn.SetAnimatedVisibility(false);
-                        cn.CrashedOutType = ChannelNodeBase.CrashOutType.Manual;
-                    }
-                }
-
-                fullScreen.SetAnimatedVisibility(true);
-                fullScreen.CrashedOutType = ChannelNodeBase.CrashOutType.None;
-
-                RequestLayout();
-            }
-        }
-
-        public void FullScreen(CamGridNode fullScreen)
-        {
-            if (EventManager.RaceManager.RaceRunning || Replay)
-            {
-                foreach (ChannelNodeBase cn in ChannelNodes)
-                {
-                    cn.SetAnimatedVisibility(false);
-                }
-
-                fullScreen.SetAnimatedVisibility(true);
-                RequestLayout();
-            }
+            OnFullScreen?.Invoke(node);
         }
 
         public void IncreaseChannelVisiblity()
@@ -781,17 +779,17 @@ namespace UI.Nodes
 
             foreach (AnimatedNode cn in Children.OfType<AnimatedNode>())
             {
-                cn.AnimationTime = timeSpan;
+                cn.SetAnimationTime(timeSpan);
             }
 
             foreach (AnimatedRelativeNode cn in Children.OfType<AnimatedRelativeNode>())
             {
-                cn.AnimationTime = timeSpan;
+                cn.SetAnimationTime(timeSpan);
             }
 
             if (gridStatsNode != null)
             {
-                gridStatsNode.AnimationTime = CurrentAnimationTime;
+                gridStatsNode.SetAnimationTime(timeSpan);
             }
         }
 
@@ -892,6 +890,14 @@ namespace UI.Nodes
             }
             Reorder(true);
             RequestLayout();
+        }
+
+        public void ReloadPilotProfileImages()
+        {
+            foreach (ChannelNodeBase channelNode in ChannelNodes)
+            {
+                channelNode.PilotProfile.Reload();
+            }
         }
     }
 }

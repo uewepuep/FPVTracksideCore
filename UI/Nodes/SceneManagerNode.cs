@@ -11,21 +11,21 @@ using System.Threading.Tasks;
 using Tools;
 using Composition.Input;
 using UI.Video;
+using System.Xml.Linq;
 
 namespace UI.Nodes
 {
     public class SceneManagerNode : Node
     {
-        private AnimatedRelativeNode launchCamsNode;
-        private AnimatedRelativeNode commentatorsAndSummary;
-        private AnimatedRelativeNode finishLineNode;
+        private CamContainerNode launchCamsNode;
+        private CamContainerNode commentatorsAndSummary;
+        private CamContainerNode finishLineNode;
 
         private VideoManager videoManager;
         private EventManager eventManager;
 
         public ChannelsGridNode ChannelsGridNode { get; private set; }
         private TopBarNode topBarNode;
-        private AnimatedRelativeNode mainContainer;
 
         private NamedRaceNode resultsRaceNode;
         private NamedRaceNode nextRaceNode;
@@ -33,6 +33,12 @@ namespace UI.Nodes
         private WormNode wormNode;
 
         private AnimatedNode eventStatusNodeContainer;
+
+        private Scenes preFullScreenScene;
+        private FullScreenAspectClosable fullScreenContainer;
+        private Node placeMarker;
+        private Node fullscreenNode;
+        private Node fullscreenNodeParent;
 
         public enum Scenes
         {
@@ -43,7 +49,7 @@ namespace UI.Nodes
             RaceResults,
 
             EventStatus,
-            Commentators,
+            Fullscreen,
         }
 
         public Scenes Scene { get; private set; }
@@ -61,15 +67,16 @@ namespace UI.Nodes
 
         private AutoRunnerTimerNode autoRunnerTimerNode;
 
-        public SceneManagerNode(EventManager eventManager, VideoManager videoManager, ChannelsGridNode channelsGridNode, TopBarNode topBarNode, AnimatedRelativeNode mainContainer, AutoRunner autoRunner)
+        public SceneManagerNode(EventManager eventManager, VideoManager videoManager, ChannelsGridNode channelsGridNode, TopBarNode topBarNode, AutoRunner autoRunner)
         {
             AfterRaceStart = TimeSpan.FromSeconds(2);
 
             this.eventManager = eventManager;
             this.videoManager = videoManager;
-            this.ChannelsGridNode = channelsGridNode;
+            ChannelsGridNode = channelsGridNode;
             this.topBarNode = topBarNode;
-            this.mainContainer = mainContainer;
+
+            channelsGridNode.OnFullScreen += OnChannelsGridNodeFullScreen;
 
             eventStatusNodeContainer = new AnimatedNode();
             eventStatusNodeContainer.Visible = false;
@@ -79,13 +86,13 @@ namespace UI.Nodes
             EventStatusNode eventStatusNode = new EventStatusNode(eventManager);
             eventStatusNodeContainer.AddChild(eventStatusNode);
 
-            launchCamsNode = new AnimatedRelativeNode();
+            launchCamsNode = new CamContainerNode();
             launchCamsNode.SetAnimatedVisibility(false);
 
-            finishLineNode = new AnimatedRelativeNode();
+            finishLineNode = new CamContainerNode();
             finishLineNode.SetAnimatedVisibility(false);
 
-            commentatorsAndSummary = new AnimatedRelativeNode();
+            commentatorsAndSummary = new CamContainerNode();
             commentatorsAndSummary.SetAnimatedVisibility(false);
 
             resultsRaceNode = new NamedRaceNode("Results", eventManager);
@@ -97,7 +104,6 @@ namespace UI.Nodes
 
             wormNode = new WormNode(eventManager);
             wormNode.RelativeBounds = new RectangleF(0.0f, 1f, 1, 0.0f);
-
 
             AddChild(resultsRaceNode);
             AddChild(nextRaceNode);
@@ -126,6 +132,20 @@ namespace UI.Nodes
             autoRunnerTimerNode.RelativeBounds = new RectangleF(0, 0.96f, 0.97f, 0.04f);
             autoRunnerTimerNode.Alignment = RectangleAlignment.BottomRight;
             AddChild(autoRunnerTimerNode);
+
+            fullScreenContainer = new FullScreenAspectClosable();
+            fullScreenContainer.Close += UnFullScreen;
+            AddChild(fullScreenContainer);
+
+            placeMarker = new Node();
+        }
+
+        public void SyncFinished()
+        {
+            if (Scene != Scenes.Race)
+            {
+                UpdateNextRaceNode();
+            }
         }
 
         private void EventManager_OnPilotRefresh()
@@ -136,10 +156,10 @@ namespace UI.Nodes
 
         private void RaceManager_OnRacePreStart(Race race)
         {
-            ChannelsGridNode.SetProfileVisible(false, false);
+            ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
         }
 
-        private void UpdateNextRaceNode()
+        public void UpdateNextRaceNode()
         {
             Race nextRace = eventManager.RaceManager.GetNextRace(true);
             if (nextRace == null)
@@ -245,6 +265,11 @@ namespace UI.Nodes
 
             Scene = s;
 
+            if (Scene != Scenes.Fullscreen)
+            {
+                UnFullScreen();
+            }
+
             SetChannelGridReordering(s);
 
             // If those scenes are disabled, ignore that scene and do race.
@@ -265,15 +290,16 @@ namespace UI.Nodes
             OnSceneChange?.Invoke(s);
         }
 
-        public void SetAnimationTime(TimeSpan time)
+        private void SetAnimationTime(TimeSpan time)
         {
-            launchCamsNode.AnimationTime = time;
-            commentatorsAndSummary.AnimationTime = time;
-            resultsRaceNode.AnimationTime = time;
-            nextRaceNode.AnimationTime = time;
+            resultsRaceNode.SetAnimationTime(time);
+            nextRaceNode.SetAnimationTime(time);
+
+            launchCamsNode.SetAnimationTime(time);
+            commentatorsAndSummary.SetAnimationTime(time);
+            finishLineNode.SetAnimationTime(time);
             ChannelsGridNode.SetAnimationTime(time);
             topBarNode.SetAnimationTime(time);
-            mainContainer.AnimationTime = time;
         }
 
         private void SetChannelGridReordering(Scenes scene)
@@ -322,8 +348,14 @@ namespace UI.Nodes
             switch (scene)
             {
                 case Scenes.PreRace:
-                    float launchWidth = 0.7f;
+                    ChannelsGridNode.LockGridType = false;
+
                     SetAnimationTime(SetupAnimationTime);
+
+                    float launchWidth = 0.7f;
+
+                    launchCamsNode.SetAnimatedVisibility(true);
+                    commentatorsAndSummary.SetAnimatedVisibility(true);
 
                     IEnumerable<Node> launchCams = launchCamsNode.VisibleChildren;
                     IEnumerable<Node> commentatorCams = commentatorsAndSummary.VisibleChildren;
@@ -353,14 +385,12 @@ namespace UI.Nodes
                     }
 
                     ChannelsGridNode.SetBiggerInfo(true, false);
-                    ChannelsGridNode.SetProfileVisible(true, true);
+                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Large);
 
-                    launchCamsNode.SetAnimatedVisibility(true);
                     launchCamsNode.RelativeBounds = new RectangleF(0, 0, launchWidth, nonChannelGridHeight);
 
                     Node.AlignHorizontally(0, launchCams.ToArray());
 
-                    commentatorsAndSummary.SetAnimatedVisibility(true);
                     commentatorsAndSummary.RelativeBounds = new RectangleF(launchWidth, 0, 1 - launchWidth, nonChannelGridHeight);
 
                     if (launchCams.Any())
@@ -383,9 +413,11 @@ namespace UI.Nodes
                     break;
 
                 case Scenes.Race:
-                    ChannelsGridNode.SetProfileVisible(false, true);
+                    ChannelsGridNode.LockGridType = false;
 
                     SetAnimationTime(MidRaceAnimationTime);
+
+                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
                     
                     ChannelsGridNode.SingleRow = false;
                     ChannelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 1, 1);
@@ -402,6 +434,9 @@ namespace UI.Nodes
                     break;
 
                 case Scenes.Clear:
+                    ChannelsGridNode.LockGridType = false;
+                    ChannelsGridNode.SingleRow = false;
+
                     SetAnimationTime(SetupAnimationTime);
 
                     ChannelsGridNode.AllVisible(false);
@@ -414,14 +449,14 @@ namespace UI.Nodes
 
                     ChannelsGridNode.SetBiggerInfo(false, false);
                     ChannelsGridNode.MakeExtrasVisible(false);
-                    ChannelsGridNode.SetProfileVisible(false, true);
+                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.None);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
                     break;
 
                 case Scenes.RaceResults:
                     SetAnimationTime(SetupAnimationTime);
 
-                    ChannelsGridNode.SetProfileVisible(false, true);
+                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
 
                     launchCamsNode.SetAnimatedVisibility(false);
                     finishLineNode.SetAnimatedVisibility(false);
@@ -472,21 +507,25 @@ namespace UI.Nodes
                     ChannelsGridNode.SetBiggerInfo(true, true);
                     ChannelsGridNode.MakeExtrasVisible(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
+
                     break;
 
-                case Scenes.Commentators:
-                    launchCamsNode.SetAnimatedVisibility(false);
-                    finishLineNode.SetAnimatedVisibility(false);
+                case Scenes.Fullscreen:
+                    ChannelsGridNode.LockGridType = true;
+                    Node fsNode = fullscreenNode;
 
-                    commentatorsAndSummary.RelativeBounds = new RectangleF(0.0f, 0.0f, 1, 1);
-                    commentatorsAndSummary.SetAnimatedVisibility(true);
-                    Node.AlignHorizontally(0, commentatorsAndSummary.VisibleChildren.ToArray());
+                    if (fsNode == null)
+                    {
+                        break;
+                    }
 
-                    ChannelsGridNode.RelativeBounds = new RectangleF(0, 0.0f, 0, 0);
+                    if (fsNode is AnimatedNode)
+                    {
+                        AnimatedNode an = fsNode as AnimatedNode;
+                        an.SetAnimatedVisibility(true);
+                    }
 
-                    nextRaceNode.SetAnimatedVisibility(false);
-                    resultsRaceNode.SetAnimatedVisibility(false);
-                    eventStatusNodeContainer.SetAnimatedVisibility(false);
+                    fsNode.RelativeBounds = new RectangleF(0, 0, 1, 1);
                     break;
 
                 case Scenes.EventStatus:
@@ -500,6 +539,8 @@ namespace UI.Nodes
                     break;
 
                 case Scenes.FinishLine:
+                    ChannelsGridNode.LockGridType = false;
+
                     SetAnimationTime(SetupAnimationTime);
 
                     IEnumerable<Node> finishCam = finishLineNode.VisibleChildren;
@@ -519,7 +560,7 @@ namespace UI.Nodes
                     }
 
                     ChannelsGridNode.SetBiggerInfo(true, false);
-                    ChannelsGridNode.SetProfileVisible(true, true);
+                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
 
                     finishLineNode.SetAnimatedVisibility(true);
                     finishLineNode.RelativeBounds = new RectangleF(0, 0, 1, nonChannelGridHeight);
@@ -563,12 +604,13 @@ namespace UI.Nodes
                     {
                         case SourceTypes.Commentators:
                             node = new CamNode(source, videoBounds);
-                            node.OnFullScreenRequest += Node_OnFullScreenRequest;
+                            node.OnFullScreenRequest += FullScreen;
                             commentatorsAndSummary.AddChild(node);
                             break;
 
                         case SourceTypes.Launch:
                             node = new CamNode(source, videoBounds);
+                            node.OnFullScreenRequest += FullScreen;
                             node.FrameNode.KeepAspectRatio = false;
                             node.FrameNode.CropToFit = true;
                             node.FrameNode.Alignment = RectangleAlignment.Center;
@@ -577,6 +619,7 @@ namespace UI.Nodes
 
                         case SourceTypes.FinishLine:
                             node = new CamNode(source, videoBounds);
+                            node.OnFullScreenRequest += FullScreen;
                             node.FrameNode.KeepAspectRatio = false;
                             node.FrameNode.CropToFit = true;
                             node.FrameNode.Alignment = RectangleAlignment.Center;
@@ -592,15 +635,69 @@ namespace UI.Nodes
             }
         }
 
-        private void Node_OnFullScreenRequest()
-        {
-            SetScene(Scenes.Commentators);
-        }
-
         private void Node_OnVideoBoundsChange(VideoBounds obj)
         {
             videoManager.WriteCurrentDeviceConfig();
             OnVideoSettingsChange?.Invoke();
+        }
+
+        public void UnFullScreen()
+        {
+            if (fullscreenNode != null && fullscreenNodeParent != null)
+            {
+                fullscreenNode.Remove();
+                fullscreenNodeParent.AddChild(fullscreenNode);
+
+                fullscreenNode = null;
+                fullscreenNodeParent = null;
+                SetScene(preFullScreenScene);
+            }
+        }
+
+        private void OnChannelsGridNodeFullScreen(Node node)
+        {
+            FullScreen(node);
+            fullScreenContainer.KeepAspectRatio = true;
+        }
+
+        public void FullScreen(Node node)
+        {
+            if (Scene != Scenes.Fullscreen)
+            {
+                preFullScreenScene = Scene;
+            }
+
+            UnFullScreen();
+
+            fullscreenNode = node;
+            fullscreenNodeParent = node.Parent;
+
+            fullscreenNode.Remove();
+            fullScreenContainer.AddChild(fullscreenNode, 0);
+            fullScreenContainer.KeepAspectRatio = false;
+
+            SetScene(Scenes.Fullscreen);
+        }
+
+        public void FullScreen(Pilot pilot)
+        {
+            ChannelNodeBase channelNodeBase = ChannelsGridNode.GetChannelNode(pilot);
+            if (channelNodeBase != null && pilot != null)
+            {
+                channelNodeBase.PilotProfile.SetAnimatedAlpha(1);
+
+                FullScreen(channelNodeBase);
+                fullScreenContainer.KeepAspectRatio = true;
+            }
+            else
+            {
+                UnFullScreen();
+            }
+        }
+
+        public void ShowCommentators()
+        {
+            FullScreen(commentatorsAndSummary);
         }
 
         public void ToggleWorm()
@@ -619,6 +716,29 @@ namespace UI.Nodes
                 ChannelsGridNode.RelativeBounds = new RectangleF(0, 0, 1, 1 - height);
             }
             RequestLayout();
+        }
+
+        private class FullScreenAspectClosable : AspectNode
+        {
+            public event Action Close;
+
+            public FullScreenAspectClosable()
+                :base(4 / 3.0f)
+            {
+            }
+
+            public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
+            {
+                if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Pressed)
+                {
+                    if (Children.Any())
+                    {
+                        Close?.Invoke();
+                        return true;
+                    }
+                }
+                return base.OnMouseInput(mouseInputEvent);
+            }
         }
     }
 }

@@ -21,7 +21,7 @@ namespace UI.Nodes
         public IEnumerable<EventRoundNode> RoundNodes { get { return Children.OfType<EventRoundNode>(); } }
         public IEnumerable<EventXNode> EventXNodes { get { return Children.OfType<EventXNode>(); } }
         public IEnumerable<EventPointsNode> EventSumNodes { get { return Children.OfType<EventPointsNode>(); } }
-        public IEnumerable<EventLapsNode> EventTimesNodes { get { return Children.OfType<EventLapsNode>(); } }
+        public IEnumerable<EventLapsTimesNode> EventTimesNodes { get { return Children.OfType<EventLapsTimesNode>(); } }
         public IEnumerable<EventLapCountsNode> EventLapCountsNodes { get { return Children.OfType<EventLapCountsNode>(); } }
 
         public EventManager EventManager { get; private set; }
@@ -202,7 +202,7 @@ namespace UI.Nodes
         {
             needsRefresh = false;
 
-            Round[] rounds = EventManager.Event.Rounds.Union(Races.Where(r => r.Round != null).Select(r => r.Round)).Distinct().OrderBy(e => e.Order).ToArray();
+            Round[] rounds = EventManager.RoundManager.Rounds.OrderBy(e => e.Order).ToArray();
             foreach (Round round in rounds)
             {
                 IEnumerable<Race> roundRaces = EventManager.RaceManager.GetRaces(round).OrderBy(r => r.RaceNumber);
@@ -241,10 +241,10 @@ namespace UI.Nodes
 
                 if (round.TimeSummary != null)
                 {
-                    EventLapsNode esn = EventTimesNodes.FirstOrDefault(d => d.Round == round);
+                    EventLapsTimesNode esn = EventTimesNodes.FirstOrDefault(d => d.Round == round);
                     if (esn == null && ern != null)
                     {
-                        esn = new EventLapsNode(EventManager, round);
+                        esn = new EventLapsTimesNode(EventManager, round);
                         esn.RemoveRound += ToggleTimePoints;
                         HookUp(esn);
                         AddChild(esn);
@@ -458,9 +458,9 @@ namespace UI.Nodes
                     return ((EventRoundNode)a).Round.Order;
                 }
 
-                if (a is EventLapsNode)
+                if (a is EventLapsTimesNode)
                 {
-                    return ((EventLapsNode)a).Round.Order + 1;
+                    return ((EventLapsTimesNode)a).Round.Order + 1;
                 }
 
                 if (a is EventPointsNode)

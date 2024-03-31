@@ -84,10 +84,13 @@ namespace WindowsPlatform
             drawingVisual = null;
             cultureInfo = null;
 
-            if (texture != null)
+            lock (locker)
             {
-                texture.Dispose();
-                texture = null;
+                if (texture != null)
+                {
+                    texture.Dispose();
+                    texture = null;
+                }
             }
         }
 
@@ -228,8 +231,11 @@ namespace WindowsPlatform
 
         public void Draw(Drawer id, Microsoft.Xna.Framework.Rectangle target, RectangleAlignment alignment, Scale scale, Microsoft.Xna.Framework.Color tint, float alpha)
         {
-            if (texture != null)
+            lock (locker)
             {
+                if (texture == null)
+                    return;
+
                 Microsoft.Xna.Framework.Rectangle sourceBounds = new Microsoft.Xna.Framework.Rectangle(0, 0, texture.Width, texture.Height);
 
                 scaleFactor = 1;
@@ -237,23 +243,14 @@ namespace WindowsPlatform
                 bool scaleImage = Math.Abs(target.Height - texture.Height) > 10 || target.Width < texture.Width || scale == Scale.Force;
                 if (scaleImage && scale != Scale.Disallowed)
                 {
-                   scaleFactor = Maths.ScaleFactor(target, sourceBounds, FitType.FitBoth);
+                    scaleFactor = Maths.ScaleFactor(target, sourceBounds, FitType.FitBoth);
                 }
 
                 Microsoft.Xna.Framework.Rectangle bounds = Maths.FitBoxMaintainAspectRatio(target, sourceBounds, scaleFactor, alignment);
 
                 offsetX = target.X - bounds.X;
                 offsetY = target.Y - bounds.Y;
-
-                //if (text == "Finished in 76.74 - Fastest lap 12.96 - 38km/h")
-                //{
-                //    id.QuickDraw(bounds);
-                //    System.Diagnostics.Debug.WriteLine(target + " " + bounds);
-                //}
-
                 id.Draw(texture, sourceBounds, bounds, tint, alpha);
-
-                //BitmapFontCreator.Create(id, new System.IO.DirectoryInfo("bitmapfonts"));
             }
         }
 
@@ -370,7 +367,7 @@ namespace WindowsPlatform
         {
             if (texture != null)
             {
-                texture.SaveAsPng(filename + ".png");
+                texture.SaveAs(filename + ".png");
             }
         }
     }

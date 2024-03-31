@@ -42,10 +42,14 @@ namespace Composition.Nodes
         protected bool sharedTexture;
 
         public bool CanScale { get; set; }
+
         public bool CropToFit { get; set; }
+
+        public bool ReloadFromFile { get; set; }
 
         public ImageNode()
         {
+            ReloadFromFile = false;
             CanScale = true;
             CropToFit = false;
             sharedTexture = false;
@@ -143,10 +147,11 @@ namespace Composition.Nodes
         {
             try
             {
-                texture = id.TextureCache.GetTextureFromFilename(FileName);
+                texture = id.TextureCache.GetTextureFromFilename(FileName, ReloadFromFile);
                 SourceBounds = new Rectangle(0, 0, Texture.Width, Texture.Height);
                 sharedTexture = true;
                 UpdateAspectRatioFromTexture();
+                ReloadFromFile = false;
             }
             catch
             {
@@ -159,7 +164,7 @@ namespace Composition.Nodes
         {
             DebugTimer.DebugStartTime(this);
 
-            if (texture == null && !string.IsNullOrEmpty(FileName))
+            if ((texture == null || ReloadFromFile) && !string.IsNullOrEmpty(FileName))
             {
                 LoadImage(id);
             }

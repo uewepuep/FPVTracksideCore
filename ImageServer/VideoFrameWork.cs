@@ -14,11 +14,19 @@ namespace ImageServer
 
         FrameSource CreateFrameSource(VideoConfig vc);
 
+        FrameSource CreateFrameSource(string filename);
+
         Mode PickMode(IEnumerable<Mode> modes);
+
     }
 
     public static class VideoFrameworks
     {
         public static VideoFrameWork[] Available = new VideoFrameWork[0];
+
+        public static VideoFrameWork GetFramework(FrameWork frameWork)
+        {
+            return Available.FirstOrDefault(f => f.FrameWork == frameWork);
+        }
     }
 }

@@ -601,22 +601,6 @@ namespace RaceLib
             }
         }
 
-        public Lap[] GetLaps(Pilot pilot)
-        {
-            lock (Laps)
-            {
-                return Laps.Where(l => l.Pilot == pilot).ToArray();
-            }
-        }
-
-        public Lap[] GetLaps()
-        {
-            lock (Laps)
-            {
-                return Laps.ToArray();
-            }
-        }
-
         public Lap[] GetLaps(Func<Lap, bool> predicate)
         {
             lock (Laps)

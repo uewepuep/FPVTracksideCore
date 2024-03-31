@@ -18,11 +18,13 @@ namespace UI.Nodes
     {
         public bool IsOnLive { get { return sceneManagerNode == Showing; } }
         public bool IsOnRounds { get { return rounds == Showing; } }
+        public bool IsOnPhotoBooth { get { return PhotoBooth == Showing; } }
 
         private RoundsNode rounds;
         private SceneManagerNode sceneManagerNode;
         private PilotChanelList pilotChanelList;
         private PatreonsNode patreonsNode;
+        public PhotoBoothNode PhotoBooth { get; private set; }
 
         public ReplayNode ReplayNode { get; private set; }
 
@@ -41,8 +43,8 @@ namespace UI.Nodes
         private TextButtonNode rssiButton;
 
 
-        public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, RoundsNode rounds, SceneManagerNode sceneManagerContent)
-            : base(TimeSpan.FromSeconds(0.6f), Theme.Current.Panel.XNA, Theme.Current.PanelAlt.XNA, Theme.Current.Hover.XNA, Theme.Current.TextMain.XNA)
+        public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, RoundsNode rounds, SceneManagerNode sceneManagerContent, TabButtonsNode tabContainer)
+            : base(TimeSpan.FromSeconds(0.6f), tabContainer)
         {
             this.eventManager = eventManager;
             VideoManager = videoManager;
@@ -55,9 +57,28 @@ namespace UI.Nodes
             LapCountSummaryNode = new LapCountSummaryNode(eventManager);
             LapRecordsSummaryNode = new LapRecordsSummaryNode(eventManager);
             pilotChanelList = new PilotChanelList(eventManager);
+            PhotoBooth = new PhotoBoothNode(videoManager, eventManager);
 
             ReplayNode = new ReplayNode(eventManager);
 
+            
+            eventManager.RaceManager.OnRaceChanged += UpdateReplayButton;
+            eventManager.RaceManager.OnRaceEnd += UpdateReplayButton;
+            eventManager.RaceManager.TimingSystemManager.OnInitialise += UpdateRSSIVisible;
+            videoManager.OnFinishedFinalizing += VideoManager_OnFinishedFinalizing;
+        }
+
+        private void VideoManager_OnFinishedFinalizing()
+        {
+            Race race = eventManager.RaceManager.CurrentRace;
+            if (race != null)
+            {
+                UpdateReplayButton(race);   
+            }
+        }
+
+        public void Init()
+        {
             AddTab("Rounds", this.rounds, ShowRounds);
             liveButton = AddTab("Live", sceneManagerNode, ShowLive);
             replayButton = AddTab("Replay", ReplayNode, ShowReplay);
@@ -67,13 +88,10 @@ namespace UI.Nodes
             AddTab("Points", PointsSummaryNode, ShowPoints);
             AddTab("Channel List", pilotChanelList, ShowPilotChannelList);
             rssiButton = AddTab("RSSI Analyser", rssiNode, ShowAnalyser);
+            AddTab("Photo Booth", PhotoBooth, ShowPhotoBooth);
             AddTab("Patreons", patreonsNode, ShowPatreons);
 
             replayButton.Enabled = false;
-
-            eventManager.RaceManager.OnRaceChanged += UpdateReplayButton;
-            eventManager.RaceManager.OnRaceEnd += UpdateReplayButton;
-            eventManager.RaceManager.TimingSystemManager.OnInitialise += UpdateRSSIVisible;
 
             UpdateRSSIVisible();
 
@@ -100,11 +118,19 @@ namespace UI.Nodes
         {
             if (race != null && race.Ended)
             {
-                replayButton.Enabled = VideoManager.HasReplay(race);
+                replayButton.Enabled = VideoManager.HasReplay(race) && !VideoManager.Finalising;
             }
             else
             {
                 replayButton.Enabled = false;
+            }
+
+            if (race == null)
+            {
+                if (Showing == ReplayNode)
+                {
+                    ShowLive();
+                }
             }
         }
 
@@ -209,6 +235,11 @@ namespace UI.Nodes
 
             Show(rounds);
         }
+        public void ShowPhotoBooth(MouseInputEvent mie)
+        {
+            Show(PhotoBooth);
+            PhotoBooth.Load();
+        }
 
         public void ShowPilotChannelList(MouseInputEvent mie)
         {
@@ -220,6 +251,11 @@ namespace UI.Nodes
             }
 
             Show(pilotChanelList);
+        }
+
+        public void ShowCommentators()
+        {
+            sceneManagerNode.ShowCommentators();
         }
 
         public void ShowLive(SceneManagerNode.Scenes scene)
@@ -305,6 +341,13 @@ namespace UI.Nodes
                 {
                     tsm.EndDetection();
                 }
+            }
+
+            if (Showing == PhotoBooth)
+            {
+                PhotoBooth.Clean();
+                eventManager.FindProfilePictures(eventManager.Event.Pilots);
+                sceneManagerNode.ChannelsGridNode.ReloadPilotProfileImages();
             }
 
             base.Show(node);

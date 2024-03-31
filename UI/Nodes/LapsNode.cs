@@ -307,7 +307,7 @@ namespace UI.Nodes
 
                     Color c = EventManager.GetChannelColor(channel);
 
-                    Lap[] editLaps = currentRace.GetLaps(Pilot).ToArray();
+                    Lap[] editLaps = currentRace.GetLaps(l => l.Pilot == Pilot).ToArray();
 
                     if (editLaps.Any())
                     {

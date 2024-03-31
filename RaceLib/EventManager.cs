@@ -157,6 +157,8 @@ namespace RaceLib
 
             OnPilotRefresh?.Invoke();
 
+            FindProfilePicture(pc.Pilot);
+
             return true;
         }
 
@@ -232,31 +234,7 @@ namespace RaceLib
 
             workQueue.Enqueue(workSet, "Finding Profile Pictures", () =>
             {
-                DirectoryInfo photoDir = new DirectoryInfo("pilots");
-
-                string[] extensions = new string[] { ".png", ".jpg" };
-
-                if (photoDir.Exists)
-                {
-                    FileInfo[] files = photoDir.GetFiles();
-                    foreach (Pilot p in Event.Pilots)
-                    {
-                        if (p != null && string.IsNullOrEmpty(p.PhotoPath))
-                        {
-                            IEnumerable<FileInfo> matches = files.Where(f => f.Name.ToLower().Contains(p.Name.ToLower()));
-                            matches = matches.Where(f => extensions.Contains(f.Extension.ToLower()));
-
-                            if (matches.Any())
-                            {
-                                using (IDatabase db = DatabaseFactory.Open(EventId))
-                                {
-                                    p.PhotoPath = matches.OrderByDescending(f => f.Extension).FirstOrDefault().FullName;
-                                    db.Update(p);
-                                }
-                            }
-                        }
-                    }
-                }
+                FindProfilePictures(Event.Pilots);
             });
 
             workQueue.Enqueue(workSet, "Updating event object", () =>
@@ -266,6 +244,48 @@ namespace RaceLib
                     db.Update(Event);
                 }
             });
+        }
+
+        public IEnumerable<FileInfo> GetPilotProfileMedia()
+        {
+            DirectoryInfo pilotProfileDirectory = new DirectoryInfo("pilots");
+            string[] extensions = new string[] { ".mp4", ".wmv", ".mkv", ".png", ".jpg"};
+
+            if (pilotProfileDirectory.Exists)
+            {
+                foreach (FileInfo file in pilotProfileDirectory.GetFiles())
+                {
+                    if (extensions.Contains(file.Extension))
+                    {
+                        yield return file;
+                    }
+                }
+            }
+        }
+
+        public void FindProfilePicture(Pilot pilot)
+        {
+            FindProfilePictures(new[] { pilot });
+        }
+
+        public void FindProfilePictures(IEnumerable<Pilot> pilots)
+        {
+            FileInfo[] media = GetPilotProfileMedia().ToArray();
+            foreach (Pilot p in pilots)
+            {
+                if (p != null && string.IsNullOrEmpty(p.PhotoPath))
+                {
+                    IEnumerable<FileInfo> matches = media.Where(f => f.Name.ToLower().Contains(p.Name.ToLower()));
+                    if (matches.Any())
+                    {
+                        using (IDatabase db = DatabaseFactory.Open(EventId))
+                        {
+                            p.PhotoPath = matches.OrderByDescending(f => f.Extension).FirstOrDefault().FullName;
+                            db.Update(p);
+                        }
+                    }
+                }
+            }
         }
 
         public void UpdateRoundOrder(IDatabase db)
@@ -293,6 +313,8 @@ namespace RaceLib
                 RaceManager.LoadRaces(eve);
             });
 
+            workQueue.Enqueue(workSet, "RoundRepair", RoundRepair);
+
             workQueue.Enqueue(workSet, "Loading Results", () =>
             {
                 // Load points
@@ -309,6 +331,16 @@ namespace RaceLib
             {
                 RoundManager.SheetFormatManager.Load();
             });
+        }
+
+        private void RoundRepair()
+        {
+            IEnumerable<Round> allRounds = Event.Rounds.Union(RaceManager.Races.Select(r => r.Round)).Distinct();
+
+            if (allRounds.Count() > Event.Rounds.Count)
+            {
+                Event.Rounds = allRounds.OrderBy(r => r.Order).ToList();
+            }
         }
 
         public void Update(GameTime gameTime)
@@ -364,6 +396,12 @@ namespace RaceLib
             OnChannelsChanged?.Invoke();
         }
         
+        public Microsoft.Xna.Framework.Color GetPilotColor(Pilot p)
+        {
+            Channel channel = GetChannel(p);
+            return GetChannelColor(channel);
+        }
+
         public Microsoft.Xna.Framework.Color GetChannelColor(Channel c)
         {
             Microsoft.Xna.Framework.Color color;
@@ -565,7 +603,7 @@ namespace RaceLib
         {
             using (IDatabase db = DatabaseFactory.OpenLegacyLoad(Guid.Empty))
             {
-                return db.GetEvents().ToArray();
+                return db.GetEvents().Where(e => e.ID != Event.ID).ToArray();
             }
         }
 

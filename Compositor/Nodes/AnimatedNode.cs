@@ -12,7 +12,7 @@ namespace Composition.Nodes
     {
         private InterpolatedRelativeRectangle interpolatedBounds;
 
-        public TimeSpan AnimationTime { get; set; }
+        public TimeSpan AnimationTime { get; protected set; }
 
         private bool animatingInvisiblity;
 
@@ -99,18 +99,13 @@ namespace Composition.Nodes
             return bounds;
         }
 
-        private Rectangle oldRelativeBounds;
 
         public override void Layout(Rectangle parentBounds)
         {
             Rectangle newBounds = CalculateRelativeBounds(parentBounds);
 
-            Rectangle newRelativeBounds = newBounds;
-            newRelativeBounds.X -= parentBounds.X;
-            newRelativeBounds.Y -= parentBounds.Y;
-
             Node parent = Parent;
-            if (newRelativeBounds != oldRelativeBounds && parent != null)
+            if (newBounds != Bounds && parent != null)
             {
                 if (!parent.IsAnimating()) // Hate
                 {
@@ -128,13 +123,38 @@ namespace Composition.Nodes
                     }
                     else if (interpolatedBounds.Target != newBounds)
                     {
-                        interpolatedBounds.SetTarget(Bounds, newBounds, AnimationTime);
+                        Rectangle diff = new Rectangle(
+                            interpolatedBounds.Target.X - interpolatedBounds.Initial.X,
+                            interpolatedBounds.Target.Y - interpolatedBounds.Initial.Y,
+                            interpolatedBounds.Target.Width - interpolatedBounds.Initial.Width,
+                            interpolatedBounds.Target.Height - interpolatedBounds.Initial.Height);
+
+                        float seconds = (float)interpolatedBounds.TimeToTake.TotalSeconds;
+
+                        RectangleF velocity = new RectangleF(diff.X / seconds,
+                                                             diff.Y / seconds,
+                                                             diff.Width / seconds,
+                                                             diff.Height / seconds);
+
+                        interpolatedBounds.SetTarget(Bounds, newBounds);
                     }
+                }
+                else
+                {
+                    //parent is animating
+
+#if DEBUG
+                    Node animating;
+                    foreach (var a in ParentChain)
+                    {
+                        if (a.IsAnimating())
+                            animating = a;
+                    }
+#endif
+
                 }
             }
             base.Layout(parentBounds);
-
-            oldRelativeBounds = newRelativeBounds;
         }
 
         public virtual void OnAnimationFinished()
@@ -164,10 +184,11 @@ namespace Composition.Nodes
 
         public override bool IsAnimatingSize()
         {
-            if (interpolatedBounds != null)
+            InterpolatedRelativeRectangle ib = interpolatedBounds;
+            if (ib != null)
             {
-                return interpolatedBounds.Initial.Width != interpolatedBounds.Target.Width || 
-                       interpolatedBounds.Initial.Height != interpolatedBounds.Target.Height;
+                return ib.Initial.Width != ib.Target.Width ||
+                       ib.Initial.Height != ib.Target.Height;
             }
 
             return base.IsAnimatingSize();
@@ -183,6 +204,9 @@ namespace Composition.Nodes
 
         public void SetAnimatedVisibility(bool visible)
         {
+            if (visible == Visible)
+                return;
+
             if (interpolatedBounds != null)
             {
                 interpolatedBounds = null;
@@ -202,6 +226,11 @@ namespace Composition.Nodes
                 }
             }
             RequestLayout();
+        }
+
+        public virtual void SetAnimationTime(TimeSpan time)
+        {
+            AnimationTime = time;
         }
 
         public override Rectangle ParentChainTargetBounds()

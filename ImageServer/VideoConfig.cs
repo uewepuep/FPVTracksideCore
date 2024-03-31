@@ -89,6 +89,24 @@ namespace ImageServer
         [DisplayName("Flipped / Mirrored")]
         public FlipMirroreds FlipMirrored { get; set; }
 
+        [Browsable(false)]
+        public bool Flipped
+        {
+            get
+            {
+                return FlipMirrored == FlipMirroreds.Flipped || FlipMirrored == FlipMirroreds.FlippedAndMirrored;
+            }
+        }
+        
+        [Browsable(false)]
+        public bool Mirrored
+        {
+            get
+            {
+                return FlipMirrored == FlipMirroreds.Mirrored || FlipMirrored == FlipMirroreds.FlippedAndMirrored;
+            }
+        }
+
         [Category("Device")]
         [DisplayName("Stop feed when not in use")]
         public bool Pauseable { get; set; }
@@ -138,6 +156,17 @@ namespace ImageServer
 
         public VideoBounds[] VideoBounds { get; set; }
 
+        [System.ComponentModel.Browsable(false)]
+        [JsonIgnore]
+        [XmlIgnore]
+        public bool HasPhotoBooth 
+        { 
+            get
+            {
+                return VideoBounds.Any(vb => vb.SourceType == SourceTypes.PhotoBooth);
+            }
+        }
+
         public VideoConfig()
         {
             VideoMode = new Mode();
@@ -158,14 +187,25 @@ namespace ImageServer
 
         public override string ToString()
         {
+            string name = DeviceName;
+
+            if (VideoBounds != null && VideoMode.Index >= 0)
+            {
+                IEnumerable<SourceTypes> sourceTypesUsed = VideoBounds.Select(vb => vb.SourceType).Distinct();
+                if (sourceTypesUsed.Count() == 1)
+                {
+                    name = name + " (" + sourceTypesUsed.First().ToString() + ")";
+                }
+            }
+
             if (AnyUSBPort || DirectShowPath == null)
             {
-                return DeviceName;
+                return name;
             }
             else
             {
                 string hashCode = DirectShowPath.GetHashCode().ToString("X8");
-                return DeviceName + " (" + hashCode.Substring(0, 2) + ")";
+                return name + " #" + hashCode.Substring(0, 2);
             }
         }
 
@@ -258,7 +298,8 @@ namespace ImageServer
         FPVFeed,
         Commentators,
         Launch = 3,
-        FinishLine
+        FinishLine,
+        PhotoBooth
     }
 
     public class VideoBounds

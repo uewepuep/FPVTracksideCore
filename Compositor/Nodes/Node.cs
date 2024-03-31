@@ -39,7 +39,7 @@ namespace Composition.Nodes
         {
             get
             {
-                return Visible && Bounds.Width != 0 && Bounds.Height != 0;
+                return Visible && Bounds.Width != 0 && Bounds.Height != 0 && Alpha != 0;
             }
         }
 
@@ -49,7 +49,7 @@ namespace Composition.Nodes
             {
                 lock (children)
                 {
-                    return children.Where(c => c.Visible);
+                    return children.Where(c => c.Visible && c.Alpha != 0);
                 }
             }
         }
@@ -779,6 +779,36 @@ namespace Composition.Nodes
             position += Bounds.Location;
 
             return position;
+        }
+
+        public void ReplaceWith(Node node)
+        {
+            if (Parent == null)
+            {
+                return;
+            }
+
+            node.RelativeBounds = RelativeBounds;
+            node.Bounds = Bounds;
+            node.Visible = Visible;
+            node.Alpha = Alpha;
+            node.Parent = Parent;
+
+
+            Node[] newChildren = new Node[Parent.children.Length];
+
+            for (int i = 0; i < newChildren.Length; i++)
+            {
+                if (children[i] == this)
+                {
+                    newChildren[i] = node;
+                }
+                else
+                {
+                    newChildren[i] = children[i];
+                }
+            }
+            Parent = null;
         }
     }
 

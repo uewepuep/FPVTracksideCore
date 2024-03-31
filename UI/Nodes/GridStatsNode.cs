@@ -24,9 +24,9 @@ namespace UI.Nodes
         {
             EventManager = eventManager;
 
-            renderTargetNode = new RenderTargetNode();
+            renderTargetNode = new RenderTargetNode(575, 465);
+            renderTargetNode.CanScroll = false;
             AddChild(renderTargetNode);
-
 
             if (ProfileSettings.Instance.GridShowPBs)
             {
@@ -62,5 +62,7 @@ namespace UI.Nodes
                 pBList.SetFilterPilots(current.Pilots);
             }
         }
+
+
     }
 }

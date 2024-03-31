@@ -1006,7 +1006,12 @@ namespace RaceLib
 
                         if (race.Round == null)
                         {
-                            int round = DiscoverRoundNumber(race);
+                            int round = race.RoundNumber;
+                            if (round <= 0)
+                            {
+                                round = DiscoverRoundNumber(race);
+                            }
+
                             race.Round = EventManager.RoundManager.GetCreateRound(round, EventManager.Event.EventType);
                         }
 

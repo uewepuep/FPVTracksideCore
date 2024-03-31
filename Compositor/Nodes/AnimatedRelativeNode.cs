@@ -12,7 +12,7 @@ namespace Composition.Nodes
     {
         private InterpolatedRectangleF interpolatedRelativeBounds;
 
-        public TimeSpan AnimationTime { get; set; }
+        public TimeSpan AnimationTime { get; protected set; }
 
         private bool animatingInvisiblity;
 
@@ -31,7 +31,12 @@ namespace Composition.Nodes
         {
             get
             {
-                return interpolatedRelativeBounds != null;
+                if (interpolatedRelativeBounds != null)
+                {
+                    if (!interpolatedRelativeBounds.Finished)
+                        return true;
+                }
+                return false;
             }
         }
 
@@ -189,6 +194,26 @@ namespace Composition.Nodes
                     animatingInvisiblity = true;
                 }
                 Visible = false;
+            }
+        }
+        public virtual void SetAnimationTime(TimeSpan time)
+        {
+            AnimationTime = time;
+        }
+    }
+
+    public class DebugAnimatedRelativeNode : AnimatedRelativeNode
+    {
+        public override RectangleF RelativeBounds
+        {
+            get
+            {
+                return base.RelativeBounds;
+            }
+            set
+            {
+                base.RelativeBounds = value;
+                Logger.UI.LogCall(this, value.ToString());
             }
         }
     }

@@ -342,14 +342,22 @@ namespace UI.Nodes
             }
             root.AddBlank();
 
-            root.AddItem("Open FPVTrackside Directory", () =>
+            MouseMenu openDirectory = root.AddSubmenu("Open Directory");
+
+
+            openDirectory.AddItem("Open FPVTrackside Directory", () =>
             {
                 OpenDirectory();
             });
 
+            openDirectory.AddItem("Open Pilot Profile Image Directory", () =>
+            {
+                OpenPilotDirectory();
+            });
+
             if (hasEvent)
             {
-                root.AddItem("Open Event Data Directory", () =>
+                openDirectory.AddItem("Open Event Data Directory", () =>
                 {
                     OpenEventDirectory();
                 });
@@ -635,6 +643,12 @@ namespace UI.Nodes
         {
             PlatformTools.OpenFileManager(System.IO.Directory.GetCurrentDirectory() + "\\events\\" + eventManager.EventId + "\\");
         }
+
+        public void OpenPilotDirectory()
+        {
+            PlatformTools.OpenFileManager(System.IO.Directory.GetCurrentDirectory() + "\\pilots\\");
+        }
+        
 
         public void OpenWebServer()
         {

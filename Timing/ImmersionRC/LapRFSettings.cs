@@ -214,7 +214,15 @@ namespace Timing.ImmersionRC
         [Category("Receiver 8")]
         public bool Enable8 { get; set; }
 
-        [Category("Debug")]
+
+        [Category("Advanced")]
+        public bool AlwaysEnableReceivers { get; set; }
+        
+        [Category("Advanced")]
+        [DisplayName("Ignore frequencies, gains and thresholds")]
+        public bool IgnoreFrequencies { get; set; }
+
+        [Category("Advanced")]
         public bool LegacyFirmwareTimeRangeFix { get; set; }
 
         [Browsable(false)]
@@ -261,6 +269,8 @@ namespace Timing.ImmersionRC
             LegacyFirmwareTimeRangeFix = false;
 
             VoltageAlarm = 10;
+            AlwaysEnableReceivers = false;
+            IgnoreFrequencies = false;
         }
     }
 }

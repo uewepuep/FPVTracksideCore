@@ -58,6 +58,7 @@ namespace UI.Video
 
             heading.Text = "Video Input Settings";
             cancelButton.Visible = true;
+            CanReOrder = false;
 
             SetObjects(videoManager.VideoConfigs, true);
 
@@ -653,21 +654,19 @@ namespace UI.Video
                 channelMenu.AddSubmenu(band.ToString(), (c) => { AssignChannel(channelVideoInfo, c); }, cs.ToArray());
             }
 
-            MouseMenu cameraMenu = mouseMenu.AddSubmenu("Camera Assigment");
-            cameraMenu.AddItem("Launch Cam", () =>
-            {
-                SetSourceType(channelVideoInfo, SourceTypes.Launch);
-            });
+            MouseMenu cameraMenu = mouseMenu.AddSubmenu("Camera Assignment");
 
-            cameraMenu.AddItem("Commentators Cam", () =>
+            foreach (SourceTypes sourceType in Enum.GetValues(typeof(SourceTypes)))
             {
-                SetSourceType(channelVideoInfo, SourceTypes.Commentators);
-            });
+                if (sourceType == SourceTypes.FPVFeed)
+                    continue;
 
-            cameraMenu.AddItem("Finish line Cam", () =>
-            {
-                SetSourceType(channelVideoInfo, SourceTypes.FinishLine);
-            });
+                cameraMenu.AddItem(sourceType.ToString() +  " Camera", () =>
+                {
+                    SetSourceType(channelVideoInfo, sourceType);
+                });
+            }
+            
             mouseMenu.AddBlank();
 
             MouseMenu splitMenu = mouseMenu.AddSubmenu("Split");

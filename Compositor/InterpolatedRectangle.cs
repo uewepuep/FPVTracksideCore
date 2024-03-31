@@ -127,6 +127,14 @@ namespace Composition
             }
         }
 
+        public TimeSpan TimeToTake
+        {
+            get
+            {
+                return interpolatedRectangle.TimeToTake;
+            }
+        }
+
         public InterpolatedRelativeRectangle(Node parent, Rectangle inital, Rectangle target, TimeSpan timeToTake)
         {
             Parent = parent;

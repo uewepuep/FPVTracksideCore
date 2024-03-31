@@ -122,6 +122,8 @@ namespace ImageServer
         VideoConfig VideoConfig { get; }
 
         bool RecordNextFrameTime { set; }
+        bool ManualRecording { get; set; }
+        bool Finalising { get; }
     }
 
     public interface IPlaybackFrameSource
@@ -133,8 +135,10 @@ namespace ImageServer
         bool SlowMotion { get; set; }
         TimeSpan MediaTime { get; }
         TimeSpan Length { get; }
+        bool Repeat { get; set; }
 
         void SetPosition(DateTime seekTime);
+        void SetPosition(TimeSpan seekTime);
         void Play();
         bool Pause();
         bool Start();

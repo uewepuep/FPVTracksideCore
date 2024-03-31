@@ -83,6 +83,19 @@ namespace UI.Video
 
         public Profile Profile { get; private set; }
 
+        public bool Finalising
+        {
+            get
+            {
+                lock (frameSources)
+                {
+                    return frameSources.OfType<ICaptureFrameSource>().Any(r => r.Finalising);
+                }
+            }
+        }
+
+        public event Action OnFinishedFinalizing;
+
         public VideoManager(string eventDirectory, Profile profile)
         {
             Profile = profile;
@@ -373,7 +386,7 @@ namespace UI.Video
                         }
                         else
                         {
-                            VideoFrameWork mediaFoundation = GetFramework(FrameWork.MediaFoundation);
+                            VideoFrameWork mediaFoundation = VideoFrameworks.GetFramework(FrameWork.MediaFoundation);
                             if (mediaFoundation != null)
                             {
                                 source = mediaFoundation.CreateFrameSource(videoConfig);
@@ -494,7 +507,7 @@ namespace UI.Video
             this.race = race;
             lock (recording)
             {
-                foreach (ICaptureFrameSource source in frameSources.OfType<ICaptureFrameSource>())
+                foreach (ICaptureFrameSource source in frameSources.OfType<ICaptureFrameSource>().Where(r => r.VideoConfig.RecordVideoForReplays))
                 {
                     // if all feeds on this source are FPV, only record if they're visible..
                     if (source.VideoConfig.VideoBounds.All(r => r.SourceType == SourceTypes.FPVFeed))
@@ -660,15 +673,17 @@ namespace UI.Video
 
         private void WorkerThread()
         {
+            bool someFinalising = false;
+
             List<FrameSource> needsVideoInfoWrite = new List<FrameSource>();
             while (runWorker)
             {
                 try
                 {
                     // Wait for a set on the mutex or just every X ms
-                    if (!mutex.WaitOne(4000))
+                    if (!mutex.WaitOne(someFinalising ? 500 : 4000))
                     {
-                        //Console.WriteLine("Waited");
+                        
                     }
 
                     if (!runWorker)
@@ -676,6 +691,15 @@ namespace UI.Video
 
                     // Run any clean up tasks..
                     WorkerThreadCleanupTasks();
+
+                    if (someFinalising)
+                    {
+                        if (!Finalising)
+                        {
+                            someFinalising = false;
+                            OnFinishedFinalizing();
+                        }
+                    }
 
                     bool doCountClean = false;
                     lock (recording)
@@ -711,7 +735,7 @@ namespace UI.Video
 
                                 lock (frameSources)
                                 {
-                                    stopRecording = frameSources.OfType<ICaptureFrameSource>().ToArray();
+                                    stopRecording = frameSources.OfType<ICaptureFrameSource>().Where(r => !r.ManualRecording).ToArray();
                                 }
 
                                 foreach (ICaptureFrameSource source in stopRecording)
@@ -719,6 +743,7 @@ namespace UI.Video
                                     if (source.Recording)
                                     {
                                         source.StopRecording();
+                                        someFinalising = true;
                                     }
 
                                     needsVideoInfoWrite.Add((FrameSource)source);
@@ -733,7 +758,7 @@ namespace UI.Video
 
                     if (needsVideoInfoWrite.Any())
                     {
-                        ICaptureFrameSource[] sources = needsVideoInfoWrite.OfType<ICaptureFrameSource>().ToArray();
+                        ICaptureFrameSource[] sources = needsVideoInfoWrite.OfType<ICaptureFrameSource>().Where(r => r.VideoConfig.RecordVideoForReplays).ToArray();
                         foreach (ICaptureFrameSource source in sources)
                         {
                             try

@@ -98,7 +98,7 @@ namespace UI.Nodes
 
                 LocalMax = new AnimatedNode();
                 LocalMax.RelativeBounds = new RectangleF(0, 0.99f, 1, 0.01f);
-                LocalMax.AnimationTime = TimeSpan.FromSeconds(2);
+                LocalMax.SetAnimationTime(TimeSpan.FromSeconds(2));
                 container.AddChild(LocalMax);
 
                 ColorNode localMaxColor = new ColorNode(color);

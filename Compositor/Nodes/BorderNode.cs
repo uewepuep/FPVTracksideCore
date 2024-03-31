@@ -24,6 +24,11 @@ namespace Composition.Nodes
             BorderColor = color;
         }
 
+        public override void Dispose()
+        {
+            base.Dispose();
+        }
+
         public override void Draw(Drawer id, float parentAlpha)
         {
             if (borderTexture == null)
@@ -36,17 +41,30 @@ namespace Composition.Nodes
 
             if (borderTexture != null)
             {
+                Rectangle bounds = Bounds;
+
+                int width = Math.Abs(Width);
+                int doubleWidth = width * 2;
+
+                if (Width < 0)
+                {
+                    bounds.X -= width;
+                    bounds.Y -= width;
+                    bounds.Width += doubleWidth;
+                    bounds.Height += doubleWidth;
+                }
+
                 //top
-                id.Draw(borderTexture, new Rectangle(0, 0, borderTexture.Width, borderTexture.Height), new Rectangle(Bounds.X, Bounds.Y, Bounds.Width, Width), Color.White, Alpha);
+                id.Draw(borderTexture, new Rectangle(0, 0, borderTexture.Width, borderTexture.Height), new Rectangle(bounds.X, bounds.Y, bounds.Width, width), Color.White, Alpha);
 
                 // left
-                id.Draw(borderTexture, new Rectangle(0, 0, borderTexture.Width, borderTexture.Height), new Rectangle(Bounds.X, Bounds.Y, Width, Bounds.Height), Color.White, Alpha);
+                id.Draw(borderTexture, new Rectangle(0, 0, borderTexture.Width, borderTexture.Height), new Rectangle(bounds.X, bounds.Y + width, width, bounds.Height - doubleWidth), Color.White, Alpha);
 
                 // Right
-                id.Draw(borderTexture, new Rectangle(0, 0, borderTexture.Width, borderTexture.Height), new Rectangle(Bounds.Right - Width, Bounds.Y, Width, Bounds.Height), Color.White, Alpha);
+                id.Draw(borderTexture, new Rectangle(0, 0, borderTexture.Width, borderTexture.Height), new Rectangle(bounds.Right - width, bounds.Y + width, width, bounds.Height - doubleWidth), Color.White, Alpha);
 
                 //bottom
-                id.Draw(borderTexture, new Rectangle(0, 0, borderTexture.Width, borderTexture.Height), new Rectangle(Bounds.X, Bounds.Bottom - Width, Bounds.Width, Width), Color.White, Alpha);
+                id.Draw(borderTexture, new Rectangle(0, 0, borderTexture.Width, borderTexture.Height), new Rectangle(bounds.X, bounds.Bottom - width, bounds.Width, width), Color.White, Alpha);
             }
 
             DebugTimer.DebugEndTime(this);

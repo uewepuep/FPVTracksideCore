@@ -50,6 +50,21 @@ namespace Composition.Nodes
 
         public ScrollerNode Scroller { get; private set; }
 
+        public bool CanScroll
+        {
+            get
+            {
+                return Scroller.Visible;
+            }
+            set
+            {
+                if (Scroller != null)
+                {
+                    Scroller.Visible = value;
+                }
+            }
+        }
+
         private bool disposed;
 
         public HoverNode HoverNode { get; set; }
@@ -380,7 +395,7 @@ namespace Composition.Nodes
                     System.Text.RegularExpressions.Regex rgx = new System.Text.RegularExpressions.Regex("[^a-zA-Z0-9 -]");
                     filename = rgx.Replace(filename, "");
 
-                    texture.SaveAsPng(filename + ".png");
+                    texture.SaveAs(filename + ".png");
                 }
             }
 #endif

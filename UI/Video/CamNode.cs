@@ -26,7 +26,7 @@ namespace UI.Video
         private OverlayTextNode launchText;
 
         public event Action<VideoBounds> OnVideoBoundsChange;
-        public event Action OnFullScreenRequest;
+        public event Action<CamNode> OnFullScreenRequest;
 
         public CamNode(FrameSource s, VideoBounds videoBounds)
         {
@@ -84,7 +84,7 @@ namespace UI.Video
                     {
                         mouseMenu.AddItem("Full Screen", () =>
                         {
-                            OnFullScreenRequest();
+                            OnFullScreenRequest(this);
                         });
                     }
 
@@ -192,6 +192,33 @@ namespace UI.Video
             }
 
             Scale(0.95f);
+        }
+    }
+
+    public class CamContainerNode : Node
+    {
+        public IEnumerable<CamNode> CamNodes
+        {
+            get
+            {
+                return Children.OfType<CamNode>();
+            }
+        }
+
+        public void SetAnimatedVisibility(bool visible)
+        {
+            foreach (var camNode in CamNodes)
+            {
+                camNode.SetAnimatedVisibility(visible);
+            }
+        }
+
+        public void SetAnimationTime(TimeSpan time)
+        {
+            foreach (var camNode in CamNodes)
+            {
+                camNode.SetAnimationTime(time);
+            }
         }
     }
 }

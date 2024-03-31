@@ -74,9 +74,9 @@ namespace UI.Nodes
                 {
                     splitNode = splitNodes[index - 1];
                 }
-                else
+                else if (splitNodes.Any())
                 {
-                    splitNode = splitNodes.LastOrDefault();
+                    splitNode = splitNodes.Last();
                 }
 
                 if (splitNode != null)
@@ -143,7 +143,7 @@ namespace UI.Nodes
                 if (split == null)
                     return;
 
-                string text = "S"+ SplitNumber + " " + split.Time.ToStringRaceTime();
+                string text = "S" + SplitNumber + " " + split.Time.ToStringRaceTime();
 
                 if (Pilot == split.Detection.Pilot)
                 {

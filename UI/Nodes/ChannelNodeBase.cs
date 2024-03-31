@@ -13,6 +13,7 @@ using Microsoft.Xna.Framework.Graphics;
 using RaceLib;
 using Sound;
 using Tools;
+using UI.Video;
 using UI.Widgets;
 
 namespace UI.Nodes
@@ -39,8 +40,8 @@ namespace UI.Nodes
 
         public Color ChannelColor { get; private set; }
 
+        private AnimatedRelativeNode pilotInfoContainer;
         private ChannelPilotNameNode pilotNameNode;
-
         private ImageNode pbBackground;
         private PBContainerNode PBNode;
 
@@ -98,6 +99,18 @@ namespace UI.Nodes
         private DateTime? playbackTime;
 
         public PilotProfileNode PilotProfile { get; set; }
+        public bool ShowingPilotPhoto 
+        { 
+            get 
+            { 
+                if (PilotProfile == null || !PilotProfile.HasProfileImage)
+                {
+                    return false;
+                }
+
+                return PilotProfile.Alpha == 1;
+            } 
+        }
 
         public WidgetManagerNode WidgetManager { get; set; }
 
@@ -209,7 +222,8 @@ namespace UI.Nodes
         {
             float pilotAlpha = Theme.Current.PilotViewTheme.PilotTitleAlpha / 255.0f;
 
-            PilotProfile = new PilotProfileNode();
+            PilotProfile = new PilotProfileNode(ChannelColor, pilotAlpha);
+            PilotProfile.Alpha = 0;
             PilotProfile.SetAnimatedVisibility(false);
 
             LapsNode = new LapsNode(EventManager);
@@ -218,9 +232,9 @@ namespace UI.Nodes
             LapsNode.RelativeBounds = new RectangleF(0, 1 - (LapsNode.LapLines * LapLineHeight), 1, LapLineHeight * LapsNode.LapLines);
 
             DisplayNode = CreateDisplayNode();
+            DisplayNode.AddChild(PilotProfile);
 
             AddChild(DisplayNode);
-            DisplayNode.AddChild(PilotProfile);
             AddChild(LapsNode);
 
             //WidgetManager = new WidgetManagerNode();
@@ -233,8 +247,14 @@ namespace UI.Nodes
                 AddChild(SplitsNode);
             }
 
+            pilotInfoContainer = new AnimatedRelativeNode();
+            pilotInfoContainer.RelativeBounds = new RectangleF(0, 0.03f, 0.4f, 0.185f);
+            DisplayNode.AddChild(pilotInfoContainer);
+
+
             pilotNameNode = new ChannelPilotNameNode(this, ChannelColor, pilotAlpha);
-            DisplayNode.AddChild(pilotNameNode);
+            pilotNameNode.RelativeBounds = new RectangleF(0, 0, 1, 0.65f);
+            pilotInfoContainer.AddChild(pilotNameNode);
 
             channelInfo = new TextNode(Channel.GetBandChannelText(), Color.White);
             channelInfo.RelativeBounds = new RectangleF(0.0f, 0.01f, 0.99f, 0.1f);
@@ -293,7 +313,8 @@ namespace UI.Nodes
             pbBackground = new ColorNode(Theme.Current.PilotViewTheme.PBBackground);
             pbBackground.KeepAspectRatio = false;
             pbBackground.Alpha = pilotAlpha;
-            DisplayNode.AddChild(pbBackground);
+            pbBackground.RelativeBounds = new RectangleF(0.0f, pilotNameNode.RelativeBounds.Bottom, pilotNameNode.RelativeBounds.Width * 0.66f, 0.35f);
+            pilotInfoContainer.AddChild(pbBackground);
 
             PBNode = new PBContainerNode(EventManager, Theme.Current.PilotViewTheme.PilotOverlayText.XNA, 1 / pbBackground.Alpha);
             PBNode.RelativeBounds = new RectangleF(0.1f, 0.05f, 0.8f, 0.95f);
@@ -380,13 +401,55 @@ namespace UI.Nodes
             RequestLayout();
         }
 
-        public void SetProfileVisible(bool visible, bool snap)
+        public enum PilotProfileOptions
         {
-            PilotProfile.SetAnimatedVisibility(visible);
+            None, 
+            Large,
+            Small
+        }
 
-            if (snap)
+        private PilotProfileOptions pilotProfileOptions;
+
+        public void SetProfileVisible(PilotProfileOptions options)
+        {
+            pilotProfileOptions = options;
+
+            // Don't do the small option if we're not a video node.
+            if (this is not ChannelVideoNode)
             {
-                PilotProfile.Snap();
+                options = PilotProfileOptions.Large;
+            }
+
+            if (!PilotProfile.HasProfileImage)
+            {
+                options = PilotProfileOptions.None;
+            }
+
+            switch (options)
+            {
+                case PilotProfileOptions.None:
+                    pilotInfoContainer.RelativeBounds = new RectangleF(0, 0.03f, 0.4f, 0.185f);
+                    PilotProfile.SetAnimatedVisibility(false);
+                    PilotProfile.RepeatVideo = false;
+                    break;
+
+                case PilotProfileOptions.Small:
+                    PilotProfile.ProfileImageContainer.RelativeBounds = new RectangleF(0, 0.03f, 0.12f, 0.185f);
+                    pilotInfoContainer.RelativeBounds = new RectangleF(PilotProfile.ProfileImageContainer.RelativeBounds.Right, 0.03f, 0.4f, 0.185f);
+                    PilotProfile.SetAnimatedVisibility(true);
+                    PilotProfile.RepeatVideo = false;
+                    break;
+
+                case PilotProfileOptions.Large:
+                    pilotInfoContainer.RelativeBounds = new RectangleF(0, 0.03f, 0.4f, 0.185f);
+                    PilotProfile.SetAnimatedVisibility(true);
+
+                    float bottomOfName = pilotInfoContainer.RelativeBounds.Bottom + 0.01f;
+
+                    PilotProfile.ProfileImageContainer.RelativeBounds = new RectangleF(0.4f, bottomOfName, 0.6f, 1 - bottomOfName);
+                    PilotProfile.ProfileImageContainer.RelativeBounds = new RectangleF(0, 0, 1, 1);
+                    PilotProfile.RepeatVideo = true;
+                    break;
             }
         }
 
@@ -489,7 +552,7 @@ namespace UI.Nodes
                         }
                     }
 
-                    IEnumerable<Detection> detections = race.GetLaps(Pilot).Select(l => l.Detection);
+                    IEnumerable<Detection> detections = race.GetLaps(l => l.Pilot == Pilot).Select(l => l.Detection);
                     if (detections.Any())
                     {
                         double averagePower = detections.Select(d => d.Peak).Average();
@@ -572,6 +635,11 @@ namespace UI.Nodes
                         });
                     }
 
+                    mm.AddItem("Full screen", () =>
+                    {
+                        OnFullscreen?.Invoke();
+                    });
+
                     Race r = EventManager.RaceManager.CurrentRace;
                     if (r != null)
                     {
@@ -591,6 +659,15 @@ namespace UI.Nodes
                 return true;
             }
 
+            if (mouseInputEvent.ButtonState == ButtonStates.Pressed && mouseInputEvent.Button == MouseButtons.Left)
+            {
+                if (pilotProfileOptions == PilotProfileOptions.Large && PilotProfile.Contains(mouseInputEvent.Position))
+                {
+                    PilotProfile.ToggleAnimatedVisibility();
+                }
+
+                return true;
+            }
             return false;
         }
 
@@ -821,16 +898,22 @@ namespace UI.Nodes
             {
                 resultBackground.RelativeBounds = new RectangleF(0, 0.3f, 1, 0.4f);
             }
-
-            pilotNameNode.RelativeBounds = new RectangleF(0, 0.03f, 0.4f, 0.12f);
-            pbBackground.RelativeBounds = new RectangleF(0.0f, pilotNameNode.RelativeBounds.Bottom, pilotNameNode.RelativeBounds.Width * 0.66f, 0.065f);
         }
     }
 
     public class ChannelPilotNameNode : ColorNode, IPilot
     {
         public Pilot Pilot { get; set; }
-        public Channel Channel { get { return ChannelNodeBase.Channel; } }
+        public Channel Channel 
+        { 
+            get 
+            { 
+                if (ChannelNodeBase == null)
+                    return Channel.None; 
+
+                return ChannelNodeBase.Channel; 
+            } 
+        }
 
         private TextNode pilotName;
         public ChannelNodeBase ChannelNodeBase { get; private set; }
@@ -866,9 +949,12 @@ namespace UI.Nodes
 
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
         {
-            if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Pressed && ChannelNodeBase.EventManager.RaceManager.CanRunRace)
+            if (ChannelNodeBase != null)
             {
-                GetLayer<DragLayer>()?.RegisterDrag(this, mouseInputEvent);
+                if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Pressed && ChannelNodeBase.EventManager.RaceManager.CanRunRace)
+                {
+                    GetLayer<DragLayer>()?.RegisterDrag(this, mouseInputEvent);
+                }
             }
 
             return base.OnMouseInput(mouseInputEvent);
