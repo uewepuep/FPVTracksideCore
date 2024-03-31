@@ -246,6 +246,23 @@ namespace RaceLib
             });
         }
 
+        public IEnumerable<FileInfo> GetPilotProfileMedia()
+        {
+            DirectoryInfo pilotProfileDirectory = new DirectoryInfo("pilots");
+            string[] extensions = new string[] { ".mp4", ".wmv", ".mkv", ".png", ".jpg"};
+
+            if (pilotProfileDirectory.Exists)
+            {
+                foreach (FileInfo file in pilotProfileDirectory.GetFiles())
+                {
+                    if (extensions.Contains(file.Extension))
+                    {
+                        yield return file;
+                    }
+                }
+            }
+        }
+
         public void FindProfilePicture(Pilot pilot)
         {
             FindProfilePictures(new[] { pilot });
@@ -253,27 +270,18 @@ namespace RaceLib
 
         public void FindProfilePictures(IEnumerable<Pilot> pilots)
         {
-            DirectoryInfo photoDir = new DirectoryInfo("pilots");
-
-            string[] extensions = new string[] { ".png", ".jpg", ".mp4", ".wmv", ".mkv" };
-
-            if (photoDir.Exists)
+            FileInfo[] media = GetPilotProfileMedia().ToArray();
+            foreach (Pilot p in pilots)
             {
-                FileInfo[] files = photoDir.GetFiles();
-                foreach (Pilot p in pilots)
+                if (p != null && string.IsNullOrEmpty(p.PhotoPath))
                 {
-                    if (p != null && string.IsNullOrEmpty(p.PhotoPath))
+                    IEnumerable<FileInfo> matches = media.Where(f => f.Name.ToLower().Contains(p.Name.ToLower()));
+                    if (matches.Any())
                     {
-                        IEnumerable<FileInfo> matches = files.Where(f => f.Name.ToLower().Contains(p.Name.ToLower()));
-                        matches = matches.Where(f => extensions.Contains(f.Extension.ToLower()));
-
-                        if (matches.Any())
+                        using (IDatabase db = DatabaseFactory.Open(EventId))
                         {
-                            using (IDatabase db = DatabaseFactory.Open(EventId))
-                            {
-                                p.PhotoPath = matches.OrderByDescending(f => f.Extension).FirstOrDefault().FullName;
-                                db.Update(p);
-                            }
+                            p.PhotoPath = matches.OrderByDescending(f => f.Extension).FirstOrDefault().FullName;
+                            db.Update(p);
                         }
                     }
                 }
@@ -595,7 +603,7 @@ namespace RaceLib
         {
             using (IDatabase db = DatabaseFactory.OpenLegacyLoad(Guid.Empty))
             {
-                return db.GetEvents().ToArray();
+                return db.GetEvents().Where(e => e.ID != Event.ID).ToArray();
             }
         }
 

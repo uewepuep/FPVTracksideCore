@@ -380,6 +380,8 @@ namespace Composition.Nodes
 
         public virtual void Draw(Drawer id, float parentAlpha)
         {
+            NeedsDraw = false;
+            DrawChildren(id, parentAlpha);
         }
 
         public void DrawChildren(Drawer id, float parentAlpha)
@@ -777,6 +779,36 @@ namespace Composition.Nodes
             position += Bounds.Location;
 
             return position;
+        }
+
+        public void ReplaceWith(Node node)
+        {
+            if (Parent == null)
+            {
+                return;
+            }
+
+            node.RelativeBounds = RelativeBounds;
+            node.Bounds = Bounds;
+            node.Visible = Visible;
+            node.Alpha = Alpha;
+            node.Parent = Parent;
+
+
+            Node[] newChildren = new Node[Parent.children.Length];
+
+            for (int i = 0; i < newChildren.Length; i++)
+            {
+                if (children[i] == this)
+                {
+                    newChildren[i] = node;
+                }
+                else
+                {
+                    newChildren[i] = children[i];
+                }
+            }
+            Parent = null;
         }
     }
 

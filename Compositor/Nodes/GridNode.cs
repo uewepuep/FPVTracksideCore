@@ -55,6 +55,8 @@ namespace Composition.Nodes
 
         public bool ForceUpdate { get; set; }
 
+        public bool LockGridType { get; set; }
+
         public GridNode()
         {
             Padding = 0.01f;
@@ -135,6 +137,9 @@ namespace Composition.Nodes
 
         protected virtual GridTypes DecideLayout(int count)
         {
+            if (LockGridType)
+                return GridType;
+
             if (count == 0)
                 return GridTypes.None;
 

@@ -289,7 +289,7 @@ namespace UI.Nodes
                 int visibleCount = VisibleChildCount();
                 int gridItemCount = GridTypeItemCount(DecideLayout(visibleCount));
 
-                if (gridItemCount > visibleCount && !Replay)
+                if (gridItemCount > visibleCount && !Replay && !LockGridType)
                 {
                     gridStatsNode.SetAnimatedVisibility(true);
                 }

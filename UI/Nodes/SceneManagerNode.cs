@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Tools;
 using Composition.Input;
 using UI.Video;
+using System.Xml.Linq;
 
 namespace UI.Nodes
 {
@@ -35,6 +36,7 @@ namespace UI.Nodes
 
         private Scenes preFullScreenScene;
         private FullScreenAspectClosable fullScreenContainer;
+        private Node placeMarker;
         private Node fullscreenNode;
         private Node fullscreenNodeParent;
 
@@ -134,6 +136,8 @@ namespace UI.Nodes
             fullScreenContainer = new FullScreenAspectClosable();
             fullScreenContainer.Close += UnFullScreen;
             AddChild(fullScreenContainer);
+
+            placeMarker = new Node();
         }
 
         public void SyncFinished()
@@ -344,6 +348,8 @@ namespace UI.Nodes
             switch (scene)
             {
                 case Scenes.PreRace:
+                    ChannelsGridNode.LockGridType = false;
+
                     SetAnimationTime(SetupAnimationTime);
 
                     float launchWidth = 0.7f;
@@ -407,6 +413,8 @@ namespace UI.Nodes
                     break;
 
                 case Scenes.Race:
+                    ChannelsGridNode.LockGridType = false;
+
                     SetAnimationTime(MidRaceAnimationTime);
 
                     ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
@@ -426,6 +434,9 @@ namespace UI.Nodes
                     break;
 
                 case Scenes.Clear:
+                    ChannelsGridNode.LockGridType = false;
+                    ChannelsGridNode.SingleRow = false;
+
                     SetAnimationTime(SetupAnimationTime);
 
                     ChannelsGridNode.AllVisible(false);
@@ -500,6 +511,7 @@ namespace UI.Nodes
                     break;
 
                 case Scenes.Fullscreen:
+                    ChannelsGridNode.LockGridType = true;
                     Node fsNode = fullscreenNode;
 
                     if (fsNode == null)
@@ -527,6 +539,8 @@ namespace UI.Nodes
                     break;
 
                 case Scenes.FinishLine:
+                    ChannelsGridNode.LockGridType = false;
+
                     SetAnimationTime(SetupAnimationTime);
 
                     IEnumerable<Node> finishCam = finishLineNode.VisibleChildren;

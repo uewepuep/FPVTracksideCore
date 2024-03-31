@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework;
 using RaceLib;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Tools;
 
@@ -145,7 +146,6 @@ namespace UI.Nodes
 
         private PilotChannelNode GetPilotChannelNodeFromMouseInputEvent(MouseInputEvent mouseInputEvent)
         {
-
             foreach (var pcn in listNode.ChildrenOfType)
             {
                 if (pcn.Bounds.Contains(mouseInputEvent.Position))
@@ -274,11 +274,13 @@ namespace UI.Nodes
                 mm.AddSubmenu("Restore Removed Pilots", (c) => { eventManager.AddPilot(c); RebuildList(); }, eventManager.Event.RemovedPilots.ToArray());
             }
 
+            MouseMenu importMenu = mm.AddSubmenu("Import"); 
+
             Event[] others = eventManager.GetOtherEvents();
             if (others.Any())
             {
                 mm.AddBlank();
-                MouseMenu otherEvents = mm.AddSubmenu("Import from another event");
+                MouseMenu otherEvents = importMenu.AddSubmenu("Import from another event");
                 foreach (Event e in others)
                 {
                     if (e.Enabled && e.PilotCount > 0)
@@ -287,6 +289,24 @@ namespace UI.Nodes
                     }
                 }
             }
+
+            importMenu.AddItem("Import from profile picture filenames", () =>
+            {
+                List<string> names = new List<string>();
+                foreach (FileInfo fileInfo in eventManager.GetPilotProfileMedia())
+                {
+                    string name = fileInfo.Name.Replace(fileInfo.Extension, "");
+                    if (!names.Contains(name))
+                    {
+                        names.Add(name);
+                    }
+                }
+
+                IEnumerable<PilotChannel> newPilots = ImportFromNames(names);
+                EditPilotChannels(newPilots, null);
+                RebuildList();
+            });
+
 
             if (anyPilots)
             {
