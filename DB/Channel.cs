@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Tools;
+using RaceLib;
 
 namespace DB
 {
@@ -12,6 +13,8 @@ namespace DB
     {
         public int Number { get; set; }
         public string Band { get; set; }
+        public string ShortBand { get; set; }
+
         public char ChannelPrefix { get; set; }
         public int Frequency { get; set; }
 
@@ -21,6 +24,7 @@ namespace DB
            : base(obj)
         {
             Band = obj.Band.ToString();
+            ShortBand = obj.Band.GetCharacter();
         }
     }
 }
