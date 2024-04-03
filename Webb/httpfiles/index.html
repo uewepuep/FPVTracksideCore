@@ -20,7 +20,7 @@
     <script>
 
         var eventManager = new EventManager("%eventDirectory%");
-        var formatter = new Formatter(eventManager, document, window, history, "content");
+        var formatter = new Formatter("/", eventManager, document, this.window, history, "content");
 
         let menuItems = formatter.GetOptions();
 

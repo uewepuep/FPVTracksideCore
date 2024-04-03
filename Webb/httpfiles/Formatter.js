@@ -1,8 +1,9 @@
 
 class Formatter
 {
-    constructor(eventManager, document, window, history, contentName)
+    constructor(root, eventManager, document, window, history, contentName)
     {
+        this.root = root;
         this.eventManager = eventManager;
         this.document = document;
         this.window = window;
@@ -24,7 +25,7 @@ class Formatter
         window.setInterval(() =>
         {
             self.RepeatLastAction();
-        }, 10000);
+        }, 100000);
     }
 
     GetOptions()
@@ -56,13 +57,7 @@ class Formatter
                 this.ShowPoints();
                 break;
         }
-
-        let url = new URL(this.window.location.href);
-        url.pathname = name;
-
-        history.pushState({}, null, url.toString());
     }
-
 
     RepeatLastAction()
     {
@@ -133,7 +128,7 @@ class Formatter
 
     ChannelToString(channel)
     {
-        return channel.Band.substring(0, 1) + channel.Number;
+        return channel.ShortBand + channel.Number;
     }
 
     async ShowEventStatus()
@@ -196,7 +191,6 @@ class Formatter
                 output += "<h3>" + round.EventType + " Round " + round.RoundNumber + "</h3>";
 
                 let races = await this.eventManager.GetRoundRaces(round.ID);
-                races = races.sort((a, b) => { return a.RaceNumber - b.RaceNumber });
 
                 for (const race of races)
                 {
@@ -218,8 +212,8 @@ class Formatter
 
     async ShowLapRecords()
     {
-        let output = await this.GetLapRecords();
-        this.SetContent(output);
+        this.SetContent(await this.GetLapRecords());
+        this.GetLapRecordsGraph();//Auto appends
 
         this.lastAction = this.ShowLapRecords;
     }
@@ -235,9 +229,6 @@ class Formatter
 
         pilotRecords.sort((a, b) => { return this.eventManager.TotalTime(a.laps) - this.eventManager.TotalTime(b.laps) });
 
-        const isRace = eventDetails.EventType == "Race";
-
-
         let output = "<h2>Lap Records</h2>";
         output += "<div class=\"columns\">";
         output += "<div class=\"row\" >";
@@ -246,11 +237,7 @@ class Formatter
         output += "<div class=\"holeshot\">Holeshot</div>";
         output += "<div class=\"lap\">" + pbLaps + " Lap" + this.Plural(pbLaps) + " </div>";
         output += "<div class=\"laps\">" + lapCount + " Lap" + this.Plural(lapCount) + " </div>";
-
-        if (isRace)
-        {
-            output += "<div class=\"racetime\">Race Time</div>";
-        }
+        output += "<div class=\"racetime\">Race Time</div>";
         output += "</div>";
 
         let i = 1;
@@ -262,16 +249,105 @@ class Formatter
             output += "<div class=\"holeshot\">" + this.LapsToTime(pilotRecord.holeshot) + "</div>";
             output += "<div class=\"lap\">" + this.LapsToTime(pilotRecord.lap) + "</div>";
             output += "<div class=\"laps\">" + this.LapsToTime(pilotRecord.laps) + "</div>";
-
-            if (isRace)
-            {
-                output += "<div class=\"racetime\">" + this.LapsToTime(pilotRecord.race) + "</div>";
-            }
+            output += "<div class=\"racetime\">" + this.LapsToTime(pilotRecord.race) + "</div>";
 
             output += "</div>";
             i++;
         }
         output += "</div>";
+        return output;
+    }
+
+    async GetLapRecordsGraph()
+    {
+        const eventDetails = await this.eventManager.GetEvent();
+        const colors = eventDetails.ChannelColors;
+
+        let pilots = await this.eventManager.GetPilots();
+        let rounds = await this.eventManager.GetRounds(r => r.Valid);
+
+        const lapCount = eventDetails.PBLaps;
+
+        let output = "<div class=\"graph\">";
+        output += "<h2>PB Lap times over Rounds</h2><br>";
+
+        output += "<canvas id=\"posgraph\" width=\"1000\" height=\"600\"> </canvas>";
+        output += "</div>";
+        this.AppendContent(output);
+
+        let graph = new Graph(this.document, "posgraph");
+
+        let best = 1000;
+        let worst = 0;
+
+        for (const round of rounds)
+        {
+            let races = await this.eventManager.GetRoundRaces(round.ID);
+            for (const race of races)
+            {
+                for (const pilotIndex in pilots)
+                {
+                    const pilot = pilots[pilotIndex];
+        
+                    let colorIndex = pilotIndex % colors.length;
+                    let color = colors[colorIndex];
+        
+                    const path = graph.GetPath(pilot.Name, color);
+
+                    if (this.eventManager.RaceHasPilot(race, pilot.ID))
+                    {
+                        const raceLaps = this.eventManager.GetValidLapsPilot(race, pilot.ID);
+                        const nonHoleshots = this.eventManager.ExcludeHoleshot(raceLaps);
+
+                        const laps = this.eventManager.BestConsecutive(nonHoleshots, lapCount);
+
+                        const time = this.eventManager.TotalTime(laps);
+                        if (time == Number.MAX_SAFE_INTEGER)
+                            continue;
+
+                        path.AddPoint(round.Order, time);
+
+                        if (best > time)
+                            best = time;
+                        if (worst < time)
+                            worst = time;
+                    }
+                }
+            }
+        }
+
+        let minOrder = 100000;
+        let maxOrder = 0;
+    
+        for (const round of rounds)
+        {
+            let roundName = round.EventType[0] + round.RoundNumber;
+
+            graph.AddXLabel(roundName, round.Order);
+
+            if (minOrder > round.Order)
+                minOrder = round.Order;
+            if (maxOrder < round.Order)
+                maxOrder = round.Order;
+        }
+
+        const width = maxOrder - minOrder
+
+        let scale = 1;
+        if (worst - best > 5)
+        {
+            scale = 5;
+        }
+
+        for (let i = Math.floor(best); i < Math.ceil(worst); i += scale)
+        {
+            graph.AddYLabel(i, i);
+        }
+
+        const canvas = document.getElementById("posgraph");
+        graph.SetView(minOrder - 100, best - scale, width + 300, (worst - best) + scale);
+        graph.MakeGraph(canvas);
+
         return output;
     }
 
@@ -294,11 +370,10 @@ class Formatter
 
     async ShowPoints()
     {
-        let pilotRecords = await this.eventManager.GetPoints();
+        let rounds = await this.eventManager.GetRounds(r => r.EventType == "Race");
+        let pilotRecords = await this.eventManager.GetPoints(rounds);
 
         pilotRecords.sort((a, b) => { return b.total - a.total });
-
-        let rounds = await this.eventManager.GetRounds();
 
         let output = "<h2>Points</h2>";
 
@@ -527,14 +602,42 @@ class Formatter
         output += "<div class=\"row\" >";
         output += "<div class=\"pilots\">Pilots</div>";
 
+        let addTotal = true;
         for (const round of rounds)
         {
             let roundName = round.EventType[0] + round.RoundNumber;
             output += "<div class=\"r\">" + roundName + "</div>";
+            addTotal = true;
+
+            let hasTotal = false;
+            let hasRRO = false;
+            for (const pilotRecord of pilotRecords)
+            {
+                if (pilotRecord["total_" + roundName] != null)
+                    hasTotal = true;
+
+                if (pilotRecord["RRO_" + roundName] != null)
+                hasRRO = true;
+            }
+
+            if (hasTotal)
+            {
+                output += "<div class=\"total\">Total</div>";
+                addTotal = false;
+            }
+
+            if (hasRRO)
+            {
+                output += "<div class=\"r\">RRO</div>";
+                addTotal = true;
+            }
         }
 
-        output += "<div class=\"total\">Total</div>";
-        output += "</div>";
+        if (addTotal)
+        {
+            output += "<div class=\"total\">Total</div>";
+            output += "</div>";
+        }
 
         let i = 1;
         for (const pilotRecord of pilotRecords)
@@ -550,8 +653,24 @@ class Formatter
                     value = " ";
 
                 output += "<div class=\"r\">" + value + "</div>";
+
+                let totalName = "total_" + roundName;
+                if (pilotRecord[totalName] != null)
+                {
+                    output += "<div class=\"total\">" + pilotRecord[totalName] + "</div>";
+                }
+
+                let rroName = "RRO_" + roundName;
+                if (pilotRecord[rroName] != null)
+                {
+                    output += "<div class=\"r\">" + pilotRecord[rroName] + "</div>";
+                }
             }
-            output += "<div class=\"total\">" + pilotRecord.total + "</div>";
+
+            if (addTotal)
+            {
+                output += "<div class=\"total\">" + pilotRecord.total + "</div>";
+            }
 
             output += "</div>";
             i++;

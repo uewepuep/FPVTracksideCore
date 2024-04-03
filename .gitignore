@@ -14,3 +14,4 @@ packages/
 *.DS_Store
 ffmpegMediaPlatform/ffmpeg.exe
 ffmpegMediaPlatform/ffmpeg
+Webb/httpfiles/Channels.json

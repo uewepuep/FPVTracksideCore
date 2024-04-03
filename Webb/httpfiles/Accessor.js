@@ -33,7 +33,7 @@ class Accessor
         }
         catch (e)
         {
-            return null;
+            return [];
         }
     }
 

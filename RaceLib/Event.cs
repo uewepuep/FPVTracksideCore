@@ -190,7 +190,11 @@ namespace RaceLib
                 }
             }
         }
-        
+
+        [Category("Cloud")]
+        [DisplayName("Visible Online")]
+        public bool Visible { get; set; }
+
         [System.ComponentModel.Browsable(false)]
         
         public string Month
@@ -200,11 +204,6 @@ namespace RaceLib
                 return System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(Start.Month) + " " + Start.Year;
             }
         }
-
-        //[Category("MultiGP")]
-
-        //[DisplayName("ZippyQ")]
-        //public bool MultiGPZippyQ { get; set; }
 
         public Event()
         {
@@ -227,6 +226,7 @@ namespace RaceLib
             Channels = new Channel[0];
             MinLapTime = TimeSpan.FromSeconds(5);
             Start = DateTime.Today;
+            Visible = true;
         }
 
         public Event Clone()
