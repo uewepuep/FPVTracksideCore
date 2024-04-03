@@ -1809,7 +1809,7 @@ namespace RaceLib
                 requiredLaps = (int)Math.Ceiling(120 / avgLap);
             }
 
-            race.Start = DateTime.Now.AddSeconds(-requiredLaps * avgLap);
+            race.Start = DateTime.Now.AddSeconds(-requiredLaps * 2 * avgLap);
 
             IEnumerable<Channel> shuffled = race.Channels;
             foreach (Channel channel in shuffled)

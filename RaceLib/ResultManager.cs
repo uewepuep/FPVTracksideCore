@@ -474,6 +474,9 @@ namespace RaceLib
             if (!race.Ended)
                 return false;
 
+            if (!race.Round.EventType.HasPoints())
+                return false;
+
             ClearPointsNoTrigger(race);
 
             List<Result> newResults = new List<Result>();
