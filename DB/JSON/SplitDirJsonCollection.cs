@@ -146,7 +146,7 @@ namespace DB.JSON
             return allCache;
         }
 
-        private IEnumerable<T> DiskAll()
+        protected virtual IEnumerable<T> DiskAll()
         {
             foreach (DirectoryInfo di in Directory.EnumerateDirectories())
             {
@@ -163,6 +163,11 @@ namespace DB.JSON
             }
         }
 
+        protected T[] Read(string filename)
+        {
+            return jsonIO.Read(filename);
+        }
+
         private bool Write(T value)
         {
             return Write(new T[] { value }) > 0;
@@ -176,9 +181,16 @@ namespace DB.JSON
             foreach (var group in groups)
             {
                 Guid id = group.Key;
-                IEnumerable<T> ts = group.Where(r => r != null);
+                IEnumerable<T> newValues = group.Where(r => r != null);
                 string filename = GetFilename(id);
-                jsonIO.Write(filename, ts);
+
+                T[] existing = Read(filename);
+
+                IEnumerable<T> except = existing.Except(newValues);
+
+                IEnumerable<T> appended = except.Concat(newValues);
+
+                jsonIO.Write(filename, appended);
             }
             return count;
         }

@@ -13,9 +13,27 @@ namespace DB.JSON
         {
         }
 
+        public override string GetFilename(Guid id)
+        {
+            if (id == Guid.Empty)
+            {
+                return Path.Combine(Directory.FullName, "Results.json");
+            }
+
+            return base.GetFilename(id);
+        }
+
         protected override Guid ObjectToID(Result t)
         {
             return t.Race;
+        }
+
+        protected override IEnumerable<Result> DiskAll()
+        {
+            IEnumerable<Result> baseAll = base.DiskAll();
+
+            string generalResults = GetFilename(Guid.Empty);
+            return baseAll.Union(Read(generalResults));
         }
     }
 }
