@@ -68,10 +68,55 @@ img
     color: white;
     font-size: 16pt;
     text-align: center;
-    padding: 3px;
     margin: 0px;
     margin-left: auto;
     margin-right: auto;
+
+    background: linear-gradient(#D6D5D6,#A1A1A1);
+    padding: 0px;
+    border-top: 1px solid black;
+    text-shadow: 1px 1px rgb(92, 92, 92);
+}
+
+h1
+{
+    padding-top: 20px;
+}
+
+.submenu
+{
+    color:red;
+    font-size: 16pt;
+    padding:10px;
+    margin: 0px;
+}
+
+.menu_table
+{
+    margin: 0px;
+    text-shadow: 1px 1px rgb(92, 92, 92);
+}
+
+.menu_item
+{
+    margin: 0px;
+    padding: 4px 30px;
+    font-size: 16pt;
+}
+
+
+.menu_item_button 
+{
+    background: none!important;
+    border: none;
+    padding: 0!important;
+    text-decoration: underline;
+    cursor: pointer;
+
+    margin: 6px;
+    padding: 4px 20px;
+    font-size: 16pt;
+    
 }
 
 .rounds 
@@ -214,7 +259,7 @@ h2
 
 .t, .p, .r, .e, .c, .f, .a 
 {
-    width: 30px;
+    width: 40px;
     text-align: right;
 }
 
@@ -232,14 +277,6 @@ h2
     padding: 10px;
 }
 
-.menu
-{
-    background: linear-gradient(#D6D5D6,#A1A1A1);
-    padding: 4px 30px;
-    border-top: 1px solid black;
-    column-count: var(--menu-columns);
-    text-shadow: 1px 1px rgb(92, 92, 92);
-}
 .cell_numeric
 {
    text-align: right;
@@ -265,4 +302,11 @@ h2
 canvas
 {
     padding:50px;
+}
+
+
+.loading
+{
+    margin-left: auto;
+    margin-right: auto;
 }

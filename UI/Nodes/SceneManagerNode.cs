@@ -36,7 +36,6 @@ namespace UI.Nodes
 
         private Scenes preFullScreenScene;
         private FullScreenAspectClosable fullScreenContainer;
-        private Node placeMarker;
         private Node fullscreenNode;
         private Node fullscreenNodeParent;
 
@@ -136,8 +135,6 @@ namespace UI.Nodes
             fullScreenContainer = new FullScreenAspectClosable();
             fullScreenContainer.Close += UnFullScreen;
             AddChild(fullScreenContainer);
-
-            placeMarker = new Node();
         }
 
         public void SyncFinished()

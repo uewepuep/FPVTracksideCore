@@ -45,6 +45,11 @@ class Graph
     MakeGraph(canvas)
     {
         var ctx = canvas.getContext("2d");
+
+        this.width = canvas.width;
+        this.height = canvas.height;
+        this.bottom = this.height - 4;
+        
         ctx.font = this.font;
 
         for (const pathKey in this.paths)

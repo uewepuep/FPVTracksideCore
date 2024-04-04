@@ -14,12 +14,51 @@ class EventManager
 
     async GetPilots()
     {
-        return await this.accessor.GetJSON(this.eventDirectory + "/Pilots.json");
+        let output = [];
+        let event = await this.GetEvent();
+        let allPilots = await this.accessor.GetJSON(this.eventDirectory + "/Pilots.json");
+
+        for (let i = 0; i < allPilots.length; i++)
+        {
+            let pilot  = allPilots[i];
+            for (let j = 0; j < event.PilotChannels.length; j++)
+            {
+                let pilotChannel = event.PilotChannels[j];
+                if (pilotChannel.Pilot == pilot.ID)
+                {
+                    output.push(pilot);
+                }
+            }
+        }
+        return output;
     }
 
-    async GetRounds()
+    async GetRounds(delegate = null)
     {
-        return await this.accessor.GetJSON(this.eventDirectory + "/Rounds.json");
+        let allRounds = await this.accessor.GetJSON(this.eventDirectory + "/Rounds.json");
+
+        allRounds.sort((a, b) => 
+        { 
+            if (a == null || b == null)
+                return 0;
+
+            return a.Order - b.Order 
+        });
+        
+        let rounds = [];
+        for (let i = 0; i < allRounds.length; i++)
+        {
+            let round = allRounds[i];
+
+            if (!round.Valid)
+                continue;
+
+            if (delegate == null || delegate(round))
+            {
+                rounds.push(round);
+            }
+        }
+        return rounds;
     }
 
     async GetRace(id)
@@ -48,6 +87,9 @@ class EventManager
         for (const raceId of raceIds)
         {
             let race = await this.GetRace(raceId);
+            if (race == null)
+                continue;
+
             if (delegate == null || delegate(race))
             {
                 races.push(race);
@@ -120,7 +162,13 @@ class EventManager
             output.push(lap);
         }
 
-        output.sort((a, b) => { return a.EndTime - b.EndTime });
+        output.sort((a, b) => 
+        { 
+            if (a == null || b == null)
+                return 0;
+
+            return a.EndTime - b.EndTime 
+        });
 
         return output;
     }
@@ -240,7 +288,8 @@ class EventManager
                     if (this.RaceHasPilot(race, pilot.ID))
                     {
                         let raceLaps = this.GetValidLapsPilot(race, pilot.ID);
-                        const count = raceLaps.length;
+                        let exclude = this.ExcludeHoleshot(raceLaps)
+                        const count = exclude.length;
                         pilotRecord[roundName] = count;
                         pilotRecord.total += count;
                     }
@@ -251,13 +300,20 @@ class EventManager
         return records;
     }
 
-    async GetPoints()
+    async GetPoints(rounds)
     {
         let records = [];
 
         let pilots = await this.GetPilots();
-        let races = await this.GetRaces((r) => { return r.Valid; });
-        let rounds = await this.GetRounds();
+        let races = await this.GetRaces((r) => 
+        { 
+            if (r == null)
+                return false;
+
+            return r.Valid; 
+        });
+
+        let rros = [];
 
         for (const pilotIndex in pilots)
         {
@@ -269,10 +325,47 @@ class EventManager
                 total: 0
             };
 
+            let totalName = "total";
+
+            let worstResult = 100000;
+
             for (const roundIndex in rounds)
             {
                 const round = rounds[roundIndex];
                 let roundName = round.EventType[0] + round.RoundNumber;
+                let pointSummary = round.PointSummary;
+                if (pointSummary != null)
+                {
+                    let rroResult = null;
+                    let rro = await this.GetGeneralResults(r => r.ResultType == "RoundRollOver" && r.Round == round.ID && r.Pilot == pilot.ID);
+                    if (rro.length == 1)
+                    {
+                        rroResult = rro[0];
+                    }
+
+                    if (rroResult != null && worstResult > rroResult.Points)
+                    {
+                        worstResult = rroResult.Points;
+                    }
+
+                    if (pointSummary.DropWorstRound && worstResult < 10000)
+                    {
+                        pilotRecord.total -= worstResult;
+                    }
+
+                    totalName = "total_" + roundName;
+                    pilotRecord[totalName] = pilotRecord.total;
+                    pilotRecord.total = 0;
+
+
+                    if (rroResult != null)
+                    {
+                        pilotRecord["RRO_" + roundName] = rroResult.Points;
+                        pilotRecord.total += pilotRecord["RRO_" + roundName];
+                    }
+
+                    rros[roundName] = totalName;
+                }
 
                 let roundRaces = []
                 for (const raceIndex in races)
@@ -294,14 +387,29 @@ class EventManager
                         let result = await this.GetPilotResult(race.ID, pilot.ID);
                         if (result != null)
                         {
+                            if (worstResult > result.Points)
+                                worstResult = result.Points;
+
                             pilotRecord[roundName] = result.Points;
-                            pilotRecord.total += result.Points;
+                            pilotRecord[totalName] += result.Points;
+                        }
+                        else
+                        {
+                            worstResult = 0;
                         }
                     }
                 }
+
+                totalName = "total";
             }
             records.push(pilotRecord);
         }
+
+        for (var key in rros)
+        {
+            
+        }
+
         return records;
     }
 
@@ -397,7 +505,13 @@ class EventManager
     async GetRoundRaces(roundId)
     {
         let races = await this.GetRaces((r) => { return r.Round == roundId });
-        races.sort((a, b) => { return a.RaceNumber - b.RaceNumber });
+        races.sort((a, b) => 
+        { 
+            if (a == null || b == null)
+                return 0;
+
+            return a.RaceNumber - b.RaceNumber 
+        });
         return races;
     }
 
@@ -411,37 +525,58 @@ class EventManager
         return await this.accessor.GetJSON("httpfiles/Channels.json");
     }
 
-    async GetChannel(id)
+    async GetEventChannels()
     {
         let event = await this.GetEvent();
         let channels = await this.GetChannels();
 
-        let max = Math.max(event.Channels.length, event.ChannelColors.length);
-        for (let i = 0; i < max; i++)
+        let output = [];
+        for (let j = 0; j < channels.length; j++)
         {
-            if (event.Channels[i] == id)
+            for (let i = 0; i < event.Channels.length; i++)
             {
-                for (let j = 0; j < channels.length; j++)
+                if (channels[j].ID == event.Channels[i])
                 {
-                    if (channels[j].ID == id)
-                    {
-                        let channel = channels[j];
-                        channel.Color = event.ChannelColors[i];
-
-                        return channel;
-                    }
+                    output.push(channels[j]);
                 }
             }
         }
 
-        return null;
+        output.sort((a, b) => { return a.Frequency - b.Frequency });
+
+        return output;
     }
 
-    async GetRounds()
+    async GetChannel(id)
     {
-        let rounds = await this.accessor.GetJSON(this.eventDirectory + "/Rounds.json");
-        rounds.sort((a, b) => { return a.RoundNumber - b.RoundNumber });
-        return rounds;
+        let event = await this.GetEvent();
+        let channelColors = event.ChannelColors;
+        let eventChannels = await this.GetEventChannels();
+
+        let lastChannel = null;
+        let colorIndex = 0;
+        for (let i = 0; i < eventChannels.length; i++)
+        {
+            let channel = eventChannels[i];
+
+            if (i > 0)
+            {
+                if (!this.InterferesWith(channel, lastChannel))
+                {
+                    colorIndex = (colorIndex + 1) % channelColors.length;
+                }
+            }
+
+            if (channel.ID == id)
+            {
+                channel.Color = channelColors[colorIndex];
+                return channel;
+            }
+
+            lastChannel = channel;
+        }
+
+        return null;
     }
 
     async GetPilotResult(raceID, pilotID)
@@ -460,29 +595,26 @@ class EventManager
     async GetPrevCurrentNextRace()
     {
         let outputRaces = [];
-        let rounds = await this.GetRounds();
+        let rounds = await this.GetRounds(r => r.Valid);
         for (const round of rounds)
         {
-            if (round.Valid)
-            {
-                let races = await this.GetRoundRaces(round.ID);
+            let races = await this.GetRoundRaces(round.ID);
 
-                let last = null;
-                let lastLast = null;
-                for (const race of races)
+            let last = null;
+            let lastLast = null;
+            for (const race of races)
+            {
+                if (race.Valid)
                 {
-                    if (race.Valid)
+                    if (race.End == null || race.End == "0001/01/01 0:00:00")
                     {
-                        if (race.End == null || race.End == "0001/01/01 0:00:00")
-                        {
-                            outputRaces.push(lastLast);
-                            outputRaces.push(last);
-                            outputRaces.push(race);
-                            return outputRaces;
-                        }
-                        lastLast = last;
-                        last = race;
+                        outputRaces.push(lastLast);
+                        outputRaces.push(last);
+                        outputRaces.push(race);
+                        return outputRaces;
                     }
+                    lastLast = last;
+                    last = race;
                 }
             }
         }
@@ -494,9 +626,29 @@ class EventManager
         return await this.accessor.GetJSON(this.eventDirectory + "/" + raceID + "/Result.json");
     }
 
+    
+    async GetGeneralResults(delegate = null)
+    {
+        let results = await this.accessor.GetJSON(this.eventDirectory + "/Results.json");
+        let rro = [];
+
+        for (let i = 0; i < results.length; i++)
+        {
+            let result = results[i];
+            if (delegate == null || delegate(result))
+            {
+                rro.push(result);
+            }
+        }
+        return rro;
+    }
+
     async GetObjectByID(url, id)
     {
         let objects = await this.accessor.GetJSON(url);
+        if (objects == null)
+            return null;
+
         for (const object of objects) {
             if (object.ID == id) {
                 return object;
@@ -504,5 +656,14 @@ class EventManager
         }
 
         return null;
+    }
+
+    InterferesWith(channelA, channelB)
+    {
+        if (channelA == null || channelB == null)
+            return false;
+
+        const range = 15;
+        return Math.abs(channelA.Frequency - channelB.Frequency) < range;
     }
 }

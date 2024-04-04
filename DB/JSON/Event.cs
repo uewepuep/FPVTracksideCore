@@ -60,6 +60,7 @@ namespace DB.JSON
         public SyncWith SyncWith { get; set; }
 
         public bool Sync { get; set; }
+        public bool Visible { get; set; }
 
         public int ExternalID { get; set; }
 
@@ -90,6 +91,7 @@ namespace DB.JSON
             ChannelColors = obj.ChannelColors;
             SyncWith = obj.SyncWith;
             Sync = obj.Sync;
+            Visible = obj.Visible;
         }
 
         public override RaceLib.Event GetRaceLibObject(ICollectionDatabase database)

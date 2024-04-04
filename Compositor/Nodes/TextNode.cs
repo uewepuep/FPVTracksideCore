@@ -163,6 +163,7 @@ namespace Composition.Nodes
 
         public virtual void PreProcess(Drawer id)
         {
+            ITextRenderer textRenderer = this.textRenderer;
             if (textRenderer != null)
             {
                 if (needsUpdate == UpdateTypes.Texture)
@@ -179,6 +180,7 @@ namespace Composition.Nodes
 
         public void UpdateGeometry()
         {
+            ITextRenderer textRenderer = this.textRenderer;
             if (textRenderer == null)
                 return;
 
@@ -205,6 +207,9 @@ namespace Composition.Nodes
                 {
                     width = Bounds.Width;
                 }
+
+                if (textRenderer == null)
+                    return;
 
                 textRenderer.CreateGeometry(width, newHeight, DrawingText, Style);
                 height = newHeight;

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Composition.Input;
 using Composition.Layers;
 using Tools;
+using System.Diagnostics;
 
 namespace Composition.Nodes
 {
@@ -156,6 +157,10 @@ namespace Composition.Nodes
 
         public Node()
         {
+#if DEBUG
+            creator = new StackTrace(true);
+#endif
+
             Alpha = 1;
             Visible = true;
             NeedsDraw = true;
@@ -167,6 +172,7 @@ namespace Composition.Nodes
 #if DEBUG
 
         private string lastAddress;
+        private StackTrace creator;
 
         ~Node()
         {
@@ -205,9 +211,16 @@ namespace Composition.Nodes
             ClearDisposeChildren();
         }
 
-        protected virtual void SetParent(Node node)
+        protected virtual void SetParent(Node parent)
         {
-            Parent = node;
+            Parent = parent;
+
+#if DEBUG
+            if (Parent != null)
+            {
+                lastAddress = Parent.Address;
+            }
+#endif
         }
 
         public void ClearDisposeChildren()
@@ -283,10 +296,6 @@ namespace Composition.Nodes
                 children = children.Except(nodes).ToArray();
                 foreach (Node node in nodes)
                 {
-
-#if DEBUG
-                    node.lastAddress = node.Address;
-#endif
                     node.SetParent(null);
                 }
             }
