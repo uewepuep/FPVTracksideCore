@@ -145,6 +145,7 @@ namespace Timing.RotorHazard
     public struct RaceStart
     {
         public double start_time_s { get; set; }
+        public string[] p { get; set; }
     }
 }
 

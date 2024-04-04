@@ -128,6 +128,8 @@ namespace Timing.RotorHazard
 
         private DateTime rotorhazardStart;
 
+        private string[] pilotCallsigns;
+
         public string Name
         {
             get
@@ -222,7 +224,6 @@ namespace Timing.RotorHazard
             public char[] b { get; set; } //Band
             public int[] c { get; set; }//Channel (number)
             public int[] f { get; set; }//frequency
-            public string[] p { get; set; }//pilots
         }
 
         public bool SetListeningFrequencies(IEnumerable<ListeningFrequency> newFrequencies)
@@ -238,7 +239,7 @@ namespace Timing.RotorHazard
             frequencySetup.b = newFrequencies.Select(nf => nf.Band[0]).ToArray();
             frequencySetup.c = newFrequencies.Select(nf => nf.Channel).ToArray();
             frequencySetup.f = newFrequencies.Select(nf => nf.Frequency).ToArray();
-            frequencySetup.p = newFrequencies.Select(nf => nf.Pilot).ToArray();
+            pilotCallsigns = newFrequencies.Select(nf => nf.Pilot).ToArray();
 
             try
             {
@@ -473,7 +474,7 @@ namespace Timing.RotorHazard
                         return; 
 
                     responseWait.Set(); 
-                }, new RaceStart { start_time_s = serverStartTime.TotalSeconds });
+                }, new RaceStart { start_time_s = serverStartTime.TotalSeconds, p = pilotCallsigns });
 
                 if (!responseWait.WaitOne(CommandTimeOut))
                 {
