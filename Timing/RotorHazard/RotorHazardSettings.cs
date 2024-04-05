@@ -17,7 +17,7 @@ namespace Timing.RotorHazard
         public int VoltageWarning { get; set; }
         public int TemperatureWarning { get; set; }
 
-        public bool SendPilotNames { get; set; }
+        public bool SyncPilotNames { get; set; }
 
         public RotorHazardSettings()
         {
@@ -26,7 +26,7 @@ namespace Timing.RotorHazard
 
             VoltageWarning = 11;
             TemperatureWarning = 80;
-            SendPilotNames = false;
+            SyncPilotNames = false;
         }
     }
 }

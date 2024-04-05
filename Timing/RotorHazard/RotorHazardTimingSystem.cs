@@ -473,7 +473,7 @@ namespace Timing.RotorHazard
                     start_time_s = serverStartTime.TotalSeconds
                 };
 
-                if (settings.SendPilotNames)
+                if (settings.SyncPilotNames)
                 {
                     raceStart.p = pilotCallsigns;
                 }
