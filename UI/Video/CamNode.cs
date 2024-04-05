@@ -29,15 +29,16 @@ namespace UI.Video
         public event Action<CamNode> OnFullScreenRequest;
 
         public CamNode(FrameSource s, VideoBounds videoBounds)
+            : this (new FrameNode(s), videoBounds)
         {
+        }
+
+        public CamNode(FrameNode frameNode, VideoBounds videoBounds)
+        {
+            FrameNode = frameNode;
             VideoBounds = videoBounds;
 
-            //TextNode wtf = new TextNode(s.VideoConfig.DeviceName);
-            //Background.AddChild(wtf);
-
-            FrameNode = new FrameNode(s);
             AddChild(FrameNode, 0);
-
             ReloadConfig();
         }
 

@@ -105,7 +105,18 @@ namespace UI.Nodes
                     {
                         PilotPhoto?.Dispose();
 
-                        FileFrameNode videoPlayer = new ChromaKeyFileFrameNode(fileInfo.FullName);
+                        FileFrameNode videoPlayer;
+                        if (ProfileSettings.Instance.PilotProfileChromaKey)
+                        {
+                            videoPlayer = new ChromaKeyFileFrameNode(fileInfo.FullName, 
+                                                                     ProfileSettings.Instance.PilotProfileChromaKeyColor, 
+                                                                     ProfileSettings.Instance.PilotProfileChromaKeyLimit);
+                        }
+                        else
+                        {
+                            videoPlayer = new FileFrameNode(fileInfo.FullName);
+                        }
+
                         videoPlayer.Repeat = true;
                         videoPlayer.Play();
 

@@ -162,7 +162,17 @@ namespace UI.Video
                     if (videoBounds.SourceType == SourceTypes.PhotoBooth)
                     {
                         videoBounds.OverlayAlignment = OverlayAlignment.TopRight;
-                        CamNode camNode = new CamNode(source, videoBounds);
+
+                        CamNode camNode;
+                        if (ProfileSettings.Instance.PilotProfileChromaKey)
+                        {
+                            camNode = new ChromaKeyCamNode(source, videoBounds, ProfileSettings.Instance.PilotProfileChromaKeyColor, ProfileSettings.Instance.PilotProfileChromaKeyLimit);
+                        }
+                        else
+                        {
+                            camNode = new CamNode(source, videoBounds);
+                        }
+
                         camNode.FrameNode.CropToFit = true;
                         camNode.FrameNode.KeepAspectRatio = false;
                         return camNode;

@@ -89,34 +89,4 @@ namespace UI.Video
         }
     }
 
-    public class ChromaKeyFileFrameNode : FileFrameNode
-    {
-        private Texture2D replacementTexture;
-
-        private Color[] data;
-
-        public bool Enabled { get; set; }
-
-
-        public ChromaKeyFileFrameNode(string filename) 
-            : base(filename)
-        {
-            Enabled = true;
-        }
-
-        public override void PreProcess(Drawer id)
-        {
-            base.PreProcess(id);
-
-            if (!Enabled)
-                return;
-
-            if (texture == replacementTexture)
-                return;
-
-            TextureHelper.ChromaKey(texture, ref data, ref replacementTexture);
-
-            texture = replacementTexture;
-        }
-    }
 }

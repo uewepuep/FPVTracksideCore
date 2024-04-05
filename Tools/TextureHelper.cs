@@ -8,6 +8,13 @@ using System.Runtime.InteropServices;
 
 namespace Tools
 {
+    public enum ChromaKeyColor
+    {
+        Red,
+        Green, 
+        Blue
+    };
+
     public static class TextureHelper
     {
         public static Texture2D CreatePowerOf2Texture(GraphicsDevice graphicsDevice, Texture2D original)
@@ -260,7 +267,7 @@ namespace Tools
             return ResizeTexture(sourceImage, width, height);
         }
 
-        public static void ChromaKey(Texture2D texture, ref Color[] data, ref Texture2D replacementTexture, byte limit = 10)
+        public static void ChromaKey(Texture2D texture, ref Color[] data, ref Texture2D replacementTexture, ChromaKeyColor chromaKeyColor, byte limit)
         {
             if (texture == null)
                 return;
@@ -273,13 +280,39 @@ namespace Tools
             }
 
             texture.GetData(data);
-            for (int i = 0; i < data.Length; i++)
+
+            switch (chromaKeyColor)
             {
-                if (data[i].G > data[i].B + limit &&
-                    data[i].G > data[i].R + limit)
-                {
-                    data[i] = Color.Transparent;
-                }
+                case ChromaKeyColor.Red:
+                    for (int i = 0; i < data.Length; i++)
+                    {
+                        if (data[i].R > data[i].B + limit &&
+                            data[i].R > data[i].G + limit)
+                        {
+                            data[i] = Color.Transparent;
+                        }
+                    }
+                    break;
+                case ChromaKeyColor.Green:
+                    for (int i = 0; i < data.Length; i++)
+                    {
+                        if (data[i].G > data[i].B + limit &&
+                            data[i].G > data[i].R + limit)
+                        {
+                            data[i] = Color.Transparent;
+                        }
+                    }
+                    break;
+                case ChromaKeyColor.Blue:
+                    for (int i = 0; i < data.Length; i++)
+                    {
+                        if (data[i].B > data[i].G + limit &&
+                            data[i].B > data[i].R + limit)
+                        {
+                            data[i] = Color.Transparent;
+                        }
+                    }
+                    break;
             }
             replacementTexture.SetData(data);
         }

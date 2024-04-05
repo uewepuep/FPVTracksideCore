@@ -167,6 +167,18 @@ namespace UI
         [NeedsRestart]
         public float SillyNameChance { get; set; }
 
+
+        [Category("Pilot Profile")]
+        [NeedsRestart]
+        public bool PilotProfileChromaKey { get; set; }
+
+        [Category("Pilot Profile")]
+        [NeedsRestart]
+        public ChromaKeyColor PilotProfileChromaKeyColor { get; set; }
+        [Category("Pilot Profile")]
+        [NeedsRestart]
+        public byte PilotProfileChromaKeyLimit { get; set; }
+
         public ProfileSettings()
         {
             Theme = "Dark";
@@ -220,8 +232,11 @@ namespace UI
             ReOrderAtHoleshot = true;
             NotificationSerialPort = "";
 
-            CropContent16by9 = true;
+            CropContent16by9 = false;
             SillyNameChance = 0.05f;
+
+            PilotProfileChromaKeyColor = ChromaKeyColor.Green;
+            PilotProfileChromaKeyLimit = 10;
         }
 
         protected const string filename = "ProfileSettings.xml";

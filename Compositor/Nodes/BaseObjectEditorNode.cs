@@ -493,7 +493,7 @@ namespace Composition.Nodes
                     newNode = new TextPropertyNode<T>(obj, pi, ButtonBackground, TextColor);
                 }
             }
-            else if (pi.PropertyType == typeof(int) || pi.PropertyType == typeof(double) || pi.PropertyType == typeof(float))
+            else if (pi.PropertyType == typeof(int) || pi.PropertyType == typeof(double) || pi.PropertyType == typeof(float) || pi.PropertyType == typeof(byte))
             {
                 if (pi.Name.ToLower().Contains("percent"))
                 {
@@ -1139,6 +1139,8 @@ namespace Composition.Nodes
                 string str = value.ToString();
                 double d;
                 int i;
+                byte b;
+
                 if (PropertyInfo.PropertyType == typeof(double) && double.TryParse(str, out d))
                 {
                     base.SetValue(d);
@@ -1150,6 +1152,10 @@ namespace Composition.Nodes
                 else if (PropertyInfo.PropertyType == typeof(int) && int.TryParse(str, out i))
                 {
                     base.SetValue(i);
+                }
+                else if (PropertyInfo.PropertyType == typeof(byte) && byte.TryParse(str, out b))
+                {
+                    base.SetValue(b);
                 }
             }
             catch (Exception ex)
