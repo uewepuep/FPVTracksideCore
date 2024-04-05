@@ -43,6 +43,11 @@ h2
     clear: both;
 }
 
+h4
+{
+    padding-bottom: 30px;
+}
+
 .top 
 {
     background: #ED1B24;
@@ -121,8 +126,6 @@ h1
 
 .rounds 
 {
-    display: flex;
-    flex-wrap: wrap;
 }
 
 .round, .race_status 
@@ -133,13 +136,14 @@ h1
     margin: 5px;
     min-width: 15em;
     flex-wrap: wrap;
-    display: inline-block;
-
 }
 
 .round
 {
     background: #05050599;
+    border-bottom: 1px #ff000099 solid;
+    padding-top: 30px;
+    padding-bottom: 30px;
 }
 
 .race_status 
@@ -242,7 +246,6 @@ h2
 
 .columns 
 {
-    column-count: var(--data-columns);
     padding: 20px;
     margin: 10px;
     background: #05050599;
@@ -297,8 +300,8 @@ h2
 
 .race_laps
 {
-    column-count: var(--lap-columns);
 }
+
 canvas
 {
     padding:50px;

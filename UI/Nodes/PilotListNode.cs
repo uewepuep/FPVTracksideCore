@@ -14,7 +14,7 @@ namespace UI.Nodes
 {
     public delegate void PilotClickDelegate(MouseInputEvent mie, Pilot p);
 
-    public class PilotListNode : Node
+    public class PilotListNode : Node, IUpdateableNode
     {
         private List<Pilot> pilots;
 
@@ -90,7 +90,7 @@ namespace UI.Nodes
 
         public void Add(IEnumerable<PilotChannel> pcs)
         {
-            foreach (PilotChannel p in pcs)
+            foreach (PilotChannel p in pcs.ToArray())
             {
                 Add(p);
             }
@@ -138,10 +138,10 @@ namespace UI.Nodes
             listNode.RequestLayout();
         }
 
+        private bool rebuildList;
         public void RebuildList()
         {
-            ClearList();
-            Add(eventManager.Event.PilotChannels);
+            rebuildList = true;
         }
 
         private PilotChannelNode GetPilotChannelNodeFromMouseInputEvent(MouseInputEvent mouseInputEvent)
@@ -412,6 +412,16 @@ namespace UI.Nodes
             {
                 RebuildList();
             };
+        }
+
+        public void Update(GameTime gameTime)
+        {
+            if (rebuildList)
+            {
+                ClearList();
+                Add(eventManager.Event.PilotChannels);
+                rebuildList = false;
+            }
         }
     }
 }

@@ -12,6 +12,11 @@ class EventManager
         return (await this.accessor.GetJSON(this.eventDirectory + "/Event.json"))[0];
     }
 
+    async GetClub(id)
+    {
+        return (await this.accessor.GetJSON("index.php?page=pages/ClubData.php&id=" + id))[0];
+    }
+
     async GetPilots()
     {
         let output = [];
