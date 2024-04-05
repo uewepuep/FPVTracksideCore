@@ -1126,6 +1126,8 @@ namespace RaceLib
 
             if (currentRace != null)
             {
+               
+
                 if (EventType != currentRace.Type)
                 {
                     EventType = currentRace.Type;

@@ -32,6 +32,8 @@ namespace UI.Video
 
         private CameraCountdownNode countDown;
 
+        private Node buttonContainer;
+
         public ICaptureFrameSource CaptureFrameSource { get; private set; }
 
         public DirectoryInfo PilotsDirectory { get; private set; }
@@ -56,7 +58,7 @@ namespace UI.Video
             cameraContainer.RelativeBounds = new RectangleF(0, 0, 1, 0.95f);
             AddChild(cameraContainer);
 
-            Node buttonContainer = new Node();
+            buttonContainer = new Node();
             buttonContainer.RelativeBounds = new RectangleF(0.3f, cameraContainer.RelativeBounds.Bottom, 0.4f, 1 - cameraContainer.RelativeBounds.Bottom);
             AddChild(buttonContainer);
 
@@ -194,6 +196,8 @@ namespace UI.Video
                 pilotNameNode.SetPilot(pilot);
             }
 
+            buttonContainer.Visible = true;
+
             RequestLayout();
         }
 
@@ -201,17 +205,13 @@ namespace UI.Video
         {
             Init();
 
-            foreach (Pilot p in eventManager.Event.Pilots)
+            if (pilotNameNode != null)
             {
-                if (!File.Exists(p.PhotoPath))
-                {
-                    SetPilot(p);
-                    break;
-                }
+                pilotNameNode.Tint = Color.Red;
+                pilotNameNode.SetText("Select a pilot on the left");
             }
 
-            Pilot pa = eventManager.Event.Pilots.FirstOrDefault();
-            SetPilot(pa);
+            buttonContainer.Visible = false;
         }
 
         public void Clean()

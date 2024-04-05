@@ -366,6 +366,15 @@ namespace UI.Nodes
 
         public void SetPilot(Pilot pilot)
         {
+            if (pilot != null)
+            {
+                Pilot eventManangerInstance = EventManager.GetPilot(pilot.ID);
+                if (eventManangerInstance != null)
+                {
+                    pilot = eventManangerInstance;
+                }
+            }
+
             recentPositionNode.Text = "";
             Position = EventManager.GetMaxPilotsPerRace();
             LapsNode.ClearLaps();
@@ -945,6 +954,11 @@ namespace UI.Nodes
             {
                 pilotName.Text = p.Name;
             }
+        }
+
+        public void SetText(string text)
+        {
+            pilotName.Text = text;
         }
 
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
