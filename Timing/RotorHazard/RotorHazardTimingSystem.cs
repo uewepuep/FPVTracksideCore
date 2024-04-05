@@ -468,20 +468,29 @@ namespace Timing.RotorHazard
 
             using (Waiter responseWait = new Waiter())
             {
+                RaceStart raceStart = new RaceStart()
+                {
+                    start_time_s = serverStartTime.TotalSeconds
+                };
+
+                if (settings.SendPilotNames)
+                {
+                    raceStart.p = pilotCallsigns;
+                }
+
                 socket?.EmitAsync("ts_race_stage", (r) =>
                 { 
                     if (responseWait.IsDisposed) 
                         return; 
 
                     responseWait.Set(); 
-                }, new RaceStart { start_time_s = serverStartTime.TotalSeconds, p = pilotCallsigns });
+                }, raceStart);
 
                 if (!responseWait.WaitOne(CommandTimeOut))
                 {
                     Logger.TimingLog.Log(this, "Start detection: Timed out, no response from RH.");
                     return false;
                 }
-
             }
 
             time = rotorhazardStart;

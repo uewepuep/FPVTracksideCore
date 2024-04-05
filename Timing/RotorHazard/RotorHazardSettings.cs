@@ -17,6 +17,8 @@ namespace Timing.RotorHazard
         public int VoltageWarning { get; set; }
         public int TemperatureWarning { get; set; }
 
+        public bool SendPilotNames { get; set; }
+
         public RotorHazardSettings()
         {
             HostName = "10.1.1.207";
@@ -24,6 +26,7 @@ namespace Timing.RotorHazard
 
             VoltageWarning = 11;
             TemperatureWarning = 80;
+            SendPilotNames = false;
         }
     }
 }
