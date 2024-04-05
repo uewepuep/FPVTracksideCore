@@ -234,7 +234,7 @@ namespace RaceLib
 
             workQueue.Enqueue(workSet, "Finding Profile Pictures", () =>
             {
-                FindProfilePictures(Event.Pilots);
+                FindProfilePictures(Event.Pilots.ToArray());
             });
 
             workQueue.Enqueue(workSet, "Updating event object", () =>
@@ -268,23 +268,32 @@ namespace RaceLib
             FindProfilePictures(new[] { pilot });
         }
 
-        public void FindProfilePictures(IEnumerable<Pilot> pilots)
+        public void FindProfilePictures(Pilot[] pilots)
         {
+            string currentDirectory = Directory.GetCurrentDirectory();
+
             FileInfo[] media = GetPilotProfileMedia().ToArray();
             foreach (Pilot p in pilots)
             {
-                if (p != null && string.IsNullOrEmpty(p.PhotoPath))
+                if (p != null)
                 {
-                    IEnumerable<FileInfo> matches = media.Where(f => f.Name.ToLower().Contains(p.Name.ToLower()));
-                    if (matches.Any())
+                    string oldPath = p.PhotoPath;
+
+                    if (string.IsNullOrEmpty(p.PhotoPath))
                     {
-                        using (IDatabase db = DatabaseFactory.Open(EventId))
+                        IEnumerable<FileInfo> matches = media.Where(f => f.Name.ToLower().Contains(p.Name.ToLower()));
+                        if (matches.Any())
                         {
                             p.PhotoPath = matches.OrderByDescending(f => f.Extension).FirstOrDefault().FullName;
-                            db.Update(p);
                         }
                     }
+                    p.PhotoPath = Path.GetRelativePath(currentDirectory, p.PhotoPath);
                 }
+            }
+
+            using (IDatabase db = DatabaseFactory.Open(EventId))
+            {
+                db.Update(pilots);
             }
         }
 

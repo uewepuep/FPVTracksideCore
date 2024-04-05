@@ -346,7 +346,7 @@ namespace UI.Nodes
             if (Showing == PhotoBooth)
             {
                 PhotoBooth.Clean();
-                eventManager.FindProfilePictures(eventManager.Event.Pilots);
+                eventManager.FindProfilePictures(eventManager.Event.Pilots.ToArray());
                 sceneManagerNode.ChannelsGridNode.ReloadPilotProfileImages();
             }
 
