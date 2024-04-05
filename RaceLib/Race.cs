@@ -884,6 +884,9 @@ namespace RaceLib
 
         public void RefreshPilots(IEnumerable<Pilot> editedPilots)
         {
+            if (editedPilots == null)
+                return;
+
             foreach (PilotChannel pc in PilotChannels)
             {
                 Pilot p = editedPilots.GetObject(pc.Pilot.ID);

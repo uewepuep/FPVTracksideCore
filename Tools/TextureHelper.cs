@@ -179,6 +179,11 @@ namespace Tools
 
         public static void SaveAs(this Texture2D texture, string filename, bool mirrored = false, bool flipped = false)
         {
+            if (texture == null)
+            {
+                return;
+            }
+
             if (File.Exists(filename))
                 File.Delete(filename);
 

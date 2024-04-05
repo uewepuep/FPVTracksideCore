@@ -235,8 +235,9 @@ namespace UI
             CropContent16by9 = false;
             SillyNameChance = 0.05f;
 
+            PilotProfileChromaKey = false;
             PilotProfileChromaKeyColor = ChromaKeyColor.Green;
-            PilotProfileChromaKeyLimit = 10;
+            PilotProfileChromaKeyLimit = 20;
         }
 
         protected const string filename = "ProfileSettings.xml";

@@ -287,7 +287,10 @@ namespace RaceLib
                             p.PhotoPath = matches.OrderByDescending(f => f.Extension).FirstOrDefault().FullName;
                         }
                     }
-                    p.PhotoPath = Path.GetRelativePath(currentDirectory, p.PhotoPath);
+                    if (p.PhotoPath != null)
+                    {
+                        p.PhotoPath = Path.GetRelativePath(currentDirectory, p.PhotoPath);
+                    }
                 }
             }
 

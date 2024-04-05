@@ -123,7 +123,10 @@ namespace UI.Video
 
         private void TakePhoto()
         {
-            string newPath = Path.Combine(PilotsDirectory.FullName, Pilot.Name + "_temp.jpg");
+            string newPath = Path.Combine(PilotsDirectory.FullName, Pilot.Name + "_temp.png");
+
+            newPath = Path.GetRelativePath(Directory.GetCurrentDirectory(), newPath);
+
             camNode.FrameNode.SaveImage(newPath);
 
             ConfirmPictureNode confirmPictureNode = new ConfirmPictureNode(eventManager.EventId, Pilot, Pilot.PhotoPath, newPath);
@@ -340,20 +343,21 @@ namespace UI.Video
         {
             this.eventId = eventId;
             this.pilot = pilot; 
-            existingPhoto = new FileInfo(existingFilename);
+
+            if (!string.IsNullOrEmpty(existingFilename))
+            {
+                existingPhoto = new FileInfo(existingFilename);
+            }
             newPhoto = new FileInfo(newFilename);
 
             Scale(0.8f, 0.6f);
             Node photoContainer = new Node();
             photoContainer.Scale(0.9f);
             AddChild(photoContainer);   
-            if (existingPhoto.Exists)
-            {
-                photoContainer.AddChild(CreateChoice(existingPhoto, "Old Photo", "Keep old photo", KeepOld));
-            }
 
             if (newPhoto.Exists)
             {
+                photoContainer.AddChild(CreateChoice(existingPhoto, "Old Photo", "Keep old photo", KeepOld));
                 photoContainer.AddChild(CreateChoice(newPhoto, "New Photo", "Use new photo", UseNew));
             }
 
@@ -370,7 +374,7 @@ namespace UI.Video
         {
             try
             {
-                existingPhoto.Delete();
+                existingPhoto?.Delete();
 
                 FileInfo newFileName = new FileInfo(newPhoto.FullName.Replace("_temp", ""));
                 if (newFileName.Exists)
@@ -400,7 +404,11 @@ namespace UI.Video
 
             PilotProfileNode profileNode = new PilotProfileNode(Color.Transparent, 1);
             profileNode.RelativeBounds = new RectangleF(0, 0, 1, 0.9f);
-            profileNode.SetPilot(pilot, file.FullName, false);
+
+            if (file != null)
+            {
+                profileNode.SetPilot(pilot, file.FullName, false);
+            }
             container.AddChild(profileNode);
 
             TextNode textNode = new TextNode(name, Color.White);

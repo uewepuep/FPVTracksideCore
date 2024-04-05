@@ -305,7 +305,7 @@ namespace UI.Nodes
         {
             using (IDatabase db = DatabaseFactory.Open(obj.Selected.ID))
             {
-                if (obj.Selected != null)
+                if (obj != null && obj.Selected != null)
                 {
                     obj.Selected.LastOpened = DateTime.Now;
                 }
