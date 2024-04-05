@@ -1,7 +1,7 @@
 
 class Formatter
 {
-    constructor(root, eventManager, document, window, history, contentName)
+    constructor(root, eventManager, document, window, history, contentName, tooOld)
     {
         this.root = root;
         this.eventManager = eventManager;
@@ -25,7 +25,7 @@ class Formatter
         window.setInterval(() =>
         {
             self.RepeatLastAction();
-        }, 100000);
+        }, tooOld);
     }
 
     GetOptions()

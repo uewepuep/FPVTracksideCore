@@ -1,10 +1,10 @@
 class EventManager
 {
 
-    constructor(eventDirectory)
+    constructor(eventDirectory, tooOld)
     {
         this.eventDirectory = eventDirectory;
-        this.accessor = new Accessor();
+        this.accessor = new Accessor(tooOld);
     }
 
     async GetEvent()
