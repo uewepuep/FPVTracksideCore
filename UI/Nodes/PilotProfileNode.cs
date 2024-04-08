@@ -80,6 +80,8 @@ namespace UI.Nodes
         {
             Pilot = pilot;
 
+            insideOutBorderRelativeNode.ClearDisposeChildren();
+
             if (pilot != null)
             {
                 if (showText)

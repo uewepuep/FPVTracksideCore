@@ -58,7 +58,7 @@ namespace Composition.Nodes
                 }
             }
 
-            if (Visible) 
+            if (t.Any() && Visible) 
             { 
                 borderNode.Draw(id, parentAlpha);
             }

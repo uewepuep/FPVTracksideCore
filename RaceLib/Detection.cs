@@ -36,10 +36,9 @@ namespace RaceLib
         
         public int RaceSector { get { return RaceSectorCalculator(LapNumber, TimingSystemIndex); } }
 
-        
-        public int SectorNumber { get { return TimingSystemIndex + 1; } }
-
         public bool IsHoleshot { get { return Valid && IsLapEnd && LapNumber == 0; } }
+
+        public int SectorNumber { get { return TimingSystemIndex; } }
 
         public Detection()
         {

@@ -30,6 +30,7 @@ namespace UI.Nodes
         private NamedRaceNode resultsRaceNode;
         private NamedRaceNode nextRaceNode;
 
+        private bool showWorm;
         private WormNode wormNode;
 
         private AnimatedNode eventStatusNodeContainer;
@@ -407,6 +408,8 @@ namespace UI.Nodes
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
                     finishLineNode.SetAnimatedVisibility(false);
 
+                    PositionWorm();
+
                     break;
 
                 case Scenes.Race:
@@ -428,6 +431,9 @@ namespace UI.Nodes
                     ChannelsGridNode.SetBiggerInfo(!eventManager.RaceManager.RaceRunning, false);
                     ChannelsGridNode.MakeExtrasVisible(true);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
+
+                    PositionWorm();
+
                     break;
 
                 case Scenes.Clear:
@@ -448,6 +454,9 @@ namespace UI.Nodes
                     ChannelsGridNode.MakeExtrasVisible(false);
                     ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.None);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
+
+                    wormNode.SetAnimatedVisibility(false);
+
                     break;
 
                 case Scenes.RaceResults:
@@ -504,6 +513,7 @@ namespace UI.Nodes
                     ChannelsGridNode.SetBiggerInfo(true, true);
                     ChannelsGridNode.MakeExtrasVisible(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
+                    wormNode.SetAnimatedVisibility(false);
 
                     break;
 
@@ -533,6 +543,8 @@ namespace UI.Nodes
                     nextRaceNode.SetAnimatedVisibility(false);
                     resultsRaceNode.SetAnimatedVisibility(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(true);
+                    wormNode.SetAnimatedVisibility(false);
+
                     break;
 
                 case Scenes.FinishLine:
@@ -568,6 +580,8 @@ namespace UI.Nodes
                     nextRaceNode.SetAnimatedVisibility(false);
 
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
+
+                    PositionWorm();
                     break;
             }
         }
@@ -699,18 +713,32 @@ namespace UI.Nodes
 
         public void ToggleWorm()
         {
-            if (wormNode.RelativeBounds.Height > 0)
+            if (showWorm)
             {
-                wormNode.RelativeBounds = new RectangleF(0.0f, 1f, 1, 0.0f);
-                ChannelsGridNode.RelativeBounds = new RectangleF(0, 0, 1, 1);
+                showWorm = false;
             }
             else
-            { 
+            {
+                showWorm = true;
+            }
+            PositionWorm();
+        }
+
+        private void PositionWorm()
+        {
+            if (showWorm)
+            {
+                wormNode.SetAnimatedAlpha(1);
                 // 0.2 and 6 are the numbers it was designed for...
                 float height = 0.2f * (eventManager.RaceManager.PilotCount / 6.0f);
-
                 wormNode.RelativeBounds = new RectangleF(0.0f, 1 - height, 1, height);
+
                 ChannelsGridNode.RelativeBounds = new RectangleF(0, 0, 1, 1 - height);
+            }
+            else
+            {
+                wormNode.SetAnimatedAlpha(0);
+                ChannelsGridNode.RelativeBounds = new RectangleF(0, 0, 1, 1);
             }
             RequestLayout();
         }

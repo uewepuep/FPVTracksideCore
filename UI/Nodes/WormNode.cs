@@ -11,7 +11,7 @@ using Tools;
 
 namespace UI.Nodes
 {
-    public class WormNode : AnimatedNode
+    public class WormNode : AlphaAnimatedNode
     {
         public EventManager EventManager { get; private set; }
 
@@ -46,6 +46,7 @@ namespace UI.Nodes
             EventManager.RaceManager.OnRaceChanged += NeedsNewPilots;
             EventManager.RaceManager.OnRaceClear += NeedsNewPilots;
             EventManager.RaceManager.OnRaceReset += NeedsNewPilots;
+
             EventManager.RaceManager.OnLapDetected += NeedsWormUpdate;
             EventManager.RaceManager.OnLapDisqualified += NeedsWormUpdate;
             EventManager.RaceManager.OnLapsRecalculated += NeedsWormUpdate;
@@ -109,7 +110,7 @@ namespace UI.Nodes
                 {
                     Color color = EventManager.GetChannelColor(pc.Channel);
 
-                    PilotWormNode pilotWormNode = new PilotWormNode(race, pc.Pilot, color, EventManager.RaceManager.TimingSystemManager.TimingSystemCount, EventManager.Event.Laps);
+                    PilotWormNode pilotWormNode = new PilotWormNode(race, pc.Pilot, color, EventManager.RaceManager.TimingSystemManager.TimingSystemCount, EventManager.Event.Laps, EventManager.Event.PrimaryTimingSystemLocation);
                     pilotWormList.Add(pilotWormNode);
                     container.AddChild(pilotWormNode);
                 }
@@ -130,18 +131,12 @@ namespace UI.Nodes
         {
             needsNewPilots = true;
         }
-
-        private void NeedsNewPilots(object o, object p)
-        {
-            needsNewPilots = true;
-        }
-
     }
 
     public class PilotWormNode : Node
     {
-        public int Laps { get; private set; }
-        public int Sectors { get; private set; }
+        public float Laps { get; private set; }
+        public float Sectors { get; private set; }
 
         private TextNode pilotName;
 
@@ -150,8 +145,12 @@ namespace UI.Nodes
         public Pilot Pilot { get; private set; }
         public Race Race { get; private set; }
 
-        public PilotWormNode(Race race, Pilot pilot, Color color, int sectors, int laps)
+        private PrimaryTimingSystemLocation primaryTimingSystemLocation;
+
+        public PilotWormNode(Race race, Pilot pilot, Color color, int sectors, int laps, PrimaryTimingSystemLocation primaryTimingSystemLocation)
         {
+            this.primaryTimingSystemLocation = primaryTimingSystemLocation;
+
             pilotName = new TextNode(pilot.Name, Theme.Current.TextMain.XNA);
             pilotName.RelativeBounds = new RectangleF(0, 0, 0.1f, 1);
             AddChild(pilotName);
@@ -160,29 +159,32 @@ namespace UI.Nodes
             wormContainer.RelativeBounds = new RectangleF(pilotName.RelativeBounds.Right, 0, 1 - pilotName.RelativeBounds.Right, 1f);
             AddChild(wormContainer);
 
-
             Race = race;
             Pilot = pilot;
 
             Sectors = sectors;
             Laps = laps;
-
-
+            
             float line = 0.001f;
+
+            ColorNode lapNode = new ColorNode(Theme.Current.TextMain.XNA);
+            lapNode.RelativeBounds = new RectangleF(0, 0, line, 1);
+            wormContainer.AddChild(lapNode);
+
             for (int l = 0; l <= Laps; l++)
             {
-                float lapPos = l / (float)Laps;
+                float lapPos = GetCompletionPercent(l, 0);
 
-                ColorNode lapNode = new ColorNode(Theme.Current.TextMain.XNA);
+                lapNode = new ColorNode(Theme.Current.TextMain.XNA);
                 lapNode.RelativeBounds = new RectangleF(lapPos, 0, line, 1);
                 wormContainer.AddChild(lapNode);
 
-                for (int s = 1; s <= Sectors; s++)
+                for (int s = 1; s < Sectors && l < Laps; s++)
                 {
-                    float sectPos = (s / (float)Sectors) / (float)Laps;
+                    float sectPos = GetCompletionPercent(l, s);
 
                     ColorNode sectNode = new ColorNode(Theme.Current.TextAlt.XNA);
-                    sectNode.RelativeBounds = new RectangleF(lapNode.RelativeBounds.X + sectPos, 0, line, 1);
+                    sectNode.RelativeBounds = new RectangleF(sectPos, 0, line, 1);
                     wormContainer.AddChild(sectNode);
                 }
             }
@@ -198,26 +200,51 @@ namespace UI.Nodes
 
         public void UpdateWorm()
         {
-            float completionPercent = 0;
-            int lapNumber = 1;
+            int lapNumber = -1;
+            int sector = 0;
 
-            Lap lap = Race.GetLastValidLap(Pilot);
-
-            if (lap != null)
-            {
-                completionPercent = lap.Detection.LapNumber / (float)Laps;
-                lapNumber = lap.Number + 1;
-            }
-
-            Detection detection = Race.GetLastValidDetection(Pilot, lapNumber);
+            Detection detection = Race.GetLastValidDetection(Pilot);
             if (detection != null)
             {
-                completionPercent += ((detection.TimingSystemIndex + 1) / (float)Sectors) / (float)Laps;
+                sector = detection.SectorNumber;
+                lapNumber = detection.LapNumber;
             }
 
-            completionPercent = Math.Min(1, completionPercent);
+            float completionPercent = GetCompletionPercent(lapNumber, sector);
 
             worm.RelativeBounds = new RectangleF(0, 0.3f, completionPercent, 0.4f);
+            worm.RequestLayout();
+        }
+
+        public float GetCompletionPercent(int lap, int sector)
+        {
+            float holeShotWidth;
+            float remainder;
+
+            float lapWidth = 1 / Laps;
+            float sectorWidth = (1 / Sectors) * lapWidth;
+
+
+            if (primaryTimingSystemLocation == PrimaryTimingSystemLocation.Holeshot)
+            {
+                holeShotWidth = (1 / Laps) * 0.1f;
+            }
+            else
+            {
+                holeShotWidth = 0;
+            }
+
+            remainder = 1 - holeShotWidth;
+            
+
+            float output =  holeShotWidth + ((lapWidth * lap) + (sector * sectorWidth)) * remainder;
+
+            output = Math.Clamp(output, 0, 1);
+
+
+            Logger.TimingLog.LogCall(this, lap, sector, output);
+
+            return output;
         }
     }
 }

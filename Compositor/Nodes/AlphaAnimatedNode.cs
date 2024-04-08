@@ -12,6 +12,26 @@ namespace Composition.Nodes
         private InterpolatedFloat interpolatedAlpha;
         public TimeSpan AnimationTime { get; protected set; }
 
+        public override bool Visible
+        {
+            get
+            {
+                if (Alpha == 0)
+                {
+                    if (interpolatedAlpha == null)
+                    {
+                        return false;
+                    }
+                }
+
+                return base.Visible;
+            }
+            set
+            {
+                base.Visible = value;
+            }
+        }
+
         public override bool IsAnimating()
         {
             return interpolatedAlpha != null;

@@ -457,24 +457,7 @@ namespace UI
             Race race = EventManager.RaceManager.CurrentRace;
             if (race != null && race.Ended)
             {
-                TimeSpan timeSinceEnd = DateTime.Now - race.End;
-                if (timeSinceEnd.TotalSeconds > 5)
-                {
-                    workQueueStartRace.Enqueue(() =>
-                    {
-                        SoundManager.StartRaceIn(EventManager.Event.MaxStartDelay, () =>
-                        {
-                            if (RecoverRace(race))
-                            {
-                                SoundManager.Start();
-                            }
-                        });
-                    });
-                }
-                else
-                {
-                    RecoverRace(race);
-                }
+                RecoverRace(race);
             }
         }
 

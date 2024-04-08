@@ -275,6 +275,12 @@ namespace UI.Nodes
                 {
                     EventManager.RaceManager.AddManualLap(Pilot, DateTime.Now);
                 });
+#if DEBUG
+                mm.AddItem("Add Sector Now", () =>
+                {
+                    EventManager.RaceManager.AddManualSector(Pilot, DateTime.Now, 1);
+                });
+#endif
             }  
 
             if (EventManager.RaceManager.RaceFinished)

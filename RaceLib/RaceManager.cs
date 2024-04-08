@@ -1211,7 +1211,7 @@ namespace RaceLib
                 return 0;
 
             // Calculate which lap this is in..
-            int lapCount = currentRace.GetValidLapsCount(pilot, true) + 1;
+            int lapCount = currentRace.GetValidLapsCount(pilot, true);
 
             // Account for the holeshot
             if (currentRace.PrimaryTimingSystemLocation == PrimaryTimingSystemLocation.Holeshot)
@@ -1229,7 +1229,7 @@ namespace RaceLib
             if (currentRace == null)
                 return false;
 
-            if (GetCurrentLapNumber(pilot) > currentRace.TargetLaps)
+            if (GetCurrentLapNumber(pilot) >= currentRace.TargetLaps)
             {
                 return true;
             }
@@ -1274,14 +1274,14 @@ namespace RaceLib
                 return;
 
             int lapCount = GetCurrentLapNumber(pilot);
-
-            Detection d = new Detection(type, timingSystem, pilot, channel, time, lapCount, isLapEnd, peak);
             if (isLapEnd)
             {
+                Detection d = new Detection(type, timingSystem, pilot, channel, time, lapCount + 1, isLapEnd, peak);
                 AddLap(d);
             }
             else
             {
+                Detection d = new Detection(type, timingSystem, pilot, channel, time, lapCount, isLapEnd, peak);
                 if (currentRace.PrimaryTimingSystemLocation == PrimaryTimingSystemLocation.Holeshot)
                 {
                     if (!currentRace.HasLap(d.Pilot))
@@ -1368,16 +1368,44 @@ namespace RaceLib
             }
         }
 
+        public void AddManualSector(Pilot pilot, DateTime time, int timingSystemIndex)
+        {
+            Race currentRace = CurrentRace;
+            if (currentRace == null)
+                return;
+
+            int lapNumber = GetCurrentLapNumber(pilot);
+
+            Channel c = currentRace.GetChannel(pilot);
+
+            Detection d = new Detection(TimingSystemType.Manual, timingSystemIndex, pilot, c, time, lapNumber, false, 0);
+
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                db.Insert(d);
+            }
+
+            lock (currentRace.Detections)
+            {
+                currentRace.Detections.Add(d);
+            }
+
+            if (d.Valid)
+            {
+                OnSplitDetection?.Invoke(d);
+            }
+        }
+
         public void AddManualLap(Pilot pilot, DateTime time)
         {
             Race currentRace = CurrentRace;
             if (currentRace == null)
                 return;
 
-            int lapCount = GetCurrentLapNumber(pilot);
+            int newLapNumber = GetCurrentLapNumber(pilot) + 1;
 
             Channel c = currentRace.GetChannel(pilot);
-            EventManager.RaceManager.AddLap(new Detection(TimingSystemType.Manual, 0, pilot, c, time, lapCount, true, 0));
+            EventManager.RaceManager.AddLap(new Detection(TimingSystemType.Manual, 0, pilot, c, time, newLapNumber, true, 0));
             EventManager.RaceManager.RecalcuateLaps(pilot, currentRace);
         }
 
@@ -1387,7 +1415,7 @@ namespace RaceLib
             if (currentRace == null)
                 return;
 
-            int lapCount = GetCurrentLapNumber(pilot);
+            int newLapNumber = GetCurrentLapNumber(pilot) + 1;
 
             DateTime from = currentRace.Start;
             Lap last = currentRace.GetValidLaps(pilot, true).LastOrDefault();
@@ -1397,7 +1425,7 @@ namespace RaceLib
             }
 
             Channel c = currentRace.GetChannel(pilot);
-            EventManager.RaceManager.AddLap(new Detection(TimingSystemType.Manual, 0, pilot, c, from + time, lapCount, true, 0));
+            EventManager.RaceManager.AddLap(new Detection(TimingSystemType.Manual, 0, pilot, c, from + time, newLapNumber, true, 0));
             EventManager.RaceManager.RecalcuateLaps(pilot, currentRace);
         }
 

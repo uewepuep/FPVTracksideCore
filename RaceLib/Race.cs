@@ -541,13 +541,22 @@ namespace RaceLib
             }
         }
 
-        public Detection GetLastValidDetection(Pilot pilot, int lapNumber)
+        public Detection GetLastValidDetection(Pilot pilot)
         {
             lock (Detections)
             {
-                return Detections.Where(d => d.Pilot == pilot && d.LapNumber == lapNumber && d.Valid).OrderByDescending(d => d.TimingSystemIndex).FirstOrDefault();
+                return Detections.Where(d => d.Pilot == pilot && d.Valid).OrderByDescending(d => d.RaceSector).FirstOrDefault();
             }
         }
+
+        public Detection[] GetDetections(Func<Detection, bool> predicate)
+        {
+            lock (Detections)
+            {
+                return Detections.Where(d => predicate(d)).ToArray();
+            }
+        }
+
 
         public Lap GetHoleshot(Pilot pilot)
         {
@@ -777,12 +786,19 @@ namespace RaceLib
         {
             int i = 0;
 
+            bool hasHadHoleshot = false;
+
             if (PrimaryTimingSystemLocation == PrimaryTimingSystemLocation.EndOfLap)
-                i = 1;
+                hasHadHoleshot = true;
 
             IEnumerable<Detection> detections = GetValidDetections(pilot).OrderBy(l => l.Time);
             foreach (Detection d in detections)
             {
+                if (d.IsLapEnd && hasHadHoleshot)
+                {
+                    i++;
+                }
+
                 if (d.LapNumber != i)
                 {
                     d.LapNumber = i;
@@ -791,7 +807,7 @@ namespace RaceLib
 
                 if (d.IsLapEnd)
                 {
-                    i++;
+                    hasHadHoleshot = true;
                 }
             }
 
