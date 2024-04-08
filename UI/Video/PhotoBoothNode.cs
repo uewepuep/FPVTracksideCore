@@ -120,7 +120,10 @@ namespace UI.Video
 
         private void TakePhoto_OnClick(Composition.Input.MouseInputEvent mie)
         {
-            countDown.TakePhoto(TakePhoto);
+            if (countDown != null)
+            {
+                countDown.TakePhoto(TakePhoto);
+            }
         }
 
         private void TakePhoto()

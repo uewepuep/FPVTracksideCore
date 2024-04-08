@@ -134,23 +134,26 @@ namespace UI.Nodes
                         insideOutBorderRelativeNode.AddChild(PilotPhoto, 0);
                     }
 
-                    PilotPhoto.Alignment = RectangleAlignment.Center;
-                    PilotPhoto.KeepAspectRatio = false;
-                    PilotPhoto.CropToFit = true;
-                    PilotPhoto.Scale(0.95f);
-                    PilotPhoto.ReloadFromFile = true;
-
-                    if (string.IsNullOrEmpty(TextNode.Text))
+                    if (PilotPhoto != null)
                     {
-                        PilotPhoto.RelativeBounds = new RectangleF(0, 0, 1, 1);
-                    }
-                    else
-                    {
-                        TextNode.RelativeBounds = new RectangleF(0, 0.9f, 1, 0.1f);
-                        PilotPhoto.RelativeBounds = new RectangleF(0, 0, 1, TextNode.RelativeBounds.Y);
-                    }
+                        PilotPhoto.Alignment = RectangleAlignment.Center;
+                        PilotPhoto.KeepAspectRatio = false;
+                        PilotPhoto.CropToFit = true;
+                        PilotPhoto.Scale(0.95f);
+                        PilotPhoto.ReloadFromFile = true;
 
-                    HasProfileImage = true;
+                        if (string.IsNullOrEmpty(TextNode.Text))
+                        {
+                            PilotPhoto.RelativeBounds = new RectangleF(0, 0, 1, 1);
+                        }
+                        else
+                        {
+                            TextNode.RelativeBounds = new RectangleF(0, 0.9f, 1, 0.1f);
+                            PilotPhoto.RelativeBounds = new RectangleF(0, 0, 1, TextNode.RelativeBounds.Y);
+                        }
+
+                        HasProfileImage = true;
+                    }
                 }
                 else
                 {
