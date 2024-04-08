@@ -27,6 +27,8 @@ namespace UI.Nodes
 
         private EventManager eventManager;
 
+        private ImageNode profileIcon;
+
         public PilotChannelNode(EventManager ev, ToolTexture background, Color hover, Color text, ToolTexture channelTexture)
         {
             ColorNode backgroundNode = new ColorNode(background);
@@ -34,9 +36,14 @@ namespace UI.Nodes
 
             eventManager = ev;
 
+            profileIcon = new ImageNode("img/profileicon.png");
+            profileIcon.Alpha = 0.3f;
+            profileIcon.Visible = false;
+            AddChild(profileIcon);
+
             PilotNameNode = new TextButtonNode("", Color.Transparent, hover, text);
-            PilotNameNode.RelativeBounds = new RectangleF(0, 0, 0.7f, 1);
-            PilotNameNode.TextNode.Alignment = RectangleAlignment.BottomCenter;
+            PilotNameNode.RelativeBounds = new RectangleF(0, 0, 0.83f, 1);
+            PilotNameNode.TextNode.Alignment = RectangleAlignment.Center;
 
             PilotNameNode.OnClick += (mie) =>
             {
@@ -45,7 +52,7 @@ namespace UI.Nodes
             AddChild(PilotNameNode);
 
             ChannelNode = new TextButtonNode("", Color.Transparent, hover, text);
-            ChannelNode.RelativeBounds = new RectangleF(PilotNameNode.RelativeBounds.Right, 0, 1 - PilotNameNode.RelativeBounds.Right, 1);
+            ChannelNode.RelativeBounds = new RectangleF(0.7f, 0, 0.3f, 1);
             ChannelNode.OnClick += (mie) =>
             {
                 OnPilotChannelClick?.Invoke(mie, Pilot);
@@ -79,6 +86,27 @@ namespace UI.Nodes
             else
             {
                 SetPilotChannel(null, null, null);
+            }
+        }
+
+        public void UpdateProfileIcon()
+        {
+            if (Pilot == null)
+            {
+                profileIcon.Visible = false;
+                return;
+            }
+
+            profileIcon.Visible = System.IO.File.Exists(Pilot.PhotoPath);
+
+            if (profileIcon.Visible)
+            {
+                profileIcon.RelativeBounds = new RectangleF(0.02f, 0.1f, 0.05f, 0.8f);
+                PilotNameNode.RelativeBounds = new RectangleF(profileIcon.RelativeBounds.Right, 0, 0.83f - profileIcon.RelativeBounds.Right, 1);
+            }
+            else
+            {
+                PilotNameNode.RelativeBounds = new RectangleF(0, 0, 0.83f, 1);
             }
         }
 

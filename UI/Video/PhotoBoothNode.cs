@@ -39,6 +39,8 @@ namespace UI.Video
 
         public DirectoryInfo PilotsDirectory { get; private set; }
 
+        public event Action<Pilot> OnNewPhoto;
+
         public PhotoBoothNode(VideoManager videoManager, EventManager eventManager) 
         {
             this.videoManager = videoManager;
@@ -108,7 +110,6 @@ namespace UI.Video
             pilotNameNode.RelativeBounds = new RectangleF(0, 0.03f, 0.4f, 0.125f);
 
             AlignHorizontally(0.1f, buttonContainer.Children);
-
             RequestLayout();
         }
 
@@ -125,13 +126,20 @@ namespace UI.Video
         private void TakePhoto()
         {
             string newPath = Path.Combine(PilotsDirectory.FullName, Pilot.Name + "_temp.png");
-
             newPath = Path.GetRelativePath(Directory.GetCurrentDirectory(), newPath);
-
             camNode.FrameNode.SaveImage(newPath);
 
-            ConfirmPictureNode confirmPictureNode = new ConfirmPictureNode(eventManager.EventId, Pilot, Pilot.PhotoPath, newPath);
-            GetLayer<PopupLayer>().Popup(confirmPictureNode);
+            if (File.Exists(newPath))
+            {
+                ConfirmPictureNode confirmPictureNode = new ConfirmPictureNode(eventManager.EventId, Pilot, Pilot.PhotoPath, newPath);
+                confirmPictureNode.OnUseNew += ConfirmPictureNode_OnUseNew;
+                GetLayer<PopupLayer>().Popup(confirmPictureNode);
+            }
+        }
+
+        private void ConfirmPictureNode_OnUseNew(Pilot obj)
+        {
+            OnNewPhoto?.Invoke(obj);
         }
 
         private void StartRecording()
@@ -155,6 +163,7 @@ namespace UI.Video
             if (File.Exists(filename))
             {
                 ConfirmPictureNode confirmPictureNode = new ConfirmPictureNode(eventManager.EventId, Pilot, Pilot.PhotoPath, filename);
+                confirmPictureNode.OnUseNew += ConfirmPictureNode_OnUseNew;
                 GetLayer<PopupLayer>().Popup(confirmPictureNode);
             }
         }
@@ -199,8 +208,10 @@ namespace UI.Video
                 pilotNameNode.Tint = color;
                 pilotNameNode.SetPilot(pilot);
             }
-
-            buttonContainer.Visible = true;
+            if (buttonContainer != null)
+            {
+                buttonContainer.Visible = true;
+            }
 
             RequestLayout();
         }
@@ -216,6 +227,11 @@ namespace UI.Video
             }
 
             buttonContainer.Visible = false;
+
+            if (Pilot != null)
+            {
+                SetPilot(Pilot);
+            }
         }
 
         public void Clean()
@@ -352,6 +368,8 @@ namespace UI.Video
         private Pilot pilot;
         private Guid eventId;
 
+        public event Action<Pilot> OnUseNew;
+
         public ConfirmPictureNode(Guid eventId, Pilot pilot, string existingFilename, string newFilename)
         {
             this.eventId = eventId;
@@ -372,10 +390,14 @@ namespace UI.Video
             {
                 photoContainer.AddChild(CreateChoice(existingPhoto, "Old Photo", "Keep old photo", KeepOld));
                 photoContainer.AddChild(CreateChoice(newPhoto, "New Photo", "Use new photo", UseNew));
-            }
 
-            AlignHorizontally(0.1f, photoContainer.Children);
-            RequestLayout();
+                AlignHorizontally(0.1f, photoContainer.Children);
+                RequestLayout();
+            }
+            else
+            {
+                Dispose();
+            }
         }
 
         private void KeepOld()
@@ -397,11 +419,13 @@ namespace UI.Video
 
                 newPhoto.MoveTo(newFileName.FullName);
 
-                pilot.PhotoPath = newFileName.FullName;
+                pilot.PhotoPath = Path.GetRelativePath(Directory.GetCurrentDirectory(), newFileName.FullName);
                 using (IDatabase db = DatabaseFactory.Open(eventId))
                 {
                     db.Upsert(pilot);
                 }
+
+                OnUseNew?.Invoke(pilot);
             }
             catch (Exception ex) 
             { 

@@ -281,6 +281,7 @@ namespace UI.Nodes
                     case SourceTypes.Commentators: Name = "COM"; break;
                     case SourceTypes.Launch: Name = "LCH"; break;
                     case SourceTypes.FinishLine: Name = "FIN"; break;
+                    case SourceTypes.PhotoBooth: Name = "PHT"; break;
                 }
             }
             else

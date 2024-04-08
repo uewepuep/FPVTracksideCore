@@ -20,6 +20,7 @@ namespace UI.Nodes
 
         private ListNode<PilotChannelNode> listNode;
 
+        public event PilotClickDelegate OnTakePhoto;
         public event PilotClickDelegate OnPilotClick;
         public event PilotClickDelegate OnPilotChannelClick;
 
@@ -108,6 +109,7 @@ namespace UI.Nodes
 
             PilotChannelNode pn = new PilotChannelNode(eventManager, Theme.Current.LeftPilotList.Foreground, Theme.Current.Hover.XNA, Theme.Current.LeftPilotList.Text.XNA, Theme.Current.LeftPilotList.Channel);
             pn.SetPilotChannel(pc);
+            pn.UpdateProfileIcon();
             pn.OnPilotClick += (mie, ap) => 
             {
                 if (mie.Button == MouseButtons.Left)
@@ -190,43 +192,6 @@ namespace UI.Nodes
             {
                 AddPilot();
             });
-#if DEBUG
-            mm.AddItem("Add Debug Pilots", () =>
-            {
-                string[] pilotNames = new string[]
-                {
-                   "Alfa",
-                   "Bravo",
-                   "Charlie",
-                   "Delta",
-                   "Echo",
-                   "Foxtrot",
-                   "Golf",
-                   "Hotel",
-                   "India",
-                   "Juliett",
-                   "Kilo",
-                   "Lima",
-                   "Mike",
-                   "November",
-                   "Oscar",
-                   "Papa",
-                   "Quebec",
-                   "Romeo",
-                   "Sierra",
-                   "Tango",
-                   "Uniform",
-                   "Victor",
-                   "Whiskey",
-                   "X-ray",
-                   "Yankee",
-                   "Zulu",
-                };
-                IEnumerable<PilotChannel> newPilots = ImportFromNames(pilotNames);
-                EditPilotChannels(newPilots, null);
-                RebuildList();
-            });
-#endif
 
             bool anyPilots = eventManager.Event.Pilots.Where(p => p != null).Any();
             if (anyPilots)
@@ -241,6 +206,11 @@ namespace UI.Nodes
                     mm.AddItem("Remove " + pilot.Name + " from event", () =>
                     {
                         eventManager.RemovePilot(pilot);
+                    });
+
+                    mm.AddItem("Take photo", () =>
+                    {
+                        OnTakePhoto?.Invoke(mouseInputEvent, pilot);
                     });
                 }
                 else
@@ -279,7 +249,6 @@ namespace UI.Nodes
             Event[] others = eventManager.GetOtherEvents();
             if (others.Any())
             {
-                mm.AddBlank();
                 MouseMenu otherEvents = importMenu.AddSubmenu("Import from another event");
                 foreach (Event e in others)
                 {
@@ -308,8 +277,49 @@ namespace UI.Nodes
             });
 
 
+#if DEBUG
+            importMenu.AddItem("Import Debug Pilots", () =>
+            {
+                string[] pilotNames = new string[]
+                {
+                   "Alfa",
+                   "Bravo",
+                   "Charlie",
+                   "Delta",
+                   "Echo",
+                   "Foxtrot",
+                   "Golf",
+                   "Hotel",
+                   "India",
+                   "Juliett",
+                   "Kilo",
+                   "Lima",
+                   "Mike",
+                   "November",
+                   "Oscar",
+                   "Papa",
+                   "Quebec",
+                   "Romeo",
+                   "Sierra",
+                   "Tango",
+                   "Uniform",
+                   "Victor",
+                   "Whiskey",
+                   "X-ray",
+                   "Yankee",
+                   "Zulu",
+                };
+                IEnumerable<PilotChannel> newPilots = ImportFromNames(pilotNames);
+                EditPilotChannels(newPilots, null);
+                RebuildList();
+            });
+#endif
+
+
             if (anyPilots)
             {
+                mm.AddBlank();
+
                 mm.AddItem("Redistribute Channels", () =>
                 {
                     eventManager.RedistrubuteChannels();
@@ -323,6 +333,7 @@ namespace UI.Nodes
                     RebuildList();
                 });
             }
+
 
             mm.Show(mouseInputEvent);
         }

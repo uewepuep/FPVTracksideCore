@@ -173,6 +173,7 @@ namespace UI
 
             pilotList.OnPilotClick += PilotList_OnPilotClick;
             pilotList.OnPilotChannelClick += PilotList_OnPilotChannelClick;
+            pilotList.OnTakePhoto += TakePhoto;
 
             centreContainer = new AnimatedRelativeNode();
             mainContainer.AddChild(centreContainer);
@@ -198,6 +199,11 @@ namespace UI
             TabbedMultiNode.RelativeBounds = new RectangleF(0, 0, 1, 0.99f);
             TabbedMultiNode.OnTabChange += OnTabChange;
             centreContainer.AddChild(TabbedMultiNode);
+
+            TabbedMultiNode.PhotoBooth.OnNewPhoto += (p) =>
+            {
+                pilotList.RebuildList();
+            };
 
             topBar.Init(EventManager, TabbedMultiNode.ReplayNode);
             topBar.TabContainer.AddChild(tabButtonsNode);
@@ -332,6 +338,12 @@ namespace UI
             ReloadOBSRemoteControl();
 
             SoundManager.OnHighlightPilot += sceneManagerNode.FullScreen;
+        }
+
+        private void TakePhoto(MouseInputEvent mie, Pilot p)
+        {
+            TabbedMultiNode.PhotoBooth.SetPilot(p);
+            TabbedMultiNode.ShowPhotoBooth(mie);
         }
 
         private void PilotList_OnPilotChannelClick(MouseInputEvent mie, Pilot p)

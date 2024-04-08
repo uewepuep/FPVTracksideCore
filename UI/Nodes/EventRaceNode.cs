@@ -516,7 +516,7 @@ namespace UI.Nodes
             pilotNode = new PilotChannelNode(EventRaceNode.EventManager, ToolTexture.Transparent, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA, Theme.Current.Rounds.Channel);
             pilotNode.SetPilotChannel(pilot, channel, shared);
             pilotNode.RelativeBounds = new Tools.RectangleF(0, 0, 0.85f, 1);
-            pilotNode.PilotNameNode.TextNode.Alignment = RectangleAlignment.BottomLeft;
+            pilotNode.PilotNameNode.TextNode.Alignment = RectangleAlignment.CenterLeft;
             pilotNode.ChannelChangeNode.Visible = channelChanged;
 
             pilotNode.PilotNameNode.HoverNode.Enabled = false;

@@ -252,6 +252,7 @@ namespace Tools
             try
             {
                 sourceImage.GraphicsDevice.SetRenderTarget(renderTarget);
+                sourceImage.GraphicsDevice.Clear(Color.Transparent);
                 using (SpriteBatch batch = new SpriteBatch(sourceImage.GraphicsDevice))
                 {
                     batch.Begin();
