@@ -23,6 +23,7 @@ namespace UI.Nodes
         public IconButtonNode ResumeButton { get; private set; }
 
         public IconButtonNode SyncButton { get; private set; }
+        public IconButtonNode WormButton { get; private set; }
 
         public AutoRunnerControls AutoRunnerControls { get; private set; }
 
@@ -83,6 +84,9 @@ namespace UI.Nodes
             
             AutoRunnerControls = new AutoRunnerControls(autoRunner);
             AddChild(AutoRunnerControls);
+
+            WormButton = new IconButtonNode(@"img\worm.png", "Worm", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
+            AddChild(WormButton);
 
             foreach (IconButtonNode ibm in Children.OfType<IconButtonNode>())
             {
@@ -167,6 +171,8 @@ namespace UI.Nodes
                     NextButton.Visible = true;
                 }
             }
+
+            WormButton.Visible = tracksideMultiNode.IsOnLive && !eventManager.RaceManager.RaceFinished;
 
             RequestLayout();
         }

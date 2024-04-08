@@ -641,7 +641,7 @@ namespace UI.Nodes
 
         public void OpenEventDirectory()
         {
-            PlatformTools.OpenFileManager(System.IO.Directory.GetCurrentDirectory() + "\\events\\" + eventManager.EventId + "\\");
+            PlatformTools.OpenFileManager(Directory.GetCurrentDirectory() + "\\events\\" + eventManager.EventId + "\\");
         }
 
         public void OpenPilotDirectory()

@@ -2,6 +2,7 @@
 using RaceLib;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -51,7 +52,7 @@ namespace UI.Video
 
         public RecodingInfo(ICaptureFrameSource captureFrameSource)
         {
-            FilePath = captureFrameSource.Filename;
+            FilePath = Path.GetRelativePath(Directory.GetCurrentDirectory(), captureFrameSource.Filename);
             ChannelCoveragePercent = captureFrameSource.VideoConfig.ChannelCoveragePercent;
             FrameTimes = captureFrameSource.FrameTimes.ToArray();
             ChannelBounds = captureFrameSource.VideoConfig.VideoBounds;

@@ -407,6 +407,10 @@ namespace UI.Nodes
                 // Make PB invisible if not in TT or Race.
                 pbBackground.Visible = PBNode.HasPB;
             }
+
+            // Set this again incase changing the pilot has changed things.
+            SetProfileVisible(pilotProfileOptions);
+
             RequestLayout();
         }
 
@@ -631,11 +635,6 @@ namespace UI.Nodes
                         mm.AddItem("Crashed Out", () =>
                         {
                             Close();
-                        });
-
-                        mm.AddItem("Full screen", () =>
-                        {
-                            OnFullscreen?.Invoke();
                         });
 
                         mm.AddItem("Show All", () =>

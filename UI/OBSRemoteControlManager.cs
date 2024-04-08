@@ -33,6 +33,7 @@ namespace UI
             RoundsTab,
             ReplayTab,
             StatsTab,
+            PhotoBooth,
 
             ChannelGrid1,
             ChannelGrid2,
@@ -41,7 +42,8 @@ namespace UI
             ChannelGrid5,
             ChannelGrid6,
             ChannelGrid7,
-            ChannelGrid8
+            ChannelGrid8,
+
         }
 
         private OBSRemoteControlConfig config;
@@ -189,6 +191,10 @@ namespace UI
 
                 case "Rounds":
                     Trigger(Triggers.RoundsTab);
+                    break;
+
+                case "Photo Booth":
+                    Trigger(Triggers.PhotoBooth);
                     break;
 
                 default:

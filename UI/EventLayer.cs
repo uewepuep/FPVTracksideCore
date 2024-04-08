@@ -216,6 +216,10 @@ namespace UI
             {
                 LayerStack.GetLayer<PopupLayer>().PopupConfirmation("Confirm Reset Race", EventManager.RaceManager.ResetRace);
             };
+            ControlButtons.WormButton.OnClick += (mie) =>
+            {
+                sceneManagerNode.ToggleWorm();
+            };
 
             ControlButtons.PasteClipboard.OnClick += (mie) =>
             {

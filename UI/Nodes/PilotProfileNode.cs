@@ -92,6 +92,7 @@ namespace UI.Nodes
 
                 if (string.IsNullOrEmpty(filename))
                 {
+                    HasProfileImage = false;
                     return;
                 }
 
@@ -156,6 +157,8 @@ namespace UI.Nodes
             }
             else
             {
+
+                HasProfileImage = false;
                 PilotPhoto?.Dispose();
                 PilotPhoto = null;
                 TextNode.Text = "";

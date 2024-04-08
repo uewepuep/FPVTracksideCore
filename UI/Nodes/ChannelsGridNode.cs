@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Xml;
+using System.Xml.Linq;
 using Tools;
 using UI.Video;
 using static UI.Nodes.ChannelNodeBase;
@@ -645,10 +646,49 @@ namespace UI.Nodes
             }
         }
 
-        private void FullScreen(Node node)
+        private void FullScreen(ChannelNodeBase fullScreen)
         {
-            OnFullScreen?.Invoke(node);
+            if (EventManager.RaceManager.RaceRunning || Replay)
+            {
+                IEnumerable<ChannelNodeBase> pilotNodes = ChannelNodes.Where(cn => cn.Pilot != null && cn != fullScreen);
+                if (pilotNodes.Any())
+                {
+                    foreach (ChannelNodeBase cn in pilotNodes)
+                    {
+                        cn.SetAnimatedVisibility(false);
+                        cn.CrashedOutType = ChannelNodeBase.CrashOutType.Manual;
+                    }
+                }
+
+                fullScreen.SetAnimatedVisibility(true);
+                fullScreen.CrashedOutType = ChannelNodeBase.CrashOutType.None;
+
+                RequestLayout();
+            }
+            else
+            {
+                OnFullScreen?.Invoke(fullScreen);
+            }
         }
+
+        public void FullScreen(CamGridNode fullScreen)
+        {
+            if (EventManager.RaceManager.RaceRunning || Replay)
+            {
+                foreach (ChannelNodeBase cn in ChannelNodes)
+                {
+                    cn.SetAnimatedVisibility(false);
+                }
+
+                fullScreen.SetAnimatedVisibility(true);
+                RequestLayout();
+            }
+            else
+            {
+                OnFullScreen?.Invoke(fullScreen);
+            }
+        }
+
 
         public void IncreaseChannelVisiblity()
         {

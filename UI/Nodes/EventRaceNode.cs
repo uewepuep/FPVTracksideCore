@@ -8,6 +8,7 @@ using RaceLib.Format;
 using Sound;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -252,6 +253,10 @@ namespace UI.Nodes
                 mm.AddItemConfirm("Delete Race", () => { EventManager.RaceManager.RemoveRace(Race, false); SyncSheetChange(); Refresh(); });
 
                 mm.AddSubmenu("Set Race Bracket", SetBracket, Enum.GetValues(typeof(Race.Brackets)).OfType<Race.Brackets>().ToArray());
+                mm.AddItem("Open Race Folder", () => 
+                { 
+                    PlatformTools.OpenFileManager(Directory.GetCurrentDirectory() + "\\events\\" + EventManager.EventId + "\\" + Race.ID + "\\"); 
+                });
                 if (pilot != null)
                 {
                     mm.AddBlank();

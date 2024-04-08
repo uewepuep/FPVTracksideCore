@@ -1,4 +1,5 @@
 ﻿using Composition;
+using Composition.Input;
 using Composition.Layers;
 using Composition.Nodes;
 using ImageServer;
@@ -224,6 +225,18 @@ namespace UI.Video
             cameraAspectNode = null;
             camNode = null;
             pilotNameNode = null;
+        }
+
+        public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
+        {
+            IPilot pl = node as IPilot;
+            if (pl != null)
+            {
+                SetPilot(pl.Pilot);
+                return true;
+            }
+
+            return base.OnDrop(finalInputEvent, node);
         }
     }
 
