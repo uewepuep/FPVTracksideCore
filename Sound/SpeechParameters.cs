@@ -255,7 +255,7 @@ namespace Sound
                 soundParameters.Add(pilotChannelParameters);
             }
 
-            parameters.AddSubParameters(Types.pilots, soundManager.GetSound(SoundKey.PilotChannel), soundParameters);
+            parameters.AddSubParameters(Types.pilots, soundManager.GetSound(SoundKey.AnnouncePilotChannel), soundParameters);
 
             return parameters;
         }

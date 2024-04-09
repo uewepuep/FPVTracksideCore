@@ -211,7 +211,7 @@ namespace Sound
                     new Sound() { Key = SoundKey.RaceAnnounce, TextToSpeech = "Next up Round {round} {type} {race} {bracket}. ", Category = Sound.SoundCategories.Announcements },
                     new Sound() { Key = SoundKey.RaceAnnounceResults, TextToSpeech = "Results of Round {round} {type} {race} {bracket}. ", Category = Sound.SoundCategories.Announcements },
 
-                    new Sound() { Key = SoundKey.PilotChannel, TextToSpeech = "{pilot} on {band}{channel}", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.AnnouncePilotChannel, TextToSpeech = "{pilot} on {band}{channel}", Category = Sound.SoundCategories.Announcements },
                     new Sound() { Key = SoundKey.PilotResult, TextToSpeech = "{pilot} {position}", Category = Sound.SoundCategories.Announcements },
 
                     new Sound() { Key = SoundKey.NameTest, TextToSpeech = "{pilot}", Category = Sound.SoundCategories.Announcements },
@@ -321,7 +321,7 @@ namespace Sound
             if (race.Type == EventTypes.CasualPractice)
                 return;
 
-            Sound soundPilotChannel = GetSound(SoundKey.PilotChannel);
+            Sound soundPilotChannel = GetSound(SoundKey.AnnouncePilotChannel);
             if (soundPilotChannel == null)
                 return;
 
@@ -377,7 +377,7 @@ namespace Sound
                         break;
 
                     HighlightPilot(pc.Pilot);
-                    PlaySoundBlocking(SoundKey.PilotChannel, pilotChannelParameters);
+                    PlaySoundBlocking(SoundKey.AnnouncePilotChannel, pilotChannelParameters);
                 }
                 HighlightPilot(null);
             });
@@ -465,7 +465,7 @@ namespace Sound
             parameters.Add(SpeechParameters.Types.band, channel.GetSpokenBandLetter());
             parameters.Add(SpeechParameters.Types.channel, channel.Number);
 
-            PlaySound(SoundKey.PilotChannel, parameters);
+            PlaySound(SoundKey.AnnouncePilotChannel, parameters);
         }
 
         public void WriteSettings()

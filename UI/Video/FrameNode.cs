@@ -41,9 +41,11 @@ namespace UI.Video
 
         public override void Dispose()
         {
-            Source.OnFrameEvent -= ImageArrived;
-            Source.References--;
-
+            if (Source != null)
+            {
+                Source.OnFrameEvent -= ImageArrived;
+                Source.References--;
+            }
             base.Dispose();
         }
 

@@ -46,9 +46,12 @@ namespace UI.Video
         {
             base.Dispose();
 
-            // We need to dispose the source we created.
-            Source.Dispose();
-            Source = null;
+            if (Source != null)
+            {
+                // We need to dispose the source we created.
+                Source.Dispose();
+                Source = null;
+            }
         }
 
         public void Play()
@@ -56,30 +59,17 @@ namespace UI.Video
             playbackFrameSource?.Play();
         }
 
-        void SetPosition(DateTime seekTime)
-        {
-            playbackFrameSource?.SetPosition(seekTime);
-        }
-
-        bool Pause()
-        {
-            return playbackFrameSource.Pause();
-        }
-
         bool Start()
         {
+            if (playbackFrameSource == null)
+                return false;
+
             return playbackFrameSource.Start();
         }
 
-        void Mute(bool mute = true)
-        {
-            playbackFrameSource?.Mute(mute);
-        }
-
-
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
         {
-            if (mouseInputEvent.Button == MouseButtons.Left)
+            if (playbackFrameSource != null && mouseInputEvent.Button == MouseButtons.Left)
             {
                 playbackFrameSource.SetPosition(TimeSpan.Zero);
                 playbackFrameSource.Play();

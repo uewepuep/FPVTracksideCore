@@ -53,7 +53,7 @@ namespace Sound
 
         NameTest,
         HurryUp,
-        PilotChannel,
+        AnnouncePilotChannel,
         PilotResult,
 
         StaggeredStart,
