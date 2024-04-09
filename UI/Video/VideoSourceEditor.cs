@@ -526,6 +526,9 @@ namespace UI.Video
                 eventChannels = Channel.Read(profile);
             }
 
+            // Always order by frequency.
+            eventChannels = eventChannels.OrderBy(r => r.Frequency).ToArray();
+
             main = new Node();
             AddChild(main);
 

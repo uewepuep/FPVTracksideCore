@@ -178,7 +178,7 @@ namespace Composition.Nodes
         {
             if (!Disposed)
             {
-                Logger.UI.Log(this, "Not Disposed" + Address);
+                Logger.UI.Log(this, "Not Disposed" + Address + "\n Creator: " + creator);
                 System.Diagnostics.Debug.Assert(Disposed);
                 Dispose();
             }

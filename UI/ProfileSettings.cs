@@ -179,6 +179,10 @@ namespace UI
         [NeedsRestart]
         public byte PilotProfileChromaKeyLimit { get; set; }
 
+        [Category("Pilot Profile")]
+        [NeedsRestart]
+        public int PilotProfilePhotoboothVideoLength { get; set; }
+
         public ProfileSettings()
         {
             Theme = "Dark";
@@ -238,6 +242,8 @@ namespace UI
             PilotProfileChromaKey = false;
             PilotProfileChromaKeyColor = ChromaKeyColor.Green;
             PilotProfileChromaKeyLimit = 20;
+
+            PilotProfilePhotoboothVideoLength = 6;
         }
 
         protected const string filename = "ProfileSettings.xml";

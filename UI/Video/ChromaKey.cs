@@ -22,8 +22,8 @@ namespace UI.Video
         private ChromaKeyColor chromaKeyColor;
         private byte chromaKeyLimit;
 
-        public ChromaKeyFileFrameNode(string filename, ChromaKeyColor chromaKeyColor, byte chromaKeyLimit)
-            : base(filename)
+        public ChromaKeyFileFrameNode(FrameSource frameSource, ChromaKeyColor chromaKeyColor, byte chromaKeyLimit)
+            : base(frameSource)
         {
             this.chromaKeyColor = chromaKeyColor;
             this.chromaKeyLimit = chromaKeyLimit;

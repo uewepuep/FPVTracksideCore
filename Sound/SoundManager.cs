@@ -302,6 +302,7 @@ namespace Sound
 
         private void OnRaceChanged(Race race)
         {
+            StopSound();
             if (race != null && eventManager.RaceManager.CanRunRace)
             {
                 AnnounceRace(race);

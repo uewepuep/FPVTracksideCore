@@ -1,6 +1,7 @@
 ﻿using Composition;
 using Composition.Input;
 using Composition.Nodes;
+using ImageServer;
 using Microsoft.Xna.Framework;
 using RaceLib;
 using System;
@@ -98,26 +99,55 @@ namespace UI.Nodes
                     return;
                 }
 
+                HasProfileImage = LoadFile(filename);
+            }
+            else
+            {
+                HasProfileImage = false;
+                PilotPhoto?.Dispose();
+                PilotPhoto = null;
+                TextNode.Text = "";
+            }
+
+            RequestLayout();
+        }
+
+        private bool LoadFile(string filename)
+        {
+            try
+            {
+                PilotPhoto?.Dispose();
+                PilotPhoto = null;
+
                 FileInfo fileInfo = new FileInfo(System.Text.RegularExpressions.Regex.Replace(filename, @"[^\w\-. \\:]", ""));
                 if (fileInfo.Exists)
                 {
+
                     string[] videoFileTypes = new[] { ".mp4", ".wmv", ".mkv" };
                     string[] imageFileTypes = new[] { ".png", ".jpg" };
 
                     if (videoFileTypes.Contains(fileInfo.Extension))
                     {
-                        PilotPhoto?.Dispose();
+                        FrameSource source = VideoFrameworks.GetFramework(FrameWork.MediaFoundation).CreateFrameSource(filename);
+                        if (source == null)
+                        {
+                            return false;
+                        }
+
+                        // Shake down the source before doing anything.
+                        source.Start();
+                        source.Stop();
 
                         FileFrameNode videoPlayer;
                         if (ProfileSettings.Instance.PilotProfileChromaKey)
                         {
-                            videoPlayer = new ChromaKeyFileFrameNode(fileInfo.FullName, 
-                                                                     ProfileSettings.Instance.PilotProfileChromaKeyColor, 
+                            videoPlayer = new ChromaKeyFileFrameNode(source,
+                                                                     ProfileSettings.Instance.PilotProfileChromaKeyColor,
                                                                      ProfileSettings.Instance.PilotProfileChromaKeyLimit);
                         }
                         else
                         {
-                            videoPlayer = new FileFrameNode(fileInfo.FullName);
+                            videoPlayer = new FileFrameNode(source);
                         }
 
                         videoPlayer.Repeat = true;
@@ -128,8 +158,6 @@ namespace UI.Nodes
                     }
                     else if (imageFileTypes.Contains(fileInfo.Extension))
                     {
-                        PilotPhoto?.Dispose();
-
                         PilotPhoto = new ImageNode(fileInfo.FullName);
                         insideOutBorderRelativeNode.AddChild(PilotPhoto, 0);
                     }
@@ -151,25 +179,22 @@ namespace UI.Nodes
                             TextNode.RelativeBounds = new RectangleF(0, 0.9f, 1, 0.1f);
                             PilotPhoto.RelativeBounds = new RectangleF(0, 0, 1, TextNode.RelativeBounds.Y);
                         }
-
-                        HasProfileImage = true;
+                        return true;
                     }
                 }
                 else
                 {
-                    HasProfileImage = false;
+                    return false;
                 }
             }
-            else
+            catch (Exception ex) 
             {
-
-                HasProfileImage = false;
                 PilotPhoto?.Dispose();
                 PilotPhoto = null;
-                TextNode.Text = "";
-            }
 
-            RequestLayout();
+                Logger.VideoLog.LogException(this, ex);
+            }
+            return false;
         }
 
         private string PickAThing(Pilot pilot)

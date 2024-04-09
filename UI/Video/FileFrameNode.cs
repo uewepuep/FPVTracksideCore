@@ -36,8 +36,8 @@ namespace UI.Video
             }
         }
 
-        public FileFrameNode(string filename) 
-            : base(VideoFrameworks.GetFramework(FrameWork.MediaFoundation).CreateFrameSource(filename))
+        public FileFrameNode(FrameSource source) 
+            : base(source)
         {
             Start();
         }

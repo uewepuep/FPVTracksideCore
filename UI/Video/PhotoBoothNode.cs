@@ -276,7 +276,7 @@ namespace UI.Video
         public CameraCountdownNode() 
         {
             Delay = TimeSpan.FromSeconds(3);
-            RecordingLength = TimeSpan.FromSeconds(6);
+            RecordingLength = TimeSpan.FromSeconds(ProfileSettings.Instance.PilotProfilePhotoboothVideoLength);
 
             countdownText = new TextNode("", Color.White);
             countdownText.Scale(0.3f);
