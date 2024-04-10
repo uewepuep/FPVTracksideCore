@@ -1,3 +1,37 @@
+window.onresize = function(event)
+{
+    ResizeWindow();
+};
+window.onload = function(event)
+{
+    ResizeWindow();
+};
+
+function ResizeWindow()
+{
+    const width = this.document.body.clientWidth;
+
+    var columns = (width / 900);
+    columns = Math.min(Math.max(Math.floor(columns), 1), 5);
+
+    var lapcolumns = (width / 500);
+    lapcolumns = Math.min(Math.max(Math.floor(lapcolumns), 1), 10);
+
+    var menu_columns = width / 200.0;
+    menu_columns = Math.min(Math.max(Math.floor(menu_columns), 1), 10);
+
+    
+    var graphWidth = 800;
+    if (width < graphWidth)
+    {
+        graphWidth = width;
+    }
+
+    this.document.documentElement.style.setProperty('--graph-width', graphWidth);
+    this.document.documentElement.style.setProperty('--data-columns', columns);
+    this.document.documentElement.style.setProperty('--lap-columns', lapcolumns);
+    this.document.documentElement.style.setProperty('--menu-columns', menu_columns);
+}
 
 class Formatter
 {
@@ -12,14 +46,6 @@ class Formatter
         this.lastAction = null;
 
         var formatter = this;
-        window.onresize = function(event)
-        {
-            formatter.ResizeWindow();
-        };
-        window.onload = function(event)
-        {
-            formatter.ResizeWindow();
-        };
 
         const self = this;
         window.setInterval(() =>
@@ -28,9 +54,23 @@ class Formatter
         }, tooOld);
     }
 
-    GetOptions()
+    async GetOptions()
     {
-        return ["Event Status", "Rounds", "Lap Records", "Lap Counts", "Points"];
+        let options = [];
+
+        const eventDetails = await this.eventManager.GetEvent();
+        const diff = Date.now() - Date.parse(eventDetails.LastOpened);
+        if (diff < 48 * 3600 * 1000)
+        {
+            options.push("Event Status");
+        }
+
+        options.push("Rounds");
+        options.push("Lap Records");
+        options.push("Lap Counts");
+        options.push("Points");
+
+        return options;
     }
 
     Show(name)
@@ -227,6 +267,10 @@ class Formatter
 
         let pilotRecords = await this.eventManager.GetLapRecords(pbLaps, lapCount);
 
+        const showPB = (pbLaps != lapCount);
+        const showHoleShot = (eventDetails.PrimaryTimingSystemLocation == "Holeshot");
+        const showRaceTime = (eventDetails.EventType ==  "Race");
+
         pilotRecords.sort((a, b) => { return this.eventManager.TotalTime(a.laps) - this.eventManager.TotalTime(b.laps) });
 
         let output = "<h2>Lap Records</h2>";
@@ -234,10 +278,10 @@ class Formatter
         output += "<div class=\"row\" >";
         output += "<div class=\"position\">Position</div>";
         output += "<div class=\"pilots\">Pilots</div>";
-        output += "<div class=\"holeshot\">Holeshot</div>";
-        output += "<div class=\"lap\">" + pbLaps + " Lap" + this.Plural(pbLaps) + " </div>";
+        if (showHoleShot) output += "<div class=\"holeshot\">Holeshot</div>";
+        if (showPB) output += "<div class=\"lap\">" + pbLaps + " Lap" + this.Plural(pbLaps) + " </div>";
         output += "<div class=\"laps\">" + lapCount + " Lap" + this.Plural(lapCount) + " </div>";
-        output += "<div class=\"racetime\">Race Time</div>";
+        if (showRaceTime) output += "<div class=\"racetime\">Race Time</div>";
         output += "</div>";
 
         let i = 1;
@@ -246,10 +290,10 @@ class Formatter
             output += "<div class=\"row\">";
             output += "<div class=\"position\">" + this.ToStringPosition(i) + "</div>";
             output += "<div class=\"pilots\">" + pilotRecord.pilot.Name + "</div>";
-            output += "<div class=\"holeshot\">" + this.LapsToTime(pilotRecord.holeshot) + "</div>";
-            output += "<div class=\"lap\">" + this.LapsToTime(pilotRecord.lap) + "</div>";
+            if (showHoleShot) output += "<div class=\"holeshot\">" + this.LapsToTime(pilotRecord.holeshot) + "</div>";
+            if (showPB) output += "<div class=\"lap\">" + this.LapsToTime(pilotRecord.lap) + "</div>";
             output += "<div class=\"laps\">" + this.LapsToTime(pilotRecord.laps) + "</div>";
-            output += "<div class=\"racetime\">" + this.LapsToTime(pilotRecord.race) + "</div>";
+            if (showRaceTime) output += "<div class=\"racetime\">" + this.LapsToTime(pilotRecord.race) + "</div>";
 
             output += "</div>";
             i++;
@@ -268,10 +312,10 @@ class Formatter
 
         const lapCount = eventDetails.PBLaps;
 
-        let output = "<div class=\"graph\">";
-        output += "<h2>PB Lap times over Rounds</h2><br>";
+        let output = "<div >";
+        output += "<h2> " + eventDetails.PBLaps + "  Lap times over Rounds</h2><br>";
 
-        output += "<canvas id=\"posgraph\" width=\"1000\" height=\"600\"> </canvas>";
+        output += "<canvas class=\"graph\" id=\"posgraph\" width=\"800\" height=\"600\"> </canvas>";
         output += "</div>";
         this.AppendContent(output);
 
@@ -566,7 +610,7 @@ class Formatter
         output += "<div class=\"graph\">";
         output += "<h2>Position Graph</h2><br>";
 
-        output += "<canvas id=\"posgraph\" width=\"600\" height=\"300\"> </canvas>";
+        output += "<canvas class=\"graph\" id=\"posgraph\" width=\"800\" height=\"600\"> </canvas>";
         output += "</div>";
 
         let lapCount = Math.min(maxLapNumber, grouped.length);
@@ -710,25 +754,6 @@ class Formatter
             }
         }
         return position + post;
-    }
-
-    ResizeWindow()
-    {
-        const width = this.document.body.clientWidth;
-
-        var columns = (width / 900);
-        columns = Math.min(Math.max(Math.floor(columns), 1), 5);
-
-        var lapcolumns = (width / 500);
-        lapcolumns = Math.min(Math.max(Math.floor(lapcolumns), 1), 10);
-
-        var menu_columns = 5;
-        if (width < 900)
-            menu_columns = 1;
-
-        this.document.documentElement.style.setProperty('--data-columns', columns);
-        this.document.documentElement.style.setProperty('--lap-columns', lapcolumns);
-        this.document.documentElement.style.setProperty('--menu-columns', menu_columns);
     }
 
     AppendContent(content)

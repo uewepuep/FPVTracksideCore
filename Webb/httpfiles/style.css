@@ -1,10 +1,10 @@
 :root 
 {
     --data-columns: 2;
-    --menu-columns: 5;
+    --menu-columns: 8;
     --lap-columns: 2;
+    --graph-width:800px;
 }
-
 
 body 
 {
@@ -14,6 +14,7 @@ body
     color: white;
     margin: 0px;
     padding: 0px;
+    width: 100%;
 }
 
 .menu a:link, .menu a:visited, .menu a:hover, .menu a:active
@@ -73,16 +74,13 @@ img
     color: white;
     font-size: 16pt;
     text-align: center;
-    margin: 0px;
-    margin-left: auto;
-    margin-right: auto;
 
     background: linear-gradient(#D6D5D6,#A1A1A1);
     padding: 0px;
     border-top: 1px solid black;
     text-shadow: 1px 1px rgb(92, 92, 92);
-    flex-wrap: wrap;
-    display: flex;
+    column-count: var(--menu-columns);
+    padding: 10px 0px;
 }
 
 h1
@@ -90,27 +88,18 @@ h1
     padding-top: 20px;
 }
 
-.submenu
+.eventmenu
 {
-    color:red;
+    color: #ED1B24;
+    column-count: var(--menu-columns);
+}
+
+.menu_item, .eventmenu_item
+{
+    padding: 10px 0px;
     font-size: 16pt;
-    padding:10px;
-    margin: 0px;
+    white-space: nowrap; 
 }
-
-.menu_table
-{
-    margin: 0px;
-    text-shadow: 1px 1px rgb(92, 92, 92);
-}
-
-.menu_item
-{
-    margin: 0px;
-    padding: 4px 30px;
-    font-size: 16pt;
-}
-
 
 .menu_item_button 
 {
@@ -119,11 +108,6 @@ h1
     padding: 0!important;
     text-decoration: underline;
     cursor: pointer;
-
-    margin: 6px;
-    padding: 4px 20px;
-    font-size: 16pt;
-    
 }
 
 .rounds 
@@ -222,34 +206,41 @@ h2
     padding: 5px;
     font-weight: 600;
     font-size: 12pt;
-    text-align: left;
+    
+    text-align: right;
     display: inline-block;
     height: 20px;
-    width: 100px;
+    width: 60px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
 }
 
+.position
+{
+    text-align: left;
+}
+
 .pilots 
 {
+    text-align: left;
     width: 120px;
 }
 
-.holeshot, .racetime 
+.racetime
 {
     width: 80px;
 }
 
-.holeshot, .racetime, .laps, .lap, .position, .total 
+.holeshot
 {
-    text-align: right;
+    width: 70px;
 }
 
 .columns 
 {
     padding: 20px;
-    margin: 10px;
+    margin: 0px;
     background: #05050599;
 }
 
@@ -304,14 +295,14 @@ h2
 {
 }
 
-canvas
-{
-    padding:50px;
-}
-
-
 .loading
 {
     margin-left: auto;
     margin-right: auto;
+}
+
+.graph
+{
+    padding: 0px;
+    width: var(--graph-width);
 }

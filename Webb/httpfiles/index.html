@@ -24,8 +24,6 @@
         var eventManager = new EventManager("%eventDirectory%", tooOld);
         var formatter = new Formatter("/", eventManager, document, this.window, history, "content", tooOld);
 
-        let menuItems = formatter.GetOptions();
-
         const menuElement = document.getElementById("menu");
 
         menuElement.innerHTML = "";
@@ -37,28 +35,32 @@
 
         let shown = false;
 
-        for (const item of menuItems)
+        formatter.GetOptions().then(menuItems =>
         {
-            const div = document.createElement("div");
-            div.className = "menu_item";
-            menuElement.appendChild(div);
-
-            const link = document.createElement("span");
-            link.onclick = function () { Show(item); };
-            link.innerText = item;
-            div.appendChild(link);
-
-            if (url == item)
+            for (const item of menuItems)
             {
-                Show(item);
-                shown = true;
-            }
-        }
+                const div = document.createElement("div");
+                div.className = "menu_item";
+                menuElement.appendChild(div);
 
-        if (!shown)
-        {
-            formatter.ShowEventStatus();
-        }
+                const link = document.createElement("span");
+                link.onclick = function () { Show(item); };
+                link.innerText = item;
+                div.appendChild(link);
+
+                if (url == item)
+                {
+                    Show(item);
+                    shown = true;
+                }
+            }
+
+            if (!shown)
+            {
+                formatter.ShowEventStatus();
+            }
+        });
+
         
         function Show(name)
         {
