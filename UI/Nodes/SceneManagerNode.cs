@@ -472,6 +472,7 @@ namespace UI.Nodes
 
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
                     launchCamsNode.SetAnimatedVisibility(false);
+                    wormNode.SetAnimatedAlpha(0);
                     break;
 
                 case Scenes.Race:
