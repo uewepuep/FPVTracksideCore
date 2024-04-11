@@ -33,6 +33,10 @@ namespace Composition.Input
         public ShortcutKey ScenePreRace { get; set; }
         [Category("Live Video")]
         public ShortcutKey SceneRace { get; set; }
+
+        [Category("Live Video")]
+        public ShortcutKey SceneFinishLine { get; set; }
+        
         [Category("Live Video")]
         public ShortcutKey ScenePostRace { get; set; }
 
@@ -41,9 +45,6 @@ namespace Composition.Input
 
         [Category("Live Video")]
         public ShortcutKey SceneEventStatus { get; set; }
-
-        [Category("Live Video")]
-        public ShortcutKey SceneFinishLine { get; set; }
 
         [Category("Live Video")]
         public ShortcutKey ShowWorm { get; set; }
@@ -239,10 +240,10 @@ namespace Composition.Input
 
             ScenePreRace = new ShortcutKey(Keys.F1);
             SceneRace = new ShortcutKey(Keys.F2);
-            ScenePostRace = new ShortcutKey(Keys.F3);
-            SceneEventStatus = new ShortcutKey(Keys.F4);
+            SceneFinishLine = new ShortcutKey(Keys.F3);
+            ScenePostRace = new ShortcutKey(Keys.F4);
             SceneCommentators = new ShortcutKey(Keys.F5);
-            SceneFinishLine = new ShortcutKey(Keys.F6);
+            SceneEventStatus = new ShortcutKey(Keys.F6);
 
             ReplayPlayStop = new ShortcutKey(Keys.Space);
             ReplayPrevFrame = new ShortcutKey(Keys.OemComma);

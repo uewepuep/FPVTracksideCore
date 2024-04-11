@@ -160,7 +160,7 @@ namespace UI.Video
             float frameRate = (float)Math.Max(1, Math.Min(120, primary.FrameRate));
             double step = 1.0 / frameRate;
 
-            DateTime seekTime = primary.CurrentTime + TimeSpan.FromSeconds(step * steps);
+            TimeSpan seekTime = primary.MediaTime + TimeSpan.FromSeconds(step * steps);
             foreach (IPlaybackFrameSource frameSource in GetFileFrameSources())
             {
                 frameSource.SetPosition(seekTime);

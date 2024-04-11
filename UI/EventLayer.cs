@@ -1162,6 +1162,10 @@ namespace UI
 
         private void UpdateTopBar()
         {
+            // for fullscreen scene, just keep previous layout.
+            if (sceneManagerNode.Scene == SceneManagerNode.Scenes.Fullscreen)
+                return;
+
             // ignoring tabs 
             float topBarBottom = 0.1f;
 

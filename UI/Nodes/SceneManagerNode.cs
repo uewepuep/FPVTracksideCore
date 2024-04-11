@@ -298,6 +298,7 @@ namespace UI.Nodes
             finishLineNode.SetAnimationTime(time);
             ChannelsGridNode.SetAnimationTime(time);
             topBarNode.SetAnimationTime(time);
+            wormNode.SetAnimationTime(time);    
         }
 
         private void SetChannelGridReordering(Scenes scene)
@@ -343,6 +344,9 @@ namespace UI.Nodes
             float channelGridHeight = 0.3f;
             float nonChannelGridHeight = 1 - channelGridHeight;
 
+            float launchFinishWidth = 0.7f;
+            IEnumerable<Node> commentatorCams = commentatorsAndSummary.VisibleChildren;
+
             switch (scene)
             {
                 case Scenes.PreRace:
@@ -350,13 +354,11 @@ namespace UI.Nodes
 
                     SetAnimationTime(SetupAnimationTime);
 
-                    float launchWidth = 0.7f;
 
                     launchCamsNode.SetAnimatedVisibility(true);
                     commentatorsAndSummary.SetAnimatedVisibility(true);
 
                     IEnumerable<Node> launchCams = launchCamsNode.VisibleChildren;
-                    IEnumerable<Node> commentatorCams = commentatorsAndSummary.VisibleChildren;
 
                     if (!launchCams.Any() && !commentatorCams.Any())
                     {
@@ -372,12 +374,12 @@ namespace UI.Nodes
 
                         if (!launchCams.Any())
                         {
-                            launchWidth = 0;
+                            launchFinishWidth = 0;
                         }
 
                         if (!commentatorCams.Any())
                         {
-                            launchWidth = 1;
+                            launchFinishWidth = 1;
                         }
                         ChannelsGridNode.MakeExtrasVisible(false);
                     }
@@ -385,11 +387,11 @@ namespace UI.Nodes
                     ChannelsGridNode.SetBiggerInfo(true, false);
                     ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Large);
 
-                    launchCamsNode.RelativeBounds = new RectangleF(0, 0, launchWidth, nonChannelGridHeight);
+                    launchCamsNode.RelativeBounds = new RectangleF(0, 0, launchFinishWidth, nonChannelGridHeight);
 
                     Node.AlignHorizontally(0, launchCams.ToArray());
 
-                    commentatorsAndSummary.RelativeBounds = new RectangleF(launchWidth, 0, 1 - launchWidth, nonChannelGridHeight);
+                    commentatorsAndSummary.RelativeBounds = new RectangleF(launchFinishWidth, 0, 1 - launchFinishWidth, nonChannelGridHeight);
 
                     if (launchCams.Any())
                     {
@@ -407,9 +409,69 @@ namespace UI.Nodes
 
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
                     finishLineNode.SetAnimatedVisibility(false);
+                    wormNode.SetAnimatedAlpha(0);
+                    break;
 
-                    PositionWorm();
+                case Scenes.FinishLine:
+                    ChannelsGridNode.LockGridType = false;
 
+                    SetAnimationTime(SetupAnimationTime);
+
+                    finishLineNode.SetAnimatedVisibility(true);
+                    commentatorsAndSummary.SetAnimatedVisibility(true);
+
+                    IEnumerable<Node> finishCams = finishLineNode.VisibleChildren;
+
+
+                    if (!finishCams.Any() && !commentatorCams.Any())
+                    {
+                        channelGridHeight = 1;
+                        nonChannelGridHeight = 0;
+
+                        ChannelsGridNode.SingleRow = false;
+                        ChannelsGridNode.MakeExtrasVisible(true);
+                    }
+                    else
+                    {
+                        ChannelsGridNode.SingleRow = true;
+
+                        if (!finishCams.Any())
+                        {
+                            launchFinishWidth = 0;
+                        }
+
+                        if (!commentatorCams.Any())
+                        {
+                            launchFinishWidth = 1;
+                        }
+                        ChannelsGridNode.MakeExtrasVisible(false);
+                    }
+
+                    ChannelsGridNode.SetBiggerInfo(true, false);
+                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Large);
+
+                    finishLineNode.RelativeBounds = new RectangleF(0, 0, launchFinishWidth, nonChannelGridHeight);
+
+                    Node.AlignHorizontally(0, finishCams.ToArray());
+
+                    commentatorsAndSummary.RelativeBounds = new RectangleF(launchFinishWidth, 0, 1 - launchFinishWidth, nonChannelGridHeight);
+
+                    if (finishCams.Any())
+                    {
+                        Node.AlignVertically(0, commentatorsAndSummary.VisibleChildren.ToArray());
+                    }
+                    else
+                    {
+                        Node.AlignHorizontally(0, commentatorsAndSummary.VisibleChildren.ToArray());
+                    }
+
+                    ChannelsGridNode.RelativeBounds = new RectangleF(0, nonChannelGridHeight, 1, channelGridHeight);
+
+                    resultsRaceNode.SetAnimatedVisibility(false);
+                    nextRaceNode.SetAnimatedVisibility(false);
+
+                    eventStatusNodeContainer.SetAnimatedVisibility(false);
+                    launchCamsNode.SetAnimatedVisibility(false);
                     break;
 
                 case Scenes.Race:
@@ -455,7 +517,7 @@ namespace UI.Nodes
                     ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.None);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
 
-                    wormNode.SetAnimatedVisibility(false);
+                    wormNode.SetAnimatedAlpha(0);
 
                     break;
 
@@ -513,11 +575,11 @@ namespace UI.Nodes
                     ChannelsGridNode.SetBiggerInfo(true, true);
                     ChannelsGridNode.MakeExtrasVisible(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
-                    wormNode.SetAnimatedVisibility(false);
-
+                    wormNode.SetAnimatedAlpha(0);
                     break;
 
                 case Scenes.Fullscreen:
+                    SetAnimationTime(SetupAnimationTime);
                     ChannelsGridNode.LockGridType = true;
                     Node fsNode = fullscreenNode;
 
@@ -543,45 +605,7 @@ namespace UI.Nodes
                     nextRaceNode.SetAnimatedVisibility(false);
                     resultsRaceNode.SetAnimatedVisibility(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(true);
-                    wormNode.SetAnimatedVisibility(false);
-
-                    break;
-
-                case Scenes.FinishLine:
-                    ChannelsGridNode.LockGridType = false;
-
-                    SetAnimationTime(SetupAnimationTime);
-
-                    IEnumerable<Node> finishCam = finishLineNode.VisibleChildren;
-
-                    if (finishCam.Any())
-                    {
-                        ChannelsGridNode.SingleRow = true;
-                        ChannelsGridNode.MakeExtrasVisible(false);
-                    }
-                    else
-                    {
-                        channelGridHeight = 1;
-                        nonChannelGridHeight = 0;
-
-                        ChannelsGridNode.SingleRow = false;
-                        ChannelsGridNode.MakeExtrasVisible(true);
-                    }
-
-                    ChannelsGridNode.SetBiggerInfo(true, false);
-                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
-
-                    finishLineNode.SetAnimatedVisibility(true);
-                    finishLineNode.RelativeBounds = new RectangleF(0, 0, 1, nonChannelGridHeight);
-
-                    ChannelsGridNode.RelativeBounds = new RectangleF(0, nonChannelGridHeight, 1, channelGridHeight);
-
-                    resultsRaceNode.SetAnimatedVisibility(false);
-                    nextRaceNode.SetAnimatedVisibility(false);
-
-                    eventStatusNodeContainer.SetAnimatedVisibility(false);
-
-                    PositionWorm();
+                    wormNode.SetAnimatedAlpha(0);
                     break;
             }
         }
@@ -673,6 +697,9 @@ namespace UI.Nodes
 
         public void FullScreen(Node node)
         {
+            if (fullscreenNode == node)
+                return;
+
             if (Scene != Scenes.Fullscreen)
             {
                 preFullScreenScene = Scene;
@@ -708,20 +735,24 @@ namespace UI.Nodes
 
         public void ShowCommentators()
         {
+            commentatorsAndSummary.SetAnimatedVisibility(true);
             FullScreen(commentatorsAndSummary);
         }
 
         public void ToggleWorm()
         {
-            if (showWorm)
+            if (Scene == Scenes.Race)
             {
-                showWorm = false;
+                if (showWorm)
+                {
+                    showWorm = false;
+                }
+                else
+                {
+                    showWorm = true;
+                }
+                PositionWorm();
             }
-            else
-            {
-                showWorm = true;
-            }
-            PositionWorm();
         }
 
         private void PositionWorm()
