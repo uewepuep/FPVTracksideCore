@@ -736,6 +736,8 @@ namespace UI.Nodes
 
         public void ShowCommentators()
         {
+            finishLineNode.SetAnimatedVisibility(false);
+            launchCamsNode.SetAnimatedVisibility(false);
             commentatorsAndSummary.SetAnimatedVisibility(true);
             FullScreen(commentatorsAndSummary);
         }

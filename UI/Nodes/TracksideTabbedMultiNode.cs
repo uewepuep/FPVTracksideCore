@@ -255,6 +255,7 @@ namespace UI.Nodes
 
         public void ShowCommentators()
         {
+            Show(sceneManagerNode);
             sceneManagerNode.ShowCommentators();
         }
 
