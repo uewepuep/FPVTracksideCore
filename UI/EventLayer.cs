@@ -947,7 +947,7 @@ namespace UI
                     return true;
                 }
 
-                if (KeyMapper.SceneFinishLine.Match(inputEvent)) 
+                if (KeyMapper.SceneFinishLine.Match(inputEvent))
                 {
                     TabbedMultiNode.ShowLive(SceneManagerNode.Scenes.FinishLine);
                     return true;
@@ -961,50 +961,71 @@ namespace UI
 
 
                 Race race = EventManager.RaceManager.CurrentRace;
-                if (KeyMapper.AnnounceRace.Match(inputEvent)) 
+                if (KeyMapper.AnnounceRace.Match(inputEvent))
                 {
-                    SoundManager.AnnounceRace(race);
+                    SoundManager.StopSound();
+                    SoundManager.AnnounceRace(race, true);
                 }
 
                 if (KeyMapper.AnnounceRaceResults.Match(inputEvent))
                 {
+                    SoundManager.StopSound();
                     SoundManager.AnnounceResults(race);
                 }
 
                 if (KeyMapper.HurryUpEveryone.Match(inputEvent))
                 {
+                    SoundManager.StopSound();
                     SoundManager.HurryUpEveryone();
                 }
 
                 if (KeyMapper.UntilRaceStart.Match(inputEvent))
                 {
+                    SoundManager.StopSound();
                     SoundManager.PlayTimeUntilNextRace(AutoRunner.NextRaceStartTime - DateTime.Now);
                 }
 
                 if (KeyMapper.TimeRemaining.Match(inputEvent))
                 {
+                    SoundManager.StopSound();
                     SoundManager.TimeRemaining(race, EventManager.RaceManager.RemainingTime);
                 }
 
                 if (KeyMapper.RaceOver.Match(inputEvent))
                 {
+                    SoundManager.StopSound();
                     SoundManager.RaceOver();
                 }
 
                 if (KeyMapper.Custom1.Match(inputEvent))
+                {
+                    SoundManager.StopSound();
                     SoundManager.PlaySound(SoundKey.Custom1);
-                
+                }
+
                 if (KeyMapper.Custom2.Match(inputEvent))
+                {
+                    SoundManager.StopSound();
                     SoundManager.PlaySound(SoundKey.Custom2);
+                }
 
                 if (KeyMapper.Custom3.Match(inputEvent))
+                {
+                    SoundManager.StopSound();
                     SoundManager.PlaySound(SoundKey.Custom3);
+                }
 
                 if (KeyMapper.Custom4.Match(inputEvent))
+                {
+                    SoundManager.StopSound();
                     SoundManager.PlaySound(SoundKey.Custom4);
+                }
 
                 if (KeyMapper.Custom5.Match(inputEvent))
+                {
+                    SoundManager.StopSound();
                     SoundManager.PlaySound(SoundKey.Custom5);
+                }
 
                 if (KeyMapper.EnableTTSAudio.Match(inputEvent))
                 {
