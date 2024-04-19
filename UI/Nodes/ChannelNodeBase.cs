@@ -461,7 +461,7 @@ namespace UI.Nodes
 
                     PilotProfile.ProfileImageContainer.RelativeBounds = new RectangleF(0.4f, bottomOfName, 0.6f, 1 - bottomOfName);
                     PilotProfile.ProfileImageContainer.RelativeBounds = new RectangleF(0, 0, 1, 1);
-                    PilotProfile.RepeatVideo = true;
+                    PilotProfile.RepeatVideo = ProfileSettings.Instance.PilotProfileRepeatVideo;
                     break;
             }
         }

@@ -28,11 +28,15 @@ namespace UI.Video
         {
             get
             {
+                if (playbackFrameSource == null)
+                    return false;
+
                 return playbackFrameSource.Repeat;
             }
             set
             {
-                playbackFrameSource.Repeat = value;
+                if (playbackFrameSource != null)
+                    playbackFrameSource.Repeat = value;
             }
         }
 
@@ -59,12 +63,17 @@ namespace UI.Video
             playbackFrameSource?.Play();
         }
 
-        bool Start()
+        public bool Start()
         {
             if (playbackFrameSource == null)
                 return false;
 
             return playbackFrameSource.Start();
+        }
+
+        public void Seek(TimeSpan timeSpan)
+        {
+            playbackFrameSource?.SetPosition(timeSpan);
         }
 
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)

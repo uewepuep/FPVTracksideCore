@@ -64,6 +64,8 @@ namespace Sound
 
         NoVideoDelayingRace,
 
+        PhotoboothTrigger,
+
         Custom1,
         Custom2, 
         Custom3,

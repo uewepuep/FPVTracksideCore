@@ -61,5 +61,20 @@ namespace Tools
             }
             return false;
         }
+
+        public delegate bool BoolReturnDel();
+        public static bool WaitFor(BoolReturnDel action, TimeSpan timeout, int stepMilliseconds = 10)
+        {
+            DateTime start = DateTime.Now;
+            while (!action())
+            {
+                Thread.Sleep(stepMilliseconds);
+                if (DateTime.Now - start > timeout)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 }

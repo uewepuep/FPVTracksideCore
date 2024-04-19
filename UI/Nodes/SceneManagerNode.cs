@@ -724,6 +724,7 @@ namespace UI.Nodes
             if (channelNodeBase != null && pilot != null)
             {
                 channelNodeBase.PilotProfile.SetAnimatedAlpha(1);
+                channelNodeBase.PilotProfile.Seek(TimeSpan.Zero);
 
                 FullScreen(channelNodeBase);
                 fullScreenContainer.KeepAspectRatio = true;

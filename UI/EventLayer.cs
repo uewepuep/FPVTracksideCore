@@ -105,6 +105,7 @@ namespace UI
             SoundManager.MuteTTS = !ProfileSettings.Instance.TextToSpeech;
             SoundManager.SillyNameChance = ProfileSettings.Instance.SillyNameChance;
             SoundManager.Units = GeneralSettings.Instance.Units;
+            SoundManager.PilotAnnounceTime = TimeSpan.FromSeconds(ProfileSettings.Instance.PilotProfileHoldLengthSeconds);
 
             EventManager.RaceManager.TimingSystemManager.OnConnected += (int count) =>
             {
@@ -195,7 +196,7 @@ namespace UI
             pilotListButton.OnClick += TogglePilotList;
             OnPilotRefresh();
 
-            TabbedMultiNode = new TracksideTabbedMultiNode(eventManager, videoManager, RoundsNode, sceneManagerNode, tabButtonsNode);
+            TabbedMultiNode = new TracksideTabbedMultiNode(eventManager, videoManager, SoundManager, RoundsNode, sceneManagerNode, tabButtonsNode);
             TabbedMultiNode.RelativeBounds = new RectangleF(0, 0, 1, 0.99f);
             TabbedMultiNode.OnTabChange += OnTabChange;
             centreContainer.AddChild(TabbedMultiNode);

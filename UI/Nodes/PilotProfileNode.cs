@@ -226,5 +226,14 @@ namespace UI.Nodes
                 PilotPhoto.ReloadFromFile = true;
             }
         }
+
+        public void Seek(TimeSpan time)
+        {
+            FileFrameNode videoPlayer = PilotPhoto as FileFrameNode;
+            if (videoPlayer != null)
+            {
+                videoPlayer.Seek(time);
+            }
+        }
     }
 }

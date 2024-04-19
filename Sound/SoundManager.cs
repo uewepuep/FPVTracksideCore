@@ -84,6 +84,8 @@ namespace Sound
             }
         }
 
+        public TimeSpan PilotAnnounceTime { get; set; }
+
         public Profile Profile { get; private set; }
 
         public Units Units { get; set; }
@@ -125,6 +127,8 @@ namespace Sound
                 eventManager.SpeedRecordManager.OnSpeedCalculated += OnSpeed;
                 eventManager.RaceManager.OnSplitDetection += OnSplit;
             }
+
+            PilotAnnounceTime = TimeSpan.Zero;
         }
 
         public void Dispose()
@@ -252,6 +256,8 @@ namespace Sound
                     new Sound() { Key = SoundKey.Custom3, TextToSpeech = "Custom sound 3", Category = Sound.SoundCategories.Announcements },
                     new Sound() { Key = SoundKey.Custom4, TextToSpeech = "Custom sound 4", Category = Sound.SoundCategories.Announcements },
                     new Sound() { Key = SoundKey.Custom5, TextToSpeech = "Custom sound 5", Category = Sound.SoundCategories.Announcements },
+
+                    new Sound() { Key = SoundKey.PhotoboothTrigger, TextToSpeech = "beep", Filename = @"sounds/split.wav", Category = Sound.SoundCategories.Announcements },
                 };
 
                 foreach (Sound defaultSound in defaultSounds)
@@ -378,7 +384,14 @@ namespace Sound
                         break;
 
                     HighlightPilot(pc.Pilot);
+
+                    DateTime start = DateTime.Now;
                     PlaySoundBlocking(SoundKey.AnnouncePilotChannel, pilotChannelParameters);
+
+                    if (PilotAnnounceTime > TimeSpan.Zero)
+                    {
+                        Waiter.WaitFor(() => { return start + PilotAnnounceTime < DateTime.Now || backgroundQueueStopping; }, PilotAnnounceTime);
+                    }
                 }
                 HighlightPilot(null);
             });

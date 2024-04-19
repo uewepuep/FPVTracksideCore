@@ -181,7 +181,14 @@ namespace UI
 
         [Category("Pilot Profile")]
         [NeedsRestart]
-        public int PilotProfilePhotoboothVideoLength { get; set; }
+        public int PilotProfilePhotoboothVideoLengthSeconds { get; set; }
+        [Category("Pilot Profile")]
+        [NeedsRestart]
+        public bool PilotProfileRepeatVideo { get; set; }
+
+        [Category("Pilot Profile")]
+        [NeedsRestart]
+        public int PilotProfileHoldLengthSeconds { get; set; }
 
         public ProfileSettings()
         {
@@ -243,7 +250,9 @@ namespace UI
             PilotProfileChromaKeyColor = ChromaKeyColor.Green;
             PilotProfileChromaKeyLimit = 20;
 
-            PilotProfilePhotoboothVideoLength = 6;
+            PilotProfilePhotoboothVideoLengthSeconds = 5;
+            PilotProfileRepeatVideo = true;
+            PilotProfileHoldLengthSeconds = 0;
         }
 
         protected const string filename = "ProfileSettings.xml";

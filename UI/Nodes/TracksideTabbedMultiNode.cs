@@ -3,6 +3,7 @@ using Composition.Input;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
+using Sound;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,7 +44,7 @@ namespace UI.Nodes
         private TextButtonNode rssiButton;
 
 
-        public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, RoundsNode rounds, SceneManagerNode sceneManagerContent, TabButtonsNode tabContainer)
+        public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, SoundManager soundManager, RoundsNode rounds, SceneManagerNode sceneManagerContent, TabButtonsNode tabContainer)
             : base(TimeSpan.FromSeconds(0.6f), tabContainer)
         {
             this.eventManager = eventManager;
@@ -57,7 +58,7 @@ namespace UI.Nodes
             LapCountSummaryNode = new LapCountSummaryNode(eventManager);
             LapRecordsSummaryNode = new LapRecordsSummaryNode(eventManager);
             pilotChanelList = new PilotChanelList(eventManager);
-            PhotoBooth = new PhotoBoothNode(videoManager, eventManager);
+            PhotoBooth = new PhotoBoothNode(videoManager, eventManager, soundManager);
 
             ReplayNode = new ReplayNode(eventManager);
 

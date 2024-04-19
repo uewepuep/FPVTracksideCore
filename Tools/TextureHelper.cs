@@ -297,6 +297,10 @@ namespace Tools
                         {
                             data[i] = Color.Transparent;
                         }
+                        else
+                        {
+                            data[i].A = 255;
+                        }
                     }
                     break;
                 case ChromaKeyColor.Green:
@@ -307,6 +311,10 @@ namespace Tools
                         {
                             data[i] = Color.Transparent;
                         }
+                        else
+                        {
+                            data[i].A = 255;
+                        }
                     }
                     break;
                 case ChromaKeyColor.Blue:
@@ -316,6 +324,10 @@ namespace Tools
                             data[i].B > data[i].R + limit)
                         {
                             data[i] = Color.Transparent;
+                        }
+                        else
+                        {
+                            data[i].A = 255;
                         }
                     }
                     break;

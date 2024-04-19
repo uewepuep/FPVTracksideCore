@@ -5,6 +5,7 @@ using Composition.Nodes;
 using ImageServer;
 using Microsoft.Xna.Framework;
 using RaceLib;
+using Sound;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,6 +27,7 @@ namespace UI.Video
 
         private VideoManager videoManager;
         private EventManager eventManager;
+        private SoundManager soundManager;
 
         private AspectNode cameraAspectNode;
         private CamNode camNode;
@@ -41,11 +43,16 @@ namespace UI.Video
 
         public event Action<Pilot> OnNewPhoto;
 
-        public PhotoBoothNode(VideoManager videoManager, EventManager eventManager) 
+        public TimeSpan Timeout { get; private set; }
+
+        public PhotoBoothNode(VideoManager videoManager, EventManager eventManager, SoundManager soundManager) 
         {
             this.videoManager = videoManager;
             this.eventManager = eventManager;
+            this.soundManager = soundManager;
+
             PilotsDirectory = new DirectoryInfo("pilots/");
+            Timeout = TimeSpan.FromSeconds(10);
         }
 
         private void Init()
@@ -128,6 +135,8 @@ namespace UI.Video
 
         private void TakePhoto()
         {
+            soundManager.PlaySound(SoundKey.PhotoboothTrigger);
+
             string newPath = Path.Combine(PilotsDirectory.FullName, Pilot.Name + "_temp.png");
             newPath = Path.GetRelativePath(Directory.GetCurrentDirectory(), newPath);
             camNode.FrameNode.SaveImage(newPath);
@@ -147,20 +156,29 @@ namespace UI.Video
 
         private void StartRecording()
         {
+            soundManager.PlaySound(SoundKey.PhotoboothTrigger);
+
             string newPath = Path.Combine(PilotsDirectory.FullName, Pilot.Name + "_temp");
             CaptureFrameSource.ManualRecording = true;
             CaptureFrameSource.StartRecording(newPath);
+
+            if (!Waiter.WaitFor(() => { return CaptureFrameSource.FrameTimes.Any(); }, Timeout))
+            {
+                return;
+            }
         }
 
         private void StopRecording()
         {
+            soundManager.PlaySound(SoundKey.PhotoboothTrigger);
+
             string filename = CaptureFrameSource.Filename;
             CaptureFrameSource.StopRecording();
             CaptureFrameSource.ManualRecording = false;
 
-            while (CaptureFrameSource.Finalising)
+            if (!Waiter.WaitFor(() => { return !CaptureFrameSource.Finalising; }, Timeout))
             {
-                Thread.Sleep(10);
+                return;
             }
 
             if (File.Exists(filename))
@@ -276,7 +294,7 @@ namespace UI.Video
         public CameraCountdownNode() 
         {
             Delay = TimeSpan.FromSeconds(3);
-            RecordingLength = TimeSpan.FromSeconds(ProfileSettings.Instance.PilotProfilePhotoboothVideoLength);
+            RecordingLength = TimeSpan.FromSeconds(ProfileSettings.Instance.PilotProfilePhotoboothVideoLengthSeconds);
 
             countdownText = new TextNode("", Color.White);
             countdownText.Scale(0.3f);
@@ -313,6 +331,9 @@ namespace UI.Video
                         flash.SetAnimatedAlpha(0);
                         action();
                         action = null;
+
+                        // When is from the actual start.
+                        when = DateTime.Now + Delay;
                     }
 
                     //Start Recording
