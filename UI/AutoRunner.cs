@@ -155,6 +155,9 @@ namespace UI
                 case SceneManagerNode.Scenes.PreRace:
                     SetState(States.WaitingRaceStart);
                     break;
+                case SceneManagerNode.Scenes.Fullscreen:
+                    // do nothing
+                    break;
                 default: 
                     SetState(States.None); 
                     break;
@@ -180,6 +183,9 @@ namespace UI
 
         public void SetState(States newState)
         {
+            if (newState == State)
+                return;
+
             Logger.AutoRunner.LogCall(this, State, newState);
 
             bool hasNextRace = RaceManager.GetNextRace(true) != null;

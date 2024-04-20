@@ -1,4 +1,5 @@
-﻿using Composition.Nodes;
+﻿using Composition;
+using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
 using System;
@@ -34,6 +35,8 @@ namespace UI.Nodes
         public int ItemHeight { get; set; }
         public int ItemPaddingHorizontal { get; set; }
         public int ItemPaddingVertical { get; set; }
+
+        private bool needsUpdate;
 
         public ControlButtonsNode(EventManager eventManager, ChannelsGridNode channelsGridNode, TracksideTabbedMultiNode tracksideMultiNode, AutoRunner autoRunner)
         {
@@ -127,6 +130,23 @@ namespace UI.Nodes
 
         public void UpdateControlButtons()
         {
+            needsUpdate = true;
+        }
+
+        public override void Draw(Drawer id, float parentAlpha)
+        {
+            if (needsUpdate) 
+            {
+                DoUpdateControlButtons();
+            }
+
+            base.Draw(id, parentAlpha);
+        }
+
+        public void DoUpdateControlButtons() 
+        {
+            needsUpdate = false;
+
             bool inRaceOrPreRace = eventManager.RaceManager.RaceRunning || eventManager.RaceManager.PreRaceStartDelay;
 
             StartButton.Visible = eventManager.RaceManager.CanRunRace && !eventManager.RaceManager.PreRaceStartDelay;
@@ -174,7 +194,7 @@ namespace UI.Nodes
 
             WormButton.Visible = tracksideMultiNode.IsOnLive && !eventManager.RaceManager.RaceFinished;
 
-            RequestLayout();
+            LayoutChildren(Bounds);
         }
 
         protected override void LayoutChildren(Rectangle bounds)

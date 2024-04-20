@@ -49,6 +49,11 @@ namespace ImageServer
         {
             get
             {
+                if (!string.IsNullOrWhiteSpace(filename))
+                {
+                    return FilePath;
+                }
+
                 if (string.IsNullOrWhiteSpace(deviceName))
                 {
                     return "Unknown Device";

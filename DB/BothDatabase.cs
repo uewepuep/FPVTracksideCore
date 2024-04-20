@@ -24,7 +24,7 @@ namespace DB
 
         public BothDatabase(DirectoryInfo dataDir)
         {
-            jsondb = new CollectionDatabase(new JSON.JSONDatabaseConverted(dataDir));
+            jsondb = new CollectionDatabase(new JSON.JSONDatabaseConvertedCached(dataDir));
             litedb = new CollectionDatabase(new Lite.LiteDatabase());
         }
 
