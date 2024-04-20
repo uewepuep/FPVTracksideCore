@@ -70,13 +70,28 @@ namespace DB.JSON
 
     public class JSONDatabaseConverted : JsonDatabase, ICollectionDatabase
     {
+        private Dictionary<Type, object> cache;
+
         public JSONDatabaseConverted(DirectoryInfo dataDirectory) 
             :base(dataDirectory)
-        { 
+        {
+            cache = new Dictionary<Type, object>();
         }
         
 
         public IDatabaseCollection<T> GetCollection<T>() where T : RaceLib.BaseObject, new()
+        {
+            object collection;
+
+            if (!cache.TryGetValue(typeof(T), out collection))
+            {
+                collection = new CacheCollection<T>(GetUnCachedCollection<T>());
+                cache.Add(typeof(T), collection);
+            }
+            return collection as IDatabaseCollection<T>;
+        }
+
+        private IDatabaseCollection<T> GetUnCachedCollection<T>() where T : RaceLib.BaseObject, new()
         {
             if (typeof(T) == typeof(RaceLib.Patreon))
                 return new ConvertedCollection<RaceLib.Patreon, Patreon>(Patreons, null) as IDatabaseCollection<T>;

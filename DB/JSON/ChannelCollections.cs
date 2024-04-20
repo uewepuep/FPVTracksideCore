@@ -10,10 +10,14 @@ namespace DB.JSON
     {
         private static bool firstRun = true;
 
+        private static Channel[] allChannels;
+
         public ChannelCollections() 
         {
             if (firstRun)
             {
+                allChannels = RaceLib.Channel.AllChannels.Convert<Channel>().ToArray();
+
                 JsonIO<Channel> io = new JsonIO<Channel>();
                 io.Write("httpfiles/Channels.json", All());
                 firstRun = false;
@@ -22,7 +26,7 @@ namespace DB.JSON
 
         public IEnumerable<Channel> All()
         {
-            return RaceLib.Channel.AllChannels.Convert<Channel>();
+            return allChannels;
         }
 
         public bool Delete(Guid id)
