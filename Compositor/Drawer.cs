@@ -143,7 +143,11 @@ namespace Composition
                         try
                         {
                             IPreProcessable todo = preProcessForced.Dequeue();
-                            todo.PreProcess(this);
+
+                            if (todo != null && !todo.Disposed)
+                            {
+                                todo.PreProcess(this);
+                            }
                         }
                         catch (Exception e)
                         {
@@ -271,5 +275,6 @@ namespace Composition
     public interface IPreProcessable
     {
         void PreProcess(Drawer id);
+        bool Disposed { get; }
     }
 }

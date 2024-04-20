@@ -91,8 +91,15 @@ namespace UI
             }
         }
 
+        private TimeSpan doubleTriggerTimeout;
+
+        private Triggers lastTrigger;
+        private DateTime lastTriggerTime;
+
         public OBSRemoteControlManager(SceneManagerNode sceneManagerNode, TabbedMultiNode tabbedMultiNode, EventManager eventManager)
         {
+            doubleTriggerTimeout = TimeSpan.FromSeconds(5);
+
             this.sceneManagerNode = sceneManagerNode;
             this.tabbedMultiNode = tabbedMultiNode;
             this.eventManager = eventManager;
@@ -155,6 +162,12 @@ namespace UI
         {
             if (remoteControl == null)
                 return;
+
+            if (type == lastTrigger && lastTriggerTime + doubleTriggerTimeout > DateTime.Now)
+                return;
+
+            lastTrigger = type;
+            lastTriggerTime = DateTime.Now;
 
             foreach (OBSRemoteControlEvent rcEvent in config.RemoteControlEvents)
             {
