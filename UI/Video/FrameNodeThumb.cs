@@ -116,11 +116,15 @@ namespace UI.Video
 
         protected void DrawToTexture()
         {
+            Texture2D texture2d = Texture;
+            if (texture2d == null || drawer == null || renderTarget == null)
+                return;
+
             Rectangle sourceBounds = new Rectangle();
-            sourceBounds.X = (int)(Texture.Width * RelativeSourceBounds.X);
-            sourceBounds.Y = (int)(Texture.Height * RelativeSourceBounds.Y);
-            sourceBounds.Width = (int)(Texture.Width * RelativeSourceBounds.Width);
-            sourceBounds.Height = (int)(Texture.Height * RelativeSourceBounds.Height);
+            sourceBounds.X = (int)(texture2d.Width * RelativeSourceBounds.X);
+            sourceBounds.Y = (int)(texture2d.Height * RelativeSourceBounds.Y);
+            sourceBounds.Width = (int)(texture2d.Width * RelativeSourceBounds.Width);
+            sourceBounds.Height = (int)(texture2d.Height * RelativeSourceBounds.Height);
 
             sourceBounds = Flip(sourceBounds);
 
@@ -131,7 +135,7 @@ namespace UI.Video
                 drawer.GraphicsDevice.Clear(Color.Transparent);
 
                 drawer.Begin();
-                drawer.Draw(texture, sourceBounds, new Rectangle(0, 0, Size.Width, Size.Height), Color.White, 1);
+                drawer.Draw(texture2d, sourceBounds, new Rectangle(0, 0, Size.Width, Size.Height), Color.White, 1);
                 drawer.End();
             }
             finally
