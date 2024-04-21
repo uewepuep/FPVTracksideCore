@@ -679,14 +679,17 @@ namespace UI.Nodes
 
         public void UnFullScreen()
         {
-            if (fullscreenNode != null && fullscreenNodeParent != null)
+            lock (fullScreenContainer)
             {
-                fullscreenNode.Remove();
-                fullscreenNodeParent.AddChild(fullscreenNode);
+                if (fullscreenNode != null && fullscreenNodeParent != null)
+                {
+                    fullscreenNode.Remove();
+                    fullscreenNodeParent.AddChild(fullscreenNode);
 
-                fullscreenNode = null;
-                fullscreenNodeParent = null;
-                SetScene(preFullScreenScene);
+                    fullscreenNode = null;
+                    fullscreenNodeParent = null;
+                    SetScene(preFullScreenScene);
+                }
             }
         }
 
@@ -701,19 +704,24 @@ namespace UI.Nodes
             if (fullscreenNode == node)
                 return;
 
-            if (Scene != Scenes.Fullscreen)
+            lock (fullScreenContainer)
             {
-                preFullScreenScene = Scene;
+                if (Scene != Scenes.Fullscreen)
+                {
+                    preFullScreenScene = Scene;
+                }
+
+                UnFullScreen();
+
+                fullscreenNode = node;
+                fullscreenNodeParent = node.Parent;
+
+                fullscreenNode.Remove();
+                fullScreenContainer.AddChild(fullscreenNode, 0);
+                fullScreenContainer.KeepAspectRatio = false;
             }
 
-            UnFullScreen();
-
-            fullscreenNode = node;
-            fullscreenNodeParent = node.Parent;
-
-            fullscreenNode.Remove();
-            fullScreenContainer.AddChild(fullscreenNode, 0);
-            fullScreenContainer.KeepAspectRatio = false;
+            SetFront(fullScreenContainer);
 
             SetScene(Scenes.Fullscreen);
         }
@@ -783,7 +791,7 @@ namespace UI.Nodes
             public event Action Close;
 
             public FullScreenAspectClosable()
-                :base(4 / 3.0f)
+                :base(400 / 324.0f)
             {
             }
 

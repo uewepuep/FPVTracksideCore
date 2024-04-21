@@ -494,7 +494,15 @@ namespace Composition.Nodes
         {
             lock (children)
             {
-                children =  n.Union(children.Except(n)).ToArray();
+                children = n.Union(children.Except(n)).ToArray();
+            }
+        }
+
+        public void SetFront(params Node[] n)
+        {
+            lock (children)
+            {
+                children = children.Except(n).Union(n).ToArray();
             }
         }
 

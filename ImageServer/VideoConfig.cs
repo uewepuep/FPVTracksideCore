@@ -49,7 +49,7 @@ namespace ImageServer
         {
             get
             {
-                if (!string.IsNullOrWhiteSpace(filename))
+                if (!string.IsNullOrWhiteSpace(FilePath))
                 {
                     return FilePath;
                 }

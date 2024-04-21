@@ -192,7 +192,7 @@ namespace UI.Nodes
                 }
             }
 
-            WormButton.Visible = tracksideMultiNode.IsOnLive && !eventManager.RaceManager.RaceFinished;
+            WormButton.Visible = eventManager.RaceManager.RaceRunning;
 
             LayoutChildren(Bounds);
         }

@@ -647,7 +647,8 @@ namespace UI.Video
 
             if (eventChannels != null)
             {
-                channelMenu.AddItem("Auto-Assign", () => { LinearChannelAssignment(eventChannels); });
+                channelMenu.AddItem("Auto-Assign", () => { LinearChannelAssignment(eventChannels, false); });
+                channelMenu.AddItem("Auto-Assign (Share frequencies)", () => { LinearChannelAssignment(eventChannels, true); });
                 channelMenu.AddSubmenu("Event Channels", (c) => { AssignChannel(channelVideoInfo, c); }, eventChannels);
             }
 
@@ -690,6 +691,7 @@ namespace UI.Video
 
 
             mouseMenu.AddItem("Duplicate", () => { Duplicate(channelVideoInfo, Channel.None); });
+            mouseMenu.AddItem("Duplicate Source", () => { DuplicateSource(); });
 
             if (eventChannels != null)
             {
@@ -710,16 +712,46 @@ namespace UI.Video
 
         }
 
-        public void LinearChannelAssignment(IEnumerable<Channel> channels)
+        public void LinearChannelAssignment(IEnumerable<Channel> channels, bool shareChannelGroups)
         {
             if (channels != null)
             {
-                Channel[] ordered = channels.OrderBy(c => c.Band.GetBandType()).ThenBy(c => c.Frequency).ToArray();
-
-                int max = Math.Min(ChannelVideoInfos.Length, ordered.Length);
-                for (int i = 0; i < max; i++)
+                if (shareChannelGroups)
                 {
-                    AssignChannel(ChannelVideoInfos[i], ordered[i]);
+                    for (int j = 0; j < ChannelVideoInfos.Length; j++)
+                    {
+                        ChannelVideoInfos[j].Channel = Channel.None;
+                    }
+
+
+                    int i = 0;
+                    foreach(Channel[] grouped in channels.GetChannelGroups())
+                    {
+                        if (i >= ChannelVideoInfos.Length)
+                            break;
+
+                        ChannelVideoInfo cvi = ChannelVideoInfos[i];
+                        Channel first = grouped.FirstOrDefault();
+                        AssignChannel(cvi, grouped.FirstOrDefault());
+
+                        foreach (Channel channel in grouped.Where(r => r != first))
+                        {
+                            Duplicate(cvi, channel);
+                        }
+                        i++;
+                    }
+
+                    MakeTable();
+                }
+                else
+                {
+                    Channel[] ordered = channels.OrderBy(c => c.Band.GetBandType()).ThenBy(c => c.Frequency).ToArray();
+
+                    int max = Math.Min(ChannelVideoInfos.Length, ordered.Length);
+                    for (int i = 0; i < max; i++)
+                    {
+                        AssignChannel(ChannelVideoInfos[i], ordered[i]);
+                    }
                 }
             }
         }
@@ -768,6 +800,22 @@ namespace UI.Video
             MakeTable();
         }
 
+        private void DuplicateSource()
+        {
+            videoConfig.Splits = Splits.Custom;
+
+            List<VideoBounds> videoBoundsList = videoConfig.VideoBounds.ToList();
+
+            VideoBounds source = new VideoBounds();
+            source.RelativeSourceBounds = new RectangleF(0, 0, 1, 1);
+            videoBoundsList.Add(source);
+
+            videoConfig.VideoBounds = videoBoundsList.ToArray();
+
+            CreateChannelVideoInfos();
+            MakeTable();
+        }
+
         private void Reset()
         {
             videoConfig.VideoBounds = CreateChannelBounds(Splits.SingleChannel, new RectangleF(0, 0, 1, 1)).ToArray();
@@ -802,7 +850,7 @@ namespace UI.Video
 
             if (firstSplit)
             {
-                LinearChannelAssignment(eventChannels);
+                LinearChannelAssignment(eventChannels, false);
             }
 
             MakeTable();
