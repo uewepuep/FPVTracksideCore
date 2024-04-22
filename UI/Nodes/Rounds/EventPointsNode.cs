@@ -11,11 +11,11 @@ using Microsoft.Xna.Framework;
 using RaceLib;
 using Tools;
 
-namespace UI.Nodes
+namespace UI.Nodes.Rounds
 {
     public class EventPointsNode : EventPilotListNode<PilotPointsNode>
     {
-        public EventPointsNode(EventManager ev, Round round) 
+        public EventPointsNode(EventManager ev, Round round)
             : base(ev, round)
         {
             SetHeading("Points");
@@ -219,8 +219,8 @@ namespace UI.Nodes
         public event Action<Result> ResultEdited;
 
         public PilotPointsNode(EventManager eventManager, Pilot pilot)
-            :base (eventManager, pilot)
-        {    
+            : base(eventManager, pilot)
+        {
             totalScoreNode = new TextNode("0", Theme.Current.Rounds.Text.XNA);
             totalScoreNode.Alignment = RectangleAlignment.BottomRight;
             totalScoreNode.Style.Bold = true;
@@ -264,7 +264,7 @@ namespace UI.Nodes
 
             HasRaced = false;
             TotalPoints = total;
-            
+
             if (rollover)
             {
                 Result rollOverPoints = results.FirstOrDefault(r => r.ResultType == Result.ResultTypes.RoundRollOver);
@@ -335,7 +335,7 @@ namespace UI.Nodes
         private int original;
 
         public ResultNode(Result result)
-            :base("", Theme.Current.Rounds.Text.XNA)
+            : base("", Theme.Current.Rounds.Text.XNA)
         {
             Alignment = RectangleAlignment.CenterRight;
             Result = result;

@@ -12,7 +12,7 @@ using RaceLib;
 using RaceLib.Format;
 using Tools;
 
-namespace UI.Nodes
+namespace UI.Nodes.Rounds
 {
     public abstract class EventPilotListNode<T> : EventXNode where T : EventPilotNode
     {
@@ -77,7 +77,7 @@ namespace UI.Nodes
             if (MenuButton != null)
                 MenuButton.Scale(0.6f);
         }
-        
+
         private void MenuButton_OnClick(MouseInputEvent mie)
         {
             MouseMenu mm = new MouseMenu(this);
@@ -126,7 +126,7 @@ namespace UI.Nodes
 
         public virtual void EditSettings()
         {
-            
+
         }
 
         private void CopyToClipboard()
@@ -284,7 +284,7 @@ namespace UI.Nodes
 
             addRound.AddItem("Top " + perRace, () =>
             {
-                EventManager.RoundManager.GenerateTopX(this.Round, pilots.Take(perRace));
+                EventManager.RoundManager.GenerateTopX(Round, pilots.Take(perRace));
                 Refresh();
             });
 
@@ -293,7 +293,7 @@ namespace UI.Nodes
                 int c = i;
                 addRound.AddItem("Ordered Top " + c, () =>
                 {
-                    EventManager.RoundManager.GenerateTopX(this.Round, pilots.Take(c));
+                    EventManager.RoundManager.GenerateTopX(Round, pilots.Take(c));
                     Refresh();
                 });
             }
@@ -304,7 +304,7 @@ namespace UI.Nodes
                 int c = i;
                 addRound.AddItem("Seeded Top " + c, () =>
                 {
-                    EventManager.RoundManager.GenerateSeededX(this.Round, pilots.Take(c));
+                    EventManager.RoundManager.GenerateSeededX(Round, pilots.Take(c));
                     Refresh();
                 });
             }
@@ -459,7 +459,7 @@ namespace UI.Nodes
         public int GetRequiredWidth()
         {
             int value = pilotNameWidth;
-            
+
             foreach (Node c in roundScoreContainer.Children)
             {
                 value += GetItemWidth(c) + horizontalPadding;

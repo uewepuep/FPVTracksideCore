@@ -13,7 +13,7 @@ using Composition.Layers;
 using Microsoft.Xna.Framework.Input;
 using System.ComponentModel;
 
-namespace UI.Nodes
+namespace UI.Nodes.Rounds
 {
     public class EventRoundNode : EventXNode
     {
@@ -37,12 +37,12 @@ namespace UI.Nodes
 
         private Node instructionNode;
 
-        public event System.Action NeedFullRefresh;
+        public event Action NeedFullRefresh;
 
         public RoundsNode RoundsNode { get; private set; }
 
         public EventRoundNode(RoundsNode roundsNode, Round round)
-            :base(roundsNode.EventManager, round)
+            : base(roundsNode.EventManager, round)
         {
             RoundsNode = roundsNode;
 
@@ -234,7 +234,7 @@ namespace UI.Nodes
 
             mm.AddItem("Add Race", AddRace);
 
-            
+
 
             if (canFill)
             {
@@ -304,7 +304,7 @@ namespace UI.Nodes
                         {
                             sheet.Save(filename);
                         }
-                        catch (Exception ex) 
+                        catch (Exception ex)
                         {
                             GetLayer<PopupLayer>().PopupMessage("Couldn't save. " + ex.Message);
                         }
@@ -390,8 +390,8 @@ namespace UI.Nodes
         {
             ObjectEditorNode<Round> editor = new ObjectEditorNode<Round>(Round);
             GetLayer<PopupLayer>().Popup(editor);
-            editor.OnOK += (r) => 
-            { 
+            editor.OnOK += (r) =>
+            {
                 if (editor.Selected != null)
                 {
                     using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
@@ -437,7 +437,7 @@ namespace UI.Nodes
             bool onlyRound = EventManager.RoundManager.Rounds.Length == 1;
             bool hasRaces = Races.Any();
             bool hasFinishedRaces = Races.Any(r => r.Ended);
-            canRemove = (!onlyRound || hasRaces) && !hasFinishedRaces; 
+            canRemove = (!onlyRound || hasRaces) && !hasFinishedRaces;
 
             canPasteAll = !Races.Any(r => r.Ended);
 
@@ -491,9 +491,9 @@ namespace UI.Nodes
                         foreach (EventRaceNode racenode in RaceNodes.Except(new EventRaceNode[] { draggedRaceNode }).OrderBy(r => r.Race.RaceNumber))
                         {
 
-                            if (racenode.Bounds.Bottom > translated.Position.Y 
+                            if (racenode.Bounds.Bottom > translated.Position.Y
                              && racenode.Bounds.Right > translated.Position.X
-                             && racenode.Bounds.Left < translated.Position.X 
+                             && racenode.Bounds.Left < translated.Position.X
                              && !found)
                             {
                                 found = true;

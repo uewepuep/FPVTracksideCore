@@ -10,11 +10,11 @@ using Composition.Nodes;
 using RaceLib;
 using Tools;
 
-namespace UI.Nodes
+namespace UI.Nodes.Rounds
 {
     public class EventLapsTimesNode : EventPilotListNode<EventPilotTimeNode>
     {
-        public EventLapsTimesNode(EventManager ev, Round round) 
+        public EventLapsTimesNode(EventManager ev, Round round)
             : base(ev, round)
         {
         }
@@ -38,7 +38,7 @@ namespace UI.Nodes
             while (startRound != null)
             {
                 Round prevRound = EventManager.RoundManager.PreviousRound(startRound);
-                if (prevRound == null) 
+                if (prevRound == null)
                 {
                     break;
                 }
@@ -50,7 +50,7 @@ namespace UI.Nodes
 
                 startRound = prevRound;
 
-            } 
+            }
 
             if (startRound == null)
             {

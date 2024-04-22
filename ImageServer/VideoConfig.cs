@@ -268,10 +268,10 @@ namespace ImageServer
             if (!string.IsNullOrEmpty(other.FilePath) && other.FilePath == FilePath)
                 return true;
 
-            if (!string.IsNullOrEmpty(other.FilePath) && other.DirectShowPath == DirectShowPath)
+            if (!string.IsNullOrEmpty(other.DirectShowPath) && other.DirectShowPath == DirectShowPath)
                 return true;
 
-            if (!string.IsNullOrEmpty(other.FilePath) && other.MediaFoundationPath == MediaFoundationPath)
+            if (!string.IsNullOrEmpty(other.MediaFoundationPath) && other.MediaFoundationPath == MediaFoundationPath)
                 return true;
 
             return false;

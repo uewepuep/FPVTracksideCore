@@ -1,4 +1,5 @@
 ﻿using Composition;
+using Composition.Input;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
@@ -8,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
+using UI.Nodes.Rounds;
 using static UI.Nodes.LapRecordsSummaryNode;
 
 namespace UI.Nodes
@@ -35,6 +37,10 @@ namespace UI.Nodes
 
         public bool CanTint { get; set; }
 
+        private TextButtonNode limitButton;
+        
+        public Round Round { get; private set; }
+
         public PilotSummaryTable(EventManager eventManager, string name)
         {
             CanTint = true;
@@ -49,6 +55,11 @@ namespace UI.Nodes
 
             headings = new Node();
             panelNode.AddChild(headings);
+
+            limitButton = new TextButtonNode("All", Theme.Current.InfoPanel.Heading.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
+            limitButton.RelativeBounds = new RectangleF(0.89f, 0.1f, 0.1f, 0.8f);
+            limitButton.OnClick += LimitButton_OnClick;
+            title.AddChild(limitButton);
 
             rows = new ListNode<PilotResultNode>(Theme.Current.ScrollBar.XNA);
             rows.ItemPadding = 1;
@@ -68,6 +79,34 @@ namespace UI.Nodes
 
             needsRefresh = true;
 
+        }
+
+        private void LimitButton_OnClick(Composition.Input.MouseInputEvent mie)
+        {
+            MouseMenu mm = new MouseMenu(limitButton);
+            mm.AddItem("All", () => { SetLimitRound(null); });
+
+            foreach (Round round in GetSummaryRounds())
+            {
+                Round r = round;
+                mm.AddItem(round.ToString(), () => { SetLimitRound(r); });
+            }
+            mm.Show(limitButton.Bounds.X, limitButton.Bounds.Bottom);
+        }
+
+        public void SetLimitRound(Round round)
+        {
+            if (round == null)
+            {
+                limitButton.Text = "All";
+                Round = null;
+            }
+            else
+            {
+                limitButton.Text = round.ToString();
+                Round = round;
+            }
+            Refresh();
         }
 
         public void SetHeadingsHeight(float titleHeight, float headingsHeight, int itemHeight)
@@ -176,6 +215,8 @@ namespace UI.Nodes
                 CalculatePositions();
             }
 
+            limitButton.Visible = GetSummaryRounds().Any();
+
             rows.RequestLayout();
             RequestLayout();
             RequestRedraw();
@@ -197,6 +238,11 @@ namespace UI.Nodes
         {
             FilterPilots = pilots.ToArray();
             Refresh();
+        }
+
+        public virtual IEnumerable<Round> GetSummaryRounds()
+        {
+            yield break;
         }
 
         public virtual void SetOrder()

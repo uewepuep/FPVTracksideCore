@@ -10,7 +10,7 @@ using Microsoft.Xna.Framework;
 using RaceLib;
 using Tools;
 
-namespace UI.Nodes
+namespace UI.Nodes.Rounds
 {
     public class EventLapCountsNode : EventPilotListNode<PilotLapCountsNode>
     {

@@ -12,7 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Tools;
 
-namespace UI.Nodes
+namespace UI.Nodes.Rounds
 {
     public class RoundsNode : Node
     {
@@ -35,7 +35,7 @@ namespace UI.Nodes
         private TimeSpan scrollTime;
 
         private RoundControl roundControl;
-        
+
         public int RacesPerColumn { get; private set; }
 
         public RoundsNode(EventManager eventManager)
@@ -137,7 +137,7 @@ namespace UI.Nodes
 
         private void Em_OnRoundAdded()
         {
-            Refresh(); 
+            Refresh();
             Scroller.ScrollToEnd(scrollTime);
         }
 
@@ -273,7 +273,7 @@ namespace UI.Nodes
                     }
                 }
             }
-            
+
             foreach (var ern in RoundNodes.ToArray())
             {
                 if (!rounds.Contains(ern.Round))
@@ -487,8 +487,8 @@ namespace UI.Nodes
 
             foreach (EventXNode ern in EventXNodes)
             {
-                ern.Alignment = Tools.RectangleAlignment.CenterLeft;
-                ern.RelativeBounds = new Tools.RectangleF(0,0,1,1);
+                ern.Alignment = RectangleAlignment.CenterLeft;
+                ern.RelativeBounds = new RectangleF(0, 0, 1, 1);
                 ern.CalculateAspectRatio(height);
 
                 int width = (int)(height * ern.AspectRatio);
@@ -497,7 +497,7 @@ namespace UI.Nodes
                 x += width;
                 x += paddingX;
             }
-            
+
             Scroller.ViewSizePixels = Bounds.Width;
 
             Scroller.ContentSizePixels = 100;
@@ -604,7 +604,7 @@ namespace UI.Nodes
             prev.ImageNode.RelativeSourceBounds = new RectangleF(1, 0, -1, 1);
             prev.RelativeBounds = new RectangleF(0, 0, 0.1f, 1);
             prev.OnClick += Prev_OnClick;
-            
+
             next = new ImageButtonNode(@"img\start.png", Color.Transparent, Theme.Current.Hover.XNA);
             next.RelativeBounds = new RectangleF(1 - prev.RelativeBounds.Width, 0, prev.RelativeBounds.Width, 1);
             next.OnClick += Next_OnClick;

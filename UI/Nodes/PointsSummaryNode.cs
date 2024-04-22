@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
+using UI.Nodes.Rounds;
 
 namespace UI.Nodes
 {
@@ -22,7 +23,14 @@ namespace UI.Nodes
 
         public override void CreateHeadings(Node container, out Round[] rounds, out int column)
         {
-            rounds = eventManager.Event.Rounds.Where(r => r.EventType.HasPoints()).OrderBy(r => r.Order).ThenBy(r => r.RoundNumber).ToArray();
+            IEnumerable<Round> rs = eventManager.Event.Rounds.Where(r => r.EventType.HasPoints()).OrderBy(r => r.Order).ThenBy(r => r.RoundNumber);
+            if (Round != null)
+            {
+                Round start = PointsManager.GetStartRound(Round);
+                rs = rs.Where(r => r.Order >= start.Order && r.Order <= Round.Order);
+            }
+
+            rounds = rs.ToArray();
 
             bool rollOver = rounds.Where(r => r.PointSummary != null).Any(r => r.PointSummary.RoundPositionRollover);
 
@@ -79,6 +87,12 @@ namespace UI.Nodes
                 anyTotal = true;
             }
         }
+
+        public override IEnumerable<Round> GetSummaryRounds()
+        {
+            return eventManager.Event.Rounds.Where(r => r.EventType.HasPoints() && r.PointSummary != null).OrderBy(r => r.Order);
+        }
+
         public override void SetOrder()
         {
             // order them

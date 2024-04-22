@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Tools;
 
-namespace UI.Nodes
+namespace UI.Nodes.Rounds
 {
     public class EventXNode : RenderTargetNode
     {
@@ -68,21 +68,21 @@ namespace UI.Nodes
             AddChild(panel);
 
             headingbg = new ColorNode(Theme.Current.Rounds.Heading);
-            headingbg.RelativeBounds = new Tools.RectangleF(0, 0.0f, 1f, 0.05f);
+            headingbg.RelativeBounds = new RectangleF(0, 0.0f, 1f, 0.05f);
             panel.AddChild(headingbg);
 
             heading = new TextNode("", Theme.Current.Rounds.Text.XNA);
             heading.Alignment = RectangleAlignment.CenterLeft;
-            heading.RelativeBounds = new Tools.RectangleF(0.02f, 0.2f, 0.7f, 0.7f);
+            heading.RelativeBounds = new RectangleF(0.02f, 0.2f, 0.7f, 0.7f);
             headingbg.AddChild(heading);
 
             subHeading = new TextNode("", Theme.Current.Rounds.Text.XNA);
-            subHeading.RelativeBounds = new Tools.RectangleF(0.0f, headingbg.RelativeBounds.Bottom, 1, 0.025f);
+            subHeading.RelativeBounds = new RectangleF(0.0f, headingbg.RelativeBounds.Bottom, 1, 0.025f);
             subHeading.Alignment = RectangleAlignment.Center;
             panel.Inner.AddChild(subHeading);
 
             buttonContainer = new AspectNode(2.2f);
-            buttonContainer.RelativeBounds = new Tools.RectangleF(heading.RelativeBounds.Width, 0, 1 - heading.RelativeBounds.Width, 1);
+            buttonContainer.RelativeBounds = new RectangleF(heading.RelativeBounds.Width, 0, 1 - heading.RelativeBounds.Width, 1);
             buttonContainer.Alignment = RectangleAlignment.TopRight;
             headingbg.AddChild(buttonContainer);
 
@@ -95,7 +95,7 @@ namespace UI.Nodes
             buttonContainer.AddChild(AddRoundButton);
 
             contentContainer = new Node();
-            contentContainer.RelativeBounds = new Tools.RectangleF(0, subHeading.RelativeBounds.Bottom, 1, 1 - subHeading.RelativeBounds.Bottom);
+            contentContainer.RelativeBounds = new RectangleF(0, subHeading.RelativeBounds.Bottom, 1, 1 - subHeading.RelativeBounds.Bottom);
             panel.Inner.AddChild(contentContainer);
             UpdateButtons();
         }
@@ -112,8 +112,8 @@ namespace UI.Nodes
 
             int lines = 1 + text.Count(c => c == '\n');
 
-            subHeading.RelativeBounds = new Tools.RectangleF(0.0f, headingbg.RelativeBounds.Bottom, 1, padding + (lines * lineHeight));
-            contentContainer.RelativeBounds = new Tools.RectangleF(0, subHeading.RelativeBounds.Bottom, 1, 1 - subHeading.RelativeBounds.Bottom);
+            subHeading.RelativeBounds = new RectangleF(0.0f, headingbg.RelativeBounds.Bottom, 1, padding + lines * lineHeight);
+            contentContainer.RelativeBounds = new RectangleF(0, subHeading.RelativeBounds.Bottom, 1, 1 - subHeading.RelativeBounds.Bottom);
 
             subHeading.Text = text;
         }
@@ -190,7 +190,7 @@ namespace UI.Nodes
         {
             MouseMenu addFormat = rootMenu.AddSubmenu(menuname);
             addFormat.AddItem("Double Elimination", () => { DoubleElim?.Invoke(Round); });
-           
+
 
             //add format
             if (EventManager.RoundManager.SheetFormatManager.Sheets.Any())

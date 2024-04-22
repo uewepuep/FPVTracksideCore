@@ -14,7 +14,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Tools;
 
-namespace UI.Nodes
+namespace UI.Nodes.Rounds
 {
     public class EventRaceNode : AspectNode
     {
@@ -27,8 +27,8 @@ namespace UI.Nodes
 
         public IEnumerable<PilotRaceInfoNode> PilotRaceInfoNodes { get { return container.Children.OfType<PilotRaceInfoNode>(); } }
 
-        public event System.Action NeedRefresh;
-        public event System.Action NeedFullRefresh;
+        public event Action NeedRefresh;
+        public event Action NeedFullRefresh;
 
         public bool NeedsInit { get; set; }
 
@@ -214,8 +214,8 @@ namespace UI.Nodes
                             int localTop = topi;
                             int localBottom = bottomi;
 
-                            top.AddItem("Copy Top " + (topi > 1 ? (topi + " pilots") : "pilot"), () => { CopyTop(localTop); });
-                            bottom.AddItem("Copy Bottom " + (bottomi > 1 ? (bottomi + " pilots") : "pilot"), () => { CopyBottom(localBottom); });
+                            top.AddItem("Copy Top " + (topi > 1 ? topi + " pilots" : "pilot"), () => { CopyTop(localTop); });
+                            bottom.AddItem("Copy Bottom " + (bottomi > 1 ? bottomi + " pilots" : "pilot"), () => { CopyBottom(localBottom); });
                             bottomi--;
                             topi++;
                         }
@@ -234,7 +234,7 @@ namespace UI.Nodes
                     var lines = PlatformTools.Clipboard.GetLines();
                     IEnumerable<Tuple<Pilot, Channel>> pilotChannels = EventManager.GetPilotsFromLines(lines, false);
 
-                    if (pilotChannels.Any()) 
+                    if (pilotChannels.Any())
                     {
                         mm.AddItem("Paste Pilots", () =>
                         {
@@ -246,16 +246,16 @@ namespace UI.Nodes
                             PasteFromClipboard(true);
                         });
                     }
-            
+
                     mm.AddItemConfirm("Clear Race", () => { EventManager.RaceManager.ClearRace(Race); SyncSheetChange(); Refresh(); });
                 }
 
                 mm.AddItemConfirm("Delete Race", () => { EventManager.RaceManager.RemoveRace(Race, false); SyncSheetChange(); Refresh(); });
 
                 mm.AddSubmenu("Set Race Bracket", SetBracket, Enum.GetValues(typeof(Race.Brackets)).OfType<Race.Brackets>().ToArray());
-                mm.AddItem("Open Race Folder", () => 
-                { 
-                    PlatformTools.OpenFileManager(Directory.GetCurrentDirectory() + "\\events\\" + EventManager.EventId + "\\" + Race.ID + "\\"); 
+                mm.AddItem("Open Race Folder", () =>
+                {
+                    PlatformTools.OpenFileManager(Directory.GetCurrentDirectory() + "\\events\\" + EventManager.EventId + "\\" + Race.ID + "\\");
                 });
                 if (pilot != null)
                 {
@@ -263,7 +263,7 @@ namespace UI.Nodes
 
                     List<Channel> channels = Race.GetChannel(pilot).GetInterferringChannels(EventManager.Event.Channels).ToList();
                     channels.AddRange(Race.GetFreeFrequencies(EventManager.Event.Channels));
-                    
+
                     if (!hasStarted && channels.Any())
                     {
                         mm.AddSubmenu("Set Pilot Channel", (c) => { SetChannel(c, pilot); }, channels.ToArray());
@@ -290,8 +290,8 @@ namespace UI.Nodes
                         GetLayer<PopupLayer>().Popup(editor);
                         Refresh();
                     });
-                    mm.AddItem("Remove Pilot ", 
-                        () => 
+                    mm.AddItem("Remove Pilot ",
+                        () =>
                         {
                             if (EventManager.RaceManager.RemovePilot(Race, pilot) != null)
                             {
@@ -311,10 +311,10 @@ namespace UI.Nodes
                 if (EventManager.RaceManager.TimingSystemManager.HasDummyTiming)
                 {
                     mm.AddBlank();
-                    mm.AddItem("Generate Dummy Results", () => 
+                    mm.AddItem("Generate Dummy Results", () =>
                     {
-                        EventManager.RaceManager.GenerateResults(EventManager.RaceManager.TimingSystemManager.PrimeSystems.OfType<Timing.DummyTimingSystem>().FirstOrDefault(),  Race); 
-                        Refresh(); 
+                        EventManager.RaceManager.GenerateResults(EventManager.RaceManager.TimingSystemManager.PrimeSystems.OfType<Timing.DummyTimingSystem>().FirstOrDefault(), Race);
+                        Refresh();
                     });
                 }
 
@@ -343,7 +343,7 @@ namespace UI.Nodes
             PlatformTools.Clipboard.SetLines(ordered.Select(r => r.Pilot.Name));
         }
 
-        private void CopyBottom(int number) 
+        private void CopyBottom(int number)
         {
             var ordered = EventManager.ResultManager.GetResults(Race).OrderBy(r => r.Position).Reverse().Take(number);
             PlatformTools.Clipboard.SetLines(ordered.Select(r => r.Pilot.Name));
@@ -515,7 +515,7 @@ namespace UI.Nodes
 
             pilotNode = new PilotChannelNode(EventRaceNode.EventManager, ToolTexture.Transparent, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA, Theme.Current.Rounds.Channel);
             pilotNode.SetPilotChannel(pilot, channel, shared);
-            pilotNode.RelativeBounds = new Tools.RectangleF(0, 0, 0.85f, 1);
+            pilotNode.RelativeBounds = new RectangleF(0, 0, 0.85f, 1);
             pilotNode.PilotNameNode.TextNode.Alignment = RectangleAlignment.CenterLeft;
             pilotNode.ChannelChangeNode.Visible = channelChanged;
 
@@ -528,7 +528,7 @@ namespace UI.Nodes
             float height = pilotNode.PilotNameNode.TextNode.RelativeBounds.Height;
 
             resultNode = new TextNode("", Theme.Current.Rounds.Text.XNA);
-            resultNode.RelativeBounds = new Tools.RectangleF(pilotNode.RelativeBounds.Right, y, 1 - pilotNode.RelativeBounds.Right, height);
+            resultNode.RelativeBounds = new RectangleF(pilotNode.RelativeBounds.Right, y, 1 - pilotNode.RelativeBounds.Right, height);
             resultNode.Alignment = RectangleAlignment.BottomLeft;
             resultNode.Scale(0.9f, 1);
 
@@ -615,7 +615,7 @@ namespace UI.Nodes
                         EventRaceNode.SyncSheetChange();
                         EventRaceNode.Refresh();
                     }
-                   
+
                     return true;
                 }
             }
