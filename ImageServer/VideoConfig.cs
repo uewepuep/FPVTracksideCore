@@ -264,10 +264,14 @@ namespace ImageServer
                 return false;
 
             VideoConfig other = obj as VideoConfig;
-            if (other.DirectShowPath != null && other.DirectShowPath == DirectShowPath)
+
+            if (!string.IsNullOrEmpty(other.FilePath) && other.FilePath == FilePath)
                 return true;
 
-            if (other.MediaFoundationPath != null && other.MediaFoundationPath == MediaFoundationPath)
+            if (!string.IsNullOrEmpty(other.FilePath) && other.DirectShowPath == DirectShowPath)
+                return true;
+
+            if (!string.IsNullOrEmpty(other.FilePath) && other.MediaFoundationPath == MediaFoundationPath)
                 return true;
 
             return false;
