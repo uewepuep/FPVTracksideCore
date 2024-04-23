@@ -155,6 +155,22 @@ namespace UI.Video
             }
         }
 
+        public void PrevFrame()
+        {
+            foreach (IPlaybackFrameSource frameSource in GetFileFrameSources())
+            {
+                frameSource.PrevFrame();
+            }
+        }
+
+        public void NextFrame()
+        {
+            foreach (IPlaybackFrameSource frameSource in GetFileFrameSources())
+            {
+                frameSource.NextFrame();
+            }
+        }
+
         public void Step(int steps)
         {
             float frameRate = (float)Math.Max(1, Math.Min(120, primary.FrameRate));
@@ -326,11 +342,11 @@ namespace UI.Video
             {
                 if (inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.OemComma)
                 {
-                    Step(-1);
+                    PrevFrame();
                 }
                 if (inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.OemPeriod)
                 {
-                    Step(1);
+                    NextFrame();
                 }
             }
 

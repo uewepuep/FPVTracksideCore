@@ -139,6 +139,9 @@ namespace ImageServer
 
         void SetPosition(DateTime seekTime);
         void SetPosition(TimeSpan seekTime);
+        void PrevFrame();
+        void NextFrame();
+
         void Play();
         bool Pause();
         bool Start();
