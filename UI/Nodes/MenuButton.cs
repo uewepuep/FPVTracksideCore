@@ -29,6 +29,7 @@ namespace UI.Nodes
         private SoundManager soundManager;
         private EventWebServer eventWebServer;
         private TimingSystemManager timingSystemManager;
+        private KeyboardShortcuts keyMapper;
 
         private TracksideTabbedMultiNode tabbedMultiNode;
 
@@ -52,7 +53,7 @@ namespace UI.Nodes
 
         public Profile Profile { get; set; }
 
-        public MenuButton(Profile profile, EventManager eventManager, VideoManager videoManager, SoundManager soundManager, EventWebServer eventWebServer, TracksideTabbedMultiNode tabbedMultiNode, Color hover, Color tint) 
+        public MenuButton(Profile profile, EventManager eventManager, VideoManager videoManager, SoundManager soundManager, EventWebServer eventWebServer, TracksideTabbedMultiNode tabbedMultiNode, KeyboardShortcuts keyMapper, Color hover, Color tint) 
             : base(@"img\settings.png", Color.Transparent, hover, tint)
         {
             Profile = profile;
@@ -62,6 +63,7 @@ namespace UI.Nodes
             this.soundManager = soundManager;
             this.eventWebServer = eventWebServer;
             this.tabbedMultiNode = tabbedMultiNode;
+            this.keyMapper = keyMapper;
 
             if (eventManager != null)
             {
@@ -75,7 +77,7 @@ namespace UI.Nodes
         }
 
         public MenuButton(Profile profile, Color hover, Color tint) 
-            : this(profile, null, null, null, null, null, hover, tint)
+            : this(profile, null, null, null, null, null, null, hover, tint)
         {
             hasEvent = false;
         }
@@ -269,7 +271,7 @@ namespace UI.Nodes
             openWindow.AddItem("Log", () =>
             {
                 BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                baseGame.QuickLaunchWindow<LogNode>(eventManager);
+                baseGame.QuickLaunchWindow<LogNode>(eventManager, keyMapper);
             });
 
             if (hasEvent)
@@ -277,37 +279,37 @@ namespace UI.Nodes
                 openWindow.AddItem("Rounds", () =>
                 {
                     BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                    baseGame.QuickLaunchWindow<RoundsNode>(eventManager);
+                    baseGame.QuickLaunchWindow<RoundsNode>(eventManager, keyMapper);
                 });
 
                 openWindow.AddItem("Lap Records", () =>
                 {
                     BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                    baseGame.QuickLaunchWindow<LapRecordsSummaryNode>(eventManager);
+                    baseGame.QuickLaunchWindow<LapRecordsSummaryNode>(eventManager, keyMapper);
                 });
 
                 openWindow.AddItem("Points", () =>
                 {
                     BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                    baseGame.QuickLaunchWindow<PointsSummaryNode>(eventManager);
+                    baseGame.QuickLaunchWindow<PointsSummaryNode>(eventManager, keyMapper);
                 });
 
                 openWindow.AddItem("Lap Count", () =>
                 {
                     BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                    baseGame.QuickLaunchWindow<LapCountSummaryNode>(eventManager);
+                    baseGame.QuickLaunchWindow<LapCountSummaryNode>(eventManager, keyMapper);
                 });
 
                 openWindow.AddItem("Channel List", () =>
                 {
                     BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                    baseGame.QuickLaunchWindow<PilotChanelList>(eventManager);
+                    baseGame.QuickLaunchWindow<PilotChanelList>(eventManager, keyMapper);
                 });
 
                 openWindow.AddItem("Event Status", () =>
                 {
                     BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                    baseGame.QuickLaunchWindow<EventStatusNodeTopBar>(eventManager);
+                    baseGame.QuickLaunchWindow<EventStatusNodeTopBar>(eventManager, keyMapper);
                 });
 
                 root.AddBlank();

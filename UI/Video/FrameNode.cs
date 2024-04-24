@@ -114,7 +114,7 @@ namespace UI.Video
             {
                 texture = tryTexture;
 
-                if (NeedsAspectRatioUpdate && tryTexture != null)
+                if (NeedsAspectRatioUpdate && texture != null)
                 {
                     NeedsAspectRatioUpdate = false;
                     UpdateAspectRatioFromTexture();

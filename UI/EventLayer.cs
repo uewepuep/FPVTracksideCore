@@ -108,6 +108,8 @@ namespace UI
             SoundManager.Units = GeneralSettings.Instance.Units;
             SoundManager.PilotAnnounceTime = TimeSpan.FromSeconds(ProfileSettings.Instance.PilotProfileHoldLengthSeconds);
 
+            KeyMapper = KeyboardShortcuts.Read(Profile);
+
             EventManager.RaceManager.TimingSystemManager.OnConnected += (int count) =>
             {
                 SoundManager.TimingSystemsConnected(count);
@@ -197,7 +199,7 @@ namespace UI
             pilotListButton.OnClick += TogglePilotList;
             OnPilotRefresh();
 
-            TabbedMultiNode = new TracksideTabbedMultiNode(eventManager, videoManager, SoundManager, RoundsNode, sceneManagerNode, tabButtonsNode);
+            TabbedMultiNode = new TracksideTabbedMultiNode(eventManager, videoManager, SoundManager, RoundsNode, sceneManagerNode, tabButtonsNode, KeyMapper);
             TabbedMultiNode.RelativeBounds = new RectangleF(0, 0, 1, 0.99f);
             TabbedMultiNode.OnTabChange += OnTabChange;
             centreContainer.AddChild(TabbedMultiNode);
@@ -253,7 +255,7 @@ namespace UI
                 eventWebServer.Start();
             }
 
-            MenuButton = new MenuButton(Profile, EventManager, videoManager, SoundManager, eventWebServer, TabbedMultiNode, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
+            MenuButton = new MenuButton(Profile, EventManager, videoManager, SoundManager, eventWebServer, TabbedMultiNode, KeyMapper, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
             MenuButton.RelativeBounds = new RectangleF(0.7f, 0, 0.3f, 0.03f);
             MenuButton.ImageNode.Tint = Theme.Current.RightControls.Text.XNA;
             rightBar.AddChild(MenuButton);
@@ -335,7 +337,6 @@ namespace UI
                 RemoteNotifier = new RemoteNotifier(EventManager, ProfileSettings.Instance.NotificationURL, ProfileSettings.Instance.NotificationSerialPort);
             }
 
-            KeyMapper = KeyboardShortcuts.Read(Profile);
 
             ReloadOBSRemoteControl();
 
@@ -838,17 +839,21 @@ namespace UI
 
             if (inputEvent.ButtonState == ButtonStates.Pressed)
             {
-                if (KeyMapper.HidePilotList.Match(inputEvent))
+                if (!TabbedMultiNode.IsOnReplay)
                 {
-                    ShowPilotList(false);
-                    return true;
-                }
+                    if (KeyMapper.HidePilotList.Match(inputEvent))
+                    {
+                        ShowPilotList(false);
+                        return true;
+                    }
 
-                if (KeyMapper.ShowPilotList.Match(inputEvent))
-                {
-                    ShowPilotList(true);
-                    return true;
+                    if (KeyMapper.ShowPilotList.Match(inputEvent))
+                    {
+                        ShowPilotList(true);
+                        return true;
+                    }
                 }
+                
 
                 if (KeyMapper.ShowMoreChannels.Match(inputEvent))
                 {

@@ -1,4 +1,5 @@
 ﻿using Composition;
+using Composition.Input;
 using Composition.Layers;
 using Composition.Nodes;
 using ImageServer;
@@ -394,7 +395,7 @@ namespace UI
             PlatformTools.ShowNewWindow(node);
         }
 
-        public void QuickLaunchWindow<T>(EventManager eventManager)
+        public void QuickLaunchWindow<T>(EventManager eventManager, KeyboardShortcuts keyMapper)
         {
             if (typeof(T) == typeof(LapRecordsSummaryNode))
             {
@@ -430,7 +431,7 @@ namespace UI
 
             if (typeof(T) == typeof(ReplayNode))
             {
-                var n = new ReplayNode(eventManager);
+                var n = new ReplayNode(eventManager, keyMapper);
                 n.ReplayRace(eventManager.RaceManager.CurrentRace);
                 ShowNewWindow(n);
             }

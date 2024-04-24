@@ -21,6 +21,8 @@ namespace UI.Nodes
         public bool IsOnLive { get { return sceneManagerNode == Showing; } }
         public bool IsOnRounds { get { return rounds == Showing; } }
         public bool IsOnPhotoBooth { get { return PhotoBooth == Showing; } }
+        public bool IsOnReplay { get { return ReplayNode == Showing; } }
+
 
         private RoundsNode rounds;
         private SceneManagerNode sceneManagerNode;
@@ -44,11 +46,14 @@ namespace UI.Nodes
         
         private TextButtonNode rssiButton;
 
+        private KeyboardShortcuts keyMapper;
 
-        public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, SoundManager soundManager, RoundsNode rounds, SceneManagerNode sceneManagerContent, TabButtonsNode tabContainer)
+
+        public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, SoundManager soundManager, RoundsNode rounds, SceneManagerNode sceneManagerContent, TabButtonsNode tabContainer, KeyboardShortcuts keyMapper)
             : base(TimeSpan.FromSeconds(0.6f), tabContainer)
         {
             this.eventManager = eventManager;
+            this.keyMapper = keyMapper;
             VideoManager = videoManager;
 
             this.rounds = rounds;
@@ -61,7 +66,7 @@ namespace UI.Nodes
             pilotChanelList = new PilotChanelList(eventManager);
             PhotoBooth = new PhotoBoothNode(videoManager, eventManager, soundManager);
 
-            ReplayNode = new ReplayNode(eventManager);
+            ReplayNode = new ReplayNode(eventManager, keyMapper);
 
             
             eventManager.RaceManager.OnRaceChanged += UpdateReplayButton;
@@ -174,7 +179,7 @@ namespace UI.Nodes
             if (mie != null && mie.Button == MouseButtons.Middle)
             {
                 BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                baseGame.QuickLaunchWindow<LapRecordsSummaryNode>(eventManager);
+                baseGame.QuickLaunchWindow<LapRecordsSummaryNode>(eventManager, keyMapper);
                 return;
             }
 
@@ -191,7 +196,7 @@ namespace UI.Nodes
             if (mie != null && mie.Button == MouseButtons.Middle)
             {
                 BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                baseGame.QuickLaunchWindow<PointsSummaryNode>(eventManager);
+                baseGame.QuickLaunchWindow<PointsSummaryNode>(eventManager, keyMapper);
                 return;
             }
 
@@ -205,7 +210,7 @@ namespace UI.Nodes
             if (mie != null && mie.Button == MouseButtons.Middle)
             {
                 BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                baseGame.QuickLaunchWindow<LapCountSummaryNode>(eventManager);
+                baseGame.QuickLaunchWindow<LapCountSummaryNode>(eventManager, keyMapper);
                 return;
             }
 
@@ -220,7 +225,7 @@ namespace UI.Nodes
             if (mie != null && mie.Button == MouseButtons.Middle)
             {
                 BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                baseGame.QuickLaunchWindow<RoundsNode>(eventManager);
+                baseGame.QuickLaunchWindow<RoundsNode>(eventManager, keyMapper);
                 return;
             }
 
@@ -248,7 +253,7 @@ namespace UI.Nodes
             if (mie != null && mie.Button == MouseButtons.Middle)
             {
                 BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                baseGame.QuickLaunchWindow<PilotChanelList>(eventManager);
+                baseGame.QuickLaunchWindow<PilotChanelList>(eventManager, keyMapper);
                 return;
             }
 

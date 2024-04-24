@@ -64,9 +64,12 @@ namespace UI.Video
             }
         }
 
-        public ReplayNode(EventManager eventManager)
+        private KeyboardShortcuts keyMapper;
+
+        public ReplayNode(EventManager eventManager, KeyboardShortcuts keyMapper)
         {
             EventManager = eventManager;
+            this.keyMapper = keyMapper;
 
             EventManager.RaceManager.OnLapDetected += OnChange;
             EventManager.RaceManager.OnLapsRecalculated += OnChange;
@@ -326,30 +329,42 @@ namespace UI.Video
 
         public override bool OnKeyboardInput(KeyboardInputEvent inputEvent)
         {
-            if (inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.Space && inputEvent.ButtonState == ButtonStates.Pressed)
+            if (inputEvent.ButtonState == ButtonStates.Pressed)
             {
+                if (keyMapper.ReplayPlayStop.Match(inputEvent))
+                {
+                    if (SeekNode.PlayButton.Visible)
+                    {
+                        Play();
+                    }
+                    else
+                    {
+                        Stop();
+                    }
+                }
+
                 if (SeekNode.PlayButton.Visible)
                 {
-                    Play();
+                    if (keyMapper.ReplayPrevFrame.Match(inputEvent))
+                    {
+                        PrevFrame();
+                    }
+                    if (keyMapper.ReplayNextFrame.Match(inputEvent))
+                    {
+                        NextFrame();
+                    }
                 }
-                else
+
+                if (keyMapper.ReplayPlus5Seconds.Match(inputEvent))
                 {
-                    Stop();
+                    Seek(primary.CurrentTime + TimeSpan.FromSeconds(5));
+                }
+
+                if (keyMapper.ReplayMinus5Seconds.Match(inputEvent))
+                {
+                    Seek(primary.CurrentTime + TimeSpan.FromSeconds(-5));
                 }
             }
-
-            if (SeekNode.PlayButton.Visible && inputEvent.ButtonState == ButtonStates.Pressed)
-            {
-                if (inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.OemComma)
-                {
-                    PrevFrame();
-                }
-                if (inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.OemPeriod)
-                {
-                    NextFrame();
-                }
-            }
-
             return base.OnKeyboardInput(inputEvent);
         }
 
