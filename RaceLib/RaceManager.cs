@@ -1081,7 +1081,7 @@ namespace RaceLib
 
         public Race LastFinishedRace()
         {
-            Race race = GetRaces(r => r.Ended).OrderByDescending(r => r.RaceOrder).FirstOrDefault();
+            Race race = GetRaces(r => r.Ended && r.Valid).OrderByDescending(r => r.RaceOrder).FirstOrDefault();
             if (race != null)
             {
                 return race;
