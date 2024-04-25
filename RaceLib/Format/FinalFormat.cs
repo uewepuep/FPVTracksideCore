@@ -37,7 +37,7 @@ namespace RaceLib.Format
                 race.Event = EventManager.Event;
                 race.RaceNumber = startNumber + 1 + i;
                 race.Round = newRound;
-                race.Bracket = Race.Brackets.A + i;
+                race.Bracket = Brackets.A + i;
                 races.Add(race);
             }
 

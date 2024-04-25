@@ -252,7 +252,7 @@ namespace UI.Nodes.Rounds
 
                 mm.AddItemConfirm("Delete Race", () => { EventManager.RaceManager.RemoveRace(Race, false); SyncSheetChange(); Refresh(); });
 
-                mm.AddSubmenu("Set Race Bracket", SetBracket, Enum.GetValues(typeof(Race.Brackets)).OfType<Race.Brackets>().ToArray());
+                mm.AddSubmenu("Set Race Bracket", SetBracket, Enum.GetValues(typeof(Brackets)).OfType<Brackets>().ToArray());
                 mm.AddItem("Open Race Folder", () =>
                 {
                     PlatformTools.OpenFileManager(Directory.GetCurrentDirectory() + "\\events\\" + EventManager.EventId + "\\" + Race.ID + "\\");
@@ -436,7 +436,7 @@ namespace UI.Nodes.Rounds
             Refresh();
         }
 
-        private void SetBracket(Race.Brackets bracket)
+        private void SetBracket(Brackets bracket)
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {

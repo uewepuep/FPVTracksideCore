@@ -31,8 +31,8 @@ namespace RaceLib.Format
 
             IEnumerable<Race> lastRoundRaces = EventManager.RaceManager.GetRaces(plan.CallingRound);
 
-            int winnerRacePilots = lastRoundRaces.Where(r => r.Bracket != Race.Brackets.Losers).GetPilots().Count();
-            int loserRacePilots = lastRoundRaces.Where(r => r.Bracket == Race.Brackets.Losers).GetPilots().Count();
+            int winnerRacePilots = lastRoundRaces.Where(r => r.Bracket != Brackets.Losers).GetPilots().Count();
+            int loserRacePilots = lastRoundRaces.Where(r => r.Bracket == Brackets.Losers).GetPilots().Count();
 
             int totalWinnerSpots = (int)Math.Ceiling(winnerRacePilots / 2.0f);
             int newLoserSpots = winnerRacePilots - totalWinnerSpots;
@@ -47,7 +47,7 @@ namespace RaceLib.Format
 
             if (totalLoserSpots + totalWinnerSpots < plan.Channels.Length)
             {
-                foreach (Race race in CreateRaces(totalWinnerSpots, preExisting, newRound, Race.Brackets.None, plan))
+                foreach (Race race in CreateRaces(totalWinnerSpots, preExisting, newRound, Brackets.None, plan))
                 {
                     newRaces.Add(race);
                     startNumber++;
@@ -56,17 +56,17 @@ namespace RaceLib.Format
                 IEnumerable<Race> union = preExisting.Union(newRaces);
                 IEnumerable<Pilot> allPilots = winners.Union(losers);
 
-                AssignPilots(db, union, lastRoundRaces, allPilots.ToList(), Race.Brackets.None, plan);
+                AssignPilots(db, union, lastRoundRaces, allPilots.ToList(), Brackets.None, plan);
                 return newRaces;
             }
 
-            foreach (Race race in CreateRaces(totalWinnerSpots, preExisting, newRound, Race.Brackets.Winners, plan))
+            foreach (Race race in CreateRaces(totalWinnerSpots, preExisting, newRound, Brackets.Winners, plan))
             {
                 newRaces.Add(race);
                 startNumber++;
             }
 
-            foreach (Race race in CreateRaces(totalLoserSpots, preExisting, newRound, Race.Brackets.Losers, plan))
+            foreach (Race race in CreateRaces(totalLoserSpots, preExisting, newRound, Brackets.Losers, plan))
             {
                 newRaces.Add(race);
                 startNumber++;
@@ -74,13 +74,13 @@ namespace RaceLib.Format
 
             IEnumerable<Race> allRaces = preExisting.Union(newRaces);
 
-            AssignPilots(db, allRaces, lastRoundRaces, winners.Except(alreadyPlaced), Race.Brackets.Winners, plan);
-            AssignPilots(db, allRaces, lastRoundRaces, losers.Except(alreadyPlaced), Race.Brackets.Losers, plan);
+            AssignPilots(db, allRaces, lastRoundRaces, winners.Except(alreadyPlaced), Brackets.Winners, plan);
+            AssignPilots(db, allRaces, lastRoundRaces, losers.Except(alreadyPlaced), Brackets.Losers, plan);
 
             return newRaces;
         }
 
-        private IEnumerable<Race> CreateRaces(int totalPilots, IEnumerable<Race> preExisting, Round round, Race.Brackets bracket, RoundPlan plan)
+        private IEnumerable<Race> CreateRaces(int totalPilots, IEnumerable<Race> preExisting, Round round, Brackets bracket, RoundPlan plan)
         {
             int channelCount = plan.Channels.GetChannelGroups().Count();
             int needed = (int)Math.Ceiling(totalPilots / (float)channelCount);
@@ -99,7 +99,7 @@ namespace RaceLib.Format
             }
         }
 
-        private void AssignPilots(IDatabase db, IEnumerable<Race> allRoundRaces, IEnumerable<Race> previousRoundRaces, IEnumerable<Pilot> pilots, Race.Brackets bracket, RoundPlan plan)
+        private void AssignPilots(IDatabase db, IEnumerable<Race> allRoundRaces, IEnumerable<Race> previousRoundRaces, IEnumerable<Pilot> pilots, Brackets bracket, RoundPlan plan)
         {
             Race[] races = allRoundRaces.OfBracket(bracket).ToArray();
 
@@ -155,7 +155,7 @@ namespace RaceLib.Format
             IEnumerable<Race> ended = lastRoundRaces.Where(r => r.Ended);
             foreach (Race race in ended)
             {
-                if (race.Bracket == Race.Brackets.Losers)
+                if (race.Bracket == Brackets.Losers)
                 {
                     foreach (Pilot p in race.Pilots)
                     {

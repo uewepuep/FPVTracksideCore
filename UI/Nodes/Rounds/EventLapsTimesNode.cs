@@ -133,7 +133,7 @@ namespace UI.Nodes.Rounds
                 {
                     laps = LapRecordManager.GetBestLaps(pilotInRaces, pilotNode.Pilot, lapsToCount);
                 }
-                Race.Brackets bracket = Race.Brackets.None;
+                Brackets bracket = Brackets.None;
                 var brackets = pilotInRaces.Select(r => r.Bracket).Distinct();
                 if (brackets.Count() == 1)
                 {
@@ -215,7 +215,7 @@ namespace UI.Nodes.Rounds
             base.AddMenu(mouseInputEvent, mouseMenu);
         }
 
-        public void SetLaps(IEnumerable<Lap> laps, Race.Brackets bracket)
+        public void SetLaps(IEnumerable<Lap> laps, Brackets bracket)
         {
             if (Heading)
                 return;

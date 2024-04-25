@@ -137,7 +137,7 @@ namespace UI.Nodes.Rounds
 
                         int totalPoints = EventManager.ResultManager.GetPointsTotal(results, Round.PointSummary.DropWorstRound);
 
-                        Race.Brackets bracket = pilotRaces.First().Bracket;
+                        Brackets bracket = pilotRaces.First().Bracket;
                         sn.UpdateScoreText(rounds, bracket, results.ToArray(), totalPoints, roundPositionRollover);
                     }
                 }
@@ -163,7 +163,7 @@ namespace UI.Nodes.Rounds
             int position = 0;
             int lastScore = 0;
             int inARow = 0;
-            Race.Brackets lastBracket = Race.Brackets.None;
+            Brackets lastBracket = Brackets.None;
 
 
             foreach (PilotPointsNode ppn in nodes)
@@ -256,7 +256,7 @@ namespace UI.Nodes.Rounds
                 roundCount++;
         }
 
-        public void UpdateScoreText(IEnumerable<Round> rounds, Race.Brackets bracket, IEnumerable<Result> results, int total, bool rollover)
+        public void UpdateScoreText(IEnumerable<Round> rounds, Brackets bracket, IEnumerable<Result> results, int total, bool rollover)
         {
             totalScoreNode.Remove();
             roundScoreContainer.ClearDisposeChildren();

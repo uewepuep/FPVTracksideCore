@@ -9,6 +9,18 @@ using Timing;
 
 namespace RaceLib
 {
+    public enum Brackets
+    {
+        None,
+        Winners,
+        Losers,
+
+        A, B, C, D, E, F, G,
+        H, I, J, K, L, M, N,
+        O, P, Q, R, S, T, U,
+        V, W, X, Y, Z
+    }
+
     public class Race : BaseObject
     {
         public delegate void OnRaceEvent(Race race);
@@ -235,17 +247,7 @@ namespace RaceLib
         [System.ComponentModel.Browsable(false)]
         public bool Uploaded { get; set; }
 
-        public enum Brackets
-        {
-            None,
-            Winners,
-            Losers,
-            
-            A,B,C,D,E,F,G,
-            H,I,J,K,L,M,N, 
-            O,P,Q,R,S,T,U, 
-            V,W,X,Y,Z
-        }
+        
 
         public Brackets Bracket { get; set; }
 

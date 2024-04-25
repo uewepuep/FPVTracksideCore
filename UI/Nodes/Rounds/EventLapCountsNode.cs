@@ -120,7 +120,7 @@ namespace UI.Nodes.Rounds
                     IEnumerable<Race> pilotRaces = races.Where(r => r.HasPilot(p));
                     if (races.Any())
                     {
-                        Race.Brackets bracket = pilotRaces.First().Bracket;
+                        Brackets bracket = pilotRaces.First().Bracket;
                         sn.UpdateScoreText(rounds, pilotRaces, bracket);
                     }
                 }
@@ -140,7 +140,7 @@ namespace UI.Nodes.Rounds
             int position = 0;
             int lastScore = 0;
             int inARow = 0;
-            Race.Brackets lastBracket = Race.Brackets.None;
+            Brackets lastBracket = Brackets.None;
 
             foreach (PilotLapCountsNode ppn in nodes)
             {
@@ -206,7 +206,7 @@ namespace UI.Nodes.Rounds
             positionNode.Text = "Pos.";
         }
 
-        public void UpdateScoreText(IEnumerable<Round> rounds, IEnumerable<Race> races, Race.Brackets bracket)
+        public void UpdateScoreText(IEnumerable<Round> rounds, IEnumerable<Race> races, Brackets bracket)
         {
             totalLaps.Remove();
             roundScoreContainer.ClearDisposeChildren();

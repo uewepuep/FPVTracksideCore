@@ -175,12 +175,12 @@ namespace RaceLib
             return true;
         }
 
-        public static IEnumerable<IGrouping<Race.Brackets, Race>> GroupByBracket(this IEnumerable<Race> races)
+        public static IEnumerable<IGrouping<Brackets, Race>> GroupByBracket(this IEnumerable<Race> races)
         {
             return races.GroupBy(r => r.Bracket);
         }
 
-        public static IEnumerable<Race> OfBracket(this IEnumerable<Race> races, Race.Brackets bracket)
+        public static IEnumerable<Race> OfBracket(this IEnumerable<Race> races, Brackets bracket)
         {
             return races.Where(r => r.Bracket == bracket);
         }
@@ -196,7 +196,7 @@ namespace RaceLib
             return races.Where(r => r.RoundNumber == round);
         }
 
-        public static IEnumerable<Race.Brackets> GetBrackets(this IEnumerable<Race> races)
+        public static IEnumerable<Brackets> GetBrackets(this IEnumerable<Race> races)
         {
             return races.Select(r => r.Bracket).Distinct();
         }
@@ -206,7 +206,7 @@ namespace RaceLib
             return races.SelectMany(r => r.Pilots).Distinct();
         }
 
-        public static Race.Brackets GetBracket(this IEnumerable<Race> races, Pilot p)
+        public static Brackets GetBracket(this IEnumerable<Race> races, Pilot p)
         {
             return races.Where(r => r.HasPilot(p)).Select(r => r.Bracket).FirstOrDefault();
         }

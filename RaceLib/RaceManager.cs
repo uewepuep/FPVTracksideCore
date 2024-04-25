@@ -331,7 +331,7 @@ namespace RaceLib
             TimingSystemManager.Dispose();
         }
 
-        public int GetRaceCount(EventTypes type, Race.Brackets bracket = Race.Brackets.None)
+        public int GetRaceCount(EventTypes type, Brackets bracket = Brackets.None)
         {
             lock (races)
             {
@@ -339,7 +339,7 @@ namespace RaceLib
             }
         }
 
-        public int GetRaceCount(Round round, Race.Brackets bracket)
+        public int GetRaceCount(Round round, Brackets bracket)
         {
             lock (races)
             {

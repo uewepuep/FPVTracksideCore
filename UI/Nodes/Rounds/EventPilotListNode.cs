@@ -212,7 +212,7 @@ namespace UI.Nodes.Rounds
                 tn.Dispose();
             }
 
-            Race.Brackets lastBracket = Race.Brackets.None;
+            Brackets lastBracket = Brackets.None;
             List<Node> list = new List<Node>();
 
             bool showBrackets = ordered.Where(p => p.Pilot != null).Select(r => r.Bracket).Distinct().Count() > 1;
@@ -348,7 +348,7 @@ namespace UI.Nodes.Rounds
         protected Node roundScoreContainer;
 
         public bool HasRaced { get; protected set; }
-        public Race.Brackets Bracket { get; protected set; }
+        public Brackets Bracket { get; protected set; }
 
         public event Action<EventPilotNode, MouseInputEvent> OnClick;
 

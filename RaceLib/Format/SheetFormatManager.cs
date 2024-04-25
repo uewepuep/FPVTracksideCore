@@ -410,7 +410,7 @@ namespace RaceLib.Format
         {
             int count = 0;
 
-            var brackets = Enum.GetValues(typeof(Race.Brackets)).OfType<Race.Brackets>().Where(e => e >= Race.Brackets.A && e <= Race.Brackets.Z).ToArray();
+            var brackets = Enum.GetValues(typeof(Brackets)).OfType<Brackets>().Where(e => e >= Brackets.A && e <= Brackets.Z).ToArray();
 
             SheetRace[] sfRaces = SheetFormat.GetRaces(round.EventType.ToString(), round.RoundNumber - Offset).ToArray();
             foreach (SheetRace sfRace in sfRaces)

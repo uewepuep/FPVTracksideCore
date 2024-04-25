@@ -18,11 +18,11 @@ namespace RaceLib.Format
                        
 
             Race[] lastRoundRaces;
-            Race.Brackets[] brackets;
+            Brackets[] brackets;
             if (plan.CallingRound == null)
             {
                 lastRoundRaces = new Race[0]; 
-                brackets = new Race.Brackets[] { Race.Brackets.None };
+                brackets = new Brackets[] { Brackets.None };
             }
             else
             {
@@ -34,12 +34,12 @@ namespace RaceLib.Format
 
             if (!brackets.Any())
             {
-                brackets = new Race.Brackets[] { Race.Brackets.None };
+                brackets = new Brackets[] { Brackets.None };
             }
             int raceNumber = preExisting.Count();
             FlownMap flownMap = new FlownMap(RaceManager.Races);
 
-            foreach (Race.Brackets bracket in brackets)
+            foreach (Brackets bracket in brackets)
             {
                 Pilot[] lastRoundPilots = lastRoundRaces.Where(r => r.Bracket == bracket).GetPilots().ToArray();
 

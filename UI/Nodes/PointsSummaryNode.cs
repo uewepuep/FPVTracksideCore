@@ -102,13 +102,7 @@ namespace UI.Nodes
             }
             else
             {
-                rows.SetOrder<PilotResultNode, double>(pa =>
-                {
-                    double value;
-                    if (pa.GetValue(columnToOrderBy, out value))
-                        return -value;
-                    return 0;
-                });
+                rows.SetOrder(rows.ChildrenOfType.OrderBy(pa => pa.Bracket).ThenByDescending(pa => pa.GetValue(columnToOrderBy)));
             }
         }
 

@@ -229,7 +229,8 @@ namespace Sound
                     new Sound() { Key = SoundKey.RaceDone, TextToSpeech = "{pilot} finished in {position}", Category = Sound.SoundCategories.Detection },
                     new Sound() { Key = SoundKey.RaceLap, TextToSpeech = "{pilot} lap {lapnumber} in {position}", Category = Sound.SoundCategories.Detection },
 
-                    new Sound() { Key = SoundKey.TimeTrialLap, TextToSpeech = "{pilot} {count} lap{s} in {lapstime}", Category = Sound.SoundCategories.Detection },
+                    new Sound() { Key = SoundKey.TimeTrialEveryLap, TextToSpeech = "{pilot} {laptime}", Enabled = false, Category = Sound.SoundCategories.Detection },
+                    new Sound() { Key = SoundKey.TimeTrialTargetLaps, TextToSpeech = "{pilot} {count} lap{s} in {lapstime}", Category = Sound.SoundCategories.Detection },
                     new Sound() { Key = SoundKey.TimeTrialDone, TextToSpeech = "{pilot} finished {count} lap{s} in {lapstime}, Please land", Category = Sound.SoundCategories.Detection },
                     new Sound() { Key = SoundKey.PracticeLap, TextToSpeech = "{pilot} {laptime}", Category = Sound.SoundCategories.Detection },
                     new Sound() { Key = SoundKey.CasualLap, TextToSpeech = "{pilot} {count} lap{s} in {lapstime}", Category = Sound.SoundCategories.Detection },
@@ -351,7 +352,7 @@ namespace Sound
                 parameters.Add(SpeechParameters.Types.race, race.RaceNumber);
                 parameters.Add(SpeechParameters.Types.type, RaceStringFormatter.Instance.GetEventTypeText(race.Type));
 
-                if (race.Bracket == Race.Brackets.None)
+                if (race.Bracket == Brackets.None)
                 {
                     parameters.Add(SpeechParameters.Types.bracket, "");
                 }
@@ -437,7 +438,7 @@ namespace Sound
                 parameters.Add(SpeechParameters.Types.race, race.RaceNumber);
                 parameters.Add(SpeechParameters.Types.type, RaceStringFormatter.Instance.GetEventTypeText(race.Type));
 
-                if (race.Bracket == Race.Brackets.None)
+                if (race.Bracket == Brackets.None)
                 {
                     parameters.Add(SpeechParameters.Types.bracket, "");
                 }
@@ -770,16 +771,14 @@ namespace Sound
                         else // normal in time..
                         {
                             parameters.Priority = LapNumberToPriority(lap.Detection, position);
-                            PlaySound(SoundKey.TimeTrialLap, parameters);
+                            PlaySound(SoundKey.TimeTrialEveryLap, parameters);
+                            PlaySound(SoundKey.TimeTrialTargetLaps, parameters);
                         }
 
                         break;
                     }
                 case EventTypes.CasualPractice:
                     {
-                        int position = eventManager.LapRecordManager.GetPosition(lap.Pilot, lap.Race.TargetLaps);
-                        parameters.Add(SpeechParameters.Types.position, position);
-                        parameters.Priority = LapNumberToPriority(lap.Detection, position);
                         PlaySound(SoundKey.CasualLap, parameters);
                         break;
                     }

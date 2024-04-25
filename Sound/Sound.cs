@@ -31,7 +31,8 @@ namespace Sound
         RaceLap,
         RaceDone,
 
-        TimeTrialLap,
+        TimeTrialEveryLap,
+        TimeTrialTargetLaps,
         TimeTrialDone,
 
         PracticeLap,

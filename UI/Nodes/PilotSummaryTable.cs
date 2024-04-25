@@ -3,6 +3,7 @@ using Composition.Input;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
+using RaceLib.Format;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -59,6 +60,7 @@ namespace UI.Nodes
             limitButton = new TextButtonNode("All", Theme.Current.InfoPanel.Heading.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
             limitButton.RelativeBounds = new RectangleF(0.89f, 0.1f, 0.1f, 0.8f);
             limitButton.OnClick += LimitButton_OnClick;
+            limitButton.Visible = false;
             title.AddChild(limitButton);
 
             rows = new ListNode<PilotResultNode>(Theme.Current.ScrollBar.XNA);
@@ -215,7 +217,7 @@ namespace UI.Nodes
                 CalculatePositions();
             }
 
-            limitButton.Visible = GetSummaryRounds().Any();
+            //limitButton.Visible = GetSummaryRounds().Any();
 
             rows.RequestLayout();
             RequestLayout();
@@ -353,6 +355,7 @@ namespace UI.Nodes
 
             public bool CanTint { get; set; }
 
+            public Brackets Bracket { get; set; }
 
             public PilotResultNode(EventManager eventManager, bool position)
             {
@@ -387,6 +390,10 @@ namespace UI.Nodes
                 if (positionNode != null)
                 {
                     positionNode.Text = GetPositionText(position);
+                    if (Bracket != Brackets.None)
+                    {
+                        positionNode.Text += " " + Bracket.ToString();
+                    }
                 }
             }
 
@@ -407,8 +414,14 @@ namespace UI.Nodes
 
             public void Set(Pilot p, IEnumerable<Node> resultNodes)
             {
+                Set(p, Brackets.None, resultNodes.ToArray());
+            }
+
+            public void Set(Pilot p, Brackets bracket, IEnumerable<Node> resultNodes)
+            {
                 Pilot = p;
                 pilotName.Text = p.Name;
+                Bracket = bracket;
 
                 foreach (Node n in cont.Children)
                 {
@@ -431,6 +444,16 @@ namespace UI.Nodes
                 return GetValue(cont.ChildCount, out value);
             }
 
+
+            public double GetValue(int columnToOrderBy)
+            {
+                double value;
+                if (GetValue(columnToOrderBy, out value))
+                {
+                    return value;
+                }
+                return 0;
+            }
 
             public bool GetValue(int columnToOrderBy, out double value)
             {

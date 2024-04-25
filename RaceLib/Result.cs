@@ -25,6 +25,18 @@ namespace RaceLib
         [System.ComponentModel.Browsable(false)]
         public Round Round { get; set; }
 
+        [System.ComponentModel.Browsable(false)]
+        public Brackets Bracket
+        {
+            get
+            {
+                if (Race == null)
+                    return Brackets.None;   
+
+                return Race.Bracket;
+            }
+        }
+
         public bool DNF { get; set; }
 
         public enum ResultTypes
