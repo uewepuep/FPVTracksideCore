@@ -92,12 +92,12 @@ namespace UI.Nodes
 
                 for (int i = 0; i < rows.ChildCount; i++)
                 {
-                    PilotResultNode pilotLapsNode = rows.GetChild<PilotResultNode>(i);
-                    if (pilotLapsNode != null)
+                    PilotResultNode resultNode = rows.GetChild<PilotResultNode>(i);
+                    if (resultNode != null)
                     {
-                        int? old = eventManager.LapRecordManager.GetPastPosition(pilotLapsNode.Pilot, orderLap);
+                        int? old = eventManager.LapRecordManager.GetPastPosition(resultNode.Pilot, orderLap);
 
-                        pilotLapsNode.SetPosition(i + 1, old);
+                        resultNode.SetPosition(i + 1, old);
                     }
                 }
             }

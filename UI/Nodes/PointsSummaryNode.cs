@@ -14,6 +14,8 @@ namespace UI.Nodes
 {
     public class PointsSummaryNode : PilotSummaryTable
     {
+        private bool brackets;
+
         public ResultManager PointsManager { get { return eventManager.ResultManager; } }
 
         public PointsSummaryNode(EventManager eventManager)
@@ -29,12 +31,19 @@ namespace UI.Nodes
                 Round start = PointsManager.GetStartRound(Round);
                 rs = rs.Where(r => r.Order >= start.Order && r.Order <= Round.Order);
             }
+            column = 0;
 
             rounds = rs.ToArray();
+            brackets = eventManager.RaceManager.GetRaces(r => rs.Contains(r.Round) && r.Bracket != Brackets.None).Any();
+            if (brackets)
+            {
+                TextButtonNode brac = new TextButtonNode("Bracket", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
+                container.AddChild(brac);
+                column++;
+            }
 
             bool rollOver = rounds.Where(r => r.PointSummary != null).Any(r => r.PointSummary.RoundPositionRollover);
 
-            column = 0;
             bool prevTotal = false;
             bool anyTotal = false;
 
@@ -95,15 +104,19 @@ namespace UI.Nodes
 
         public override void SetOrder()
         {
+            IEnumerable<Node> ordered;
+
             // order them
             if (columnToOrderBy == 0)
             {
-                rows.SetOrder<PilotResultNode, string>(pa => pa.Pilot.Name);
+                ordered = rows.ChildrenOfType.OrderBy(pa => pa.Bracket).ThenBy(pa => pa.Pilot.Name);
             }
             else
             {
-                rows.SetOrder(rows.ChildrenOfType.OrderBy(pa => pa.Bracket).ThenByDescending(pa => pa.GetValue(columnToOrderBy)));
+                ordered = rows.ChildrenOfType.OrderBy(pa => pa.Bracket).ThenByDescending(pa => pa.GetValue(columnToOrderBy));
             }
+
+            rows.SetOrder(ordered);
         }
 
         protected override void SetResult(PilotResultNode pilotResNode, Pilot pilot, Round[] rounds)
@@ -114,6 +127,8 @@ namespace UI.Nodes
             List<Node> nodes = new List<Node>();
 
             bool rollOver = rounds.Where(r => r.PointSummary != null).Any(r => r.PointSummary.RoundPositionRollover);
+
+            Brackets bracket = Brackets.None;
 
             foreach (Round round in rounds)
             {
@@ -134,6 +149,11 @@ namespace UI.Nodes
                 Result r = PointsManager.GetResult(round, pilot);
                 ResultNode rn = new ResultNode(r);
                 nodes.Add(rn);
+
+                if (r.Race.Bracket != Brackets.None && brackets)
+                {
+                    bracket = r.Race.Bracket;
+                }
 
                 if (round.PointSummary != null)
                 {
@@ -161,7 +181,7 @@ namespace UI.Nodes
                 }
             }
 
-            pilotResNode.Set(pilot, nodes);
+            pilotResNode.Set(pilot, bracket, nodes);
         }
     }
 }

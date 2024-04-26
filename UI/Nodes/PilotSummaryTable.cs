@@ -217,7 +217,7 @@ namespace UI.Nodes
                 CalculatePositions();
             }
 
-            //limitButton.Visible = GetSummaryRounds().Any();
+            limitButton.Visible = GetSummaryRounds().Any();
 
             rows.RequestLayout();
             RequestLayout();
@@ -226,12 +226,24 @@ namespace UI.Nodes
 
         public virtual void CalculatePositions()
         {
+            int position = 1;
+
+            Brackets bracket = Brackets.None;
             for (int i = 0; i < rows.ChildCount; i++)
             {
                 PilotResultNode pilotLapsNode = rows.GetChild<PilotResultNode>(i);
                 if (pilotLapsNode != null)
                 {
-                    pilotLapsNode.SetPosition(i + 1);
+                    if (pilotLapsNode.Bracket != bracket)
+                    {
+                        if (bracket != Brackets.None)
+                            position = 1;
+
+                        bracket = pilotLapsNode.Bracket;
+                    }
+
+                    pilotLapsNode.SetPosition(position);
+                    position++;
                 }
             }
         }
@@ -327,6 +339,7 @@ namespace UI.Nodes
             private Node cont;
 
             private TextNode positionNode;
+            private TextNode bracketNode;
 
             private int position;
             public int Position
@@ -390,10 +403,6 @@ namespace UI.Nodes
                 if (positionNode != null)
                 {
                     positionNode.Text = GetPositionText(position);
-                    if (Bracket != Brackets.None)
-                    {
-                        positionNode.Text += " " + Bracket.ToString();
-                    }
                 }
             }
 
@@ -423,9 +432,25 @@ namespace UI.Nodes
                 pilotName.Text = p.Name;
                 Bracket = bracket;
 
+                if (Bracket != Brackets.None)
+                {
+                    if (bracketNode == null)
+                    {
+                        bracketNode = new TextNode("", Theme.Current.InfoPanel.Text.XNA);
+                        cont.AddChild(bracketNode);
+                    }
+
+                    bracketNode.Text = bracket.ToString();
+                }
+                else
+                {
+                    bracketNode?.Dispose();
+                    bracketNode = null;
+                }
+
                 foreach (Node n in cont.Children)
                 {
-                    if (n != pilotName)
+                    if (n != pilotName && n != bracketNode)
                     {
                         n.Dispose();
                     }
