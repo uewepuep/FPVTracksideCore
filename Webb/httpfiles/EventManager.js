@@ -83,20 +83,53 @@ class EventManager
     {
         let race = await this.GetRace(raceId);        
         let event = await this.GetEvent();
-
+        let round = await this.GetRound(race.Round);
 
         let summary = 
         { 
-            Event : event, 
-            Race : race 
+            RaceID : race.ID,
+            RoundNumner: round.Number,
+            RaceNumber : race.Number,
+            RaceStart : race.Start,
+            RaceEnd : race.End,
+            Laps : race.TargetLaps,
+            Bracket : race.Bracket,
+            PrimaryTimingSystemLocation: race.PrimaryTimingSystemLocation,
+            PilotSummaries : []
         };
 
         for (const pilotChannel of race.PilotChannels)
         {
             let pilotId = pilotChannel.Pilot;
             let pilot = await this.GetPilot(pilotId);
-            let laps = this.GetValidLapsPilot(race, pilotId);
-            let result = this.GetPilotResult(raceId, pilotId);
+            let laps = await this.GetValidLapsPilot(race, pilotId);
+            let result = await this.GetPilotResult(raceId, pilotId);
+
+            let pilotSummary = 
+            {
+                PilotID : pilotId,
+                Name : pilot.Name,
+                Position : 0,
+                Points : 0,
+                BestLap : this.BestLap(laps)
+            };
+
+            for (const lap of laps)
+            {
+                let lapName = "Lap " + lap.LapNumber;
+                if (lap.LapNumber == 0)
+                    lapName = "HS";
+
+                pilotSummary[lapName] = lap.LengthSeconds;
+            }
+
+            if (result != null)
+            {
+                pilotSummary["Position"] =  result.DNF ? "DNF" : result.Position;
+                pilotSummary["Points"] = result.Points;
+            }
+
+            summary.PilotSummaries.push(pilotSummary);
         }
 
         return summary;
@@ -516,6 +549,22 @@ class EventManager
         }
 
         return total;
+    }
+
+    BestLap(validLaps)
+    {
+        if (validLaps == null || validLaps.length == 0)
+        return Number.MAX_SAFE_INTEGER;
+
+        let min = Number.MAX_SAFE_INTEGER;
+
+        for (const lapIndex in validLaps)
+        {
+            const lap = validLaps[lapIndex];
+            min = Math.min(min, lap.LengthSeconds);
+        }
+
+        return min;
     }
 
     async GetRound(roundId)
