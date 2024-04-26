@@ -229,6 +229,31 @@ namespace WindowsPlatform
             }
         }
 
+        public void Draw(Drawer id, RectangleF target, RectangleAlignment alignment, Scale scale, Microsoft.Xna.Framework.Color tint, float alpha)
+        {
+            lock (locker)
+            {
+                if (texture == null)
+                    return;
+
+                Microsoft.Xna.Framework.Rectangle sourceBounds = new Microsoft.Xna.Framework.Rectangle(0, 0, texture.Width, texture.Height);
+                RectangleF sourceBoundsF = new RectangleF(0, 0, texture.Width, texture.Height);
+
+                scaleFactor = 1;
+
+                bool scaleImage = target.Width < texture.Width || scale == Scale.Force;
+                if (scale != Scale.Disallowed)
+                {
+                    scaleFactor = Maths.ScaleFactor(target, sourceBoundsF, FitType.FitBoth);
+                }
+
+                RectangleF bounds = Maths.FitBoxMaintainAspectRatio(target, sourceBoundsF, scaleFactor, alignment);
+                offsetX = target.X - bounds.X;
+                offsetY = target.Y - bounds.Y;
+                id.Draw(texture, sourceBounds, bounds, tint, alpha);
+            }
+        }
+
         public void Draw(Drawer id, Microsoft.Xna.Framework.Rectangle target, RectangleAlignment alignment, Scale scale, Microsoft.Xna.Framework.Color tint, float alpha)
         {
             lock (locker)
@@ -237,17 +262,16 @@ namespace WindowsPlatform
                     return;
 
                 Microsoft.Xna.Framework.Rectangle sourceBounds = new Microsoft.Xna.Framework.Rectangle(0, 0, texture.Width, texture.Height);
-
+                
                 scaleFactor = 1;
 
-                bool scaleImage = Math.Abs(target.Height - texture.Height) > 10 || target.Width < texture.Width || scale == Scale.Force;
-                if (scaleImage && scale != Scale.Disallowed)
+                bool scaleImage = target.Width < texture.Width || scale == Scale.Force;
+                if (scale != Scale.Disallowed)
                 {
                     scaleFactor = Maths.ScaleFactor(target, sourceBounds, FitType.FitBoth);
                 }
 
                 Microsoft.Xna.Framework.Rectangle bounds = Maths.FitBoxMaintainAspectRatio(target, sourceBounds, scaleFactor, alignment);
-
                 offsetX = target.X - bounds.X;
                 offsetY = target.Y - bounds.Y;
                 id.Draw(texture, sourceBounds, bounds, tint, alpha);

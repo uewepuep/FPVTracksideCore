@@ -129,7 +129,7 @@ namespace Composition.Nodes
                 Scale scale;
                 if (CanScale)
                 {
-                    if (IsAnimatingSize() /*|| needsGeometryUpdate || needsTextureUpdate */)
+                    if (isAnimatingSize /*|| needsGeometryUpdate || needsTextureUpdate */)
                     {
                         scale = Composition.Text.Scale.Force;
                     }

@@ -352,12 +352,13 @@ namespace Composition.Nodes
 
         public virtual Rectangle CalculateRelativeBounds(Rectangle parentPosition)
         {
-            Rectangle p = new Rectangle();
-            p.X = parentPosition.X + (int)Math.Round(parentPosition.Width * RelativeBounds.X);
-            p.Y = parentPosition.Y + (int)Math.Round(parentPosition.Height * RelativeBounds.Y);
-            p.Width = (int)Math.Round(parentPosition.Width * RelativeBounds.Width);
-            p.Height = (int)Math.Round(parentPosition.Height * RelativeBounds.Height);
-            return p;
+            return new Rectangle()
+            {
+                X = parentPosition.X + (int)Math.Round(parentPosition.Width * RelativeBounds.X),
+                Y = parentPosition.Y + (int)Math.Round(parentPosition.Height * RelativeBounds.Y),
+                Width = (int)Math.Round(parentPosition.Width * RelativeBounds.Width),
+                Height = (int)Math.Round(parentPosition.Height * RelativeBounds.Height)
+            };
         }
 
         public virtual void SetBounds(Rectangle bounds)

@@ -134,6 +134,12 @@ namespace Composition.Text
             return true;
         }
 
+        public void Draw(Drawer id, RectangleF target, RectangleAlignment alignment, Scale scale, Color tint, float alpha)
+        {
+            Rectangle rectangle = new Rectangle((int)target.X, (int)target.Y, (int)target.Width, (int)target.Height);
+            Draw(id, rectangle, alignment, scale, tint, alpha);
+        }
+
         public void Draw(Drawer id, Rectangle target, RectangleAlignment alignment, Scale scale, Color tint, float alpha)
         {
             if (font != null)

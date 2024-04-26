@@ -45,7 +45,7 @@ namespace UI.Nodes
         private ImageNode pbBackground;
         private PBContainerNode PBNode;
 
-        protected ColorNode resultBackground;
+        protected AnimatedRelativeNode resultContainer;
         private TextNode finalPosition;
         private TextNode raceSummary1;
         private TextNode raceSummary2;
@@ -80,7 +80,7 @@ namespace UI.Nodes
         }
 
         public CrashOutType CrashedOutType { get; set; }
-        public bool Finished { get { return resultBackground.Visible; } }
+        public bool Finished { get { return resultContainer.Visible; } }
            
         private ColorNode crashedOut;
 
@@ -272,24 +272,25 @@ namespace UI.Nodes
                 Close();
             };
 
-            resultBackground = new ColorNode(Theme.Current.PilotViewTheme.PilotOverlayPanel);
-            resultBackground.Alpha = pilotAlpha;
-            // Size set in set bigger info
-            DisplayNode.AddChild(resultBackground);
+            resultContainer = new AnimatedRelativeNode();
+            resultContainer.Alpha = pilotAlpha;
+            DisplayNode.AddChild(resultContainer);
+
+            ColorNode resultBackground = new ColorNode(Theme.Current.PilotViewTheme.PilotOverlayPanel);
+            resultContainer.AddChild(resultBackground);
 
             finalPosition = new TextNode("", Theme.Current.PilotViewTheme.PilotOverlayText.XNA);
-            finalPosition.RelativeBounds = new RectangleF(0, 0, 1, 0.75f);
+            finalPosition.RelativeBounds = new RectangleF(0, 0, 1, 0.6f);
             finalPosition.Style.Bold = true;
             finalPosition.Alignment = RectangleAlignment.BottomCenter;
 
-            RectangleF raceSummaryLocations = new RectangleF(0.0f, 0.7f, 1.0f, 0.145f);
+            RectangleF raceSummaryLocations = new RectangleF(0.0f, 0.55f, 1.0f, 0.145f);
 
             raceSummary1 = new TextNode("", Theme.Current.PilotViewTheme.PilotOverlayText.XNA);
             raceSummary1.RelativeBounds = raceSummaryLocations;
             raceSummary1.Alignment = RectangleAlignment.BottomCenter;
 
             raceSummaryLocations.Y += 0.15f;
-            raceSummaryLocations.Height -= 0.01f;
 
             raceSummary2 = new TextNode("", Theme.Current.PilotViewTheme.PilotOverlayText.XNA);
             raceSummary2.RelativeBounds = raceSummaryLocations;
@@ -303,12 +304,12 @@ namespace UI.Nodes
             rssiNode.RelativeBounds = sensitivityNode.RelativeBounds;
             rssiNode.Alignment = RectangleAlignment.BottomLeft;
 
-            resultBackground.AddChild(finalPosition);
-            resultBackground.AddChild(raceSummary1);
-            resultBackground.AddChild(raceSummary2);
-            resultBackground.AddChild(rssiNode);
-            resultBackground.AddChild(sensitivityNode);
-            resultBackground.Visible = false;
+            resultContainer.AddChild(finalPosition);
+            resultContainer.AddChild(raceSummary1);
+            resultContainer.AddChild(raceSummary2);
+            resultContainer.AddChild(rssiNode);
+            resultContainer.AddChild(sensitivityNode);
+            resultContainer.Visible = false;
 
             pbBackground = new ColorNode(Theme.Current.PilotViewTheme.PBBackground);
             pbBackground.KeepAspectRatio = false;
@@ -347,7 +348,7 @@ namespace UI.Nodes
             AddChild(new ShadowNode());
             SetPilot(null);
 
-            SetBiggerInfo(false, false);
+            SetBiggerInfo(true, true);
         }
 
         public void Close()
@@ -574,14 +575,14 @@ namespace UI.Nodes
                 }
             }
 
-            resultBackground.Visible = true;
+            resultContainer.Visible = true;
         }
 
         public void ClearResult()
         {
-            if (resultBackground.Visible)
+            if (resultContainer.Visible)
             {
-                resultBackground.Visible = false;
+                resultContainer.Visible = false;
                 finalPosition.Text = "";
                 raceSummary1.Text = "";
                 raceSummary2.Text = "";
@@ -703,7 +704,7 @@ namespace UI.Nodes
             }
 
             // udpdate crashed out visible
-            crashedOut.Visible = CrashedOut && !resultBackground.Visible;
+            crashedOut.Visible = CrashedOut && !resultContainer.Visible;
 
             base.Update(gameTime);
         }
@@ -872,16 +873,16 @@ namespace UI.Nodes
                 Lap l = current.GetLastValidLap(Pilot);
                 if (l != null && Pilot.HasFinished(EventManager))
                 {
-                    resultBackground.Visible = l.Detection.Time < playbackTime.Value && l.Number >= current.TargetLaps;
+                    resultContainer.Visible = l.Detection.Time < playbackTime.Value && l.Number >= current.TargetLaps;
                 }
                 else
                 {
-                    resultBackground.Visible = false;
+                    resultContainer.Visible = false;
                 }
             }
             else
             {
-                resultBackground.Visible = false;
+                resultContainer.Visible = false;
             }
 
             LapsNode.SetPlaybackTime(time);
@@ -900,11 +901,11 @@ namespace UI.Nodes
 
             if (biggerResults)
             {
-                resultBackground.RelativeBounds = new RectangleF(0, 0.25f, 1, 0.5f);
+                resultContainer.RelativeBounds = new RectangleF(0, 0.25f, 1, 0.5f);
             }
             else
             {
-                resultBackground.RelativeBounds = new RectangleF(0, 0.3f, 1, 0.4f);
+                resultContainer.RelativeBounds = new RectangleF(0, 0.3f, 1, 0.4f);
             }
         }
     }

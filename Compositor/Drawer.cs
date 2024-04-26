@@ -98,6 +98,15 @@ namespace Composition
             SpriteBatch?.Draw(texture, dest, src, Color.FromNonPremultiplied(new Vector4(tint.ToVector3(), alpha)));
         }
 
+        public void Draw(Texture2D texture, Rectangle src, RectangleF dest, Color tint, float alpha)
+        {
+            dest.X += Offset.X;
+            dest.Y += Offset.Y;
+
+            Vector2 scale = new Vector2(dest.Width / src.Width, dest.Height / src.Height);
+            SpriteBatch?.Draw(texture, dest.Position, src, Color.FromNonPremultiplied(new Vector4(tint.ToVector3(), alpha)), 0, Vector2.Zero, scale, SpriteEffects.None, 0);
+        }
+
         public void PushClipRectangle(Rectangle clip)
         {
             SpriteBatch.End();

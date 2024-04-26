@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -47,6 +48,27 @@ namespace Tools
 
         public float CenterX { get { return X + (Width / 2); } }
         public float CenterY { get { return Y + (Height / 2); } }
+
+        public Vector2 Center
+        {
+            get
+            {
+                return new Vector2() { X = CenterX, Y = CenterY }; 
+            }
+        }
+
+        public Vector2 Position
+        {
+            get
+            {
+                return new Vector2() { X = X, Y = Y };
+            }
+        }
+
+        public RectangleF(Rectangle r)
+            :this(r.X, r.Y, r.Width, r.Height)
+        {
+        }
 
         public RectangleF(float x, float y, float width, float height)
         {

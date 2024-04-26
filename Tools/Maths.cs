@@ -52,13 +52,31 @@ namespace Tools
             return new Rectangle(c.X - (needle.Width / 2), c.Y - (needle.Height / 2), needle.Width, needle.Height);
         }
 
+        public static RectangleF Center(RectangleF needle, RectangleF haystack)
+        {
+            Vector2 c = haystack.Center;
+            return new RectangleF(c.X - (needle.Width / 2), c.Y - (needle.Height / 2), needle.Width, needle.Height);
+        }
+
         public static Rectangle FitBoxMaintainAspectRatio(Rectangle outer, float aspectRatio, RectangleAlignment alignment, FitType fitType)
         {
             Rectangle innerBounds = new Rectangle(0, 0, (int)(aspectRatio * 1000000), 1000000);
             return FitBoxMaintainAspectRatio(outer, innerBounds, alignment, fitType);
         }
 
+        public static RectangleF FitBoxMaintainAspectRatio(RectangleF outer, float aspectRatio, RectangleAlignment alignment, FitType fitType)
+        {
+            RectangleF innerBounds = new RectangleF(0, 0, aspectRatio * 1000000, 1000000);
+            return FitBoxMaintainAspectRatio(outer, innerBounds, alignment, fitType);
+        }
+
         public static Rectangle FitBoxMaintainAspectRatio(Rectangle outer, Rectangle inner, RectangleAlignment alignment, FitType fitType)
+        {
+            float factor = ScaleFactor(outer, inner, fitType);
+            return FitBoxMaintainAspectRatio(outer, inner, factor, alignment);
+        }
+
+        public static RectangleF FitBoxMaintainAspectRatio(RectangleF outer, RectangleF inner, RectangleAlignment alignment, FitType fitType)
         {
             float factor = ScaleFactor(outer, inner, fitType);
             return FitBoxMaintainAspectRatio(outer, inner, factor, alignment);
@@ -124,10 +142,88 @@ namespace Tools
             return output;
         }
 
+        public static RectangleF FitBoxMaintainAspectRatio(RectangleF outer, RectangleF inner, float factor, RectangleAlignment alignment)
+        {
+            RectangleF output = new RectangleF(0, 0, inner.Width * factor,  inner.Height * factor);
+
+            switch (alignment)
+            {
+                case RectangleAlignment.TopLeft:
+                    output.X = outer.X;
+                    output.Y = outer.Y;
+                    break;
+
+                case RectangleAlignment.TopCenter:
+                    output.X = outer.X + ((outer.Width - output.Width) / 2);
+                    output.Y = outer.Y;
+                    break;
+
+                case RectangleAlignment.TopRight:
+                    output.X = outer.Right - output.Width;
+                    output.Y = outer.Y;
+                    break;
+
+                case RectangleAlignment.CenterLeft:
+                    output.X = outer.X;
+                    output.Y = outer.Y + ((outer.Height - output.Height) / 2);
+                    break;
+
+                case RectangleAlignment.Center:
+                    output.X = outer.X + ((outer.Width - output.Width) / 2);
+                    output.Y = outer.Y + ((outer.Height - output.Height) / 2);
+                    break;
+
+                case RectangleAlignment.CenterRight:
+                    output.X = outer.Right - output.Width;
+                    output.Y = outer.Y + ((outer.Height - output.Height) / 2);
+                    break;
+
+
+
+                case RectangleAlignment.BottomLeft:
+                    output.X = outer.X;
+                    output.Y = outer.Bottom - output.Height;
+                    break;
+
+                case RectangleAlignment.BottomCenter:
+                    output.X = outer.X + ((outer.Width - output.Width) / 2);
+                    output.Y = outer.Bottom - output.Height;
+                    break;
+
+                case RectangleAlignment.BottomRight:
+                    output.X = outer.Right - output.Width;
+                    output.Y = outer.Bottom - output.Height;
+                    break;
+
+                default:
+                    throw new NotImplementedException();
+            }
+
+            return output;
+        }
+
         public static float ScaleFactor(Rectangle outer, Rectangle inner, FitType fitType)
         {
             float hfactor = (float)outer.Height / (float)inner.Height;
             float wfactor = (float)outer.Width / (float)inner.Width;
+
+            switch (fitType)
+            {
+                case FitType.FitHorizontal:
+                    return wfactor;
+                case FitType.FitVertical:
+                    return hfactor;
+
+                case FitType.FitBoth:
+                default:
+                    return Math.Min(hfactor, wfactor);
+            }
+        }
+
+        public static float ScaleFactor(RectangleF outer, RectangleF inner, FitType fitType)
+        {
+            float hfactor = outer.Height / inner.Height;
+            float wfactor = outer.Width / inner.Width;
 
             switch (fitType)
             {

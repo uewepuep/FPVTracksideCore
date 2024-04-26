@@ -33,7 +33,8 @@ namespace Composition.Text
 
         Point CharacterPosition(int index);
 
-        void Draw(Drawer id, Microsoft.Xna.Framework.Rectangle target, RectangleAlignment alignment, Scale scale, Microsoft.Xna.Framework.Color tint, float alpha);
+        void Draw(Drawer id, Rectangle target, RectangleAlignment alignment, Scale scale, Color tint, float alpha);
+        void Draw(Drawer id, RectangleF target, RectangleAlignment alignment, Scale scale, Color tint, float alpha);
         Texture2D TextToTexture(GraphicsDevice graphicsDevice, Color textColor, string font, float point, string text);
 
         void SavePNG(string filename);
