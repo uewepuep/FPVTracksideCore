@@ -561,6 +561,10 @@ class EventManager
         for (const lapIndex in validLaps)
         {
             const lap = validLaps[lapIndex];
+
+            if (lap.LapNumber == 0)
+                continue;
+            
             min = Math.min(min, lap.LengthSeconds);
         }
 
