@@ -1,7 +1,7 @@
 :root 
 {
     --data-columns: 2;
-    --menu-columns: 8;
+    --menu-columns: 6;
     --lap-columns: 2;
     --graph-width:800px;
 }
@@ -79,8 +79,13 @@ img
     padding: 0px;
     border-top: 1px solid black;
     text-shadow: 1px 1px rgb(92, 92, 92);
+}
+
+.menu_category
+{
+    padding: 3px 0px;
+    border-bottom: 1px #888888 solid;
     column-count: var(--menu-columns);
-    padding: 10px 0px;
 }
 
 h1
@@ -305,4 +310,9 @@ h2
 {
     padding: 0px;
     width: var(--graph-width);
+}
+
+.clubs
+{
+    column-count: var(--lap-columns);
 }

@@ -17,8 +17,8 @@ function ResizeWindow()
     var lapcolumns = (width / 500);
     lapcolumns = Math.min(Math.max(Math.floor(lapcolumns), 1), 10);
 
-    var menu_columns = width / 200.0;
-    menu_columns = Math.min(Math.max(Math.floor(menu_columns), 1), 10);
+    var menu_columns = width / 175.0;
+    menu_columns = Math.min(Math.max(Math.floor(menu_columns), 1), 6);
 
     
     var graphWidth = 800;
@@ -69,6 +69,7 @@ class Formatter
         options.push("Lap Records");
         options.push("Lap Counts");
         options.push("Points");
+        options.push("Current Race");
 
         return options;
     }
@@ -95,6 +96,10 @@ class Formatter
 
             case "Points":
                 this.ShowPoints();
+                break;
+
+            case "Current Race":
+                this.ShowCurrent();
                 break;
         }
     }
@@ -425,6 +430,24 @@ class Formatter
 
         this.SetContent(output);
         this.lastAction = this.ShowPoints;
+    }
+
+    async ShowCurrent()
+    { 
+        let output = "<h2>Current Race</h2>";
+         
+        let races = await this.eventManager.GetPrevCurrentNextRace();
+
+        if (races.length > 2)
+        {
+            let currentRace = races[1];
+            let currentSummary = await this.eventManager.GetRaceSummary(currentRace.ID);
+            output += JSON.stringify(currentSummary);
+        }
+
+        
+        this.SetContent(output);
+        this.lastAction = this.ShowCurrent;
     }
 
     async ShowRace(raceid)

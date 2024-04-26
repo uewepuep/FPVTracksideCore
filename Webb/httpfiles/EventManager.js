@@ -79,6 +79,29 @@ class EventManager
         return null;
     }
 
+    async GetRaceSummary(raceId)
+    {
+        let race = await this.GetRace(raceId);        
+        let event = await this.GetEvent();
+
+
+        let summary = 
+        { 
+            Event : event, 
+            Race : race 
+        };
+
+        for (const pilotChannel of race.PilotChannels)
+        {
+            let pilotId = pilotChannel.Pilot;
+            let pilot = await this.GetPilot(pilotId);
+            let laps = this.GetValidLapsPilot(race, pilotId);
+            let result = this.GetPilotResult(raceId, pilotId);
+        }
+
+        return summary;
+    }
+
     async GetRaces(delegate = null)
     {
         let races = [];
@@ -102,7 +125,7 @@ class EventManager
         }
         return races;
     }
-
+    
     RaceHasPilot(race, pilotId)
     {
         for (const pilotChannel of race.PilotChannels)
