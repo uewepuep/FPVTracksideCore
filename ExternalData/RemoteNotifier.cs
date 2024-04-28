@@ -69,6 +69,29 @@ namespace ExternalData
             }
         }
 
+        public void Dispose()
+        {
+            if (serialPort != null)
+            {
+                serialPort.Dispose();
+                serialPort = null;
+            }
+
+            eventManager.RaceManager.OnSplitDetection -= Detection;
+            eventManager.RaceManager.OnLapDetected -= RaceManager_OnLapDetected;
+            eventManager.RaceManager.OnRaceStart -= RaceManager_OnRaceStart;
+            eventManager.RaceManager.OnRaceEnd -= RaceManager_OnRaceEnd;
+            eventManager.RaceManager.OnRacePreStart -= RaceManager_OnRacePreStart;
+            eventManager.RaceManager.OnRaceCancelled -= RaceManager_OnRaceCancelled;
+            eventManager.RaceManager.OnPilotAdded -= OnPilotsChanged;
+            eventManager.RaceManager.OnPilotRemoved -= OnPilotsChanged;
+            eventManager.RaceManager.OnRaceTimesUp -= OnRaceTimesUp;
+
+
+            workQueue.Dispose();
+            workQueue = null;
+        }
+
         private void OnRaceTimesUp(Race race)
         {
             RaceState raceState = new RaceState(race, URL) { State = "Times Up" };
@@ -98,31 +121,6 @@ namespace ExternalData
             }
         }
 
-
-
-        public void Dispose()
-        {
-            if (serialPort != null)
-            {
-                serialPort.Dispose();
-                serialPort = null;
-            }
-
-            eventManager.RaceManager.OnSplitDetection -= Detection;
-            eventManager.RaceManager.OnLapDetected -= RaceManager_OnLapDetected;
-            eventManager.RaceManager.OnRaceStart -= RaceManager_OnRaceStart;
-            eventManager.RaceManager.OnRaceEnd -= RaceManager_OnRaceEnd;
-            eventManager.RaceManager.OnRacePreStart -= RaceManager_OnRacePreStart;
-            eventManager.RaceManager.OnRaceCancelled -= RaceManager_OnRaceCancelled;
-            eventManager.RaceManager.OnPilotAdded -= OnPilotsChanged;
-            eventManager.RaceManager.OnPilotRemoved -= OnPilotsChanged;
-            eventManager.RaceManager.OnRaceTimesUp -= OnRaceTimesUp;
-
-
-            workQueue.Dispose();
-            workQueue = null;
-        }
-
         private void RaceManager_OnLapDetected(RaceLib.Lap lap)
         {
             Detection(lap.Detection);
@@ -138,8 +136,11 @@ namespace ExternalData
                 return;
             }
 
+            int position = current.GetPosition(det.Pilot);
+
             TimeSpan time = det.Time - current.Start;
             DetectionDetails dd = new DetectionDetails(det, color, time, det.LapNumber == current.TargetLaps, URL);
+            dd.Position = position;
 
             PutObject(dd);
         }
@@ -318,6 +319,7 @@ namespace ExternalData
         public bool IsRaceEnd { get; set; }
 
         public string PilotName { get; set; }
+        public int Position { get; set; }
 
         public DetectionDetails(RaceLib.Detection detection, Color color, TimeSpan time, bool raceEnd, string url)
         {

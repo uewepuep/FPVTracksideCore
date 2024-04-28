@@ -1,7 +1,7 @@
 :root 
 {
     --data-columns: 2;
-    --menu-columns: 8;
+    --menu-columns: 6;
     --lap-columns: 2;
     --graph-width:800px;
 }
@@ -79,8 +79,13 @@ img
     padding: 0px;
     border-top: 1px solid black;
     text-shadow: 1px 1px rgb(92, 92, 92);
+}
+
+.menu_category
+{
+    padding: 3px 0px;
+    border-bottom: 1px #888888 solid;
     column-count: var(--menu-columns);
-    padding: 10px 0px;
 }
 
 h1
@@ -99,6 +104,12 @@ h1
     padding: 10px 0px;
     font-size: 16pt;
     white-space: nowrap; 
+}
+
+.menu_item
+{
+    padding: 10px 20px;
+    display: inline;
 }
 
 .menu_item_button 
@@ -170,6 +181,11 @@ h2
     padding-bottom: 2px;
 }
 
+.race_result 
+{
+    text-align: right;
+}
+
 .race_pilot 
 {
     width: 200px;
@@ -201,7 +217,7 @@ h2
     padding: 20px;
 }
 
-.position, .pilots, .holeshot, .racetime, .laps, .lap, .t, .p, .r, .e, .c, .f, .a, .total 
+.position, .pilots, .holeshot, .racetime, .laps, .lap, .t, .p, .r, .e, .c, .f, .a, .total, .channel, .channel_color
 {
     padding: 5px;
     font-weight: 600;
@@ -214,6 +230,13 @@ h2
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+}
+
+.channel_color
+{
+    width: 10px;
+    height: 10px;
+    margin: 5px;
 }
 
 .position
@@ -305,4 +328,9 @@ h2
 {
     padding: 0px;
     width: var(--graph-width);
+}
+
+.clubs
+{
+    column-count: var(--lap-columns);
 }
