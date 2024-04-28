@@ -17,8 +17,8 @@ function ResizeWindow()
     var lapcolumns = (width / 500);
     lapcolumns = Math.min(Math.max(Math.floor(lapcolumns), 1), 10);
 
-    var menu_columns = width / 175.0;
-    menu_columns = Math.min(Math.max(Math.floor(menu_columns), 1), 6);
+    var menu_columns = width / 200.0;
+    menu_columns = Math.min(Math.max(Math.floor(menu_columns), 1), 10);
 
     
     var graphWidth = 800;
@@ -118,6 +118,7 @@ class Formatter
             output += "<h4><a href=\"#\" onclick=\"formatter.ShowRace('" + race.ID + "')\">" + raceName + "</a></h4>";
         }
 
+        output += "<table class=\"race_table\">";
 
         let pilotChannels = [];
         for (const pilotChannel of race.PilotChannels)
@@ -134,7 +135,6 @@ class Formatter
 
         pilotChannels.sort((a, b) => { return a.Channel.Frequency - b.Channel.Frequency });
 
-        output += "<table class=\"race_table\">";
         for (const pilotChannel of pilotChannels)
         {
             output += "<tr>";
@@ -142,29 +142,6 @@ class Formatter
             output += "<td class=\"race_channel\">" + this.ChannelToString(pilotChannel.Channel) + "</td>";
             output += "<td class=\"race_channel_color\" style=\"background-color: " + pilotChannel.Channel.Color + "\"></td>";
             output += "<td class=\"race_result\">" + this.ResultToString(pilotChannel.Result) + "</td>";
-            output += "</tr>";
-        }
-        output += '</table>';
-
-        output += "</div>";
-        return output;
-    }
-
-    RaceSummary(raceSummary)
-    {
-        let output = "<div id=\"" + raceSummary.RaceNumber + "\" class=\"race_status\">";
-
-        let raceName = raceSummary.EventType + " " + raceSummary.RoundNumber + "-" + raceSummary.RaceNumber;
-
-        output += "<h4><a href=\"#\" onclick=\"formatter.ShowRace('" + raceSummary.raceID + "')\">" + raceName + "</a></h4>";
-        output += "<table class=\"race_table\">";
-        for (const pilotSummary of raceSummary.PilotSummaries)
-        {
-            output += "<tr>";
-            output += "<td class=\"race_pilot\">" + pilotSummary.Name + "</td>";
-            output += "<td class=\"race_channel\">" + pilotSummary.Channel + "</td>";
-            output += "<td class=\"race_channel_color\" style=\"background-color: " + pilotSummary.ChannelColor + "\"></td>";
-            output += "<td class=\"race_result\">" + this.ToStringPosition(pilotSummary.Position) + "</td>";
             output += "</tr>";
         }
         output += '</table>';
@@ -201,9 +178,9 @@ class Formatter
 
         const prevcurrentnext = await this.eventManager.GetPrevCurrentNextRace();
 
-        for (const raceName in prevcurrentnext)
+        for (let i = 0; i < prevcurrentnext.length; i++)
         {
-            const race = prevcurrentnext[raceName];
+            const race = prevcurrentnext[i];
             if (race != null)
             {
                 output += "<div class=\"round\">";
@@ -211,9 +188,18 @@ class Formatter
                 if (round != null)
                 {
                     output += "<h3>";
-                    
-                    output += raceName.replace("Race", " Race");
-
+                    switch (i)
+                    {
+                        case 0:
+                            output += "Previous Race";
+                            break;
+                        case 1:
+                            output += "Current Race";
+                            break;
+                        case 2:
+                            output += "Next Race";
+                            break;
+                    }
                     output += "</h3>";
 
 
@@ -767,129 +753,7 @@ class Formatter
                 case '3': post = "rd"; break;
             }
         }
-
-        if (position <= 0)
-            return "DNF";
-
         return position + post;
-    }
-
-    async GetPrevCurrentNextRaceSummaries()
-    {
-        let prevcurrentnext = await this.eventManager.GetPrevCurrentNextRace();
-
-        for (const raceName in prevcurrentnext)
-        {
-            prevcurrentnext[raceName] = FormatRaceSummary(prevcurrentnext[raceName]);
-        }
-        return prevcurrentnext;
-    }
-
-    async FormatRaceSummary(race)
-    {
-        let event = await this.GetEvent();
-        let round = await this.GetRound(race.Round);
-
-        const targetLength = this.TimeSpanToSeconds(event.RaceLength)
-
-        const start = Date.parse(race.Start);
-        const end = Date.parse(race.End);
-        const now = Date.now();
-
-        const raceTime = (now - start);
-
-        let summary = 
-        { 
-            RaceID : race.ID,
-            RoundNumber: round.RoundNumber,
-            RaceNumber : race.RaceNumber,
-            EventType : round.EventType,
-            RaceStart : race.Start,
-            RaceEnd : race.End,
-            RaceTime : raceTime / 1000,
-            Remaining : targetLength - (raceTime / 1000),
-            MaxLength : targetLength,
-            PBLaps : event.PBLaps,
-            TargetLaps : race.TargetLaps,
-            Bracket : race.Bracket,
-            PrimaryTimingSystemLocation: race.PrimaryTimingSystemLocation,
-            PilotSummaries : []
-        };
-
-        for (const pilotChannel of race.PilotChannels)
-        {
-            let pilotId = pilotChannel.Pilot;
-            let pilot = await this.GetPilot(pilotId);
-            let laps = await this.GetValidLapsPilot(race, pilotId);
-            let result = await this.GetPilotResult(raceId, pilotId);
-            let channel = await eventManager.GetChannel(pilotChannel.Channel);
-
-            let pilotSummary = 
-            {
-                PilotID : pilotId,
-                Name : pilot.Name,
-                Position : 0,
-                Points : 0,
-                BestLap : this.BestLap(laps),
-                Channel : channel.ShortBand + "" + channel.Number,
-                ChannelColor : channel.Color,
-                Frequency : channel.Frequency,
-            };
-
-            if (result != null)
-            {
-                pilotSummary.Position = result.Position;
-                pilotSummary.Points = result.Points;
-            }
-
-            pilotSummary["BestConsecutive" + event.PBLaps] = this.TotalTime(this.BestConsecutive(laps, event.PBLaps));
-            pilotSummary["BestConsecutive" + race.TargetLaps] = this.TotalTime(this.BestConsecutive(laps, race.TargetLaps));
-
-            for (const lap of laps)
-            {
-                let lapName = "Lap " + lap.LapNumber;
-                if (lap.LapNumber == 0)
-                    lapName = "HS";
-
-                pilotSummary[lapName] = lap.LengthSeconds;
-            }
-
-            pilotSummary.Total = this.TotalTime(laps);
-            if (result != null)
-            {
-                pilotSummary["Position"] =  result.DNF ? "DNF" : result.Position;
-                pilotSummary["Points"] = result.Points;
-            }
-
-            summary.PilotSummaries.push(pilotSummary);
-        }
-
-
-        if (race.End == null || race.End == "0001/01/01 0:00:00")
-        {
-            const positions = this.CalculatePositions(race);
-
-            for(const index in summary.PilotSummaries)
-            {
-                const pilotSummary = summary.PilotSummaries[index];
-                pilotSummary.Position = 1 + positions.indexOf(pilotSummary.PilotID);
-            }
-        }
-
-        summary.PilotSummaries.sort((a, b) => 
-        { 
-            if (a == null || b == null)
-                return 0;
-
-            const result = a.Position - b.Position 
-            if (result == 0)
-            {
-                return a.Frequency - b.Frequency;
-            }
-            return result;
-        });
-
-        return summary;
     }
 
     AppendContent(content)

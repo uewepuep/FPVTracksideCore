@@ -102,7 +102,7 @@ class EventManager
         }
         return races;
     }
-    
+
     RaceHasPilot(race, pilotId)
     {
         for (const pilotChannel of race.PilotChannels)
@@ -495,26 +495,6 @@ class EventManager
         return total;
     }
 
-    BestLap(validLaps)
-    {
-        if (validLaps == null || validLaps.length == 0)
-        return Number.MAX_SAFE_INTEGER;
-
-        let min = Number.MAX_SAFE_INTEGER;
-
-        for (const lapIndex in validLaps)
-        {
-            const lap = validLaps[lapIndex];
-
-            if (lap.LapNumber == 0)
-                continue;
-            
-            min = Math.min(min, lap.LengthSeconds);
-        }
-
-        return min;
-    }
-
     async GetRound(roundId)
     {
         let rounds = await this.GetRounds();
@@ -619,43 +599,31 @@ class EventManager
 
     async GetPrevCurrentNextRace()
     {
-        let output = {};
+        let outputRaces = [];
         let rounds = await this.GetRounds(r => r.Valid);
-
-        let last = null;
-        let lastLast = null;
-
-        let returnNext = false;
-
         for (const round of rounds)
         {
             let races = await this.GetRoundRaces(round.ID);
 
+            let last = null;
+            let lastLast = null;
             for (const race of races)
             {
                 if (race.Valid)
                 {
-                    if (returnNext)
-                    {
-                        output.PreviousRace = lastLast;
-                        output.CurrentRace = last;
-                        output.NextRace = race;
-
-                        return output;
-                    }
-
                     if (race.End == null || race.End == "0001/01/01 0:00:00")
                     {
-                        returnNext = true;
+                        outputRaces.push(lastLast);
+                        outputRaces.push(last);
+                        outputRaces.push(race);
+                        return outputRaces;
                     }
                     lastLast = last;
                     last = race;
                 }
             }
         }
-        output.PreviousRace = lastLast;
-        output.CurrentRace = last;
-        return output;
+        return outputRaces;
     }
 
     async GetResults(raceID)
@@ -702,49 +670,5 @@ class EventManager
 
         const range = 15;
         return Math.abs(channelA.Frequency - channelB.Frequency) < range;
-    }
-
-    TimeSpanToSeconds(timespan)
-    {
-        const components = timespan.split(":");
-        if (components.length == 3)
-        {
-            const hours = parseInt(components[0]);
-            const minutes = parseInt(components[1]);
-            const seconds = parseFloat(components[2]);
-            return 3600 * hours + 60 * minutes + seconds;
-        }
-        return 0;
-    }
-
-    CalculatePositions(race)
-    {
-        let detections = race.Detections;
-
-        detections.sort((a, b) => 
-        { 
-            if (a == null || b == null)
-                return 0;
-
-            let result = a.RaceSector - b.RaceSector 
-            if (result == 0)
-            {
-                return a.Time - b.Time;
-            }
-        });
-
-        let outputPilotIds = []
-        for (const detection of detections)
-        {
-            if (!detection.Valid)
-                continue;
-
-            let pilotId = detection.Pilot;
-            if (!outputPilotIds.includes(pilotId))
-            {
-                outputPilotIds.push(pilotId);
-            }
-        }
-        return outputPilotIds;
     }
 }
