@@ -69,7 +69,6 @@ class Formatter
         options.push("Lap Records");
         options.push("Lap Counts");
         options.push("Points");
-        options.push("Current Race");
 
         return options;
     }
@@ -96,10 +95,6 @@ class Formatter
 
             case "Points":
                 this.ShowPoints();
-                break;
-
-            case "Current Race":
-                this.ShowCurrent();
                 break;
         }
     }
@@ -162,8 +157,6 @@ class Formatter
         let raceName = raceSummary.EventType + " " + raceSummary.RoundNumber + "-" + raceSummary.RaceNumber;
 
         output += "<h4><a href=\"#\" onclick=\"formatter.ShowRace('" + raceSummary.raceID + "')\">" + raceName + "</a></h4>";
-
-
         output += "<table class=\"race_table\">";
         for (const pilotSummary of raceSummary.PilotSummaries)
         {
@@ -208,9 +201,9 @@ class Formatter
 
         const prevcurrentnext = await this.eventManager.GetPrevCurrentNextRace();
 
-        for (let i = 0; i < prevcurrentnext.length; i++)
+        for (const raceName in prevcurrentnext)
         {
-            const race = prevcurrentnext[i];
+            const race = prevcurrentnext[raceName];
             if (race != null)
             {
                 output += "<div class=\"round\">";
@@ -218,18 +211,9 @@ class Formatter
                 if (round != null)
                 {
                     output += "<h3>";
-                    switch (i)
-                    {
-                        case 0:
-                            output += "Previous Race";
-                            break;
-                        case 1:
-                            output += "Current Race";
-                            break;
-                        case 2:
-                            output += "Next Race";
-                            break;
-                    }
+                    
+                    output += raceName.replace("Race", " Race");
+
                     output += "</h3>";
 
 
@@ -455,24 +439,6 @@ class Formatter
 
         this.SetContent(output);
         this.lastAction = this.ShowPoints;
-    }
-
-    async ShowCurrent()
-    { 
-        let output = "<h2>Current Race</h2>";
-         
-        let races = await this.eventManager.GetPrevCurrentNextRace();
-
-        if (races.CurrentRace != null)
-        {
-            let currentSummary = await this.eventManager.GetRaceSummary(races.CurrentRace.ID);
-            
-            output += this.RaceSummary(currentSummary);
-        }
-
-        
-        this.SetContent(output);
-        this.lastAction = this.ShowCurrent;
     }
 
     async ShowRace(raceid)
@@ -806,6 +772,124 @@ class Formatter
             return "DNF";
 
         return position + post;
+    }
+
+    async GetPrevCurrentNextRaceSummaries()
+    {
+        let prevcurrentnext = await this.eventManager.GetPrevCurrentNextRace();
+
+        for (const raceName in prevcurrentnext)
+        {
+            prevcurrentnext[raceName] = FormatRaceSummary(prevcurrentnext[raceName]);
+        }
+        return prevcurrentnext;
+    }
+
+    async FormatRaceSummary(race)
+    {
+        let event = await this.GetEvent();
+        let round = await this.GetRound(race.Round);
+
+        const targetLength = this.TimeSpanToSeconds(event.RaceLength)
+
+        const start = Date.parse(race.Start);
+        const end = Date.parse(race.End);
+        const now = Date.now();
+
+        const raceTime = (now - start);
+
+        let summary = 
+        { 
+            RaceID : race.ID,
+            RoundNumber: round.RoundNumber,
+            RaceNumber : race.RaceNumber,
+            EventType : round.EventType,
+            RaceStart : race.Start,
+            RaceEnd : race.End,
+            RaceTime : raceTime / 1000,
+            Remaining : targetLength - (raceTime / 1000),
+            MaxLength : targetLength,
+            PBLaps : event.PBLaps,
+            TargetLaps : race.TargetLaps,
+            Bracket : race.Bracket,
+            PrimaryTimingSystemLocation: race.PrimaryTimingSystemLocation,
+            PilotSummaries : []
+        };
+
+        for (const pilotChannel of race.PilotChannels)
+        {
+            let pilotId = pilotChannel.Pilot;
+            let pilot = await this.GetPilot(pilotId);
+            let laps = await this.GetValidLapsPilot(race, pilotId);
+            let result = await this.GetPilotResult(raceId, pilotId);
+            let channel = await eventManager.GetChannel(pilotChannel.Channel);
+
+            let pilotSummary = 
+            {
+                PilotID : pilotId,
+                Name : pilot.Name,
+                Position : 0,
+                Points : 0,
+                BestLap : this.BestLap(laps),
+                Channel : channel.ShortBand + "" + channel.Number,
+                ChannelColor : channel.Color,
+                Frequency : channel.Frequency,
+            };
+
+            if (result != null)
+            {
+                pilotSummary.Position = result.Position;
+                pilotSummary.Points = result.Points;
+            }
+
+            pilotSummary["BestConsecutive" + event.PBLaps] = this.TotalTime(this.BestConsecutive(laps, event.PBLaps));
+            pilotSummary["BestConsecutive" + race.TargetLaps] = this.TotalTime(this.BestConsecutive(laps, race.TargetLaps));
+
+            for (const lap of laps)
+            {
+                let lapName = "Lap " + lap.LapNumber;
+                if (lap.LapNumber == 0)
+                    lapName = "HS";
+
+                pilotSummary[lapName] = lap.LengthSeconds;
+            }
+
+            pilotSummary.Total = this.TotalTime(laps);
+            if (result != null)
+            {
+                pilotSummary["Position"] =  result.DNF ? "DNF" : result.Position;
+                pilotSummary["Points"] = result.Points;
+            }
+
+            summary.PilotSummaries.push(pilotSummary);
+        }
+
+
+        if (race.End == null || race.End == "0001/01/01 0:00:00")
+        {
+            const positions = this.CalculatePositions(race);
+
+            for(const index in summary.PilotSummaries)
+            {
+                const pilotSummary = summary.PilotSummaries[index];
+                pilotSummary.Position = 1 + positions.indexOf(pilotSummary.PilotID);
+            }
+        }
+
+        summary.PilotSummaries.sort((a, b) => 
+        { 
+            if (a == null || b == null)
+                return 0;
+
+            const result = a.Position - b.Position 
+            if (result == 0)
+            {
+                return a.Frequency - b.Frequency;
+            }
+            return result;
+        });
+
+        return summary;
     }
 
     AppendContent(content)

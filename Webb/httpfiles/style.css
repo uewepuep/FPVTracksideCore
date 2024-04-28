@@ -106,6 +106,12 @@ h1
     white-space: nowrap; 
 }
 
+.menu_item
+{
+    padding: 10px 20px;
+    display: inline;
+}
+
 .menu_item_button 
 {
     background: none!important;
