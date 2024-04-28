@@ -57,6 +57,8 @@ namespace Composition.Nodes
 
         public bool LockGridType { get; set; }
 
+        private int lastVisibiltyCount;
+
         public GridNode()
         {
             Padding = 0.01f;
@@ -83,8 +85,11 @@ namespace Composition.Nodes
             UpdateVisibility(Children);
 
             int visibleChildrenCount = VisibleChildCount();
-
-            OnGridCountChanged?.Invoke(visibleChildrenCount);
+            if (visibleChildrenCount != lastVisibiltyCount)
+            {
+                OnGridCountChanged?.Invoke(visibleChildrenCount);
+                lastVisibiltyCount = visibleChildrenCount;
+            }
 
             GridTypes newType = DecideLayout(visibleChildrenCount);
             if (newType != GridType

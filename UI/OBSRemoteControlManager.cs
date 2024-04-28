@@ -28,8 +28,10 @@ namespace UI
            
             PreRaceScene,
             PostRaceScene,
-
             LiveScene,
+
+
+            LiveTab,
             RoundsTab,
             ReplayTab,
 
@@ -199,7 +201,7 @@ namespace UI
 
         private void OnTabChange(string tab, Node node)
         {
-            if (tabbedMultiNode.IsOnLive) Trigger(Triggers.LiveScene);
+            if (tabbedMultiNode.IsOnLive) Trigger(Triggers.LiveTab);
             if (tabbedMultiNode.IsOnRounds) Trigger(Triggers.RoundsTab);
             if (tabbedMultiNode.IsOnChanelList) Trigger(Triggers.ChannelListTab);
             if (tabbedMultiNode.IsOnLapRecords) Trigger(Triggers.LapRecordsTab);
