@@ -26,14 +26,21 @@ namespace UI
 
             RaceStartCancelled,
            
-            PreRaceTab,
-            PostRaceTab,
+            PreRaceScene,
+            PostRaceScene,
 
-            LiveTab,
+            LiveScene,
             RoundsTab,
             ReplayTab,
-            StatsTab,
-            PhotoBooth,
+
+            LapRecordsTab,
+            LapCountTab,
+            PointsTab,
+            ChannelListTab,
+            RSSITab,
+
+            PhotoBoothTab,
+            PatreonsTab,
 
             ChannelGrid1,
             ChannelGrid2,
@@ -50,7 +57,7 @@ namespace UI
         private OBSRemoteControl remoteControl;
 
         private SceneManagerNode sceneManagerNode;
-        private TabbedMultiNode tabbedMultiNode;
+        private TracksideTabbedMultiNode tabbedMultiNode;
         private EventManager eventManager;
 
         private bool eventsHooked;
@@ -96,7 +103,7 @@ namespace UI
         private Triggers lastTrigger;
         private DateTime lastTriggerTime;
 
-        public OBSRemoteControlManager(SceneManagerNode sceneManagerNode, TabbedMultiNode tabbedMultiNode, EventManager eventManager)
+        public OBSRemoteControlManager(SceneManagerNode sceneManagerNode, TracksideTabbedMultiNode tabbedMultiNode, EventManager eventManager)
         {
             doubleTriggerTimeout = TimeSpan.FromSeconds(5);
 
@@ -192,28 +199,16 @@ namespace UI
 
         private void OnTabChange(string tab, Node node)
         {
-            switch (tab)
-            {
-                case "Live":
-                    Trigger(Triggers.LiveTab);
-                    break;
-
-                case "Replay":
-                    Trigger(Triggers.ReplayTab);
-                    break;
-
-                case "Rounds":
-                    Trigger(Triggers.RoundsTab);
-                    break;
-
-                case "Photo Booth":
-                    Trigger(Triggers.PhotoBooth);
-                    break;
-
-                default:
-                    Trigger(Triggers.StatsTab);
-                    break;
-            }
+            if (tabbedMultiNode.IsOnLive) Trigger(Triggers.LiveScene);
+            if (tabbedMultiNode.IsOnRounds) Trigger(Triggers.RoundsTab);
+            if (tabbedMultiNode.IsOnChanelList) Trigger(Triggers.ChannelListTab);
+            if (tabbedMultiNode.IsOnLapRecords) Trigger(Triggers.LapRecordsTab);
+            if (tabbedMultiNode.IsOnLapCount) Trigger(Triggers.LapCountTab);
+            if (tabbedMultiNode.IsOnRSSI) Trigger(Triggers.RSSITab);
+            if (tabbedMultiNode.IsOnChanelList) Trigger(Triggers.ChannelListTab);
+            if (tabbedMultiNode.IsOnPhotoBooth) Trigger(Triggers.PhotoBoothTab);
+            if (tabbedMultiNode.IsOnPatreons) Trigger(Triggers.PatreonsTab);
+            if (tabbedMultiNode.IsOnPoints) Trigger(Triggers.PointsTab);
         }
 
         private void OnRacePreStart(Race race)
@@ -241,15 +236,15 @@ namespace UI
             switch (scene) 
             {
                 default:
-                    Trigger(Triggers.LiveTab);
+                    Trigger(Triggers.LiveScene);
                     break;
 
                 case SceneManagerNode.Scenes.PreRace:
-                    Trigger(Triggers.PreRaceTab);
+                    Trigger(Triggers.PreRaceScene);
                     break;
 
                 case SceneManagerNode.Scenes.RaceResults:
-                    Trigger(Triggers.PostRaceTab);
+                    Trigger(Triggers.PostRaceScene);
                     break;
             }
         }

@@ -20,8 +20,15 @@ namespace UI.Nodes
     {
         public bool IsOnLive { get { return sceneManagerNode == Showing; } }
         public bool IsOnRounds { get { return rounds == Showing; } }
-        public bool IsOnPhotoBooth { get { return PhotoBooth == Showing; } }
         public bool IsOnReplay { get { return ReplayNode == Showing; } }
+        public bool IsOnChanelList { get { return pilotChanelList == Showing; } }
+        public bool IsOnLapCount { get { return LapCountSummaryNode == Showing; } }
+        public bool IsOnLapRecords { get { return LapRecordsSummaryNode == Showing; } }
+        public bool IsOnPoints { get { return PointsSummaryNode == Showing; } }
+        public bool IsOnPatreons { get { return patreonsNode == Showing; } }
+        public bool IsOnPhotoBooth { get { return PhotoBooth == Showing; } }
+        public bool IsOnRSSI { get { return rssiNode == Showing; } }
+
 
 
         private RoundsNode rounds;

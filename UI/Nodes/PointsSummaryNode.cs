@@ -150,7 +150,7 @@ namespace UI.Nodes
                 ResultNode rn = new ResultNode(r);
                 nodes.Add(rn);
 
-                if (r.Race.Bracket != Brackets.None && brackets)
+                if (r != null && r.Race.Bracket != Brackets.None && brackets)
                 {
                     bracket = r.Race.Bracket;
                 }
