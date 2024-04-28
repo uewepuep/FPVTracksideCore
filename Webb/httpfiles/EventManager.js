@@ -98,6 +98,7 @@ class EventManager
             RaceID : race.ID,
             RoundNumber: round.RoundNumber,
             RaceNumber : race.RaceNumber,
+            EventType : round.EventType,
             RaceStart : race.Start,
             RaceEnd : race.End,
             RaceTime : raceTime / 1000,
@@ -126,7 +127,8 @@ class EventManager
                 Points : 0,
                 BestLap : this.BestLap(laps),
                 Channel : channel.ShortBand + "" + channel.Number,
-                Frequency : channel.Frequency
+                ChannelColor : channel.Color,
+                Frequency : channel.Frequency,
             };
 
             if (result != null)

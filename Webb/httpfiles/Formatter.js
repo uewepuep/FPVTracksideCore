@@ -159,29 +159,19 @@ class Formatter
     {
         let output = "<div id=\"" + raceSummary.RaceNumber + "\" class=\"race_status\">";
 
-        let raceName = round.EventType + " " + raceSummary.RoundNumber + "-" + raceSummary.RaceNumber;
+        let raceName = raceSummary.EventType + " " + raceSummary.RoundNumber + "-" + raceSummary.RaceNumber;
 
-        if (showName)
-        {
-            output += "<h4><a href=\"#\" onclick=\"formatter.ShowRace('" + raceSummary.raceID + "')\">" + raceName + "</a></h4>";
-        }
+        output += "<h4><a href=\"#\" onclick=\"formatter.ShowRace('" + raceSummary.raceID + "')\">" + raceName + "</a></h4>";
 
-        let pilotChannels = [];
-        for (const pilotChannel of raceSummary.PilotSummaries)
-        {
-            
-        }
-
-        pilotChannels.sort((a, b) => { return a.Channel.Frequency - b.Channel.Frequency });
 
         output += "<table class=\"race_table\">";
-        for (const pilotChannel of pilotChannels)
+        for (const pilotSummary of raceSummary.PilotSummaries)
         {
             output += "<tr>";
-            output += "<td class=\"race_pilot\">" + pilotChannel.Pilot.Name + "</td>";
-            output += "<td class=\"race_channel\">" + this.ChannelToString(pilotChannel.Channel) + "</td>";
-            output += "<td class=\"race_channel_color\" style=\"background-color: " + pilotChannel.Channel.Color + "\"></td>";
-            output += "<td class=\"race_result\">" + this.ResultToString(pilotChannel.Result) + "</td>";
+            output += "<td class=\"race_pilot\">" + pilotSummary.Name + "</td>";
+            output += "<td class=\"race_channel\">" + pilotSummary.Channel + "</td>";
+            output += "<td class=\"race_channel_color\" style=\"background-color: " + pilotSummary.ChannelColor + "\"></td>";
+            output += "<td class=\"race_result\">" + this.ToStringPosition(pilotSummary.Position) + "</td>";
             output += "</tr>";
         }
         output += '</table>';
@@ -476,7 +466,8 @@ class Formatter
         if (races.CurrentRace != null)
         {
             let currentSummary = await this.eventManager.GetRaceSummary(races.CurrentRace.ID);
-            output += JSON.stringify(currentSummary, null, 3);
+            
+            output += this.RaceSummary(currentSummary);
         }
 
         
@@ -810,6 +801,10 @@ class Formatter
                 case '3': post = "rd"; break;
             }
         }
+
+        if (position <= 0)
+            return "DNF";
+
         return position + post;
     }
 
