@@ -123,7 +123,6 @@ class Formatter
             output += "<h4><a href=\"#\" onclick=\"formatter.ShowRace('" + race.ID + "')\">" + raceName + "</a></h4>";
         }
 
-        output += "<table class=\"race_table\">";
 
         let pilotChannels = [];
         for (const pilotChannel of race.PilotChannels)
@@ -140,6 +139,42 @@ class Formatter
 
         pilotChannels.sort((a, b) => { return a.Channel.Frequency - b.Channel.Frequency });
 
+        output += "<table class=\"race_table\">";
+        for (const pilotChannel of pilotChannels)
+        {
+            output += "<tr>";
+            output += "<td class=\"race_pilot\">" + pilotChannel.Pilot.Name + "</td>";
+            output += "<td class=\"race_channel\">" + this.ChannelToString(pilotChannel.Channel) + "</td>";
+            output += "<td class=\"race_channel_color\" style=\"background-color: " + pilotChannel.Channel.Color + "\"></td>";
+            output += "<td class=\"race_result\">" + this.ResultToString(pilotChannel.Result) + "</td>";
+            output += "</tr>";
+        }
+        output += '</table>';
+
+        output += "</div>";
+        return output;
+    }
+
+    RaceSummary(raceSummary)
+    {
+        let output = "<div id=\"" + raceSummary.RaceNumber + "\" class=\"race_status\">";
+
+        let raceName = round.EventType + " " + raceSummary.RoundNumber + "-" + raceSummary.RaceNumber;
+
+        if (showName)
+        {
+            output += "<h4><a href=\"#\" onclick=\"formatter.ShowRace('" + raceSummary.raceID + "')\">" + raceName + "</a></h4>";
+        }
+
+        let pilotChannels = [];
+        for (const pilotChannel of raceSummary.PilotSummaries)
+        {
+            
+        }
+
+        pilotChannels.sort((a, b) => { return a.Channel.Frequency - b.Channel.Frequency });
+
+        output += "<table class=\"race_table\">";
         for (const pilotChannel of pilotChannels)
         {
             output += "<tr>";
@@ -438,11 +473,10 @@ class Formatter
          
         let races = await this.eventManager.GetPrevCurrentNextRace();
 
-        if (races.length > 2)
+        if (races.CurrentRace != null)
         {
-            let currentRace = races[1];
-            let currentSummary = await this.eventManager.GetRaceSummary(currentRace.ID);
-            output += JSON.stringify(currentSummary);
+            let currentSummary = await this.eventManager.GetRaceSummary(races.CurrentRace.ID);
+            output += JSON.stringify(currentSummary, null, 3);
         }
 
         

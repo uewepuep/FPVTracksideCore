@@ -28,6 +28,9 @@ namespace DB.JSON
 
         public bool IsLapEnd { get; set; }
 
+        public int RaceSector { get; set; }
+        public bool IsHoleshot { get; set; }
+
         public Detection() { }
 
         public Detection(RaceLib.Detection obj)
@@ -37,6 +40,8 @@ namespace DB.JSON
                 Channel = obj.Channel.ID;
             if (obj.Pilot != null)
                 Pilot = obj.Pilot.ID;
+            RaceSector = obj.RaceSector;
+            IsHoleshot = obj.IsHoleshot;
         }
 
         public override RaceLib.Detection GetRaceLibObject(ICollectionDatabase database)

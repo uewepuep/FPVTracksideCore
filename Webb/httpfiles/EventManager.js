@@ -85,14 +85,26 @@ class EventManager
         let event = await this.GetEvent();
         let round = await this.GetRound(race.Round);
 
+        const targetLength = this.TimeSpanToSeconds(event.RaceLength)
+
+        const start = Date.parse(race.Start);
+        const end = Date.parse(race.End);
+        const now = Date.now();
+
+        const raceTime = (now - start);
+
         let summary = 
         { 
             RaceID : race.ID,
-            RoundNumner: round.Number,
-            RaceNumber : race.Number,
+            RoundNumber: round.RoundNumber,
+            RaceNumber : race.RaceNumber,
             RaceStart : race.Start,
             RaceEnd : race.End,
-            Laps : race.TargetLaps,
+            RaceTime : raceTime / 1000,
+            Remaining : targetLength - (raceTime / 1000),
+            MaxLength : targetLength,
+            PBLaps : event.PBLaps,
+            TargetLaps : race.TargetLaps,
             Bracket : race.Bracket,
             PrimaryTimingSystemLocation: race.PrimaryTimingSystemLocation,
             PilotSummaries : []
@@ -104,6 +116,7 @@ class EventManager
             let pilot = await this.GetPilot(pilotId);
             let laps = await this.GetValidLapsPilot(race, pilotId);
             let result = await this.GetPilotResult(raceId, pilotId);
+            let channel = await eventManager.GetChannel(pilotChannel.Channel);
 
             let pilotSummary = 
             {
@@ -111,8 +124,19 @@ class EventManager
                 Name : pilot.Name,
                 Position : 0,
                 Points : 0,
-                BestLap : this.BestLap(laps)
+                BestLap : this.BestLap(laps),
+                Channel : channel.ShortBand + "" + channel.Number,
+                Frequency : channel.Frequency
             };
+
+            if (result != null)
+            {
+                pilotSummary.Position = result.Position;
+                pilotSummary.Points = result.Points;
+            }
+
+            pilotSummary["BestConsecutive" + event.PBLaps] = this.TotalTime(this.BestConsecutive(laps, event.PBLaps));
+            pilotSummary["BestConsecutive" + race.TargetLaps] = this.TotalTime(this.BestConsecutive(laps, race.TargetLaps));
 
             for (const lap of laps)
             {
@@ -123,6 +147,7 @@ class EventManager
                 pilotSummary[lapName] = lap.LengthSeconds;
             }
 
+            pilotSummary.Total = this.TotalTime(laps);
             if (result != null)
             {
                 pilotSummary["Position"] =  result.DNF ? "DNF" : result.Position;
@@ -131,6 +156,26 @@ class EventManager
 
             summary.PilotSummaries.push(pilotSummary);
         }
+
+
+        if (race.End == null || race.End == "0001/01/01 0:00:00")
+        {
+            const positions = this.CalculatePositions(race);
+
+            for(const index in summary.PilotSummaries)
+            {
+                const pilotSummary = summary.PilotSummaries[index];
+                pilotSummary.Position = 1 + positions.indexOf(pilotSummary.PilotID);
+            }
+        }
+
+        summary.PilotSummaries.sort((a, b) => 
+        { 
+            if (a == null || b == null)
+                return 0;
+
+            return a.Position - b.Position 
+        });
 
         return summary;
     }
@@ -675,31 +720,43 @@ class EventManager
 
     async GetPrevCurrentNextRace()
     {
-        let outputRaces = [];
+        let output = {};
         let rounds = await this.GetRounds(r => r.Valid);
+
+        let last = null;
+        let lastLast = null;
+
+        let returnNext = false;
+
         for (const round of rounds)
         {
             let races = await this.GetRoundRaces(round.ID);
 
-            let last = null;
-            let lastLast = null;
             for (const race of races)
             {
                 if (race.Valid)
                 {
+                    if (returnNext)
+                    {
+                        output.PreviousRace = lastLast;
+                        output.CurrentRace = last;
+                        output.NextRace = race;
+
+                        return output;
+                    }
+
                     if (race.End == null || race.End == "0001/01/01 0:00:00")
                     {
-                        outputRaces.push(lastLast);
-                        outputRaces.push(last);
-                        outputRaces.push(race);
-                        return outputRaces;
+                        returnNext = true;
                     }
                     lastLast = last;
                     last = race;
                 }
             }
         }
-        return outputRaces;
+        output.PreviousRace = lastLast;
+        output.CurrentRace = last;
+        return output;
     }
 
     async GetResults(raceID)
@@ -746,5 +803,49 @@ class EventManager
 
         const range = 15;
         return Math.abs(channelA.Frequency - channelB.Frequency) < range;
+    }
+
+    TimeSpanToSeconds(timespan)
+    {
+        const components = timespan.split(":");
+        if (components.length == 3)
+        {
+            const hours = parseInt(components[0]);
+            const minutes = parseInt(components[1]);
+            const seconds = parseFloat(components[2]);
+            return 3600 * hours + 60 * minutes + seconds;
+        }
+        return 0;
+    }
+
+    CalculatePositions(race)
+    {
+        let detections = race.Detections;
+
+        detections.sort((a, b) => 
+        { 
+            if (a == null || b == null)
+                return 0;
+
+            let result = a.RaceSector - b.RaceSector 
+            if (result == 0)
+            {
+                return a.Time - b.Time;
+            }
+        });
+
+        let outputPilotIds = []
+        for (const detection of detections)
+        {
+            if (!detection.Valid)
+                continue;
+
+            let pilotId = detection.Pilot;
+            if (!outputPilotIds.includes(pilotId))
+            {
+                outputPilotIds.push(pilotId);
+            }
+        }
+        return outputPilotIds;
     }
 }
