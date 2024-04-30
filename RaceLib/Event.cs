@@ -182,8 +182,8 @@ namespace RaceLib
 
                 switch (SyncWith)
                 {
-                    case SyncWith.FPVTracksideAndMultiGP:
-                        return "FPVTrackside.com & MultiGP.com";
+                    //case SyncWith.FPVTracksideAndMultiGP:
+                    //    return "FPVTrackside.com & MultiGP.com";
                     default:
                         return SyncWith.ToString().ToLower() + ".com";
                 }
