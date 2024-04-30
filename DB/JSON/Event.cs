@@ -61,6 +61,7 @@ namespace DB.JSON
 
         public bool Sync { get; set; }
         public bool Visible { get; set; }
+        public bool Locked { get; set; }
 
         public int ExternalID { get; set; }
 

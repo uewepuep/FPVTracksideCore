@@ -368,7 +368,7 @@ namespace Composition.Nodes
             List<PropertyInfo> propertyInfos = new List<PropertyInfo>();
             foreach (Type type in orderedBaseTypes)
             {
-                IEnumerable<PropertyInfo> pis = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                IEnumerable<PropertyInfo> pis = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly).OrderBy(x => x.MetadataToken);
                 propertyInfos.AddRange(pis);
             }
             return propertyInfos;

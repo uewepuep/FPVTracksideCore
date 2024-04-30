@@ -71,6 +71,12 @@ namespace UI.Nodes
                 }
             }
 
+            string[] locked = new string[] { "EventType", "Laps", "RaceLength" };
+            if (obj.Locked && locked.Contains(pi.Name))
+            {
+                return new StaticTextPropertyNode<Event>(obj, pi, TextColor);
+            }
+
             PropertyNode<Event> n = base.CreatePropertyNode(obj, pi);
             if (n != null)
             {

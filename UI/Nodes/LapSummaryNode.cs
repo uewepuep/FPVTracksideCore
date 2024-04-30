@@ -113,7 +113,7 @@ namespace UI.Nodes
 
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
         {
-            if (mouseInputEvent.ButtonState == ButtonStates.Released)
+            if (mouseInputEvent.ButtonState == ButtonStates.Released && !EventManager.Event.Locked)
             {
                 MouseMenu mouseMenu = new MouseMenu(this);
 

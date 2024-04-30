@@ -40,8 +40,7 @@ namespace RaceLib
     {
         None,
         FPVTrackside,
-        MultiGP,
-        XClassRacing
+        MultiGP
     }
 
     public class Event : BaseObject
@@ -183,8 +182,8 @@ namespace RaceLib
 
                 switch (SyncWith)
                 {
-                    case SyncWith.XClassRacing:
-                        return "xclass.racing";
+                    case SyncWith.FPVTracksideAndMultiGP:
+                        return "FPVTrackside.com & MultiGP.com";
                     default:
                         return SyncWith.ToString().ToLower() + ".com";
                 }
@@ -204,6 +203,9 @@ namespace RaceLib
                 return System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(Start.Month) + " " + Start.Year;
             }
         }
+
+        [System.ComponentModel.Browsable(false)]
+        public bool Locked { get; set; }
 
         public Event()
         {
