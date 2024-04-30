@@ -226,7 +226,11 @@ namespace UI.Nodes
             end.Alignment = RectangleAlignment.TopRight;
             raceNode.AddChild(end);
 
-            float raceLengthSec = (float)Race.Length.TotalSeconds;
+            DateTime last = orderedLapContainers.Where(r => r.Valid).Select(l => l.End).Max();
+            TimeSpan length = last - Race.Start;
+
+            double maxSeconds = Math.Min(Race.Length.TotalSeconds, length.TotalSeconds);
+
             float width = 0.0025f;
 
             DateTime raceStart = Race.Start;
@@ -236,7 +240,7 @@ namespace UI.Nodes
             {
                 TimeSpan sinceRaceStart = lve.End - raceStart;
 
-                float factor = (float)(sinceRaceStart.TotalSeconds / raceLengthSec);
+                float factor = (float)(sinceRaceStart.TotalSeconds / maxSeconds);
 
                 ColorNode colorNode = new ColorNode(ChannelColor);
                 colorNode.Alpha = lve.Valid ? 1 : DisabledAlpha;
@@ -245,7 +249,7 @@ namespace UI.Nodes
 
                 if (lve.Valid)
                 {
-                    TextNode lapTime = new TextNode(Lap.LapNumberToString(lve.Number) + " " + lve.Length.ToStringRaceTime(), Theme.Current.Editor.Text.XNA);
+                    TextNode lapTime = new TextNode(Lap.LapNumberToString(lve.Number), Theme.Current.Editor.Text.XNA);
                     lapTime.RelativeBounds = new RectangleF(prevFactor, (1 - textHeight) / 2, factor - prevFactor, textHeight);
                     raceNode.AddChild(lapTime);
 

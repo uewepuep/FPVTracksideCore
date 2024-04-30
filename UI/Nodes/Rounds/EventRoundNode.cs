@@ -268,15 +268,18 @@ namespace UI.Nodes.Rounds
 
             mm.AddItem("Edit Round", EditRound);
 
-            MouseMenu typeMenu = mm.AddSubmenu("Set Type");
-
-            foreach (EventTypes t in Event.GetEventTypes())
+            if (!EventManager.Event.Locked)
             {
-                EventTypes typee = t;
+                MouseMenu typeMenu = mm.AddSubmenu("Set Type");
 
-                string typeString = RaceStringFormatter.Instance.GetEventTypeText(typee);
+                foreach (EventTypes t in Event.GetEventTypes())
+                {
+                    EventTypes typee = t;
 
-                typeMenu.AddItem(typeString, () => { SetType(typee, Round); });
+                    string typeString = RaceStringFormatter.Instance.GetEventTypeText(typee);
+
+                    typeMenu.AddItem(typeString, () => { SetType(typee, Round); });
+                }
             }
 
             var sheet = EventManager.RoundManager.SheetFormatManager.GetRoundSheetFormat(Round);
