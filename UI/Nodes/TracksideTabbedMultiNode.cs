@@ -331,13 +331,6 @@ namespace UI.Nodes
             Show(sceneManagerNode);
         }
 
-        public override void Draw(Drawer id, float parentAlpha)
-        {
-            id.PushClipRectangle(Bounds);
-            base.Draw(id, parentAlpha);
-            id.PopClipRectangle();
-        }
-
         public void ShowReplay(MouseInputEvent mie)
         {
             Race current = eventManager.RaceManager.CurrentRace;

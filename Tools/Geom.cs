@@ -166,6 +166,14 @@ namespace Tools
                 (int)Math.Round(Height));
         }
 
+        public void Round()
+        {
+            X = (int)Math.Round(X);
+            Y = (int)Math.Round(Y);
+            Width = (int)Math.Round(Width);
+            Height = (int)Math.Round(Height);
+        }
+
         public static RectangleF Centered(float width, float height)
         {
             RectangleF r = new RectangleF();
