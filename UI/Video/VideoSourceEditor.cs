@@ -925,7 +925,7 @@ namespace UI.Video
 
         public IEnumerable<VideoBounds> CreateChannelBounds(VideoConfig videoConfig)
         {
-            return CreateChannelBounds(videoConfig.Splits, new RectangleF(1, 1));
+            return CreateChannelBounds(videoConfig.Splits, RectangleF.Centered(1, 1));
         }
 
         public IEnumerable<VideoBounds> CreateChannelBounds(Splits splits, RectangleF bounds)

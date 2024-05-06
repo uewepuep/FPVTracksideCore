@@ -76,20 +76,12 @@ namespace Tools
 
         public RectangleF(float x, float y, float width, float height)
         {
-            this.X = x;
-            this.Y = y;
-            this.Width = width;
-            this.Height = height;
-        }
-
-        public RectangleF(float width, float height)
-        {
+            X = x;
+            Y = y;
             Width = width;
             Height = height;
-
-            X = (1 - width) / 2;
-            Y = (1 - height) / 2;
         }
+
 
         public RectangleF(Point p, Size s)
             :this(p.X, p.Y, s.Width, s.Height)
@@ -114,6 +106,17 @@ namespace Tools
             }
 
             return base.Equals(obj);
+        }
+
+        public bool Contains(Point p)
+        {
+            return Contains(p.X, p.Y);
+        }
+
+        public bool Contains(float px, float py)
+        {
+            return (px >= X && px <= Right
+                 && py >= Y && py <= Bottom);
         }
 
         public override int GetHashCode()
@@ -161,6 +164,19 @@ namespace Tools
                 (int)Math.Round(Y), 
                 (int)Math.Round(Width), 
                 (int)Math.Round(Height));
+        }
+
+        public static RectangleF Centered(float width, float height)
+        {
+            RectangleF r = new RectangleF();
+
+            r.Width = width;
+            r.Height = height;
+
+            r.X = (1 - width) / 2;
+            r.Y = (1 - height) / 2;
+
+            return r;
         }
     }
 

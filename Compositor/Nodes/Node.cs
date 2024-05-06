@@ -416,7 +416,7 @@ namespace Composition.Nodes
 
         public virtual bool Contains(Point point)
         {
-            return Bounds.Contains(point);
+            return BoundsF.Contains(point);
         }
 
         public virtual bool OnMouseInput(MouseInputEvent mouseInputEvent)

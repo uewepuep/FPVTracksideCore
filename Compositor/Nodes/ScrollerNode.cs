@@ -185,7 +185,7 @@ namespace Composition.Nodes
                 return false;
             }
 
-            if (Bounds.Contains(mouseInputEvent.Position))
+            if (BoundsF.Contains(mouseInputEvent.Position))
             {
                 if (mouseInputEvent.ButtonState == ButtonStates.Pressed)
                 {

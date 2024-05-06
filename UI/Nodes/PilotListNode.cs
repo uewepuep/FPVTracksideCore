@@ -150,7 +150,7 @@ namespace UI.Nodes
         {
             foreach (var pcn in listNode.ChildrenOfType)
             {
-                if (pcn.Bounds.Contains(mouseInputEvent.Position))
+                if (pcn.BoundsF.Contains(mouseInputEvent.Position))
                 {
                     return pcn;
                 }

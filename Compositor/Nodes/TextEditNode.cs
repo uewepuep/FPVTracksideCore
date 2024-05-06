@@ -61,7 +61,7 @@ namespace Composition.Nodes
 
         public override bool Contains(Point point)
         {
-            return Bounds.Contains(point);
+            return BoundsF.Contains(point);
         }
 
         public void Update(GameTime gameTime)

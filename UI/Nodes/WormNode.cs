@@ -33,7 +33,7 @@ namespace UI.Nodes
             AddChild(backGround);
 
             container = new Node();
-            container.RelativeBounds = new RectangleF(0.99f, 0.8f);
+            container.RelativeBounds = RectangleF.Centered(0.99f, 0.8f);
             AddChild(container);
 
             pilotWormList = new List<PilotWormNode>();

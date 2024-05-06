@@ -109,7 +109,7 @@ namespace Composition.Nodes
         // Need to use basebounds as ImageNode over-rides the Bounds size based on image size. But our image size is dynamic..
         public override bool Contains(Point point)
         {
-            return BaseBounds.Contains(point);
+            return BaseBoundsF.Contains(point);
         }
 
         public override void Layout(RectangleF parentBounds)
@@ -405,7 +405,7 @@ namespace Composition.Nodes
                 return true;
             }
 
-            if (BaseBounds.Contains(mouseInputEvent.Position) || mouseInputEvent is MouseInputLeaveEvent)
+            if (BaseBoundsF.Contains(mouseInputEvent.Position) || mouseInputEvent is MouseInputLeaveEvent)
             {
                 MouseInputEvent translated = Translate(mouseInputEvent);
                 return base.OnMouseInput(translated);
