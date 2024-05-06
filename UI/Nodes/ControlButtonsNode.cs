@@ -194,17 +194,17 @@ namespace UI.Nodes
 
             WormButton.Visible = eventManager.RaceManager.RaceRunning;
 
-            LayoutChildren(Bounds);
+            LayoutChildren(BoundsF);
         }
 
-        protected override void LayoutChildren(Rectangle bounds)
+        protected override void LayoutChildren(RectangleF bounds)
         {
             Node[] items = Children;
 
-            int left = ItemPaddingHorizontal + bounds.Left;
-            int width = bounds.Width - (ItemPaddingHorizontal * 2);
+            float left = ItemPaddingHorizontal + bounds.Left;
+            float width = bounds.Width - (ItemPaddingHorizontal * 2);
 
-            int prevTop = bounds.Bottom;
+            float prevTop = bounds.Bottom;
             foreach (Node n in items)
             {
                 if (!n.Visible)
@@ -219,7 +219,7 @@ namespace UI.Nodes
                     height = (int)(1.7 * ItemHeight);
                 }
 
-                Rectangle newBounds = new Rectangle(left, 
+                RectangleF newBounds = new RectangleF(left, 
                                                     prevTop - (ItemPaddingVertical + height),
                                                     width,
                                                     height);

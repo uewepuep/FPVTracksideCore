@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Transactions;
+using Tools;
 
 namespace Composition.Nodes
 {
@@ -81,12 +82,12 @@ namespace Composition.Nodes
         {
             if (Scrollable != null)
             {
-                Layout(Scrollable.Bounds);
+                Layout(Scrollable.BoundsF);
                 OnSelfLayout?.Invoke();
             }
         }
 
-        public override void Layout(Rectangle parentBounds)
+        public override void Layout(RectangleF parentBounds)
         {
             float lengthFactor = ViewSizePixels / ContentSizePixels;
 
@@ -114,15 +115,15 @@ namespace Composition.Nodes
                 switch (ScrollType)
                 {
                     case Types.Horizontal:
-                        Bounds = new Rectangle(position + parentBounds.X, parentBounds.Bottom - Width, length, Width);
+                        BoundsF = new RectangleF(position + parentBounds.X, parentBounds.Bottom - Width, length, Width);
                         break;
 
                     case Types.VerticalLeft:
-                        Bounds = new Rectangle(parentBounds.Left, position + parentBounds.Y, Width, length);
+                        BoundsF = new RectangleF(parentBounds.Left, position + parentBounds.Y, Width, length);
                         break;
 
                     case Types.VerticalRight:
-                        Bounds = new Rectangle(parentBounds.Right - Width, position + parentBounds.Y, Width, length);
+                        BoundsF = new RectangleF(parentBounds.Right - Width, position + parentBounds.Y, Width, length);
                         break;
                 }
             }

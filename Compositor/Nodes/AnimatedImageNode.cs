@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 
 namespace Composition.Nodes
 {
@@ -35,23 +36,23 @@ namespace Composition.Nodes
                 }
 
 
-                int ox = Offset.X * frameCount % BaseBounds.Width;
-                int oy = Offset.Y * frameCount % BaseBounds.Height;
+                float ox = Offset.X * frameCount % BaseBoundsF.Width;
+                float oy = Offset.Y * frameCount % BaseBoundsF.Height;
 
                 for (int x = -1; x <= 1; x++)
                 {
                     for (int y = -1; y <= 1; y++)
                     {
-                        Rectangle bounds = new Rectangle(BaseBounds.X, BaseBounds.Y, BaseBounds.Width, BaseBounds.Height);
+                        RectangleF bounds = new RectangleF(BaseBoundsF.X, BaseBoundsF.Y, BaseBoundsF.Width, BaseBoundsF.Height);
 
                         bounds.X += ox;
                         bounds.Y += oy;
 
 
-                        bounds.X += x * BaseBounds.Width;
-                        bounds.Y += y * BaseBounds.Height;
+                        bounds.X += x * BaseBoundsF.Width;
+                        bounds.Y += y * BaseBoundsF.Height;
 
-                        id.PushClipRectangle(BaseBounds);
+                        id.PushClipRectangle(BaseBoundsF.ToRectangle());
                         id.Draw(texture, SourceBounds, bounds, Tint, alpha);
                         id.PopClipRectangle();
                     }

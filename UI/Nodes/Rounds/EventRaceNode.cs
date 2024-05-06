@@ -447,7 +447,7 @@ namespace UI.Nodes.Rounds
             Refresh();
         }
 
-        public override void Layout(Rectangle parentBounds)
+        public override void Layout(RectangleF parentBounds)
         {
             if (NeedsInit)
             {

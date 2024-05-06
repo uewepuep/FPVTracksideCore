@@ -528,7 +528,7 @@ namespace UI.Nodes
                 channelNodeBase.RequestReorder += Reorder;
 
                 channelNodeBase.RelativeBounds = new RectangleF(0.45f, 0.45f, 0.1f, 0.1f);
-                channelNodeBase.Layout(Bounds);
+                channelNodeBase.Layout(BoundsF);
                 channelNodeBase.Snap();
 
                 return channelNodeBase;

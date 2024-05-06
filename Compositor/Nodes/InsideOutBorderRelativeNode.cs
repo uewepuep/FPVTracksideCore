@@ -22,7 +22,7 @@ namespace Composition.Nodes
         }
 
 
-        public override void Layout(Rectangle parentBounds)
+        public override void Layout(RectangleF parentBounds)
         {
             base.Layout(parentBounds);
 
@@ -33,7 +33,7 @@ namespace Composition.Nodes
 
                 borderNode.Width = Offset;
 
-                borderNode.Bounds = new Rectangle(
+                borderNode.BoundsF = new RectangleF(
                     childBounds.X - Offset,
                     childBounds.Y - Offset,
                     childBounds.Width + (Offset * 2),

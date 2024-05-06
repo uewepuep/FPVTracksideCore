@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 
 namespace Composition.Nodes
 {
@@ -23,16 +24,16 @@ namespace Composition.Nodes
         {
         }
 
-        public override void Layout(Rectangle parentBounds)
+        public override void Layout(RectangleF parentBounds)
         {
-            Bounds = new Rectangle(
+            BoundsF = new RectangleF(
                 parentBounds.X + PaddingX,
                 parentBounds.Y + PaddingY,
                 parentBounds.Width - (2 * PaddingX),
                 parentBounds.Height - (2 * PaddingY)
                 );
 
-            LayoutChildren(Bounds);
+            LayoutChildren(BoundsF);
         }
     }
 }

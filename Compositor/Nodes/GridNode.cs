@@ -80,7 +80,7 @@ namespace Composition.Nodes
             return VisibleChildren.Count();
         }
 
-        public override void Layout(Rectangle parentBounds)
+        public override void Layout(RectangleF parentBounds)
         {
             UpdateVisibility(Children);
 

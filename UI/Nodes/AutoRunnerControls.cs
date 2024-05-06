@@ -77,7 +77,7 @@ namespace UI.Nodes
             AutoRunner.Timer -= TimeSpan.FromSeconds(10);
         }
 
-        public override void Layout(Rectangle parentBounds)
+        public override void Layout(RectangleF parentBounds)
         {
             if (LargeMode) 
             {

@@ -484,7 +484,7 @@ namespace UI.Video
                 AddChild(cn);
             }
 
-            public override void Layout(Rectangle parentBounds)
+            public override void Layout(RectangleF parentBounds)
             {
                 parentBounds.Height *= 4;
                 base.Layout(parentBounds);

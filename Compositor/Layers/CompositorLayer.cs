@@ -82,7 +82,7 @@ namespace Composition.Layers
         {
             Bounds = bounds;
             NeedsLayout = false;
-            Root.Layout(Bounds);
+            Root.Layout(new RectangleF(Bounds));
         }
 
         public void RequestRedraw()

@@ -143,7 +143,7 @@ namespace Composition.Nodes
                     scale = Composition.Text.Scale.Disallowed;
                 }
 
-                textRenderer.Draw(id, Bounds, Alignment, scale, Tint, parentAlpha * Alpha);
+                textRenderer.Draw(id, BoundsF, Alignment, scale, Tint, parentAlpha * Alpha);
             }
             catch
             {
@@ -154,7 +154,7 @@ namespace Composition.Nodes
             // Has to be done because drawing children normally happens in base.
             DrawChildren(id, parentAlpha);
 
-            if (!OverrideHeight.HasValue && needsUpdate == UpdateTypes.None && height != Bounds.Height)
+            if (!OverrideHeight.HasValue && needsUpdate == UpdateTypes.None && height != BoundsF.Height)
             {
                 needsUpdate = UpdateTypes.Size;
             }
@@ -216,11 +216,11 @@ namespace Composition.Nodes
             }
         }
 
-        public override void Layout(Microsoft.Xna.Framework.Rectangle parentBounds)
+        public override void Layout(RectangleF parentBounds)
         {
-            Microsoft.Xna.Framework.Rectangle oldBounds = Bounds;
+            RectangleF oldBounds = BoundsF;
             base.Layout(parentBounds);
-            if (oldBounds.Height != Bounds.Height && needsUpdate != UpdateTypes.Geometry)
+            if (oldBounds.Height != BoundsF.Height && needsUpdate != UpdateTypes.Geometry)
             {
                 needsUpdate = UpdateTypes.Size;
             }

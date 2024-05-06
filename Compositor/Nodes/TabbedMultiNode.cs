@@ -135,7 +135,7 @@ namespace Composition.Nodes
             return textButtonNode;
         }
 
-        public override void Layout(Rectangle parentBounds)
+        public override void Layout(RectangleF parentBounds)
         {
             AlignHorizontally(0.01f, tabBack.VisibleChildren.ToArray());
             base.Layout(parentBounds);

@@ -17,7 +17,14 @@ namespace Composition.Nodes
         public RectangleAlignment Alignment { get; set; }
 
         // This guy is what the bounds would be if aspect ratio wasn't done.
-        public Rectangle BaseBounds { get; private set; }
+        public RectangleF BaseBoundsF { get; private set; }
+        public Rectangle BaseBounds
+        {
+            get
+            {
+                return BaseBoundsF.ToRectangle();
+            }
+        }
 
         public FitType FitType { get; set; }
 
@@ -52,34 +59,34 @@ namespace Composition.Nodes
             AspectRatio = width / height;
         }
 
-        public override Rectangle CalculateRelativeBounds(Rectangle parentPosition)
+        public override RectangleF CalculateRelativeBounds(RectangleF parentPosition)
         {
-            BaseBounds = base.CalculateRelativeBounds(parentPosition);
+            BaseBoundsF = base.CalculateRelativeBounds(parentPosition);
 
             if (KeepAspectRatio)
             {
-                return Maths.FitBoxMaintainAspectRatio(BaseBounds, AspectRatio, Alignment, FitType);
+                return Maths.FitBoxMaintainAspectRatio(BaseBoundsF, AspectRatio, Alignment, FitType);
             }
             else
             {
-                return BaseBounds;
+                return BaseBoundsF;
             }
         }
 
-        public override Rectangle ParentChainTargetBounds()
+        public override RectangleF ParentChainTargetBounds()
         {
             if (Parent == null)
             {
-                return Bounds;
+                return BoundsF;
             }
 
-            Rectangle parent = Parent.ParentChainTargetBounds();
+            RectangleF parent = Parent.ParentChainTargetBounds();
 
-            Rectangle p = new Rectangle();
-            p.X = parent.X + (int)Math.Round(parent.Width * RelativeBounds.X);
-            p.Y = parent.Y + (int)Math.Round(parent.Height * RelativeBounds.Y);
-            p.Width = (int)Math.Round(parent.Width * RelativeBounds.Width);
-            p.Height = (int)Math.Round(parent.Height * RelativeBounds.Height);
+            RectangleF p = new RectangleF();
+            p.X = parent.X + parent.Width * RelativeBounds.X;
+            p.Y = parent.Y + parent.Height * RelativeBounds.Y;
+            p.Width = parent.Width * RelativeBounds.Width;
+            p.Height = parent.Height * RelativeBounds.Height;
 
             if (KeepAspectRatio)
             {

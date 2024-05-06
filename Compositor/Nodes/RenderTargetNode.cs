@@ -112,9 +112,9 @@ namespace Composition.Nodes
             return BaseBounds.Contains(point);
         }
 
-        public override void Layout(Rectangle parentBounds)
+        public override void Layout(RectangleF parentBounds)
         {
-            Bounds = CalculateRelativeBounds(parentBounds);
+            BoundsF = CalculateRelativeBounds(parentBounds);
 
             bool isAnimatingSize = IsAnimatingSize();
 
@@ -128,7 +128,7 @@ namespace Composition.Nodes
                         hasLayedOut = true;
                         NeedsLayout = false;
 
-                        LayoutChildren(new Rectangle(0, 0, Size.Width, Size.Height));
+                        LayoutChildren(new RectangleF(0, 0, Size.Width, Size.Height));
                         NeedsDraw = true;
                         lastLayoutBounds = BaseBounds;
                     }
@@ -137,7 +137,7 @@ namespace Composition.Nodes
                 {
                     hasLayedOut = true;
                     NeedsLayout = false;
-                    LayoutChildren(new Rectangle(0, 0, Size.Width, Size.Height));
+                    LayoutChildren(new RectangleF(0, 0, Size.Width, Size.Height));
                     NeedsDraw = true;
                     lastLayoutBounds = BaseBounds;
                 }
@@ -146,7 +146,7 @@ namespace Composition.Nodes
 
             if (renderTarget != null && !isAnimatingSize)
             {
-                Rectangle actualBounds = new Rectangle(Bounds.X, Bounds.Y, Size.Width, Size.Height);
+                RectangleF actualBounds = new RectangleF(Bounds.X, Bounds.Y, Size.Width, Size.Height);
                 Scroller.Layout(actualBounds);
 
                 switch (Scroller.ScrollType)
@@ -259,7 +259,7 @@ namespace Composition.Nodes
             DebugTimer.DebugStartTime(this);
             if (NeedsLayout && Parent != null)
             {
-                Layout(Parent.Bounds);
+                Layout(Parent.BoundsF);
                 NeedsLayout = false;
                 NeedsDraw = true;
             }

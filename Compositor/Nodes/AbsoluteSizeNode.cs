@@ -24,13 +24,13 @@ namespace Composition.Nodes
             Size = size;
         }
 
-        public override void Layout(Rectangle parentBounds)
+        public override void Layout(RectangleF parentBounds)
         {
-            Rectangle bounds = new Rectangle(0, 0, Size.Width, Size.Height);
+            RectangleF bounds = new RectangleF(0, 0, Size.Width, Size.Height);
 
-            Bounds = Maths.FitBoxMaintainAspectRatio(parentBounds, bounds, 1, Alignment);
+            BoundsF = Maths.FitBoxMaintainAspectRatio(parentBounds, bounds, 1, Alignment);
 
-            LayoutChildren(Bounds);
+            LayoutChildren(BoundsF);
         }
     }
 
@@ -45,14 +45,13 @@ namespace Composition.Nodes
             Height = height;
         }
 
-        public override void Layout(Rectangle parentBounds)
+        public override void Layout(RectangleF parentBounds)
         {
-            Rectangle bounds = CalculateRelativeBounds(parentBounds);
+            RectangleF bounds = CalculateRelativeBounds(parentBounds);
             bounds.Height = Height;
 
-            Bounds = Maths.FitBoxMaintainAspectRatio(parentBounds, bounds, 1, Alignment);
-
-            LayoutChildren(Bounds);
+            BoundsF = Maths.FitBoxMaintainAspectRatio(parentBounds, bounds, 1, Alignment);
+            LayoutChildren(BoundsF);
         }
     }
 }

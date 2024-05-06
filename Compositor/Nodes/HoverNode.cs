@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 
 namespace Composition.Nodes
 {
@@ -67,10 +68,11 @@ namespace Composition.Nodes
 
         public void RenderTargetDraw(Drawer id, float parentAlpha)
         {
-            Rectangle localBounds = hover.Bounds;
-            hover.Bounds = new Rectangle(hover.GetScreenPosition(), localBounds.Size);
+            RectangleF localBounds = hover.BoundsF;
+
+            hover.BoundsF = new RectangleF(hover.GetScreenPosition().X, hover.GetScreenPosition().Y, localBounds.Width, localBounds.Height);
             hover.Draw(id, parentAlpha);
-            hover.Bounds = localBounds;
+            hover.BoundsF = localBounds;
         }
 
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)

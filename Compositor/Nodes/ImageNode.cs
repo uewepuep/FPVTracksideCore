@@ -89,12 +89,12 @@ namespace Composition.Nodes
             base.Dispose();
         }
 
-        public override Rectangle CalculateRelativeBounds(Rectangle parentPosition)
+        public override RectangleF CalculateRelativeBounds(RectangleF parentPosition)
         {
-            Rectangle bounds = base.CalculateRelativeBounds(parentPosition);
+            RectangleF bounds = base.CalculateRelativeBounds(parentPosition);
             if (!CanScale && texture != null)
             {
-                return Maths.FitBoxMaintainAspectRatio(BaseBounds, new Rectangle(0, 0, texture.Width, texture.Height), 1, Alignment);
+                return Maths.FitBoxMaintainAspectRatio(BaseBoundsF, new RectangleF(0, 0, texture.Width, texture.Height), 1, Alignment);
             }
             return bounds;
         }
@@ -112,14 +112,14 @@ namespace Composition.Nodes
             }
         }
 
-        public override void Layout(Rectangle parentBounds)
+        public override void Layout(RectangleF parentBounds)
         {
             base.Layout(parentBounds);
 
             Texture2D temp = texture;
             if (temp != null)
             {
-                Rectangle sourceBounds = new Rectangle();
+                RectangleF sourceBounds = new RectangleF();
                 sourceBounds.X = (int)(temp.Width * RelativeSourceBounds.X);
                 sourceBounds.Y = (int)(temp.Height * RelativeSourceBounds.Y);
                 sourceBounds.Width = (int)(temp.Width * RelativeSourceBounds.Width);
@@ -127,9 +127,9 @@ namespace Composition.Nodes
 
                 if (CropToFit)
                 {
-                    sourceBounds = Maths.FitBoxMaintainAspectRatio(sourceBounds, BaseBounds, Alignment, FitType);
+                    sourceBounds = Maths.FitBoxMaintainAspectRatio(sourceBounds, BaseBoundsF, Alignment, FitType);
                 }
-                SourceBounds = sourceBounds;
+                SourceBounds = sourceBounds.ToRectangle();
             }
         }
 

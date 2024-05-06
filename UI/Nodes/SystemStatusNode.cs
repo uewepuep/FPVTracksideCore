@@ -56,22 +56,22 @@ namespace UI.Nodes
             RequestLayout();
         }
 
-        protected override void LayoutChildren(Rectangle bounds)
+        protected override void LayoutChildren(RectangleF bounds)
         {
-            int left = bounds.Left;
+            float left = bounds.Left;
             int ItemPadding = 10;
             int ItemHeight = 30;
-            int width = bounds.Width;
+            float width = bounds.Width;
 
             MuteTTS.Visible = MuteTTS.SoundManager.HasSpeech();
 
             Node[] nodes = VisibleChildren.ToArray();
 
-            int prevBottom = bounds.Y;
+            float prevBottom = bounds.Y;
             foreach (Node n in nodes)
             {
                 n.RelativeBounds = new RectangleF(0, 0, 1, 1);
-                n.Layout(new Rectangle(left,
+                n.Layout(new RectangleF(left,
                                        prevBottom + ItemPadding,
                                        width,
                                        ItemHeight));

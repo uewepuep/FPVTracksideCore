@@ -442,9 +442,9 @@ namespace UI.Nodes.Rounds
             }
         }
 
-        public override void Layout(Rectangle parentBounds)
+        public override void Layout(RectangleF parentBounds)
         {
-            Bounds = CalculateRelativeBounds(parentBounds);
+            BoundsF = CalculateRelativeBounds(parentBounds);
 
             if (needsRefresh)
             {
@@ -481,9 +481,9 @@ namespace UI.Nodes.Rounds
 
             int paddingX = 50;
 
-            int height = (int)(Bounds.Height * 0.94f);
-            int y = (int)(Bounds.Height * 0.02f) + Bounds.Y;
-            int x = paddingX + Bounds.X;
+            float height = (int)(BoundsF.Height * 0.94f);
+            float y = (int)(BoundsF.Height * 0.02f) + BoundsF.Y;
+            float x = paddingX + BoundsF.X;
 
             foreach (EventXNode ern in EventXNodes)
             {
@@ -492,7 +492,7 @@ namespace UI.Nodes.Rounds
                 ern.CalculateAspectRatio(height);
 
                 int width = (int)(height * ern.AspectRatio);
-                Rectangle bounds = new Rectangle(x - (int)Scroller.CurrentScrollPixels, y, width, height);
+                RectangleF bounds = new RectangleF(x - (int)Scroller.CurrentScrollPixels, y, width, height);
                 ern.SetBounds(bounds);
                 x += width;
                 x += paddingX;
@@ -506,7 +506,7 @@ namespace UI.Nodes.Rounds
                 Scroller.ContentSizePixels += EventXNodes.Select(e => e.Bounds.Right).Max() - EventXNodes.Select(e => e.Bounds.X).Min();
             }
 
-            Scroller.Layout(Bounds);
+            Scroller.Layout(BoundsF);
 
             base.Layout(parentBounds);
         }

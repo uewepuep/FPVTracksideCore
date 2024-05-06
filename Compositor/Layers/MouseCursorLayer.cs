@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Composition.Nodes;
+using Tools;
 
 namespace Composition.Layers
 {
@@ -35,7 +36,7 @@ namespace Composition.Layers
             {
                 if (cursor.Texture != null)
                 {
-                    cursor.Bounds = new Rectangle(newState.X, newState.Y, cursor.Texture.Width, cursor.Texture.Height);
+                    cursor.BoundsF = new RectangleF(newState.X, newState.Y, cursor.Texture.Width, cursor.Texture.Height);
                 }
                 lastMove = DateTime.Now;
                 cursor.Visible = true;

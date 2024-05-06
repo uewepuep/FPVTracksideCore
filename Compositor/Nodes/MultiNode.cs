@@ -73,10 +73,10 @@ namespace Composition.Nodes
             base.Snap();
         }
 
-        public override void Layout(Rectangle parentBounds)
+        public override void Layout(RectangleF parentBounds)
         {
             NeedsLayout = false;
-            Bounds = CalculateRelativeBounds(parentBounds);
+            BoundsF = CalculateRelativeBounds(parentBounds);
 
             LayoutLinearChildren();
         }
@@ -90,7 +90,7 @@ namespace Composition.Nodes
                     foreach (Node node in Active)
                     {
                         node.RelativeBounds = new RectangleF(transX, 0, 1, 1);
-                        node.Layout(Bounds);
+                        node.Layout(BoundsF);
                         transX += node.RelativeBounds.Width + Padding;
                     }
                     break;
@@ -100,7 +100,7 @@ namespace Composition.Nodes
                     foreach (Node node in Active)
                     {
                         node.RelativeBounds = new RectangleF(0, transY, 1, 1);
-                        node.Layout(Bounds);
+                        node.Layout(BoundsF);
                         transY += node.RelativeBounds.Height + Padding;
                     }
                     break;

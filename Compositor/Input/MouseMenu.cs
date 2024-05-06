@@ -230,13 +230,13 @@ namespace Composition.Input
             return width;
         }
 
-        public override Rectangle CalculateRelativeBounds(Rectangle parentBounds)
+        public override RectangleF CalculateRelativeBounds(RectangleF parentBounds)
         {
             MenuItem[] validItems = Items.Where(i => i.Text != null).ToArray();
 
             if (validItems.Any())
             {
-                Rectangle bounds = new Rectangle()
+                RectangleF bounds = new RectangleF()
                 {
                     X = LeftToRight ? CalleeArea.Right : CalleeArea.Left,
                     Y = TopToBottom ? CalleeArea.Top : CalleeArea.Bottom,

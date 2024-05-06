@@ -10,7 +10,7 @@ namespace Composition.Nodes
 {
     public class AnimatedNode : Node, IUpdateableNode
     {
-        private InterpolatedRelativeRectangle interpolatedBounds;
+        private InterpolatedRectangleF interpolatedBounds;
 
         public TimeSpan AnimationTime { get; protected set; }
 
@@ -27,7 +27,7 @@ namespace Composition.Nodes
             }
         }
 
-        public Rectangle TargetBounds
+        public RectangleF TargetBounds
         {
             get
             {
@@ -35,7 +35,7 @@ namespace Composition.Nodes
                 {
                     return interpolatedBounds.Target;
                 }
-                return Bounds;
+                return BoundsF;
             }
         }
 
@@ -57,16 +57,16 @@ namespace Composition.Nodes
 
         public virtual void Update(GameTime gameTime)
         {
-            InterpolatedRelativeRectangle ib = interpolatedBounds;
+            InterpolatedRectangleF ib = interpolatedBounds;
             if (ib != null)
             {
-                Bounds = ib.Output;
+                BoundsF = ib.Output;
 
-                LayoutChildren(Bounds);
+                LayoutChildren(BoundsF);
 
                 if (ib.Finished)
                 {
-                    Bounds = ib.Target;
+                    BoundsF = ib.Target;
                     interpolatedBounds = null;
                     RequestLayout();
 
@@ -83,15 +83,15 @@ namespace Composition.Nodes
             }
         }
 
-        public override Rectangle CalculateRelativeBounds(Rectangle parentPosition)
+        public override RectangleF CalculateRelativeBounds(RectangleF parentPosition)
         {
-            Rectangle bounds = base.CalculateRelativeBounds(parentPosition);
+            RectangleF bounds = base.CalculateRelativeBounds(parentPosition);
 
             if (animatingInvisiblity)
             {
-                Rectangle tiny = new Rectangle(bounds.Center.X, bounds.Center.Y, 10, 10);
+                RectangleF tiny = new RectangleF(bounds.Center.X, bounds.Center.Y, 10, 10);
 
-                Rectangle sizeOnly = new Rectangle(0, 0, bounds.Width, bounds.Height);
+                RectangleF sizeOnly = new RectangleF(0, 0, bounds.Width, bounds.Height);
 
                 bounds = Maths.FitBoxMaintainAspectRatio(tiny, sizeOnly, RectangleAlignment.Center, FitType.FitBoth);
             }
@@ -100,12 +100,12 @@ namespace Composition.Nodes
         }
 
 
-        public override void Layout(Rectangle parentBounds)
+        public override void Layout(RectangleF parentBounds)
         {
-            Rectangle newBounds = CalculateRelativeBounds(parentBounds);
+            RectangleF newBounds = CalculateRelativeBounds(parentBounds);
 
             Node parent = Parent;
-            if (newBounds != Bounds && parent != null)
+            if (newBounds != BoundsF && parent != null)
             {
                 if (!parent.IsAnimating()) // Hate
                 {
@@ -113,17 +113,17 @@ namespace Composition.Nodes
                     {
                         if (SnapNext)
                         {
-                            Bounds = newBounds;
+                            BoundsF = newBounds;
                             SnapNext = false;
                         }
                         else
                         {
-                            interpolatedBounds = new InterpolatedRelativeRectangle(parent, Bounds, newBounds, AnimationTime);
+                            interpolatedBounds = new InterpolatedRectangleF(BoundsF, newBounds, AnimationTime);
                         }
                     }
                     else if (interpolatedBounds.Target != newBounds)
                     {
-                        Rectangle diff = new Rectangle(
+                        RectangleF diff = new RectangleF(
                             interpolatedBounds.Target.X - interpolatedBounds.Initial.X,
                             interpolatedBounds.Target.Y - interpolatedBounds.Initial.Y,
                             interpolatedBounds.Target.Width - interpolatedBounds.Initial.Width,
@@ -136,7 +136,7 @@ namespace Composition.Nodes
                                                              diff.Width / seconds,
                                                              diff.Height / seconds);
 
-                        interpolatedBounds.SetTarget(Bounds, newBounds);
+                        interpolatedBounds.SetTarget(BoundsF, newBounds);
                     }
                 }
                 else
@@ -166,7 +166,7 @@ namespace Composition.Nodes
         {
             if (interpolatedBounds != null)
             {
-                Bounds = interpolatedBounds.Target;
+                BoundsF = interpolatedBounds.Target;
                 interpolatedBounds = null;
             }
             base.Snap();
@@ -184,7 +184,7 @@ namespace Composition.Nodes
 
         public override bool IsAnimatingSize()
         {
-            InterpolatedRelativeRectangle ib = interpolatedBounds;
+            InterpolatedRectangleF ib = interpolatedBounds;
             if (ib != null)
             {
                 return ib.Initial.Width != ib.Target.Width ||
@@ -233,11 +233,11 @@ namespace Composition.Nodes
             AnimationTime = time;
         }
 
-        public override Rectangle ParentChainTargetBounds()
+        public override RectangleF ParentChainTargetBounds()
         {
             if (HasAnimation)
             {
-                Microsoft.Xna.Framework.Rectangle target = TargetBounds;
+                RectangleF target = TargetBounds;
                 return target;
             }
 

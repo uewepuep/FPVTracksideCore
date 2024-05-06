@@ -13,7 +13,15 @@ namespace Composition.Nodes
 {
     public class Node : IDisposable
     {
-        public Rectangle Bounds { get; set; }
+        public Rectangle Bounds
+        {
+            get
+            {
+                return BoundsF.ToRectangle();
+            }
+        }
+        public RectangleF BoundsF { get; set; }
+
         public virtual RectangleF RelativeBounds { get; set; }
 
         public CompositorLayer CompositorLayer { get; private set; }
@@ -350,36 +358,36 @@ namespace Composition.Nodes
         }
 
 
-        public virtual Rectangle CalculateRelativeBounds(Rectangle parentPosition)
+        public virtual RectangleF CalculateRelativeBounds(RectangleF parentPosition)
         {
-            return new Rectangle()
+            return new RectangleF()
             {
-                X = parentPosition.X + (int)Math.Round(parentPosition.Width * RelativeBounds.X),
-                Y = parentPosition.Y + (int)Math.Round(parentPosition.Height * RelativeBounds.Y),
-                Width = (int)Math.Round(parentPosition.Width * RelativeBounds.Width),
-                Height = (int)Math.Round(parentPosition.Height * RelativeBounds.Height)
+                X = parentPosition.X + parentPosition.Width * RelativeBounds.X,
+                Y = parentPosition.Y + parentPosition.Height * RelativeBounds.Y,
+                Width = parentPosition.Width * RelativeBounds.Width,
+                Height = parentPosition.Height * RelativeBounds.Height
             };
         }
 
-        public virtual void SetBounds(Rectangle bounds)
+        public virtual void SetBounds(RectangleF bounds)
         {
-            Rectangle parentBounds = Parent.Bounds;
+            RectangleF parentBounds = Parent.BoundsF;
             RelativeBounds = new RectangleF(
-                (bounds.X - parentBounds.X) / (float)parentBounds.Width,
-                (bounds.Y - parentBounds.Y) / (float)parentBounds.Height,
-                bounds.Width / (float)parentBounds.Width,
-                bounds.Height / (float)parentBounds.Height
+                (bounds.X - parentBounds.X) / parentBounds.Width,
+                (bounds.Y - parentBounds.Y) / parentBounds.Height,
+                bounds.Width / parentBounds.Width,
+                bounds.Height / parentBounds.Height
                 );
         }
 
-        public virtual void Layout(Rectangle parentBounds)
+        public virtual void Layout(RectangleF parentBounds)
         {
             NeedsLayout = false;
-            Bounds = CalculateRelativeBounds(parentBounds);
-            LayoutChildren(Bounds);
+            BoundsF = CalculateRelativeBounds(parentBounds);
+            LayoutChildren(BoundsF);
         }
 
-        protected virtual void LayoutChildren(Rectangle bounds)
+        protected virtual void LayoutChildren(RectangleF bounds)
         {
             Node[] t = children;
             foreach (Node n in t)
@@ -737,20 +745,20 @@ namespace Composition.Nodes
             }
         }
 
-        public virtual Rectangle ParentChainTargetBounds()
+        public virtual RectangleF ParentChainTargetBounds()
         {
             if (Parent == null)
             {
-                return Bounds;
+                return BoundsF;
             }
 
-            Rectangle parent = Parent.ParentChainTargetBounds();
+            RectangleF parent = Parent.ParentChainTargetBounds();
 
-            Rectangle p = new Rectangle();
-            p.X = parent.X + (int)Math.Round(parent.Width * RelativeBounds.X);
-            p.Y = parent.Y + (int)Math.Round(parent.Height * RelativeBounds.Y);
-            p.Width = (int)Math.Round(parent.Width * RelativeBounds.Width);
-            p.Height = (int)Math.Round(parent.Height * RelativeBounds.Height);
+            RectangleF p = new RectangleF();
+            p.X = parent.X + parent.Width * RelativeBounds.X;
+            p.Y = parent.Y + parent.Height * RelativeBounds.Y;
+            p.Width = parent.Width * RelativeBounds.Width;
+            p.Height = parent.Height * RelativeBounds.Height;
             return p;
         }
 
@@ -807,7 +815,7 @@ namespace Composition.Nodes
             }
 
             node.RelativeBounds = RelativeBounds;
-            node.Bounds = Bounds;
+            node.BoundsF = BoundsF;
             node.Visible = Visible;
             node.Alpha = Alpha;
             node.Parent = Parent;

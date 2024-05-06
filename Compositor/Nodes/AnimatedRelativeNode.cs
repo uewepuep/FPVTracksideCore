@@ -76,7 +76,7 @@ namespace Composition.Nodes
             AnimationTime = TimeSpan.FromSeconds(0.3f);
         }
 
-        public override Rectangle CalculateRelativeBounds(Rectangle parentPosition)
+        public override RectangleF CalculateRelativeBounds(RectangleF parentPosition)
         {
             RectangleF relative;
 
@@ -89,11 +89,11 @@ namespace Composition.Nodes
                 relative = interpolatedRelativeBounds.Output;
             }
 
-            Rectangle p = new Rectangle();
-            p.X = parentPosition.X + (int)Math.Round(parentPosition.Width * relative.X);
-            p.Y = parentPosition.Y + (int)Math.Round(parentPosition.Height * relative.Y);
-            p.Width = (int)Math.Round(parentPosition.Width * relative.Width);
-            p.Height = (int)Math.Round(parentPosition.Height * relative.Height);
+            RectangleF p = new RectangleF();
+            p.X = parentPosition.X + parentPosition.Width * relative.X;
+            p.Y = parentPosition.Y + parentPosition.Height * relative.Y;
+            p.Width = parentPosition.Width * relative.Width;
+            p.Height = parentPosition.Height * relative.Height;
             return p;
         }
 
@@ -104,7 +104,7 @@ namespace Composition.Nodes
             {
                 RequestLayout();
 
-                LayoutChildren(Bounds);
+                LayoutChildren(BoundsF);
 
                 if (inter.Finished)
                 {

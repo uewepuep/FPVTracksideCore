@@ -153,7 +153,7 @@ namespace UI.Nodes.Rounds
             RequestLayout();
         }
 
-        public override void Layout(Rectangle parentBounds)
+        public override void Layout(RectangleF parentBounds)
         {
             if (needsRefresh)
             {
@@ -246,7 +246,7 @@ namespace UI.Nodes.Rounds
             }
         }
 
-        public override void CalculateAspectRatio(int height)
+        public override void CalculateAspectRatio(float height)
         {
             // Default safe value.
             float ap = 300 / 800.0f;
@@ -413,28 +413,28 @@ namespace UI.Nodes.Rounds
             AddChild(roundScoreContainer);
         }
 
-        public override void Layout(Rectangle parentBounds)
+        public override void Layout(RectangleF parentBounds)
         {
-            Bounds = CalculateRelativeBounds(parentBounds);
+            BoundsF = CalculateRelativeBounds(parentBounds);
 
-            colorNode.Layout(Bounds);
-            Rectangle workBounds = colorNode.Bounds;
+            colorNode.Layout(BoundsF);
+            RectangleF workBounds = colorNode.BoundsF;
 
-            roundScoreContainer.Bounds = roundScoreContainer.CalculateRelativeBounds(workBounds);
+            roundScoreContainer.BoundsF = roundScoreContainer.CalculateRelativeBounds(workBounds);
 
             workBounds.X += horizontalPadding;
 
             workBounds.Y += verticalPadding;
             workBounds.Height -= verticalPadding * 2;
 
-            Rectangle pilotNameParentBounds = workBounds;
+            RectangleF pilotNameParentBounds = workBounds;
             pilotNameParentBounds.Width = pilotNameWidth;
             pilotNameNode.Layout(pilotNameParentBounds);
 
-            int x = pilotNameParentBounds.Right + horizontalPadding;
+            float x = pilotNameParentBounds.Right + horizontalPadding;
             foreach (Node node in roundScoreContainer.Children)
             {
-                Rectangle bounds = workBounds;
+                RectangleF bounds = workBounds;
                 bounds.X = x;
                 bounds.Width = GetItemWidth(node);
                 node.Layout(bounds);
@@ -442,13 +442,13 @@ namespace UI.Nodes.Rounds
                 x = bounds.Right + horizontalPadding;
             }
 
-            Rectangle posBounds = workBounds;
+            RectangleF posBounds = workBounds;
             posBounds.X = x;
             posBounds.Width = GetItemWidth(positionNode);
             positionNode.Layout(posBounds);
 
             workBounds.Width = posBounds.Right - workBounds.X;
-            colorNode.Bounds = workBounds;
+            colorNode.BoundsF = workBounds;
         }
 
         protected virtual int GetItemWidth(Node node)

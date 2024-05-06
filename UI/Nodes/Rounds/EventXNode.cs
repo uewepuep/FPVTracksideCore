@@ -264,7 +264,7 @@ namespace UI.Nodes.Rounds
             AlignHorizontally(0.0f, buttonContainer.Children.ToArray());
         }
 
-        public virtual void CalculateAspectRatio(int height)
+        public virtual void CalculateAspectRatio(float height)
         {
         }
 

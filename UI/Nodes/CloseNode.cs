@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 
 namespace UI.Nodes
 {
@@ -21,7 +22,7 @@ namespace UI.Nodes
 
         public event MouseInputDelegate OnClick;
 
-        public override void Layout(Rectangle parentBounds)
+        public override void Layout(RectangleF parentBounds)
         {
             int width = 30;
             int height = 30;
@@ -31,12 +32,12 @@ namespace UI.Nodes
                 height = Texture.Height;
             }
 
-            Bounds = new Rectangle(parentBounds.Right - width, parentBounds.Top, width, height);
+            BoundsF = new RectangleF(parentBounds.Right - width, parentBounds.Top, width, height);
         }
 
         public override void Draw(Drawer id, float parentAlpha)
         {
-            Layout(Parent.Bounds);
+            Layout(Parent.BoundsF);
 
             base.Draw(id, parentAlpha);
         }

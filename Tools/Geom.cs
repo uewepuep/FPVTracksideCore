@@ -65,6 +65,10 @@ namespace Tools
             }
         }
 
+        public float Left { get { return X; } }
+        public float Top { get { return Y; } }
+
+
         public RectangleF(Rectangle r)
             :this(r.X, r.Y, r.Width, r.Height)
         {
@@ -85,6 +89,11 @@ namespace Tools
 
             X = (1 - width) / 2;
             Y = (1 - height) / 2;
+        }
+
+        public RectangleF(Point p, Size s)
+            :this(p.X, p.Y, s.Width, s.Height)
+        { 
         }
 
         public override string ToString()
@@ -147,7 +156,11 @@ namespace Tools
 
         public Microsoft.Xna.Framework.Rectangle ToRectangle()
         {
-            return new Microsoft.Xna.Framework.Rectangle((int)X, (int)Y, (int)Width, (int)Height);
+            return new Microsoft.Xna.Framework.Rectangle(
+                (int)Math.Round(X), 
+                (int)Math.Round(Y), 
+                (int)Math.Round(Width), 
+                (int)Math.Round(Height));
         }
     }
 
