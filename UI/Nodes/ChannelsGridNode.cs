@@ -418,7 +418,7 @@ namespace UI.Nodes
             channelNode.SetPilot(pilotChannel.Pilot);
             channelNode.SetAnimationTime(CurrentAnimationTime);
             channelNode.SetAnimatedVisibility(true);
-            channelNode.CrashedOutType = CrashOutType.None;
+            channelNode.SetCrashedOutType(CrashOutType.None);
 
             bool isRace = EventManager.RaceManager.EventType != EventTypes.Freestyle;
             channelNode.SetLapsVisible(isRace);
@@ -656,12 +656,12 @@ namespace UI.Nodes
                     foreach (ChannelNodeBase cn in pilotNodes)
                     {
                         cn.SetAnimatedVisibility(false);
-                        cn.CrashedOutType = ChannelNodeBase.CrashOutType.Manual;
+                        cn.SetCrashedOutType(CrashOutType.Manual);
                     }
                 }
 
                 fullScreen.SetAnimatedVisibility(true);
-                fullScreen.CrashedOutType = ChannelNodeBase.CrashOutType.None;
+                fullScreen.SetCrashedOutType(CrashOutType.None);
 
                 RequestLayout();
             }
@@ -703,7 +703,7 @@ namespace UI.Nodes
                 foreach (ChannelNodeBase cn in pilotNodes)
                 {
                     cn.SetAnimatedVisibility(true);
-                    cn.CrashedOutType = ChannelNodeBase.CrashOutType.None;
+                    cn.SetCrashedOutType(CrashOutType.None);
                 }
 
                 RequestLayout();
@@ -748,7 +748,7 @@ namespace UI.Nodes
                 {
                     if (!cn.Finished && cn.CrashedOutType != ChannelNodeBase.CrashOutType.Manual)
                     {
-                        cn.CrashedOutType = crashed ? ChannelNodeBase.CrashOutType.Auto : ChannelNodeBase.CrashOutType.None;
+                        cn.SetCrashedOutType(crashed ? ChannelNodeBase.CrashOutType.Auto : ChannelNodeBase.CrashOutType.None);
                     }
                 }
                 Reorder();
@@ -924,7 +924,7 @@ namespace UI.Nodes
                     }
                     else
                     {
-                        channelNode.CrashedOutType = ChannelNodeBase.CrashOutType.None;
+                        channelNode.SetCrashedOutType(CrashOutType.None);
                     }
                 }
             }

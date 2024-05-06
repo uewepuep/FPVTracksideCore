@@ -42,6 +42,7 @@ namespace RaceLib
         public event PilotChannelDelegate OnPilotAdded;
         public event PilotChannelDelegate OnPilotRemoved;
 
+        public event Action<Channel, Pilot> OnChannelCrashedOut;
         public bool CallOutPilotsBeforeRaceStart { get; set; }
 
         public bool CanRunRace
@@ -2037,6 +2038,14 @@ namespace RaceLib
                 return race.GetPilot(channel);
             }
             return null;
+        }
+
+        public void CrashedOut(Pilot pilot, Channel channel)
+        {
+            if (EventManager.RaceManager.RaceRunning)
+            {
+                OnChannelCrashedOut?.Invoke(channel, pilot);
+            }
         }
     }
 }

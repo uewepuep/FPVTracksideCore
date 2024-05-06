@@ -68,6 +68,7 @@ namespace UI.Nodes
         {
             None,
             Auto,
+            Hidden,
             Manual
         }
 
@@ -79,7 +80,10 @@ namespace UI.Nodes
             }
         }
 
-        public CrashOutType CrashedOutType { get; set; }
+        public CrashOutType CrashedOutType { get; private set; }
+
+        public event Action<Channel, Pilot> OnCrashedOut;
+
         public bool Finished { get { return resultContainer.Visible; } }
            
         private ColorNode crashedOut;
@@ -209,6 +213,23 @@ namespace UI.Nodes
             needUpdatePosition = true; 
             needsLapRefresh = true;
             needsSplitClear = true;
+        }
+
+        public void SetCrashedOutType(CrashOutType type)
+        {
+            if (CrashedOutType == type)
+                return;
+
+            CrashedOutType = type;
+
+            switch (type)
+            {
+                case CrashOutType.Manual:
+                case CrashOutType.Auto:
+
+                    EventManager.RaceManager.CrashedOut(Pilot, Channel);
+                    break;
+            }
         }
 
         protected virtual Node CreateDisplayNode()
@@ -386,6 +407,8 @@ namespace UI.Nodes
             Pilot = pilot;
 
             pilotNameNode.SetPilot(Pilot);
+            CrashedOutType = CrashOutType.None;
+
 
             LapsNode.SetPilot(Pilot);
             if (SplitsNode != null)

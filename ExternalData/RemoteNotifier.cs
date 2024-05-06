@@ -39,6 +39,7 @@ namespace ExternalData
             eventManager.RaceManager.OnPilotAdded += OnPilotsChanged;
             eventManager.RaceManager.OnPilotRemoved += OnPilotsChanged;
             eventManager.RaceManager.OnRaceTimesUp += OnRaceTimesUp;
+            eventManager.RaceManager.OnChannelCrashedOut += RaceManager_OnChannelCrashedOut;
 
             JSONDataAccessor = new JSONDataAccessor();
             workQueue = new WorkQueue("RemoteNotifier");
@@ -90,6 +91,13 @@ namespace ExternalData
 
             workQueue.Dispose();
             workQueue = null;
+        }
+
+        private void RaceManager_OnChannelCrashedOut(Channel channel, Pilot pilot)
+        {
+            Color color = eventManager.GetChannelColor(channel);
+            PilotCrashedOut pilotState = new PilotCrashedOut(pilot, channel, color);
+            PutObject(pilotState);
         }
 
         private void OnRaceTimesUp(Race race)
@@ -271,7 +279,37 @@ namespace ExternalData
 
             Pilots = pilots;
         }
+    }
 
+
+    public class PilotCrashedOut : Notification
+    {
+        public string Name { get; set; }
+        public string Phonetic { get; set; }
+        public byte ChannelColorR { get; set; }
+        public byte ChannelColorG { get; set; }
+        public byte ChannelColorB { get; set; }
+
+        public string ChannelBand { get; set; }
+        public int ChannelNumber { get; set; }
+        public int Frequency { get; set; }
+
+        public bool CrashedOut { get; set; }
+
+        public PilotCrashedOut(Pilot p, Channel c, Color color)
+        {
+            CrashedOut = true;
+            Name = p.Name;
+            Phonetic = p.Phonetic;
+
+            ChannelColorR = color.R;
+            ChannelColorG = color.G;
+            ChannelColorB = color.B;
+
+            ChannelBand = c.Band.ToString();
+            ChannelNumber = c.Number;
+            Frequency = c.Frequency;
+        }
     }
 
     public class PilotState

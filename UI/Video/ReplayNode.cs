@@ -321,7 +321,7 @@ namespace UI.Video
                 if (cbn.Pilot != null)
                 {
                     cbn.Visible = true;
-                    cbn.CrashedOutType = ChannelNodeBase.CrashOutType.None;
+                    cbn.SetCrashedOutType(ChannelNodeBase.CrashOutType.None);
                 }
             }
             ChannelsGridNode.Reorder();
