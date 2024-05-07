@@ -85,8 +85,6 @@ namespace DB.JSON
         public bool VisibleOnline { get; set; }
         public bool Locked { get; set; }
 
-        public int ExternalID { get; set; }
-
         public Event()
         {
         }

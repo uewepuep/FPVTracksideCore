@@ -14,14 +14,12 @@ namespace DB
     public class DatabaseObject
     {
         public Guid ID { get; set; }
-
+        
         [JsonIgnore]
         public DateTime Creation { get; set; }
 
         [JsonIgnore]
         public DateTime Modified { get; set; }
-        
-        [JsonIgnore]
         public int ExternalID { get; set; }
 
         public DatabaseObject()
