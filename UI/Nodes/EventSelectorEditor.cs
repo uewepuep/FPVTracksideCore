@@ -58,7 +58,7 @@ namespace UI.Nodes
                 {
                     var property = new StaticTextPropertyNode<Event>(obj, pi, TextColor);
 
-                    if (obj.SyncWith == SyncWith.MultiGP)
+                    if (obj.SyncWithMultiGP)
                     {
                         property.Name.Text = "Chapter";
                     }
@@ -294,7 +294,6 @@ namespace UI.Nodes
                 if (club == null)
                 {
                     club = new Club();
-                    club.SyncWith = SyncWith.FPVTrackside;
                     db.Insert(club);
                 }
 

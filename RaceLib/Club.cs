@@ -10,8 +10,6 @@ namespace RaceLib
     {
         public string Name { get; set; }
 
-        public SyncWith SyncWith { get; set; }
-
         public Club()
         {
         }

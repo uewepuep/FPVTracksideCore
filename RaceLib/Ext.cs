@@ -16,6 +16,9 @@ namespace RaceLib
 
         public static TimeSpan TotalTime(this IEnumerable<Lap> laps)
         {
+            if (laps == null)
+                return TimeSpan.MaxValue;
+
             if (!laps.Any())
             {
                 return TimeSpan.MaxValue;

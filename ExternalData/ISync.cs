@@ -8,6 +8,12 @@ using Tools;
 
 namespace ExternalData
 {
+    public enum SyncType
+    {
+        FPVTrackside,
+        MultiGP
+    }
+
     public interface ISync
     {
         event Action<bool> RaceSyncEvent;

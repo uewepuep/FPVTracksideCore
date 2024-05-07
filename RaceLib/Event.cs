@@ -36,13 +36,6 @@ namespace RaceLib
         Holeshot
     }
 
-    public enum SyncWith
-    {
-        None,
-        FPVTrackside,
-        MultiGP
-    }
-
     public class Event : BaseObject
     {
         [System.ComponentModel.Browsable(false)]
@@ -162,40 +155,23 @@ namespace RaceLib
         [System.ComponentModel.Browsable(false)]
         public MultiGPRaceFormat MultiGPRaceFormat { get; set; }
         
-        [System.ComponentModel.Browsable(false)]
-        public SyncWith SyncWith { get; set; }
+        [Category("Cloud")]
+        [DisplayName("Sync with FPVTrackside.com")]
+        public bool SyncWithFPVTrackside { get; set; }
 
+        [Category("Cloud")]
+        [DisplayName("Sync with MultiGP")]
+        public bool SyncWithMultiGP { get; set; }
+
+        [Category("Cloud")]
+        [DisplayName("Visible on FPVTrackside.com")]
+        [System.ComponentModel.Browsable(false)]
+        public bool VisibleOnline { get; set; }
+
+        [System.ComponentModel.Browsable(false)]
         public string[] ChannelColors { get; set; }
 
-        [Category("Cloud")]
-        public bool Sync { get; set; }
-
-        
-        [Category("Cloud")]
-        [DisplayName("Sync Service")]
-        public string SyncService
-        {
-            get
-            {
-                if (!Sync || SyncWith == SyncWith.None)
-                    return "None";
-
-                switch (SyncWith)
-                {
-                    //case SyncWith.FPVTracksideAndMultiGP:
-                    //    return "FPVTrackside.com & MultiGP.com";
-                    default:
-                        return SyncWith.ToString().ToLower() + ".com";
-                }
-            }
-        }
-
-        [Category("Cloud")]
-        [DisplayName("Visible Online")]
-        public bool Visible { get; set; }
-
         [System.ComponentModel.Browsable(false)]
-        
         public string Month
         {
             get
@@ -207,10 +183,20 @@ namespace RaceLib
         [System.ComponentModel.Browsable(false)]
         public bool Locked { get; set; }
 
+        [System.ComponentModel.Browsable(false)]
+        public bool Sync
+        {
+            get
+            {
+                return SyncWithFPVTrackside || SyncWithMultiGP;
+            }
+        }
+
         public Event()
         {
-            Sync = false;
-            SyncWith = SyncWith.FPVTrackside;
+            SyncWithFPVTrackside = false;
+            SyncWithMultiGP = false;
+            VisibleOnline = true;
             Enabled = true;
             PrimaryTimingSystemLocation = PrimaryTimingSystemLocation.Holeshot;
             RaceStartIgnoreDetections = TimeSpan.FromSeconds(0.5);
@@ -228,7 +214,7 @@ namespace RaceLib
             Channels = new Channel[0];
             MinLapTime = TimeSpan.FromSeconds(5);
             Start = DateTime.Today;
-            Visible = true;
+            VisibleOnline = true;
         }
 
         public Event Clone()
@@ -260,15 +246,7 @@ namespace RaceLib
 
         public override string ToString()
         {
-            switch (SyncWith)
-            {
-                case SyncWith.None:
-                case SyncWith.FPVTrackside:
-                    return Name;
-
-                default:
-                    return Name + " (" + SyncWith.ToString() +")";
-            }
+            return Name;
         }
 
         public static IEnumerable<EventTypes> GetEventTypes()
