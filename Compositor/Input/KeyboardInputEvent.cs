@@ -83,6 +83,11 @@ namespace Composition.Input
                     case Keys.NumPad7: return '7'; ;
                     case Keys.NumPad8: return '8';
                     case Keys.NumPad9: return '9';
+                    case Keys.Decimal: return '.';
+                    case Keys.Divide: return '/';
+                    case Keys.Subtract: return '-';
+                    case Keys.Add: return '+';
+                    case Keys.Multiply: return '*';
 
                     case Keys.OemTilde:
                         if (Shift) { return '~'; } else { return '`'; }
