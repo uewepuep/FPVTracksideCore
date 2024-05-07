@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 using UI.Nodes;
 
 namespace UI
@@ -17,10 +18,14 @@ namespace UI
 
         public EventSelectorEditor Editor { get; private set; }
 
+        public Profile Profile { get; private set; }
+
         public EventSelectorLayer(GraphicsDevice device, Texture2D logo)
             : base(device)
         {
-            Editor = new EventSelectorEditor(logo, new Tools.Profile(GeneralSettings.Instance.Profile));
+            Profile = new Tools.Profile(GeneralSettings.Instance.Profile);
+
+            Editor = new EventSelectorEditor(logo, Profile);
             Editor.OnOK += Editor_OnOK;
             Editor.GeneralSettingsSaved += () =>
             {
