@@ -18,14 +18,12 @@ namespace UI
 
         public EventSelectorEditor Editor { get; private set; }
 
-        public Profile Profile { get; private set; }
 
-        public EventSelectorLayer(GraphicsDevice device, Texture2D logo)
+        public EventSelectorLayer(GraphicsDevice device, EventSelectorEditor eventSelectorEditor)
             : base(device)
         {
-            Profile = new Tools.Profile(GeneralSettings.Instance.Profile);
-
-            Editor = new EventSelectorEditor(logo, Profile);
+            Editor = eventSelectorEditor;
+            
             Editor.OnOK += Editor_OnOK;
             Editor.GeneralSettingsSaved += () =>
             {

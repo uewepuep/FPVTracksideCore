@@ -50,6 +50,8 @@ namespace UI
         public DirectoryInfo Patreons { get; private set; }
         public DirectoryInfo HTTPFiles { get; private set; }
 
+        public Tools.Profile Profile { get; private set; }
+
         public BaseGame(PlatformTools platformTools)
             :base(platformTools)
         {
@@ -185,6 +187,9 @@ namespace UI
             loadingLayer.WorkQueue.Enqueue("Database Upgrade", DatabaseUpgrade);
 
             loadingLayer.WorkQueue.Enqueue("Startup", Startup);
+
+            Profile = new Tools.Profile(GeneralSettings.Instance.Profile);
+
         }
 
         private void DatabaseUpgrade()
@@ -226,10 +231,15 @@ namespace UI
 
             Logger.UI.LogCall(this);
             hasEverShownEventSelector = true;
-            eventSelector = new EventSelectorLayer(GraphicsDevice, Banner);
+            eventSelector = new EventSelectorLayer(GraphicsDevice, CreateEventSelectorEditor());
 
             LayerStack.AddAbove<BackgroundLayer>(eventSelector);
             eventSelector.OnOK += EventSelected;
+        }
+
+        protected virtual EventSelectorEditor CreateEventSelectorEditor()
+        {
+            return new EventSelectorEditor(Banner, Profile);
         }
 
         public void ShowWelcomeSetup()

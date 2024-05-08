@@ -1,6 +1,7 @@
 ﻿using Composition;
 using Composition.Input;
 using Composition.Nodes;
+using ExternalData;
 using Microsoft.Xna.Framework.Graphics;
 using RaceLib;
 using System;
@@ -25,21 +26,6 @@ namespace UI.Nodes
             :base(events, addRemove, cancelButtona, false)
         {
             Text = "Select an event";
-        }
-
-        protected override void ChildValueChanged(Change newChange)
-        {
-            base.ChildValueChanged(newChange);
-            foreach (var propertyNode in GetPropertyNodes)
-            {
-                CheckVisible(propertyNode, Selected);
-            }
-        }
-
-        private void CheckVisible(PropertyNode<Event> propertyNode, Event even)
-        {
-            if (propertyNode == null)
-                return;
         }
 
         protected override PropertyNode<Event> CreatePropertyNode(Event obj, PropertyInfo pi)
@@ -77,13 +63,25 @@ namespace UI.Nodes
                 return new StaticTextPropertyNode<Event>(obj, pi, TextColor);
             }
 
-            PropertyNode<Event> n = base.CreatePropertyNode(obj, pi);
-            if (n != null)
+            if (pi.Name.Contains("SyncWith"))
             {
-                CheckVisible(n, obj);
+                foreach (SyncType syncType in Enum.GetValues(typeof(SyncType)))
+                {
+                    if (pi.Name.Contains(syncType.ToString()))
+                    {
+                        if (!CheckLogin(syncType))
+                            return null;
+                    }
+                }
             }
 
+            PropertyNode<Event> n = base.CreatePropertyNode(obj, pi);
             return n;
+        }
+
+        protected virtual bool CheckLogin(SyncType syncType)
+        {
+            return false;
         }
     }
 
@@ -96,20 +94,18 @@ namespace UI.Nodes
 
         public TextButtonNode CloneButton { get; private set; }
         public TextButtonNode RecoverButton { get; private set; }
-        public TextButtonNode SyncButton { get; private set; }
-        public TextButtonNode LoginButton { get; private set; }
 
         public Profile Profile { get { return MenuButton.Profile; } }
 
         public MenuButton MenuButton { get; private set; }
 
         public EventSelectorEditor(Texture2D logo, Profile profile)
-            : this(GetEvents(profile), true, false)
+            : this(new Event[0], true, false)
         {
             heading.RelativeBounds = new RectangleF(0, 0.18f, 1, 0.05f);
             container.RelativeBounds = new RectangleF(0, heading.RelativeBounds.Bottom, 1, 1 - heading.RelativeBounds.Bottom);
 
-            RelativeBounds = new RectangleF(0.25f, 0.01f, 0.5f, 0.98f);
+            RelativeBounds = new RectangleF(0.2f, 0.01f, 0.6f, 0.98f);
 
             ColorNode colorNode = new ColorNode(Theme.Current.TopPanel.XNA);
             colorNode.RelativeBounds = new RectangleF(0, 0, 1, 0.175f);
@@ -119,6 +115,8 @@ namespace UI.Nodes
             logoNode.RelativeBounds = new RectangleF(0, 0, 1, 0.99f);
             logoNode.Alignment = RectangleAlignment.TopCenter;
             colorNode.AddChild(logoNode);
+
+            addButton.Text = "New";
 
             MenuButton = new MenuButton(profile, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
             MenuButton.RelativeBounds = new RectangleF(0.96f, 0.01f, 0.025f, 0.025f);
@@ -151,14 +149,6 @@ namespace UI.Nodes
 
             if (addRemove)
             {
-                SyncButton = new TextButtonNode("Sync", ButtonBackground, ButtonHover, TextColor);
-                buttonContainer.AddChild(SyncButton);
-                SyncButton.Visible = false;
-
-                LoginButton = new TextButtonNode("Login..", ButtonBackground, ButtonHover, TextColor);
-                buttonContainer.AddChild(LoginButton);
-                LoginButton.Visible = false;
-
                 RecoverButton = new TextButtonNode("Recover", ButtonBackground, ButtonHover, TextColor);
                 RecoverButton.OnClick += (mie) => { Recover(); };
                 RecoverButton.Visible = events.Any(r => !r.Enabled);
@@ -191,11 +181,6 @@ namespace UI.Nodes
                     }
                 };
                 buttonContainer.AddChild(CloneButton);
-
-                Node[] buttons = new Node[] { SyncButton, addButton, removeButton, CloneButton, RecoverButton, cancelButton, okButton };
-                buttonContainer.SetOrder(buttons);
-
-                AlignVisibleButtons();
             }
             itemName.Visible = false;
         }
@@ -283,7 +268,7 @@ namespace UI.Nodes
             SetObjects(elist, true, true);
         }
 
-        private static Event[] GetEvents(Profile profile)
+        protected static Event[] GetEvents(Profile profile)
         {
             Event[] events;
             using (IDatabase db = DatabaseFactory.OpenLegacyLoad(Guid.Empty))
