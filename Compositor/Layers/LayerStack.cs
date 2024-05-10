@@ -72,7 +72,7 @@ namespace Composition.Layers
             //iterate through in reverse order
             for (int i = layerArray.Length - 1; i >= 0; i--)
             {
-                if (!layerArray[i].Visible)
+                if (!layerArray[i].Visible && !layerArray[i].AlwaysGetKeyboardEvents)
                     continue;
 
                 if (layerArray[i].OnKeyboardInput(inputEvent))

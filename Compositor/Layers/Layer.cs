@@ -30,10 +30,14 @@ namespace Composition.Layers
         public LayerStackGame Game { get { return LayerStack.Game; } }
 
         public InputEventFactory InputEventFactory { get { return LayerStack.InputEventFactory; } }
+
+        public bool AlwaysGetKeyboardEvents { get; set; }
+
         public Layer()
         {
             LayerStack = null;
             Visible = true;
+            AlwaysGetKeyboardEvents = false;
         }
 
         public virtual void SetLayerStack(LayerStack layerStack)
