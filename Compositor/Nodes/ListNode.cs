@@ -151,9 +151,12 @@ namespace Composition.Nodes
 
             base.Layout(parentBounds);
 
-            Scroller.ContentSizePixels = contentSize;
-            Scroller.ViewSizePixels = Bounds.Height;
-            Scroller.Layout(BoundsF);
+            if (Scroller  != null)
+            {
+                Scroller.ContentSizePixels = contentSize;
+                Scroller.ViewSizePixels = Bounds.Height;
+                Scroller.Layout(BoundsF);
+            }
         }
 
         protected override void LayoutChildren(RectangleF bounds)
