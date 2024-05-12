@@ -13,7 +13,7 @@ namespace Composition.Nodes
 {
     public class RenderTargetNode : ImageNode, IUpdateableNode, IPreProcessable
     {
-        private RenderTarget2D renderTarget
+        protected RenderTarget2D renderTarget
         {
             get
             {
@@ -305,7 +305,7 @@ namespace Composition.Nodes
             return d;
         }
 
-        public void PreProcess(Drawer id)
+        public virtual void PreProcess(Drawer id)
         {
             if (drawer != null)
             {
@@ -363,7 +363,10 @@ namespace Composition.Nodes
                     id.GraphicsDevice.SetRenderTarget(null);
                 }
             }
-            Parent?.RequestRedraw();
+            if (drawer.CanMultiThread)
+            {
+                Parent?.RequestRedraw();
+            }
         }
 
         protected virtual void DrawContent(Drawer id)
