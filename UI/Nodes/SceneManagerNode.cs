@@ -12,6 +12,7 @@ using Tools;
 using Composition.Input;
 using UI.Video;
 using System.Xml.Linq;
+using ThreeDee.Nodes;
 
 namespace UI.Nodes
 {
@@ -39,6 +40,8 @@ namespace UI.Nodes
         private FullScreenAspectClosable fullScreenContainer;
         private Node fullscreenNode;
         private Node fullscreenNodeParent;
+
+        private RaceTrackNode raceTrackNode;
 
         public enum Scenes
         {
@@ -136,6 +139,9 @@ namespace UI.Nodes
             fullScreenContainer = new FullScreenAspectClosable();
             fullScreenContainer.Close += UnFullScreen;
             AddChild(fullScreenContainer);
+
+            raceTrackNode = new RaceTrackNode();
+            AddChild(raceTrackNode);
         }
 
         public void SyncFinished()
@@ -388,6 +394,7 @@ namespace UI.Nodes
                     ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Large);
 
                     launchCamsNode.RelativeBounds = new RectangleF(0, 0, launchFinishWidth, nonChannelGridHeight);
+                    raceTrackNode.RelativeBounds = new RectangleF(0, 0, launchFinishWidth, nonChannelGridHeight);
 
                     Node.AlignHorizontally(0, launchCams.ToArray());
 

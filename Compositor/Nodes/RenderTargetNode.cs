@@ -254,7 +254,7 @@ namespace Composition.Nodes
             }
         }
 
-        public void Update(GameTime gameTime)
+        public virtual void Update(GameTime gameTime)
         {
             DebugTimer.DebugStartTime(this);
             if (NeedsLayout && Parent != null)
@@ -273,8 +273,7 @@ namespace Composition.Nodes
                     {
                         if (drawer == null)
                         {
-                            drawer = new Drawer(CompositorLayer.GraphicsDevice);
-                            drawer.CanMultiThread = false;
+                            drawer = CreateDrawer();
                         }
 
                         Size maxSize = Size;
@@ -297,6 +296,13 @@ namespace Composition.Nodes
                 }
             }
             DebugTimer.DebugEndTime(this);
+        }
+
+        protected virtual Drawer CreateDrawer()
+        {
+            Drawer d = new Drawer(CompositorLayer.GraphicsDevice);
+            d.CanMultiThread = false;
+            return d;
         }
 
         public void PreProcess(Drawer id)
@@ -334,9 +340,7 @@ namespace Composition.Nodes
 //#endif
                     if (id != null)
                     {
-                        id.Begin();
                         DrawContent(id);
-                        id.End();
                     }
                 }
                 catch
@@ -364,7 +368,9 @@ namespace Composition.Nodes
 
         protected virtual void DrawContent(Drawer id)
         {
+            id.Begin();
             DrawChildren(id, 1);
+            id.End();
         }
 
         public override void RequestLayout()
