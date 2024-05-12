@@ -13,6 +13,7 @@ using ThreeDee.Nodes;
 using Timing;
 using Tools;
 using UI.Nodes.Rounds;
+using UI.Nodes.Track;
 using UI.Video;
 
 namespace UI.Nodes
@@ -57,7 +58,7 @@ namespace UI.Nodes
 
         private KeyboardShortcuts keyMapper;
 
-        private RaceTrackNode raceTrackNode;
+        private TrackTab trackTab;
 
 
         public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, SoundManager soundManager, RoundsNode rounds, SceneManagerNode sceneManagerContent, TabButtonsNode tabContainer, KeyboardShortcuts keyMapper)
@@ -79,7 +80,7 @@ namespace UI.Nodes
 
             ReplayNode = new ReplayNode(eventManager, keyMapper);
 
-            raceTrackNode = new RaceTrackNode();
+            trackTab = new TrackTab();
 
             eventManager.RaceManager.OnRaceChanged += UpdateReplayButton;
             eventManager.RaceManager.OnRaceEnd += UpdateReplayButton;
@@ -101,6 +102,7 @@ namespace UI.Nodes
             AddTab("Rounds", this.rounds, ShowRounds);
             liveButton = AddTab("Live", sceneManagerNode, ShowLive);
             replayButton = AddTab("Replay", ReplayNode, ShowReplay);
+            AddTab("Track", trackTab, ShowRaceTrack);
 
             AddTab("Lap Records", LapRecordsSummaryNode, ShowTopLaps);
             AddTab("Lap Count", LapCountSummaryNode, ShowLaps);
@@ -108,7 +110,6 @@ namespace UI.Nodes
             AddTab("Channel List", pilotChanelList, ShowPilotChannelList);
             rssiButton = AddTab("RSSI Analyser", rssiNode, ShowAnalyser);
             AddTab("Photo Booth", PhotoBooth, ShowPhotoBooth);
-            AddTab("Track", raceTrackNode, ShowRaceTrack);
             AddTab("Patreons", patreonsNode, ShowPatreons);
 
             replayButton.Enabled = false;
@@ -263,7 +264,7 @@ namespace UI.Nodes
 
         public void ShowRaceTrack(MouseInputEvent mie)
         {
-            Show(raceTrackNode);
+            Show(trackTab);
         }
 
         public void ShowPilotChannelList(MouseInputEvent mie)
