@@ -26,7 +26,7 @@ namespace Composition.Nodes
         }
 
         private object renderTargetLock;
-        private Drawer drawer;
+        protected Drawer drawer;
 
         private Size size;
         public Size Size
@@ -289,13 +289,18 @@ namespace Composition.Nodes
 
                         if (renderTarget == null && maxSize.Width > 0 && maxSize.Height > 0)
                         {
-                            renderTarget = new RenderTarget2D(drawer.GraphicsDevice, maxSize.Width, maxSize.Height);
+                            renderTarget = CreateRenderTarget(maxSize);
                             NeedsDraw = true;
                         }
                     }
                 }
             }
             DebugTimer.DebugEndTime(this);
+        }
+
+        protected virtual RenderTarget2D CreateRenderTarget(Size maxSize)
+        {
+            return new RenderTarget2D(drawer.GraphicsDevice, maxSize.Width, maxSize.Height);
         }
 
         protected virtual Drawer CreateDrawer()
