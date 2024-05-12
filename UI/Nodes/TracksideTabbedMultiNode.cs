@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ThreeDee.Nodes;
 using Timing;
 using Tools;
 using UI.Nodes.Rounds;
@@ -28,6 +29,7 @@ namespace UI.Nodes
         public bool IsOnPatreons { get { return patreonsNode == Showing; } }
         public bool IsOnPhotoBooth { get { return PhotoBooth == Showing; } }
         public bool IsOnRSSI { get { return rssiNode == Showing; } }
+        public bool IsOnTrack { get { return rssiNode == Showing; } }
 
 
 
@@ -55,6 +57,8 @@ namespace UI.Nodes
 
         private KeyboardShortcuts keyMapper;
 
+        private RaceTrackNode raceTrackNode;
+
 
         public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, SoundManager soundManager, RoundsNode rounds, SceneManagerNode sceneManagerContent, TabButtonsNode tabContainer, KeyboardShortcuts keyMapper)
             : base(TimeSpan.FromSeconds(0.6f), tabContainer)
@@ -75,7 +79,8 @@ namespace UI.Nodes
 
             ReplayNode = new ReplayNode(eventManager, keyMapper);
 
-            
+            raceTrackNode = new RaceTrackNode();
+
             eventManager.RaceManager.OnRaceChanged += UpdateReplayButton;
             eventManager.RaceManager.OnRaceEnd += UpdateReplayButton;
             eventManager.RaceManager.TimingSystemManager.OnInitialise += UpdateRSSIVisible;
@@ -103,6 +108,7 @@ namespace UI.Nodes
             AddTab("Channel List", pilotChanelList, ShowPilotChannelList);
             rssiButton = AddTab("RSSI Analyser", rssiNode, ShowAnalyser);
             AddTab("Photo Booth", PhotoBooth, ShowPhotoBooth);
+            AddTab("Track", raceTrackNode, ShowRaceTrack);
             AddTab("Patreons", patreonsNode, ShowPatreons);
 
             replayButton.Enabled = false;
@@ -253,6 +259,11 @@ namespace UI.Nodes
         {
             Show(PhotoBooth);
             PhotoBooth.Load();
+        }
+
+        public void ShowRaceTrack(MouseInputEvent mie)
+        {
+            Show(raceTrackNode);
         }
 
         public void ShowPilotChannelList(MouseInputEvent mie)
