@@ -55,6 +55,8 @@ namespace Composition.Nodes
             }
         }
 
+        public bool Clip { get; set; }
+
         public ListNode(Microsoft.Xna.Framework.Color scrollColor)
         {
             Scroller = new ScrollerNode(this, ScrollerNode.Types.VerticalRight);
@@ -66,6 +68,7 @@ namespace Composition.Nodes
             LayoutInvisibleItems = true;
             BackgroundColors = null;
             ShrinkContentsForScrollers = true;
+            Clip = true;
         }
 
         public override void Dispose()
@@ -104,7 +107,12 @@ namespace Composition.Nodes
 
             Point offset = id.Offset;
 
-            id.PushClipRectangle(Bounds);
+            Rectangle bounds = Bounds;
+
+            if (Clip)
+            {
+                id.PushClipRectangle(bounds);
+            }
 
             id.Offset = new Point(0, -(int)Scroller.CurrentScrollPixels);
 
@@ -120,8 +128,10 @@ namespace Composition.Nodes
                 }
             }
 
-
-            id.PopClipRectangle();
+            if (Clip)
+            {
+                id.PopClipRectangle();
+            }
 
             id.Offset = offset;
 

@@ -30,7 +30,7 @@ namespace UI.Nodes
         public bool IsOnPatreons { get { return patreonsNode == Showing; } }
         public bool IsOnPhotoBooth { get { return PhotoBooth == Showing; } }
         public bool IsOnRSSI { get { return rssiNode == Showing; } }
-        public bool IsOnTrack { get { return rssiNode == Showing; } }
+        public bool IsOnTrack { get { return trackTab == Showing; } }
 
 
 

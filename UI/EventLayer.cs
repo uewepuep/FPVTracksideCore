@@ -1177,6 +1177,11 @@ namespace UI
                 {
                     ShowPilotList(true);
                 }
+
+                if (TabbedMultiNode.IsOnTrack)
+                {
+                    ShowPilotList(false);
+                }
             }
 
             UpdateTopBar();

@@ -67,6 +67,15 @@ namespace Composition.Nodes
 
         private bool needsDispose;
 
+        public bool Clip
+        {
+            set
+            {
+                objectProperties.Clip = value;
+                multiItemBox.Clip = value;
+            }
+        }
+
         public BaseObjectEditorNode(Color buttonBackground, Color buttonHover, Color textColor, Color scrollColor, bool hasButtons = true)
         {
             changes = new List<Change>();
