@@ -19,14 +19,9 @@ namespace UI.Nodes.Track
         public TrackTab() 
         {
             Panel = new ColorNode(Theme.Current.Panel.XNA);
-            Panel.RelativeBounds = new RectangleF(0, 0, 0.15f, 1);
             AddChild(Panel);
 
-
-            
-
             RaceTrackNode = new RaceTrackNode();
-            RaceTrackNode.RelativeBounds = new RectangleF(Panel.RelativeBounds.Right, 0, 1 - Panel.RelativeBounds.Right, 1);
             RaceTrackNode.ClickedElement += RaceTrackNode_ClickedElement;
             AddChild(RaceTrackNode);
 
@@ -46,11 +41,40 @@ namespace UI.Nodes.Track
             BaseObjectEditorNode<TrackElementEditable> editor = new BaseObjectEditorNode<TrackElementEditable>(Theme.Current.InfoPanel.Background.XNA, Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.InfoPanel.Text.XNA, Theme.Current.ScrollBar.XNA);
             editor.Clip = false;
             Panel.AddChild(editor);
+            editor.OnCancel += (e) =>
+            {
+                CloseSide();
+            };
+
+            editor.OnOK += Editor_OnOK;
 
             editor.SetObject(trackElementEditable);
             editor.RefreshList();
             editor.RequestLayout();
+
+            OpenSide();
         }
+
+        private void Editor_OnOK(BaseObjectEditorNode<TrackElementEditable> obj)
+        {
+            CloseSide();
+        }
+
+        public void OpenSide()
+        {
+            Panel.RelativeBounds = new RectangleF(0, 0, 0.15f, 1);
+            RaceTrackNode.RelativeBounds = new RectangleF(Panel.RelativeBounds.Right, 0, 1 - Panel.RelativeBounds.Right, 1);
+            RequestLayout();
+        }
+
+        public void CloseSide() 
+        {
+            RaceTrackNode.RelativeBounds = new RectangleF(0, 0, 1, 1);
+            Panel.RelativeBounds = new RectangleF(0, 0, 0, 0);
+            RequestLayout();
+
+        }
+
 
         private void FlyThrough_OnClick(Composition.Input.MouseInputEvent mie)
         {
