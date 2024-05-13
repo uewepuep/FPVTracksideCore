@@ -211,6 +211,7 @@ namespace UI
             if (tabbedMultiNode.IsOnPhotoBooth) Trigger(Triggers.PhotoBoothTab);
             if (tabbedMultiNode.IsOnPatreons) Trigger(Triggers.PatreonsTab);
             if (tabbedMultiNode.IsOnPoints) Trigger(Triggers.PointsTab);
+            if (tabbedMultiNode.IsOnReplay) Trigger(Triggers.ReplayTab);
         }
 
         private void OnRacePreStart(Race race)
