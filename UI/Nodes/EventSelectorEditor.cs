@@ -70,7 +70,10 @@ namespace UI.Nodes
                     if (pi.Name.Contains(syncType.ToString()))
                     {
                         if (!CheckLogin(syncType))
+                        {
+                            pi.SetValue(obj, false);
                             return null;
+                        }
                     }
                 }
             }
@@ -273,7 +276,7 @@ namespace UI.Nodes
             Event[] events;
             using (IDatabase db = DatabaseFactory.OpenLegacyLoad(Guid.Empty))
             {
-                events = db.GetEvents().ToArray();
+                events = db.GetEvents().Where(r => r.Enabled).ToArray();
 
                 Club club = db.All<Club>().FirstOrDefault();
                 if (club == null)
