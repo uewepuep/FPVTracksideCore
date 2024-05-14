@@ -114,7 +114,10 @@ namespace Composition.Nodes
                 id.PushClipRectangle(bounds);
             }
 
-            id.Offset = new Point(0, -(int)Scroller.CurrentScrollPixels);
+            if (Scroller != null)
+            {
+                id.Offset = new Point(0, -(int)Scroller.CurrentScrollPixels);
+            }
 
             Node[] t = Children;
             foreach (Node n in t)

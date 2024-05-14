@@ -109,6 +109,9 @@ namespace Composition
 
         public void PushClipRectangle(Rectangle clip)
         {
+            if (SpriteBatch == null)
+                return;
+
             SpriteBatch.End();
 
             clipRectangles.Push(clip);

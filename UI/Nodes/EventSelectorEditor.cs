@@ -69,7 +69,15 @@ namespace UI.Nodes
                 {
                     if (pi.Name.Contains(syncType.ToString()))
                     {
-                        if (!CheckLogin(syncType))
+                        bool value = (bool)pi.GetValue(obj);
+
+                        if (!CheckLogin(syncType) && !value)
+                        {
+                            pi.SetValue(obj, false);
+                            return null;
+                        }
+
+                        if (syncType != SyncType.FPVTrackside && obj.ExternalID == 0)
                         {
                             pi.SetValue(obj, false);
                             return null;

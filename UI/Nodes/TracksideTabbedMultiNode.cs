@@ -9,11 +9,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ThreeDee.Nodes;
 using Timing;
 using Tools;
 using UI.Nodes.Rounds;
-using UI.Nodes.Track;
 using UI.Video;
 
 namespace UI.Nodes
@@ -58,7 +56,7 @@ namespace UI.Nodes
 
         private KeyboardShortcuts keyMapper;
 
-        private TrackTab trackTab;
+        private Node trackTab;
 
 
         public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, SoundManager soundManager, RoundsNode rounds, SceneManagerNode sceneManagerContent, TabButtonsNode tabContainer, KeyboardShortcuts keyMapper)
@@ -80,7 +78,7 @@ namespace UI.Nodes
 
             ReplayNode = new ReplayNode(eventManager, keyMapper);
 
-            trackTab = new TrackTab();
+            trackTab = null;
 
             eventManager.RaceManager.OnRaceChanged += UpdateReplayButton;
             eventManager.RaceManager.OnRaceEnd += UpdateReplayButton;
@@ -102,7 +100,7 @@ namespace UI.Nodes
             AddTab("Rounds", this.rounds, ShowRounds);
             liveButton = AddTab("Live", sceneManagerNode, ShowLive);
             replayButton = AddTab("Replay", ReplayNode, ShowReplay);
-            AddTab("Track", trackTab, ShowRaceTrack);
+            //AddTab("Track", trackTab, ShowRaceTrack);
 
             AddTab("Lap Records", LapRecordsSummaryNode, ShowTopLaps);
             AddTab("Lap Count", LapCountSummaryNode, ShowLaps);
