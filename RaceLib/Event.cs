@@ -192,6 +192,8 @@ namespace RaceLib
             }
         }
 
+        public Track Track { get; set; }
+
         public Event()
         {
             SyncWithFPVTrackside = false;

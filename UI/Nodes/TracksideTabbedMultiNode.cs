@@ -264,6 +264,11 @@ namespace UI.Nodes
         public void ShowRaceTrack(MouseInputEvent mie)
         {
             Show(trackTab);
+
+            using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open(Guid.Empty))
+            {
+                trackTab.Load(db.All<RaceLib.Track>().FirstOrDefault());
+            }
         }
 
         public void ShowPilotChannelList(MouseInputEvent mie)

@@ -85,6 +85,8 @@ namespace DB.JSON
         public bool VisibleOnline { get; set; }
         public bool Locked { get; set; }
 
+        public Guid Track { get; set; }
+
         public Event()
         {
         }

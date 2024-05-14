@@ -28,6 +28,7 @@ namespace DB.JSON
 
         public EventCollection Events { get; private set; }
         public JsonCollection<Round> Rounds { get; private set; }
+        public JsonCollection<Track> Tracks { get; private set; }
 
         public SplitDirJsonCollection<Race> Races { get; private set; }
         public ResultCollection Results { get; private set; }
@@ -40,6 +41,7 @@ namespace DB.JSON
             Events = new EventCollection(DataDirectory);
             Patreons = new JsonCollection<Patreon>(DataDirectory);
             Clubs = new JsonCollection<Club>(DataDirectory);
+            Tracks = new JsonCollection<Track>(DataDirectory);
             Channels = new ChannelCollections();
         }
 
@@ -102,6 +104,9 @@ namespace DB.JSON
 
             if (typeof(T) == typeof(RaceLib.Detection))
                 return new ConvertedCollection<RaceLib.Detection, Detection>(new DetectionCollection(Races), this) as IDatabaseCollection<T>;
+
+            if (typeof(T) == typeof(RaceLib.Track))
+                return new ConvertedCollection<RaceLib.Track, Track>(Tracks, this) as IDatabaseCollection<T>;
 
             if (typeof(T) == typeof(RaceLib.PilotChannel))
                 return new DummyCollection<T>();
