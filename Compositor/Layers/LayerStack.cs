@@ -25,10 +25,13 @@ namespace Composition.Layers
 
         public Rectangle Bounds { get; private set; }
 
+        public ContentManager Content { get; private set; }
+
         public LayerStack(GraphicsDevice graphicsDevice, LayerStackGame game, PlatformTools platformTools)
             :this(graphicsDevice, game.Window, platformTools)
         {
             Game = game;
+            Content = game.Content;
         }
 
         public LayerStack(GraphicsDevice graphicsDevice, GameWindow gameWindow, PlatformTools platformTools)
