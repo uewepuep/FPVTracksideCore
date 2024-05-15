@@ -265,9 +265,17 @@ namespace UI.Nodes
         {
             Show(trackTab);
 
-            using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open(Guid.Empty))
+            if (!trackTab.Loaded)
             {
-                trackTab.Load(db.All<RaceLib.Track>().FirstOrDefault());
+                LoadingLayer ll = CompositorLayer.LayerStack.GetLayer<LoadingLayer>();
+
+                ll.WorkQueue.Enqueue(() =>
+                {
+                    using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open(Guid.Empty))
+                    {
+                        trackTab.Load(db.All<RaceLib.Track>().FirstOrDefault());
+                    }
+                });
             }
         }
 

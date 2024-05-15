@@ -9,18 +9,18 @@ using System.Threading.Tasks;
 
 namespace DB.JSON
 {
-    public class SplitDirJsonCollection<T> : IDatabaseCollection<T> where T : DatabaseObject, new()
+    public class SplitJsonCollection<T> : IDatabaseCollection<T> where T : DatabaseObject, new()
     {
         public DirectoryInfo Directory { get; private set; }
 
         public string Prefix { get; private set; }
 
-        private JsonIO<T> jsonIO;
+        protected JsonIO<T> jsonIO;
 
-        private T[] allCache;
-        private bool cacheValid;
+        protected T[] allCache;
+        protected bool cacheValid;
 
-        public SplitDirJsonCollection(DirectoryInfo directoryInfo, string prefix = null)
+        public SplitJsonCollection(DirectoryInfo directoryInfo, string prefix = null)
         {
             jsonIO = new JsonIO<T>();
             Directory = directoryInfo;
@@ -43,7 +43,7 @@ namespace DB.JSON
             return t.ID;
         }
 
-        public DirectoryInfo GetDirectoryInfo(Guid id)
+        public virtual DirectoryInfo GetDirectoryInfo(Guid id)
         {
             return new DirectoryInfo(Path.Combine(Directory.FullName, id.ToString()));
         }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DB.JSON
 {
-    public class ResultCollection : SplitDirJsonCollection<Result>
+    public class ResultCollection : SplitJsonCollection<Result>
     {
         public ResultCollection(DirectoryInfo directoryInfo) 
             : base(directoryInfo, null)

@@ -282,7 +282,13 @@ namespace Composition.Nodes
                         maxSize.Width = Math.Min(4096, maxSize.Width);
                         maxSize.Height = Math.Min(4096, maxSize.Height);
 
-                        if (renderTarget != null && !IsAnimating() && (maxSize.Width != renderTarget.Width || maxSize.Height != renderTarget.Height))
+                        bool isAnimating = false;
+                        if (Parent != null && Parent.IsAnimating())
+                        {
+                            isAnimating = true;
+                        }
+
+                        if (renderTarget != null && !isAnimating && (maxSize.Width != renderTarget.Width || maxSize.Height != renderTarget.Height))
                         {
                             renderTarget.Dispose();
                             renderTarget = null;

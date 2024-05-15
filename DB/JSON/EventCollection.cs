@@ -9,12 +9,12 @@ namespace DB.JSON
 
     public class EventCollection : IDatabaseCollection<Event>
     {
-        private SplitDirJsonCollection<Event> collection;
+        private SplitJsonCollection<Event> collection;
 
 
         public EventCollection(DirectoryInfo dataDirectory)
         {
-            collection = new SplitDirJsonCollection<Event>(dataDirectory);
+            collection = new SplitJsonCollection<Event>(dataDirectory);
         }
 
         public IEnumerable<Event> All()

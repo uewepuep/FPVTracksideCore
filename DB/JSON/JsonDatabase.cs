@@ -28,9 +28,9 @@ namespace DB.JSON
 
         public EventCollection Events { get; private set; }
         public JsonCollection<Round> Rounds { get; private set; }
-        public JsonCollection<Track> Tracks { get; private set; }
+        public TrackCollection Tracks { get; private set; }
 
-        public SplitDirJsonCollection<Race> Races { get; private set; }
+        public SplitJsonCollection<Race> Races { get; private set; }
         public ResultCollection Results { get; private set; }
 
         public Guid EventId { get; private set; }
@@ -41,8 +41,15 @@ namespace DB.JSON
             Events = new EventCollection(DataDirectory);
             Patreons = new JsonCollection<Patreon>(DataDirectory);
             Clubs = new JsonCollection<Club>(DataDirectory);
-            Tracks = new JsonCollection<Track>(DataDirectory);
             Channels = new ChannelCollections();
+
+            DirectoryInfo trackDir = new DirectoryInfo("Tracks");
+            if (!trackDir.Exists)
+            {
+                trackDir.Create();
+            }
+
+            Tracks = new TrackCollection(trackDir);
         }
 
         public JsonDatabase(DirectoryInfo dataDirectory, Guid eventId)
@@ -60,7 +67,7 @@ namespace DB.JSON
                 Rounds = new JsonCollection<Round>(eventDirectory);
                 Pilots = new JsonCollection<Pilot>(eventDirectory);
 
-                Races = new SplitDirJsonCollection<Race>(eventDirectory);
+                Races = new SplitJsonCollection<Race>(eventDirectory);
                 Results = new ResultCollection(eventDirectory);
             }
         }

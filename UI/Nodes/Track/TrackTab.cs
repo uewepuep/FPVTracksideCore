@@ -21,6 +21,8 @@ namespace UI.Nodes.Track
 
         private RaceLib.Track track;
 
+        public bool Loaded { get { return track != null; } }
+
         public TrackTab() 
         {
             RaceTrackNode = new RaceTrackNode();
