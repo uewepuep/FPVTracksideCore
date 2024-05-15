@@ -57,5 +57,6 @@ namespace DB.JSON
         public float Tilt { get; set; }
 
         public float Rotation { get; set; }
+        public bool Visible { get; set; }
     }
 }

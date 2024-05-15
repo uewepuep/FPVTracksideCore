@@ -228,6 +228,7 @@ namespace UI.Nodes.Track
                 created.Z = trackElement.Position.Z;
                 created.Tilt = trackElement.Tilt;
                 created.Rotation = trackElement.RotationTopdown;
+                created.Visible = trackElement.Visible;
 
                 if (trackElement is Gate)
                     created.ElementType = RaceLib.TrackElement.ElementTypes.Gate;
