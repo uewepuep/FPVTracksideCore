@@ -189,11 +189,11 @@ namespace UI.Nodes.Track
 
             if (Mode == Modes.Selected)
             {
-                if (mouseInputEvent.ButtonState == ButtonStates.Pressed)
+                if (mouseInputEvent.ButtonState == ButtonStates.Pressed && mouseInputEvent.Button == MouseButtons.Right)
                 {
                     dragging = true;
                 }
-                else if (mouseInputEvent.ButtonState == ButtonStates.Released)
+                else if (mouseInputEvent.ButtonState == ButtonStates.Released && mouseInputEvent.Button == MouseButtons.Right)
                 {
                     dragging = false;
                 }
@@ -266,7 +266,7 @@ namespace UI.Nodes.Track
             }
         }
 
-        public void Select(RaceLib.TrackElement obj)
+        public void Select(TrackElement obj)
         {
             modeLookAt = obj.Position;
             Mode = Modes.Selected;

@@ -44,11 +44,11 @@ namespace UI.Nodes.Track
             this.track = track;
         }
 
-        private void TrackEditorNode_OnOK(BaseObjectEditorNode<RaceLib.TrackElement> obj)
+        private void TrackEditorNode_OnOK(BaseObjectEditorNode<TrackElement> obj)
         {
         }
 
-        private void TrackEditorNode_OnCancel(BaseObjectEditorNode<RaceLib.TrackElement> obj)
+        private void TrackEditorNode_OnCancel(BaseObjectEditorNode<TrackElement> obj)
         {
         }
 
