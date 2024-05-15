@@ -267,7 +267,7 @@ namespace UI.Nodes
 
             using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open(Guid.Empty))
             {
-                trackTab.Load(db.All<RaceLib.Track>().FirstOrDefault());
+                trackTab.RaceTrackNode.Load(db.All<RaceLib.Track>().FirstOrDefault());
             }
         }
 

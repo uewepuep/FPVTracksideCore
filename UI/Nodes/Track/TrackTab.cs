@@ -1,4 +1,6 @@
 ﻿using Composition.Nodes;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,9 +27,9 @@ namespace UI.Nodes.Track
             RaceTrackNode.ClickedElement += RaceTrackNode_ClickedElement;
             AddChild(RaceTrackNode);
 
-            TextButtonNode flyThrough = new TextButtonNode("Fly Through", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
+            TextButtonNode flyThrough = new TextButtonNode("View Mode", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
             flyThrough.RelativeBounds = new Tools.RectangleF(0.9f, 0.9f, 0.1f, 0.1f);
-            flyThrough.OnClick += FlyThrough_OnClick;
+            flyThrough.OnClick += ModeClick;
             AddChild(flyThrough);
 
             //TextButtonNode save = new TextButtonNode("sae", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
@@ -41,61 +43,9 @@ namespace UI.Nodes.Track
             using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open(Guid.Empty))
             {
                 RaceLib.Track track = new RaceLib.Track();
-                FillTrack(track);
-
+                track.TrackElements = RaceTrackNode.GetTrackElements().ToArray();
                 db.Upsert(track);
             }
-        }
-
-        public void Load(RaceLib.Track track)
-        {
-            foreach (var trackElement in track.TrackElements)
-            {
-                switch (trackElement.ElementType)
-                {
-                    case RaceLib.TrackElement.ElementTypes.Dive:
-                        RaceTrackNode.AddDive(trackElement.X, trackElement.Y, trackElement.Z, trackElement.Rotation, trackElement.Tilt);
-                        break;
-                    case RaceLib.TrackElement.ElementTypes.Gate:
-                        RaceTrackNode.AddGate(trackElement.X, trackElement.Y, trackElement.Z, trackElement.Rotation, trackElement.Tilt);
-                        break;
-                    case RaceLib.TrackElement.ElementTypes.Flag:
-                        RaceTrackNode.AddFlag(trackElement.X, trackElement.Y, trackElement.Z, trackElement.Rotation, trackElement.Tilt);
-                        break;
-                    default:
-                        throw new NotImplementedException();
-                }
-            }
-        }
-
-        public void FillTrack(RaceLib.Track track)
-        {
-            List<RaceLib.TrackElement> elements = new List<RaceLib.TrackElement>();
-            foreach (TrackElement trackElement in RaceTrackNode.TrackEntity.TrackElements)
-            {
-                RaceLib.TrackElement created = new RaceLib.TrackElement();
-                created.X = trackElement.Position.X;
-                created.Y = trackElement.Position.Y;
-                created.Z = trackElement.Position.Z;
-                created.Tilt = trackElement.Tilt;
-                created.Rotation = trackElement.RotationTopdown;
-
-                if (trackElement is Gate)
-                    created.ElementType = RaceLib.TrackElement.ElementTypes.Gate;
-
-                if (trackElement is Dive)
-                    created.ElementType = RaceLib.TrackElement.ElementTypes.Dive;
-
-                if (trackElement is Flag)
-                    created.ElementType = RaceLib.TrackElement.ElementTypes.Flag;
-
-                if (created.ElementType != RaceLib.TrackElement.ElementTypes.Invalid)
-                {
-                    elements.Add(created);
-                }
-            }
-
-            track.TrackElements = elements.ToArray();
         }
 
         private void RaceTrackNode_ClickedElement(ThreeDee.Entities.TrackElement obj)
@@ -142,9 +92,9 @@ namespace UI.Nodes.Track
         }
 
 
-        private void FlyThrough_OnClick(Composition.Input.MouseInputEvent mie)
+        private void ModeClick(Composition.Input.MouseInputEvent mie)
         {
-            RaceTrackNode.FlyThrough();
+            RaceTrackNode.ToggleMode();
         }
     }
 }
