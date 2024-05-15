@@ -11,6 +11,7 @@ using Microsoft.Xna.Framework.Content;
 using Composition.Layers;
 using ThreeDee.Nodes;
 using ImageServer;
+using Tools;
 
 namespace UI.Nodes.Track
 {
@@ -21,11 +22,15 @@ namespace UI.Nodes.Track
         {
             SpinCenter,
             FlyThrough,
-            AboveThrough
+            AboveThrough,
+
+            Selected,
         }
 
         private float modeValue;
         private Vector3 modeLookFrom;
+        private Vector3 modeLookAt;
+
         public Modes Mode { get; private set; }
 
         public TrackEntity TrackEntity { get; private set; }
@@ -46,14 +51,14 @@ namespace UI.Nodes.Track
             Mode = Modes.SpinCenter;
         }
 
-        public override void Load(GraphicsDevice graphicsDevice)
+        public override void Initialize(GraphicsDevice graphicsDevice)
         {
             Camera.LookAt(new Vector3(0, 10, 20), Vector3.Zero);
 
             TrackEntity = new TrackEntity(graphicsDevice, ContentManager);
             Root = TrackEntity;
 
-            base.Load(graphicsDevice);
+            base.Initialize(graphicsDevice);
         }
 
         public override void Update(GameTime gameTime)
@@ -74,7 +79,11 @@ namespace UI.Nodes.Track
                 {
                     case Modes.SpinCenter:
                         modeValue += (float)gameTime.ElapsedGameTime.TotalSeconds / 2;
-                        LookAtFromAboveSpin(TrackEntity.Center, new Vector3(0, 10, 20));
+                        LookAtFromAboveSpin(modeLookAt, new Vector3(0, 10, 20));
+                        break;
+
+                    case Modes.Selected:
+                        LookAtFromAboveSpin(modeLookAt, new Vector3(0, 5, 10));
                         break;
 
                     case Modes.FlyThrough:
@@ -164,8 +173,13 @@ namespace UI.Nodes.Track
                 case Modes.SpinCenter:
                     TrackEntity.FlightPath.Visible = true;
                     break;
+                case Modes.Selected:
+                    TrackEntity.FlightPath.Visible = true;
+                    break;
             }
         }
+
+        private bool dragging;
 
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
         {
@@ -182,6 +196,23 @@ namespace UI.Nodes.Track
                     {
                         ClickedElement((TrackElement)best.Entity);
                     }
+                }
+            }
+
+            if (Mode == Modes.Selected)
+            {
+                if (mouseInputEvent.ButtonState == ButtonStates.Pressed)
+                {
+                    dragging = true;
+                }
+                else if (mouseInputEvent.ButtonState == ButtonStates.Released)
+                {
+                    dragging = false;
+                }
+                else if (dragging)
+                {
+                    modeValue -= mouseInputEvent.PositionChange.X / 100.0f;
+                    Logger.UI.LogCall(this, modeValue);
                 }
             }
 
@@ -210,7 +241,7 @@ namespace UI.Nodes.Track
                     default:
                         throw new NotImplementedException();
                 }
-                tr.Position = new Vector3(v.X, v.Y, v.Z);
+                tr.Position = v.Position;
                 tr.Tilt = v.Tilt;
                 tr.RotationTopdown = v.Rotation;
 
@@ -223,9 +254,7 @@ namespace UI.Nodes.Track
             foreach (TrackElement trackElement in TrackEntity.TrackElements)
             {
                 RaceLib.TrackElement created = new RaceLib.TrackElement();
-                created.X = trackElement.Position.X;
-                created.Y = trackElement.Position.Y;
-                created.Z = trackElement.Position.Z;
+                created.Position = trackElement.Position;
                 created.Tilt = trackElement.Tilt;
                 created.Rotation = trackElement.RotationTopdown;
                 created.Visible = trackElement.Visible;
@@ -246,5 +275,10 @@ namespace UI.Nodes.Track
             }
         }
 
+        public void Select(RaceLib.TrackElement obj)
+        {
+            modeLookAt = obj.Position;
+            Mode = Modes.Selected;
+        }
     }
 }

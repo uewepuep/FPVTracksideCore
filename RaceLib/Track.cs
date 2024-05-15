@@ -33,9 +33,42 @@ namespace RaceLib
 
         public ElementTypes ElementType { get; set; }
 
-        public float X { get; set; }
-        public float Y { get; set; }
-        public float Z { get; set; }
+        public Vector3 Position;
+
+        public float X
+        {
+            get
+            {
+                return Position.X;
+            }
+            set
+            {
+                Position.X = value;
+            }
+        }
+
+        public float Y
+        {
+            get
+            {
+                return Position.Y;
+            }
+            set
+            {
+                Position.Y = value;
+            }
+        }
+        public float Z
+        {
+            get
+            {
+                return Position.Z;
+            }
+            set
+            {
+                Position.Z = value;
+            }
+        }
 
         public int? TimingSystemIndex { get; set; }
 
@@ -43,5 +76,10 @@ namespace RaceLib
 
         public float Rotation { get; set; }
         public bool Visible { get; set; }
+
+        public override string ToString()
+        {
+            return ElementType.ToString();
+        }
     }
 }

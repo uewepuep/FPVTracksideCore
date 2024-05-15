@@ -16,13 +16,12 @@ namespace UI.Nodes.Track
     {
         public RaceTrackNode RaceTrackNode { get; private set; }
 
+        public TrackEditorNode TrackEditorNode { get; private set; }
+
         public ColorNode Panel { get; private set; }
 
         public TrackTab() 
         {
-            Panel = new ColorNode(Theme.Current.Panel.XNA);
-            AddChild(Panel);
-
             RaceTrackNode = new RaceTrackNode();
             RaceTrackNode.ClickedElement += RaceTrackNode_ClickedElement;
             AddChild(RaceTrackNode);
@@ -32,20 +31,40 @@ namespace UI.Nodes.Track
             flyThrough.OnClick += ModeClick;
             AddChild(flyThrough);
 
-            //TextButtonNode save = new TextButtonNode("sae", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
-            //save.RelativeBounds = new Tools.RectangleF(0.8f, 0.9f, 0.1f, 0.1f);
-            //save.OnClick += Save_OnClick;
-            //AddChild(save);
+            TextButtonNode edit = new TextButtonNode("Edit", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
+            edit.RelativeBounds = new Tools.RectangleF(0.8f, 0.9f, 0.1f, 0.1f);
+            edit.OnClick += EditClick;
+            AddChild(edit);
+
+            TrackEditorNode = new TrackEditorNode();
+            TrackEditorNode.OnCancel += TrackEditorNode_OnCancel;
+            TrackEditorNode.OnOK += TrackEditorNode_OnOK;
+            AddChild(TrackEditorNode);
+            TrackEditorNode.Visible = false;
         }
 
-        private void Save_OnClick(Composition.Input.MouseInputEvent mie)
+        public void Load(RaceLib.Track track)
         {
-            using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open(Guid.Empty))
-            {
-                RaceLib.Track track = new RaceLib.Track();
-                track.TrackElements = RaceTrackNode.GetTrackElements().ToArray();
-                db.Upsert(track);
-            }
+            RaceTrackNode.Load(track);
+            TrackEditorNode.SetTrack(track);    
+        }
+
+        private void TrackEditorNode_OnOK(BaseObjectEditorNode<RaceLib.TrackElement> obj)
+        {
+            RaceTrackNode.Visible = true;
+            TrackEditorNode.Visible = false;
+        }
+
+        private void TrackEditorNode_OnCancel(BaseObjectEditorNode<RaceLib.TrackElement> obj)
+        {
+            RaceTrackNode.Visible = true;
+            TrackEditorNode.Visible = false;
+        }
+
+        private void EditClick(Composition.Input.MouseInputEvent mie)
+        {
+            RaceTrackNode.Visible = false;
+            TrackEditorNode.Visible = true;
         }
 
         private void RaceTrackNode_ClickedElement(ThreeDee.Entities.TrackElement obj)
@@ -90,8 +109,6 @@ namespace UI.Nodes.Track
             RequestLayout();
 
         }
-
-
         private void ModeClick(Composition.Input.MouseInputEvent mie)
         {
             RaceTrackNode.ToggleMode();

@@ -12,6 +12,8 @@ namespace Composition.Input
         public Point Position { get; set; }
         public Point OldPosition { get; set; }
 
+        public Point PositionChange { get { return Position - OldPosition; } }
+
         public int WheelChange { get; set; }
         public ButtonStates ButtonState { get; set; }
 
