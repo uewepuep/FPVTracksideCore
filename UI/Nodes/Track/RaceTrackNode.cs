@@ -214,30 +214,38 @@ namespace UI.Nodes.Track
 
             foreach (var v in track.TrackElements)
             {
-                TrackElement tr = null;
-
-                switch (v.ElementType)
-                {
-                    case RaceLib.TrackElement.ElementTypes.Dive:
-                        tr = new Dive(ContentManager);
-                        break;
-                    case RaceLib.TrackElement.ElementTypes.Gate:
-                        tr = new Gate(ContentManager);
-                        break;
-                    case RaceLib.TrackElement.ElementTypes.Flag:
-                        tr = new Flag(ContentManager);
-                        break;
-                    default:
-                        throw new NotImplementedException();
-                }
-                tr.Position = v.Position;
+                TrackElement tr = AddTrackElement(v.ElementType, v.Position);
                 tr.Tilt = v.Tilt;
                 tr.RotationTopdown = v.Rotation;
-
-                TrackEntity.AddElement(tr);
+                tr.Visible = v.Visible;
             }
 
             Camera.LookAt(new Vector3(0, 10, 20), Vector3.Zero);
+        }
+
+        public TrackElement AddTrackElement(RaceLib.TrackElement.ElementTypes type, Vector3 position)
+        {
+            TrackElement tr;
+            switch (type)
+            {
+                case RaceLib.TrackElement.ElementTypes.Dive:
+                    tr = new Dive(ContentManager);
+                    break;
+                case RaceLib.TrackElement.ElementTypes.Gate:
+                    tr = new Gate(ContentManager);
+                    break;
+                case RaceLib.TrackElement.ElementTypes.Flag:
+                    tr = new Flag(ContentManager);
+                    break;
+                case RaceLib.TrackElement.ElementTypes.Up:
+                    tr = new Up(ContentManager);
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+            tr.Position = position;
+            TrackEntity.AddElement(tr);
+            return tr;
         }
 
         public IEnumerable<RaceLib.TrackElement> GetTrackElements()
@@ -255,6 +263,9 @@ namespace UI.Nodes.Track
 
                 if (trackElement is Dive)
                     created.ElementType = RaceLib.TrackElement.ElementTypes.Dive;
+
+                if (trackElement is Up)
+                    created.ElementType = RaceLib.TrackElement.ElementTypes.Up;
 
                 if (trackElement is Flag)
                     created.ElementType = RaceLib.TrackElement.ElementTypes.Flag;

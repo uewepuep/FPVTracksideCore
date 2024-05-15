@@ -1,4 +1,6 @@
-﻿using Composition.Nodes;
+﻿using Composition.Input;
+using Composition.Nodes;
+using ImageServer;
 using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
@@ -7,20 +9,23 @@ using System.Text;
 using System.Threading.Tasks;
 using ThreeDee.Entities;
 using Tools;
+using UI.Video;
 
 namespace UI.Nodes.Track
 {
     public class TrackEditorNode : ObjectEditorNode<TrackElement>
     {
-        private RaceTrackNode trackNode;
+        public RaceTrackNode TrackNode { get; private set; }
+
+        public RaceLib.Track Track { get; private set; }
 
         public TrackEditorNode()
         {
             objectProperties.Remove();
             left.AddChild(objectProperties);
-            trackNode = new RaceTrackNode();
-            trackNode.ClickedElement += TrackNode_ClickedElement;
-            right.AddChild(trackNode, 0);
+            TrackNode = new RaceTrackNode();
+            TrackNode.ClickedElement += TrackNode_ClickedElement;
+            right.AddChild(TrackNode, 0);
             RelativeBounds = new RectangleF(0, 0, 1, 1);
 
             TextButtonNode add = new TextButtonNode("Add Element", ButtonBackground, ButtonHover, TextColor);
@@ -44,13 +49,32 @@ namespace UI.Nodes.Track
 
         private void Add_OnClick(Composition.Input.MouseInputEvent mie)
         {
+            MouseMenu mouseMenu = new MouseMenu(this);
+            mouseMenu.TopToBottom = false;
+
+            foreach (RaceLib.TrackElement.ElementTypes type in Enum.GetValues(typeof(RaceLib.TrackElement.ElementTypes)))
+            {
+                var t2 = type;
+                mouseMenu.AddItem(type.ToString(), () => { Add(t2); });
+            }
+
+            mouseMenu.Show(addButton);
+        }
+
+        private void Add(RaceLib.TrackElement.ElementTypes type)
+        {
+            TrackNode.AddTrackElement(type, Vector3.Zero);
+            SetObjects(TrackNode.TrackEntity.TrackElements);
         }
 
         public void SetTrack(RaceLib.Track track)
         {
-            trackNode.Load(track);
+            RaceLib.Track clone = (RaceLib.Track)track.Clone();
 
-            SetObjects(trackNode.TrackEntity.TrackElements);
+            TrackNode.Load(track);
+
+            SetObjects(TrackNode.TrackEntity.TrackElements);
+            Track = track;
         }
 
         public override void SetObjects(IEnumerable<TrackElement> toEdit, bool addRemove = false, bool cancelButton = true)
@@ -59,17 +83,23 @@ namespace UI.Nodes.Track
 
             SplitHorizontally(left, right, 0.2f);
 
-            objectProperties.RelativeBounds = new RectangleF(0, 0.7f, 1, 0.3f);
+            objectProperties.RelativeBounds = new RectangleF(0, 0.8f, 1, 0.2f);
             multiItemBox.RelativeBounds = new RectangleF(0, 0.0f, 1, objectProperties.RelativeBounds.Top);
-            trackNode.RelativeBounds = new RectangleF(0, 0.0f, 1, 1);
-            trackNode.RequestLayout();
+            TrackNode.RelativeBounds = new RectangleF(0, 0.0f, 1, 1);
+            TrackNode.RequestLayout();
             RequestLayout();
         }
 
         protected override void SetSelected(TrackElement obj)
         {
-            trackNode.Select(obj);
+            TrackNode.Select(obj);
             base.SetSelected(obj);
+        }
+
+        protected override void ChildValueChanged(Change newChange)
+        {
+            base.ChildValueChanged(newChange);
+            TrackNode.TrackEntity.UpdateFlightPath();
         }
     }
 }

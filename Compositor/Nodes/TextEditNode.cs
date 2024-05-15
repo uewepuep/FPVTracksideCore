@@ -156,7 +156,6 @@ namespace Composition.Nodes
                 string before = Text.Substring(0, activeIndex);
                 string after = Text.Substring(before.Length);
 
-
                 string input = "";
                 char c = inputEvent.GetChar();
 
@@ -171,7 +170,6 @@ namespace Composition.Nodes
                 {
                     input += c;
                 }
-
 
                 if (!string.IsNullOrEmpty(input))
                 {
@@ -225,6 +223,14 @@ namespace Composition.Nodes
                     case Keys.End:
                         cursorIndex = Text.Length;
                         break;
+
+                    case Keys.Up:
+                        AddValue(1);
+                        break;
+
+                    case Keys.Down:
+                        AddValue(-1);
+                        break;
                 }
                 RequestRedraw();
                 TextChanged?.Invoke(Text);
@@ -232,6 +238,26 @@ namespace Composition.Nodes
             }
 
             return base.OnKeyboardInput(inputEvent);
+        }
+
+        public void AddValue(int add)
+        {
+            if (text.Contains("."))
+            {
+                if (double.TryParse(text, out double result))
+                {
+                    result += add;
+                    Text = result.ToString();
+                }
+            }
+            else
+            {
+                if (int.TryParse(text, out int result))
+                {
+                    result += add;
+                    Text = result.ToString();
+                }
+            }
         }
 
         public int HitCharacterIndex(MouseInputEvent mouseInputEvent)

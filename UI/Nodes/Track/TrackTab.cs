@@ -48,6 +48,20 @@ namespace UI.Nodes.Track
 
         private void TrackEditorNode_OnOK(BaseObjectEditorNode<TrackElement> obj)
         {
+            TrackEditorNode trackEditorNode = obj as TrackEditorNode;
+            if (trackEditorNode != null) 
+            {
+                RaceLib.Track track;
+                using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open(Guid.Empty))
+                {
+                    track = trackEditorNode.Track;
+                    track.TrackElements = trackEditorNode.TrackNode.GetTrackElements().ToArray();
+
+                    db.Upsert(track);
+                }
+
+                Load(track);
+            }
         }
 
         private void TrackEditorNode_OnCancel(BaseObjectEditorNode<TrackElement> obj)

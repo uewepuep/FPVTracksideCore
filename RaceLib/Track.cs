@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace RaceLib
 {
-    public class Track : BaseObject
+    public class Track : BaseObject, ICloneable
     {
         public TrackElement[] TrackElements { get; set; }
 
@@ -18,9 +18,19 @@ namespace RaceLib
         public Track() 
         { 
         }
+
+        public object Clone()
+        {
+            return new Track()
+            {
+                Name = Name,
+                Length = Length,
+                TrackElements = TrackElements.Select(x => (TrackElement)x.Clone()).ToArray()
+            };
+        }
     }
 
-    public class TrackElement
+    public class TrackElement: ICloneable
     {
         public enum ElementTypes
         {
@@ -77,9 +87,26 @@ namespace RaceLib
         public float Rotation { get; set; }
         public bool Visible { get; set; }
 
+        public TrackElement()
+        {
+        }
+
         public override string ToString()
         {
             return ElementType.ToString();
+        }
+
+        public object Clone()
+        {
+            return new TrackElement()
+            {
+                ElementType = ElementType,
+                Position = Position,
+                TimingSystemIndex = TimingSystemIndex,
+                Tilt = Tilt,
+                Rotation = Rotation,
+                Visible = Visible
+            };
         }
     }
 }
