@@ -51,16 +51,6 @@ namespace UI.Nodes.Track
             Mode = Modes.SpinCenter;
         }
 
-        public override void Initialize(GraphicsDevice graphicsDevice)
-        {
-            Camera.LookAt(new Vector3(0, 10, 20), Vector3.Zero);
-
-            TrackEntity = new TrackEntity(graphicsDevice, ContentManager);
-            Root = TrackEntity;
-
-            base.Initialize(graphicsDevice);
-        }
-
         public override void Update(GameTime gameTime)
         {
             if (TrackEntity != null && TrackEntity.FlightPath != null) 
@@ -109,8 +99,6 @@ namespace UI.Nodes.Track
 
                 }
             }
-            
-
             base.Update(gameTime);
         }
 
@@ -219,10 +207,11 @@ namespace UI.Nodes.Track
             return base.OnMouseInput(mouseInputEvent);
         }
 
-
-
         public void Load(RaceLib.Track track)
         {
+            TrackEntity = new TrackEntity(GraphicsDevice, ContentManager);
+            Root = TrackEntity;
+
             foreach (var v in track.TrackElements)
             {
                 TrackElement tr = null;
@@ -247,6 +236,8 @@ namespace UI.Nodes.Track
 
                 TrackEntity.AddElement(tr);
             }
+
+            Camera.LookAt(new Vector3(0, 10, 20), Vector3.Zero);
         }
 
         public IEnumerable<RaceLib.TrackElement> GetTrackElements()

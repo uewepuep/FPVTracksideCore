@@ -69,7 +69,7 @@ namespace Composition.Nodes
 
         public HoverNode HoverNode { get; set; }
 
-        private int lastDrawFrame;
+        protected int lastDrawFrame;
 
         public RenderTargetNode()
             : this(128, 128)
@@ -267,13 +267,14 @@ namespace Composition.Nodes
             bool canRender = !LayoutDefinesSize || (LayoutDefinesSize && hasLayedOut);
             if (canRender && !disposed)
             {
-                //if (lastDrawFrame == CompositorLayer.FrameNumber)
+                if (lastDrawFrame == CompositorLayer.FrameNumber)
                 {
                     lock (renderTargetLock)
                     {
                         if (drawer == null)
                         {
-                            drawer = CreateDrawer();
+                            drawer = new Drawer(CompositorLayer.GraphicsDevice);
+                            drawer.CanMultiThread = false;
                         }
 
                         Size maxSize = Size;
@@ -301,13 +302,6 @@ namespace Composition.Nodes
         protected virtual RenderTarget2D CreateRenderTarget(Size maxSize)
         {
             return new RenderTarget2D(drawer.GraphicsDevice, maxSize.Width, maxSize.Height);
-        }
-
-        protected virtual Drawer CreateDrawer()
-        {
-            Drawer d = new Drawer(CompositorLayer.GraphicsDevice);
-            d.CanMultiThread = false;
-            return d;
         }
 
         public virtual void PreProcess(Drawer id)

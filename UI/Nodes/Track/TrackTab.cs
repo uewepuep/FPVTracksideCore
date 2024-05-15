@@ -1,4 +1,5 @@
-﻿using Composition.Nodes;
+﻿using Composition.Layers;
+using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using System;
@@ -16,9 +17,9 @@ namespace UI.Nodes.Track
     {
         public RaceTrackNode RaceTrackNode { get; private set; }
 
-        public TrackEditorNode TrackEditorNode { get; private set; }
-
         public ColorNode Panel { get; private set; }
+
+        private RaceLib.Track track;
 
         public TrackTab() 
         {
@@ -35,36 +36,34 @@ namespace UI.Nodes.Track
             edit.RelativeBounds = new Tools.RectangleF(0.8f, 0.9f, 0.1f, 0.1f);
             edit.OnClick += EditClick;
             AddChild(edit);
-
-            TrackEditorNode = new TrackEditorNode();
-            TrackEditorNode.OnCancel += TrackEditorNode_OnCancel;
-            TrackEditorNode.OnOK += TrackEditorNode_OnOK;
-            AddChild(TrackEditorNode);
-            TrackEditorNode.Visible = false;
         }
 
         public void Load(RaceLib.Track track)
         {
             RaceTrackNode.Load(track);
-            TrackEditorNode.SetTrack(track);    
+            this.track = track;
         }
 
         private void TrackEditorNode_OnOK(BaseObjectEditorNode<RaceLib.TrackElement> obj)
         {
-            RaceTrackNode.Visible = true;
-            TrackEditorNode.Visible = false;
         }
 
         private void TrackEditorNode_OnCancel(BaseObjectEditorNode<RaceLib.TrackElement> obj)
         {
-            RaceTrackNode.Visible = true;
-            TrackEditorNode.Visible = false;
         }
 
         private void EditClick(Composition.Input.MouseInputEvent mie)
         {
-            RaceTrackNode.Visible = false;
-            TrackEditorNode.Visible = true;
+            PopupLayer popupLayer = CompositorLayer.LayerStack.GetLayer<PopupLayer>();
+            if (popupLayer != null)
+            {
+                TrackEditorNode TrackEditorNode = new TrackEditorNode();
+                TrackEditorNode.OnCancel += TrackEditorNode_OnCancel;
+                TrackEditorNode.OnOK += TrackEditorNode_OnOK;
+                popupLayer.Popup(TrackEditorNode);
+
+                TrackEditorNode.SetTrack(track);
+            }
         }
 
         private void RaceTrackNode_ClickedElement(ThreeDee.Entities.TrackElement obj)
