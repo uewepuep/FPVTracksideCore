@@ -19,6 +19,8 @@ namespace UI.Nodes.Track
 
         public RaceLib.Track Track { get; private set; }
 
+        public EntityEditor EntityEditor { get; private set; }
+
         public TrackEditorNode()
         {
             objectProperties.Remove();
@@ -49,6 +51,7 @@ namespace UI.Nodes.Track
 
         private void TrackNode_ClickedElement(ThreeDee.Entities.TrackElement obj)
         {
+            SetSelected(obj);
         }
 
         private void Remove_OnClick(Composition.Input.MouseInputEvent mie)
@@ -92,6 +95,11 @@ namespace UI.Nodes.Track
 
         public void SetTrack(RaceLib.Track track)
         {
+            if (EntityEditor == null)
+            {
+                EntityEditor = new EntityEditor(TrackNode.GraphicsDevice);
+            }
+
             RaceLib.Track clone = (RaceLib.Track)track.Clone();
 
             TrackNode.Load(track);
@@ -115,8 +123,14 @@ namespace UI.Nodes.Track
 
         protected override void SetSelected(TrackElement obj)
         {
+            if (EntityEditor.Parent != null) 
+            {
+                EntityEditor.Parent.RemoveChild(EntityEditor);
+            }
+
             TrackNode.Select(obj);
             base.SetSelected(obj);
+            obj.AddChild(EntityEditor);
         }
 
         protected override void ChildValueChanged(Change newChange)
