@@ -4,6 +4,7 @@ using ImageServer;
 using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -38,9 +39,21 @@ namespace UI.Nodes.Track
             remove.OnClick += Remove_OnClick;
             buttonContainer.AddChild(remove, 0);
 
+            TextButtonNode import = new TextButtonNode("Import..", ButtonBackground, ButtonHover, TextColor);
+            import.OnClick += Import_OnClick;
+            buttonContainer.AddChild(import, 0);
+
             AlignVisibleButtons();
 
             OnRefreshList += TrackEditorNode_OnRefreshList;
+        }
+
+        private void Import_OnClick(MouseInputEvent mie)
+        {
+            string filename = PlatformTools.OpenFileDialog("Import VDrone Track", "Track file|*.trk");
+
+            RaceLib.Track track = ExternalData.VDFileManager.LoadTrk(filename);
+            SetTrack(track);
         }
 
         private void TrackEditorNode_OnRefreshList(BaseObjectEditorNode<TrackElement> obj)
