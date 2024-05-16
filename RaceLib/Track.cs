@@ -89,6 +89,8 @@ namespace RaceLib
 
         public TrackElement()
         {
+            Visible = true;
+            ElementType = ElementTypes.Gate;
         }
 
         public override string ToString()

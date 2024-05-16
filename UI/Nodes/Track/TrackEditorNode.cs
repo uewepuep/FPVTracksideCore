@@ -37,6 +37,14 @@ namespace UI.Nodes.Track
             buttonContainer.AddChild(remove, 0);
 
             AlignVisibleButtons();
+
+            OnRefreshList += TrackEditorNode_OnRefreshList;
+        }
+
+        private void TrackEditorNode_OnRefreshList(BaseObjectEditorNode<TrackElement> obj)
+        {
+            TrackElement[] elements = obj.Objects.ToArray();
+            TrackNode.TrackEntity.TrackElements = elements;
         }
 
         private void TrackNode_ClickedElement(ThreeDee.Entities.TrackElement obj)
@@ -45,6 +53,9 @@ namespace UI.Nodes.Track
 
         private void Remove_OnClick(Composition.Input.MouseInputEvent mie)
         {
+            TrackElement[] elements = Objects.Where(r => r!= Selected).ToArray();
+            TrackNode.TrackEntity.TrackElements = elements;
+            SetObjects(elements);
         }
 
         private void Add_OnClick(Composition.Input.MouseInputEvent mie)
@@ -58,13 +69,25 @@ namespace UI.Nodes.Track
                 mouseMenu.AddItem(type.ToString(), () => { Add(t2); });
             }
 
-            mouseMenu.Show(addButton);
+            mouseMenu.Show(addButton.Bounds.Location);
         }
 
         private void Add(RaceLib.TrackElement.ElementTypes type)
         {
-            TrackNode.AddTrackElement(type, Vector3.Zero);
+            TrackElement selected = Selected;
+
+            TrackElement tr = TrackNode.AddTrackElement(type, Vector3.Zero);
+
+            if (selected != null)
+            {
+                tr.Position = selected.Position;
+                tr.Rotation = selected.Rotation;
+                tr.Tilt = selected.Tilt;
+            }
+
             SetObjects(TrackNode.TrackEntity.TrackElements);
+            SetSelected(tr);
+            TrackNode.TrackEntity.NeedUpdate = true;
         }
 
         public void SetTrack(RaceLib.Track track)
@@ -99,7 +122,7 @@ namespace UI.Nodes.Track
         protected override void ChildValueChanged(Change newChange)
         {
             base.ChildValueChanged(newChange);
-            TrackNode.TrackEntity.UpdateFlightPath();
+            TrackNode.TrackEntity.NeedUpdate = true;
         }
     }
 }

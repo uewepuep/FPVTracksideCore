@@ -55,6 +55,11 @@ namespace UI.Nodes.Track
         {
             if (TrackEntity != null && TrackEntity.FlightPath != null) 
             {
+                if (TrackEntity.FlightPath.Length == 0)
+                {
+                    Mode = Modes.SpinCenter;
+                }
+
                 if (float.IsNaN(modeValue))
                 {
                     modeValue = 0;

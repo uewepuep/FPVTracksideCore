@@ -33,6 +33,7 @@ namespace Composition.Nodes
 
         public event Action<BaseObjectEditorNode<T>> OnOK;
         public event Action<BaseObjectEditorNode<T>> OnCancel;
+        public event Action<BaseObjectEditorNode<T>> OnRefreshList;
 
         protected Node container;
         protected Node left;
@@ -292,6 +293,8 @@ namespace Composition.Nodes
             }
             multiItemBox.RequestLayout();
             RequestLayout();
+
+            OnRefreshList?.Invoke(this);
         }
 
         public virtual bool IsVisible(T t)
@@ -717,7 +720,7 @@ namespace Composition.Nodes
                 int index = Objects.Count - 1;
                 foreach (ItemNode<T> other in multiItemBox.ChildrenOfType)
                 {
-                    if (other.Bounds.Bottom >= y)
+                    if (other.Bounds.Contains(finalInputEvent.Position))
                     {
                         index = Objects.IndexOf(other.Item);
                         break;
@@ -726,6 +729,7 @@ namespace Composition.Nodes
 
                 Objects.Remove(dropped.Item);
                 Objects.Insert(index, dropped.Item);
+
 
                 RefreshList();
             }
