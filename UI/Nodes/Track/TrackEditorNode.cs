@@ -231,6 +231,10 @@ namespace UI.Nodes.Track
 
                         if (draggingTranslation)
                         {
+                            landing.X = (float)Math.Round(landing.X, 1);
+                            landing.Y = Selected.Position.Y; // Don't change Y
+                            landing.Z = (float)Math.Round(landing.Z, 1);
+
                             Selected.Position = landing;
                             SelectedUpdated?.Invoke();
                         }
@@ -255,7 +259,11 @@ namespace UI.Nodes.Track
 
                             Logger.UI.LogCall(this, direction);
 
-                            Selected.RotationTopdown = MathHelper.ToDegrees((float)Math.Acos(dot)) + addition;
+                            float degrees = MathHelper.ToDegrees((float)Math.Acos(dot)) + addition;
+
+                            degrees = (float)Math.Round(degrees);
+
+                            Selected.RotationTopdown = degrees;
 
                             SelectedUpdated?.Invoke();
                         }
