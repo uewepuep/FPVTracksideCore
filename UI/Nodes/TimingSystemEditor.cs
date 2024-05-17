@@ -200,7 +200,7 @@ namespace UI.Nodes
         {
             bool multipleCategoryVisible = Objects.Count > 1;
 
-            foreach (var propertyNode in GetPropertyNodes)
+            foreach (var propertyNode in PropertyNodes)
             {
                 if (propertyNode == null)
                     continue;

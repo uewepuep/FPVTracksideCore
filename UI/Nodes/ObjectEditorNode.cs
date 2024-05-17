@@ -642,7 +642,7 @@ namespace UI.Nodes
 
         private void CheckVisible()
         {
-            foreach (var propertyNode in GetPropertyNodes)
+            foreach (var propertyNode in PropertyNodes)
             {
                 if (propertyNode == null)
                     continue;

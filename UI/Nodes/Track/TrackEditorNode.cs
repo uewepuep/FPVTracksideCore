@@ -27,6 +27,7 @@ namespace UI.Nodes.Track
             left.AddChild(objectProperties);
             TrackNode = new RaceTrackEditorNode();
             TrackNode.ClickedElement += TrackNode_ClickedElement;
+            TrackNode.SelectedUpdated += TrackNode_SelectedUpdated;
             right.AddChild(TrackNode, 0);
             RelativeBounds = new RectangleF(0, 0, 1, 1);
 
@@ -45,6 +46,11 @@ namespace UI.Nodes.Track
             AlignVisibleButtons();
 
             OnRefreshList += TrackEditorNode_OnRefreshList;
+        }
+
+        private void TrackNode_SelectedUpdated()
+        {
+            RefreshSelectedObjectProperties();
         }
 
         private void Import_OnClick(MouseInputEvent mie)
@@ -146,7 +152,14 @@ namespace UI.Nodes.Track
         public EntityEditor EntityEditor { get; private set; }
 
         public event Action<TrackElement> ClickedElement;
-        private bool dragging;
+        public event Action SelectedUpdated;
+        private bool draggingView;
+        
+        
+        private bool draggingElement;
+        private Vector3 dragLimit;
+
+        public TrackElement Selected { get; private set; }
 
         public RaceTrackEditorNode()
         {
@@ -157,12 +170,8 @@ namespace UI.Nodes.Track
             base.Load(track);
 
             EntityEditor = new EntityEditor(GraphicsDevice);
-
-            foreach (var t in TrackEntity.TrackElements)
-            {
-                t.DebugDraw = true;
-            }
         }
+
 
         public void Select(TrackElement trackElement)
         {
@@ -173,6 +182,7 @@ namespace UI.Nodes.Track
 
             trackElement.AddChild(EntityEditor);
 
+            Selected = trackElement;
             modeLookAt = trackElement.Position;
             Mode = Modes.Selected;
         }
@@ -185,17 +195,50 @@ namespace UI.Nodes.Track
             {
                 if (mouseInputEvent.ButtonState == ButtonStates.Pressed && mouseInputEvent.Button == MouseButtons.Right)
                 {
-                    dragging = true;
+                    draggingView = true;
                 }
                 else if (mouseInputEvent.ButtonState == ButtonStates.Released && mouseInputEvent.Button == MouseButtons.Right)
                 {
-                    dragging = false;
+                    draggingView = false;
                 }
-                else if (dragging)
+                else if (draggingView)
                 {
                     modeValue -= mouseInputEvent.PositionChange.X / 100.0f;
                 }
             }
+
+            if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Released)
+            {
+                draggingElement = false;
+            }
+
+            if (Selected != null && Camera != null)
+            {
+                Ray ray = Camera.ScreenToWorld(mouseInputEvent.Position);
+                if (draggingElement)
+                {
+                    float? distance = ray.Intersects(new Plane(Vector3.Zero, Vector3.Up));
+                    if (distance.HasValue)
+                    {
+                        Vector3 point = ray.Position + ray.Direction * distance.Value;
+
+                        Vector3 difference = Selected.Position - point;
+                        difference *= dragLimit * -1;
+
+                        Selected.Position += difference;
+                        SelectedUpdated?.Invoke();
+                    }
+                }
+                else if (mouseInputEvent.ButtonState == ButtonStates.Pressed && mouseInputEvent.Button == MouseButtons.Left)
+                {
+                    foreach (EntityDistance ed in EntityEditor.CastRay<Arrow>(ray, EntityEditor.GetAbsoluteTransform()))
+                    {
+                        dragLimit = ed.Entity.Position;
+                        draggingElement = true;
+                    }
+                }
+            }
+
 
             if (mouseInputEvent.ButtonState == ButtonStates.Pressed && ClickedElement != null)
             {
@@ -203,7 +246,7 @@ namespace UI.Nodes.Track
                 {
                     Ray ray = Camera.ScreenToWorld(mouseInputEvent.Position);
 
-                    IEnumerable<EntityDistance> hitEntities = Root.CastRay<TrackElement>(Camera, ray);
+                    IEnumerable<EntityDistance> hitEntities = Root.CastRay<TrackElement>(ray, Matrix.Identity);
 
                     EntityDistance best = hitEntities.OrderBy(e => e.Distance).FirstOrDefault();
                     if (best.Entity != null)

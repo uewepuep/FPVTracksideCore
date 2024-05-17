@@ -64,7 +64,7 @@ namespace Composition.Nodes
 
         public bool NeedsRestart { get { return changes.Any(c => c.NeedsRestart); } }
 
-        public IEnumerable<PropertyNode<T>> GetPropertyNodes { get { return objectProperties.ChildrenOfType; } }
+        public IEnumerable<PropertyNode<T>> PropertyNodes { get { return objectProperties.ChildrenOfType; } }
 
         private bool needsDispose;
 
@@ -295,6 +295,17 @@ namespace Composition.Nodes
             RequestLayout();
 
             OnRefreshList?.Invoke(this);
+        }
+
+        public void RefreshSelectedObjectProperties()
+        {
+            if (selected != null)
+            {
+                foreach (var property in PropertyNodes)
+                {
+                    property.RequestUpdateFromObject();
+                }
+            }
         }
 
         public virtual bool IsVisible(T t)

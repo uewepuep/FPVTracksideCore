@@ -312,7 +312,7 @@ namespace UI.Video
 
         protected override void ChildValueChanged(Change newChange)
         {
-            foreach (var propertyNode in GetPropertyNodes)
+            foreach (var propertyNode in PropertyNodes)
             {
                 CheckVisible(propertyNode, Selected);
             }
