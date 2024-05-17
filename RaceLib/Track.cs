@@ -86,6 +86,7 @@ namespace RaceLib
 
         public float Rotation { get; set; }
         public bool Visible { get; set; }
+        public bool Decorative { get; set; }
 
         public TrackElement()
         {
@@ -107,7 +108,8 @@ namespace RaceLib
                 TimingSystemIndex = TimingSystemIndex,
                 Tilt = Tilt,
                 Rotation = Rotation,
-                Visible = Visible
+                Visible = Visible,
+                Decorative = Decorative
             };
         }
     }

@@ -180,6 +180,7 @@ namespace UI.Nodes.Track
                 tr.Tilt = v.Tilt;
                 tr.RotationTopdown = v.Rotation;
                 tr.Visible = v.Visible;
+                tr.Decorative = v.Decorative;
             }
 
             Camera.LookAt(new Vector3(0, 10, 20), Vector3.Zero);
@@ -219,6 +220,7 @@ namespace UI.Nodes.Track
                 created.Tilt = trackElement.Tilt;
                 created.Rotation = trackElement.RotationTopdown;
                 created.Visible = trackElement.Visible;
+                created.Decorative = trackElement.Decorative;
 
                 if (trackElement is Gate)
                     created.ElementType = RaceLib.TrackElement.ElementTypes.Gate;

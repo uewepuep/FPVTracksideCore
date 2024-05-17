@@ -156,8 +156,8 @@ namespace UI.Nodes.Track
         private bool draggingView;
         
         
-        private bool draggingElement;
-        private Vector3 dragLimit;
+        private bool draggingTranslation;
+        private bool draggingRotation;
 
         public TrackElement Selected { get; private set; }
 
@@ -169,7 +169,7 @@ namespace UI.Nodes.Track
         {
             base.Load(track);
 
-            EntityEditor = new EntityEditor(GraphicsDevice);
+            EntityEditor = new EntityEditor(ContentManager);
         }
 
 
@@ -178,6 +178,10 @@ namespace UI.Nodes.Track
             if (EntityEditor.Parent != null)
             {
                 EntityEditor.Parent.RemoveChild(EntityEditor);
+            }
+            if (trackElement == null)
+            {
+                return;
             }
 
             trackElement.AddChild(EntityEditor);
@@ -209,32 +213,68 @@ namespace UI.Nodes.Track
 
             if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Released)
             {
-                draggingElement = false;
+                draggingTranslation = false;
+                draggingRotation = false;
+                TrackEntity.NeedUpdate = true;
+                modeLookAt = Selected.Position;
             }
 
             if (Selected != null && Camera != null)
             {
                 Ray ray = Camera.ScreenToWorld(mouseInputEvent.Position);
-                if (draggingElement)
+                if (draggingTranslation || draggingRotation)
                 {
                     float? distance = ray.Intersects(new Plane(Vector3.Zero, Vector3.Up));
                     if (distance.HasValue)
                     {
-                        Vector3 point = ray.Position + ray.Direction * distance.Value;
+                        Vector3 landing = ray.Position + ray.Direction * distance.Value;
 
-                        Vector3 difference = Selected.Position - point;
-                        difference *= dragLimit * -1;
+                        if (draggingTranslation)
+                        {
+                            Selected.Position = landing;
+                            SelectedUpdated?.Invoke();
+                        }
 
-                        Selected.Position += difference;
-                        SelectedUpdated?.Invoke();
+                        if (draggingRotation)
+                        {
+                            Vector3 direction = landing - Selected.Position;
+                            direction.Y = 0;
+                            direction.Normalize();
+
+                            float addition = 0;
+                            float dot;
+                            if (direction.X > 0)
+                            {
+                                addition = 180;
+                                dot = -Vector3.Dot(Vector3.Forward, direction);
+                            }
+                            else
+                            {
+                                dot = -Vector3.Dot(Vector3.Backward, direction);
+                            }
+
+                            Logger.UI.LogCall(this, direction);
+
+                            Selected.RotationTopdown = MathHelper.ToDegrees((float)Math.Acos(dot)) + addition;
+
+                            SelectedUpdated?.Invoke();
+                        }
                     }
                 }
-                else if (mouseInputEvent.ButtonState == ButtonStates.Pressed && mouseInputEvent.Button == MouseButtons.Left)
+                else if(mouseInputEvent.ButtonState == ButtonStates.Pressed && mouseInputEvent.Button == MouseButtons.Left)
                 {
-                    foreach (EntityDistance ed in EntityEditor.CastRay<Arrow>(ray, EntityEditor.GetAbsoluteTransform()))
+                    foreach (EntityDistance ed in EntityEditor.CastRay<Handle>(ray, EntityEditor.GetAbsoluteTransform()))
                     {
-                        dragLimit = ed.Entity.Position;
-                        draggingElement = true;
+                        if (ed.Entity == EntityEditor.TranslationHandle)
+                        {
+                            draggingTranslation = true;
+                        }
+
+                        if (ed.Entity == EntityEditor.RotationHandle)
+                        {
+                            draggingRotation = true;
+                        }
+                        return true;
                     }
                 }
             }
