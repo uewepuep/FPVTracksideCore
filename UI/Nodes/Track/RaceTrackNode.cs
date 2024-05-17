@@ -17,7 +17,6 @@ namespace UI.Nodes.Track
 {
     public class RaceTrackNode : RenderEntityNode
     {
-
         public enum Modes
         {
             SpinCenter,
@@ -27,15 +26,13 @@ namespace UI.Nodes.Track
             Selected,
         }
 
-        private float modeValue;
-        private Vector3 modeLookFrom;
-        private Vector3 modeLookAt;
+        protected float modeValue;
+        protected Vector3 modeLookFrom;
+        protected Vector3 modeLookAt;
 
-        public Modes Mode { get; private set; }
+        public Modes Mode { get; protected set; }
 
         public TrackEntity TrackEntity { get; private set; }
-
-        public event Action<TrackElement> ClickedElement;
 
         public ContentManager ContentManager
         {
@@ -172,47 +169,7 @@ namespace UI.Nodes.Track
             }
         }
 
-        private bool dragging;
-
-        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
-        {
-            if (mouseInputEvent.ButtonState == ButtonStates.Pressed && ClickedElement != null)
-            {
-                if (Camera != null)
-                {
-                    Ray ray = Camera.ScreenToWorld(mouseInputEvent.Position);
-
-                    IEnumerable<EntityDistance> hitEntities = Root.CastRay<TrackElement>(Camera, ray);
-
-                    EntityDistance best = hitEntities.OrderBy(e => e.Distance).FirstOrDefault();
-                    if (best.Entity != null)
-                    {
-                        ClickedElement((TrackElement)best.Entity);
-                    }
-                }
-            }
-
-            if (Mode == Modes.Selected)
-            {
-                if (mouseInputEvent.ButtonState == ButtonStates.Pressed && mouseInputEvent.Button == MouseButtons.Right)
-                {
-                    dragging = true;
-                }
-                else if (mouseInputEvent.ButtonState == ButtonStates.Released && mouseInputEvent.Button == MouseButtons.Right)
-                {
-                    dragging = false;
-                }
-                else if (dragging)
-                {
-                    modeValue -= mouseInputEvent.PositionChange.X / 100.0f;
-                    Logger.UI.LogCall(this, modeValue);
-                }
-            }
-
-            return base.OnMouseInput(mouseInputEvent);
-        }
-
-        public void Load(RaceLib.Track track)
+        public virtual void Load(RaceLib.Track track)
         {
             TrackEntity = new TrackEntity(GraphicsDevice, ContentManager);
             Root = TrackEntity;
@@ -280,12 +237,6 @@ namespace UI.Nodes.Track
                     yield return created;
                 }
             }
-        }
-
-        public void Select(TrackElement obj)
-        {
-            modeLookAt = obj.Position;
-            Mode = Modes.Selected;
         }
     }
 }

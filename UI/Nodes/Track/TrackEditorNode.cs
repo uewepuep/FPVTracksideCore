@@ -16,17 +16,16 @@ namespace UI.Nodes.Track
 {
     public class TrackEditorNode : ObjectEditorNode<TrackElement>
     {
-        public RaceTrackNode TrackNode { get; private set; }
+        public RaceTrackEditorNode TrackNode { get; private set; }
 
         public RaceLib.Track Track { get; private set; }
 
-        public EntityEditor EntityEditor { get; private set; }
 
         public TrackEditorNode()
         {
             objectProperties.Remove();
             left.AddChild(objectProperties);
-            TrackNode = new RaceTrackNode();
+            TrackNode = new RaceTrackEditorNode();
             TrackNode.ClickedElement += TrackNode_ClickedElement;
             right.AddChild(TrackNode, 0);
             RelativeBounds = new RectangleF(0, 0, 1, 1);
@@ -108,11 +107,6 @@ namespace UI.Nodes.Track
 
         public void SetTrack(RaceLib.Track track)
         {
-            if (EntityEditor == null)
-            {
-                EntityEditor = new EntityEditor(TrackNode.GraphicsDevice);
-            }
-
             RaceLib.Track clone = (RaceLib.Track)track.Clone();
 
             TrackNode.Load(track);
@@ -136,20 +130,90 @@ namespace UI.Nodes.Track
 
         protected override void SetSelected(TrackElement obj)
         {
-            if (EntityEditor.Parent != null) 
-            {
-                EntityEditor.Parent.RemoveChild(EntityEditor);
-            }
-
             TrackNode.Select(obj);
             base.SetSelected(obj);
-            obj.AddChild(EntityEditor);
         }
 
         protected override void ChildValueChanged(Change newChange)
         {
             base.ChildValueChanged(newChange);
             TrackNode.TrackEntity.NeedUpdate = true;
+        }
+    }
+
+    public class RaceTrackEditorNode : RaceTrackNode
+    {
+        public EntityEditor EntityEditor { get; private set; }
+
+        public event Action<TrackElement> ClickedElement;
+        private bool dragging;
+
+        public RaceTrackEditorNode()
+        {
+        }
+
+        public override void Load(RaceLib.Track track)
+        {
+            base.Load(track);
+
+            EntityEditor = new EntityEditor(GraphicsDevice);
+
+            foreach (var t in TrackEntity.TrackElements)
+            {
+                t.DebugDraw = true;
+            }
+        }
+
+        public void Select(TrackElement trackElement)
+        {
+            if (EntityEditor.Parent != null)
+            {
+                EntityEditor.Parent.RemoveChild(EntityEditor);
+            }
+
+            trackElement.AddChild(EntityEditor);
+
+            modeLookAt = trackElement.Position;
+            Mode = Modes.Selected;
+        }
+
+        public override bool OnMouseInput(MouseInputEvent unTranslated)
+        {
+            MouseInputEvent mouseInputEvent = Translate(unTranslated);
+
+            if (Mode == Modes.Selected)
+            {
+                if (mouseInputEvent.ButtonState == ButtonStates.Pressed && mouseInputEvent.Button == MouseButtons.Right)
+                {
+                    dragging = true;
+                }
+                else if (mouseInputEvent.ButtonState == ButtonStates.Released && mouseInputEvent.Button == MouseButtons.Right)
+                {
+                    dragging = false;
+                }
+                else if (dragging)
+                {
+                    modeValue -= mouseInputEvent.PositionChange.X / 100.0f;
+                }
+            }
+
+            if (mouseInputEvent.ButtonState == ButtonStates.Pressed && ClickedElement != null)
+            {
+                if (Camera != null)
+                {
+                    Ray ray = Camera.ScreenToWorld(mouseInputEvent.Position);
+
+                    IEnumerable<EntityDistance> hitEntities = Root.CastRay<TrackElement>(Camera, ray);
+
+                    EntityDistance best = hitEntities.OrderBy(e => e.Distance).FirstOrDefault();
+                    if (best.Entity != null)
+                    {
+                        ClickedElement((TrackElement)best.Entity);
+                    }
+                }
+            }
+
+            return base.OnMouseInput(mouseInputEvent);
         }
     }
 }

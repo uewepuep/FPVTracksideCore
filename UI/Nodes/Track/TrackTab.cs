@@ -24,7 +24,6 @@ namespace UI.Nodes.Track
         public TrackTab() 
         {
             RaceTrackNode = new RaceTrackNode();
-            RaceTrackNode.ClickedElement += RaceTrackNode_ClickedElement;
             AddChild(RaceTrackNode);
 
             TextButtonNode flyThrough = new TextButtonNode("View", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
@@ -84,25 +83,6 @@ namespace UI.Nodes.Track
 
                 TrackEditorNode.SetTrack(track);
             }
-        }
-
-        private void RaceTrackNode_ClickedElement(ThreeDee.Entities.TrackElement obj)
-        {
-            //TrackElementEditable trackElementEditable = new TrackElementEditable(obj);
-
-            //BaseObjectEditorNode<TrackElementEditable> editor = new BaseObjectEditorNode<TrackElementEditable>(Theme.Current.InfoPanel.Background.XNA, Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.InfoPanel.Text.XNA, Theme.Current.ScrollBar.XNA);
-            //editor.Clip = false;
-            //Panel.AddChild(editor);
-            //editor.OnCancel += (e) =>
-            //{
-            //    CloseSide();
-            //};
-
-            //editor.OnOK += Editor_OnOK;
-
-            //editor.SetObject(trackElementEditable);
-            //editor.RefreshList();
-            //editor.RequestLayout();
         }
 
         private void ModeClick(Composition.Input.MouseInputEvent mie)
