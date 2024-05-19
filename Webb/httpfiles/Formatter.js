@@ -407,7 +407,7 @@ class Formatter
                         const laps = this.eventManager.BestConsecutive(nonHoleshots, lapCount);
 
                         const time = this.eventManager.TotalTime(laps);
-                        if (time == Number.MAX_SAFE_INTEGER)
+                        if (time == Number.MAX_SAFE_INTEGER || time == 0)
                             continue;
 
                         path.AddPoint(round.Order, time);
@@ -478,7 +478,14 @@ class Formatter
         let rounds = await this.eventManager.GetRounds(r => r.EventType == "Race");
         let pilotRecords = await this.eventManager.GetPoints(rounds);
 
-        pilotRecords.sort((a, b) => { return b.total - a.total });
+        pilotRecords.sort((a, b) => 
+        { 
+            if (a.bracket != b.bracket)
+            {
+                return a.bracket.localeCompare(b.bracket); 
+            }
+            return b.lastTotal - a.lastTotal;
+        });
 
         let output = "<h2>Points</h2>";
 
@@ -707,6 +714,21 @@ class Formatter
         output += "<div class=\"row\" >";
         output += "<div class=\"pilots\">Pilots</div>";
 
+        let hasBrackets = false;
+        for (const pilotRecord of pilotRecords)
+        {
+            if (pilotRecord.bracket != "none" && pilotRecord.bracket != null)
+            {
+                hasBrackets = true;
+                break;
+            }
+        }
+
+        if (hasBrackets)
+        {
+            output += "<div class=\"bracket\">Bracket</div>";
+        }
+
         let addTotal = true;
         for (const round of rounds)
         {
@@ -749,6 +771,15 @@ class Formatter
         {
             output += "<div class=\"row\">";
             output += "<div class=\"pilots\">" + pilotRecord.pilot.Name + "</div>";
+
+            if (hasBrackets)
+            {
+                let bracket = pilotRecord.bracket;
+                if (bracket == "none")
+                    bracket = "";
+
+                output += "<div class=\"bracket\">" + bracket + "</div>";
+            }
 
             for (const round of rounds)
             {
