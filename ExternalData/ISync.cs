@@ -14,6 +14,13 @@ namespace ExternalData
         MultiGP
     }
 
+    public enum LoginType
+    {
+        Success,
+        InvalidPassword,
+        Error
+    }
+
     public interface ISync
     {
         event Action<bool> RaceSyncEvent;
@@ -23,7 +30,7 @@ namespace ExternalData
         void SyncUpResults(WorkSet workSet, WorkQueue queue, EventManager eventManager);
         void SyncUpResults(WorkSet workSet, WorkQueue queue, IEnumerable<Guid> eventIDs, Action callBack);
 
-        bool Login(string username, string password);
+        LoginType Login(string username, string password);
         void CreateAccount();
         void ForgotPassword();
     }

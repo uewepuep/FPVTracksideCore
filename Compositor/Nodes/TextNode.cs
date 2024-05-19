@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -22,6 +23,8 @@ namespace Composition.Nodes
             get { return text; }
             set
             {
+                //Debug.Assert(value != null);
+
                 if (text != value)
                 {
                     text = value;
