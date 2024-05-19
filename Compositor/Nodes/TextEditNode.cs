@@ -145,6 +145,9 @@ namespace Composition.Nodes
         {
             bool control = CompositorLayer.InputEventFactory.AreControlKeysDown();
 
+            if (Text == null)
+                Text = "";
+
             if (inputEvent.ButtonState == ButtonStates.Pressed || inputEvent.ButtonState == ButtonStates.Repeat)
             {
                 int activeIndex = cursorIndex;

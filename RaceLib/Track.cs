@@ -16,7 +16,8 @@ namespace RaceLib
         public float Length { get; set; }
 
         public Track() 
-        { 
+        {
+            TrackElements = new TrackElement[0];
         }
 
         public object Clone()

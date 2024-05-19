@@ -30,7 +30,7 @@ namespace UI.Nodes.Track
         protected Vector3 modeLookFrom;
         protected Vector3 modeLookAt;
 
-        public Modes Mode { get; protected set; }
+        public Modes Mode { get; set; }
 
         public TrackEntity TrackEntity { get; private set; }
 
@@ -52,7 +52,7 @@ namespace UI.Nodes.Track
         {
             if (TrackEntity != null && TrackEntity.FlightPath != null) 
             {
-                if (TrackEntity.FlightPath.Length == 0)
+                if (TrackEntity.FlightPath.Length == 0 && (Mode == Modes.FlyThrough || Mode == Modes.AboveThrough))
                 {
                     Mode = Modes.SpinCenter;
                 }
