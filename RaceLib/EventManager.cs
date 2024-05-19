@@ -290,7 +290,7 @@ namespace RaceLib
                             p.PhotoPath = matches.OrderByDescending(f => f.Extension).FirstOrDefault().FullName;
                         }
                     }
-                    if (p.PhotoPath != null)
+                    if (!string.IsNullOrEmpty(p.PhotoPath))
                     {
                         p.PhotoPath = Path.GetRelativePath(currentDirectory, p.PhotoPath);
                     }
