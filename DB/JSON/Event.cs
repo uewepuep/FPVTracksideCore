@@ -153,6 +153,7 @@ namespace DB.JSON
 
             ev.PilotChannels = PilotChannels.Except(invalid).Select(pc => new RaceLib.PilotChannel() { Pilot = new RaceLib.Pilot() { ID = pc.Pilot }, Channel = new RaceLib.Channel() { ID = pc.Channel } }).ToList();
             ev.RemovedPilots = RemovedPilots.Select(id => new RaceLib.Pilot() { ID = id }).ToList();
+            ev.Track = Track.Convert<RaceLib.Track>(database);
             return ev;
         }
     }

@@ -211,9 +211,9 @@ namespace UI.Nodes.Track
 
         public void Select(TrackElement trackElement)
         {
-            if (EntityEditor.Parent != null)
+            if (Selected != null)
             {
-                EntityEditor.Parent.RemoveChild(EntityEditor);
+                Selected.RemoveChild(EntityEditor);
             }
             if (trackElement == null)
             {
@@ -221,7 +221,6 @@ namespace UI.Nodes.Track
             }
 
             trackElement.AddChild(EntityEditor);
-
             Selected = trackElement;
             modeLookAt = trackElement.Position;
             Mode = Modes.Selected;
@@ -268,8 +267,17 @@ namespace UI.Nodes.Track
                         if (draggingTranslation)
                         {
                             landing.X = (float)Math.Round(landing.X, 1);
-                            landing.Y = Selected.Position.Y; // Don't change Y
+                            landing.Y = 0;
                             landing.Z = (float)Math.Round(landing.Z, 1);
+
+                            
+                            // Try to put it on another element.
+                            IEnumerable<EntityDistance> hitEntities = Root.CastRay<TrackElement>(ray, Matrix.Identity);
+                            EntityDistance best = hitEntities.OrderBy(e => e.Distance).FirstOrDefault();
+                            if (best.Entity != null && best.Entity != Selected)
+                            {
+                                landing.Y = best.Entity.Position.Y + best.Entity.BoundingBox.Max.Y;
+                            }
 
                             Selected.Position = landing;
                             SelectedUpdated?.Invoke();

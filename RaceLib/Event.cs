@@ -192,6 +192,7 @@ namespace RaceLib
             }
         }
 
+        [Browsable(false)]
         public Track Track { get; set; }
 
         public Event()
