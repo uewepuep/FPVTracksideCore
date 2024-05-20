@@ -21,8 +21,12 @@ namespace UI.Nodes.Track
 
         public bool Loaded { get { return track != null; } }
 
-        public TrackTab() 
+        private RaceLib.EventManager eventManager;
+
+        public TrackTab(RaceLib.EventManager eventManager) 
         {
+            this.eventManager = eventManager;
+
             RaceTrackNode = new RaceTrackNode();
             AddChild(RaceTrackNode);
 
@@ -42,6 +46,7 @@ namespace UI.Nodes.Track
             if (track == null)
             {
                 track = new RaceLib.Track();
+                track.Name = "New Track";
                 track.TrackElements = new RaceLib.TrackElement[] { new RaceLib.TrackElement() };
             }
 
@@ -54,22 +59,19 @@ namespace UI.Nodes.Track
             TrackEditorNode trackEditorNode = obj as TrackEditorNode;
             if (trackEditorNode != null) 
             {
-                RaceLib.Track track;
                 using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open(Guid.Empty))
                 {
-                    track = trackEditorNode.Track;
+                    eventManager.Event.Track = trackEditorNode.Track;
                     track.TrackElements = trackEditorNode.TrackNode.GetTrackElements().ToArray();
 
                     db.Upsert(track);
+                    db.Upsert(eventManager.Event);
                 }
 
                 Load(track);
             }
         }
 
-        private void TrackEditorNode_OnCancel(BaseObjectEditorNode<TrackElement> obj)
-        {
-        }
 
         private void EditClick(Composition.Input.MouseInputEvent mie)
         {
@@ -77,10 +79,8 @@ namespace UI.Nodes.Track
             if (popupLayer != null)
             {
                 TrackEditorNode TrackEditorNode = new TrackEditorNode();
-                TrackEditorNode.OnCancel += TrackEditorNode_OnCancel;
                 TrackEditorNode.OnOK += TrackEditorNode_OnOK;
                 popupLayer.Popup(TrackEditorNode);
-
                 TrackEditorNode.SetTrack(track);
             }
         }

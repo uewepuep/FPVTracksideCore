@@ -79,7 +79,7 @@ namespace UI.Nodes
 
             ReplayNode = new ReplayNode(eventManager, keyMapper);
 
-            trackTab = new TrackTab();
+            trackTab = new TrackTab(eventManager);
 
             eventManager.RaceManager.OnRaceChanged += UpdateReplayButton;
             eventManager.RaceManager.OnRaceEnd += UpdateReplayButton;
@@ -271,11 +271,7 @@ namespace UI.Nodes
 
                 ll.WorkQueue.Enqueue(() =>
                 {
-                    using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open(Guid.Empty))
-                    {
-                        RaceLib.Track track = db.All<RaceLib.Track>().FirstOrDefault();
-                        trackTab.Load(track);
-                    }
+                    trackTab.Load(eventManager.Event.Track);
                 });
             }
         }

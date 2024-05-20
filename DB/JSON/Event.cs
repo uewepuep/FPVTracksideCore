@@ -115,6 +115,9 @@ namespace DB.JSON
             SyncWithFPVTrackside = obj.SyncWithFPVTrackside;
             SyncWithMultiGP = obj.SyncWithMultiGP;
             VisibleOnline = obj.VisibleOnline;
+
+            if (obj.Track != null)
+                Track = obj.Track.ID;
         }
 
         public override RaceLib.Event GetRaceLibObject(ICollectionDatabase database)
@@ -128,6 +131,9 @@ namespace DB.JSON
             ev.SyncWithFPVTrackside = SyncWithFPVTrackside;
             ev.SyncWithMultiGP = SyncWithMultiGP;
             ev.VisibleOnline = VisibleOnline;
+
+            ev.Track = Track.Convert<RaceLib.Track>(database);
+
             return ev;
         }
 
