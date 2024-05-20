@@ -30,7 +30,7 @@ namespace UI.Nodes.Track
         protected Vector3 modeLookFrom;
         protected Vector3 modeLookAt;
 
-        public Modes Mode { get; set; }
+        public Modes Mode { get; private set; }
 
         public TrackEntity TrackEntity { get; private set; }
 
@@ -42,6 +42,8 @@ namespace UI.Nodes.Track
             }
         }
 
+        public bool Paused { get; set; }
+
         public RaceTrackNode()
         {
             modeValue = 0;
@@ -50,7 +52,7 @@ namespace UI.Nodes.Track
 
         public override void Update(GameTime gameTime)
         {
-            if (TrackEntity != null && TrackEntity.FlightPath != null) 
+            if (TrackEntity != null && TrackEntity.FlightPath != null && !Paused) 
             {
                 if (TrackEntity.FlightPath.Length == 0 && (Mode == Modes.FlyThrough || Mode == Modes.AboveThrough))
                 {
@@ -80,7 +82,7 @@ namespace UI.Nodes.Track
 
                     case Modes.FlyThrough:
                         modeValue += speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
-
+                        
                         Vector3 from = TrackEntity.FlightPath.GetPoint(distance);
                         Vector3 to = TrackEntity.FlightPath.GetPoint(next);
 
@@ -130,24 +132,16 @@ namespace UI.Nodes.Track
             Camera?.LookAt(lookFrom + lookAt, lookAt, Vector3.Up);
         }
 
-        public void ToggleMode()
+        public void SetMode(Modes newMode)
         {
+            if (newMode == Mode || TrackEntity == null || TrackEntity.FlightPath == null)
+            {
+                return;
+            }
+
+            Mode = newMode;
             modeValue = 0;
             modeLookFrom = Vector3.Zero;
-            switch (Mode)
-            {
-                case Modes.AboveThrough:
-                    Mode = Modes.FlyThrough;
-                    break;
-
-                case Modes.FlyThrough:
-                    Mode = Modes.SpinCenter;
-                    break;
-
-                case Modes.SpinCenter:
-                    Mode = Modes.AboveThrough;
-                    break;
-            }
 
             switch (Mode) 
             {

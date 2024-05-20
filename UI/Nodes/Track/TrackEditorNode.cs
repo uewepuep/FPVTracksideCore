@@ -29,7 +29,7 @@ namespace UI.Nodes.Track
             objectProperties.Remove();
             left.AddChild(objectProperties);
             TrackNode = new RaceTrackEditorNode();
-            TrackNode.Mode = RaceTrackNode.Modes.Selected;
+            TrackNode.SetMode(RaceTrackNode.Modes.Selected);
             TrackNode.ClickedElement += TrackNode_ClickedElement;
             TrackNode.SelectedUpdated += TrackNode_SelectedUpdated;
             right.AddChild(TrackNode, 0);
@@ -50,7 +50,7 @@ namespace UI.Nodes.Track
 
             cancelButton.Text = "Exit";
 
-            nameContainer = new Node();
+            nameContainer = new ColorNode(Theme.Current.Editor.Background);
             nameContainer.RelativeBounds = buttonContainer.RelativeBounds;
             nameContainer.Translate(0, -buttonContainer.RelativeBounds.Height);
             nameContainer.Scale(0.25f, 0.5f);
@@ -61,7 +61,9 @@ namespace UI.Nodes.Track
 
             trackName = new TextEditNode(" ", TextColor);
             nameContainer.AddChild(trackName);
-            AlignHorizontally(nameContainer.Children);
+
+            trackNameName.RelativeBounds = new RectangleF(0.01f, 0.1f, 0.3f, 0.98f);
+            trackName.RelativeBounds = new RectangleF(0.35f, 0.1f, 0.63f, 0.98f);
 
             OnOK += TrackEditorNode_OnOK;
         }
@@ -84,7 +86,10 @@ namespace UI.Nodes.Track
         private void Import_OnClick(MouseInputEvent mie)
         {
             string filename = PlatformTools.OpenFileDialog("Import VDrone Track", "Track file|*.trk");
-
+            if (string.IsNullOrEmpty(filename))
+            {
+                return;
+            }
             RaceLib.Track track = ExternalData.VDFileManager.LoadTrk(filename);
             SetTrack(track);
         }
@@ -223,7 +228,7 @@ namespace UI.Nodes.Track
             trackElement.AddChild(EntityEditor);
             Selected = trackElement;
             modeLookAt = trackElement.Position;
-            Mode = Modes.Selected;
+            SetMode(Modes.Selected);
         }
 
         public override bool OnMouseInput(MouseInputEvent unTranslated)
