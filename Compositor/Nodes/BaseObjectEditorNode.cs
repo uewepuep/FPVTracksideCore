@@ -723,7 +723,12 @@ namespace Composition.Nodes
 
         public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
         {
-            int y = finalInputEvent.Position.Y  - multiItemBox.Bounds.Y;
+            int y = finalInputEvent.Position.Y;
+
+            y += (int)multiItemBox.Scroller.CurrentScrollPixels;
+
+            Point adjustedMouse = finalInputEvent.Position;
+            adjustedMouse.Y = y;
 
             ItemNode<T> dropped = node as ItemNode<T>;
             if (dropped != null && left.Contains(finalInputEvent.Position))
@@ -731,7 +736,7 @@ namespace Composition.Nodes
                 int index = Objects.Count - 1;
                 foreach (ItemNode<T> other in multiItemBox.ChildrenOfType)
                 {
-                    if (other.Bounds.Contains(finalInputEvent.Position))
+                    if (other.Bounds.Contains(adjustedMouse))
                     {
                         index = Objects.IndexOf(other.Item);
                         break;

@@ -12,6 +12,7 @@ using Composition.Layers;
 using ThreeDee.Nodes;
 using ImageServer;
 using Tools;
+using Composition.Nodes;
 
 namespace UI.Nodes.Track
 {
@@ -44,10 +45,17 @@ namespace UI.Nodes.Track
 
         public bool Paused { get; set; }
 
+        public TextNode Length { get; private set; }
+
         public RaceTrackNode()
         {
             modeValue = 0;
             Mode = Modes.SpinCenter;
+
+            Length = new TextNode("", Theme.Current.InfoPanel.Text.XNA);
+            Length.RelativeBounds = new RectangleF(0.75f, 0.9f, 0.2f, 0.1f);
+            Length.Alignment = RectangleAlignment.CenterRight;
+            AddChild(Length);   
         }
 
         public override void Update(GameTime gameTime)
@@ -166,6 +174,7 @@ namespace UI.Nodes.Track
         public virtual void Load(RaceLib.Track track)
         {
             TrackEntity = new TrackEntity(GraphicsDevice, ContentManager);
+            TrackEntity.OnFlightPathUpdate += TrackEntity_OnFlightPathUpdate;
             Root = TrackEntity;
 
             foreach (var v in track.TrackElements)
@@ -178,6 +187,30 @@ namespace UI.Nodes.Track
             }
 
             Camera.LookAt(new Vector3(0, 10, 20), Vector3.Zero);
+        }
+
+        private void TrackEntity_OnFlightPathUpdate()
+        {
+            if (TrackEntity.FlightPath != null)
+            {
+                int length = (int)TrackEntity.FlightPath.Length;
+
+                if (GeneralSettings.Instance.Units == RaceLib.Units.Imperial)
+                {
+                    length = (int)(length * 3.28084f);
+
+                    Length.Text = length.ToString() + "ft";
+                }
+                else
+                {
+                    Length.Text = length.ToString() + "m";
+                }
+
+            }
+            else
+            {
+                Length.Text = "";
+            }
         }
 
         public TrackElement AddTrackElement(RaceLib.TrackElement.ElementTypes type, Vector3 position)

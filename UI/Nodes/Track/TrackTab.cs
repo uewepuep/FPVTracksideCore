@@ -74,8 +74,8 @@ namespace UI.Nodes.Track
             pause.Visible = false;
             buttonContainer.AddChild(pause);
 
-            buttonContainer.RelativeBounds = new RectangleF(0.88f, 0.92f, 0.1f, 0.05f);
-            AlignHorizontally(stop, play);
+            buttonContainer.RelativeBounds = new RectangleF(0.02f, 0.92f, 0.1f, 0.05f);
+            AlignHorizontally(play, stop);
 
             pause.RelativeBounds = play.RelativeBounds;
 

@@ -1,4 +1,5 @@
-﻿using Composition.Input;
+﻿using Composition;
+using Composition.Input;
 using Composition.Nodes;
 using ImageServer;
 using Microsoft.Xna.Framework;
@@ -131,7 +132,7 @@ namespace UI.Nodes.Track
             if (selected != null)
             {
                 tr.Position = selected.Position;
-                tr.Rotation = selected.Rotation;
+                tr.RotationTopdown = selected.RotationTopdown;
                 tr.Tilt = selected.Tilt;
             }
 
@@ -216,20 +217,27 @@ namespace UI.Nodes.Track
 
         public void Select(TrackElement trackElement)
         {
-            if (Selected != null)
-            {
-                Selected.RemoveChild(EntityEditor);
-            }
             if (trackElement == null)
             {
                 return;
             }
-
-            trackElement.AddChild(EntityEditor);
             Selected = trackElement;
             modeLookAt = trackElement.Position;
             SetMode(Modes.Selected);
+            EntityEditor.Target = Selected;
         }
+
+
+        protected override void DrawContent(Drawer id)
+        {
+            base.DrawContent(id);
+
+            if (Selected != null)
+            {
+                EntityEditor.Draw(Renderer, Camera, Matrix.Identity);
+            }
+        }
+
 
         public override bool OnMouseInput(MouseInputEvent unTranslated)
         {
@@ -320,7 +328,7 @@ namespace UI.Nodes.Track
                 }
                 else if(mouseInputEvent.ButtonState == ButtonStates.Pressed && mouseInputEvent.Button == MouseButtons.Left)
                 {
-                    foreach (EntityDistance ed in EntityEditor.CastRay<Handle>(ray, EntityEditor.GetAbsoluteTransform()))
+                    foreach (EntityDistance ed in EntityEditor.CastRay<Handle>(ray, Matrix.Identity))
                     {
                         if (ed.Entity == EntityEditor.TranslationHandle)
                         {
