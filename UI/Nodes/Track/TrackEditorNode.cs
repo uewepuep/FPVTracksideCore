@@ -25,6 +25,8 @@ namespace UI.Nodes.Track
 
         private TextEditNode trackName;
 
+        private TextNode length;
+
         public TrackEditorNode()
         {
             objectProperties.Remove();
@@ -67,6 +69,11 @@ namespace UI.Nodes.Track
             trackName.RelativeBounds = new RectangleF(0.35f, 0.1f, 0.63f, 0.98f);
 
             OnOK += TrackEditorNode_OnOK;
+
+            length = new TextNode("", Theme.Current.InfoPanel.Text.XNA);
+            length.RelativeBounds = new RectangleF(0.79f, 0.01f, 0.2f, 0.02f);
+            length.Alignment = RectangleAlignment.CenterRight;
+            AddChild(length);
         }
 
         private void TrackEditorNode_OnOK(BaseObjectEditorNode<TrackElement> obj)
@@ -158,6 +165,7 @@ namespace UI.Nodes.Track
             Track = track;
 
             trackName.Text = Track.Name;
+            TrackNode.TrackEntity.OnFlightPathUpdate += TrackEntity_OnFlightPathUpdate;
         }
 
         public override void SetObjects(IEnumerable<TrackElement> toEdit, bool addRemove = true, bool cancelButton = true)
@@ -187,6 +195,29 @@ namespace UI.Nodes.Track
             base.ChildValueChanged(newChange);
             TrackNode.TrackEntity.NeedUpdate = true;
         }
+
+        private void TrackEntity_OnFlightPathUpdate()
+        {
+            if (TrackNode.TrackEntity.FlightPath != null)
+            {
+                int l = (int)TrackNode.TrackEntity.FlightPath.Length;
+
+                if (GeneralSettings.Instance.Units == RaceLib.Units.Imperial)
+                {
+                    l = (int)(l * 3.28084f);
+
+                    length.Text = l.ToString() + "ft";
+                }
+                else
+                {
+                    length.Text = l.ToString() + "m";
+                }
+            }
+            else
+            {
+                length.Text = "";
+            }
+        }
     }
 
     public class RaceTrackEditorNode : RaceTrackNode
@@ -203,6 +234,7 @@ namespace UI.Nodes.Track
 
         public TrackElement Selected { get; private set; }
 
+
         public RaceTrackEditorNode()
         {
         }
@@ -213,7 +245,6 @@ namespace UI.Nodes.Track
 
             EntityEditor = new EntityEditor(ContentManager);
         }
-
 
         public void Select(TrackElement trackElement)
         {

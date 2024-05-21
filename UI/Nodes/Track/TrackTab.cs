@@ -27,8 +27,6 @@ namespace UI.Nodes.Track
         private ImageButtonNode pause;
         private ImageButtonNode stop;
 
-        private TextNode length;
-
         public TrackTab(RaceLib.EventManager eventManager) 
         {
             this.eventManager = eventManager;
@@ -84,37 +82,8 @@ namespace UI.Nodes.Track
             edit.RelativeBounds = new Tools.RectangleF(0.94f, 0.01f, 0.05f, 0.05f);
             edit.OnClick += EditClick;
             AddChild(edit);
-
-            length = new TextNode("", Theme.Current.InfoPanel.Text.XNA);
-            length.RelativeBounds = new RectangleF(0.75f, 0.95f, 0.2f, 0.04f);
-            length.Alignment = RectangleAlignment.CenterRight;
-            AddChild(length);
         }
 
-
-        private void TrackEntity_OnFlightPathUpdate()
-        {
-            if (RaceTrackNode.TrackEntity.FlightPath != null)
-            {
-                int l = (int)RaceTrackNode.TrackEntity.FlightPath.Length;
-
-                if (GeneralSettings.Instance.Units == RaceLib.Units.Imperial)
-                {
-                    l = (int)(l * 3.28084f);
-
-                    length.Text = l.ToString() + "ft";
-                }
-                else
-                {
-                    length.Text = l.ToString() + "m";
-                }
-
-            }
-            else
-            {
-                length.Text = "";
-            }
-        }
 
         public void Load(RaceLib.Track track)
         {
@@ -127,8 +96,6 @@ namespace UI.Nodes.Track
 
             RaceTrackNode.Load(track);
             this.track = track;
-
-            RaceTrackNode.TrackEntity.OnFlightPathUpdate += TrackEntity_OnFlightPathUpdate;
         }
 
         private void TrackEditorNode_OnOK(BaseObjectEditorNode<TrackElement> obj)
