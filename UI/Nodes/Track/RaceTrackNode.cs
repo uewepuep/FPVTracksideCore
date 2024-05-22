@@ -49,6 +49,7 @@ namespace UI.Nodes.Track
         {
             modeValue = 0;
             Mode = Modes.SpinCenter;
+            ClearColor = new Color(Color.CornflowerBlue, 0.1f);
         }
 
         public override void Update(GameTime gameTime)

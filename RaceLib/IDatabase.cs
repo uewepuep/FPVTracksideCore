@@ -55,6 +55,11 @@ namespace RaceLib
             databaseFactory = dbf;
         }
 
+        public static IDatabase Open()
+        {
+            return databaseFactory.Open(Guid.Empty);
+        }
+
         public static IDatabase Open(Guid eventId) 
         { 
             return databaseFactory.Open(eventId);

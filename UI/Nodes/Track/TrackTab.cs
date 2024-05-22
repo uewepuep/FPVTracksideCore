@@ -105,7 +105,9 @@ namespace UI.Nodes.Track
             {
                 using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open(Guid.Empty))
                 {
-                    eventManager.Event.Track = trackEditorNode.Track;
+                    track = trackEditorNode.Track;
+
+                    eventManager.Event.Track = track;
                     track.TrackElements = trackEditorNode.TrackNode.GetTrackElements().ToArray();
 
                     db.Upsert(track);

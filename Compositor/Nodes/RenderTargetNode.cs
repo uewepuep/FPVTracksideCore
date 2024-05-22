@@ -68,6 +68,7 @@ namespace Composition.Nodes
         private bool disposed;
 
         public HoverNode HoverNode { get; set; }
+        public Color ClearColor { get; set; }
 
         protected int lastDrawFrame;
 
@@ -84,6 +85,7 @@ namespace Composition.Nodes
             renderTargetLock = new object();
             Scroller = new ScrollerNode(this, ScrollerNode.Types.VerticalRight);
             HoverNode = null;
+            ClearColor = Color.Transparent;
         }
 
         public override void Dispose()
@@ -338,7 +340,7 @@ namespace Composition.Nodes
                 {
                     // Set the render target
                     id.GraphicsDevice.SetRenderTarget(renderTarget);
-                    id.GraphicsDevice.Clear(Color.Transparent);
+                    id.GraphicsDevice.Clear(ClearColor);
 //#if DEBUG
 //                    Random r = new Random(lastDrawFrame);
 //                    id.GraphicsDevice.Clear(new Color((float)r.NextDouble(), (float)r.NextDouble(), (float)r.NextDouble()));

@@ -21,7 +21,7 @@ namespace DB.JSON
 
         public override string GetFilename(Guid id)
         {
-            return Path.Combine(Directory.FullName, id.ToString() + ".json");
+            return Path.Combine(Directory.FullName, id.ToString() + ".fpvtrk");
         }
 
         protected override IEnumerable<Track> DiskAll()

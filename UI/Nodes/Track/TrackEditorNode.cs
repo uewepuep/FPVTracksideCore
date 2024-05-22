@@ -27,6 +27,8 @@ namespace UI.Nodes.Track
 
         private TextNode length;
 
+        private TextButtonNode menuButton;
+
         public TrackEditorNode()
         {
             objectProperties.Remove();
@@ -38,25 +40,22 @@ namespace UI.Nodes.Track
             right.AddChild(TrackNode, 0);
             RelativeBounds = new RectangleF(0, 0, 1, 1);
 
-            TextButtonNode newTrack = new TextButtonNode("New Track", ButtonBackground, ButtonHover, TextColor);
-            newTrack.OnClick += NewTrack_OnClick;
-            buttonContainer.AddChild(newTrack, 0);
+            menuButton = new TextButtonNode("Menu", ButtonBackground, ButtonHover, TextColor);
+            menuButton.OnClick += MenuButton_OnClick;
+            buttonContainer.AddChild(menuButton, 0);
 
-            TextButtonNode import = new TextButtonNode("Import", ButtonBackground, ButtonHover, TextColor);
-            import.OnClick += Import_OnClick;
-            buttonContainer.AddChild(import, 0);
+            okButton.Visible = false;
+            cancelButton.Visible = false;
 
-            AlignVisibleButtons();
+            AlignHorizontally(0.05f, addButton, removeButton, null, null, null, null, menuButton);
 
             OnRefreshList += TrackEditorNode_OnRefreshList;
-            okButton.Text = "Save & Exit";
-
-            cancelButton.Text = "Exit";
+            addButton.Text = "Add Element";
+            removeButton.Text = "Remove Element";
 
             nameContainer = new ColorNode(Theme.Current.Editor.Background);
             nameContainer.RelativeBounds = buttonContainer.RelativeBounds;
-            nameContainer.Translate(0, -buttonContainer.RelativeBounds.Height);
-            nameContainer.Scale(0.25f, 0.5f);
+            nameContainer.Scale(0.25f, 1);
             right.AddChild(nameContainer);
 
             TextNode trackNameName = new TextNode("Track Name: ", TextColor);
@@ -65,8 +64,8 @@ namespace UI.Nodes.Track
             trackName = new TextEditNode(" ", TextColor);
             nameContainer.AddChild(trackName);
 
-            trackNameName.RelativeBounds = new RectangleF(0.01f, 0.1f, 0.3f, 0.98f);
-            trackName.RelativeBounds = new RectangleF(0.35f, 0.1f, 0.63f, 0.98f);
+            trackNameName.RelativeBounds = new RectangleF(0.01f, 0.25f, 0.3f, 0.5f);
+            trackName.RelativeBounds = new RectangleF(0.35f, 0.25f, 0.63f, 0.5f);
 
             OnOK += TrackEditorNode_OnOK;
 
@@ -74,6 +73,32 @@ namespace UI.Nodes.Track
             length.RelativeBounds = new RectangleF(0.79f, 0.01f, 0.2f, 0.02f);
             length.Alignment = RectangleAlignment.CenterRight;
             AddChild(length);
+        }
+
+        private void MenuButton_OnClick(MouseInputEvent mie)
+        {
+            MouseMenu mouseMenu = new MouseMenu(this);
+            mouseMenu.TopToBottom = false;
+
+            mouseMenu.AddItem("New Track", () => { NewTrack_OnClick(mie); });
+            MouseMenu openMenu = mouseMenu.AddSubmenu("Open");
+            using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open())
+            {
+                RaceLib.Track[] tracks = db.All<RaceLib.Track>().ToArray();
+
+                foreach (RaceLib.Track track in tracks)
+                {
+                    var t = track;
+                    openMenu.AddItem(track.Name, () => { SetTrack(t); });
+                }
+            }
+
+            mouseMenu.AddItem("Import", () => { Import_OnClick(mie); });
+            mouseMenu.AddBlank();
+            mouseMenu.AddItem("Save & Exit", () => { OkButton_OnClick(mie); });
+            mouseMenu.AddItem("Exit", () => { CancelButton_OnClick(mie); });
+
+            mouseMenu.Show(menuButton.Bounds.Location);
         }
 
         private void TrackEditorNode_OnOK(BaseObjectEditorNode<TrackElement> obj)

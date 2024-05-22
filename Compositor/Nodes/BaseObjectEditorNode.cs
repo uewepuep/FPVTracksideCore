@@ -691,7 +691,7 @@ namespace Composition.Nodes
             return Activator.CreateInstance<T>();
         }
 
-        private void OkButton_OnClick(MouseInputEvent mie)
+        protected void OkButton_OnClick(MouseInputEvent mie)
         {
             if (CompositorLayer != null)
             {
@@ -703,7 +703,7 @@ namespace Composition.Nodes
             needsDispose = true;
         }
 
-        private void CancelButton_OnClick(MouseInputEvent mie)
+        protected void CancelButton_OnClick(MouseInputEvent mie)
         {
             foreach (Change c in changes)
             {
