@@ -3,6 +3,7 @@ using Composition.Nodes;
 using Composition.Text;
 using ImageServer;
 using Microsoft.Xna.Framework;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -25,6 +26,8 @@ namespace WindowsPlatform
         public override bool Focused { get => focused; }
 
         public Control Control { get; private set; }
+
+        public const string loginFile = @"data\login.enc";
 
         public override string InstallerExtension
         {
@@ -148,35 +151,6 @@ namespace WindowsPlatform
                 speaker.SelectVoice(voice);
             }
             return speaker;
-        }
-
-        public override Tuple<string, string> GetSavedUsernamePassword(string service)
-        {
-            if (service == "FPVTrackside")
-            {
-                return new Tuple<string, string>(Properties.Settings.Default.fpvtracksideusername, Properties.Settings.Default.fpvtracksidepassword);
-            }
-            if (service == "MultiGP")
-            {
-                return new Tuple<string, string>(Properties.Settings.Default.multigpusername, Properties.Settings.Default.multigppassword);
-            }
-            return new Tuple<string, string>("", "");
-        }
-
-        public override void SetSavedUsernamePassword(string service, string username, string password)
-        {
-            if (service == "FPVTrackside")
-            {
-                Properties.Settings.Default.fpvtracksideusername = username;
-                Properties.Settings.Default.fpvtracksidepassword = password;
-                Properties.Settings.Default.Save();
-            }
-            if (service == "MultiGP")
-            {
-                Properties.Settings.Default.multigpusername = username;
-                Properties.Settings.Default.multigppassword = password;
-                Properties.Settings.Default.Save();
-            }
         }
 
         public static void RunAsSTAThread(Action action)

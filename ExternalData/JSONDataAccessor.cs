@@ -46,6 +46,8 @@ namespace ExternalData
 
         private JsonSerializerSettings serializerSettings;
 
+        public string LastFailedResponse { get; private set; }
+
         public JSONDataAccessor()
         {
             Encoding = Encodings.JSON;
@@ -176,8 +178,16 @@ namespace ExternalData
                 return default(T);
             }
 
-            T os = JsonConvert.DeserializeObject<T>(pageContents);
-            return os;
+            try
+            {
+                T os = JsonConvert.DeserializeObject<T>(pageContents);
+                return os;
+            }
+            catch (Exception e) 
+            {
+                LastFailedResponse = response;
+                throw e;
+            }
         }
     }
 }

@@ -327,7 +327,8 @@ class EventManager
             const pilotRecord =
             {
                 pilot: pilot,
-                total: 0
+                total: 0,
+                bracket: "none"
             };
 
             let totalName = "total";
@@ -339,6 +340,44 @@ class EventManager
                 const round = rounds[roundIndex];
                 let roundName = round.EventType[0] + round.RoundNumber;
                 let pointSummary = round.PointSummary;
+
+                let roundRaces = []
+                for (const raceIndex in races)
+                {
+                    const race = races[raceIndex];
+
+                    if (round.ID == race.Round)
+                    {
+                        roundRaces.push(race);
+                    }
+                }
+
+                for (const raceIndex in roundRaces)
+                {
+                    const race = roundRaces[raceIndex];
+                    if (this.RaceHasPilot(race, pilot.ID))
+                    {
+                        if (pilotRecord.bracket == "none")
+                        {
+                            pilotRecord.bracket = race.Bracket;
+                        }
+
+                        let result = await this.GetPilotResult(race.ID, pilot.ID);
+                        if (result != null)
+                        {
+                            if (worstResult > result.Points)
+                                worstResult = result.Points;
+
+                            pilotRecord[roundName] = result.Points;
+                            pilotRecord[totalName] += result.Points;
+                        }
+                        else
+                        {
+                            worstResult = 0;
+                        }
+                    }
+                }
+
                 if (pointSummary != null)
                 {
                     let rroResult = null;
@@ -360,8 +399,8 @@ class EventManager
 
                     totalName = "total_" + roundName;
                     pilotRecord[totalName] = pilotRecord.total;
+                    pilotRecord.lastTotal = pilotRecord.total;
                     pilotRecord.total = 0;
-
 
                     if (rroResult != null)
                     {
@@ -372,47 +411,15 @@ class EventManager
                     rros[roundName] = totalName;
                 }
 
-                let roundRaces = []
-                for (const raceIndex in races)
-                {
-                    const race = races[raceIndex];
-
-                    if (round.ID == race.Round)
-                    {
-                        roundRaces.push(race);
-                    }
-                }
-
-                for (const raceIndex in roundRaces)
-                {
-                    const race = roundRaces[raceIndex];
-
-                    if (this.RaceHasPilot(race, pilot.ID))
-                    {
-                        let result = await this.GetPilotResult(race.ID, pilot.ID);
-                        if (result != null)
-                        {
-                            if (worstResult > result.Points)
-                                worstResult = result.Points;
-
-                            pilotRecord[roundName] = result.Points;
-                            pilotRecord[totalName] += result.Points;
-                        }
-                        else
-                        {
-                            worstResult = 0;
-                        }
-                    }
-                }
-
                 totalName = "total";
             }
-            records.push(pilotRecord);
-        }
-
-        for (var key in rros)
-        {
             
+            if (pilotRecord.total > 0 && pilotRecord.lastTotal == 0)
+            {
+                pilotRecord.lastTotal = pilotRecord.total;
+            }
+
+            records.push(pilotRecord);
         }
 
         return records;
@@ -451,6 +458,8 @@ class EventManager
         let best = [];
         let bestTime = 10000;
 
+        validLaps.sort((a, b) => { return a.LapNumber - b.LapNumber; });
+
         for (let i = 0; i <= validLaps.length - consecutive; i++)
         {
             let current = [];
@@ -462,16 +471,16 @@ class EventManager
 
             if (current.length != consecutive)
                 continue;
-            
-            if (best.length == 0 || this.TotalTime(current) < bestTime)
+
+            let time = this.TotalTime(current);
+            if (best.length == 0 || time < bestTime)
             {
                 best = current;
-                bestTime = this.TotalTime(best);
+                bestTime = time;
             }
         }
         return best;
     }
-
     TotalTime(validLaps)
     {
         if (validLaps == null || validLaps.length == 0)
@@ -529,7 +538,7 @@ class EventManager
 
     async GetRoundRaces(roundId)
     {
-        let races = await this.GetRaces((r) => { return r.Round == roundId });
+        let races = await this.GetRaces((r) => { return r.Round == roundId && r.Valid });
         races.sort((a, b) => 
         { 
             if (a == null || b == null)

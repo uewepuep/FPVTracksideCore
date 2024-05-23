@@ -12,7 +12,7 @@ namespace WindowsPlatform.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.9.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -37,49 +37,37 @@ namespace WindowsPlatform.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string fpvtracksideusername {
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public string Maximised {
             get {
-                return ((string)(this["fpvtracksideusername"]));
+                return ((string)(this["Maximised"]));
             }
             set {
-                this["fpvtracksideusername"] = value;
+                this["Maximised"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string fpvtracksidepassword {
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public string Minimised {
             get {
-                return ((string)(this["fpvtracksidepassword"]));
+                return ((string)(this["Minimised"]));
             }
             set {
-                this["fpvtracksidepassword"] = value;
+                this["Minimised"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string multigpusername {
+        [global::System.Configuration.DefaultSettingValueAttribute("0, 0")]
+        public string Location {
             get {
-                return ((string)(this["multigpusername"]));
+                return ((string)(this["Location"]));
             }
             set {
-                this["multigpusername"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string multigppassword {
-            get {
-                return ((string)(this["multigppassword"]));
-            }
-            set {
-                this["multigppassword"] = value;
+                this["Location"] = value;
             }
         }
     }

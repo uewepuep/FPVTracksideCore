@@ -5,17 +5,14 @@
     <Setting Name="Size" Type="System.Drawing.Size" Scope="User">
       <Value Profile="(Default)">0, 0</Value>
     </Setting>
-    <Setting Name="fpvtracksideusername" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+    <Setting Name="Maximised" Type="System.String" Scope="User">
+      <Value Profile="(Default)">False</Value>
     </Setting>
-    <Setting Name="fpvtracksidepassword" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+    <Setting Name="Minimised" Type="System.String" Scope="User">
+      <Value Profile="(Default)">False</Value>
     </Setting>
-    <Setting Name="multigpusername" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
-    </Setting>
-    <Setting Name="multigppassword" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+    <Setting Name="Location" Type="System.String" Scope="User">
+      <Value Profile="(Default)">0, 0</Value>
     </Setting>
   </Settings>
 </SettingsFile>

@@ -1,6 +1,7 @@
 ﻿using Composition.Layers;
 using Composition.Nodes;
 using Composition.Text;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -73,12 +74,46 @@ namespace Composition
             return false;
         }
 
-        public abstract Tuple<string, string> GetSavedUsernamePassword(string service);
-        public abstract void SetSavedUsernamePassword(string service, string username, string password);
+        private string loginFile = @"data\login";
+        private string key = @"P2l!OOHM@&#lWXGAjsaTf38e^*!GFrHZ";
+
+        public LoginDetails GetSavedUsernamePassword()
+        {
+            if (File.Exists(loginFile))
+            {
+                string enc = File.ReadAllText(loginFile);
+                string json = Encryptor.DecryptString(key, enc);
+
+                return JsonConvert.DeserializeObject<LoginDetails>(json);
+            }
+            return new LoginDetails();
+        }
+
+        public void SetSavedUsernamePassword(LoginDetails loginDetails)
+        {
+            string json = JsonConvert.SerializeObject(loginDetails);
+            string enc = Encryptor.EncryptString(key, json);
+            File.WriteAllText(loginFile, enc);
+        }
 
         public virtual bool Check(string toCheck)
         {
             return false;
+        }
+    }
+
+    public class LoginDetails
+    {
+        public string FPVTracksideUsername { get; set; }
+        public string FPVTracksidePassword { get; set; }
+
+        public string MultiGPKey { get; set; }
+
+        public LoginDetails()
+        {
+            FPVTracksideUsername = "";
+            FPVTracksidePassword = "";
+            MultiGPKey = "";
         }
     }
 }
