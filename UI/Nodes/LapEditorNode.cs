@@ -226,7 +226,13 @@ namespace UI.Nodes
             end.Alignment = RectangleAlignment.TopRight;
             raceNode.AddChild(end);
 
-            DateTime last = orderedLapContainers.Where(r => r.Valid).Select(l => l.End).Max();
+            DateTime last = Race.Start;
+            var validOrderedLapContainers = orderedLapContainers.Where(r => r.Valid);
+            
+            if (validOrderedLapContainers.Any())
+            {
+                last = validOrderedLapContainers.Select(l => l.End).Max();
+            }
             TimeSpan length = last - Race.Start;
 
             double maxSeconds = Math.Min(Race.Length.TotalSeconds, length.TotalSeconds);
