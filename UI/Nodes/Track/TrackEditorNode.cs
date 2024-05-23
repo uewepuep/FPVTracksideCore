@@ -1,5 +1,6 @@
 ﻿using Composition;
 using Composition.Input;
+using Composition.Layers;
 using Composition.Nodes;
 using ImageServer;
 using Microsoft.Xna.Framework;
@@ -81,17 +82,7 @@ namespace UI.Nodes.Track
             mouseMenu.TopToBottom = false;
 
             mouseMenu.AddItem("New Track", () => { NewTrack_OnClick(mie); });
-            MouseMenu openMenu = mouseMenu.AddSubmenu("Open");
-            using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open())
-            {
-                RaceLib.Track[] tracks = db.All<RaceLib.Track>().ToArray();
-
-                foreach (RaceLib.Track track in tracks)
-                {
-                    var t = track;
-                    openMenu.AddItem(track.Name, () => { SetTrack(t); });
-                }
-            }
+            mouseMenu.AddItem("Open", () => { OpenTrack(); });
 
             mouseMenu.AddItem("Import", () => { Import_OnClick(mie); });
             mouseMenu.AddBlank();
@@ -104,6 +95,20 @@ namespace UI.Nodes.Track
         private void TrackEditorNode_OnOK(BaseObjectEditorNode<TrackElement> obj)
         {
             Track.Name = trackName.Text;
+        }
+
+        private void OpenTrack()
+        {
+            TrackSelector trackSelector = new TrackSelector();
+            PopupLayer py = CompositorLayer.LayerStack.GetLayer<PopupLayer>();
+            py.Popup(trackSelector);
+
+            trackSelector.OnTrackSelected += TrackSelector_OnTrackSelected;
+        }
+
+        private void TrackSelector_OnTrackSelected(RaceLib.Track obj)
+        {
+            SetTrack(obj);
         }
 
         private void NewTrack_OnClick(MouseInputEvent mie)
@@ -178,7 +183,8 @@ namespace UI.Nodes.Track
             if (track == null)
             {
                 track = new RaceLib.Track();
-                track.Name = "Track 1";
+                track.ID = Guid.NewGuid();
+                track.Name = "Track  " + track.ID.ToString();
                 track.TrackElements = new RaceLib.TrackElement[] { new RaceLib.TrackElement() { ElementType = RaceLib.TrackElement.ElementTypes.Gate } };
             }
 

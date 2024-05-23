@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using ThreeDee.Entities;
@@ -82,8 +83,34 @@ namespace UI.Nodes.Track
             edit.RelativeBounds = new Tools.RectangleF(0.94f, 0.01f, 0.05f, 0.05f);
             edit.OnClick += EditClick;
             AddChild(edit);
+
+            TextButtonNode open = new TextButtonNode("Open", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
+            open.RelativeBounds = new Tools.RectangleF(0.88f, 0.01f, 0.05f, 0.05f);
+            open.OnClick += Open_OnClick;
+            AddChild(open);
         }
 
+        private void Open_OnClick(Composition.Input.MouseInputEvent mie)
+        {
+            TrackSelector trackSelector = new TrackSelector();
+            PopupLayer py = CompositorLayer.LayerStack.GetLayer<PopupLayer>();
+            py.Popup(trackSelector);
+
+            trackSelector.OnTrackSelected += SaveToEvent;
+        }
+
+        private void SaveToEvent(RaceLib.Track track)
+        {
+            this.track = track;
+            using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open(Guid.Empty))
+            {
+                eventManager.Event.Track = track;
+                db.Upsert(track);
+                db.Upsert(eventManager.Event);
+            }
+
+            Load(track);
+        }
 
         public void Load(RaceLib.Track track)
         {
@@ -103,18 +130,10 @@ namespace UI.Nodes.Track
             TrackEditorNode trackEditorNode = obj as TrackEditorNode;
             if (trackEditorNode != null) 
             {
-                using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open(Guid.Empty))
-                {
-                    track = trackEditorNode.Track;
+                var track = trackEditorNode.Track;
+                track.TrackElements = trackEditorNode.TrackNode.GetTrackElements().ToArray();
 
-                    eventManager.Event.Track = track;
-                    track.TrackElements = trackEditorNode.TrackNode.GetTrackElements().ToArray();
-
-                    db.Upsert(track);
-                    db.Upsert(eventManager.Event);
-                }
-
-                Load(track);
+                SaveToEvent(track);
             }
         }
 
