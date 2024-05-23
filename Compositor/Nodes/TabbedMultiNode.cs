@@ -71,6 +71,21 @@ namespace Composition.Nodes
             return textButtonNode;
         }
 
+        public TextButtonNode InsertTab(int index, string text, Node node, MouseInputDelegate action)
+        {
+            TextButtonNode textButtonNode = AddTab(text, node, action);
+
+            Node parent = textButtonNode.Parent;
+            if (parent != null && parent.ChildCount >= index)
+            {
+                // Remove it and add it at the right index.
+                parent.RemoveChild(textButtonNode);
+                parent.AddChild(textButtonNode, index);
+            }
+
+            return textButtonNode;
+        }
+
         private void MultiNode_OnShowChange(Node obj)
         {
             if (mapBack.TryGetValue(obj, out TextButtonNode textButtonNode)) 

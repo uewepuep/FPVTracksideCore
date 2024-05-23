@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 using Timing;
 using Tools;
 using UI.Nodes.Rounds;
-using UI.Nodes.Track;
 using UI.Video;
 
 namespace UI.Nodes
@@ -30,9 +29,6 @@ namespace UI.Nodes
         public bool IsOnPatreons { get { return patreonsNode == Showing; } }
         public bool IsOnPhotoBooth { get { return PhotoBooth == Showing; } }
         public bool IsOnRSSI { get { return rssiNode == Showing; } }
-        public bool IsOnTrack { get { return TrackTab == Showing; } }
-
-
 
         private RoundsNode rounds;
         private SceneManagerNode sceneManagerNode;
@@ -51,16 +47,14 @@ namespace UI.Nodes
         private TextButtonNode replayButton;
         private TextButtonNode liveButton;
 
-        private EventManager eventManager;
+        protected EventManager eventManager;
         private VideoManager VideoManager;
         
         private TextButtonNode rssiButton;
 
         private KeyboardShortcuts keyMapper;
 
-        public TrackTab TrackTab { get; private set; }
-
-        public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, SoundManager soundManager, RoundsNode rounds, SceneManagerNode sceneManagerContent, TabButtonsNode tabContainer, KeyboardShortcuts keyMapper, ITrackProvider trackProvider)
+        public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, SoundManager soundManager, RoundsNode rounds, SceneManagerNode sceneManagerContent, TabButtonsNode tabContainer, KeyboardShortcuts keyMapper)
             : base(TimeSpan.FromSeconds(0.6f), tabContainer)
         {
             this.eventManager = eventManager;
@@ -79,7 +73,6 @@ namespace UI.Nodes
 
             ReplayNode = new ReplayNode(eventManager, keyMapper);
 
-            TrackTab = new TrackTab(eventManager);
 
             eventManager.RaceManager.OnRaceChanged += UpdateReplayButton;
             eventManager.RaceManager.OnRaceEnd += UpdateReplayButton;
@@ -96,12 +89,11 @@ namespace UI.Nodes
             }
         }
 
-        public void Init()
+        public virtual void Init()
         {
             AddTab("Rounds", this.rounds, ShowRounds);
             liveButton = AddTab("Live", sceneManagerNode, ShowLive);
             replayButton = AddTab("Replay", ReplayNode, ShowReplay);
-            AddTab("Track", TrackTab, ShowRaceTrack);
 
             AddTab("Lap Records", LapRecordsSummaryNode, ShowTopLaps);
             AddTab("Lap Count", LapCountSummaryNode, ShowLaps);
@@ -259,21 +251,6 @@ namespace UI.Nodes
         {
             Show(PhotoBooth);
             PhotoBooth.Load();
-        }
-
-        public void ShowRaceTrack(MouseInputEvent mie)
-        {
-            Show(TrackTab);
-
-            if (!TrackTab.Loaded)
-            {
-                LoadingLayer ll = CompositorLayer.LayerStack.GetLayer<LoadingLayer>();
-
-                ll.WorkQueue.Enqueue(() =>
-                {
-                    TrackTab.Load(eventManager.Event.Track);
-                });
-            }
         }
 
         public void ShowPilotChannelList(MouseInputEvent mie)

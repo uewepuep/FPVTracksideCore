@@ -26,7 +26,7 @@ namespace UI
 
         public ControlButtonsNode ControlButtons { get; private set; }
 
-        private VideoManager videoManager;
+        protected VideoManager videoManager;
 
         protected PilotListNode pilotList;
         public MenuButton MenuButton { get; private set; }
@@ -49,7 +49,7 @@ namespace UI
         private TopBarNode topBar;
         private AspectNode centralAspectNode;
         private AnimatedNode rightBar;
-        private TabButtonsNode tabButtonsNode;
+        protected TabButtonsNode tabButtonsNode;
         private TextButtonNode pilotListButton;
 
         private float rightBarWidth = 0.035f;
@@ -199,7 +199,7 @@ namespace UI
             pilotListButton.OnClick += TogglePilotList;
             OnPilotRefresh();
 
-            TabbedMultiNode = new TracksideTabbedMultiNode(eventManager, videoManager, SoundManager, RoundsNode, sceneManagerNode, tabButtonsNode, KeyMapper, null);
+            TabbedMultiNode = CreateTabNode();
             TabbedMultiNode.RelativeBounds = new RectangleF(0, 0, 1, 0.99f);
             TabbedMultiNode.OnTabChange += OnTabChange;
             centreContainer.AddChild(TabbedMultiNode);
@@ -341,6 +341,11 @@ namespace UI
             ReloadOBSRemoteControl();
 
             SoundManager.OnHighlightPilot += sceneManagerNode.FullScreen;
+        }
+
+        public virtual TracksideTabbedMultiNode CreateTabNode()
+        {
+            return new TracksideTabbedMultiNode(EventManager, videoManager, SoundManager, RoundsNode, sceneManagerNode, tabButtonsNode, KeyMapper);
         }
 
         private void TakePhoto(MouseInputEvent mie, Pilot p)
@@ -1167,19 +1172,12 @@ namespace UI
                 {
                     ShowPilotList(!EventManager.RaceManager.HasPilots);
                 }
-
-                if (TabbedMultiNode.IsOnPhotoBooth)
+                else if (TabbedMultiNode.IsOnPhotoBooth || TabbedMultiNode.IsOnRounds)
                 {
                     ShowPilotList(true);
                 }
-
-                if (TabbedMultiNode.IsOnRounds)
-                {
-                    ShowPilotList(true);
-                }
-
-                if (TabbedMultiNode.IsOnTrack)
-                {
+                else
+                { 
                     ShowPilotList(false);
                 }
             }
