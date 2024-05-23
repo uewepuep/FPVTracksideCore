@@ -27,4 +27,9 @@ namespace ExternalData
         void CreateAccount();
         void ForgotPassword();
     }
+
+    public interface ITrackProvider
+    {
+        IEnumerable<Track> GetTracks();
+    }
 }

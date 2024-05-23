@@ -1,4 +1,5 @@
 ﻿using Composition.Nodes;
+using ExternalData;
 using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
@@ -20,8 +21,11 @@ namespace UI.Nodes.Track
 
         public event Action<RaceLib.Track> OnTrackSelected;
 
-        public TrackSelector() 
+        private ITrackProvider trackProvider;
+
+        public TrackSelector(ITrackProvider ttrackProvider) 
         {
+            trackProvider = ttrackProvider;
             Scale(0.3f, 0.9f);
 
             titleNode = new HeadingNode(Theme.Current.InfoPanel, "Track Selector");
@@ -53,6 +57,7 @@ namespace UI.Nodes.Track
             tracksNode = new ListNode<TrackNameNode>(Theme.Current.ScrollBar.XNA);
             tracksNode.RelativeBounds = new RectangleF(0, searchContainer.RelativeBounds.Bottom, 1, 0.94f - searchContainer.RelativeBounds.Bottom);
             tracksNode.LayoutInvisibleItems = false;
+            tracksNode.ItemHeight = 30;
             container.AddChild(tracksNode);
 
             TextButtonNode cancel = new TextButtonNode("Cancel", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
@@ -60,7 +65,33 @@ namespace UI.Nodes.Track
             cancel.OnClick += (m) => { Remove(); };
             container.AddChild(cancel);
 
+            if (trackProvider != null)
+            {
+                TextButtonNode download = new TextButtonNode("Download more", Theme.Current.InfoPanel.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
+                download.RelativeBounds = new RectangleF(0.25f, 0.94f, 0.3f, 0.05f);
+                download.OnClick += Download_OnClick;
+                container.AddChild(download);
+            }
+
             Load();
+        }
+
+        private void Download_OnClick(Composition.Input.MouseInputEvent mie)
+        {
+            LoadingLayer ll = CompositorLayer.LayerStack.GetLayer<LoadingLayer>();
+            ll.WorkQueue.Enqueue("Downloading Tracks from FPVTrackside.com", () =>
+            {
+                RaceLib.Track[] onlineTracks = trackProvider.GetTracks().ToArray();
+                RaceLib.Track[] offlineTracks;
+
+                using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open())
+                {
+                    offlineTracks = db.All<RaceLib.Track>().ToArray();
+                }
+
+                var merged = offlineTracks.Union(onlineTracks).Distinct();
+                MakeItems(merged);
+            });
         }
 
         private void SearcherNode_TextChanged(string search)
@@ -78,14 +109,21 @@ namespace UI.Nodes.Track
         {
             using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open())
             {
-                IEnumerable<RaceLib.Track> tracks = db.All<RaceLib.Track>();
-                foreach (RaceLib.Track track in tracks)
-                {
-                    TrackNameNode ttn = new TrackNameNode(track);
-                    ttn.OnClick += (mie) => { SelectTrack(ttn.Track); };
-                    tracksNode.AddChild(ttn);
-                }
+                MakeItems(db.All<RaceLib.Track>());
             }
+        }
+
+        private void MakeItems(IEnumerable<RaceLib.Track> tracks)
+        {
+            tracksNode.ClearDisposeChildren();
+
+            foreach (RaceLib.Track track in tracks.OrderBy(r => r.Name))
+            {
+                TrackNameNode ttn = new TrackNameNode(track);
+                ttn.OnClick += (mie) => { SelectTrack(ttn.Track); };
+                tracksNode.AddChild(ttn);
+            }
+            RequestLayout();
         }
 
         public void SelectTrack(RaceLib.Track track)

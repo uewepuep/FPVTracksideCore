@@ -29,6 +29,15 @@ namespace RaceLib
                 TrackElements = TrackElements.Select(x => (TrackElement)x.Clone()).ToArray()
             };
         }
+
+        public override bool Equals(object obj)
+        {
+            Track other = obj as Track;
+            if (other == null) 
+                return false;
+
+            return ID.Equals(other.ID);
+        }
     }
 
     public class TrackElement: ICloneable

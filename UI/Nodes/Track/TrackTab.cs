@@ -1,9 +1,11 @@
 ﻿using Composition.Layers;
 using Composition.Nodes;
+using ExternalData;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
@@ -27,6 +29,8 @@ namespace UI.Nodes.Track
         private ImageButtonNode play;
         private ImageButtonNode pause;
         private ImageButtonNode stop;
+
+        public ITrackProvider TrackProvider { get; set; }
 
         public TrackTab(RaceLib.EventManager eventManager) 
         {
@@ -92,7 +96,7 @@ namespace UI.Nodes.Track
 
         private void Open_OnClick(Composition.Input.MouseInputEvent mie)
         {
-            TrackSelector trackSelector = new TrackSelector();
+            TrackSelector trackSelector = new TrackSelector(TrackProvider);
             PopupLayer py = CompositorLayer.LayerStack.GetLayer<PopupLayer>();
             py.Popup(trackSelector);
 
@@ -142,7 +146,7 @@ namespace UI.Nodes.Track
             PopupLayer popupLayer = CompositorLayer.LayerStack.GetLayer<PopupLayer>();
             if (popupLayer != null)
             {
-                TrackEditorNode TrackEditorNode = new TrackEditorNode();
+                TrackEditorNode TrackEditorNode = new TrackEditorNode(TrackProvider);
                 TrackEditorNode.OnOK += TrackEditorNode_OnOK;
                 popupLayer.Popup(TrackEditorNode);
                 TrackEditorNode.SetTrack(track);

@@ -1,6 +1,7 @@
 ﻿using Composition;
 using Composition.Input;
 using Composition.Nodes;
+using ExternalData;
 using Microsoft.Xna.Framework;
 using RaceLib;
 using Sound;
@@ -29,7 +30,7 @@ namespace UI.Nodes
         public bool IsOnPatreons { get { return patreonsNode == Showing; } }
         public bool IsOnPhotoBooth { get { return PhotoBooth == Showing; } }
         public bool IsOnRSSI { get { return rssiNode == Showing; } }
-        public bool IsOnTrack { get { return trackTab == Showing; } }
+        public bool IsOnTrack { get { return TrackTab == Showing; } }
 
 
 
@@ -57,10 +58,9 @@ namespace UI.Nodes
 
         private KeyboardShortcuts keyMapper;
 
-        private TrackTab trackTab;
+        public TrackTab TrackTab { get; private set; }
 
-
-        public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, SoundManager soundManager, RoundsNode rounds, SceneManagerNode sceneManagerContent, TabButtonsNode tabContainer, KeyboardShortcuts keyMapper)
+        public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, SoundManager soundManager, RoundsNode rounds, SceneManagerNode sceneManagerContent, TabButtonsNode tabContainer, KeyboardShortcuts keyMapper, ITrackProvider trackProvider)
             : base(TimeSpan.FromSeconds(0.6f), tabContainer)
         {
             this.eventManager = eventManager;
@@ -79,7 +79,7 @@ namespace UI.Nodes
 
             ReplayNode = new ReplayNode(eventManager, keyMapper);
 
-            trackTab = new TrackTab(eventManager);
+            TrackTab = new TrackTab(eventManager);
 
             eventManager.RaceManager.OnRaceChanged += UpdateReplayButton;
             eventManager.RaceManager.OnRaceEnd += UpdateReplayButton;
@@ -101,7 +101,7 @@ namespace UI.Nodes
             AddTab("Rounds", this.rounds, ShowRounds);
             liveButton = AddTab("Live", sceneManagerNode, ShowLive);
             replayButton = AddTab("Replay", ReplayNode, ShowReplay);
-            AddTab("Track", trackTab, ShowRaceTrack);
+            AddTab("Track", TrackTab, ShowRaceTrack);
 
             AddTab("Lap Records", LapRecordsSummaryNode, ShowTopLaps);
             AddTab("Lap Count", LapCountSummaryNode, ShowLaps);
@@ -263,15 +263,15 @@ namespace UI.Nodes
 
         public void ShowRaceTrack(MouseInputEvent mie)
         {
-            Show(trackTab);
+            Show(TrackTab);
 
-            if (!trackTab.Loaded)
+            if (!TrackTab.Loaded)
             {
                 LoadingLayer ll = CompositorLayer.LayerStack.GetLayer<LoadingLayer>();
 
                 ll.WorkQueue.Enqueue(() =>
                 {
-                    trackTab.Load(eventManager.Event.Track);
+                    TrackTab.Load(eventManager.Event.Track);
                 });
             }
         }

@@ -199,7 +199,7 @@ namespace UI
             pilotListButton.OnClick += TogglePilotList;
             OnPilotRefresh();
 
-            TabbedMultiNode = new TracksideTabbedMultiNode(eventManager, videoManager, SoundManager, RoundsNode, sceneManagerNode, tabButtonsNode, KeyMapper);
+            TabbedMultiNode = new TracksideTabbedMultiNode(eventManager, videoManager, SoundManager, RoundsNode, sceneManagerNode, tabButtonsNode, KeyMapper, null);
             TabbedMultiNode.RelativeBounds = new RectangleF(0, 0, 1, 0.99f);
             TabbedMultiNode.OnTabChange += OnTabChange;
             centreContainer.AddChild(TabbedMultiNode);

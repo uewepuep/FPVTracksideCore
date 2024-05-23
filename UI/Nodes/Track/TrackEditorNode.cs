@@ -2,6 +2,7 @@
 using Composition.Input;
 using Composition.Layers;
 using Composition.Nodes;
+using ExternalData;
 using ImageServer;
 using Microsoft.Xna.Framework;
 using System;
@@ -29,9 +30,12 @@ namespace UI.Nodes.Track
         private TextNode length;
 
         private TextButtonNode menuButton;
+        private ITrackProvider trackProvider;
 
-        public TrackEditorNode()
+        public TrackEditorNode(ITrackProvider trackProvider)
         {
+            this.trackProvider = trackProvider;
+
             objectProperties.Remove();
             left.AddChild(objectProperties);
             TrackNode = new RaceTrackEditorNode();
@@ -99,7 +103,7 @@ namespace UI.Nodes.Track
 
         private void OpenTrack()
         {
-            TrackSelector trackSelector = new TrackSelector();
+            TrackSelector trackSelector = new TrackSelector(trackProvider);
             PopupLayer py = CompositorLayer.LayerStack.GetLayer<PopupLayer>();
             py.Popup(trackSelector);
 
@@ -243,6 +247,7 @@ namespace UI.Nodes.Track
                 {
                     length.Text = l.ToString() + "m";
                 }
+                Track.Length = l;
             }
             else
             {
@@ -368,11 +373,11 @@ namespace UI.Nodes.Track
                             float dot;
                             if (direction.X > 0)
                             {
-                                addition = 180;
                                 dot = -Vector3.Dot(Vector3.Forward, direction);
                             }
                             else
                             {
+                                addition = 180;
                                 dot = -Vector3.Dot(Vector3.Backward, direction);
                             }
 
@@ -407,7 +412,7 @@ namespace UI.Nodes.Track
             }
 
 
-            if (mouseInputEvent.ButtonState == ButtonStates.Pressed && ClickedElement != null)
+            if (mouseInputEvent.ButtonState == ButtonStates.Pressed && mouseInputEvent.Button == MouseButtons.Left && ClickedElement != null)
             {
                 if (Camera != null)
                 {
