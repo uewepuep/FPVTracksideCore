@@ -142,6 +142,9 @@ namespace UI.Nodes
 
             MenuButton.ProfileSet += MenuButton_ProfileSet;
             AddChild(MenuButton);
+
+            SetObjects(GetEvents(profile), true);
+            AlignVisibleButtons();
         }
 
         private void MenuButton_ProfileSet(Profile profile)
