@@ -20,7 +20,7 @@ namespace FPVTracksideCore
             try
 #endif
             {
-                using (var game = new FPVTracksideGame())
+                using (var game = new FPVTracksideCoreGame())
                 {
                     game.Run();
                 }

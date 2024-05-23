@@ -121,7 +121,7 @@ namespace Composition
 
             SpriteBatch.GraphicsDevice.ScissorRectangle = clip;
 
-            SpriteBatch.Begin(SpriteSortMode.Immediate, blendState, SamplerState.AnisotropicClamp, null, rasterizerState, null, null);
+            SpriteBatch.Begin(SpriteSortMode.Deferred, blendState, SamplerState.AnisotropicClamp, null, rasterizerState, null, null);
         }
 
         public void PopClipRectangle()

@@ -52,6 +52,11 @@ namespace UI
         [DisplayName("UI / Font Scale (Percent)")]
         public float InverseResolutionScalePercent { get; set; }
 
+        [Category("Performance")]
+        [DisplayName("Legacy DirectX 9.0 (Reach) mode")]
+        [NeedsRestart]
+        public bool UseDirectX9 { get; set; }
+
         [DisplayName("Video recordings to keep")]
         [Category("Video")]
         public int VideosToKeep { get; set; }
@@ -105,6 +110,7 @@ namespace UI
 
             ShownDecimalPlaces = 2;
             Profile = "Profile 1";
+            UseDirectX9 = false;
         }
 
         protected const string filename = "GeneralSettings.xml";

@@ -24,15 +24,15 @@ using System.Drawing;
 namespace FPVTracksideCore
 {
 
-    public class FPVTracksideGame :
+    public class FPVTracksideCoreGame :
         UI.BaseGame
     {
-        public FPVTracksideGame()
+        public FPVTracksideCoreGame()
             : base(new WindowsPlatformTools())
         {
             WindowsPlatformTools windowsPlatformTools = PlatformTools as WindowsPlatformTools;
 
-            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetAssembly(typeof(FPVTracksideGame));
+            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetAssembly(typeof(FPVTracksideCoreGame));
             using (Stream resourceStream = assembly.GetManifestResourceStream("FPVTracksideCore.Icon.ico"))
             {
                 if (resourceStream != null)
@@ -46,9 +46,14 @@ namespace FPVTracksideCore
             }
         }
 
-        protected override void LoadContent()
+        protected override void Initialize()
         {
             GeneralSettings.Initialise();
+            base.Initialize();
+        }
+
+        protected override void LoadContent()
+        {
 
             DirectoryInfo eventDir = new DirectoryInfo(GeneralSettings.Instance.EventStorageLocation);
             DatabaseFactory.Init(new DB.DatabaseFactory(Data, eventDir));
