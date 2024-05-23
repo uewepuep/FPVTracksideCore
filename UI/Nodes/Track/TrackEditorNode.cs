@@ -385,7 +385,11 @@ namespace UI.Nodes.Track
 
                             float degrees = MathHelper.ToDegrees((float)Math.Acos(dot)) + addition;
 
-                            degrees = (float)Math.Round(degrees);
+                            float increment = 5;
+
+                            float temp = (float)Math.Round(degrees / increment);
+
+                            degrees = temp * increment;
 
                             Selected.RotationTopdown = degrees;
 
