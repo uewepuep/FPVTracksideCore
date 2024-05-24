@@ -370,7 +370,7 @@ namespace Composition.Nodes
                     id.GraphicsDevice.SetRenderTarget(null);
                 }
             }
-            if (drawer.CanMultiThread)
+            if (drawer != null && drawer.CanMultiThread)
             {
                 Parent?.RequestRedraw();
             }

@@ -350,19 +350,24 @@ namespace UI.Nodes
 
             openDirectory.AddItem("Open FPVTrackside Directory", () =>
             {
-                OpenDirectory();
+                OpenCurrentDirectory();
             });
 
             openDirectory.AddItem("Open Pilot Profile Image Directory", () =>
             {
-                OpenPilotDirectory();
+                OpenCurrentDirectory("pilots\\");
+            });
+
+            openDirectory.AddItem("Open Tracks Directory", () =>
+            {
+                OpenCurrentDirectory("Tracks\\");
             });
 
             if (hasEvent)
             {
                 openDirectory.AddItem("Open Event Data Directory", () =>
                 {
-                    OpenEventDirectory();
+                    OpenCurrentDirectory("events\\" + eventManager.EventId + "\\");
                 });
             }
 
@@ -637,21 +642,16 @@ namespace UI.Nodes
             RequestLayout();
         }
 
-        public void OpenDirectory()
+        public void OpenCurrentDirectory(string addition = "")
         {
-            PlatformTools.OpenFileManager(System.IO.Directory.GetCurrentDirectory());
-        }
+            string path = Directory.GetCurrentDirectory();
+            if (!string.IsNullOrEmpty(addition))
+            {
+                path = Path.Combine(path, addition);
+            }
 
-        public void OpenEventDirectory()
-        {
-            PlatformTools.OpenFileManager(Directory.GetCurrentDirectory() + "\\events\\" + eventManager.EventId + "\\");
+            PlatformTools.OpenFileManager(path);
         }
-
-        public void OpenPilotDirectory()
-        {
-            PlatformTools.OpenFileManager(System.IO.Directory.GetCurrentDirectory() + "\\pilots\\");
-        }
-        
 
         public void OpenWebServer()
         {
