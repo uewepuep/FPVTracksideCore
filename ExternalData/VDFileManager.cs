@@ -13,6 +13,20 @@ namespace ExternalData
 {
     public class VDFileManager
     {
+        public const float TransScale = 200;
+        public const float QuartScale = 1000;
+
+        private static JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings() { Formatting = Formatting.Indented, MissingMemberHandling = MissingMemberHandling.Ignore };
+
+
+        private static Dictionary<int, TrackElement.ElementTypes> mapping = new Dictionary<int, TrackElement.ElementTypes>()
+        {
+            { 285, TrackElement.ElementTypes.Gate },
+            { 286, TrackElement.ElementTypes.Dive },
+            { 88, TrackElement.ElementTypes.Dive },
+            { 170, TrackElement.ElementTypes.Flag },
+        };
+
         public static RaceLib.Track LoadTrk(string filename)
         {
             string encrypted = File.ReadAllText(filename);
@@ -25,18 +39,98 @@ namespace ExternalData
                 return null;
             }
 
-            string name = decrypted.Substring(nameStart, start - 1);
+            int end = decrypted.LastIndexOf("}") + 1;
 
-            string data = decrypted.Substring(start);
+            string name = decrypted.Substring(nameStart, start - 2);
 
-            VDFormat result = JsonConvert.DeserializeObject<VDFormat>(data);
+            string data = decrypted.Substring(start, end - start);
+
+            VDFormat result = JsonConvert.DeserializeObject<VDFormat>(data, JsonSerializerSettings);
 
             Track track = new Track();
             track.Name = name;
 
-            track.TrackElements = GetTrackElements(result.gates).ToArray();
+            List<TrackElement> elements = new List<TrackElement>();
+            elements.AddRange(GetTrackElements(result.gates));
+
+            foreach (TrackElement element in GetTrackElements(result.barriers))
+            {
+                element.Decorative = true;
+                elements.Add(element);  
+            }
+
+            track.TrackElements = elements.Where(r => r.ElementType != TrackElement.ElementTypes.Invalid).ToArray();
 
             return track;
+        }
+
+        public static void SaveTrk(RaceLib.Track track, string filename)
+        {
+            VDFormat vDFormat = new VDFormat();
+            vDFormat.gates = GetVDGates(track.TrackElements).ToArray();
+
+            string serialised = JsonConvert.SerializeObject(vDFormat, JsonSerializerSettings);
+
+            string output = "16\n" + track.Name + "\n" + serialised;
+
+            string encrypted = VDDecrypter.Encrypt(output, VDDecrypter.DecryptKey);
+
+            File.WriteAllText(filename, encrypted);
+        }
+
+        private static int GetPrefabType(TrackElement.ElementTypes type)
+        {
+            foreach (var kvp in mapping)
+            {
+                if (type == kvp.Value)
+                    return kvp.Key;
+            }
+
+            return -1;
+        }
+
+        private static TrackElement.ElementTypes GetElementType(int prefab)
+        {
+            if (mapping.TryGetValue(prefab, out var elementType))
+            { 
+                return elementType; 
+            }
+
+            return TrackElement.ElementTypes.Invalid;
+        }
+
+
+        private static IEnumerable<VDGate> GetVDGates(IEnumerable<TrackElement> trackElements)
+        {
+            bool first = true;
+
+            foreach (TrackElement trackElement in trackElements)
+            {
+                VDGate vdgate = new VDGate();
+                vdgate.start = vdgate.finish = first;
+                first = false;
+
+                Vector3 t = trackElement.Position * TransScale;
+
+                vdgate.trans.pos[0] = -(int)t.X;
+                vdgate.trans.pos[1] = (int)t.Y;
+                vdgate.trans.pos[2] = (int)t.Z;
+
+                float rotation = trackElement.Rotation;
+
+                if (trackElement.ElementType == TrackElement.ElementTypes.Flag)
+                {
+                    rotation -= 90;
+                }
+
+                Quaternion q = Quaternion.CreateFromAxisAngle(Vector3.Up, rotation);
+
+                vdgate.trans.rot[0] = (int)(q.X / QuartScale);
+                vdgate.trans.rot[1] = (int)(q.Y / QuartScale);
+                vdgate.trans.rot[2] = (int)(q.Z / QuartScale);
+                vdgate.trans.rot[3] = (int)(q.W / QuartScale);
+                yield return vdgate;
+            }
         }
 
         private static IEnumerable<TrackElement> GetTrackElements(IEnumerable<VDGate> vdgates)
@@ -46,25 +140,10 @@ namespace ExternalData
             foreach (VDGate vg in vdgates.OrderBy(r => r.gate)) 
             {
                 TrackElement tr = new TrackElement();
-                switch (vg.prefab)
-                {
-                    case 285:
-                        tr.ElementType = TrackElement.ElementTypes.Gate;
-                        break;
-                    case 88:
-                        tr.ElementType = TrackElement.ElementTypes.Dive;
-                        break;
-                    case 170:
-                        tr.ElementType = TrackElement.ElementTypes.Flag;
-                        break;
-#if DEBUG
-                    default:
-                        throw new NotImplementedException();
-#endif
-                }
+                tr.ElementType = GetElementType(vg.prefab);
 
-                tr.Position = new Vector3(vg.trans.pos[0], vg.trans.pos[1], vg.trans.pos[2]);
-                tr.Position /= 200; // VD weird units?.
+                tr.Position = new Vector3(-vg.trans.pos[0], vg.trans.pos[1], vg.trans.pos[2]);
+                tr.Position /= TransScale; // VD weird units?.
 
                 if (offset == Vector3.Zero) 
                 {
@@ -74,7 +153,7 @@ namespace ExternalData
                 tr.Position -= offset;
 
                 // Quaternion also seems to be 1000x
-                Quaternion qr = new Quaternion(vg.trans.rot[0] / 1000.0f, vg.trans.rot[1] / 1000.0f, vg.trans.rot[2] / 1000.0f, vg.trans.rot[3] / 1000.0f);
+                Quaternion qr = new Quaternion(vg.trans.rot[0] / QuartScale, vg.trans.rot[1] / QuartScale, vg.trans.rot[2] / QuartScale, vg.trans.rot[3] / QuartScale);
 
                 Vector3 output = Vector3.Transform(Vector3.Forward, qr);
 
@@ -83,6 +162,11 @@ namespace ExternalData
                 float dot = Vector3.Dot(Vector3.Forward, output);
 
                 tr.Rotation = MathHelper.ToDegrees((float)Math.Acos(dot));
+
+                if (tr.ElementType == TrackElement.ElementTypes.Flag)
+                {
+                    tr.Rotation += 90;
+                }
 
                 if (float.IsNaN(tr.Rotation))
                 {
@@ -97,6 +181,7 @@ namespace ExternalData
     internal class VDFormat
     {
         public VDGate[] gates { get; set; }
+        public VDGate[] barriers { get; set; }
     }
 
     internal class VDGate
@@ -106,6 +191,11 @@ namespace ExternalData
         public int gate { get; set; }
         public bool start { get; set; }
         public bool finish { get; set; }
+
+        public VDGate()
+        {
+            trans = new transform();
+        }
     }
 
     internal class transform
@@ -113,6 +203,14 @@ namespace ExternalData
         public int[] pos { get; set; }
         public int[] rot { get; set; }
         public int[] scale { get; set; }
+
+        public transform()
+        {
+            pos = new int[3];
+            rot = new int[4];
+            scale = new int[3] { 1,1,1 };
+
+        }
     }
 
     internal class VDDecrypter

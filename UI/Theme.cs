@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -67,6 +68,7 @@ namespace UI
         public BorderPanelTheme Login { get; set; }
         public PanelTheme Replay { get; set; }
 
+        public TrackTheme TrackTheme { get; set; }
 
         public static Theme Current { get; set; }
 
@@ -116,6 +118,8 @@ namespace UI
                 new ToolColor(0, 240, 240),
                 new ToolColor(255, 168, 0)
             };
+
+            TrackTheme = new TrackTheme();
         }
 
         public static List<Theme> Themes { get; private set; }
@@ -434,6 +438,18 @@ namespace UI
             NoVideoBackground = new ToolTexture("static.png", 22, 22, 22, 255);
             CrashedOut = new ToolTexture("crashed.png", 22, 22, 22, 255);
         }
+    }
+
+    public class TrackTheme : InfoPanelTheme
+    {
+        public ToolColor GateLabel { get; set; }
+
+        public TrackTheme()
+        {
+            GateLabel = new ToolColor(255, 0, 0);
+            Heading = new ToolTexture(236, 28, 35, 200);
+        }
+
     }
 
 }
