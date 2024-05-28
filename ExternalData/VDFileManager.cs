@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ExternalData
@@ -16,7 +17,7 @@ namespace ExternalData
         public const float TransScale = 200;
         public const float QuartScale = 1000;
 
-        private static JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings() { Formatting = Formatting.Indented, MissingMemberHandling = MissingMemberHandling.Ignore };
+        private static JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings() { Formatting = Formatting.None, MissingMemberHandling = MissingMemberHandling.Ignore };
 
 
         private static Dictionary<int, TrackElement.ElementTypes> mapping = new Dictionary<int, TrackElement.ElementTypes>()
@@ -25,12 +26,16 @@ namespace ExternalData
             { 286, TrackElement.ElementTypes.Dive },
             { 88, TrackElement.ElementTypes.Dive },
             { 170, TrackElement.ElementTypes.Flag },
+            { 2231, TrackElement.ElementTypes.Flag },
         };
 
         public static RaceLib.Track LoadTrk(string filename)
         {
             string encrypted = File.ReadAllText(filename);
             string decrypted = VDDecrypter.Decrypt(encrypted, VDDecrypter.DecryptKey);
+
+            int len = decrypted.Length;
+            int len2 = encrypted.Length;
 
             int nameStart = decrypted.IndexOf("\n");
             int start = decrypted.IndexOf("{");
@@ -53,11 +58,15 @@ namespace ExternalData
             List<TrackElement> elements = new List<TrackElement>();
             elements.AddRange(GetTrackElements(result.gates));
 
-            foreach (TrackElement element in GetTrackElements(result.barriers))
+            if (result.barriers != null)
             {
-                element.Decorative = true;
-                elements.Add(element);  
+                foreach (TrackElement element in GetTrackElements(result.barriers))
+                {
+                    element.Decorative = true;
+                    elements.Add(element);
+                }
             }
+            
 
             track.TrackElements = elements.Where(r => r.ElementType != TrackElement.ElementTypes.Invalid).ToArray();
 
@@ -71,7 +80,10 @@ namespace ExternalData
 
             string serialised = JsonConvert.SerializeObject(vDFormat, JsonSerializerSettings);
 
-            string output = "16\n" + track.Name + "\n" + serialised;
+            Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+            string name = rgx.Replace(track.Name, "");
+
+            string output = "16\n" + name + "\n" + serialised;
 
             string encrypted = VDDecrypter.Encrypt(output, VDDecrypter.DecryptKey);
 
@@ -104,11 +116,14 @@ namespace ExternalData
         {
             bool first = true;
 
+            int count = 0;
+
             foreach (TrackElement trackElement in trackElements)
             {
                 VDGate vdgate = new VDGate();
                 vdgate.start = vdgate.finish = first;
                 first = false;
+                vdgate.prefab = GetPrefabType(trackElement.ElementType);
 
                 Vector3 t = trackElement.Position * TransScale;
 
@@ -125,10 +140,17 @@ namespace ExternalData
 
                 Quaternion q = Quaternion.CreateFromAxisAngle(Vector3.Up, rotation);
 
-                vdgate.trans.rot[0] = (int)(q.X / QuartScale);
-                vdgate.trans.rot[1] = (int)(q.Y / QuartScale);
-                vdgate.trans.rot[2] = (int)(q.Z / QuartScale);
-                vdgate.trans.rot[3] = (int)(q.W / QuartScale);
+                vdgate.trans.rot[0] = (int)(q.W * QuartScale);
+                vdgate.trans.rot[1] = (int)(q.X * QuartScale);
+                vdgate.trans.rot[2] = (int)(q.Y * QuartScale);
+                vdgate.trans.rot[3] = (int)(q.Z * QuartScale);
+
+                vdgate.trans.scale[0] = 100;
+                vdgate.trans.scale[1] = 100;
+                vdgate.trans.scale[2] = 100;
+
+                vdgate.gate = count;
+                count++;
                 yield return vdgate;
             }
         }
@@ -182,6 +204,12 @@ namespace ExternalData
     {
         public VDGate[] gates { get; set; }
         public VDGate[] barriers { get; set; }
+
+        public VDFormat()
+        {
+            gates = new VDGate[0];
+            barriers = new VDGate[0];
+        }
     }
 
     internal class VDGate
@@ -208,7 +236,7 @@ namespace ExternalData
         {
             pos = new int[3];
             rot = new int[4];
-            scale = new int[3] { 1,1,1 };
+            scale = new int[3] { 100, 100, 100 };
 
         }
     }
