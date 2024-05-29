@@ -338,15 +338,16 @@ namespace Composition.Nodes
             {
                 try
                 {
-                    // Set the render target
-                    id.GraphicsDevice.SetRenderTarget(renderTarget);
-                    id.GraphicsDevice.Clear(ClearColor);
-//#if DEBUG
-//                    Random r = new Random(lastDrawFrame);
-//                    id.GraphicsDevice.Clear(new Color((float)r.NextDouble(), (float)r.NextDouble(), (float)r.NextDouble()));
-//#endif
                     if (id != null)
                     {
+                        // Set the render target
+                        id.GraphicsDevice.SetRenderTarget(renderTarget);
+                        id.GraphicsDevice.Clear(ClearColor);
+                        //#if DEBUG
+                        //                    Random r = new Random(lastDrawFrame);
+                        //                    id.GraphicsDevice.Clear(new Color((float)r.NextDouble(), (float)r.NextDouble(), (float)r.NextDouble()));
+                        //#endif
+
                         DrawContent(id);
                     }
                 }
@@ -431,7 +432,6 @@ namespace Composition.Nodes
 
         public MouseInputEvent Translate(MouseInputEvent input)
         {
-           
             Point translation = new Point(-Bounds.X, -Bounds.Y);
 
             if (Scroller != null)
