@@ -52,13 +52,13 @@ namespace DB.JSON
         public float Y { get; set; }
         public float Z { get; set; }
 
-        public int? TimingSystemIndex { get; set; }
-
         public float Tilt { get; set; }
 
         public float Rotation { get; set; }
         public bool Visible { get; set; }
         public bool Decorative { get; set; }
+
+        public bool SplitEnd { get; set; }
 
     }
 }

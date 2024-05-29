@@ -90,7 +90,7 @@ namespace RaceLib
             }
         }
 
-        public int? TimingSystemIndex { get; set; }
+        public bool SplitEnd { get; set; }
 
         public float Tilt { get; set; }
 
@@ -115,7 +115,7 @@ namespace RaceLib
             {
                 ElementType = ElementType,
                 Position = Position,
-                TimingSystemIndex = TimingSystemIndex,
+                SplitEnd = SplitEnd,
                 Tilt = Tilt,
                 Rotation = Rotation,
                 Visible = Visible,
