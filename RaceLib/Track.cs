@@ -55,41 +55,6 @@ namespace RaceLib
 
         public Vector3 Position;
 
-        public float X
-        {
-            get
-            {
-                return Position.X;
-            }
-            set
-            {
-                Position.X = value;
-            }
-        }
-
-        public float Y
-        {
-            get
-            {
-                return Position.Y;
-            }
-            set
-            {
-                Position.Y = value;
-            }
-        }
-        public float Z
-        {
-            get
-            {
-                return Position.Z;
-            }
-            set
-            {
-                Position.Z = value;
-            }
-        }
-
         public bool SplitEnd { get; set; }
 
         public float Tilt { get; set; }
@@ -98,10 +63,50 @@ namespace RaceLib
         public bool Visible { get; set; }
         public bool Decorative { get; set; }
 
+        // So we don't have to reference vector3 in db.
+        public float X { get { return Position.X; } set { Position.X = value; } }
+        public float Y { get { return Position.Y; } set { Position.Y = value; } }
+        public float Z { get { return Position.Z; } set { Position.Z = value; } }
+
+
         public TrackElement()
         {
             Visible = true;
             ElementType = ElementTypes.Gate;
+        }
+
+        public IEnumerable<Vector3> GetFlightPath()
+        {
+            Quaternion rotation = Quaternion.CreateFromAxisAngle(Vector3.Up, MathHelper.ToRadians(Rotation));
+
+            foreach (Vector3 v in GetLocalFlightPath())
+            {
+                yield return Position + Vector3.Transform(v, rotation);
+            }
+        }
+
+        public IEnumerable<Vector3> GetLocalFlightPath()
+        {
+            switch (ElementType) 
+            {
+                case ElementTypes.Gate:
+                    yield return new Vector3(0, 1, 0);
+                    break;
+
+                case ElementTypes.Flag:
+                    yield return new Vector3(0, 1, 1);
+                    break;
+
+                case ElementTypes.Dive:
+                    yield return new Vector3(0, 3, 0);
+                    yield return new Vector3(0, 1, 1);
+                    break;
+
+                case ElementTypes.Up:
+                    yield return new Vector3(0, 1, 1);
+                    yield return new Vector3(0, 3, 0);
+                    break;
+            }
         }
 
         public override string ToString()

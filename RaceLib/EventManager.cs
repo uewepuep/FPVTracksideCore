@@ -42,6 +42,8 @@ namespace RaceLib
 
         public Profile Profile { get; private set; }
 
+        public TrackFlightPath FlightPath { get; set; }
+
         public EventManager(Profile profile)
         {
             Profile = profile;
@@ -247,6 +249,17 @@ namespace RaceLib
                     db.Update(Event);
                 }
             });
+
+            workQueue.Enqueue(workSet, "Loading Track", () =>
+            {
+                LoadTrack(Event.Track);
+            });
+        }
+
+        public void LoadTrack(Track track)
+        {
+            Event.Track = track;
+            FlightPath = new TrackFlightPath(Event.Track);
         }
 
         public IEnumerable<FileInfo> GetPilotProfileMedia()

@@ -80,54 +80,6 @@ namespace RaceLib
             }
         }
 
-
-        // This race is not *complete* and is assumed to be filled out by sync..
-        public Race GetCreateRace(Guid iD)
-        {
-            Race race = null;
-            lock (races)
-            {
-                race = races.FirstOrDefault(r => r.ID == iD);
-            }
-
-            if (race == null)
-            {
-                race = new Race();
-                race.ID = iD;
-                race.Event = EventManager.Event;
-                race.PrimaryTimingSystemLocation = EventManager.Event.PrimaryTimingSystemLocation;
-                lock (races)
-                {
-                    races.Add(race);
-                }
-            }
-
-            return race;
-        }
-        
-        public Race GetCreateRace(Round round, int number)
-        {
-            Race race;
-            lock (races)
-            {
-                race = races.FirstOrDefault(ra => ra.Round.EventType == round.EventType && ra.RoundNumber == round.RoundNumber && ra.RaceNumber == number && ra.Valid);
-                if (race != null)
-                {
-                    return race;
-                }
-            }
-
-            race = new Race();
-            race.AutoAssignNumbers = false;
-            race.PrimaryTimingSystemLocation = EventManager.Event.PrimaryTimingSystemLocation;
-            race.Event = EventManager.Event;
-            race.RaceNumber = number;
-            race.Round = round;
-
-            AddRace(race);
-            return race;
-        }
-
         public bool RaceFinished
         {
             get
@@ -281,7 +233,6 @@ namespace RaceLib
             }
         }
 
-
         private List<Race> races;
 
         public bool PreRaceStartDelay { get; private set; }
@@ -330,6 +281,53 @@ namespace RaceLib
         public void Dispose()
         {
             TimingSystemManager.Dispose();
+        }
+
+        // This race is not *complete* and is assumed to be filled out by sync..
+        public Race GetCreateRace(Guid iD)
+        {
+            Race race = null;
+            lock (races)
+            {
+                race = races.FirstOrDefault(r => r.ID == iD);
+            }
+
+            if (race == null)
+            {
+                race = new Race();
+                race.ID = iD;
+                race.Event = EventManager.Event;
+                race.PrimaryTimingSystemLocation = EventManager.Event.PrimaryTimingSystemLocation;
+                lock (races)
+                {
+                    races.Add(race);
+                }
+            }
+
+            return race;
+        }
+
+        public Race GetCreateRace(Round round, int number)
+        {
+            Race race;
+            lock (races)
+            {
+                race = races.FirstOrDefault(ra => ra.Round.EventType == round.EventType && ra.RoundNumber == round.RoundNumber && ra.RaceNumber == number && ra.Valid);
+                if (race != null)
+                {
+                    return race;
+                }
+            }
+
+            race = new Race();
+            race.AutoAssignNumbers = false;
+            race.PrimaryTimingSystemLocation = EventManager.Event.PrimaryTimingSystemLocation;
+            race.Event = EventManager.Event;
+            race.RaceNumber = number;
+            race.Round = round;
+
+            AddRace(race);
+            return race;
         }
 
         public int GetRaceCount(EventTypes type, Brackets bracket = Brackets.None)
