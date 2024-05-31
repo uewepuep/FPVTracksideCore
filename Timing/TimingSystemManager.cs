@@ -40,6 +40,18 @@ namespace Timing
             }
         }
 
+        public IEnumerable<ITimingSystem> TimingSystemsSectorOrder
+        {
+            get
+            {
+                foreach (ITimingSystem timingSystem in SplitSystems)
+                    yield return timingSystem;
+
+                foreach (ITimingSystem timingSystem in PrimeSystems)
+                    yield return timingSystem;
+            }
+        }
+
         public bool Connected
         {
             get

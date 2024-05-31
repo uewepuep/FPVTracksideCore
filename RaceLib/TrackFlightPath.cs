@@ -34,6 +34,8 @@ namespace RaceLib
 
         public void SetTrackElements(IEnumerable<TrackElement> trackElements)
         {
+            trackElements = trackElements.Where(e => e != null && !e.Decorative);
+
             Spline = new Spline3D();
 
             if (!trackElements.Any())

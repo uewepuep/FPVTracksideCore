@@ -18,6 +18,7 @@ namespace RaceLib
     {
         public TimingSystemManager TimingSystemManager { get; private set; }
         public RaceManager RaceManager { get; private set; }
+        public EventManager EventManager { get; private set; }
 
         private Dictionary<int, float> timingSystemIndexDistance;
 
@@ -34,6 +35,7 @@ namespace RaceLib
 
         public SpeedRecordManager(RaceManager raceManager)
         {
+            EventManager = raceManager.EventManager;
             timingSystemIndexDistance = null;
             RaceManager = raceManager;
 
@@ -168,12 +170,25 @@ namespace RaceLib
 
         public void Initialize()
         {
+            Initialize(RaceManager.EventManager.FlightPath);
+        }
+
+        public void Initialize(TrackFlightPath trackFlightPath)
+        {
             Dictionary<int, float> indexDistance2 = new Dictionary<int, float>();
 
-            foreach (ITimingSystem timingSystem in TimingSystemManager.TimingSystems)
+            ITimingSystem[] timingSystems = TimingSystemManager.TimingSystemsSectorOrder.ToArray();
+            Sector[] sectors = trackFlightPath.Sectors;
+
+            int max = Math.Max(timingSystems.Length, sectors.Length);
+
+            for (int i = 0; i < max; i++)
             {
+                ITimingSystem timingSystem = timingSystems[i];
+                Sector sector = sectors[i];
+
                 int index = TimingSystemManager.GetIndex(timingSystem);
-                indexDistance2.Add(index, timingSystem.Settings.SectorLengthMeters);
+                indexDistance2.Add(index, sector.Length);
             }
 
             HasDistance = indexDistance2.Values.Any(a => a > 0);
