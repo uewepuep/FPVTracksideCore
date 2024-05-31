@@ -168,8 +168,7 @@ namespace RaceLib
 
         public string LengthHuman(Units units)
         {
-            int l = (int)Length;
-            return LengthHuman(units, l);
+            return LengthHuman(units, Length);
         }
 
         public static string LengthHuman(Units units, float length)
