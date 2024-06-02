@@ -180,7 +180,7 @@ namespace RaceLib
             ITimingSystem[] timingSystems = TimingSystemManager.TimingSystemsSectorOrder.ToArray();
             Sector[] sectors = trackFlightPath.Sectors;
 
-            int max = Math.Max(timingSystems.Length, sectors.Length);
+            int max = Math.Min(timingSystems.Length, sectors.Length);
 
             for (int i = 0; i < max; i++)
             {
