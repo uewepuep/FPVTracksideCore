@@ -631,22 +631,22 @@ namespace UI
 
             KeyboardState keyboardState = Keyboard.GetState();
 
-            if (KeyMapper.GlobalStartStopRace.Match(keyboardState))
+            if (KeyMapper.GlobalStartStopRace != null && KeyMapper.GlobalStartStopRace.Match(keyboardState))
             {
                 StartStopNext();
             }
 
-            if (KeyMapper.GlobalNextRace.Match(keyboardState))
+            if (KeyMapper.GlobalNextRace != null && KeyMapper.GlobalNextRace.Match(keyboardState))
             {
                 NextRace(false);
             }
 
-            if (KeyMapper.GlobalPrevRace.Match(keyboardState))
+            if (KeyMapper.GlobalPrevRace != null && KeyMapper.GlobalPrevRace.Match(keyboardState))
             {
                 EventManager.RaceManager.PrevRace();
             }
 
-            if (KeyMapper.GlobalCopyResults.Match(keyboardState))
+            if (KeyMapper.GlobalCopyResults != null && KeyMapper.GlobalCopyResults.Match(keyboardState))
             {
                 PlatformTools.Clipboard.SetText(EventManager.GetResultsText(GeneralSettings.Instance.Units));
             }
