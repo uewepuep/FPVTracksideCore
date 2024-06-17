@@ -501,6 +501,16 @@ namespace UI.Nodes
         {
         }
 
+        public override string ValueToString(object value)
+        {
+            if (value == null)
+            {
+                return "None";
+            }
+
+            return base.ValueToString(value);
+        }
+
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
         {
             if (mouseInputEvent.EventType == MouseInputEvent.EventTypes.Button)

@@ -628,6 +628,28 @@ namespace UI
             base.OnUpdate(gameTime);
             EventManager?.Update(gameTime);
             AutoRunner?.Update();
+
+            KeyboardState keyboardState = Keyboard.GetState();
+
+            if (KeyMapper.GlobalStartStopRace.Match(keyboardState))
+            {
+                StartStopNext();
+            }
+
+            if (KeyMapper.GlobalNextRace.Match(keyboardState))
+            {
+                NextRace(false);
+            }
+
+            if (KeyMapper.GlobalPrevRace.Match(keyboardState))
+            {
+                EventManager.RaceManager.PrevRace();
+            }
+
+            if (KeyMapper.GlobalCopyResults.Match(keyboardState))
+            {
+                PlatformTools.Clipboard.SetText(EventManager.GetResultsText());
+            }
         }
 
         protected override void OnDraw()
@@ -892,22 +914,7 @@ namespace UI
 
                 if (KeyMapper.StartStopRace.Match(inputEvent))
                 {
-                    if (TabbedMultiNode.IsOnLive)
-                    {
-                        if (ControlButtons.StopButton.Visible)
-                        {
-                            StopRace();
-                        }
-                        else if (ControlButtons.StartButton.Visible)
-                        {
-                            StartRace();
-                        }
-                        else if (sceneManagerNode.Scene == SceneManagerNode.Scenes.RaceResults)
-                        {
-                            NextRace(false);
-                        }
-                    }
-
+                    StartStopNext();
                     return true;
                 }
 
@@ -1161,6 +1168,25 @@ namespace UI
 
             }
             return false;
+        }
+
+        private void StartStopNext()
+        {
+            if (TabbedMultiNode.IsOnLive)
+            {
+                if (ControlButtons.StopButton.Visible)
+                {
+                    StopRace();
+                }
+                else if (ControlButtons.StartButton.Visible)
+                {
+                    StartRace();
+                }
+                else if (sceneManagerNode.Scene == SceneManagerNode.Scenes.RaceResults)
+                {
+                    NextRace(false);
+                }
+            }
         }
 
         private void OnTabChange(string tab, Node s)

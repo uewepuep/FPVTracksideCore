@@ -963,10 +963,7 @@ namespace Composition.Nodes
         {
             object value = PropertyInfo.GetValue(Object, null);
 
-            if (value != null)
-            {
-                Value.Text = ValueToString(value);
-            }
+            Value.Text = ValueToString(value);
         }
 
         protected override void SetValue(object value)
@@ -985,6 +982,10 @@ namespace Composition.Nodes
 
         public virtual string ValueToString(object value)
         {
+            if (value == null)
+            {
+                return "";
+            }
             return value.ToString();
         }
     }
@@ -1306,6 +1307,9 @@ namespace Composition.Nodes
 
         public override string ValueToString(object obj)
         {
+            if (obj == null)
+                return "";
+
             TimeSpan value = (TimeSpan)obj;
             if (value != default(TimeSpan))
             {
@@ -1435,6 +1439,9 @@ namespace Composition.Nodes
 
         public override string ValueToString(object value)
         {
+            if (value == null)
+                return "";
+
             return value.ToString().CamelCaseToHuman();
         }
 

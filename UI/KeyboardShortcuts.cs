@@ -219,6 +219,17 @@ namespace Composition.Input
         public ShortcutKey Custom5 { get; set; }
 
 
+        [Category("Global / Unfocused")]
+        public ShortcutKey GlobalStartStopRace { get; set; }
+
+        [Category("Global / Unfocused")]
+        public ShortcutKey GlobalNextRace { get; set; }
+
+        [Category("Global / Unfocused")]
+        public ShortcutKey GlobalPrevRace { get; set; }
+
+        [Category("Global / Unfocused")]
+        public ShortcutKey GlobalCopyResults { get; set; }
 
         private const string filename = "Keys.xml";
 

@@ -51,5 +51,22 @@ namespace Tools
 
             return string.Join(" + ", texts);
         }
+
+        public bool Match(KeyboardState keyboardState)
+        {
+            if ((keyboardState.IsKeyDown(Keys.LeftControl) || keyboardState.IsKeyDown(Keys.RightControl)) && !ControlKey)
+                return false;
+
+            if ((keyboardState.IsKeyDown(Keys.LeftAlt) || keyboardState.IsKeyDown(Keys.RightAlt)) && !AltKey)
+                return false;
+
+            if ((keyboardState.IsKeyDown(Keys.LeftShift) || keyboardState.IsKeyDown(Keys.RightShift)) && !ShiftKey)
+                return false;
+
+            if (!keyboardState.IsKeyDown(Key))
+                return false;
+
+            return true;    
+        }
     }
 }
