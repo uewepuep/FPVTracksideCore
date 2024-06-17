@@ -146,14 +146,18 @@ namespace Composition.Nodes
                     scale = Composition.Text.Scale.Disallowed;
                 }
 
-                // Use floats when animating, ints when static
-                if (isAnimatingSize)
+                // Don't draw if geometry is wrong.
+                if (needsUpdate != UpdateTypes.Geometry)
                 {
-                    textRenderer.Draw(id, BoundsF, Alignment, scale, Tint, parentAlpha * Alpha);
-                }
-                else
-                {
-                    textRenderer.Draw(id, Bounds, Alignment, scale, Tint, parentAlpha * Alpha);
+                    // Use floats when animating, ints when static
+                    if (isAnimatingSize)
+                    {
+                        textRenderer.Draw(id, BoundsF, Alignment, scale, Tint, parentAlpha * Alpha);
+                    }
+                    else
+                    {
+                        textRenderer.Draw(id, Bounds, Alignment, scale, Tint, parentAlpha * Alpha);
+                    }
                 }
             }
             catch

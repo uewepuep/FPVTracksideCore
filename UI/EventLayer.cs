@@ -767,6 +767,9 @@ namespace UI
                     wait.Set();
                 });
 
+                if (workQueueStartRace.QueueLength > 0)
+                    return false;
+
                 workQueueStartRace.Enqueue(() =>
                 {
                     if (!wait.WaitOne(TimeSpan.FromSeconds(20)))
@@ -783,6 +786,9 @@ namespace UI
             }
             else if (delayedStart)
             {
+                if (workQueueStartRace.QueueLength > 0)
+                    return false;
+
                 workQueueStartRace.Enqueue(() =>
                 {
                     bool failed = false;
@@ -812,6 +818,9 @@ namespace UI
             }
             else
             {
+                if (workQueueStartRace.QueueLength > 0)
+                    return false;
+
                 workQueueStartRace.Enqueue(() =>
                 {
                     EventManager.RaceManager.PreRaceStart();

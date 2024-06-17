@@ -40,8 +40,10 @@ namespace Timing
                     float voltage = random.Next(120, 180) / 10.0f;
                     float temperature = random.Next(10, 60);
 
-                    yield return new StatusItem() { StatusOK = voltage > 14, Value = voltage + "v" };
-                    yield return new StatusItem() { StatusOK = temperature < 50, Value = temperature + "c" };
+                    bool alertOverride = !DummingSettings.GenerateAlerts;
+
+                    yield return new StatusItem() { StatusOK = voltage > 14 || alertOverride, Value = voltage + "v" };
+                    yield return new StatusItem() { StatusOK = temperature < 50 || alertOverride, Value = temperature + "c" };
                 }
             }
         }
@@ -85,7 +87,6 @@ namespace Timing
                 if (threads.Any())
                 {
                     EndDetection();
-                    return false;
                 }
 
                 running = true;
@@ -249,6 +250,9 @@ namespace Timing
         [Category("Random number generation settings (for testing)")]
         public double FalseReadPercent { get; set; }
 
+        [Category("Random number generation settings (for testing)")]
+        public bool GenerateAlerts { get; set; }
+
         [Category("Virtual Hardware")]
         public int Receivers { get; set; }
 
@@ -269,6 +273,7 @@ namespace Timing
             FakeFailureRatePercent = 0;
             FalseReadPercent = 10;
             Receivers = 8;
+            GenerateAlerts = false;
         }
 
         public override string ToString()
