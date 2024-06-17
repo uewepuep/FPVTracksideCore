@@ -678,7 +678,7 @@ namespace UI.Nodes
 
         public void ExportRacesCSV()
         {
-            PlatformTools.ExportCSV("Save Race Results CSV", eventManager.RaceManager.GetRaceResultsText(","), GetLayer<PopupLayer>());
+            PlatformTools.ExportCSV("Save Race Results CSV", eventManager.RaceManager.GetRaceResultsText(GeneralSettings.Instance.Units, ","), GetLayer<PopupLayer>());
         }
 
         public void ExportLapsCSV()

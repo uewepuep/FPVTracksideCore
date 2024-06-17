@@ -223,7 +223,7 @@ namespace UI.Nodes.Rounds
 
                     copyMenu.AddItem("Copy Results", () =>
                     {
-                        string textResults = EventManager.ResultManager.GetResultsText(Race);
+                        string textResults = EventManager.ResultManager.GetResultsText(Race, GeneralSettings.Instance.Units);
                         PlatformTools.Clipboard.SetText(textResults);
                     });
 

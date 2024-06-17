@@ -555,7 +555,7 @@ namespace UI.Nodes
 
                     raceSummary1.Text += "Fastest lap " + best.Length.ToStringRaceTime();
 
-                    if (EventManager.SpeedRecordManager.HasDistance)
+                    if (EventManager.SpeedRecordManager.DistanceManager.HasDistance)
                     {
                         IEnumerable<Split> splits = race.GetSplits(Pilot);
                         IEnumerable<float> speeds = EventManager.SpeedRecordManager.GetSpeeds(splits);

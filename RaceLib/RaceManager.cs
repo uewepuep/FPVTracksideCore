@@ -1635,7 +1635,7 @@ namespace RaceLib
             }
         }
 
-        public string GetRaceResultsText(string delimiter = "\t")
+        public string GetRaceResultsText(Units units, string delimiter = "\t")
         {
             string result = "";
 
@@ -1651,7 +1651,7 @@ namespace RaceLib
                     }
 
                     result += "\r\n";
-                    result += EventManager.ResultManager.GetResultsText(race, delimiter);
+                    result += EventManager.ResultManager.GetResultsText(race, units, delimiter);
                     result += "\r\n";
                 }
 

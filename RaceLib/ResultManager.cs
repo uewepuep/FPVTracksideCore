@@ -621,7 +621,7 @@ namespace RaceLib
             }
         }
 
-        public string GetResultsText(Race race, string delimiter = "\t")
+        public string GetResultsText(Race race, Units units,  string delimiter = "\t")
         {
             bool showDNF = PointsSettings.DNFForUnfinishedRaces;
 
@@ -733,6 +733,17 @@ namespace RaceLib
                                 break;
                             case ExportColumn.ColumnTypes.RaceNumber:
                                 results.Add(race.RaceNumber.ToString());
+                                break;
+                            case ExportColumn.ColumnTypes.FastestSpeed:
+                                float fastestSpeed = EventManager.SpeedRecordManager.GetFastestSpeed(race, p);
+                                results.Add(EventManager.SpeedRecordManager.SpeedToString(fastestSpeed, units));
+                                break;
+                            case ExportColumn.ColumnTypes.AverageSpeed:
+                                results.Add(EventManager.SpeedRecordManager.GetAverageSpeed(race, p).ToString());
+                                break;
+                            case ExportColumn.ColumnTypes.Distance:
+                                float distance = EventManager.SpeedRecordManager.GetDistance(race, p);
+                                results.Add(Sector.LengthHuman(units, distance));
                                 break;
                         }
                     }

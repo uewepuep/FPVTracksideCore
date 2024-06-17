@@ -19,7 +19,10 @@ namespace RaceLib
             RaceTime,
             PBTime,
             RoundNumber, 
-            RaceNumber
+            RaceNumber,
+            FastestSpeed,
+            AverageSpeed,
+            Distance
         }
 
         [Browsable(false)]

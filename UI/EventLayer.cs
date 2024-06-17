@@ -239,7 +239,7 @@ namespace UI
 
             ControlButtons.CopyResultsClipboard.OnClick += (mie) =>
             {
-                PlatformTools.Clipboard.SetText(EventManager.GetResultsText());
+                PlatformTools.Clipboard.SetText(EventManager.GetResultsText(GeneralSettings.Instance.Units));
             };
 
             IRaceControl raceControl = null;
@@ -648,7 +648,7 @@ namespace UI
 
             if (KeyMapper.GlobalCopyResults.Match(keyboardState))
             {
-                PlatformTools.Clipboard.SetText(EventManager.GetResultsText());
+                PlatformTools.Clipboard.SetText(EventManager.GetResultsText(GeneralSettings.Instance.Units));
             }
         }
 
@@ -1142,7 +1142,7 @@ namespace UI
                         {
                             if (ControlButtons.CopyResultsClipboard.Visible)
                             {
-                                PlatformTools.Clipboard.SetText(EventManager.GetResultsText());
+                                PlatformTools.Clipboard.SetText(EventManager.GetResultsText(GeneralSettings.Instance.Units));
                             }
                         }
                         else
