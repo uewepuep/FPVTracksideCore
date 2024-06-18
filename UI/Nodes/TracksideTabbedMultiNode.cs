@@ -51,6 +51,7 @@ namespace UI.Nodes
         private VideoManager VideoManager;
         
         private TextButtonNode rssiButton;
+        public TextButtonNode PhotoBoothButton { get; private set; }
 
         private KeyboardShortcuts keyMapper;
 
@@ -80,6 +81,15 @@ namespace UI.Nodes
             videoManager.OnFinishedFinalizing += VideoManager_OnFinishedFinalizing;
         }
 
+        public override void Dispose()
+        {
+            eventManager.RaceManager.OnRaceChanged -= UpdateReplayButton;
+            eventManager.RaceManager.OnRaceEnd -= UpdateReplayButton;
+            eventManager.RaceManager.TimingSystemManager.OnInitialise -= UpdateRSSIVisible;
+
+            base.Dispose();
+        }
+
         private void VideoManager_OnFinishedFinalizing()
         {
             Race race = eventManager.RaceManager.CurrentRace;
@@ -89,7 +99,7 @@ namespace UI.Nodes
             }
         }
 
-        public virtual void Init()
+        public virtual void Init(PlatformTools platformTools)
         {
             AddTab("Rounds", this.rounds, ShowRounds);
             liveButton = AddTab("Live", sceneManagerNode, ShowLive);
@@ -100,24 +110,15 @@ namespace UI.Nodes
             AddTab("Points", PointsSummaryNode, ShowPoints);
             AddTab("Channel List", pilotChanelList, ShowPilotChannelList);
             rssiButton = AddTab("RSSI Analyser", rssiNode, ShowAnalyser);
-            AddTab("Photo Booth", PhotoBooth, ShowPhotoBooth);
+            PhotoBoothButton = AddTab("Photo Booth", PhotoBooth, ShowPhotoBooth);
             AddTab("Patreons", patreonsNode, ShowPatreons);
 
             replayButton.Enabled = false;
+            PhotoBoothButton.Visible = platformTools.HasFeature(PlatformFeature.Video);
 
             UpdateRSSIVisible();
 
             ShowPatreons();
-        }
-
-
-        public override void Dispose()
-        {
-            eventManager.RaceManager.OnRaceChanged -= UpdateReplayButton;
-            eventManager.RaceManager.OnRaceEnd -= UpdateReplayButton;
-            eventManager.RaceManager.TimingSystemManager.OnInitialise -= UpdateRSSIVisible;
-
-            base.Dispose();
         }
 
 

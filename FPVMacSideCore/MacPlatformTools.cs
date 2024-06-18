@@ -36,8 +36,7 @@ namespace FPVMacsideCore
             {
                 return new PlatformFeature[]
                 {
-                    PlatformFeature.Speech,
-                    PlatformFeature.Video
+                    PlatformFeature.Speech
                 };
             }
         }

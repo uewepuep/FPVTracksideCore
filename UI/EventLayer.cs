@@ -17,6 +17,7 @@ using Webb;
 using UI.Sponsor;
 using System.IO;
 using UI.Nodes.Rounds;
+using Composition;
 
 namespace UI
 {
@@ -75,7 +76,7 @@ namespace UI
             }
         }
 
-        public EventLayer(BaseGame game, GraphicsDevice graphicsDevice, EventManager eventManager)
+        public EventLayer(BaseGame game, GraphicsDevice graphicsDevice, EventManager eventManager, PlatformTools platformTools)
             : base(graphicsDevice)
         {
             DirectoryInfo eventDirectory = new DirectoryInfo(Path.Combine(GeneralSettings.Instance.EventStorageLocation, eventManager.Event.ID.ToString()));
@@ -211,7 +212,7 @@ namespace UI
 
             topBar.Init(EventManager, TabbedMultiNode.ReplayNode);
             topBar.TabContainer.AddChild(tabButtonsNode);
-            TabbedMultiNode.Init();
+            TabbedMultiNode.Init(platformTools);
 
             ControlButtons = new ControlButtonsNode(EventManager, ChannelsGridNode, TabbedMultiNode, AutoRunner);
             ControlButtons.RelativeBounds = new RectangleF(0, 0.0f, 1, 1);

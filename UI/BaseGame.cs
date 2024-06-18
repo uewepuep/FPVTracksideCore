@@ -364,7 +364,7 @@ namespace UI
 
         protected virtual void CreateEventLayer(EventManager eventManager)
         {
-            eventLayer = new EventLayer(this, GraphicsDevice, eventManager);
+            eventLayer = new EventLayer(this, GraphicsDevice, eventManager, PlatformTools);
 
             eventLayer.Root.Alpha = 0;
             LayerStack.AddAbove<BackgroundLayer>(eventLayer);
