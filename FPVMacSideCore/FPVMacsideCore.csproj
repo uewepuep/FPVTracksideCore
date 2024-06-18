@@ -21,6 +21,7 @@
     <ProjectReference Include="..\..\FPVTracksideCore\Compositor\Composition.csproj" />
     <ProjectReference Include="..\..\FPVTracksideCore\UI\UI.csproj" />
     <ProjectReference Include="..\ffmpegMediaPlatform\FfmpegMediaPlatform.csproj" />
+    <ProjectReference Include="..\DB\DB.csproj" />
   </ItemGroup>
   <Target Name="RestoreDotnetTools" BeforeTargets="Restore">
     <Message Text="Restoring dotnet tools" Importance="High" />

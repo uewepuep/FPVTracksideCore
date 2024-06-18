@@ -170,15 +170,6 @@ namespace FPVMacsideCore
 
         }
 
-        public override Tuple<string, string> GetSavedUsernamePassword(string service)
-        {
-            return new Tuple<string, string>("", "");
-        }
-
-        public override void SetSavedUsernamePassword(string service, string username, string password)
-        {
-        }
-
         public override void OpenFileManager(string directory)
         {
             System.Diagnostics.Process.Start("open", directory);
