@@ -97,7 +97,7 @@ namespace FPVMacsideCore
             Console.WriteLine("Source " + oldWorkDir.FullName);
 
 
-            string[] toCopy = new string[] { "themes", "img", "bitmapfonts", "httpfiles", "formats", "sounds" };
+            string[] toCopy = new string[] { "themes", "img", "bitmapfonts", "httpfiles", "formats", "sounds", "Content" };
             foreach (string copy in toCopy)
             {
                 try
