@@ -6,7 +6,7 @@
     <ApplicationIcon />
     <Platforms>x64;AnyCPU</Platforms>
     <StartupObject />
-    <Version>2.0.57.0</Version>
+    <Version>2.0.57.1</Version>
 	  <usewpf>true</usewpf>
   </PropertyGroup>
 
