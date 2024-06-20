@@ -335,6 +335,11 @@ namespace Composition.Input
                     // check we're in the window.
                     if (!layerStack.Bounds.Contains(cursorPosition))
                     {
+                        // mouse cursor moves still count towards update, even if they're out of bounds.. 
+                        if (newState.Position != OldMouseState.Position)
+                        {
+                            LastMouseUpdateTime = DateTime.Now;
+                        }
                         return;
                     }
 
