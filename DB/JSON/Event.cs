@@ -82,6 +82,7 @@ namespace DB.JSON
 
         public bool SyncWithFPVTrackside { get; set; }
         public bool SyncWithMultiGP { get; set; }
+        public bool GenerateHeatsMultiGP { get; set; }
         public bool VisibleOnline { get; set; }
         public bool Locked { get; set; }
 
@@ -114,6 +115,7 @@ namespace DB.JSON
             ChannelColors = obj.ChannelColors;
             SyncWithFPVTrackside = obj.SyncWithFPVTrackside;
             SyncWithMultiGP = obj.SyncWithMultiGP;
+            GenerateHeatsMultiGP = obj.GenerateHeatsMultiGP;
             VisibleOnline = obj.VisibleOnline;
 
             if (obj.Track != null)
@@ -130,6 +132,7 @@ namespace DB.JSON
             ev.RemovedPilots = RemovedPilots.Convert<RaceLib.Pilot>(database).ToList();
             ev.SyncWithFPVTrackside = SyncWithFPVTrackside;
             ev.SyncWithMultiGP = SyncWithMultiGP;
+            ev.GenerateHeatsMultiGP = GenerateHeatsMultiGP;
             ev.VisibleOnline = VisibleOnline;
 
             ev.Track = Track.Convert<RaceLib.Track>(database);

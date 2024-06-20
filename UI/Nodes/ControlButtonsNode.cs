@@ -22,8 +22,6 @@ namespace UI.Nodes
         public IconButtonNode CopyResultsClipboard { get; private set; }
         public IconButtonNode ResetButton { get; private set; }
         public IconButtonNode ResumeButton { get; private set; }
-
-        public IconButtonNode SyncButton { get; private set; }
         public IconButtonNode WormButton { get; private set; }
 
         public AutoRunnerControls AutoRunnerControls { get; private set; }
@@ -37,6 +35,8 @@ namespace UI.Nodes
         public int ItemPaddingVertical { get; set; }
 
         private bool needsUpdate;
+
+        public event Action OnControlButtonsUpdate;
 
         public ControlButtonsNode(EventManager eventManager, ChannelsGridNode channelsGridNode, TracksideTabbedMultiNode tracksideMultiNode, AutoRunner autoRunner)
         {
@@ -97,12 +97,6 @@ namespace UI.Nodes
             }
         }
 
-        public void AddSyncButton(IconButtonNode button)
-        {
-            SyncButton = button;
-            SyncButton.ImageNode.Tint = Theme.Current.RightControls.Text.XNA;
-            AddChild(SyncButton);
-        }
 
         public override void Dispose()
         {
@@ -169,11 +163,6 @@ namespace UI.Nodes
                 ClearButton.Visible = false;
                 ResumeButton.Visible = false;
             }
-            
-            if (SyncButton != null)
-            {
-                SyncButton.Visible = !inRaceOrPreRace;
-            }
             ClearButton.Visible = showingAnyPilots && !inRaceOrPreRace;
 
             Race nextRace = eventManager.RaceManager.GetNextRace(true);
@@ -193,6 +182,8 @@ namespace UI.Nodes
             }
 
             WormButton.Visible = eventManager.RaceManager.RaceRunning;
+
+            OnControlButtonsUpdate?.Invoke();
 
             LayoutChildren(BoundsF);
         }

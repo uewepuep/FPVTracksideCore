@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -24,6 +25,7 @@ namespace RaceLib
         public DateTime Modified { get; set; }
 
         [System.ComponentModel.Browsable(false)]
+        [Category("Cloud")]
         public int ExternalID { get; set; }
 
         public BaseObject()

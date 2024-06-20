@@ -160,13 +160,18 @@ namespace RaceLib
         public bool SyncWithFPVTrackside { get; set; }
 
         [Category("Cloud")]
+        [DisplayName("Visible on FPVTrackside.com")]
+        [System.ComponentModel.Browsable(false)]
+        public bool VisibleOnline { get; set; }
+
+        [Category("Cloud")]
         [DisplayName("Sync with MultiGP")]
         public bool SyncWithMultiGP { get; set; }
 
         [Category("Cloud")]
-        [DisplayName("Visible on FPVTrackside.com")]
-        [System.ComponentModel.Browsable(false)]
-        public bool VisibleOnline { get; set; }
+        [DisplayName("Generate heats on MultiGP.com (ZippyQ etc)")]
+        public bool GenerateHeatsMultiGP { get; set; }
+
 
         [System.ComponentModel.Browsable(false)]
         public string[] ChannelColors { get; set; }
@@ -183,15 +188,6 @@ namespace RaceLib
         [System.ComponentModel.Browsable(false)]
         public bool Locked { get; set; }
 
-        [System.ComponentModel.Browsable(false)]
-        public bool Sync
-        {
-            get
-            {
-                return SyncWithFPVTrackside || SyncWithMultiGP;
-            }
-        }
-
         [Browsable(false)]
         public Track Track { get; set; }
 
@@ -199,6 +195,7 @@ namespace RaceLib
         {
             SyncWithFPVTrackside = false;
             SyncWithMultiGP = false;
+            GenerateHeatsMultiGP = false;
             VisibleOnline = true;
             Enabled = true;
             PrimaryTimingSystemLocation = PrimaryTimingSystemLocation.Holeshot;

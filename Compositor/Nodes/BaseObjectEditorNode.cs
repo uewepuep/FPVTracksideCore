@@ -426,7 +426,7 @@ namespace Composition.Nodes
             multiItemBox.RequestLayout();
         }
 
-        protected void CreatePropertyNodes(T obj, IEnumerable<PropertyInfo> propertyInfos)
+        protected virtual void CreatePropertyNodes(T obj, IEnumerable<PropertyInfo> propertyInfos)
         {
             string lastCat = "";
             foreach (PropertyInfo pi in propertyInfos)
@@ -434,24 +434,21 @@ namespace Composition.Nodes
                 if (pi.GetAccessors(true)[0].IsStatic)
                     continue;
 
-                BrowsableAttribute ba = pi.GetCustomAttribute<BrowsableAttribute>();
-                if (ba != null && !ba.Browsable)
-                    continue;
-
-                ReadOnlyAttribute ro = pi.GetCustomAttribute<ReadOnlyAttribute>();
-                if (ro != null && ro.IsReadOnly)
-                    continue;
-
                 string category = "";
 
                 CategoryAttribute ca = pi.GetCustomAttribute<CategoryAttribute>();
                 if (ca != null)
+                {
                     category = ca.Category;
+                }
 
                 IEnumerable<PropertyNode<T>> newNodes = CreatePropertyNodes(obj, pi);
                 foreach (var newNode in newNodes)
                 {
-                    if (newNode != null && newNode.Category != "")
+                    if (newNode == null)
+                        continue;
+
+                    if (newNode.Category != "")
                     {
                         category = newNode.Category;
                     }
@@ -495,6 +492,14 @@ namespace Composition.Nodes
 
         protected virtual PropertyNode<T> CreatePropertyNode(T obj, PropertyInfo pi)
         {
+            BrowsableAttribute ba = pi.GetCustomAttribute<BrowsableAttribute>();
+            if (ba != null && !ba.Browsable)
+                return null;
+
+            ReadOnlyAttribute ro = pi.GetCustomAttribute<ReadOnlyAttribute>();
+            if (ro != null && ro.IsReadOnly)
+                return null;
+
             PropertyNode<T> newNode = null;
 
             bool HasPublicSetter = pi.GetSetMethod() != null;

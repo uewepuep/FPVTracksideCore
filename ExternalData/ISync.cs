@@ -23,6 +23,8 @@ namespace ExternalData
 
     public interface ISync
     {
+        SyncType SyncType { get; }
+
         event Action<bool> RaceSyncEvent;
 
         void SyncEvents(WorkSet workSet, WorkQueue queue, CallBacks<RaceLib.Event> callBack);

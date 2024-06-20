@@ -34,11 +34,11 @@ namespace UI.Nodes
         private TracksideTabbedMultiNode tabbedMultiNode;
 
         public event System.Action BackToEventSelector;
+        public event System.Action EventEditor;
         public event Action<Event> Restart;
         public event System.Action ChannelsChanged;
         public event System.Action<bool> VideoSettingsExited;
         public event System.Action TimingChanged;
-        public event System.Action EventChanged;
         public event System.Action DataDeleted;
         public event System.Action BugReport;
 
@@ -211,7 +211,7 @@ namespace UI.Nodes
             {
                 root.AddItem("Event Settings", () =>
                 {
-                    ShowEventSettings();
+                    EventEditor?.Invoke();
                 });
             }
 
@@ -553,23 +553,6 @@ namespace UI.Nodes
             };
 
             GetLayer<PopupLayer>().Popup(editor);
-        }
-
-        public void ShowEventSettings()
-        {
-            EventEditor editor = new EventEditor(eventManager.Event);
-            GetLayer<PopupLayer>().Popup(editor);
-
-            editor.OnOK += (e) =>
-            {
-                eventManager.Event = editor.Objects.FirstOrDefault();
-                using (IDatabase db = DatabaseFactory.Open(eventManager.EventId))
-                {
-                    db.Update(eventManager.Event);
-                }
-
-                EventChanged?.Invoke();
-            };
         }
 
         public void ShowGeneralSettings()

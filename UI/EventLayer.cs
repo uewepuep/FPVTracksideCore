@@ -287,12 +287,7 @@ namespace UI
                 }
                 sceneManagerNode.SetScene(sceneManagerNode.Scene, true);
             };
-            MenuButton.EventChanged += () =>
-            {
-                topBar.UpdateDetails();
-                pilotList.RebuildList();
-            };
-
+            MenuButton.EventEditor += EventEditor;
             MenuButton.DataDeleted += () =>
             {
                 pilotList.RebuildList();
@@ -342,6 +337,30 @@ namespace UI
             ReloadOBSRemoteControl();
 
             SoundManager.OnHighlightPilot += sceneManagerNode.FullScreen;
+        }
+
+        protected virtual void EventEditor()
+        {
+            EventEditor editor = new EventEditor(EventManager.Event);
+            ShowEventEditor(editor);
+        }
+
+        protected void ShowEventEditor(EventEditor editor)
+        {
+            LayerStack.GetLayer<PopupLayer>().Popup(editor);
+
+            editor.OnOK += (e) =>
+            {
+                EventManager.Event = editor.Objects.FirstOrDefault();
+                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                {
+                    db.Update(EventManager.Event);
+                }
+
+                topBar.UpdateDetails();
+                pilotList.RebuildList();
+                ControlButtons.UpdateControlButtons();
+            };
         }
 
         public virtual TracksideTabbedMultiNode CreateTabNode()

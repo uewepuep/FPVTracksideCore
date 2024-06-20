@@ -28,6 +28,20 @@ namespace UI.Nodes
             Text = "Select an event";
         }
 
+        protected override void CreatePropertyNodes(Event obj, IEnumerable<PropertyInfo> propertyInfos)
+        {
+            var ps = propertyInfos.ToList();
+
+            var external = ps.FirstOrDefault(r => r.Name == "ExternalID");
+            if (external != null)
+            {
+                ps.Remove(external);
+                ps.Add(external);
+            }
+
+            base.CreatePropertyNodes(obj, ps);
+        }
+
         protected override PropertyNode<Event> CreatePropertyNode(Event obj, PropertyInfo pi)
         {
             if (obj.ExternalID == default)
@@ -63,26 +77,45 @@ namespace UI.Nodes
                 return new StaticTextPropertyNode<Event>(obj, pi, TextColor);
             }
 
-            if (pi.Name.Contains("SyncWith"))
+            if (pi.Name.Contains("FPVTrackside"))
             {
-                foreach (SyncType syncType in Enum.GetValues(typeof(SyncType)))
+                bool value = (bool)pi.GetValue(obj);
+
+                if (!CheckLogin(SyncType.MultiGP) && !value)
                 {
-                    if (pi.Name.Contains(syncType.ToString()))
+                    pi.SetValue(obj, false);
+                    return null;
+                }
+            }
+
+            if (pi.Name.Contains("MultiGP"))
+            {
+                object objv = pi.GetValue(obj);
+                if (objv is bool)
+                {
+                    bool value = (bool)objv;
+
+                    if (!CheckLogin(SyncType.MultiGP) && !value)
                     {
-                        bool value = (bool)pi.GetValue(obj);
-
-                        if (!CheckLogin(syncType) && !value)
-                        {
-                            pi.SetValue(obj, false);
-                            return null;
-                        }
-
-                        if (syncType != SyncType.FPVTrackside && obj.ExternalID == 0)
-                        {
-                            pi.SetValue(obj, false);
-                            return null;
-                        }
+                        pi.SetValue(obj, false);
+                        return null;
                     }
+
+                    if (obj.ExternalID == 0)
+                    {
+                        pi.SetValue(obj, false);
+                        return null;
+                    }
+                }
+            }
+
+
+            if (pi.Name == "ExternalID")
+            {
+                int objv = (int)pi.GetValue(obj);
+                if (objv != 0)
+                {
+                    return new StaticTextPropertyNode<Event>(obj, pi, TextColor);
                 }
             }
 
