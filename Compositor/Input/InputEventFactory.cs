@@ -46,6 +46,7 @@ namespace Composition.Input
         public bool CreateKeyboardEvents { get; set; }
 
         public DateTime LastKeyboardUpdateTime { get; private set; }
+        public DateTime LastMouseUpdateTime { get; private set; }
 
         public GameWindow Window { get; private set; }
 
@@ -314,6 +315,8 @@ namespace Composition.Input
 
         public void OnMouseInput(MouseInputEvent mouseInputEvent)
         {
+            LastMouseUpdateTime = DateTime.Now;
+
             lock (mouseInputs)
             {
                 mouseInputs.Add(mouseInputEvent);

@@ -33,6 +33,8 @@ namespace Composition
 
             ClearColor = Color.CornflowerBlue;
             PlatformTools = platformTools;
+
+            IsMouseVisible = true;
         }
 
         protected override void LoadContent()
@@ -72,7 +74,6 @@ namespace Composition
 
         protected override void Update(GameTime gameTime)
         {
-            
             try
             {
                 Rectangle bounds = new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height);

@@ -62,7 +62,6 @@ namespace UI
             hasEverShownEventSelector = false;
             mutex = new Mutex(false, "FPVTrackside - uewepuep");
 
-
             Log = CreateDirectory(platformTools.WorkingDirectory, "log");
             Data = CreateDirectory(platformTools.WorkingDirectory, "data");
             Themes = CreateDirectory(platformTools.WorkingDirectory, "themes");
@@ -73,7 +72,6 @@ namespace UI
             HTTPFiles = CreateDirectory(platformTools.WorkingDirectory, "httpfiles");
 
             Content.RootDirectory = "Content";
-            IsMouseVisible = true;
             IsFixedTimeStep = false;
             this.Window.Title = Assembly.GetEntryAssembly().GetName().Name + " - " + Assembly.GetEntryAssembly().GetName().Version;
             
@@ -398,6 +396,17 @@ namespace UI
                     ((UI.BaseGame)LayerStack.Game).Restart(null);
                 }
             });
+        }
+
+        protected override void Update(GameTime gameTime)
+        {
+            base.Update(gameTime);
+
+            if (LayerStack != null && LayerStack.InputEventFactory != null)
+            {
+                TimeSpan sinceMouseMove = DateTime.Now - LayerStack.InputEventFactory.LastMouseUpdateTime;
+                IsMouseVisible = sinceMouseMove.TotalSeconds < 5;
+            }
         }
 
         public void ShowNewWindow(Node node)
