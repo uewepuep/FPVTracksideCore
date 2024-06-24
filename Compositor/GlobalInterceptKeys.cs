@@ -18,6 +18,9 @@ namespace Composition
         private const int WH_KEYBOARD_LL = 13;
         private const int WM_KEYDOWN = 0x0100;
         private const int WM_KEYUP = 0x0101;
+        private const int WM_SYSKEYDOWN = 0x0104;
+        private const int WM_SYSKEYUP = 0x0105;
+
         private static LowLevelKeyboardProc proc = HookCallback;
         private static IntPtr hookID = IntPtr.Zero;
 
@@ -49,9 +52,10 @@ namespace Composition
                 if (listeningTo.Contains(key) && !keysDown.Contains(key))
                 {
                     keysDown.Add(key);
+                    OnKeyPress?.Invoke();
+                    Logger.UI.LogCall(this, key);
                 }
             }
-            OnKeyPress?.Invoke();
         }
 
         private void KeyUp(Keys key)
@@ -116,14 +120,19 @@ namespace Composition
 
                 Keys key = (Keys)vkCode;
 
-                if (wParam == (IntPtr)WM_KEYDOWN)
-                {
-                    Instance.KeyDown(key);
-                }
+                long iParam = (int)wParam;
 
-                if (wParam == (IntPtr)WM_KEYUP)
+                switch (iParam)
                 {
-                    Instance.KeyUp(key);
+                    case WM_KEYUP:
+                    case WM_SYSKEYUP:
+                        Instance.KeyUp(key);
+                        break;
+
+                    case WM_KEYDOWN:
+                    case WM_SYSKEYDOWN:
+                        Instance.KeyDown(key);
+                        break;
                 }
             }
             return CallNextHookEx(hookID, nCode, wParam, lParam);

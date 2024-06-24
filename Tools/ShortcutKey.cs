@@ -80,14 +80,23 @@ namespace Tools
 
         public bool Match(KeyboardState keyboardState)
         {
-            if ((keyboardState.IsKeyDown(Keys.LeftControl) || keyboardState.IsKeyDown(Keys.RightControl)) && !ControlKey)
-                return false;
+            if (ControlKey)
+            {
+                if (!keyboardState.IsKeyDown(Keys.LeftControl) && !keyboardState.IsKeyDown(Keys.RightControl))
+                    return false;
+            }
 
-            if ((keyboardState.IsKeyDown(Keys.LeftAlt) || keyboardState.IsKeyDown(Keys.RightAlt)) && !AltKey)
-                return false;
+            if (AltKey)
+            {
+                if (!keyboardState.IsKeyDown(Keys.LeftAlt) && !keyboardState.IsKeyDown(Keys.RightAlt))
+                    return false;
+            }
 
-            if ((keyboardState.IsKeyDown(Keys.LeftShift) || keyboardState.IsKeyDown(Keys.RightShift)) && !ShiftKey)
-                return false;
+            if (ShiftKey)
+            {
+                if (!keyboardState.IsKeyDown(Keys.LeftShift) && !keyboardState.IsKeyDown(Keys.RightShift))
+                    return false;
+            }
 
             if (!keyboardState.IsKeyDown(Key))
                 return false;

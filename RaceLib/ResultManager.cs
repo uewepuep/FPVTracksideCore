@@ -731,20 +731,44 @@ namespace RaceLib
                             case ExportColumn.ColumnTypes.RoundNumber:
                                 results.Add(race.RoundNumber.ToString());
                                 break;
+
                             case ExportColumn.ColumnTypes.RaceNumber:
                                 results.Add(race.RaceNumber.ToString());
                                 break;
+
                             case ExportColumn.ColumnTypes.FastestSpeed:
                                 float fastestSpeed = EventManager.SpeedRecordManager.GetFastestSpeed(race, p);
                                 results.Add(EventManager.SpeedRecordManager.SpeedToString(fastestSpeed, units));
                                 break;
+
                             case ExportColumn.ColumnTypes.AverageSpeed:
                                 results.Add(EventManager.SpeedRecordManager.GetAverageSpeed(race, p).ToString());
                                 break;
+
                             case ExportColumn.ColumnTypes.Distance:
                                 float distance = EventManager.SpeedRecordManager.GetDistance(race, p);
                                 results.Add(Sector.LengthHuman(units, distance));
                                 break;
+
+                            case ExportColumn.ColumnTypes.Lap1Time:
+                                results.Add(GetLapTime(1, laps));
+                                break;
+                            case ExportColumn.ColumnTypes.Lap2Time:
+                                results.Add(GetLapTime(2, laps));
+                                break;
+                            case ExportColumn.ColumnTypes.Lap3Time:
+                                results.Add(GetLapTime(3, laps));
+                                break;
+                            case ExportColumn.ColumnTypes.Lap4Time:
+                                results.Add(GetLapTime(4, laps));
+                                break;
+                            case ExportColumn.ColumnTypes.Lap5Time:
+                                results.Add(GetLapTime(5, laps));
+                                break;
+                            case ExportColumn.ColumnTypes.Lap6Time:
+                                results.Add(GetLapTime(6, laps));
+                                break;
+
                         }
                     }
                 }
@@ -753,6 +777,19 @@ namespace RaceLib
             }
 
             return result;
+        }
+
+        private string GetLapTime(int number, IEnumerable<Lap> laps)
+        {
+            Lap lap = laps.FirstOrDefault(l => l.Number == number);
+            if (lap != null)
+            {
+                return lap.Length.TotalSeconds.ToString("0.00");
+            }
+            else
+            {
+                return " ";
+            }
         }
 
         public void Clear()
