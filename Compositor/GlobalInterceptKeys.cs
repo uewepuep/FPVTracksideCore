@@ -53,7 +53,7 @@ namespace Composition
                 {
                     keysDown.Add(key);
                     OnKeyPress?.Invoke();
-                    Logger.UI.LogCall(this, key);
+                    //Logger.UI.LogCall(this, key);
                 }
             }
         }
