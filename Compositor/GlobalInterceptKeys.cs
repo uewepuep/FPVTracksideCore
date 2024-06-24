@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace Composition
@@ -25,6 +26,8 @@ namespace Composition
         private List<Keys> keysDown;
         private List<Keys> listeningTo;
 
+        public event Action OnKeyPress;
+
         public GlobalInterceptKeys()
         {
             keysDown = new List<Keys>();
@@ -41,17 +44,26 @@ namespace Composition
 
         private void KeyDown(Keys key)
         {
-            if (listeningTo.Contains(key) && !keysDown.Contains(key))
+            lock (keysDown)
             {
-                keysDown.Add(key);
+                if (listeningTo.Contains(key) && !keysDown.Contains(key))
+                {
+                    keysDown.Add(key);
+                }
             }
+            OnKeyPress?.Invoke();
         }
 
         private void KeyUp(Keys key)
         {
-            if (listeningTo.Contains(key))
+            OnKeyPress?.Invoke();
+        }
+
+        public void Clear()
+        {
+            lock (keysDown)
             {
-                keysDown.Remove(key);
+                keysDown.Clear();
             }
         }
 
@@ -63,14 +75,17 @@ namespace Composition
 
         public void AddListen(Keys key)
         {
-            listeningTo.Add(key);
+            if (!listeningTo.Contains(key))
+            {
+                listeningTo.Add(key);
+            }
         }
 
         public void AddListen(IEnumerable<Keys> keys)
         {
             foreach (Keys key in keys)
-            { 
-               listeningTo.Add(key);
+            {
+                AddListen(key);
             }
         }
 
@@ -110,7 +125,6 @@ namespace Composition
                 {
                     Instance.KeyUp(key);
                 }
-
             }
             return CallNextHookEx(hookID, nCode, wParam, lParam);
         }

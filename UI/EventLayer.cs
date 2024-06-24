@@ -344,6 +344,8 @@ namespace UI
 
             ShortcutKey[] globals = new ShortcutKey[] { KeyMapper.GlobalCopyResults, KeyMapper.GlobalStartStopRace, KeyMapper.GlobalNextRace, KeyMapper.GlobalPrevRace };
             GlobalInterceptKeys.AddListen(globals.GetKeys().Distinct());
+
+            GlobalInterceptKeys.OnKeyPress += GlobalInterceptKeys_OnChange;
         }
 
         protected virtual void EventEditor()
@@ -656,26 +658,35 @@ namespace UI
             EventManager?.Update(gameTime);
             AutoRunner?.Update();
 
+            
+        }
+
+        private void GlobalInterceptKeys_OnChange()
+        {
             KeyboardState keyboardState = GlobalInterceptKeys.GetKeyboardState();
 
             if (KeyMapper.GlobalStartStopRace != null && KeyMapper.GlobalStartStopRace.Match(keyboardState))
             {
                 StartStopNext();
+                GlobalInterceptKeys.Clear();
             }
 
             if (KeyMapper.GlobalNextRace != null && KeyMapper.GlobalNextRace.Match(keyboardState))
             {
                 NextRace(false);
+                GlobalInterceptKeys.Clear();
             }
 
             if (KeyMapper.GlobalPrevRace != null && KeyMapper.GlobalPrevRace.Match(keyboardState))
             {
                 EventManager.RaceManager.PrevRace();
+                GlobalInterceptKeys.Clear();
             }
 
             if (KeyMapper.GlobalCopyResults != null && KeyMapper.GlobalCopyResults.Match(keyboardState))
             {
                 PlatformTools.Clipboard.SetText(EventManager.GetResultsText(GeneralSettings.Instance.Units));
+                GlobalInterceptKeys.Clear();
             }
         }
 

@@ -1578,7 +1578,8 @@ namespace RaceLib
                     currentOrder = race.RaceOrder;
                 }
 
-                return races.Where(r => r.Valid && r.RaceOrder > currentOrder && (r != race || allowCurrent)).OrderBy(r => r.Round.Order).ThenBy(r => r.RaceOrder).FirstOrDefault();
+                IEnumerable<Race> ordered = races.Where(r => r.Valid && r.RaceOrder > currentOrder && (r != race || allowCurrent)).OrderBy(r => r.Round.Order).ThenBy(r => r.RaceOrder);
+                return ordered.FirstOrDefault();
             }
         }
 
@@ -1592,7 +1593,8 @@ namespace RaceLib
                 if (cr != null)
                 {
                     currentOrder = cr.RaceOrder;
-                    return races.Where(r => r.Valid && r.RaceOrder < currentOrder).OrderByDescending(r => r.Round.Creation).ThenByDescending(r => r.RaceOrder).FirstOrDefault();
+                    IEnumerable<Race> ordered = races.Where(r => r.Valid && r.RaceOrder < currentOrder).OrderByDescending(r => r.Round.Order).ThenByDescending(r => r.RaceOrder);
+                    return ordered.FirstOrDefault();
                 }
                 return null;
             }
