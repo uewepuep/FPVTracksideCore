@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -124,6 +125,16 @@ namespace Tools
             return csv.Replace(',', with);
         }
 
+        public static IEnumerable<Keys> GetKeys(this IEnumerable<ShortcutKey> shortcutKeys)
+        {
+            foreach (ShortcutKey shortcutKey in shortcutKeys)
+            {
+                foreach (Keys key in shortcutKey.InvolvedKeys)
+                {
+                    yield return key;
+                }
+            }
+        }
     }
 
     public class DateOnlyAttribute : Attribute

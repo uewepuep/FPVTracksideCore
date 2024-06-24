@@ -76,6 +76,8 @@ namespace UI
             }
         }
 
+        public GlobalInterceptKeys GlobalInterceptKeys { get; private set; }
+
         public EventLayer(BaseGame game, GraphicsDevice graphicsDevice, EventManager eventManager, PlatformTools platformTools)
             : base(graphicsDevice)
         {
@@ -337,6 +339,11 @@ namespace UI
             ReloadOBSRemoteControl();
 
             SoundManager.OnHighlightPilot += sceneManagerNode.FullScreen;
+
+            GlobalInterceptKeys = GlobalInterceptKeys.Instance;
+
+            ShortcutKey[] globals = new ShortcutKey[] { KeyMapper.GlobalCopyResults, KeyMapper.GlobalStartStopRace, KeyMapper.GlobalNextRace, KeyMapper.GlobalPrevRace };
+            GlobalInterceptKeys.AddListen(globals.GetKeys().Distinct());
         }
 
         protected virtual void EventEditor()
@@ -649,7 +656,7 @@ namespace UI
             EventManager?.Update(gameTime);
             AutoRunner?.Update();
 
-            KeyboardState keyboardState = Keyboard.GetState();
+            KeyboardState keyboardState = GlobalInterceptKeys.GetKeyboardState();
 
             if (KeyMapper.GlobalStartStopRace != null && KeyMapper.GlobalStartStopRace.Match(keyboardState))
             {

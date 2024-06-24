@@ -15,6 +15,32 @@ namespace Tools
 
         public Keys Key { get; set; }
 
+        public IEnumerable<Keys> InvolvedKeys
+        {
+            get
+            {
+                if (ControlKey)
+                {
+                    yield return Keys.LeftControl;
+                    yield return Keys.RightControl;
+                }
+
+                if (ShiftKey)
+                {
+                    yield return Keys.LeftShift;
+                    yield return Keys.RightShift;
+                }
+
+                if (AltKey)
+                {
+                    yield return Keys.LeftAlt;
+                    yield return Keys.RightAlt;
+                }
+
+                yield return Key;
+            }
+        }
+
         public ShortcutKey()
         {
             ControlKey = false;
