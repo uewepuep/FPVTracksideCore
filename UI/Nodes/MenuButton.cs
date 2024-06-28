@@ -276,41 +276,41 @@ namespace UI.Nodes
 
             if (hasEvent)
             {
-                openWindow.AddItem("Rounds", () =>
-                {
-                    BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                    baseGame.QuickLaunchWindow<RoundsNode>(eventManager, keyMapper);
-                });
+                //openWindow.AddItem("Rounds", () =>
+                //{
+                //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
+                //    baseGame.QuickLaunchWindow<RoundsNode>(eventManager, keyMapper);
+                //});
 
-                openWindow.AddItem("Lap Records", () =>
-                {
-                    BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                    baseGame.QuickLaunchWindow<LapRecordsSummaryNode>(eventManager, keyMapper);
-                });
+                //openWindow.AddItem("Lap Records", () =>
+                //{
+                //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
+                //    baseGame.QuickLaunchWindow<LapRecordsSummaryNode>(eventManager, keyMapper);
+                //});
 
-                openWindow.AddItem("Points", () =>
-                {
-                    BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                    baseGame.QuickLaunchWindow<PointsSummaryNode>(eventManager, keyMapper);
-                });
+                //openWindow.AddItem("Points", () =>
+                //{
+                //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
+                //    baseGame.QuickLaunchWindow<PointsSummaryNode>(eventManager, keyMapper);
+                //});
 
-                openWindow.AddItem("Lap Count", () =>
-                {
-                    BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                    baseGame.QuickLaunchWindow<LapCountSummaryNode>(eventManager, keyMapper);
-                });
+                //openWindow.AddItem("Lap Count", () =>
+                //{
+                //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
+                //    baseGame.QuickLaunchWindow<LapCountSummaryNode>(eventManager, keyMapper);
+                //});
 
-                openWindow.AddItem("Channel List", () =>
-                {
-                    BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                    baseGame.QuickLaunchWindow<PilotChanelList>(eventManager, keyMapper);
-                });
+                //openWindow.AddItem("Channel List", () =>
+                //{
+                //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
+                //    baseGame.QuickLaunchWindow<PilotChanelList>(eventManager, keyMapper);
+                //});
 
-                openWindow.AddItem("Event Status", () =>
-                {
-                    BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                    baseGame.QuickLaunchWindow<EventStatusNodeTopBar>(eventManager, keyMapper);
-                });
+                //openWindow.AddItem("Event Status", () =>
+                //{
+                //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
+                //    baseGame.QuickLaunchWindow<EventStatusNodeTopBar>(eventManager, keyMapper);
+                //});
 
                 root.AddBlank();
 

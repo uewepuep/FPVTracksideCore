@@ -182,12 +182,12 @@ namespace UI.Nodes
 
         public void ShowTopLaps(MouseInputEvent mie)
         {
-            if (mie != null && mie.Button == MouseButtons.Middle)
-            {
-                BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                baseGame.QuickLaunchWindow<LapRecordsSummaryNode>(eventManager, keyMapper);
-                return;
-            }
+            //if (mie != null && mie.Button == MouseButtons.Middle)
+            //{
+            //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
+            //    baseGame.QuickLaunchWindow<LapRecordsSummaryNode>(eventManager, keyMapper);
+            //    return;
+            //}
 
             if (LapRecordsSummaryNode.Visible)
             {
@@ -199,12 +199,12 @@ namespace UI.Nodes
 
         public void ShowPoints(MouseInputEvent mie)
         {
-            if (mie != null && mie.Button == MouseButtons.Middle)
-            {
-                BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                baseGame.QuickLaunchWindow<PointsSummaryNode>(eventManager, keyMapper);
-                return;
-            }
+            //if (mie != null && mie.Button == MouseButtons.Middle)
+            //{
+            //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
+            //    baseGame.QuickLaunchWindow<PointsSummaryNode>(eventManager, keyMapper);
+            //    return;
+            //}
 
             PointsSummaryNode.OrderByLast();
             PointsSummaryNode.Refresh();
@@ -213,12 +213,12 @@ namespace UI.Nodes
 
         public void ShowLaps(MouseInputEvent mie)
         {
-            if (mie != null && mie.Button == MouseButtons.Middle)
-            {
-                BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                baseGame.QuickLaunchWindow<LapCountSummaryNode>(eventManager, keyMapper);
-                return;
-            }
+            //if (mie != null && mie.Button == MouseButtons.Middle)
+            //{
+            //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
+            //    baseGame.QuickLaunchWindow<LapCountSummaryNode>(eventManager, keyMapper);
+            //    return;
+            //}
 
             LapCountSummaryNode.OrderByLast();
             LapCountSummaryNode.Refresh();
@@ -228,12 +228,12 @@ namespace UI.Nodes
         public void ShowRounds(MouseInputEvent mie)
         {
             eventManager.RoundManager.CheckThereIsOneRound();
-            if (mie != null && mie.Button == MouseButtons.Middle)
-            {
-                BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                baseGame.QuickLaunchWindow<RoundsNode>(eventManager, keyMapper);
-                return;
-            }
+            //if (mie != null && mie.Button == MouseButtons.Middle)
+            //{
+            //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
+            //    baseGame.QuickLaunchWindow<RoundsNode>(eventManager, keyMapper);
+            //    return;
+            //}
 
             ShowRounds();
         }
@@ -256,12 +256,12 @@ namespace UI.Nodes
 
         public void ShowPilotChannelList(MouseInputEvent mie)
         {
-            if (mie != null && mie.Button == MouseButtons.Middle)
-            {
-                BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                baseGame.QuickLaunchWindow<PilotChanelList>(eventManager, keyMapper);
-                return;
-            }
+            //if (mie != null && mie.Button == MouseButtons.Middle)
+            //{
+            //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
+            //    baseGame.QuickLaunchWindow<PilotChanelList>(eventManager, keyMapper);
+            //    return;
+            //}
 
             Show(pilotChanelList);
         }

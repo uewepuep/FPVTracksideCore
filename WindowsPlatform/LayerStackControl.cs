@@ -71,10 +71,7 @@ namespace WindowsPlatform
         {
             try
             {
-                if (Handle != null)
-                {
-                    BeginInvoke(new Action(Invalidate));
-                }
+                BeginInvoke(new Action(Invalidate));
             }
             catch (Exception e)
             {
