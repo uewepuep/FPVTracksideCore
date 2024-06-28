@@ -127,7 +127,7 @@ namespace Tools
 
         public static IEnumerable<Keys> GetKeys(this IEnumerable<ShortcutKey> shortcutKeys)
         {
-            foreach (ShortcutKey shortcutKey in shortcutKeys)
+            foreach (ShortcutKey shortcutKey in shortcutKeys.Where(r => r != null))
             {
                 foreach (Keys key in shortcutKey.InvolvedKeys)
                 {

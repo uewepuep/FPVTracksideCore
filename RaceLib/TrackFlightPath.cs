@@ -144,6 +144,26 @@ namespace RaceLib
         {
             return Sector.LengthHuman(units, Length);
         }
+
+        public float FlyThroughSpeed(float distance)
+        {
+            float next = distance + 1f;
+            const int minSpeed = 4;
+
+            Vector3 fromTangent = GetTangent(distance);
+            Vector3 toTangent = GetTangent(next);
+
+            float dot = Math.Abs(Vector3.Dot(fromTangent, toTangent));
+            if (float.IsNaN(dot))
+            {
+                return minSpeed;
+            }
+
+            float lerpedDot = MathHelper.Lerp(dot, dot * dot, 0.5f);
+            lerpedDot *= 9;
+
+            return Math.Max(lerpedDot, minSpeed);
+        }
     }
 
     public class Sector

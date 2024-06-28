@@ -44,6 +44,8 @@ namespace RaceLib
 
         public TrackFlightPath FlightPath { get; set; }
 
+
+
         public EventManager(Profile profile)
         {
             Profile = profile;
