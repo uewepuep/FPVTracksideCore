@@ -72,7 +72,7 @@ namespace WindowsPlatform
             return new TextRenderWPF();
         }
 
-        public override void ShowNewWindow(Node node)
+        public void ShowNewWindow(Node node)
         {
             Action d = () =>
             {

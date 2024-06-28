@@ -164,11 +164,6 @@ namespace FPVMacsideCore
             return "";
         }
 
-        public override void ShowNewWindow(Node node)
-        {
-
-        }
-
         public override void OpenFileManager(string directory)
         {
             System.Diagnostics.Process.Start("open", directory);

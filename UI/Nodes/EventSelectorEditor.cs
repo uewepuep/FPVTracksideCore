@@ -81,7 +81,7 @@ namespace UI.Nodes
             {
                 bool value = (bool)pi.GetValue(obj);
 
-                if (!CheckLogin(SyncType.MultiGP) && !value)
+                if (!CheckLogin(SyncType.FPVTrackside) && !value)
                 {
                     pi.SetValue(obj, false);
                     return null;

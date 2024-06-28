@@ -292,11 +292,11 @@ namespace UI.Nodes.Rounds
                     sheet.GenerateSingleRound(Round);
                 });
 
-                mm.AddItem("View Sheet Contents", () =>
-                {
-                    BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                    baseGame.ShowNewWindow(new SheetNode(sheet));
-                });
+                //mm.AddItem("View Sheet Contents", () =>
+                //{
+                //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
+                //    baseGame.ShowNewWindow(new SheetNode(sheet));
+                //});
 
                 mm.AddItem("Export Sheet Contents", () =>
                 {

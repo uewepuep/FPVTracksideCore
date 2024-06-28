@@ -40,8 +40,6 @@ namespace Composition
         public abstract bool Focused { get; }
         public abstract bool ThreadedDrawing { get; }
 
-        public abstract void ShowNewWindow(Node node);
-
         public abstract string OpenFileDialog(string title, string fileExtension);
         public abstract string SaveFileDialog(string title, string fileExtension);
         public abstract void Invoke(Action value);
