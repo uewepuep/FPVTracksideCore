@@ -249,6 +249,7 @@ namespace Sound
 
                     new Sound() { Key = SoundKey.NoVideoDelayingRace, TextToSpeech = " Race start delayed as {pilot} has no video.", Category = Sound.SoundCategories.Race },
                     new Sound() { Key = SoundKey.PilotsEnableVideo, TextToSpeech = "Pilots turn on your video transmitters", Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.VideoOkNow, TextToSpeech = "All Pilots have Video. ", Category = Sound.SoundCategories.Race },
 
                     new Sound() { Key = SoundKey.UntilRaceStart, TextToSpeech = "{time} until the race start", Category = Sound.SoundCategories.Announcements },
 
@@ -935,6 +936,12 @@ namespace Sound
         public void PlayEnableVideo()
         {
             PlaySound(SoundKey.PilotsEnableVideo);
+        }
+
+        public void PlayVideoOk(Action startRace)
+        {
+            StopSound();
+            PlaySound(SoundKey.VideoOkNow, startRace);
         }
     }
 

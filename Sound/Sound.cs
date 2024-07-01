@@ -65,6 +65,7 @@ namespace Sound
 
         PilotsEnableVideo,
         NoVideoDelayingRace,
+        VideoOkNow,
 
         PhotoboothTrigger,
 

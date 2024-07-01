@@ -79,6 +79,17 @@ namespace UI
         [NeedsRestart]
         public int[] RemainingSecondsToAnnounce { get; set; }
 
+        [Category("Start Rules")]
+        public bool TimeTrialStaggeredStart { get; set; }
+
+        [Category("Start Rules")]
+        public float StaggeredStartDelaySeconds { get; set; }
+
+        [Category("Start Rules")]
+        public bool AutoRaceStartVideoCheck { get; set; }
+        [Category("Start Rules")]
+        public int AutoRaceStartVideoCheckAnnouncementSeconds { get; set; }
+
         [Category("Allowed Channel Grid Layouts")]
         public bool ChannelGrid1 { get; set; }
         [Category("Allowed Channel Grid Layouts")]
@@ -144,18 +155,7 @@ namespace UI
         [NeedsRestart]
         [Category("Event Type Names")]
         public string CasualPractice { get; set; }
-
-        [Category("Start Rules")]
-        public bool TimeTrialStaggeredStart { get; set; }
-
-        [Category("Start Rules")]
-        public float StaggeredStartDelaySeconds { get; set; }
-
-        [Category("Start Rules")]
-        public bool VideoStartCheck { get; set; }
-        [Category("Start Rules")]
-        public int VideoCheckLengthSeconds { get; set; }
-
+        
         [Category("Gate / LED POST notifications")]
         [NeedsRestart]
         public string NotificationSerialPort { get; set; }
@@ -258,8 +258,8 @@ namespace UI
             PilotProfilePhotoboothVideoLengthSeconds = 5;
             PilotProfileRepeatVideo = true;
             PilotProfileHoldLengthSeconds = 0;
-            VideoStartCheck = true;
-            VideoCheckLengthSeconds = 10;
+            AutoRaceStartVideoCheck = true;
+            AutoRaceStartVideoCheckAnnouncementSeconds = 10;
         }
 
         protected const string filename = "ProfileSettings.xml";

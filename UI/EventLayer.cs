@@ -664,6 +664,14 @@ namespace UI
             EventManager?.Update(gameTime);
             AutoRunner?.Update();
 
+            if (ProfileSettings.Instance.AutoRaceStartVideoCheck)
+            {
+                UpdateAutoVideoCheck();
+            }
+        }
+
+        protected void UpdateAutoVideoCheck()
+        {
             if (sceneManagerNode != null) 
             {
                 if (sceneManagerNode.Scene == SceneManagerNode.Scenes.VideoCheck)
@@ -685,7 +693,9 @@ namespace UI
 
                         if (allFine) 
                         {
-                            StartRace();
+                            sceneManagerNode.SetScene(SceneManagerNode.Scenes.PreRace);
+
+                            SoundManager.PlayVideoOk(() => { StartRace(); });
                         }
                         else
                         {
@@ -696,7 +706,7 @@ namespace UI
                                 {
                                     SoundManager.PlayVideoIssuesDelayRace(p);
                                 }
-                                videoCheckEnd = DateTime.Now + TimeSpan.FromSeconds(ProfileSettings.Instance.VideoCheckLengthSeconds);
+                                videoCheckEnd = DateTime.Now + TimeSpan.FromSeconds(ProfileSettings.Instance.AutoRaceStartVideoCheckAnnouncementSeconds);
                             }
                         }
                     }
@@ -1270,7 +1280,7 @@ namespace UI
                 }
                 else if (ControlButtons.StartButton.Visible)
                 {
-                    if (sceneManagerNode.Scene == SceneManagerNode.Scenes.PreRace && ProfileSettings.Instance.VideoStartCheck)
+                    if (sceneManagerNode.Scene == SceneManagerNode.Scenes.PreRace && ProfileSettings.Instance.AutoRaceStartVideoCheck)
                     {
                         VideoCheck();
                     }
@@ -1289,7 +1299,7 @@ namespace UI
 
         private void StartRaceWithVideoCheck()
         {
-            if (sceneManagerNode.Scene == SceneManagerNode.Scenes.PreRace && ProfileSettings.Instance.VideoStartCheck)
+            if (sceneManagerNode.Scene == SceneManagerNode.Scenes.PreRace && ProfileSettings.Instance.AutoRaceStartVideoCheck)
             {
                 VideoCheck();
             }
@@ -1305,7 +1315,7 @@ namespace UI
             if (sceneManagerNode == null)
                 return;
 
-            videoCheckEnd = DateTime.Now + TimeSpan.FromSeconds(ProfileSettings.Instance.VideoCheckLengthSeconds);
+            videoCheckEnd = DateTime.Now + TimeSpan.FromSeconds(ProfileSettings.Instance.AutoRaceStartVideoCheckAnnouncementSeconds);
             sceneManagerNode.SetScene(SceneManagerNode.Scenes.VideoCheck);
             SoundManager.PlayEnableVideo();
         }
