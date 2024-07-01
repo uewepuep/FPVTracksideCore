@@ -62,11 +62,17 @@ namespace UI
         private WorkQueue workQueueStartRace;
 
         private SystemStatusNode systemStatusNode;
+        
+        private DateTime videoCheckEnd;
+
         public KeyboardShortcuts KeyMapper { get; private set; }
 
         public OBSRemoteControlManager OBSRemoteControlManager { get; private set; }
 
         public AutoRunner AutoRunner { get; private set; }
+
+        public AutoCrashOut AutoCrashOut { get { return ChannelsGridNode.AutoCrashOut; } }
+
 
         public Profile Profile
         {
@@ -220,7 +226,7 @@ namespace UI
             ControlButtons.RelativeBounds = new RectangleF(0, 0.0f, 1, 1);
             rightBar.AddChild(ControlButtons);
 
-            ControlButtons.StartButton.OnClick += (mie) => { StartRace(); };
+            ControlButtons.StartButton.OnClick += (mie) => { StartRaceWithVideoCheck(); };
             ControlButtons.StopButton.OnClick += (mie) => { StopRace(); };
             ControlButtons.ClearButton.OnClick += (mie) => { Clear(); };
             ControlButtons.NextButton.OnClick += NextButton_OnClick;
@@ -658,7 +664,44 @@ namespace UI
             EventManager?.Update(gameTime);
             AutoRunner?.Update();
 
-            
+            if (sceneManagerNode != null) 
+            {
+                if (sceneManagerNode.Scene == SceneManagerNode.Scenes.VideoCheck)
+                {
+                    Race race = EventManager.RaceManager.CurrentRace;
+                    if (race != null) 
+                    {
+                        bool allFine = true;
+                        Channel badChannel = Channel.None;
+
+                        foreach (Channel channel in race.Channels)
+                        {
+                            if (!AutoCrashOut.HasMotion(channel))
+                            {
+                                badChannel = channel;
+                                allFine = false;
+                            }
+                        }
+
+                        if (allFine) 
+                        {
+                            StartRace();
+                        }
+                        else
+                        {
+                            if (DateTime.Now > videoCheckEnd)
+                            {
+                                Pilot p = race.GetPilot(badChannel);
+                                if (p != null)
+                                {
+                                    SoundManager.PlayVideoIssuesDelayRace(p);
+                                }
+                                videoCheckEnd = DateTime.Now + TimeSpan.FromSeconds(ProfileSettings.Instance.VideoCheckLengthSeconds);
+                            }
+                        }
+                    }
+                }
+            } 
         }
 
         private void GlobalInterceptKeys_OnChange()
@@ -1227,13 +1270,44 @@ namespace UI
                 }
                 else if (ControlButtons.StartButton.Visible)
                 {
-                    StartRace();
+                    if (sceneManagerNode.Scene == SceneManagerNode.Scenes.PreRace && ProfileSettings.Instance.VideoStartCheck)
+                    {
+                        VideoCheck();
+                    }
+                    else
+                    { 
+                        StartRace();
+                    }
                 }
                 else if (sceneManagerNode.Scene == SceneManagerNode.Scenes.RaceResults)
                 {
                     NextRace(false);
                 }
             }
+        }
+
+
+        private void StartRaceWithVideoCheck()
+        {
+            if (sceneManagerNode.Scene == SceneManagerNode.Scenes.PreRace && ProfileSettings.Instance.VideoStartCheck)
+            {
+                VideoCheck();
+            }
+            else
+            {
+                StartRace();
+            }
+        }
+
+
+        private void VideoCheck()
+        {
+            if (sceneManagerNode == null)
+                return;
+
+            videoCheckEnd = DateTime.Now + TimeSpan.FromSeconds(ProfileSettings.Instance.VideoCheckLengthSeconds);
+            sceneManagerNode.SetScene(SceneManagerNode.Scenes.VideoCheck);
+            SoundManager.PlayEnableVideo();
         }
 
         private void OnTabChange(string tab, Node s)

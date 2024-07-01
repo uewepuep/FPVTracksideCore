@@ -24,7 +24,7 @@ namespace UI
 
         public SceneManagerNode SceneManager { get; private set; }
 
-        public AutoCrashOut AutoCrashOut { get { return EventLayer.ChannelsGridNode.AutoCrashOut; } }
+        public AutoCrashOut AutoCrashOut { get { return EventLayer.AutoCrashOut; } }
 
         public AutoRunnerConfig Config { get; private set; }
 
@@ -295,7 +295,8 @@ namespace UI
                                 if (pilot != null)
                                 {
                                     SetState(States.WaitVideo);
-                                    SoundManager.PlayVideoIssuesDelayRace(Timer, pilot);
+                                    SoundManager.PlayVideoIssuesDelayRace(pilot);
+                                    SoundManager.PlayTimeUntilNextRace(Timer);
                                 }
                                 else
                                 {

@@ -63,6 +63,7 @@ namespace Sound
         Detection,
         DetectionSplit,
 
+        PilotsEnableVideo,
         NoVideoDelayingRace,
 
         PhotoboothTrigger,

@@ -247,7 +247,8 @@ namespace Sound
                     new Sound() { Key = SoundKey.TimingSystemConnected, TextToSpeech = "Timing system connected", Category = Sound.SoundCategories.Status },
                     new Sound() { Key = SoundKey.TimingSystemsConnected, TextToSpeech = "{count} Timing systems connected", Category = Sound.SoundCategories.Status },
 
-                    new Sound() { Key = SoundKey.NoVideoDelayingRace, TextToSpeech = " Race start delayed as {pilot} has no video. Race starts in {time}", Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.NoVideoDelayingRace, TextToSpeech = " Race start delayed as {pilot} has no video.", Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.PilotsEnableVideo, TextToSpeech = "Pilots turn on your video transmitters", Category = Sound.SoundCategories.Race },
 
                     new Sound() { Key = SoundKey.UntilRaceStart, TextToSpeech = "{time} until the race start", Category = Sound.SoundCategories.Announcements },
 
@@ -920,16 +921,20 @@ namespace Sound
             PlaySound(SoundKey.UntilRaceStart, soundParameters);
         }
 
-        public void PlayVideoIssuesDelayRace(TimeSpan time, Pilot pilot)
+        public void PlayVideoIssuesDelayRace(Pilot pilot)
         {
             StopSound();
 
             SpeechParameters soundParameters = new SpeechParameters();
-            soundParameters.AddTime(SpeechParameters.Types.time, time);
             soundParameters.Add(SpeechParameters.Types.pilot, pilot.Phonetic);
             soundParameters.Priority = 1111;
             soundParameters.SecondsExpiry = 10;
             PlaySound(SoundKey.NoVideoDelayingRace, soundParameters);
+        }
+
+        public void PlayEnableVideo()
+        {
+            PlaySound(SoundKey.PilotsEnableVideo);
         }
     }
 

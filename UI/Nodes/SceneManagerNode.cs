@@ -44,6 +44,7 @@ namespace UI.Nodes
         {
             Clear,
             PreRace,
+            VideoCheck,
             Race,
             FinishLine,
             RaceResults,
@@ -346,14 +347,13 @@ namespace UI.Nodes
 
             float launchFinishWidth = 0.7f;
             IEnumerable<Node> commentatorCams = commentatorsAndSummary.VisibleChildren;
-
             switch (scene)
             {
+                case Scenes.VideoCheck:
                 case Scenes.PreRace:
                     ChannelsGridNode.LockGridType = false;
 
                     SetAnimationTime(SetupAnimationTime);
-
 
                     launchCamsNode.SetAnimatedVisibility(true);
                     commentatorsAndSummary.SetAnimatedVisibility(true);
@@ -385,7 +385,11 @@ namespace UI.Nodes
                     }
 
                     ChannelsGridNode.SetBiggerInfo(true, false);
-                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Large);
+
+                    if (scene == Scenes.VideoCheck)
+                        ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
+                    else
+                        ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Large);
 
                     launchCamsNode.RelativeBounds = new RectangleF(0, 0, launchFinishWidth, nonChannelGridHeight);
 
