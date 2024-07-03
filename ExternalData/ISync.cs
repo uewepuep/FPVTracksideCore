@@ -40,5 +40,9 @@ namespace ExternalData
     public interface ITrackProvider
     {
         IEnumerable<Track> GetTracks();
+
+        bool UploadTrack(Track track); 
+
+        public bool CanUpload { get; }
     }
 }

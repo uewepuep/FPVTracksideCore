@@ -22,6 +22,7 @@ namespace Composition.Nodes
             if (mouseInputEvent.Button != MouseButtons.None && mouseInputEvent.ButtonState == ButtonStates.Pressed)
             {
                 pressed = true;
+                return true;
             }
 
             if (mouseInputEvent.Button != MouseButtons.None && mouseInputEvent.ButtonState == ButtonStates.Released && pressed)
