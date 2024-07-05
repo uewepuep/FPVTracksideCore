@@ -587,6 +587,8 @@ namespace UI.Nodes
                     GetLayer<PopupLayer>().PopupConfirmation("Changes require restart to take effect. Restart now?", () => { Restart(evennt); });
                 }
 
+                ProfileSettings.Initialize(Profile);
+
                 ProfileSettingsSaved?.Invoke();
             };
         }

@@ -23,8 +23,5 @@ namespace DB.JSON
         public int Number { get; set; }
 
         public bool CalculateSpeed { get; set; }
-
-        public bool CalculateTimes { get; set; }
-
     }
 }

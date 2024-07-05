@@ -35,13 +35,14 @@ namespace RaceLib
             {
                 ITimingSystem timingSystem = timingSystems[i];
                 Sector sector = sectors[i];
-
-                int index = timingSystemManager.GetIndex(timingSystem);
-                indexDistance2.Add(index, sector.Length);
+                if (sector.CalculateSpeed)
+                {
+                    int index = timingSystemManager.GetIndex(timingSystem);
+                    indexDistance2.Add(index, sector.Length);
+                }
             }
 
             HasDistance = indexDistance2.Values.Any(a => a > 0);
-
             timingSystemIndexDistance = indexDistance2;
         }
 

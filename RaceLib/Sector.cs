@@ -26,13 +26,9 @@ namespace RaceLib
 
         public bool CalculateSpeed { get; set; }
 
-        public bool CalculateTimes { get; set; }
-
-
         public Sector()
         {
             CalculateSpeed = true;
-            CalculateTimes = true;
         }
 
         public string ToString(Units units)
