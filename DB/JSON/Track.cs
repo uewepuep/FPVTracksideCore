@@ -20,25 +20,17 @@ namespace DB.JSON
 
         public Track(RaceLib.Track t)
             :base(t)
-        { 
-            TrackElements = new TrackElement[t.TrackElements.Length];
-            for(int i = 0; i < t.TrackElements.Length; i++)
-            {
-                TrackElements[i] = new TrackElement();
-                Copy(t.TrackElements[i], TrackElements[i]);
-            }
+        {
+            Copy(t.TrackElements, out TrackElement[] temp);
+            TrackElements = temp;
         }
 
         public override RaceLib.Track GetRaceLibObject(ICollectionDatabase database)
         {
             RaceLib.Track t = base.GetRaceLibObject(database);
-            t.TrackElements = new RaceLib.TrackElement[TrackElements.Length];
 
-            for (int i = 0; i < TrackElements.Length; i++)
-            {
-                t.TrackElements[i] = new RaceLib.TrackElement();
-                Copy(TrackElements[i], t.TrackElements[i]);
-            }
+            Copy(TrackElements, out RaceLib.TrackElement[] temp);
+            t.TrackElements = temp;
 
             return t;
         }

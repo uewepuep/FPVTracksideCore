@@ -87,7 +87,8 @@ namespace DB.JSON
         public bool Locked { get; set; }
 
         public Guid Track { get; set; }
-
+        public Sector[] Sectors { get; set; }
+        
         public Event()
         {
         }
@@ -120,6 +121,9 @@ namespace DB.JSON
 
             if (obj.Track != null)
                 Track = obj.Track.ID;
+
+            Copy(obj.Sectors, out DB.JSON.Sector[] temp);
+            Sectors = temp;
         }
 
         public override RaceLib.Event GetRaceLibObject(ICollectionDatabase database)
@@ -136,6 +140,9 @@ namespace DB.JSON
             ev.VisibleOnline = VisibleOnline;
 
             ev.Track = Track.Convert<RaceLib.Track>(database);
+
+            Copy(Sectors, out RaceLib.Sector[] temp);
+            ev.Sectors = temp;
 
             return ev;
         }
@@ -157,6 +164,10 @@ namespace DB.JSON
             ev.PilotChannels = PilotChannels.Except(invalid).Select(pc => new RaceLib.PilotChannel() { Pilot = new RaceLib.Pilot() { ID = pc.Pilot }, Channel = new RaceLib.Channel() { ID = pc.Channel } }).ToList();
             ev.RemovedPilots = RemovedPilots.Select(id => new RaceLib.Pilot() { ID = id }).ToList();
             ev.Track = Track.Convert<RaceLib.Track>(database);
+
+            Copy(Sectors, out RaceLib.Sector[] temp);
+            ev.Sectors = temp;
+
             return ev;
         }
     }

@@ -93,6 +93,22 @@ namespace DB
             return t;
         }
 
+        protected void Copy<Source, Destination>(Source[] source, out Destination[] destination) where Destination: new()
+        {
+            if (source == null)
+            {
+                destination = null;
+                return;
+            }
+
+            destination = new Destination[source.Length];
+            for (int i = 0; i < source.Length; i++)
+            {
+                destination[i] = new Destination();
+                Copy(source[i], destination[i]);
+            }
+        }
+
         protected void Copy<Source, Destination>(Source source, Destination destination)
         {
             if (source == null || destination == null)

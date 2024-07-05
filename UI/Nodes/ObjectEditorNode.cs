@@ -897,7 +897,7 @@ namespace UI.Nodes
             Scale(0.8f, 1f);
 
             IEnumerable<Sector> sectors = null;
-            if (eventt.Sectors.Any())
+            if (eventt.Sectors != null && eventt.Sectors.Any())
             {
                 sectors = eventt.Sectors;
             }
