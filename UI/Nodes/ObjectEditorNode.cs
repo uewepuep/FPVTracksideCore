@@ -876,4 +876,129 @@ namespace UI.Nodes
             Scale(0.8f, 1f);
         }
     }
+
+    public class SectorEditor : ObjectEditorNode<Sector> 
+    {
+        private TrackFlightPath trackFlightPath;
+
+        public Units Units
+        {
+            get
+            {
+                return GeneralSettings.Instance.Units;
+            }
+        }
+
+        public SectorEditor(Event eventt, TrackFlightPath trackFlightPath)
+            : base(false)
+        {
+            this.trackFlightPath = trackFlightPath;
+            
+            Scale(0.8f, 1f);
+
+            IEnumerable<Sector> sectors = null;
+            if (eventt.Sectors.Any())
+            {
+                sectors = eventt.Sectors;
+            }
+            else
+            {
+                sectors = trackFlightPath.Sectors;
+            }
+
+            if (sectors == null)
+            {
+                sectors = new Sector[0];
+            }
+
+            Objects = sectors.ToList();
+
+            SetObjects(sectors, true, true);
+        }
+
+        protected override PropertyNode<Sector> CreatePropertyNode(Sector obj, PropertyInfo pi)
+        {
+            if (pi.Name == "Length")
+            {
+                return new LengthPropertyNode(obj, pi, ButtonBackground, TextColor, Units);
+            }
+
+            if (pi.Name == "TrackElementStartIndex" || pi.Name == "TrackElementEndIndex")
+            {
+                return new TrackElementSelectorPropertyNode(obj, pi, ButtonBackground, TextColor, ButtonHover, trackFlightPath.Track.TrackElements);
+            }
+
+            return base.CreatePropertyNode(obj, pi);
+        }
+
+        public class LengthPropertyNode : NumberPropertyNode<Sector>
+        {
+            public Units Units { get; private set; }    
+
+            public LengthPropertyNode(Sector obj, PropertyInfo pi, Color textBackground, Color textColor, Units units) 
+                : base(obj, pi, textBackground, textColor)
+            {
+                Units = units;
+            }
+
+            protected override void SetValue(object value)
+            {
+                string str = value.ToString();
+                str = str.Replace("ft", "");
+                str = str.Replace("m", "");
+
+                if (float.TryParse(str, out float fl))
+                {
+                    Object.SetLengthHuman(Units, fl);
+                }
+            }
+
+            public override string ValueToString(object value)
+            {
+                return Object.GetLengthHuman(Units);
+            }
+        }
+
+        public class TrackElementSelectorPropertyNode : ListPropertyNode<Sector>
+        {
+            public TrackElementSelectorPropertyNode(Sector obj, PropertyInfo pi, Color textBackground, Color textColor, Color hover, IEnumerable<TrackElement> options)
+                : base(obj, pi, textBackground, textColor, hover, options.ToArray())
+            {
+                RequestUpdateFromObject();
+            }
+
+            protected override void SetValue(object value)
+            {
+                if (value is TrackElement)
+                {
+                    TrackElement element = (TrackElement)value;
+                    value = Options.IndexOf(element);
+                    base.SetValue(value);
+                }
+            }
+
+            public override string ValueToString(object value)
+            {
+                if (value is int && Options != null)
+                {
+                    int index = (int)value;
+
+                    if (Options.Count > index)
+                    {
+                        int number = index + 1;
+
+                        return Options[index].ToString() + " " + number;
+                    }
+                }
+
+                if (value is TrackElement)
+                {
+                    int number = Options.IndexOf(value) + 1;
+                    return value.ToString() + " " + number;
+                }
+
+                return base.ValueToString(value);
+            }
+        }
+    }
 }

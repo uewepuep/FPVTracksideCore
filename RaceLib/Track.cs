@@ -54,7 +54,6 @@ namespace RaceLib
         public ElementTypes ElementType { get; set; }
 
         public Vector3 Position;
-
         public bool SplitEnd { get; set; }
 
         public float Tilt { get; set; }

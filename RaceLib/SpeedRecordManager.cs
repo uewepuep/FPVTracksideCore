@@ -169,7 +169,7 @@ namespace RaceLib
 
         public void Initialize()
         {
-            DistanceManager.Initialize(TimingSystemManager, RaceManager.EventManager.FlightPath);
+            DistanceManager.Initialize(EventManager, TimingSystemManager, RaceManager.EventManager.FlightPath);
 
             Update();
         }

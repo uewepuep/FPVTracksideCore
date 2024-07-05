@@ -191,6 +191,9 @@ namespace RaceLib
         [Browsable(false)]
         public Track Track { get; set; }
 
+        [Browsable(false)]
+        public Sector[] Sectors { get; set; }
+
         public Event()
         {
             SyncWithFPVTrackside = false;
@@ -215,6 +218,7 @@ namespace RaceLib
             MinLapTime = TimeSpan.FromSeconds(5);
             Start = DateTime.Today;
             VisibleOnline = true;
+            Sectors = new Sector[0];
         }
 
         public Event Clone()

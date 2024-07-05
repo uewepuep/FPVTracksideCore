@@ -17,12 +17,17 @@ namespace RaceLib
         {
         }
 
-        public void Initialize(TimingSystemManager timingSystemManager, TrackFlightPath trackFlightPath)
+        public void Initialize(EventManager eventManager, TimingSystemManager timingSystemManager, TrackFlightPath trackFlightPath)
         {
             Dictionary<int, float> indexDistance2 = new Dictionary<int, float>();
 
             ITimingSystem[] timingSystems = timingSystemManager.TimingSystemsSectorOrder.ToArray();
-            Sector[] sectors = trackFlightPath.Sectors;
+            Sector[] sectors = eventManager.Event.Sectors;
+
+            if (sectors == null || sectors.Length == 0)
+            {
+                sectors = trackFlightPath.Sectors;
+            }
 
             int max = Math.Min(timingSystems.Length, sectors.Length);
 

@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,11 +18,15 @@ namespace RaceLib
 
         public Sector[] Sectors { get; private set; }
 
+        public Track Track { get; private set; }
+
         public TrackFlightPath(Track track)
             :this()
         {
             if (track == null)
                 return;
+
+            Track = track;
 
             SetTrackElements(track.TrackElements);
         }
@@ -32,9 +37,9 @@ namespace RaceLib
             Sectors = new Sector[0];
         }
 
-        public void SetTrackElements(IEnumerable<TrackElement> trackElements)
+        public void SetTrackElements(IEnumerable<TrackElement> trackElementsA)
         {
-            trackElements = trackElements.Where(e => e != null && !e.Decorative);
+            TrackElement[] trackElements = trackElementsA.Where(e => e != null && !e.Decorative).ToArray();
 
             Spline = new Spline3D();
 
@@ -68,13 +73,17 @@ namespace RaceLib
                 Sector sector = Sectors[i];
 
                 float start = 0;
-                if (i > 0)
-                    start = GetDistance(sector.Start.Position);
+                if (i > 0 && trackElements.Length > sector.TrackElementStartIndex)
+                {
+                    TrackElement startElement = trackElements[sector.TrackElementStartIndex];
+                    start = GetDistance(startElement.Position);
+                }
 
                 float end = Length;
                 if (i < Sectors.Length - 1)
                 {
-                    end = GetDistance(sector.End.Position);
+                    TrackElement endElement = trackElements[sector.TrackElementEndIndex];
+                    end = GetDistance(endElement.Position);
                 }
 
                 sector.Length = end - start;
@@ -85,28 +94,30 @@ namespace RaceLib
             }
         }
 
-        private IEnumerable<Sector> CreateSectors(IEnumerable<TrackElement> trackElements)
+        private IEnumerable<Sector> CreateSectors(IEnumerable<TrackElement> trackElementsa)
         {
+            List<TrackElement> trackElements = trackElementsa.ToList();
+
             if (trackElements == null || !trackElements.Any())
                 yield break;
 
             TrackElement start = trackElements.First();
 
             Sector current = new Sector();
-            current.Start = start;
+            current.TrackElementStartIndex = 0;
             current.Number = 1;
 
             foreach (TrackElement sectorEnd in trackElements.Where(g => g.SplitEnd))
             {
                 int number = current.Number;
-                current.End = sectorEnd;
+                current.TrackElementEndIndex = trackElements.IndexOf(sectorEnd);
                 yield return current;
                 current = new Sector();
                 current.Number = number + 1;
-                current.Start = sectorEnd;
+                current.TrackElementStartIndex = trackElements.IndexOf(sectorEnd);
             }
 
-            current.End = start;
+            current.TrackElementEndIndex = 0;
             yield return current;
         }
 
@@ -145,7 +156,7 @@ namespace RaceLib
             return Sector.LengthHuman(units, Length);
         }
 
-        public float FlyThroughSpeed(float distance)
+        public float EstimatedFlyThroughSpeed(float distance)
         {
             float next = distance + 1f;
             const int minSpeed = 4;
@@ -163,46 +174,6 @@ namespace RaceLib
             lerpedDot *= 9;
 
             return Math.Max(lerpedDot, minSpeed);
-        }
-    }
-
-    public class Sector
-    {
-        public TrackElement Start { get; set; }
-        public TrackElement End { get; set; }
-
-        public float Length { get; set; }
-
-        public Color Color { get; set; }
-
-        public int Number { get; set; }
-
-        public Sector()
-        {
-        }
-
-        public string ToString(Units units)
-        {
-            return "S" + Number + " " + LengthHuman(units);
-        }
-
-        public string LengthHuman(Units units)
-        {
-            return LengthHuman(units, Length);
-        }
-
-        public static string LengthHuman(Units units, float length)
-        {
-            if (units == RaceLib.Units.Imperial)
-            {
-                length = length * 3.28f;
-
-                return length.ToString("0.0") + "ft";
-            }
-            else
-            {
-                return length.ToString("0.0") + "m";
-            }
         }
     }
 }
