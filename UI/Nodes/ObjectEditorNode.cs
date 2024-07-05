@@ -916,6 +916,12 @@ namespace UI.Nodes
             SetObjects(sectors, true, true);
         }
 
+        protected override void AddNew(Sector t)
+        {
+            t.Number = Objects.Count + 1;
+            base.AddNew(t);
+        }
+
         protected override PropertyNode<Sector> CreatePropertyNode(Sector obj, PropertyInfo pi)
         {
             if (pi.Name == "Length")
@@ -925,7 +931,11 @@ namespace UI.Nodes
 
             if (pi.Name == "TrackElementStartIndex" || pi.Name == "TrackElementEndIndex")
             {
-                return new TrackElementSelectorPropertyNode(obj, pi, ButtonBackground, TextColor, ButtonHover, trackFlightPath.Track.TrackElements);
+                if (trackFlightPath.Track != null)
+                {
+                    return new TrackElementSelectorPropertyNode(obj, pi, ButtonBackground, TextColor, ButtonHover, trackFlightPath.Track.TrackElements);
+                }
+                return null;
             }
 
             return base.CreatePropertyNode(obj, pi);
