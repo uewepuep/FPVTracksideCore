@@ -169,7 +169,7 @@ namespace Composition.Nodes
             // Has to be done because drawing children normally happens in base.
             DrawChildren(id, parentAlpha);
 
-            if (!OverrideHeight.HasValue && needsUpdate == UpdateTypes.None && height != BoundsF.Height)
+            if (!OverrideHeight.HasValue && needsUpdate == UpdateTypes.None && height != Bounds.Height)
             {
                 needsUpdate = UpdateTypes.Size;
             }
