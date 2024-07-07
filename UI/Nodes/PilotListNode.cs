@@ -160,9 +160,6 @@ namespace UI.Nodes
 
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
         {
-            if (base.OnMouseInput(mouseInputEvent))
-                return true;
-            
             MouseInputEvent translated = listNode.Translate(mouseInputEvent);
 
             PilotChannelNode pcn = GetPilotChannelNodeFromMouseInputEvent(translated);
@@ -181,6 +178,9 @@ namespace UI.Nodes
             {
                 GetLayer<DragLayer>()?.RegisterDrag(pcn, translated);
             }
+
+            if (base.OnMouseInput(mouseInputEvent))
+                return true;
 
             return false;
         }
