@@ -69,7 +69,7 @@ namespace Timing
             EndDetection();
         }
 
-        public bool StartDetection(ref DateTime time)
+        public bool StartDetection(ref DateTime time, Guid raceId)
         {
             if (!DummingSettings.GenerateRandomLaps)
             {

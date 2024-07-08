@@ -857,7 +857,13 @@ namespace RaceLib
 
         private bool StartDetection(ref DateTime start)
         {
-            if (!TimingSystemManager.StartDetection(ref start))
+            Guid raceId = Guid.Empty;
+            if (CurrentRace != null)
+            {
+                raceId = CurrentRace.ID;
+            }
+
+            if (!TimingSystemManager.StartDetection(ref start, raceId))
             {
                 return false;
             }

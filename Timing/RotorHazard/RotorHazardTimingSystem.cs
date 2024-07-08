@@ -457,7 +457,7 @@ namespace Timing.RotorHazard
             }
         }
 
-        public bool StartDetection(ref DateTime time)
+        public bool StartDetection(ref DateTime time, Guid raceId)
         {
             if (!Connected)
                 return false;
@@ -470,7 +470,8 @@ namespace Timing.RotorHazard
             {
                 RaceStart raceStart = new RaceStart()
                 {
-                    start_time_s = serverStartTime.TotalSeconds
+                    start_time_s = serverStartTime.TotalSeconds,
+                    race_id = raceId
                 };
 
                 if (settings.SyncPilotNames)

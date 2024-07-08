@@ -275,7 +275,7 @@ namespace Timing.ImmersionRC
             return true;
         }
 
-        public bool StartDetection(ref DateTime time)
+        public bool StartDetection(ref DateTime time, Guid raceId)
         {
             if (!SetMinLapTime(settings.MinimumTriggerTime))
             {

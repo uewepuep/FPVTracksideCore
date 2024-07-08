@@ -146,6 +146,7 @@ namespace Timing.RotorHazard
     {
         public double start_time_s { get; set; }
         public string[] p { get; set; }
+        public Guid race_id { get; set; }
     }
 }
 
