@@ -12,6 +12,7 @@ namespace Sound
 {
     public enum SoundKey
     {
+        None,
         StartRaceIn,
         RaceStart,
         RaceOver,
@@ -64,8 +65,8 @@ namespace Sound
         DetectionSplit,
 
         PilotsEnableVideo,
-        NoVideoDelayingRace,
-        VideoOkNow,
+        VideoDelayingRace,
+        VideoLooksGood,
 
         PhotoboothTrigger,
 

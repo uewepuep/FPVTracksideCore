@@ -64,6 +64,7 @@ namespace UI
         private SystemStatusNode systemStatusNode;
         
         private DateTime videoCheckEnd;
+        private bool hasReportedNoVideo;
 
         public KeyboardShortcuts KeyMapper { get; private set; }
 
@@ -695,7 +696,14 @@ namespace UI
                         {
                             sceneManagerNode.SetScene(SceneManagerNode.Scenes.PreRace);
 
-                            SoundManager.PlayVideoOk(() => { StartRace(); });
+                            if (hasReportedNoVideo)
+                            {
+                                SoundManager.PlayVideoOk(() => { StartRace(); });
+                            }
+                            else
+                            {
+                                StartRace();
+                            }
                         }
                         else
                         {
@@ -707,6 +715,7 @@ namespace UI
                                     SoundManager.PlayVideoIssuesDelayRace(p);
                                 }
                                 videoCheckEnd = DateTime.Now + TimeSpan.FromSeconds(ProfileSettings.Instance.AutoRaceStartVideoCheckAnnouncementSeconds);
+                                hasReportedNoVideo = true;
                             }
                         }
                     }
@@ -1316,6 +1325,7 @@ namespace UI
                 return;
 
             videoCheckEnd = DateTime.Now + TimeSpan.FromSeconds(ProfileSettings.Instance.AutoRaceStartVideoCheckAnnouncementSeconds);
+            hasReportedNoVideo = false;
             sceneManagerNode.SetScene(SceneManagerNode.Scenes.VideoCheck);
             SoundManager.PlayEnableVideo();
         }
