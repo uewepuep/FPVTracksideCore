@@ -31,21 +31,23 @@ namespace Timing
         public float SensitivityFactor { get; set; }
 
         public string Pilot { get; set; }
+        public Guid PilotId { get; set; }
 
         public int Channel { get; set; }
         public string Band { get; set; }
 
 
         public ListeningFrequency(string band, int channel, int frequency, float sensitivityFactor)
-            :this("", band, channel, frequency, sensitivityFactor)
+            :this("", Guid.Empty, band, channel, frequency, sensitivityFactor)
         {
         }
 
-        public ListeningFrequency(string pilot, string band, int channel, int freq, float sensitivity)
+        public ListeningFrequency(string pilot, Guid pilotId, string band, int channel, int freq, float sensitivity)
         {
             Frequency = freq;
             SensitivityFactor = sensitivity;
             Pilot = pilot;
+            PilotId = pilotId;
             Band = band;
             Channel = channel;
         }

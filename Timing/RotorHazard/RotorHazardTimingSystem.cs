@@ -11,9 +11,22 @@ using Tools;
 using SocketIOClient;
 using System.Reflection;
 using System.Timers;
+using SocketIOClient.JsonSerializer;
 
 namespace Timing.RotorHazard
 {
+    public struct PilotInfo
+    {
+        public Guid ID { get; private set; }
+        public string Name { get; private  set; }
+
+        public PilotInfo(Guid id, string name)
+        {
+            ID = id;
+            Name = name;
+        }
+    }
+
     public class RotorHazardTimingSystem : ITimingSystemWithRSSI
     {
 
@@ -128,7 +141,7 @@ namespace Timing.RotorHazard
 
         private DateTime rotorhazardStart;
 
-        private string[] pilotCallsigns;
+        private PilotInfo[] pilotInfos;
 
         public string Name
         {
@@ -239,7 +252,7 @@ namespace Timing.RotorHazard
             frequencySetup.b = newFrequencies.Select(nf => nf.Band[0]).ToArray();
             frequencySetup.c = newFrequencies.Select(nf => nf.Channel).ToArray();
             frequencySetup.f = newFrequencies.Select(nf => nf.Frequency).ToArray();
-            pilotCallsigns = newFrequencies.Select(nf => nf.Pilot).ToArray();
+            pilotInfos = newFrequencies.Select(nf => new PilotInfo(nf.PilotId, nf.Pilot)).ToArray();
 
             try
             {
@@ -476,9 +489,17 @@ namespace Timing.RotorHazard
 
                 if (settings.SyncPilotNames)
                 {
-                    raceStart.p = pilotCallsigns;
-                }
+                    raceStart.p = pilotInfos.Select(pi => pi.Name).ToArray();
+                    raceStart.p_id = pilotInfos.Select((pi) => 
+                    {
+                        if (pi.ID == Guid.Empty)
+                        {
+                            return "";
+                        }
 
+                        return "\"" + pi.ID.ToString() + "\"";
+                    }).ToArray();
+                }
                 socket?.EmitAsync("ts_race_stage", (r) =>
                 { 
                     if (responseWait.IsDisposed) 
