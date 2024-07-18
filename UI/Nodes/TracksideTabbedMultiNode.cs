@@ -159,7 +159,7 @@ namespace UI.Nodes
                 Timing.ListeningFrequency[] lastFrequencies = eventManager.RaceManager.TimingSystemManager.LastListeningFrequencies;
                 if (lastFrequencies.Length == 0)
                 {
-                    lastFrequencies = frequencies.Select(r => new Timing.ListeningFrequency(r.Band.ToString(), r.Number, r.Frequency, 1)).ToArray();
+                    lastFrequencies = frequencies.Select(r => new Timing.ListeningFrequency(r.Band.ToString(), r.Number, r.Frequency, 1, Color.Red)).ToArray();
                 }
 
                 eventManager.RaceManager.TimingSystemManager.SetListeningFrequencies(lastFrequencies);

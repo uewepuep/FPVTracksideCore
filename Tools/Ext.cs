@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
@@ -134,6 +135,11 @@ namespace Tools
                     yield return key;
                 }
             }
+        }
+
+        public static string ToHex(this Color color)
+        {
+            return "#" + color.R.ToString("XX") + color.G.ToString("XX") + color.B.ToString("XX");
         }
     }
 

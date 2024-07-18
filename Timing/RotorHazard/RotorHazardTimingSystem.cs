@@ -141,7 +141,8 @@ namespace Timing.RotorHazard
 
         private DateTime rotorhazardStart;
 
-        private PilotInfo[] pilotInfos;
+        private RaceStartPilots raceStartPilots;
+
 
         public string Name
         {
@@ -252,7 +253,13 @@ namespace Timing.RotorHazard
             frequencySetup.b = newFrequencies.Select(nf => nf.Band[0]).ToArray();
             frequencySetup.c = newFrequencies.Select(nf => nf.Channel).ToArray();
             frequencySetup.f = newFrequencies.Select(nf => nf.Frequency).ToArray();
-            pilotInfos = newFrequencies.Select(nf => new PilotInfo(nf.PilotId, nf.Pilot)).ToArray();
+
+            raceStartPilots = new RaceStartPilots()
+            {
+                p_id = newFrequencies.Select(r => r.PilotId.ToString()).ToArray(),
+                p = newFrequencies.Select(r => r.Pilot).ToArray(),
+                p_color = newFrequencies.Select(r => r.Color.ToHex()).ToArray()
+            };
 
             try
             {
@@ -481,32 +488,21 @@ namespace Timing.RotorHazard
 
             using (Waiter responseWait = new Waiter())
             {
-                RaceStart raceStart = new RaceStart()
+                if (!settings.SyncPilotNames)
                 {
-                    start_time_s = serverStartTime.TotalSeconds,
-                    race_id = raceId
-                };
-
-                if (settings.SyncPilotNames)
-                {
-                    raceStart.p = pilotInfos.Select(pi => pi.Name).ToArray();
-                    raceStart.p_id = pilotInfos.Select((pi) => 
-                    {
-                        if (pi.ID == Guid.Empty)
-                        {
-                            return "";
-                        }
-
-                        return "\"" + pi.ID.ToString() + "\"";
-                    }).ToArray();
+                    raceStartPilots = new RaceStartPilots();
                 }
+
+                raceStartPilots.start_time_s = serverStartTime.TotalSeconds;
+                raceStartPilots.race_id = raceId;
+                
                 socket?.EmitAsync("ts_race_stage", (r) =>
                 { 
                     if (responseWait.IsDisposed) 
                         return; 
 
                     responseWait.Set(); 
-                }, raceStart);
+                }, raceStartPilots);
 
                 if (!responseWait.WaitOne(CommandTimeOut))
                 {

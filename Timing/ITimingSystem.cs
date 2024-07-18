@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -36,13 +37,15 @@ namespace Timing
         public int Channel { get; set; }
         public string Band { get; set; }
 
+        public Color Color { get; set; }
 
-        public ListeningFrequency(string band, int channel, int frequency, float sensitivityFactor)
-            :this("", Guid.Empty, band, channel, frequency, sensitivityFactor)
+
+        public ListeningFrequency(string band, int channel, int frequency, float sensitivityFactor, Color color)
+            :this("", Guid.Empty, band, channel, frequency, sensitivityFactor, color)
         {
         }
 
-        public ListeningFrequency(string pilot, Guid pilotId, string band, int channel, int freq, float sensitivity)
+        public ListeningFrequency(string pilot, Guid pilotId, string band, int channel, int freq, float sensitivity, Color color)
         {
             Frequency = freq;
             SensitivityFactor = sensitivity;
@@ -50,6 +53,7 @@ namespace Timing
             PilotId = pilotId;
             Band = band;
             Channel = channel;
+            Color = color;
         }
 
         public override string ToString()

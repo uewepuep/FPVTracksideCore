@@ -142,12 +142,14 @@ namespace Timing.RotorHazard
         public string prog_start_time { get; set; }
     }
 
-    public struct RaceStart
+    public struct RaceStartPilots
     {
         public double start_time_s { get; set; }
+        public Guid race_id { get; set; }
+
         public string[] p { get; set; }
         public string[] p_id { get; set; }
-        public Guid race_id { get; set; }
+        public string[] p_color { get; set; }
     }
 }
 
