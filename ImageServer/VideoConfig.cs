@@ -121,6 +121,8 @@ namespace ImageServer
         public Splits Splits { get; set; }
 
         [Category("Layout")]
+        [DisplayName("Channel Crop Percent")]
+
         public float ChannelCoveragePercent { get; set; }
 
         [DisplayName("Missing GMFBridge")]
