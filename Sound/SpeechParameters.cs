@@ -14,8 +14,8 @@ namespace Sound
         public enum Types
         {
             pilot,
-            pilot2,
             pilots,
+            pilotchannels,
             lapnumber,
             count,
             time,
@@ -228,6 +228,7 @@ namespace Sound
             parameters.AddRaceTime(Types.lapstime, time);
             parameters.AddRaceTime(Types.racetime, time);
             parameters.Add(Types.pilot, pilotNames.Random());
+            parameters.Add(Types.pilots, string.Join(", ", pilotNames.Randomise().Take(4)));
             parameters.Add(Types.position, channel);
             parameters.Add(Types.round, round);
             parameters.Add(Types.race, race);
@@ -254,8 +255,7 @@ namespace Sound
                 pilotChannelParameters.Add(Types.channel, channel);
                 soundParameters.Add(pilotChannelParameters);
             }
-
-            parameters.AddSubParameters(Types.pilots, soundManager.GetSound(SoundKey.AnnouncePilotChannel), soundParameters);
+            parameters.AddSubParameters(Types.pilotchannels, soundManager.GetSound(SoundKey.AnnouncePilotChannel), soundParameters);
 
             return parameters;
         }

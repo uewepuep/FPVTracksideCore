@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -1588,6 +1589,17 @@ namespace RaceLib
 
                 IEnumerable<Race> ordered = races.Where(r => r.Valid && r.RaceOrder > currentOrder && (r != race || allowCurrent)).OrderBy(r => r.Round.Order).ThenBy(r => r.RaceOrder);
                 return ordered.FirstOrDefault();
+            }
+        }
+
+        public Race GetNextRace(Race afterThisRace)
+        {
+            if (afterThisRace == null)
+                return null;
+
+            lock (races)
+            {
+                return races.Where(r => r.Valid && !r.Ended && r.PilotChannels.Any() && r.RaceOrder > afterThisRace.RaceOrder && r.Round.Order >= afterThisRace.Round.Order).OrderBy(r => r.Round.Order).ThenBy(r => r.RaceOrder).FirstOrDefault();
             }
         }
 

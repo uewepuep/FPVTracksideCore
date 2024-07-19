@@ -213,6 +213,7 @@ namespace Sound
                     new Sound() { Key = SoundKey.StaggeredPilot, TextToSpeech = "{pilot}", Category = Sound.SoundCategories.Race },
 
                     new Sound() { Key = SoundKey.RaceAnnounce, TextToSpeech = "Next up Round {round} {type} {race} {bracket}. ", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.InTheHole, TextToSpeech = "In the hole {pilots}", Category = Sound.SoundCategories.Announcements, Enabled = false },
                     new Sound() { Key = SoundKey.RaceAnnounceResults, TextToSpeech = "Results of Round {round} {type} {race} {bracket}. ", Category = Sound.SoundCategories.Announcements },
 
                     new Sound() { Key = SoundKey.AnnouncePilotChannel, TextToSpeech = "{pilot} on {band}{channel}", Category = Sound.SoundCategories.Announcements },
@@ -347,6 +348,9 @@ namespace Sound
             backgroundQueue.Clear();
             backgroundQueue.Enqueue(() =>
             {
+                Race nextRace = eventManager.RaceManager.GetNextRace(race);
+                PlayInTheHole(nextRace);
+
                 SpeechParameters parameters = new SpeechParameters();
                 parameters.Priority = 1000;
                 parameters.SecondsExpiry = 10;
@@ -398,6 +402,19 @@ namespace Sound
                 }
                 HighlightPilot(null);
             });
+        }
+
+        private void PlayInTheHole(Race nextRace)
+        {
+            if (nextRace == null)
+                return;
+
+            SpeechParameters pilotChannelParameters = new SpeechParameters();
+            pilotChannelParameters.Priority = 1000;
+            pilotChannelParameters.SecondsExpiry = 5;
+            pilotChannelParameters.Add(SpeechParameters.Types.pilots, nextRace.PilotNames);
+
+            PlaySoundBlocking(SoundKey.InTheHole,  pilotChannelParameters);
         }
 
         private void HighlightPilot(Pilot pilot)

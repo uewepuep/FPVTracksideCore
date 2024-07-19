@@ -191,7 +191,7 @@ namespace UI.Nodes
                 { "{bracket}", "Bracket (A, B, Winners, Losers..)"},
                 { "{band}", "Channel band (Fatshark, Raceband..)"},
                 { "{channel}", "Channel number  (1, 2..)"},
-                { "{pilots}", "Pilots and their respective channels"},
+                { "{pilots}", "Pilots"},
                 { "{s}", "Will be an 's' if {count} isn't '1'. Helps you say '2 laps', not '2 lap' and '1 lap' not '1 laps'."},
 
             };

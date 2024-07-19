@@ -22,6 +22,7 @@ namespace Sound
         AfterTimesUp,
         
         RaceAnnounce,
+        InTheHole,
 
         RaceAnnounceResults,
 
