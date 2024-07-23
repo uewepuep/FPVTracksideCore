@@ -122,13 +122,29 @@ namespace UI
             Tools.Logger.CleanUp();
         }
 
+        protected override void Initialize()
+        {
+            GeneralSettings.Initialise();
+
+            Profile = new Profile(GeneralSettings.Instance.Profile);
+
+            ApplicationProfileSettings.Initialize(Profile);
+
+            if (!ApplicationProfileSettings.Instance.UseDirectX9)
+            {
+                GraphicsDeviceManager.GraphicsProfile = GraphicsProfile.HiDef;
+                GraphicsDeviceManager.ApplyChanges();
+            }
+            base.Initialize();
+        }
+
         protected override void LoadContent()
         {
             Logger.UI.Log(this, this.Window.Title, "LoadContent");
 
             base.LoadContent();
 
-            float inversScale = GeneralSettings.Instance.InverseResolutionScalePercent / 100.0f;
+            float inversScale = ApplicationProfileSettings.Instance.InverseResolutionScalePercent / 100.0f;
             if (inversScale > 0)
             {
                 LayerStack.Scale = 1 / inversScale;
@@ -175,19 +191,16 @@ namespace UI
                 LayerStack.Add(alreadyRunning);
             }
 
-            int frameRate = Math.Min(1000, Math.Max(1, GeneralSettings.Instance.FrameRateLimit));
+            int frameRate = Math.Min(1000, Math.Max(1, ApplicationProfileSettings.Instance.FrameRateLimit));
             TargetElapsedTime = TimeSpan.FromSeconds(1f / frameRate);
             IsFixedTimeStep = true;
-            GraphicsDeviceManager.SynchronizeWithVerticalRetrace = GeneralSettings.Instance.VSync;
+            GraphicsDeviceManager.SynchronizeWithVerticalRetrace = ApplicationProfileSettings.Instance.VSync;
             GraphicsDeviceManager.ApplyChanges();
 
 
             loadingLayer.WorkQueue.Enqueue("Database Upgrade", DatabaseUpgrade);
 
             loadingLayer.WorkQueue.Enqueue("Startup", Startup);
-
-            Profile = new Tools.Profile(GeneralSettings.Instance.Profile);
-
         }
 
         private void DatabaseUpgrade()
@@ -200,7 +213,7 @@ namespace UI
 
         public virtual void Startup()
         {
-            if (GeneralSettings.Instance.ShowWelcomeScreen2 && !hasEverShownEventSelector)
+            if (ApplicationProfileSettings.Instance.ShowWelcomeScreen && !hasEverShownEventSelector)
             {
                 ShowWelcomeSetup();
             }
@@ -305,8 +318,6 @@ namespace UI
         private void StartEvent(Event selected, Profile profile)
         {
             loadingLayer.BlockOnLoading = true;
-
-            ProfileSettings.Initialize(profile);
 
             WorkSet startEventWorkSet = new WorkSet();
             startEventWorkSet.OnError += ErrorLoadingEvent;

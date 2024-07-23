@@ -46,16 +46,11 @@ namespace FPVTracksideCore
             }
         }
 
-        protected override void Initialize()
-        {
-            GeneralSettings.Initialise();
-            base.Initialize();
-        }
 
         protected override void LoadContent()
         {
 
-            DirectoryInfo eventDir = new DirectoryInfo(GeneralSettings.Instance.EventStorageLocation);
+            DirectoryInfo eventDir = new DirectoryInfo(ApplicationProfileSettings.Instance.EventStorageLocation);
             DatabaseFactory.Init(new DB.DatabaseFactory(Data, eventDir));
 
             Theme.Initialise(PlatformTools.WorkingDirectory, "Dark");

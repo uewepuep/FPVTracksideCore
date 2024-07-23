@@ -200,9 +200,9 @@ namespace UI.Video
                         videoBounds.OverlayAlignment = OverlayAlignment.TopRight;
 
                         CamNode camNode;
-                        if (ProfileSettings.Instance.PilotProfileChromaKey)
+                        if (ApplicationProfileSettings.Instance.PilotProfileChromaKey)
                         {
-                            camNode = new ChromaKeyCamNode(source, videoBounds, ProfileSettings.Instance.PilotProfileChromaKeyColor, ProfileSettings.Instance.PilotProfileChromaKeyLimit);
+                            camNode = new ChromaKeyCamNode(source, videoBounds, ApplicationProfileSettings.Instance.PilotProfileChromaKeyColor, ApplicationProfileSettings.Instance.PilotProfileChromaKeyLimit);
                         }
                         else
                         {
@@ -294,7 +294,7 @@ namespace UI.Video
         public CameraCountdownNode() 
         {
             Delay = TimeSpan.FromSeconds(3);
-            RecordingLength = TimeSpan.FromSeconds(ProfileSettings.Instance.PilotProfilePhotoboothVideoLengthSeconds);
+            RecordingLength = TimeSpan.FromSeconds(ApplicationProfileSettings.Instance.PilotProfilePhotoboothVideoLengthSeconds);
 
             countdownText = new TextNode("", Color.White);
             countdownText.Scale(0.3f);

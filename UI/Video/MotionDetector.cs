@@ -16,8 +16,8 @@ namespace UI.Video
 
         public TimeSpan QueueLength { get; set; }
 
-        public float LowThreshold { get { return GeneralSettings.Instance.CrashThreshold; } }
-        public float HighThreshold { get { return GeneralSettings.Instance.ReactivateThreshold; } }
+        public float LowThreshold { get { return ApplicationProfileSettings.Instance.CrashThreshold; } }
+        public float HighThreshold { get { return ApplicationProfileSettings.Instance.ReactivateThreshold; } }
 
         private bool inLowState;
         public Channel Channel { get; private set; }

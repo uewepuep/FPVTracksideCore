@@ -139,11 +139,11 @@ namespace UI.Nodes
                         source.Stop();
 
                         FileFrameNode videoPlayer;
-                        if (ProfileSettings.Instance.PilotProfileChromaKey)
+                        if (ApplicationProfileSettings.Instance.PilotProfileChromaKey)
                         {
                             videoPlayer = new ChromaKeyFileFrameNode(source,
-                                                                     ProfileSettings.Instance.PilotProfileChromaKeyColor,
-                                                                     ProfileSettings.Instance.PilotProfileChromaKeyLimit);
+                                                                     ApplicationProfileSettings.Instance.PilotProfileChromaKeyColor,
+                                                                     ApplicationProfileSettings.Instance.PilotProfileChromaKeyLimit);
                         }
                         else
                         {

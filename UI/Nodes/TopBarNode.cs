@@ -118,7 +118,7 @@ namespace UI.Nodes
             EventManager.RaceManager.OnRaceReset += UpdateDetails;
 
             UpdateDetails();
-            SetAnimationTime(TimeSpan.FromSeconds(ProfileSettings.Instance.ReOrderAnimationSeconds));
+            SetAnimationTime(TimeSpan.FromSeconds(ApplicationProfileSettings.Instance.ReOrderAnimationSeconds));
         }
 
         public void DisableTimeNodes()
@@ -143,12 +143,12 @@ namespace UI.Nodes
             float top = 0.075f;
             float height = 1 - (2 * top);
 
-            eventName.Visible = ProfileSettings.Instance.TopEventName;
-            type.Visible = ProfileSettings.Instance.TopEventType;
-            lapSummaryNode.Visible = ProfileSettings.Instance.TopLapInfo;
-            timeNode.Visible = ProfileSettings.Instance.TopRaceTime;
-            remainingNode.Visible = ProfileSettings.Instance.TopRemainingTime;
-            currentTime.Visible = ProfileSettings.Instance.TopClock;
+            eventName.Visible = ApplicationProfileSettings.Instance.TopEventName;
+            type.Visible = ApplicationProfileSettings.Instance.TopEventType;
+            lapSummaryNode.Visible = ApplicationProfileSettings.Instance.TopLapInfo;
+            timeNode.Visible = ApplicationProfileSettings.Instance.TopRaceTime;
+            remainingNode.Visible = ApplicationProfileSettings.Instance.TopRemainingTime;
+            currentTime.Visible = ApplicationProfileSettings.Instance.TopClock;
 
             type.RelativeBounds = new RectangleF(0, top, 0.37f, height);
             lapSummaryNode.RelativeBounds = new RectangleF(0, top, 0.18f, height);

@@ -384,7 +384,7 @@ namespace UI.Video
                         SeekNode.RequestLayout();
 
                         ChannelsGridNode.SetPlaybackTime(currentTime);
-                        ChannelsGridNode.SetReorderType(ProfileSettings.Instance.PilotOrderMidRace == GeneralSettings.OrderTypes.Channel ? ChannelsGridNode.ReOrderTypes.ChannelOrder : ChannelsGridNode.ReOrderTypes.PositionOrder);
+                        ChannelsGridNode.SetReorderType(ApplicationProfileSettings.Instance.PilotOrderMidRace == ApplicationProfileSettings.OrderTypes.Channel ? ChannelsGridNode.ReOrderTypes.ChannelOrder : ChannelsGridNode.ReOrderTypes.PositionOrder);
                     }
                 }
             }

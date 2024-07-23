@@ -261,7 +261,7 @@ namespace UI.Nodes
             //WidgetManager = new WidgetManagerNode();
             //DisplayNode.AddChild(WidgetManager);
 
-            if (ProfileSettings.Instance.ShowSplitTimes)
+            if (ApplicationProfileSettings.Instance.ShowSplitTimes)
             {
                 SplitsNode = new SplitsNode(EventManager);
                 SplitsNode.RelativeBounds = new RectangleF(0, LapsNode.RelativeBounds.Y - LapLineHeight, 1, LapLineHeight);
@@ -485,7 +485,7 @@ namespace UI.Nodes
 
                     PilotProfile.ProfileImageContainer.RelativeBounds = new RectangleF(0.4f, bottomOfName, 0.6f, 1 - bottomOfName);
                     PilotProfile.ProfileImageContainer.RelativeBounds = new RectangleF(0, 0, 1, 1);
-                    PilotProfile.RepeatVideo = ProfileSettings.Instance.PilotProfileRepeatVideo;
+                    PilotProfile.RepeatVideo = ApplicationProfileSettings.Instance.PilotProfileRepeatVideo;
                     break;
             }
         }
@@ -564,7 +564,7 @@ namespace UI.Nodes
                             float maxSpeed = speeds.Max();
                             if (maxSpeed > 0)
                             {
-                                raceSummary1.Text += " - " + EventManager.SpeedRecordManager.SpeedToString(maxSpeed, GeneralSettings.Instance.Units);
+                                raceSummary1.Text += " - " + EventManager.SpeedRecordManager.SpeedToString(maxSpeed, ApplicationProfileSettings.Instance.Units);
                             }
                         }
                     }
@@ -781,7 +781,7 @@ namespace UI.Nodes
                 {
                     if (showPosition)
                     {
-                        if (!ProfileSettings.Instance.AlwaysShowPosition)
+                        if (!ApplicationProfileSettings.Instance.AlwaysShowPosition)
                         {
                             recentPositionNode.SetTextAlpha(position.ToStringPosition());
                             recentPositionNode.Normal = 0;
@@ -808,7 +808,7 @@ namespace UI.Nodes
                 }
                 Position = position;
 
-                if (ProfileSettings.Instance.AlwaysShowPosition)
+                if (ApplicationProfileSettings.Instance.AlwaysShowPosition)
                 {
                     if (race.Started && !hasFinished)
                     {
@@ -835,7 +835,7 @@ namespace UI.Nodes
             {
                 if (holeshot)
                 {
-                    if (ProfileSettings.Instance.ReOrderAtHoleshot)
+                    if (ApplicationProfileSettings.Instance.ReOrderAtHoleshot)
                     {
                         RequestReorder?.Invoke();
                     }

@@ -43,9 +43,9 @@ namespace UI.Nodes
 
         private void ThemeSettingsEditor_OnOK(BaseObjectEditorNode<Theme> obj)
         {
-            ProfileSettings profileSettings = ProfileSettings.Read(Profile);
+            ApplicationProfileSettings profileSettings = ApplicationProfileSettings.Read(Profile);
             profileSettings.Theme = Selected.Name;
-            ProfileSettings.Write(Profile, profileSettings);
+            ApplicationProfileSettings.Write(Profile, profileSettings);
         }
 
         public override void SetObjects(IEnumerable<Theme> toEdit, bool addRemove = false, bool cancelButton = true)

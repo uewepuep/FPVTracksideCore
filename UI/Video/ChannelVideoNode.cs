@@ -30,7 +30,7 @@ namespace UI.Video
         {
             FrameNode = new FrameNodeThumb(source);
             FrameNode.KeepAspectRatio = false;
-            FrameNode.ThumbnailEnabled = GeneralSettings.Instance.VideoStaticDetector || EventManager.RaceManager.TimingSystemManager.HasVideoTiming;
+            FrameNode.ThumbnailEnabled = ApplicationProfileSettings.Instance.VideoStaticDetector || EventManager.RaceManager.TimingSystemManager.HasVideoTiming;
             return FrameNode;
         }
 

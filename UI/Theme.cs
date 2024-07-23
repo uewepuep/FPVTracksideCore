@@ -169,9 +169,9 @@ namespace UI
 
             Themes = themes.ToList();
 
-            if (ProfileSettings.Instance != null)
+            if (ApplicationProfileSettings.Instance != null)
             {
-                Current = Themes.FirstOrDefault(t => t.Name == ProfileSettings.Instance.Theme);
+                Current = Themes.FirstOrDefault(t => t.Name == ApplicationProfileSettings.Instance.Theme);
             }
 
             if (Current == null)

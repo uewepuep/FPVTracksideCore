@@ -147,7 +147,7 @@ namespace UI.Nodes
                 Speed = speed;
 
 
-                textNode.Text = "PB " + EventManager.SpeedRecordManager.SpeedToString(speed, GeneralSettings.Instance.Units);
+                textNode.Text = "PB " + EventManager.SpeedRecordManager.SpeedToString(speed, ApplicationProfileSettings.Instance.Units);
             }
             SetTint(isBest);
             race = Split.Race;

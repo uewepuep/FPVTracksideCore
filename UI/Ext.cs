@@ -12,7 +12,7 @@ namespace UI
     {
         public static string ToStringRaceTime(this TimeSpan timespan)
         {
-            return ToStringRaceTime(timespan, GeneralSettings.Instance.ShownDecimalPlaces);
+            return ToStringRaceTime(timespan, ApplicationProfileSettings.Instance.ShownDecimalPlaces);
         }
 
         public static string ToStringRaceTime(this TimeSpan timespan, int decimalPlaces)

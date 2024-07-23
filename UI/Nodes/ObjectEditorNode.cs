@@ -422,41 +422,14 @@ namespace UI.Nodes
         }
     }
 
-    class GeneralSettingsEditor : ObjectEditorNode<GeneralSettings>
+    class SettingsEditor : ObjectEditorNode<ApplicationProfileSettings>
     {
-        public GeneralSettingsEditor(GeneralSettings toEdit)
+        public SettingsEditor(ApplicationProfileSettings toEdit)
             : base(toEdit, false, true, false)
         {
         }
 
-        protected override PropertyNode<GeneralSettings> CreatePropertyNode(GeneralSettings obj, PropertyInfo pi)
-        {
-            if (pi.Name == "InverseResolutionScalePercent")
-            {
-                int[] scales = new int[] { 50, 75, 100, 125, 150, 200 };
-                ListPropertyNode<GeneralSettings> listPropertyNode = new ListPropertyNode<GeneralSettings>(obj, pi, ButtonBackground, TextColor, ButtonHover, scales);
-                return listPropertyNode;
-            }
-
-            if (pi.Name == "NotificationSerialPort")
-            {
-                return new ComPortPropertyNode<GeneralSettings>(obj, pi, ButtonBackground, TextColor, ButtonHover);
-            }
-
-            return base.CreatePropertyNode(obj, pi);
-        }
-
-    }
-
-
-    class ProfileSettingsEditor : ObjectEditorNode<ProfileSettings>
-    {
-        public ProfileSettingsEditor(ProfileSettings toEdit)
-            : base(toEdit, false, true, false)
-        {
-        }
-
-        protected override PropertyNode<ProfileSettings> CreatePropertyNode(ProfileSettings obj, PropertyInfo pi)
+        protected override PropertyNode<ApplicationProfileSettings> CreatePropertyNode(ApplicationProfileSettings obj, PropertyInfo pi)
         {
             if (pi.Name == "Voice")
             {
@@ -464,12 +437,24 @@ namespace UI.Nodes
                 return listPropertyNode;
             }
 
+            if (pi.Name == "InverseResolutionScalePercent")
+            {
+                int[] scales = new int[] { 50, 75, 100, 125, 150, 200 };
+                ListPropertyNode<ApplicationProfileSettings> listPropertyNode = new ListPropertyNode<ApplicationProfileSettings>(obj, pi, ButtonBackground, TextColor, ButtonHover, scales);
+                return listPropertyNode;
+            }
+
+            if (pi.Name == "NotificationSerialPort")
+            {
+                return new ComPortPropertyNode<ApplicationProfileSettings>(obj, pi, ButtonBackground, TextColor, ButtonHover);
+            }
+
             return base.CreatePropertyNode(obj, pi);
         }
 
-        private class VoicesPropertyNode : ListPropertyNode<ProfileSettings>
+        private class VoicesPropertyNode : ListPropertyNode<ApplicationProfileSettings>
         {
-            public VoicesPropertyNode(ProfileSettings obj, PropertyInfo pi, Color background, Color textColor, Color hover)
+            public VoicesPropertyNode(ApplicationProfileSettings obj, PropertyInfo pi, Color background, Color textColor, Color hover)
                 : base(obj, pi, background, textColor, hover)
             {
             }
@@ -484,7 +469,6 @@ namespace UI.Nodes
             }
         }
     }
-
 
     class KeyboardShortcutsEditor : ObjectEditorNode<KeyboardShortcuts>
     {
@@ -885,7 +869,7 @@ namespace UI.Nodes
         {
             get
             {
-                return GeneralSettings.Instance.Units;
+                return ApplicationProfileSettings.Instance.Units;
             }
         }
 

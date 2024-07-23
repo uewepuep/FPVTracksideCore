@@ -12,10 +12,83 @@ using static UI.GeneralSettings;
 namespace UI
 {
 
-
-    public class ProfileSettings
+    public class ApplicationProfileSettings
     {
-        public static ProfileSettings Instance { get; protected set; }
+        public static ApplicationProfileSettings Instance { get; protected set; }
+        public static Profile ProfileInstance { get; protected set; }
+
+        public enum OrderTypes
+        {
+            PositionAndPB,
+            Channel
+        }
+
+        [Category("General")]
+        [DisplayName("Show Welcome Screen")]
+        public bool ShowWelcomeScreen { get; set; }
+
+        [Category("General")]
+        public RaceLib.Units Units { get; set; }
+
+        [Category("General")]
+        [DisplayName("'Sponsored By' messages.")]
+        public bool SponsoredByMessages { get; set; }
+
+        [Category("General")]
+        [NeedsRestart]
+        public int ShownDecimalPlaces { get; set; }
+
+
+        [Category("Performance")]
+        [NeedsRestart]
+        public int FrameRateLimit { get; set; }
+
+        [Category("Performance")]
+        [NeedsRestart]
+        [DisplayName("V-Sync")]
+        public bool VSync { get; set; }
+
+        [Category("Performance")]
+        [NeedsRestart]
+        [DisplayName("UI / Font Scale (Percent)")]
+        public float InverseResolutionScalePercent { get; set; }
+
+        [Category("Performance")]
+        [DisplayName("Legacy DirectX 9.0 (Reach) mode")]
+        [NeedsRestart]
+        public bool UseDirectX9 { get; set; }
+
+        [DisplayName("Video recordings to keep")]
+        [Category("Video")]
+        public int VideosToKeep { get; set; }
+        [Category("Data")]
+        [NeedsRestart]
+        public string EventStorageLocation { get; set; }
+
+        [Category("Static Detector")]
+        [NeedsRestart]
+        public bool VideoStaticDetector { get; set; }
+        [Category("Static Detector")]
+        public float CrashThreshold { get; set; }
+        [Category("Static Detector")]
+        public float ReactivateThreshold { get; set; }
+        [Category("Static Detector")]
+        public float StartDelaySeconds { get; set; }
+
+        [Category("Web")]
+        [DisplayName("Auto Sync race results")]
+        public bool AutoSync { get; set; }
+
+        [Category("Web")]
+        [DisplayName("Auto start HTTP Server")]
+        [NeedsRestart]
+        public bool HTTPServer { get; set; }
+
+        [Category("Web")]
+        [NeedsRestart]
+        [DisplayName("HTTP Server race controls enabled")]
+        public bool HTTPServerRaceControl { get; set; }
+
 
         [Category("Layout")]
         [Browsable(false)]
@@ -195,7 +268,7 @@ namespace UI
         [NeedsRestart]
         public int PilotProfileHoldLengthSeconds { get; set; }
 
-        public ProfileSettings()
+        public ApplicationProfileSettings()
         {
             Theme = "Dark";
 
@@ -260,6 +333,27 @@ namespace UI
             PilotProfileHoldLengthSeconds = 0;
             AutoRaceStartVideoCheck = true;
             AutoRaceStartVideoCheckAnnouncementSeconds = 10;
+
+            InverseResolutionScalePercent = 100;
+            AutoSync = true;
+            SponsoredByMessages = true;
+
+            FrameRateLimit = 60;
+            VSync = true;
+
+            VideosToKeep = 50;
+            HTTPServer = false;
+
+            EventStorageLocation = @"events/";
+
+            VideoStaticDetector = true;
+            CrashThreshold = 4;
+            ReactivateThreshold = 20;
+            StartDelaySeconds = 5;
+            ShowWelcomeScreen = true;
+
+            ShownDecimalPlaces = 2;
+            UseDirectX9 = false;
         }
 
         protected const string filename = "ProfileSettings.xml";
@@ -267,22 +361,23 @@ namespace UI
         public static void Initialize(Profile profile)
         {
             Instance = Read(profile);
+            ProfileInstance = profile;
         }
 
-        public static ProfileSettings Read(Profile profile)
+        public static ApplicationProfileSettings Read(Profile profile)
         {
-            ProfileSettings s = null;
+            ApplicationProfileSettings s = null;
             try
             {
-                s = Tools.IOTools.Read<ProfileSettings>(profile, filename).FirstOrDefault();
+                s = Tools.IOTools.Read<ApplicationProfileSettings>(profile, filename).FirstOrDefault();
                 if (s == null)
                 {
-                    s = new ProfileSettings();
+                    s = new ApplicationProfileSettings();
                 }
             }
             catch
             {
-                s = new ProfileSettings();
+                s = new ApplicationProfileSettings();
             }
 
             Write(profile, s);
@@ -290,7 +385,12 @@ namespace UI
             return s;
         }
 
-        public static void Write(Profile profile, ProfileSettings profileSettings)
+        public static void Write()
+        {
+            Write(ProfileInstance, Instance);
+        }
+
+        public static void Write(Profile profile, ApplicationProfileSettings profileSettings)
         {
             Tools.IOTools.Write(profile, filename, profileSettings);
         }

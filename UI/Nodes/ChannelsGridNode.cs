@@ -97,25 +97,25 @@ namespace UI.Nodes
         {
             get
             {
-                if (ProfileSettings.Instance.ChannelGrid1)
+                if (ApplicationProfileSettings.Instance.ChannelGrid1)
                     yield return GridTypes.One;
-                if (ProfileSettings.Instance.ChannelGrid2)
+                if (ApplicationProfileSettings.Instance.ChannelGrid2)
                     yield return GridTypes.Two;
-                if (ProfileSettings.Instance.ChannelGrid3)
+                if (ApplicationProfileSettings.Instance.ChannelGrid3)
                     yield return GridTypes.Three;
-                if (ProfileSettings.Instance.ChannelGrid4)
+                if (ApplicationProfileSettings.Instance.ChannelGrid4)
                     yield return GridTypes.Four;
-                if (ProfileSettings.Instance.ChannelGrid6)
+                if (ApplicationProfileSettings.Instance.ChannelGrid6)
                     yield return GridTypes.Six;
-                if (ProfileSettings.Instance.ChannelGrid8)
+                if (ApplicationProfileSettings.Instance.ChannelGrid8)
                     yield return GridTypes.Eight;
-                if (ProfileSettings.Instance.ChannelGrid10)
+                if (ApplicationProfileSettings.Instance.ChannelGrid10)
                     yield return GridTypes.Ten;
-                if (ProfileSettings.Instance.ChannelGrid12)
+                if (ApplicationProfileSettings.Instance.ChannelGrid12)
                     yield return GridTypes.Twelve;
-                if (ProfileSettings.Instance.ChannelGrid12)
+                if (ApplicationProfileSettings.Instance.ChannelGrid12)
                     yield return GridTypes.Fifteen;
-                if (ProfileSettings.Instance.ChannelGrid16)
+                if (ApplicationProfileSettings.Instance.ChannelGrid16)
                     yield return GridTypes.Sixteen;
 
                 yield return GridTypes.SingleRow;
@@ -148,7 +148,7 @@ namespace UI.Nodes
             withOutLaps = new Size(400, 300);
             SingleSize = withLaps;
 
-            Alignment = ProfileSettings.Instance.AlignChannels;
+            Alignment = ApplicationProfileSettings.Instance.AlignChannels;
 
             RequestLayout();
 
@@ -319,11 +319,11 @@ namespace UI.Nodes
                 reOrderType = ReOrderTypes.ChannelOrder;
             }
 
-            if (ProfileSettings.Instance.ReOrderDelaySeconds != 0f && !ForceReOrder)
+            if (ApplicationProfileSettings.Instance.ReOrderDelaySeconds != 0f && !ForceReOrder)
             {
                 if (reOrderRequest == DateTime.MaxValue)
                 {
-                    reOrderRequest = DateTime.Now.AddSeconds(ProfileSettings.Instance.ReOrderDelaySeconds);
+                    reOrderRequest = DateTime.Now.AddSeconds(ApplicationProfileSettings.Instance.ReOrderDelaySeconds);
                     reOrderType = ReOrderTypes.None;
                 }
                 else if (reOrderRequest < DateTime.Now)

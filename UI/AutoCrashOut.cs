@@ -25,11 +25,11 @@ namespace UI
 
         private bool needsClear;
 
-        public TimeSpan RaceStartDelay { get { return TimeSpan.FromSeconds(GeneralSettings.Instance.StartDelaySeconds); } }
+        public TimeSpan RaceStartDelay { get { return TimeSpan.FromSeconds(ApplicationProfileSettings.Instance.StartDelaySeconds); } }
 
         private DateTime waitTill;
 
-        public bool Enabled { get { return GeneralSettings.Instance.VideoStaticDetector; } }
+        public bool Enabled { get { return ApplicationProfileSettings.Instance.VideoStaticDetector; } }
 
         public AutoCrashOut(EventManager eventManager, ChannelsGridNode channelsGridNode)
         {

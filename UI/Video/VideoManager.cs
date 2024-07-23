@@ -622,7 +622,7 @@ namespace UI.Video
         {
             try
             {
-                int maxCount = GeneralSettings.Instance.VideosToKeep;
+                int maxCount = ApplicationProfileSettings.Instance.VideosToKeep;
                 EventDirectory.Refresh();
 
                 FileInfo[] files = EventDirectory.GetFiles("*.wmv");

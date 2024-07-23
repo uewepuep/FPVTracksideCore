@@ -192,6 +192,11 @@ namespace UI.Nodes
 
             root.AddBlank();
 
+            root.AddItem("Application Settings", () =>
+            {
+                ShowSettingsEditor();
+            });
+
             root.AddItem("Auto Runner Settings", () =>
             {
                 ShowAutoRunnerSettings();
@@ -215,11 +220,6 @@ namespace UI.Nodes
                 });
             }
 
-            root.AddItem("General Settings", () =>
-            {
-                ShowGeneralSettings();
-            });
-
             root.AddItem("Keyboard Shortcuts", () =>
             {
                 ShowKeyboardShortcuts();
@@ -229,11 +229,6 @@ namespace UI.Nodes
             root.AddItem("OBS Remote Control Settings", () =>
             {
                 ShowOBSRemoteControlSettings();
-            });
-
-            root.AddItem("Profile Settings", () =>
-            {
-                ShowProfileSettingsEditor();
             });
 
             root.AddItem("Points Settings", () =>
@@ -502,7 +497,7 @@ namespace UI.Nodes
         {
             if (soundManager == null)
             {
-                ProfileSettings profileSettings = ProfileSettings.Read(Profile);
+                ApplicationProfileSettings profileSettings = ApplicationProfileSettings.Read(Profile);
 
                 soundManager = new SoundManager(null, Profile);
                 soundManager.SetupSpeaker(PlatformTools, profileSettings.Voice, profileSettings.TextToSpeechVolume);
@@ -555,39 +550,22 @@ namespace UI.Nodes
             GetLayer<PopupLayer>().Popup(editor);
         }
 
-        public void ShowGeneralSettings()
+        public void ShowSettingsEditor()
         {
-            GeneralSettingsEditor editor = new GeneralSettingsEditor(GeneralSettings.Instance);
+            ApplicationProfileSettings profileSettings = ApplicationProfileSettings.Read(Profile);
+
+            SettingsEditor editor = new SettingsEditor(profileSettings);
             GetLayer<PopupLayer>().Popup(editor);
 
             editor.OnOK += (e) =>
             {
-                GeneralSettings.Write();
+                ApplicationProfileSettings.Write(Profile, profileSettings);
                 if (hasEvent && Restart != null && editor.NeedsRestart)
                 {
                     GetLayer<PopupLayer>().PopupConfirmation("Changes require restart to take effect. Restart now?", () => { Restart(evennt); });
                 }
 
-                GeneralSettingsSaved?.Invoke();
-            };
-        }
-
-        public void ShowProfileSettingsEditor()
-        {
-            ProfileSettings profileSettings = ProfileSettings.Read(Profile);
-
-            ProfileSettingsEditor editor = new ProfileSettingsEditor(profileSettings);
-            GetLayer<PopupLayer>().Popup(editor);
-
-            editor.OnOK += (e) =>
-            {
-                ProfileSettings.Write(Profile, profileSettings);
-                if (hasEvent && Restart != null && editor.NeedsRestart)
-                {
-                    GetLayer<PopupLayer>().PopupConfirmation("Changes require restart to take effect. Restart now?", () => { Restart(evennt); });
-                }
-
-                ProfileSettings.Initialize(Profile);
+                ApplicationProfileSettings.Initialize(Profile);
 
                 ProfileSettingsSaved?.Invoke();
             };
@@ -642,9 +620,9 @@ namespace UI.Nodes
         {
             if (eventWebServer != null)
             {
-                if (GeneralSettings.Instance.HTTPServer == false)
+                if (ApplicationProfileSettings.Instance.HTTPServer == false)
                 {
-                    GeneralSettings.Instance.HTTPServer = true;
+                    ApplicationProfileSettings.Instance.HTTPServer = true;
                 }
 
                 if (!eventWebServer.Running)
@@ -663,7 +641,7 @@ namespace UI.Nodes
 
         public void ExportRacesCSV()
         {
-            PlatformTools.ExportCSV("Save Race Results CSV", eventManager.RaceManager.GetRaceResultsText(GeneralSettings.Instance.Units, ","), GetLayer<PopupLayer>());
+            PlatformTools.ExportCSV("Save Race Results CSV", eventManager.RaceManager.GetRaceResultsText(ApplicationProfileSettings.Instance.Units, ","), GetLayer<PopupLayer>());
         }
 
         public void ExportLapsCSV()

@@ -60,11 +60,11 @@ namespace UI.Nodes
 
         public TimeSpan AfterRaceStart { get; private set; }
 
-        public bool PreRaceScene { get { return ProfileSettings.Instance.PreRaceScene; } }
-        public bool PostRaceScene { get { return ProfileSettings.Instance.PostRaceScene; } }
+        public bool PreRaceScene { get { return ApplicationProfileSettings.Instance.PreRaceScene; } }
+        public bool PostRaceScene { get { return ApplicationProfileSettings.Instance.PostRaceScene; } }
 
         public TimeSpan SetupAnimationTime { get { return TimeSpan.FromSeconds(0.5f); } }
-        public TimeSpan MidRaceAnimationTime { get { return TimeSpan.FromSeconds(ProfileSettings.Instance.ReOrderAnimationSeconds); } }
+        public TimeSpan MidRaceAnimationTime { get { return TimeSpan.FromSeconds(ApplicationProfileSettings.Instance.ReOrderAnimationSeconds); } }
 
         private AutoRunnerTimerNode autoRunnerTimerNode;
 
@@ -308,7 +308,7 @@ namespace UI.Nodes
             switch (scene)
             {
                 case Scenes.PreRace:
-                    if (ProfileSettings.Instance.PilotOrderPreRace == GeneralSettings.OrderTypes.PositionAndPB)
+                    if (ApplicationProfileSettings.Instance.PilotOrderPreRace == ApplicationProfileSettings.OrderTypes.PositionAndPB)
                     {
                         ChannelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.PositionOrder);
                     }
@@ -318,7 +318,7 @@ namespace UI.Nodes
                     }
                     break;
                 case Scenes.Race:
-                    if (ProfileSettings.Instance.PilotOrderMidRace == GeneralSettings.OrderTypes.PositionAndPB)
+                    if (ApplicationProfileSettings.Instance.PilotOrderMidRace == ApplicationProfileSettings.OrderTypes.PositionAndPB)
                     {
                         ChannelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.PositionOrder);
                     }
@@ -328,7 +328,7 @@ namespace UI.Nodes
                     }
                     break;
                 case Scenes.RaceResults:
-                    if (ProfileSettings.Instance.PilotOrderPostRace == GeneralSettings.OrderTypes.PositionAndPB)
+                    if (ApplicationProfileSettings.Instance.PilotOrderPostRace == ApplicationProfileSettings.OrderTypes.PositionAndPB)
                     {
                         ChannelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.PositionOrder);
                     }

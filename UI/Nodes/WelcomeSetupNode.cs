@@ -156,8 +156,8 @@ namespace UI.Nodes
 
         private void Checkbox_ValueChanged(bool obj)
         {
-            GeneralSettings.Instance.ShowWelcomeScreen2 = !obj;
-            GeneralSettings.Write();
+            ApplicationProfileSettings.Instance.ShowWelcomeScreen = !obj;
+            ApplicationProfileSettings.Write();
         }
 
         private void ThemeSettings_OnClick(Composition.Input.MouseInputEvent mie)

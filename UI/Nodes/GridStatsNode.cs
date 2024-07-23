@@ -28,7 +28,7 @@ namespace UI.Nodes
             renderTargetNode.CanScroll = false;
             AddChild(renderTargetNode);
 
-            if (ProfileSettings.Instance.GridShowPBs)
+            if (ApplicationProfileSettings.Instance.GridShowPBs)
             {
                 ColorNode background = new ColorNode(Theme.Current.PanelAlt.XNA);
                 renderTargetNode.AddChild(background);
@@ -46,7 +46,7 @@ namespace UI.Nodes
 
         public override void Dispose()
         {
-            if (ProfileSettings.Instance.GridShowPBs)
+            if (ApplicationProfileSettings.Instance.GridShowPBs)
             {
                 EventManager.RaceManager.OnPilotAdded -= RaceManager_OnPilotAdded;
             }
