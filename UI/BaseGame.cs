@@ -359,15 +359,18 @@ namespace UI
 
             loadingLayer.WorkQueue.Enqueue(startEventWorkSet, "Setting Scene", () =>
             {
-                eventLayer.FinalSetup();
-
-                while (eventLayer.Root.Alpha < 1)
+                if (eventLayer != null)
                 {
-                    Thread.Sleep(10);
-                    eventLayer.Root.Alpha += 0.05f;
-                }
+                    eventLayer.FinalSetup();
 
-                eventLayer.Root.Alpha = 1;
+                    while (eventLayer.Root.Alpha < 1)
+                    {
+                        Thread.Sleep(10);
+                        eventLayer.Root.Alpha += 0.05f;
+                    }
+
+                    eventLayer.Root.Alpha = 1;
+                }
             });
         }
 

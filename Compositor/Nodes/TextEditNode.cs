@@ -167,6 +167,7 @@ namespace Composition.Nodes
                     if (inputEvent.Key == Keys.V)
                     {
                         input = PlatformTools.Clipboard.GetText();
+                        cursorIndex = input.Length;
                     }
                 }
                 else if (c != 0)

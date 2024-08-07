@@ -32,9 +32,9 @@ namespace ExternalData
         void SyncUpResults(WorkSet workSet, WorkQueue queue, EventManager eventManager);
         void SyncUpResults(WorkSet workSet, WorkQueue queue, IEnumerable<Guid> eventIDs, Action callBack);
 
-        LoginType Login(string username, string password);
+        LoginType Login(string authkey);
         void CreateAccount();
-        void ForgotPassword();
+        void GetAuth();
     }
 
     public interface ITrackProvider

@@ -104,15 +104,13 @@ namespace Composition
 
     public class LoginDetails
     {
-        public string FPVTracksideUsername { get; set; }
-        public string FPVTracksidePassword { get; set; }
+        public string AuthKey { get; set; }
 
         public string MultiGPKey { get; set; }
 
         public LoginDetails()
         {
-            FPVTracksideUsername = "";
-            FPVTracksidePassword = "";
+            AuthKey = "";
             MultiGPKey = "";
         }
     }
