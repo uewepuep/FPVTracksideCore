@@ -96,7 +96,7 @@ namespace ExternalData
         private void RaceManager_OnChannelCrashedOut(Channel channel, Pilot pilot)
         {
             Color color = eventManager.GetChannelColor(channel);
-            PilotCrashedOut pilotState = new PilotCrashedOut(pilot, channel, color);
+            PilotCrashedOut pilotState = new PilotCrashedOut(pilot, channel, color, URL);
             PutObject(pilotState);
         }
 
@@ -296,8 +296,9 @@ namespace ExternalData
 
         public bool CrashedOut { get; set; }
 
-        public PilotCrashedOut(Pilot p, Channel c, Color color)
+        public PilotCrashedOut(Pilot p, Channel c, Color color, string url)
         {
+            URL = url;
             CrashedOut = true;
             Name = p.Name;
             Phonetic = p.Phonetic;

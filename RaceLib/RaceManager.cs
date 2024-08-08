@@ -2062,7 +2062,7 @@ namespace RaceLib
 
         public void CrashedOut(Pilot pilot, Channel channel)
         {
-            if (EventManager.RaceManager.RaceRunning)
+            if (EventManager.RaceManager.RaceRunning && pilot != null && channel != null)
             {
                 OnChannelCrashedOut?.Invoke(channel, pilot);
             }
