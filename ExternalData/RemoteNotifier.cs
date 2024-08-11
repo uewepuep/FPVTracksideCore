@@ -93,10 +93,11 @@ namespace ExternalData
             workQueue = null;
         }
 
-        private void RaceManager_OnChannelCrashedOut(Channel channel, Pilot pilot)
+        private void RaceManager_OnChannelCrashedOut(Channel channel, Pilot pilot, bool manual)
         {
             Color color = eventManager.GetChannelColor(channel);
             PilotCrashedOut pilotState = new PilotCrashedOut(pilot, channel, color, URL);
+            pilotState.ManuallySet = manual;
             PutObject(pilotState);
         }
 
@@ -295,6 +296,7 @@ namespace ExternalData
         public int Frequency { get; set; }
 
         public bool CrashedOut { get; set; }
+        public bool ManuallySet { get; set; }
 
         public PilotCrashedOut(Pilot p, Channel c, Color color, string url)
         {

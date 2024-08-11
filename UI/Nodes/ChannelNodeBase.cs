@@ -227,7 +227,7 @@ namespace UI.Nodes
                 case CrashOutType.Manual:
                 case CrashOutType.Auto:
 
-                    EventManager.RaceManager.CrashedOut(Pilot, Channel);
+                    EventManager.RaceManager.CrashedOut(Pilot, Channel, type == CrashOutType.Manual);
                     break;
             }
         }
@@ -382,7 +382,7 @@ namespace UI.Nodes
             else
             {
                 OnCrashedOutClick.Invoke();
-                CrashedOutType = CrashOutType.Manual;
+                SetCrashedOutType(CrashOutType.Manual);
             }
         }
 
