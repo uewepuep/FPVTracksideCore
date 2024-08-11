@@ -10,7 +10,7 @@ using Tools;
 
 namespace Composition.Nodes
 {
-    public class ListNode<T> : Node where T : Node
+    public class ListNode<T> : Node, IScrollableNode where T : Node
     {
         public enum ListStyles
         {
@@ -40,6 +40,14 @@ namespace Composition.Nodes
         public bool ShrinkContentsForScrollers { get; set; }
 
         public ScrollerNode Scroller { get; private set; }
+
+        public Point ScrollOffset
+        {
+            get
+            {
+                return Point.Zero;
+            }
+        }
 
         private Size size;
         public Size Size

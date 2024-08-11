@@ -11,6 +11,13 @@ using Tools;
 
 namespace Composition.Nodes
 {
+    public interface IScrollableNode
+    {
+        public ScrollerNode Scroller { get; }
+        public Point ScrollOffset { get; }
+    }
+
+
     public class ScrollerNode : ColorNode
     {
         public enum Types

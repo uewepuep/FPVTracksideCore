@@ -11,7 +11,7 @@ using Tools;
 
 namespace Composition.Nodes
 {
-    public class RenderTargetNode : ImageNode, IUpdateableNode, IPreProcessable
+    public class RenderTargetNode : ImageNode, IUpdateableNode, IPreProcessable, IScrollableNode
     {
         protected RenderTarget2D renderTarget
         {
@@ -49,7 +49,13 @@ namespace Composition.Nodes
         private Rectangle lastLayoutBounds;
 
         public ScrollerNode Scroller { get; private set; }
-
+        public Point ScrollOffset
+        {
+            get
+            {
+                return new Point((int)BoundsF.X, (int)BoundsF.Y);
+            }
+        }
         public bool CanScroll
         {
             get

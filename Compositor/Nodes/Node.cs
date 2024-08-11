@@ -785,19 +785,19 @@ namespace Composition.Nodes
         public Point GetScreenPosition()
         {
             Point position = Point.Zero;
-            foreach (RenderTargetNode renderTargetNode in ParentChain.OfType<RenderTargetNode>())
+            foreach (IScrollableNode iscroller in ParentChain.OfType<IScrollableNode>())
             {
-                position += renderTargetNode.Bounds.Location;
+                position += iscroller.ScrollOffset;
 
-                switch (renderTargetNode.Scroller.ScrollType)
+                switch (iscroller.Scroller.ScrollType)
                 {
                     case ScrollerNode.Types.Horizontal:
-                        position.X -= (int)renderTargetNode.Scroller.CurrentScrollPixels;
+                        position.X -= (int)iscroller.Scroller.CurrentScrollPixels;
                         break;
 
                     case ScrollerNode.Types.VerticalLeft:
                     case ScrollerNode.Types.VerticalRight:
-                        position.Y -= (int)renderTargetNode.Scroller.CurrentScrollPixels;
+                        position.Y -= (int)iscroller.Scroller.CurrentScrollPixels;
                         break;
                 }
             }
