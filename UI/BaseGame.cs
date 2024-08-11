@@ -323,13 +323,7 @@ namespace UI
             startEventWorkSet.OnError += ErrorLoadingEvent;
             EventManager eventManager = new EventManager(profile);
 
-            Theme.Initialise(PlatformTools.WorkingDirectory, "Dark");
-
             BackgroundLayer backgroundLayer = LayerStack.GetLayer<BackgroundLayer>();
-            if (backgroundLayer != null)
-            {
-                backgroundLayer.SetBackground(Theme.Current.Background);
-            }
 
             eventManager.LoadEvent(startEventWorkSet, loadingLayer.WorkQueue, selected);
             
@@ -337,7 +331,18 @@ namespace UI
             eventManager.LoadRaces(startEventWorkSet, loadingLayer.WorkQueue, selected);
 
             OnStartEvent(eventManager, selected);
-            
+
+            loadingLayer.WorkQueue.Enqueue(startEventWorkSet, "Reloading Settings", () =>
+            {
+                // Re-init the following settings so settings windows can reload event to reload settings.
+                ApplicationProfileSettings.Initialize(Profile);
+                Theme.Initialise(PlatformTools.WorkingDirectory, "Dark");
+
+                if (backgroundLayer != null)
+                {
+                    backgroundLayer.SetBackground(Theme.Current.Background);
+                }
+            });
 
             loadingLayer.WorkQueue.Enqueue(startEventWorkSet, "Initializing UI", () =>
             {

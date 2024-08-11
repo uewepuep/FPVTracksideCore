@@ -88,7 +88,9 @@ namespace UI
         public EventLayer(BaseGame game, GraphicsDevice graphicsDevice, EventManager eventManager, PlatformTools platformTools)
             : base(graphicsDevice)
         {
+
             DirectoryInfo eventDirectory = new DirectoryInfo(Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocation, eventManager.Event.ID.ToString()));
+
 
             workQueueStartRace = new WorkQueue("Event Layer - Start Race");
 

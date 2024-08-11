@@ -70,7 +70,7 @@ namespace UI
 
         public TrackTheme TrackTheme { get; set; }
 
-        public static Theme Current { get; set; }
+        public static Theme Current { get; private set; }
 
         public Theme()
         {
