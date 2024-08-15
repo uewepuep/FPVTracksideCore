@@ -451,6 +451,11 @@ namespace UI.Nodes
         {
             pilotProfileOptions = options;
 
+            if (ApplicationProfileSettings.Instance.AlwaysSmallPilotProfile && options == PilotProfileOptions.Large)
+            {
+                options = PilotProfileOptions.Small;
+            }
+
             // Don't do the small option if we're not a video node.
             if (this is not ChannelVideoNode)
             {
@@ -461,6 +466,7 @@ namespace UI.Nodes
             {
                 options = PilotProfileOptions.None;
             }
+
 
             switch (options)
             {

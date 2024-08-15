@@ -118,6 +118,13 @@ namespace UI
         [Category("Layout")]
         public bool PostRaceScene { get; set; }
 
+        [Category("Layout")]
+        public bool AlwaysShowPosition { get; set; }
+
+        [Category("Layout")]
+        public bool AlwaysSmallPilotProfile { get; set; }
+
+
         [Category("Dynamic pilot ordering")]
         public OrderTypes PilotOrderPreRace { get; set; }
         [Category("Dynamic pilot ordering")]
@@ -129,8 +136,6 @@ namespace UI
         [Category("Dynamic pilot ordering")]
         public float ReOrderAnimationSeconds { get; set; }
 
-        [Category("Dynamic pilot ordering")]
-        public bool AlwaysShowPosition { get; set; }
 
         [Category("Dynamic pilot ordering")]
         public bool ReOrderAtHoleshot { get; set; }
