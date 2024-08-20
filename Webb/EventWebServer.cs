@@ -207,7 +207,21 @@ namespace Webb
                 requestPath = new string[] { "httpfiles", "index.html" };
             }
 
+
             FileInfo file = new FileInfo(string.Join('\\', requestPath));
+
+#if DEBUG
+            string[] basehttpFilesDir = new string[] { "..", "..", "..", "..", "..", "..", "..","FPVTracksideCore","Webb" };
+
+            string combined = Path.Combine(string.Join('\\', basehttpFilesDir), string.Join('\\', requestPath));
+
+            FileInfo debugAdjustedFile = new FileInfo(combined);
+            if (debugAdjustedFile.Exists)
+            {
+                file = debugAdjustedFile;
+            }
+#endif
+
             if (!file.Exists)
             {
                 requestPath = new string[] { "httpfiles", "index.html" };
@@ -305,7 +319,6 @@ namespace Webb
 
             if (autoScroll)
                 output += "<script src=\"/httpfiles/scroll.js\"></script>";
-            output += "<script src=\"/httpfiles/linq.js\"></script>";
             output += "<script src=\"/httpfiles/EventManager.js\"></script>";
             output += "<script src=\"/httpfiles/Formatter.js\"></script>";
 
