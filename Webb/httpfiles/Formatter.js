@@ -138,7 +138,7 @@ class Formatter
         for (const pilotChannel of pilotChannels)
         {
             output += "<tr>";
-            output += "<td class=\"race_pilot\"><a href=\"#\" onclick=\"formatter.ShowPilot('" + pilotChannel.Pilot.ID + "')\">" + pilotChannel.Pilot.Name + "</a></td>";
+            output += "<td class=\"race_pilot\">" + this.ToPilotNameLink(pilotChannel.Pilot) +"</td>";
             output += "<td class=\"race_channel\">" + this.ChannelToString(pilotChannel.Channel) + "</td>";
             output += "<td class=\"race_channel_color\" style=\"background-color: " + pilotChannel.Channel.Color + "\"></td>";
             output += "<td class=\"race_result\">" + this.ResultToString(pilotChannel.Result) + "</td>";
@@ -194,7 +194,7 @@ class Formatter
             output += "<div class=\"row\" >";
 
             output += "<div class=\"position\">" + this.ToStringPosition(pilotSummary.Position) + "</div>";
-            output += "<div class=\"pilots\">" + pilotSummary.Name + "</div>";
+            output += "<div class=\"pilots\">" + this.ToPilotNameLink(pilotSummary) + "</div>";
             output += "<div class=\"channel\">" + pilotSummary.Channel + "</div>";
             output += "<div class=\"channel_color\" style=\"background-color: " + pilotSummary.ChannelColor + "\"></div>";
 
@@ -350,7 +350,7 @@ class Formatter
         {
             output += "<div class=\"row\">";
             output += "<div class=\"position\">" + this.ToStringPosition(i) + "</div>";
-            output += "<div class=\"pilots\">" + pilotRecord.pilot.Name + "</div>";
+            output += "<div class=\"pilots\">" + this.ToPilotNameLink(pilotRecord.pilot) + "</div>";
             if (showHoleShot) output += "<div class=\"holeshot\">" + this.LapsToTime(pilotRecord.holeshot) + "</div>";
             if (showPB) output += "<div class=\"lap\">" + this.LapsToTime(pilotRecord.lap) + "</div>";
             output += "<div class=\"laps\">" + this.LapsToTime(pilotRecord.laps) + "</div>";
@@ -547,7 +547,7 @@ class Formatter
 
             if (pilot != null && channel != null)
             {
-                output += "<li>" + pilot.Name + "</li>";
+                output += "<li>" + this.ToPilotNameLink(pilot) + "</li>";
 
                 pilots[pilot.ID] = pilot;
                 colors[pilot.ID] = channel.Color;
@@ -649,7 +649,7 @@ class Formatter
 
                 //$behind = FormatTime($lap->GetEnd() - $last_lap->GetEnd());
                 output += "<tr>";
-                output += "<td class=\"cell_text\">" + pilot.Name +  "</td>";
+                output += "<td class=\"cell_text\">" + this.ToPilotNameLink(pilot) +  "</td>";
                 output += "<td class=\"cell_numeric\">" + this.ToStringTime(length) +  "</td>";
                 output += "<td class=\"cell_numeric\">" + this.ToStringTime(behind) +  "</td>";
                 output += "<td class=\"cell_numeric\">" + this.ToStringPosition(position) +  "</td>";
@@ -815,8 +815,6 @@ class Formatter
             graph.AddYLabel(i, i);
         }
 
-        
-
         const canvas = document.getElementById("posgraph");
         graph.SetView(0, bestLap, totalLapCount, worstLap - bestLap);
         graph.MakeGraph(canvas);
@@ -886,7 +884,7 @@ class Formatter
         for (const pilotRecord of pilotRecords)
         {
             output += "<div class=\"row\">";
-            output += "<div class=\"pilots\">" + pilotRecord.pilot.Name + "</div>";
+            output += "<div class=\"pilots\">" + this.ToPilotNameLink(pilotRecord.pilot) + "</div>";
 
             if (hasBrackets)
             {
@@ -975,6 +973,11 @@ class Formatter
         return position + post;
     }
 
+    ToPilotNameLink(pilot)
+    {
+        return "<a href=\"#\" onclick=\"formatter.ShowPilot('" + pilot.ID + "')\">" + pilot.Name + "</a>";
+    }
+
     async GetPrevCurrentNextRaceSummaries()
     {
         let prevcurrentnext = await this.eventManager.GetPrevCurrentNextRace();
@@ -1027,7 +1030,7 @@ class Formatter
 
             let pilotSummary = 
             {
-                PilotID : pilotId,
+                ID : pilotId,
                 Name : pilot.Name,
                 Position : 0,
                 Points : 0,
@@ -1089,7 +1092,7 @@ class Formatter
             for(const index in summary.PilotSummaries)
             {
                 const pilotSummary = summary.PilotSummaries[index];
-                pilotSummary.Position = 1 + positions.indexOf(pilotSummary.PilotID);
+                pilotSummary.Position = 1 + positions.indexOf(pilotSummary.ID);
             }
         }
 
