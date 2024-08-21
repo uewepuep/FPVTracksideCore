@@ -188,7 +188,7 @@ class EventManager
         return null;
     }
 
-    async GetLapRecords(pbLabs, lapCount)
+    async GetLapRecords(pbLabs, lapCount, wherePilot = null)
     {
         let records = [];
 
@@ -204,6 +204,12 @@ class EventManager
         for (const pilotIndex in pilots)
         {
             const pilot = pilots[pilotIndex];
+
+            if (wherePilot != null)
+            {
+                if (wherePilot(pilot) == false)
+                    continue;
+            }
 
             const pilotRecord =
             {

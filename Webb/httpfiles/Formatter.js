@@ -138,7 +138,7 @@ class Formatter
         for (const pilotChannel of pilotChannels)
         {
             output += "<tr>";
-            output += "<td class=\"race_pilot\">" + pilotChannel.Pilot.Name + "</td>";
+            output += "<td class=\"race_pilot\"><a href=\"#\" onclick=\"formatter.ShowPilot('" + pilotChannel.Pilot.ID + "')\">" + pilotChannel.Pilot.Name + "</a></td>";
             output += "<td class=\"race_channel\">" + this.ChannelToString(pilotChannel.Channel) + "</td>";
             output += "<td class=\"race_channel_color\" style=\"background-color: " + pilotChannel.Channel.Color + "\"></td>";
             output += "<td class=\"race_result\">" + this.ResultToString(pilotChannel.Result) + "</td>";
@@ -708,6 +708,122 @@ class Formatter
         this.lastAction = () => { this.ShowRace(raceid); }
     }
 
+    async ShowPilot(pilotId)
+    {            
+        const eventDetails = await this.eventManager.GetEvent();
+
+        const lapCount = eventDetails.Laps;
+        const pbLaps = eventDetails.PBLaps;
+        const color = eventDetails.ChannelColors[0];
+
+        let pilotRecords = await this.eventManager.GetLapRecords(pbLaps, lapCount, (p) => { return p.ID == pilotId; });
+
+        // There will only be one.
+        let pilotRecord = pilotRecords[0];
+
+        var pilot = await eventManager.GetPilot(pilotId);
+
+        let graph = new Graph(this.document, "posgraph");
+
+        let output = "<h2>" + pilot.Name + "</h2>";
+       
+        let lapsOutput = "<div class=\"pilot_laps\">";
+
+        let rounds = await eventManager.GetRounds();
+
+        let totalLapCount = 0;
+        let totalRaceCount = 0;
+
+        let worstLap = 0;
+        let bestLap = 200;
+
+        for (const round of rounds)
+        {
+            if (round.Valid)
+            {
+                graph.AddXLabel("R" + round.RoundNumber, totalLapCount);
+
+                let races = await this.eventManager.GetRoundRaces(round.ID);
+                for (const race of races)
+                {
+                    if (race.Valid && eventManager.RaceHasPilot(race, pilotId))
+                    {
+                        lapsOutput += "<div class=\"pilot_lap\">";
+                        lapsOutput += "<h3>Round "  + round.RoundNumber + "</h3>";
+                        lapsOutput += '<table class=\"race_table\">';
+
+                        let laps = eventManager.GetValidLapsPilot(race, pilotId);
+                        for (const lap of laps)
+                        {
+                            const length = lap.LengthSeconds;
+                            lapsOutput += "<tr>";
+                            lapsOutput += "<td class=\"cell_text\">" + this.ToLapNumber(lap.LapNumber) +  "</td>";
+                            lapsOutput += "<td class=\"cell_numeric\">" + this.ToStringTime(length) +  "</td>";
+                            lapsOutput += "</tr>";
+
+                            if (lap.LapNumber != 0)
+                            {
+                                totalLapCount++;
+
+                                const path = graph.GetPath(pilot.Name, color);
+                                path.AddPoint(totalLapCount, length);
+
+
+                                if (worstLap < length)
+                                {
+                                    worstLap = length;
+                                }
+
+                                if (bestLap > length)
+                                {
+                                    bestLap = length;
+                                }
+                            }
+                        }
+                        lapsOutput += "</table>";
+                        lapsOutput += "</div>";
+                        totalRaceCount++;
+                    }
+                }
+            }
+        }
+        
+        lapsOutput += "</div>";
+
+        output += "<div class=\"details\">";
+        output += "<h3>Personal Records<h3>";
+        output += '<table class=\"race_table\">';
+
+        output += "<tr><td class=\"cell_text\">Holeshot</td><td class=\"cell_numeric\">" + this.LapsToTime(pilotRecord.holeshot) + "</td></tr>";
+        output += "<tr><td class=\"cell_text\">" + pbLaps + " Lap(s)</td><td class=\"cell_numeric\">" + this.LapsToTime(pilotRecord.lap) + "</td></tr>";
+        output += "<tr><td class=\"cell_text\">" + lapCount + " Lap(s)</td><td class=\"cell_numeric\">" + this.LapsToTime(pilotRecord.laps) + "</td></tr>";
+        output += "<tr><td class=\"cell_text\">Race time</td><td class=\"cell_numeric\">" + this.LapsToTime(pilotRecord.race) + "</td></tr>";
+        output += "<tr><td class=\"cell_text\">Lap Count </td><td class=\"cell_numeric\">" + totalLapCount + "</td></tr>";
+        output += "<tr><td class=\"cell_text\">Race Count </td><td class=\"cell_numeric\">" + totalRaceCount + "</td></tr>";
+        output += "</table>";
+
+        output += "<div class=\"graph\">";
+        output += "<h2>Lap times</h2><br>";
+        output += "<canvas class=\"graph\" id=\"posgraph\" width=\"800\" height=\"600\"> </canvas>";
+        output += "</div>";
+        
+        this.SetContent(output);
+        this.AppendContent(lapsOutput);
+
+        for (let i = Math.floor(bestLap); i < Math.ceil(worstLap); i++)
+        {
+            graph.AddYLabel(i, i);
+        }
+
+        
+
+        const canvas = document.getElementById("posgraph");
+        graph.SetView(0, bestLap, totalLapCount, worstLap - bestLap);
+        graph.MakeGraph(canvas);
+
+        this.lastAction = () => { this.ShowPilot(pilotId); }
+    }
+
     FormatRoundsTable(rounds, pilotRecords)
     {
         let output = "<div class=\"columns\">";
@@ -827,6 +943,13 @@ class Formatter
     {
         const value = Math.round(time * 100) / 100
         return value.toFixed(2);
+    }
+
+    ToLapNumber(number)
+    {
+        if (number == 0)
+            return "Holeshot";
+        return "Lap " + number;
     }
 
     ToStringPosition(position)

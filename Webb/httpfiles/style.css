@@ -24,7 +24,7 @@ body
 
 a:link, a:visited, a:hover, a:active 
 {
-    color: #ED1B24;
+    color: white;
 }
 
 table 
@@ -302,7 +302,7 @@ h2
 }
 
 
-.race_lap
+.race_lap, .pilot_lap
 {
     padding:20px;
     padding-top: 5px;
@@ -314,7 +314,12 @@ h2
     display:inline-block;
 }
 
-.race_laps
+.pilot_lap
+{
+    width: 100px;
+}
+
+.race_laps, .pilot_laps
 {
 }
 
