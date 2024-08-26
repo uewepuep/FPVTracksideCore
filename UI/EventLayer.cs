@@ -480,6 +480,7 @@ namespace UI
             OBSRemoteControlManager?.Dispose();
 
             eventWebServer?.Dispose();
+            GlobalInterceptKeys.Reset();
 
             base.Dispose();
         }
@@ -727,30 +728,24 @@ namespace UI
 
         private void GlobalInterceptKeys_OnChange()
         {
-            KeyboardState keyboardState = GlobalInterceptKeys.GetKeyboardState();
-
-            if (KeyMapper.GlobalStartStopRace != null && KeyMapper.GlobalStartStopRace.Match(keyboardState))
+            if (GlobalInterceptKeys.Match(KeyMapper.GlobalStartStopRace))
             {
                 StartStopNext();
-                GlobalInterceptKeys.Clear();
             }
 
-            if (KeyMapper.GlobalNextRace != null && KeyMapper.GlobalNextRace.Match(keyboardState))
+            if (GlobalInterceptKeys.Match(KeyMapper.GlobalNextRace))
             {
                 NextRace(false);
-                GlobalInterceptKeys.Clear();
             }
 
-            if (KeyMapper.GlobalPrevRace != null && KeyMapper.GlobalPrevRace.Match(keyboardState))
+            if (GlobalInterceptKeys.Match(KeyMapper.GlobalPrevRace))
             {
                 EventManager.RaceManager.PrevRace();
-                GlobalInterceptKeys.Clear();
             }
 
-            if (KeyMapper.GlobalCopyResults != null && KeyMapper.GlobalCopyResults.Match(keyboardState))
+            if (GlobalInterceptKeys.Match(KeyMapper.GlobalCopyResults))
             {
                 PlatformTools.Clipboard.SetText(EventManager.GetResultsText(ApplicationProfileSettings.Instance.Units));
-                GlobalInterceptKeys.Clear();
             }
         }
 

@@ -133,6 +133,8 @@ namespace Sound
 
         public void Dispose()
         {
+            StopSound();
+
             backgroundQueue?.Dispose();
             backgroundQueue = null;
 

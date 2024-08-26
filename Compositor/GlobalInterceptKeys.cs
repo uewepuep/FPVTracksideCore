@@ -98,9 +98,27 @@ namespace Composition
             listeningTo.Remove(key);
         }
 
-        public void ClearListen()
+        public void Reset()
         {
+            keysDown.Clear();
             listeningTo.Clear();
+            OnKeyPress = null;
+        }
+
+        public bool Match(ShortcutKey key)
+        {
+            if (key == null)
+            {
+                return false;
+            }
+
+            KeyboardState state = GetKeyboardState();
+            if (key.Match(state))
+            {
+                Clear();
+                return true;
+            }
+            return false;
         }
 
         private static IntPtr SetHook(LowLevelKeyboardProc proc)
