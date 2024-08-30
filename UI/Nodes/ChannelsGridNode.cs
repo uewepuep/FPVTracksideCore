@@ -246,7 +246,6 @@ namespace UI.Nodes
             {
                 ForceReOrder = forceReorder;
             }
-
             ForceUpdate = true;
             RequestLayout();
         }
@@ -306,8 +305,6 @@ namespace UI.Nodes
         public void SetReorderType(ReOrderTypes reOrderType)
         {
             ReOrderType = reOrderType;
-            ForceReOrder = true;
-            Reorder();
         }
 
         public override IEnumerable<Node> OrderedChildren(IEnumerable<Node> input)
@@ -430,9 +427,7 @@ namespace UI.Nodes
                 n.UpdatePosition(null);
             }
 
-            ForceUpdate = true;
-            ForceReOrder = true;
-            RequestLayout();
+            Reorder(true);
             return channelNode;
         }
 
@@ -547,10 +542,8 @@ namespace UI.Nodes
             {
                 channelNode.SetPilot(null);
                 channelNode.SetAnimatedVisibility(false);
-                                
-                ForceUpdate = true;
-                ForceReOrder = true;
-                RequestLayout();
+
+                Reorder(true);
             }
         }
 
@@ -594,10 +587,7 @@ namespace UI.Nodes
                 cn.SetPilot(null);
                 cn.SetAnimatedVisibility(false);
             }
-
-            ForceUpdate = true;
-            ForceReOrder = true;
-            RequestLayout();
+            Reorder(true);
         }
 
         public void SetPilotVisible(Pilot p, bool visible)
@@ -656,7 +646,7 @@ namespace UI.Nodes
                     foreach (ChannelNodeBase cn in pilotNodes)
                     {
                         cn.SetAnimatedVisibility(false);
-                        cn.SetCrashedOutType(CrashOutType.Manual);
+                        cn.SetCrashedOutType(CrashOutType.FullScreen);
                     }
                 }
 
@@ -837,8 +827,7 @@ namespace UI.Nodes
         {
             if (reOrderRequest != DateTime.MinValue && DateTime.Now > reOrderRequest)
             {
-                RequestLayout();
-                ForceUpdate = true;
+                Reorder(true);
             }
         }
 

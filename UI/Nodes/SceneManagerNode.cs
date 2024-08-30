@@ -316,7 +316,9 @@ namespace UI.Nodes
                     {
                         ChannelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.ChannelOrder);
                     }
+                    ChannelsGridNode.Reorder(true);
                     break;
+
                 case Scenes.Race:
                     if (ApplicationProfileSettings.Instance.PilotOrderMidRace == ApplicationProfileSettings.OrderTypes.PositionAndPB)
                     {
@@ -326,7 +328,9 @@ namespace UI.Nodes
                     {
                         ChannelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.ChannelOrder);
                     }
+                    // intentionally no reorder call here.
                     break;
+
                 case Scenes.RaceResults:
                     if (ApplicationProfileSettings.Instance.PilotOrderPostRace == ApplicationProfileSettings.OrderTypes.PositionAndPB)
                     {
@@ -336,8 +340,10 @@ namespace UI.Nodes
                     {
                         ChannelsGridNode.SetReorderType(ChannelsGridNode.ReOrderTypes.ChannelOrder);
                     }
+                    ChannelsGridNode.Reorder(true);
                     break;
             }
+
         }
 
         private void SceneLayout(Scenes scene)

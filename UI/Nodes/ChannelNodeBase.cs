@@ -69,7 +69,8 @@ namespace UI.Nodes
             None,
             Auto,
             Hidden,
-            Manual
+            Manual,
+            FullScreen,
         }
 
         public bool CrashedOut
@@ -225,9 +226,11 @@ namespace UI.Nodes
             switch (type)
             {
                 case CrashOutType.Manual:
-                case CrashOutType.Auto:
+                    EventManager.RaceManager.CrashedOut(Pilot, Channel, true);
+                    break;
 
-                    EventManager.RaceManager.CrashedOut(Pilot, Channel, type == CrashOutType.Manual);
+                case CrashOutType.Auto:
+                    EventManager.RaceManager.CrashedOut(Pilot, Channel, false);
                     break;
             }
         }

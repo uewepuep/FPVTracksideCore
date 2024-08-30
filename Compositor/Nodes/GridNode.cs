@@ -34,7 +34,14 @@ namespace Composition.Nodes
         public GridTypes GridType { get; private set; }
 
         private Size singleSize;
-        public Size SingleSize { get => singleSize; set { singleSize = value; ForceUpdate = true; } }
+        public Size SingleSize 
+        { 
+            get => singleSize; 
+            set 
+            {   
+                singleSize = value; 
+            } 
+        }
 
         public event System.Action<GridTypes> OnGridTypeChanged;
         public event System.Action<int> OnGridCountChanged;
