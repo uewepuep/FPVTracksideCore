@@ -62,7 +62,5 @@ namespace UI.Nodes
                 pBList.SetFilterPilots(current.Pilots);
             }
         }
-
-
     }
 }

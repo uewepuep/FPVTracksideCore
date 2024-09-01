@@ -286,20 +286,26 @@ namespace UI.Nodes
                     camNode.SetAnimatedVisibility(camNode.VideoBounds.ShowInGrid && extrasVisible);
                 }
 
-                int visibleCount = VisibleChildCount();
-                int gridItemCount = GridTypeItemCount(DecideLayout(visibleCount));
-
-                if (gridItemCount > visibleCount && !Replay && !LockGridType)
-                {
-                    gridStatsNode.SetAnimatedVisibility(true);
-                }
-                else
-                {
-                    gridStatsNode.SetAnimatedVisibility(false);
-                }
+                CheckGridStatsVisiblilty();
             }
 
             base.UpdateVisibility(input);
+        }
+
+        private void CheckGridStatsVisiblilty()
+        {
+            int visibleCount = VisibleChildCount();
+            GridTypes gridTypeDecided = DecideLayout(visibleCount);
+            int gridItemCount = GridTypeItemCount(gridTypeDecided);
+
+            if (gridItemCount > visibleCount && !Replay && !LockGridType && gridTypeDecided != GridTypes.SingleRow)
+            {
+                gridStatsNode.SetAnimatedVisibility(true);
+            }
+            else
+            {
+                gridStatsNode.SetAnimatedVisibility(false);
+            }
         }
 
         public void SetReorderType(ReOrderTypes reOrderType)
@@ -436,10 +442,10 @@ namespace UI.Nodes
             extrasVisible = visible;
             foreach (CamGridNode camNode in CamNodes)
             {
-                camNode.SetAnimatedVisibility(visible);
+                camNode.SetAnimatedVisibility(camNode.VideoBounds.ShowInGrid && extrasVisible);
             }
 
-            gridStatsNode.SetAnimatedVisibility(visible);
+            CheckGridStatsVisiblilty();
         }
 
         public void SetBiggerInfo(bool biggerChannel, bool biggerResults)
@@ -736,7 +742,7 @@ namespace UI.Nodes
             {
                 if (cn != null)
                 {
-                    if (!cn.Finished && cn.CrashedOutType != ChannelNodeBase.CrashOutType.Manual)
+                    if (!cn.Finished && cn.CrashedOutType != ChannelNodeBase.CrashOutType.Manual && cn.CrashedOutType != ChannelNodeBase.CrashOutType.FullScreen)
                     {
                         cn.SetCrashedOutType(crashed ? ChannelNodeBase.CrashOutType.Auto : ChannelNodeBase.CrashOutType.None);
                     }
