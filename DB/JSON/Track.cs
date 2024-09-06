@@ -15,8 +15,12 @@ namespace DB.JSON
         public string Name { get; set; }
 
         public float Length { get; set; }
+        public int GridSize { get; set; }
 
-        public Track() { }
+        public Track() 
+        { 
+            GridSize = 5;
+        }
 
         public Track(RaceLib.Track t)
             :base(t)
@@ -45,12 +49,18 @@ namespace DB.JSON
         public float Z { get; set; }
 
         public float Tilt { get; set; }
+        public float Scale { get; set; }
 
         public float Rotation { get; set; }
         public bool Visible { get; set; }
         public bool Decorative { get; set; }
 
         public bool SplitEnd { get; set; }
+
+        public TrackElement()
+        {
+            Scale = 1;
+        }
 
     }
 }

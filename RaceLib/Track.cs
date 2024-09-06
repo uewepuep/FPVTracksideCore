@@ -15,9 +15,12 @@ namespace RaceLib
 
         public float Length { get; set; }
 
+        public int GridSize { get; set; }
+
         public Track() 
         {
             TrackElements = new TrackElement[0];
+            GridSize = 5;
         }
 
         public object Clone()
@@ -26,7 +29,8 @@ namespace RaceLib
             {
                 Name = Name,
                 Length = Length,
-                TrackElements = TrackElements.Select(x => (TrackElement)x.Clone()).ToArray()
+                TrackElements = TrackElements.Select(x => (TrackElement)x.Clone()).ToArray(),
+                GridSize = GridSize
             };
         }
 
@@ -67,9 +71,10 @@ namespace RaceLib
         public float Y { get { return Position.Y; } set { Position.Y = value; } }
         public float Z { get { return Position.Z; } set { Position.Z = value; } }
 
-
+        public float Scale { get; set; }
         public TrackElement()
         {
+            Scale = 1.0f;
             Visible = true;
             ElementType = ElementTypes.Gate;
         }
@@ -123,7 +128,8 @@ namespace RaceLib
                 Tilt = Tilt,
                 Rotation = Rotation,
                 Visible = Visible,
-                Decorative = Decorative
+                Decorative = Decorative,
+                Scale = Scale,
             };
         }
     }
