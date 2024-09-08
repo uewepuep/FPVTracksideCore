@@ -26,40 +26,24 @@ namespace Tools
             AddSafe(length, point);
         }
 
-        public void AddPoint(Vector3 point, Vector3 tangent)
+        public float GetDistance(Vector3 point)
         {
+            Vector3 bestDistance = new Vector3(10000);
+            float best = float.MaxValue;
 
-        }
-
-        public float GetDistance(Vector3 point, float min = float.MinValue, float max = float.MaxValue, float closeEnough = 0.01f)
-        {
-            min = Math.Max(min, 0);
-            max = Math.Min(max, Length);
-
-            float distance = float.MaxValue;
-            
-            while (distance > closeEnough)
+            for (float f = 0; f < Length; f += 0.1f)
             {
-                distance = max - min;
-                float thirdDistance = distance / 3;
+                Vector3 check = Evaluate(f);
+                Vector3 distance = point - check;
 
-                Vector3 oneThird = Evaluate(min + thirdDistance);
-                Vector3 twoThirds = Evaluate(max - thirdDistance);
-
-                float onethirdDistanceFromPoint = (oneThird - point).Length();
-                float twoThirdsDistanceFromPoint = (twoThirds - point).Length();
-
-                if (onethirdDistanceFromPoint < twoThirdsDistanceFromPoint)
+                if (distance.LengthSquared() < bestDistance.LengthSquared())
                 {
-                    max -= thirdDistance;
-                }
-                else
-                {
-                    min += thirdDistance;
+                    bestDistance = distance;
+                    best = f;
                 }
             }
 
-            return (min + max) / 2.0f; 
+            return best;
         }
 
         public void DebugDraw(GraphicsDevice graphicsDevice, int resolution = 5)
