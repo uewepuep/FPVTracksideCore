@@ -31,7 +31,7 @@ namespace Tools
             Vector3 bestDistance = new Vector3(10000);
             float best = float.MaxValue;
 
-            for (float f = 0; f < Length; f += 0.1f)
+            for (float f = 0; f < Length; f += 2f)
             {
                 Vector3 check = Evaluate(f);
                 Vector3 distance = point - check;
@@ -43,8 +43,41 @@ namespace Tools
                 }
             }
 
-            return best;
+            return GetDistanceClose(point, best - 1, best + 1);
         }
+
+
+        private float GetDistanceClose(Vector3 point, float min = float.MinValue, float max = float.MaxValue, float closeEnough = 0.01f)
+        {
+            min = Math.Max(min, 0);
+            max = Math.Min(max, Length);
+
+            float distance = float.MaxValue;
+
+            while (distance > closeEnough)
+            {
+                distance = max - min;
+                float thirdDistance = distance / 3;
+
+                Vector3 oneThird = Evaluate(min + thirdDistance);
+                Vector3 twoThirds = Evaluate(max - thirdDistance);
+
+                float onethirdDistanceFromPoint = (oneThird - point).Length();
+                float twoThirdsDistanceFromPoint = (twoThirds - point).Length();
+
+                if (onethirdDistanceFromPoint < twoThirdsDistanceFromPoint)
+                {
+                    max -= thirdDistance;
+                }
+                else
+                {
+                    min += thirdDistance;
+                }
+            }
+
+            return (min + max) / 2.0f;
+        }
+
 
         public void DebugDraw(GraphicsDevice graphicsDevice, int resolution = 5)
         {
