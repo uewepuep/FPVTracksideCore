@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static OfficeOpenXml.ExcelErrorValue;
 
 namespace DB.JSON
 {
@@ -61,25 +62,25 @@ namespace DB.JSON
         public bool Update(T obj)
         {
             cacheValid = false;
-            return Write(obj);
+            return Append(obj);
         }
 
         public int Update(IEnumerable<T> objs)
         {
             cacheValid = false;
-            return Write(objs);
+            return Append(objs);
         }
 
         public bool Insert(T obj)
         {
             cacheValid = false;
-            return Write(obj);
+            return Append(obj);
         }
 
         public int Insert(IEnumerable<T> objs)
         {
             cacheValid = false;
-            return Write(objs);
+            return Append(objs);
         }
 
         public bool Upsert(T obj)
@@ -120,19 +121,32 @@ namespace DB.JSON
             return Delete(new Guid[] { obj.ID }) > 1;
         }
 
-        public int Delete(IEnumerable<T> objs)
-        {
-            cacheValid = false;
-
-            return Delete(objs.Select(r => r.ID));
-        }
-
         private int Delete(IEnumerable<Guid> ids)
         {
-            IEnumerable<T> except = All().Where(r => !ids.Contains(r.ID));
+            IEnumerable<T> objs = GetObjects(ids);
+            return Delete(objs);
+        }
+
+        public int Delete(IEnumerable<T> objs)
+        {
+            int count = 0;
 
             cacheValid = false;
-            return Write(except.ToArray());
+
+            var groups = objs.GroupBy(r => ObjectToID(r));
+
+            foreach (var group in groups)
+            {
+                Guid id = group.Key;
+                IEnumerable<T> delValues = group.Where(r => r != null);
+                string filename = GetFilename(id);
+
+                T[] existing = Read(filename);
+
+                IEnumerable<T> except = existing.Except(delValues);
+                count += jsonIO.Write(filename, except);
+            }
+            return count;
         }
 
         public IEnumerable<T> All()
@@ -168,12 +182,12 @@ namespace DB.JSON
             return jsonIO.Read(filename);
         }
 
-        private bool Write(T value)
+        private bool Append(T value)
         {
-            return Write(new T[] { value }) > 0;
+            return Append(new T[] { value }) > 0;
         }
 
-        private int Write(IEnumerable<T> values)
+        private int Append(IEnumerable<T> values)
         {
             int count = 0;
             var groups = values.GroupBy(r => ObjectToID(r));
@@ -190,7 +204,22 @@ namespace DB.JSON
 
                 IEnumerable<T> appended = except.Concat(newValues);
 
-                jsonIO.Write(filename, appended);
+                count += jsonIO.Write(filename, appended);
+            }
+            return count;
+        }
+
+        private int Write(IEnumerable<T> values)
+        {
+            int count = 0;
+            var groups = values.GroupBy(r => ObjectToID(r));
+
+            foreach (var group in groups)
+            {
+                Guid id = group.Key;
+                IEnumerable<T> newValues = group.Where(r => r != null);
+                string filename = GetFilename(id);
+                count += jsonIO.Write(filename, newValues);
             }
             return count;
         }
