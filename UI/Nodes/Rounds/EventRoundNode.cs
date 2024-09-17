@@ -321,7 +321,7 @@ namespace UI.Nodes.Rounds
                 if (EventManager.RaceManager.TimingSystemManager.HasDummyTiming)
                 {
                     mm.AddBlank();
-                    mm.AddItem("Generate Dummy Results", () =>
+                    mm.AddItem("Generate Dummy Round Results", () =>
                     {
                         GenerateDummyResults();
                     });

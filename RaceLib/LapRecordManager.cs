@@ -9,7 +9,6 @@ namespace RaceLib
 {
     public class LapRecordManager
     {
-
         public int[] ConsecutiveLapsToTrack { get; set; }
 
         public event PilotLapRecord.NewRecord OnNewPersonalBest;

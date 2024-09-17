@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 
 namespace RaceLib
 {
@@ -433,6 +434,23 @@ namespace RaceLib
             plan.NumberOfRaces = (int)Math.Ceiling(plan.Pilots.Count() / (float)EventManager.Channels.GetChannelGroups().Count());
 
             Generate(roundFormat, newRound, plan);
+        }
+
+        public void DeleteRounds()
+        {
+            Logger.RaceLog.LogCall(this);
+            lock (Event.Rounds)
+            {
+                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                {
+                    db.Delete(Event.Rounds);
+                    Event.Rounds.Clear();
+
+                    GetCreateRound(1, Event.EventType);
+
+                    db.Update(Event.Rounds);
+                }
+            }
         }
     }
 }

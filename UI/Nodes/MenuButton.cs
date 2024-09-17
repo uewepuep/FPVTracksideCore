@@ -652,6 +652,7 @@ namespace UI.Nodes
         public void DeleteAllRaceData()
         {
             eventManager.RaceManager.DeleteRaces();
+            eventManager.RoundManager.DeleteRounds();
             eventManager.LapRecordManager.Clear();
 
             DataDeleted?.Invoke();

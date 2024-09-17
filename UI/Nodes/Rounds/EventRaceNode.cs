@@ -311,7 +311,7 @@ namespace UI.Nodes.Rounds
                 if (EventManager.RaceManager.TimingSystemManager.HasDummyTiming)
                 {
                     mm.AddBlank();
-                    mm.AddItem("Generate Dummy Results", () =>
+                    mm.AddItem("Generate Dummy Race Results", () =>
                     {
                         EventManager.RaceManager.GenerateResults(EventManager.RaceManager.TimingSystemManager.PrimeSystems.OfType<Timing.DummyTimingSystem>().FirstOrDefault(), Race);
                         Refresh();
