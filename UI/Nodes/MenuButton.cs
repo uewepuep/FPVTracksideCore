@@ -328,7 +328,7 @@ namespace UI.Nodes
 
                 MouseMenu delete = root.AddSubmenu("Delete from event");
 
-                delete.AddItemConfirm("Delete all races", () =>
+                delete.AddItemConfirm("Delete all rounds & races", () =>
                 {
                     DeleteAllRaceData();
                 });
