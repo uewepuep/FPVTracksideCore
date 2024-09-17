@@ -352,5 +352,22 @@ namespace RaceLib
                 race.ClearPilots(db);
             }
         }
+
+        public static string ToTSV(this IEnumerable<Lap> laps)
+        {
+            return string.Join("\t", laps.Select(l => l.Length.TotalSeconds.ToString()));
+        }
+
+        public static IEnumerable<double> TSVToDouble(this string line)
+        {
+            string[] split = line.Split("\t");
+            foreach (string s in split)
+            {
+                if (double.TryParse(s, out double d))
+                {
+                    yield return d;
+                }
+            }
+        }
     }
 }

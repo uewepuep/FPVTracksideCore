@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Timing;
 using Tools;
 
 namespace UI.Nodes
@@ -25,6 +26,8 @@ namespace UI.Nodes
         private TextButtonNode okButton;
         private TextButtonNode cancelButton;
         private TextButtonNode addLapButton;
+        private TextButtonNode copyLapsButton;
+        private TextButtonNode pasteLapsButton;
 
         public event Action<Lap[]> OnOK;
         public event Action<Lap[]> OnCancel;
@@ -76,14 +79,19 @@ namespace UI.Nodes
             okButton = new TextButtonNode("Ok", Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
             cancelButton = new TextButtonNode("Cancel", Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
 
-            addLapButton = new TextButtonNode("Add Lap time...", Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
+            addLapButton = new TextButtonNode("Add Lap", Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
+            copyLapsButton = new TextButtonNode("Copy Laps", Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
+            pasteLapsButton = new TextButtonNode("Paste Laps", Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
 
             okButton.OnClick += OkButton_OnClick;
             cancelButton.OnClick += CancelButton_OnClick;
             addLapButton.OnClick += AddLapButton_OnClick;
 
-            buttonContainer.AddChild(cancelButton, addLapButton, okButton);
-            AlignHorizontally(0.05f, cancelButton, null, addLapButton, null, okButton);
+            copyLapsButton.OnClick += CopyLapsButton_OnClick;
+            pasteLapsButton.OnClick += PasteLapsButton_OnClick;  
+
+            buttonContainer.AddChild(cancelButton, addLapButton, copyLapsButton, pasteLapsButton, okButton);
+            AlignHorizontally(0.05f, cancelButton, null, addLapButton, copyLapsButton, pasteLapsButton, null, okButton);
 
             Scale(0.5f, 0.9f);
 
@@ -101,12 +109,40 @@ namespace UI.Nodes
             UpdateRaceNode();
         }
 
-        private void AddLapButton_OnClick(MouseInputEvent mie)
+        private void PasteLapsButton_OnClick(MouseInputEvent mie)
         {
-            GetLayer<PopupLayer>().Popup(new AddLapTimeNode(Pilot, AddLapCallback));
+            string lapLine = PlatformTools.Clipboard.GetText();
+            AddManualLaps(lapLine.TSVToDouble());
         }
 
-        private void AddLapCallback(Pilot pilot, TimeSpan timeSinceLast)
+        private void CopyLapsButton_OnClick(MouseInputEvent mie)
+        {
+            PlatformTools.Clipboard.SetText(orderedLapContainers.Where(lc => lc.Valid).Select(lc => lc.Lap).ToTSV());
+        }
+
+        private void AddLapButton_OnClick(MouseInputEvent mie)
+        {
+            GetLayer<PopupLayer>().Popup(new AddLapTimeNode(Pilot, AddManualLap));
+        }
+
+        public void AddManualLaps(IEnumerable<double> laps)
+        {
+            DateTime from = Race.Start;
+            foreach (double seconds in laps)
+            {
+                TimeSpan time = TimeSpan.FromSeconds(seconds);
+
+                AddManualLap(time);
+                from += time;
+            }
+        }
+
+        private void AddManualLap(TimeSpan timeSinceLast)
+        {
+            AddManualLap(Pilot, timeSinceLast);
+        }
+
+        private void AddManualLap(Pilot pilot, TimeSpan timeSinceLast)
         {
             DateTime start = Race.Start;
 
@@ -382,7 +418,15 @@ namespace UI.Nodes
         public void Refresh()
         {
             Alpha = Valid ? 1 : LapEditorNode.DisabledAlpha;
-            lapNumber.Text = Lap.LapNumberToString(Number);
+
+            if (Valid)
+            {
+                lapNumber.Text = Lap.LapNumberToString(Number);
+            }
+            else
+            {
+                lapNumber.Text = "";
+            }
             if (!lapTime.HasFocus)
             {
                 lapTime.Text = Length.ToStringRaceTime();

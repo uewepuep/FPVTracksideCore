@@ -37,6 +37,20 @@ namespace UI.Nodes
 
         private DateTime? playbackTime;
 
+        public IEnumerable<Lap> Laps
+        {
+            get
+            {
+                foreach (var node in lapNodes)
+                {
+                    if (node.Lap != null)
+                    {
+                        yield return node.Lap;
+                    }
+                }
+            }
+        }
+
         public LapsNode(EventManager em)
         {
             locker = new object();
@@ -303,37 +317,21 @@ namespace UI.Nodes
 
                 mm.AddItem("Edit Laps", () =>
                 {
-                    Race currentRace = EventManager.RaceManager.CurrentRace;
-                    if (currentRace == null)
-                        return;
+                    EditLaps();
+                });
 
-                    Channel channel = currentRace.GetChannel(Pilot);
-                    if (channel == null)
-                        return;
-
-                    Color c = EventManager.GetChannelColor(channel);
-
-                    Lap[] editLaps = currentRace.GetLaps(l => l.Pilot == Pilot).ToArray();
-
-                    if (editLaps.Any())
+                if (Laps.Any())
+                {
+                    mm.AddItem("Copy Laps", () =>
                     {
-                        //LapEditorNode editor = new LapEditorNode(editLaps, c);
-                        LapEditorNode editor = new LapEditorNode(EventManager.RaceManager, editLaps, c);
-                        GetLayer<PopupLayer>().Popup(editor);
-                        editor.OnOK += (v) =>
-                        {
-                            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
-                            {
-                                db.Update(editLaps);
-                                currentRace.ReCalculateLaps(db, Pilot);
-                            }
+                        PlatformTools.Clipboard.SetText(Laps.ToTSV());
+                    });
+                }
 
-                            EventManager.LapRecordManager.ClearPilot(Pilot);
-                            EventManager.LapRecordManager.UpdatePilot(Pilot);
-                            EventManager.SpeedRecordManager.UpdatePilot(Pilot);
-                            RefreshData();
-                        };
-                    }
+                mm.AddItem("Paste Laps", () =>
+                {
+                    string lapLine = PlatformTools.Clipboard.GetText();
+                    EditLaps(lapLine.TSVToDouble());
                 });
             }
 
@@ -351,6 +349,52 @@ namespace UI.Nodes
             }
 
             mm.Show(mouseInputEvent);
+        }
+
+        private void EditLaps()
+        {
+            EditLaps(new double[0]);
+        }
+
+        private void EditLaps(IEnumerable<double> lapsToAdd)
+        {
+            Race currentRace = EventManager.RaceManager.CurrentRace;
+            if (currentRace == null)
+                return;
+
+            Channel channel = currentRace.GetChannel(Pilot);
+            if (channel == null)
+                return;
+
+            Color c = EventManager.GetChannelColor(channel);
+
+            Lap[] editLaps = currentRace.GetLaps(l => l.Pilot == Pilot).ToArray();
+
+            if (editLaps.Any())
+            {
+                //LapEditorNode editor = new LapEditorNode(editLaps, c);
+                LapEditorNode editor = new LapEditorNode(EventManager.RaceManager, editLaps, c);
+
+                if (lapsToAdd.Any())
+                {
+                    editor.AddManualLaps(lapsToAdd);
+                }
+
+                GetLayer<PopupLayer>().Popup(editor);
+                editor.OnOK += (v) =>
+                {
+                    using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                    {
+                        db.Update(editLaps);
+                        currentRace.ReCalculateLaps(db, Pilot);
+                    }
+
+                    EventManager.LapRecordManager.ClearPilot(Pilot);
+                    EventManager.LapRecordManager.UpdatePilot(Pilot);
+                    EventManager.SpeedRecordManager.UpdatePilot(Pilot);
+                    RefreshData();
+                };
+            }
         }
 
         public void SetPlaybackTime(DateTime time)
