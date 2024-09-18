@@ -64,7 +64,7 @@ namespace ImageServer
         {
             while (State == States.Running)
             {
-                OnFrame(0);
+                OnFrame(0, 0);
                 Thread.Sleep(Interval);
             }
         }

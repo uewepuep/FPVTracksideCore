@@ -16,7 +16,8 @@ namespace UI.Video
     {
         public FrameSource Source { get; protected set; }
         public bool NeedsAspectRatioUpdate { get; set; }
-        public int FrameNumber { get; private set; }
+        public long ProcessNumber { get; private set; }
+        public long SampleTime { get; private set; }
 
         public FrameTextureID FrameTextureID { get { return Texture as FrameTextureID; } }
 
@@ -49,8 +50,11 @@ namespace UI.Video
             base.Dispose();
         }
 
-        private void ImageArrived(int id)
+        private void ImageArrived(long sampleTime, long processNumber)
         {
+            SampleTime = sampleTime;
+            ProcessNumber = processNumber;
+
             if (Visible)
             {
                 if (CompositorLayer != null) 
@@ -120,7 +124,6 @@ namespace UI.Video
                     UpdateAspectRatioFromTexture();
                     RequestLayout();
                 }
-                FrameNumber = Source.FrameCount;
             }
             texture = tryTexture;
         }

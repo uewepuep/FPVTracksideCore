@@ -143,7 +143,6 @@ namespace FfmpegMediaPlatform
                     if (reader.Read(buffer, 0, buffer.Length) == buffer.Length)
                     {
                         ProcessImage();
-                        FrameCount++;
                     }
                 }
             }
@@ -157,7 +156,8 @@ namespace FfmpegMediaPlatform
                 RawTexture frame;
                 if (currentRawTextures.GetWritable(out frame))
                 {
-                    frame.SetData(buffer, FrameCount);
+                    FrameProcessNumber++;
+                    frame.SetData(buffer, SampleTime, FrameProcessNumber);
                     currentRawTextures.WriteOne(frame);
                 }
             }

@@ -58,7 +58,7 @@ namespace UI.Video
 
         private void Process()
         {
-            int lastFrame = 0;
+            long lastFrame = 0;
 
             while (run)
             {
@@ -77,7 +77,7 @@ namespace UI.Video
                     continue;
                 }
 
-                int frame = first.FrameNode.Source.FrameCount;
+                long frame = first.FrameNode.Source.SampleTime;
                 if (lastFrame == frame)
                 {
                     Thread.Sleep(1);

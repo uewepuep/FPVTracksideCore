@@ -13,7 +13,7 @@ namespace ImageServer
 {
     public abstract class FrameSource : IDisposable
     {
-        public delegate void FrameDelegate(int number);
+        public delegate void FrameDelegate(long sampleTime, long processNumber);
 
         public event FrameDelegate OnFrameEvent;
 
@@ -35,7 +35,8 @@ namespace ImageServer
 
         public int References { get; set; }
 
-        public int FrameCount { get; set; }
+        public long FrameProcessNumber { get; set; }
+        public long SampleTime { get; set; }
 
         public VideoConfig VideoConfig { get; private set; }
 
@@ -60,7 +61,7 @@ namespace ImageServer
         public FrameSource(VideoConfig videoConfig)
         {
             VideoConfig = videoConfig;
-            FrameCount = 0;
+            SampleTime = 0;
             OnFrameEvent = null;
             Direction = Directions.TopDown;
             IsVisible = true;
@@ -104,10 +105,9 @@ namespace ImageServer
             return true;
         }
 
-        public void OnFrame(int id)
+        public void OnFrame(long sampleTime, long processNumber)
         {
-            OnFrameEvent?.Invoke(id);
-            FrameCount++;
+            OnFrameEvent?.Invoke(sampleTime, processNumber);
         }
     }
 

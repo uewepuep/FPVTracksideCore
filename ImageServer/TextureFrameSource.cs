@@ -30,7 +30,6 @@ namespace ImageServer
             SurfaceFormat = SurfaceFormat.Bgr32;
 
             ASync = true;
-            FrameCount = 0;
         }
 
         public override bool Start()
@@ -111,7 +110,6 @@ namespace ImageServer
         {
             if (mutex != null)
                 mutex.Set();
-            FrameCount++;
         }
 
         private void ProcessImages()
@@ -156,7 +154,7 @@ namespace ImageServer
 
         protected virtual void ProcessImage()
         {
-            OnFrame(FrameCount);
+            OnFrame(SampleTime, FrameProcessNumber);
         }
 
         public override bool UpdateTexture(GraphicsDevice graphicsDevice, int drawFrameCount, ref Texture2D texture2D)

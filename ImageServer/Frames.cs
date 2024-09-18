@@ -17,7 +17,8 @@ namespace ImageServer
         private int height;
         private int size;
 
-        private int sourceFrameID;
+        private long processCount;
+        private long sampleTime;
 
         public RawTexture(int width, int height)
         {
@@ -26,7 +27,8 @@ namespace ImageServer
 
             this.width = width;
             this.height = height;
-            sourceFrameID = 0;
+            processCount = 0;
+            sampleTime = 0;
         }
 
         //private unsafe void MakeTestPattern()
@@ -74,36 +76,38 @@ namespace ImageServer
         //    }
         //}
 
-        public void SetData(IntPtr bufferToCopy, int frameID)
+        public void SetData(IntPtr bufferToCopy, long sampleTime, long processCount)
         {
             lock (source)
             {
                 Marshal.Copy(bufferToCopy, source, 0, source.Length);
             }
-            sourceFrameID = frameID;
+            this.processCount = processCount;
+            this.sampleTime = sampleTime;
         }
 
-        public void SetData(char[] bufferToCopy, int frameID)
+        public void SetData(char[] bufferToCopy, long sampleTime, long processCount)
         {
             lock (source)
             {
                 Buffer.BlockCopy(bufferToCopy, 0, source, 0, source.Length);
             }
-            sourceFrameID = frameID;
+            this.processCount = processCount;
+            this.sampleTime = sampleTime;
         }
 
         public bool UpdateTexture(FrameTextureID texture)
         {
             try
             {
-                if (sourceFrameID > texture.FrameID)
+                if (processCount > texture.FrameProcessCount)
                 {
                     System.Diagnostics.Debug.Assert(texture.Width == width);
                     System.Diagnostics.Debug.Assert(texture.Height == height);
 
                     lock (source)
                     {
-                        texture.SetData(source, sourceFrameID);
+                        texture.SetData(source, sampleTime, processCount);
                     }
                     return true;
                 }
@@ -119,20 +123,21 @@ namespace ImageServer
 
     public class FrameTextureID : Texture2D
     {
-        public int FrameID { get; private set; }
+        public long FrameSampleTime { get; private set; }
+        public long FrameProcessCount { get; private set; }
 
         public FrameTextureID(GraphicsDevice graphicsDevice, int width, int height, SurfaceFormat surfaceFormat) 
             : base(graphicsDevice, width, height, false, surfaceFormat)
         {
         }
 
-        public void SetData(byte[] data, int frameId)
+        public void SetData(byte[] data, long sampleTime, long processCount)
         {
             DebugTimer.DebugStartTime("FrameTextureID.SetData");
             base.SetData(data);
             DebugTimer.DebugEndTime("FrameTextureID.SetData");
-
-            FrameID = frameId;
+            FrameSampleTime = sampleTime;
+            FrameProcessCount = processCount;
         }
     }
 }

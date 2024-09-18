@@ -22,13 +22,29 @@ namespace UI.Video
         private ChromaKeyColor chromaKeyColor;
         private byte chromaKeyLimit;
 
+        private Dictionary<long, Texture2D> textureCache;
+
         public ChromaKeyFileFrameNode(FrameSource frameSource, ChromaKeyColor chromaKeyColor, byte chromaKeyLimit)
             : base(frameSource)
         {
+            textureCache = new Dictionary<long, Texture2D>();
+
             this.chromaKeyColor = chromaKeyColor;
             this.chromaKeyLimit = chromaKeyLimit;
             Enabled = true;
         }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+
+            foreach (Texture2D texture in textureCache.Values)
+            {
+                texture.Dispose();
+            }
+            textureCache.Clear();
+        }
+
 
         public override void PreProcess(Drawer id)
         {
@@ -40,7 +56,11 @@ namespace UI.Video
             if (texture == replacementTexture)
                 return;
 
+            //if (!textureCache.TryGetValue(SampleTime, out replacementTexture))
+            //{
             TextureHelper.ChromaKey(texture, ref data, ref replacementTexture, chromaKeyColor, chromaKeyLimit);
+            //    textureCache.Add(SampleTime, replacementTexture);
+            //}
 
             texture = replacementTexture;
         }
