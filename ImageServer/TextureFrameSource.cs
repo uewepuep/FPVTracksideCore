@@ -18,7 +18,7 @@ namespace ImageServer
 
         // Arrays for copying the data.
         protected XBuffer<RawTexture> rawTextures;
-        protected Dictionary<GraphicsDevice, FrameTextureID> textures;
+        protected Dictionary<GraphicsDevice, FrameTextureSample> textures;
         
         public bool ASync { get; set; }
 
@@ -39,7 +39,7 @@ namespace ImageServer
                 mutex = new AutoResetEvent(false);
             }
 
-            textures = new Dictionary<GraphicsDevice, FrameTextureID>();
+            textures = new Dictionary<GraphicsDevice, FrameTextureSample>();
 
             processImages = true;
 
@@ -98,7 +98,7 @@ namespace ImageServer
 
             if (textures != null && textures.Count > 0)
             {
-                foreach (FrameTextureID fti in textures.Values)
+                foreach (FrameTextureSample fti in textures.Values)
                 {
                     fti.Dispose();
                 }
@@ -170,12 +170,12 @@ namespace ImageServer
                 texture2D = null;
             }
 
-            FrameTextureID texture = texture2D as FrameTextureID;
+            FrameTextureSample texture = texture2D as FrameTextureSample;
             if (texture == null)
             {
                 if (!textures.TryGetValue(graphicsDevice, out texture))
                 {
-                    texture = new FrameTextureID(graphicsDevice, FrameWidth, FrameHeight, SurfaceFormat);
+                    texture = new FrameTextureSample(graphicsDevice, FrameWidth, FrameHeight, SurfaceFormat);
                     textures.Add(graphicsDevice, texture);
                 }
                 texture2D = texture;

@@ -126,16 +126,24 @@ namespace ImageServer
         bool Finalising { get; }
     }
 
+
+    public enum PlaybackSpeed
+    {
+        Normal,
+        Slow,
+        FastAsPossible
+    }
     public interface IPlaybackFrameSource
     {
         FrameTime[] FrameTimes { get; }
         DateTime StartTime { get; }
         DateTime CurrentTime { get; }
         double FrameRate { get; }
-        bool SlowMotion { get; set; }
+        PlaybackSpeed PlaybackSpeed { get; set; }
         TimeSpan MediaTime { get; }
         TimeSpan Length { get; }
         bool Repeat { get; set; }
+        bool IsAtEnd { get; }
 
         void SetPosition(DateTime seekTime);
         void SetPosition(TimeSpan seekTime);

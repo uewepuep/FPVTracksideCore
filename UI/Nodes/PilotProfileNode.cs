@@ -128,27 +128,27 @@ namespace UI.Nodes
 
                     if (videoFileTypes.Contains(fileInfo.Extension))
                     {
-                        FrameSource source = VideoFrameworks.GetFramework(FrameWork.MediaFoundation).CreateFrameSource(filename);
-                        if (source == null)
+                        
+                        CachedTextureFrameSource source = new CachedTextureFrameSource();
+
+                        using (FrameSource frameSource = VideoFrameworks.GetFramework(FrameWork.MediaFoundation).CreateFrameSource(filename))
                         {
-                            return false;
+                            if (frameSource == null)
+                            {
+                                return false;
+                            }
+                            source.CopyFrameSource(CompositorLayer.GraphicsDevice, frameSource);
                         }
 
-                        // Shake down the source before doing anything.
-                        source.Start();
-                        source.Stop();
 
                         FileFrameNode videoPlayer;
                         if (ApplicationProfileSettings.Instance.PilotProfileChromaKey)
                         {
-                            videoPlayer = new ChromaKeyFileFrameNode(source,
-                                                                     ApplicationProfileSettings.Instance.PilotProfileChromaKeyColor,
-                                                                     ApplicationProfileSettings.Instance.PilotProfileChromaKeyLimit);
+                            source.DoChromaKey(ApplicationProfileSettings.Instance.PilotProfileChromaKeyColor, ApplicationProfileSettings.Instance.PilotProfileChromaKeyLimit);
                         }
-                        else
-                        {
-                            videoPlayer = new FileFrameNode(source);
-                        }
+
+                        videoPlayer = new FileFrameNode(source);
+
 
                         videoPlayer.Repeat = true;
                         videoPlayer.Play();

@@ -106,11 +106,11 @@ namespace UI.Video
             }
         }
 
-        private void Checkbox_ValueChanged(bool obj)
+        private void Checkbox_ValueChanged(bool slowMotion)
         {
             foreach (IPlaybackFrameSource frameSource in GetFileFrameSources())
             {
-                frameSource.SlowMotion = obj;
+                frameSource.PlaybackSpeed = slowMotion ? PlaybackSpeed.Slow : PlaybackSpeed.Normal;
             }
         }
 

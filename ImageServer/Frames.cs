@@ -96,7 +96,7 @@ namespace ImageServer
             this.sampleTime = sampleTime;
         }
 
-        public bool UpdateTexture(FrameTextureID texture)
+        public bool UpdateTexture(FrameTextureSample texture)
         {
             try
             {
@@ -121,21 +121,21 @@ namespace ImageServer
         }
     }
 
-    public class FrameTextureID : Texture2D
+    public class FrameTextureSample : Texture2D
     {
-        public long FrameSampleTime { get; private set; }
-        public long FrameProcessCount { get; private set; }
+        public long FrameSampleTime { get; set; }
+        public long FrameProcessCount { get; set; }
 
-        public FrameTextureID(GraphicsDevice graphicsDevice, int width, int height, SurfaceFormat surfaceFormat) 
+        public FrameTextureSample(GraphicsDevice graphicsDevice, int width, int height, SurfaceFormat surfaceFormat) 
             : base(graphicsDevice, width, height, false, surfaceFormat)
         {
         }
 
         public void SetData(byte[] data, long sampleTime, long processCount)
         {
-            DebugTimer.DebugStartTime("FrameTextureID.SetData");
+            DebugTimer.DebugStartTime("FrameTextureSample.SetData");
             base.SetData(data);
-            DebugTimer.DebugEndTime("FrameTextureID.SetData");
+            DebugTimer.DebugEndTime("FrameTextureSample.SetData");
             FrameSampleTime = sampleTime;
             FrameProcessCount = processCount;
         }

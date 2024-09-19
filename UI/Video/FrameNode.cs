@@ -19,7 +19,7 @@ namespace UI.Video
         public long ProcessNumber { get; private set; }
         public long SampleTime { get; private set; }
 
-        public FrameTextureID FrameTextureID { get { return Texture as FrameTextureID; } }
+        public FrameTextureSample FrameTextureID { get { return Texture as FrameTextureSample; } }
 
         private static Color Blank = new Color(10, 0, 10);
 
