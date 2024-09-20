@@ -20,12 +20,11 @@ namespace ImageServer
 
         public DateTime StartTime { get { return startTime; } }
 
-        private long currentTimeTicks;
         public DateTime CurrentTime
         {
             get
             {
-                return StartTime.AddTicks(currentTimeTicks);
+                return StartTime + MediaTime;
             }
         }
 
@@ -37,7 +36,7 @@ namespace ImageServer
         {
             get
             {
-                return TimeSpan.FromTicks(currentTimeTicks);
+                return TimeSpan.FromTicks(currentIndex * TicksPerFrame);
             }
         }
 
@@ -52,6 +51,9 @@ namespace ImageServer
         }
 
         public bool Repeat { get; set; }
+        public bool BounceRepeat { get; set; }
+
+        public bool Reversed { get; set; }
 
         public long TicksPerFrame
         {
@@ -75,14 +77,22 @@ namespace ImageServer
         private double frameRate;
         private TimeSpan length;
 
-        public CachedTextureFrameSource()
+        private FrameSource frameSource;
+        private GraphicsDevice graphicsDevice;
+
+        public CachedTextureFrameSource(GraphicsDevice graphicsDevice, VideoFrameWork videoFrameWork, string filename)
             :base(new VideoConfig())
         {
             samples = new List<FrameTextureSample>();
+            frameSource = videoFrameWork.CreateFrameSource(filename);
+            this.graphicsDevice = graphicsDevice;
         }
 
         public override void Dispose()
         {
+            frameSource?.Dispose();
+            frameSource = null;
+
             base.Dispose();
 
             Stop();
@@ -94,7 +104,7 @@ namespace ImageServer
             samples.Clear();
         }
 
-        public void CopyFrameSource(GraphicsDevice graphicsDevice, FrameSource frameSource)
+        private void CopyFrameSource(FrameSource frameSource)
         {
             IPlaybackFrameSource playbackFrameSource = frameSource as IPlaybackFrameSource;
             int count = 0;
@@ -115,7 +125,7 @@ namespace ImageServer
                 }
 
                 count++;
-                FrameTextureSample texture = new FrameTextureSample(graphicsDevice, FrameWidth, FrameHeight, FrameFormat);
+                FrameTextureSample texture = CreateSample(graphicsDevice, frameWidth, frameHeight, frameFormat);
 
                 Texture2D texture2D = texture as Texture2D;
 
@@ -132,15 +142,48 @@ namespace ImageServer
             }
         }
 
-        private void PlayBack()
+        protected virtual FrameTextureSample CreateSample(GraphicsDevice graphicsDevice, int frameWidth, int frameHeight, SurfaceFormat frameFormat)
         {
+            return new FrameTextureSample(graphicsDevice, frameWidth, frameHeight, frameFormat);
+        }
+
+        private void PlayBackThread()
+        {
+            if (frameSource != null && samples.Count == 0)
+            {
+                CopyFrameSource(frameSource);
+                frameSource.Dispose();
+                frameSource = null;
+            }
+
             int count = 0;
             while (State == States.Running)
             {
-                currentTimeTicks += TicksPerFrame;
+                if (Reversed)
+                {
+                    if (currentIndex >= 1)
+                    {
+                        currentIndex--;
+                    }
+                    else if (BounceRepeat)
+                    {
+                        Reversed = false;
+                    }
+                }
+                else
+                {
+                    if (currentIndex < samples.Count - 1)
+                    {
+                        currentIndex++;
+                    }
+                    else if (BounceRepeat)
+                    {
+                        Reversed = true;
+                    }
+                }
 
                 count++;
-                OnFrame(currentTimeTicks, count);
+                OnFrame(TicksPerFrame * currentIndex, count);
 
                 Thread.Sleep(TimeSpan.FromTicks(TicksPerFrame));
             }
@@ -153,17 +196,6 @@ namespace ImageServer
 
         public override bool UpdateTexture(GraphicsDevice graphicsDevice, int drawFrameId, ref Texture2D texture)
         {
-            while (currentIndex + 1 < samples.Count && samples[currentIndex].FrameSampleTime < currentTimeTicks)
-            {
-                currentIndex++;
-            }
-
-            if (currentIndex + 1 == samples.Count && Repeat)
-            {
-                currentIndex = 0;
-                currentTimeTicks = 0;
-            }
-
             if (currentIndex < samples.Count)
             {
                 texture = samples[currentIndex];
@@ -182,7 +214,7 @@ namespace ImageServer
         {
             if (playbackThread == null)
             {
-                playbackThread = new Thread(PlayBack);
+                playbackThread = new Thread(PlayBackThread);
                 playbackThread.Name = "CachedTextureFrameSource";
                 playbackThread.Start();
 
@@ -213,48 +245,30 @@ namespace ImageServer
 
         public void SetPosition(TimeSpan seekTime)
         {
-            currentTimeTicks = seekTime.Ticks;
+            int index = (int)(seekTime.Ticks / TicksPerFrame);
+
+            currentIndex = Math.Min(samples.Count, Math.Max(0, index));
         }
 
         public void PrevFrame()
         {
-            currentTimeTicks -= TicksPerFrame;
+            if (currentIndex >= 1)
+            {
+                currentIndex--;
+            }
         }
 
         public void NextFrame()
         {
-            currentTimeTicks += TicksPerFrame;
+            if (currentIndex < samples.Count - 1)
+            {
+                currentIndex++;
+            }
         }
 
         public void Mute(bool mute = true)
         {
 
-        }
-
-        public void DoChromaKey(ChromaKeyColor chromaKeyColor, byte chromaKeyLimit)
-        {
-            Color[] data = null;
-            for (int i = 0; i < samples.Count; i++)
-            {
-                FrameTextureSample oldTexture = samples[i];
-
-                if (data == null)
-                {
-                    data = new Color[oldTexture.Width * oldTexture.Height];
-                }
-                FrameTextureSample newTexture = new FrameTextureSample(oldTexture.GraphicsDevice, oldTexture.Width, oldTexture.Height, oldTexture.Format);
-
-                Texture2D replacementTexture = newTexture as Texture2D;
-
-                TextureHelper.ChromaKey(oldTexture, ref data, ref replacementTexture, chromaKeyColor, chromaKeyLimit);
-
-                newTexture.FrameSampleTime = oldTexture.FrameSampleTime;
-                newTexture.FrameProcessCount = oldTexture.FrameProcessCount;
-
-                samples[i] = newTexture;
-
-                oldTexture.Dispose();
-            }
         }
     }
 }

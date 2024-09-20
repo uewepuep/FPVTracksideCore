@@ -287,6 +287,13 @@ namespace Tools
 
             texture.GetData(data);
 
+            ChromaKey(data, chromaKeyColor, limit); 
+
+            replacementTexture.SetData(data);
+        }
+
+        public static void ChromaKey(Color[] data, ChromaKeyColor chromaKeyColor, byte limit)
+        {
             switch (chromaKeyColor)
             {
                 case ChromaKeyColor.Red:
@@ -332,7 +339,6 @@ namespace Tools
                     }
                     break;
             }
-            replacementTexture.SetData(data);
         }
 
         public static void TextureCombiner(GraphicsDevice device, int height, IEnumerable<Texture2D> ts, out Rectangle[] bounds, out Texture2D texture)

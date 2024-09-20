@@ -57,13 +57,16 @@ namespace Tools
         public static void DebugStartTime(string name)
         {
 #if DEBUG
-            if (start.ContainsKey(name))
+            lock (start)
             {
-                start[name] = DateTime.Now;
-            }
-            else
-            {
-                start.Add(name, DateTime.Now);
+                if (start.ContainsKey(name))
+                {
+                    start[name] = DateTime.Now;
+                }
+                else
+                {
+                    start.Add(name, DateTime.Now);
+                }
             }
 #endif
         }

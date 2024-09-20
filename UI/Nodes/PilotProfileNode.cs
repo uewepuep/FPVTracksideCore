@@ -128,27 +128,21 @@ namespace UI.Nodes
 
                     if (videoFileTypes.Contains(fileInfo.Extension))
                     {
-                        
-                        CachedTextureFrameSource source = new CachedTextureFrameSource();
-
-                        using (FrameSource frameSource = VideoFrameworks.GetFramework(FrameWork.MediaFoundation).CreateFrameSource(filename))
-                        {
-                            if (frameSource == null)
-                            {
-                                return false;
-                            }
-                            source.CopyFrameSource(CompositorLayer.GraphicsDevice, frameSource);
-                        }
-
+                        CachedTextureFrameSource source = null;
 
                         FileFrameNode videoPlayer;
                         if (ApplicationProfileSettings.Instance.PilotProfileChromaKey)
                         {
-                            source.DoChromaKey(ApplicationProfileSettings.Instance.PilotProfileChromaKeyColor, ApplicationProfileSettings.Instance.PilotProfileChromaKeyLimit);
+                            source = new ChromaKeyCachedTextureFrameSource(CompositorLayer.GraphicsDevice, VideoFrameWorks.GetFramework(FrameWork.MediaFoundation), filename, ApplicationProfileSettings.Instance.PilotProfileChromaKeyColor, ApplicationProfileSettings.Instance.PilotProfileChromaKeyLimit);
+                        }
+                        else
+                        {
+                            source = new CachedTextureFrameSource(CompositorLayer.GraphicsDevice, VideoFrameWorks.GetFramework(FrameWork.MediaFoundation), filename);
                         }
 
-                        videoPlayer = new FileFrameNode(source);
+                        source.BounceRepeat = ApplicationProfileSettings.Instance.PilotProfileBoomerangRepeat;
 
+                        videoPlayer = new FileFrameNode(source);
 
                         videoPlayer.Repeat = true;
                         videoPlayer.Play();

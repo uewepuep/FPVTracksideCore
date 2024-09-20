@@ -116,7 +116,7 @@ namespace UI.Video
 
         private VideoFrameWork GetFramework(FrameWork frameWork)
         {
-            return VideoFrameworks.Available.FirstOrDefault(f => f.FrameWork == frameWork);
+            return VideoFrameWorks.Available.FirstOrDefault(f => f.FrameWork == frameWork);
         }
 
         public void LoadCreateDevices(FrameSourcesDelegate frameSources)
@@ -228,7 +228,7 @@ namespace UI.Video
         {
             List<VideoConfig> configs = new List<VideoConfig>();
 
-            foreach (VideoFrameWork videoFramework in VideoFrameworks.Available)
+            foreach (VideoFrameWork videoFramework in VideoFrameWorks.Available)
             {
                 foreach (VideoConfig videoConfig in videoFramework.GetVideoConfigs())
                 {
@@ -386,7 +386,7 @@ namespace UI.Video
                         }
                         else
                         {
-                            VideoFrameWork mediaFoundation = VideoFrameworks.GetFramework(FrameWork.MediaFoundation);
+                            VideoFrameWork mediaFoundation = VideoFrameWorks.GetFramework(FrameWork.MediaFoundation);
                             if (mediaFoundation != null)
                             {
                                 source = mediaFoundation.CreateFrameSource(videoConfig);
@@ -409,7 +409,7 @@ namespace UI.Video
                 {
                     try
                     {
-                        foreach (VideoFrameWork frameWork in VideoFrameworks.Available)
+                        foreach (VideoFrameWork frameWork in VideoFrameWorks.Available)
                         {
                             if (videoConfig.FrameWork == frameWork.FrameWork)
                             {
@@ -935,7 +935,7 @@ namespace UI.Video
                         VideoConfig clone = vs.Clone();
                         clone.VideoMode = new Mode();
 
-                        foreach (VideoFrameWork frameWork in VideoFrameworks.Available)
+                        foreach (VideoFrameWork frameWork in VideoFrameWorks.Available)
                         {
                             if (clone.FrameWork == frameWork.FrameWork)
                             {

@@ -271,6 +271,10 @@ namespace UI
 
         [Category("Pilot Profile")]
         [NeedsRestart]
+        public bool PilotProfileBoomerangRepeat { get; set; }
+
+        [Category("Pilot Profile")]
+        [NeedsRestart]
         public int PilotProfileHoldLengthSeconds { get; set; }
 
         public ApplicationProfileSettings()

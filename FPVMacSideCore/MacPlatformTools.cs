@@ -86,7 +86,7 @@ namespace FPVMacsideCore
             todo = new List<Action>();
             maclipboard = new Maclipboard();
 
-            VideoFrameworks.Available = new VideoFrameWork[]
+            VideoFrameWorks.Available = new VideoFrameWork[]
             {
                 //new FfmpegMediaPlatform.FfmpegMediaFramework()
             };

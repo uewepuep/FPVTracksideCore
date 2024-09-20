@@ -20,7 +20,7 @@ namespace ImageServer
 
     }
 
-    public static class VideoFrameworks
+    public static class VideoFrameWorks
     {
         public static VideoFrameWork[] Available = new VideoFrameWork[0];
 

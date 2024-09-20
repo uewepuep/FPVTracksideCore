@@ -131,7 +131,7 @@ namespace ImageServer
         {
         }
 
-        public void SetData(byte[] data, long sampleTime, long processCount)
+        public virtual void SetData(byte[] data, long sampleTime, long processCount)
         {
             DebugTimer.DebugStartTime("FrameTextureSample.SetData");
             base.SetData(data);
