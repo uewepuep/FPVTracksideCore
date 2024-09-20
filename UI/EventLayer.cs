@@ -231,6 +231,7 @@ namespace UI
 
             ControlButtons.StartButton.OnClick += (mie) => { StartRaceWithVideoCheck(); };
             ControlButtons.StopButton.OnClick += (mie) => { StopRace(); };
+            ControlButtons.EmergencyButton.OnClick += (mie) => { EmergencyStop(); };
             ControlButtons.ClearButton.OnClick += (mie) => { Clear(); };
             ControlButtons.NextButton.OnClick += NextButton_OnClick;
             ControlButtons.ResumeButton.OnClick += (mie) => { ResumeRace(); };
@@ -945,6 +946,12 @@ namespace UI
             }
 
             videoManager.StopRecording();
+        }
+
+        public void EmergencyStop()
+        {
+            StopRace();
+            SoundManager.EmergencyStop();
         }
 
         public void Clear()

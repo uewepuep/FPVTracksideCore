@@ -264,6 +264,9 @@ namespace Sound
                     new Sound() { Key = SoundKey.Custom5, TextToSpeech = "Custom sound 5", Category = Sound.SoundCategories.Announcements },
 
                     new Sound() { Key = SoundKey.PhotoboothTrigger, TextToSpeech = "beep", Filename = @"sounds/split.wav", Category = Sound.SoundCategories.Announcements },
+
+                    new Sound() { Key = SoundKey.EmergencyStop, TextToSpeech = "Emergency Stop, PILOTS LAND NOW!", Category = Sound.SoundCategories.Announcements },
+                    
                 };
 
                 foreach (Sound defaultSound in defaultSounds)
@@ -961,6 +964,12 @@ namespace Sound
         {
             StopSound();
             PlaySound(SoundKey.VideoLooksGood, startRace);
+        }
+
+        public void EmergencyStop()
+        {
+            StopSound();
+            PlaySound(SoundKey.EmergencyStop);
         }
     }
 

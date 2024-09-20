@@ -71,6 +71,8 @@ namespace Sound
 
         PhotoboothTrigger,
 
+        EmergencyStop,
+
         Custom1,
         Custom2, 
         Custom3,

@@ -139,6 +139,9 @@ namespace ImageServer
             while (!playbackFrameSource.IsAtEnd)
             {
                 Thread.Sleep(1);
+
+                if (frameSource == null || frameSource.IsDisposed)
+                    break;
             }
         }
 
@@ -152,7 +155,7 @@ namespace ImageServer
             if (frameSource != null && samples.Count == 0)
             {
                 CopyFrameSource(frameSource);
-                frameSource.Dispose();
+                frameSource?.Dispose();
                 frameSource = null;
             }
 
@@ -176,10 +179,18 @@ namespace ImageServer
                     {
                         currentIndex++;
                     }
-                    else if (BounceRepeat)
+                    else if (Repeat)
                     {
-                        Reversed = true;
+                        if (BounceRepeat)
+                        {
+                            Reversed = true;
+                        }
+                        else
+                        {
+                            currentIndex = 0;
+                        }
                     }
+
                 }
 
                 count++;

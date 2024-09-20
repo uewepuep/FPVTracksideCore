@@ -72,7 +72,7 @@ namespace ImageServer
                     imageProcessor = null;
                     return false && base.Stop();
                 }
-                imageProcessor.Join();
+                imageProcessor?.Join();
                 imageProcessor = null;
             }
 

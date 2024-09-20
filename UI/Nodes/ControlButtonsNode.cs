@@ -23,6 +23,7 @@ namespace UI.Nodes
         public IconButtonNode ResetButton { get; private set; }
         public IconButtonNode ResumeButton { get; private set; }
         public IconButtonNode WormButton { get; private set; }
+        public IconButtonNode EmergencyButton { get; private set; }
 
         public AutoRunnerControls AutoRunnerControls { get; private set; }
 
@@ -64,7 +65,7 @@ namespace UI.Nodes
             StopButton = new IconButtonNode(@"img\stop.png", "Stop", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
             StopButton.NodeName = "StopRace";
             AddChild(StopButton);
-
+            
             NextButton = new IconButtonNode(@"img\next.png", "Next", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
             AddChild(NextButton);
 
@@ -74,6 +75,9 @@ namespace UI.Nodes
 
             ResetButton = new IconButtonNode(@"img\restart.png", "Restart", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
             AddChild(ResetButton);
+
+            EmergencyButton = new IconButtonNode(@"img\emergency.png", "Emgy Stop", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
+            AddChild(EmergencyButton);
 
             PasteClipboard = new IconButtonNode(@"img\paste.png", "Paste", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
             AddChild(PasteClipboard);
@@ -90,6 +94,7 @@ namespace UI.Nodes
 
             WormButton = new IconButtonNode(@"img\worm.png", "Worm", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
             AddChild(WormButton);
+
 
             foreach (IconButtonNode ibm in Children.OfType<IconButtonNode>())
             {
@@ -182,6 +187,8 @@ namespace UI.Nodes
             }
 
             WormButton.Visible = eventManager.RaceManager.RaceRunning;
+
+            EmergencyButton.Visible = StopButton.Visible;
 
             OnControlButtonsUpdate?.Invoke();
 
