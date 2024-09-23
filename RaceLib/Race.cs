@@ -329,7 +329,7 @@ namespace RaceLib
             return Laps.Any(l => l.Pilot == p && l.Detection.Valid);
         }
 
-        public PilotChannel SetPilot(IDatabase db, Channel channel, Pilot p)
+        public PilotChannel SetPilot(IDatabase db, Channel channel, Pilot p, bool force = false)
         {
             if (channel == null || p == null)
                 return null;
@@ -337,7 +337,7 @@ namespace RaceLib
             if (Pilots.Contains(p))
                 return null;
 
-            if (Ended)
+            if (!force && Ended)
                 return null;
 
             if (!IsFrequencyFree(channel))
@@ -371,9 +371,9 @@ namespace RaceLib
             return null;
         }
 
-        public PilotChannel RemovePilot(IDatabase db, Pilot pilot)
+        public PilotChannel RemovePilot(IDatabase db, Pilot pilot, bool force = false)
         {
-            if (Ended)
+            if (!force && Ended)
             {
                 return null;
             }
@@ -385,6 +385,7 @@ namespace RaceLib
                 {
                     PilotChannels.Remove(pc);
                     db.Delete(pc);
+                    db.Update(this);
                     return pc;
                 }
             }

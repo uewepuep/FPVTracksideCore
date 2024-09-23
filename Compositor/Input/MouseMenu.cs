@@ -173,12 +173,17 @@ namespace Composition.Input
 
         public void AddItemConfirm(string text, System.Action action)
         {
+            AddItemConfirm(text, text, action);
+        }
+
+        public void AddItemConfirm(string text, string confirmMessage, System.Action action)
+        {
             MenuItem newItem = new MenuItem(text, MenuLayer.Background, MenuLayer.Hover, MenuLayer.Text);
             newItem.TextNode.Alignment = RectangleAlignment.CenterLeft;
-            newItem.OnClick += (mie) => 
-            { 
-                Close(); 
-                GetLayer<PopupLayer>().PopupConfirmation(text + "?", action);  
+            newItem.OnClick += (mie) =>
+            {
+                Close();
+                GetLayer<PopupLayer>().PopupConfirmation(confirmMessage + "?", action);
             };
             listNode.AddChild(newItem);
         }

@@ -103,6 +103,14 @@ namespace UI.Nodes
         
         private DateTime? playbackTime;
 
+        public bool Replay
+        {
+            get
+            {
+                return playbackTime != null;
+            }
+        }
+
         public PilotProfileNode PilotProfile { get; set; }
         public bool ShowingPilotPhoto 
         { 
@@ -658,10 +666,13 @@ namespace UI.Nodes
                         GetLayer<PopupLayer>().Popup(editor);
                     });
 
-                    if (!EventManager.RaceManager.RaceRunning && !EventManager.RaceManager.RaceFinished)
+                    if (EventManager.RaceManager.RaceRunning && !EventManager.RaceManager.RaceFinished)
                     {
                         mm.AddItem("Remove Pilot", () => { EventManager.RaceManager.RemovePilotFromCurrentRace(Pilot); });
-                        mm.AddSubmenu("Change Channel", (c) => { EventManager.RaceManager.ChangeChannel(c, Pilot); }, EventManager.RaceManager.FreeChannels.ToArray());
+                        mm.AddSubmenu("Change Channel", (c) => 
+                        { 
+                            EventManager.RaceManager.ChangeChannel(c, Pilot); 
+                        }, EventManager.RaceManager.FreeChannels.ToArray());
                     }
                     else
                     {
@@ -670,7 +681,7 @@ namespace UI.Nodes
                             Close();
                         });
 
-                        mm.AddItem("Show All", () =>
+                        mm.AddItem("Show All Pilots", () =>
                         {
                             OnShowAll?.Invoke();
                         });
@@ -686,7 +697,7 @@ namespace UI.Nodes
                     {
                         if (r.Ended)
                         {
-                            mm.AddItem("Announce Results", () => { SoundManager.Instance.AnnounceResults(r); });
+                            mm.AddItem("Announce Race Results", () => { SoundManager.Instance.AnnounceResults(r); });
                         }
                         else
                         {

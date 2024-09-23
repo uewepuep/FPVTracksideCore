@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Timers;
 using Timing;
@@ -540,14 +541,6 @@ namespace RaceLib
                 return true;
             }
             return false;
-        }
-
-        public PilotChannel RemovePilot(Race race, Pilot pilot)
-        {
-            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
-            {
-                return race.RemovePilot(db, pilot);
-            }
         }
 
         public bool HasPilot(Pilot p)
@@ -2066,6 +2059,53 @@ namespace RaceLib
             if (EventManager.RaceManager.RaceRunning && pilot != null && channel != null)
             {
                 OnChannelCrashedOut?.Invoke(channel, pilot, manual);
+            }
+        }
+
+        public bool SetPilot(Race race, Channel channel, Pilot toAdd)
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                if (race.SetPilot(db, channel, toAdd, true) != null)
+                {
+                    if (race.Ended)
+                    {
+                        Lap[] laps = race.GetLaps(l => l.Detection.Channel == channel);
+                        foreach (Lap lap in laps)
+                        {
+                            lap.Detection.Valid = true;
+                            lap.Detection.Pilot = toAdd;
+                        }
+
+                        EventManager.LapRecordManager.ClearPilot(toAdd);
+                        EventManager.LapRecordManager.UpdatePilot(toAdd);
+                        EventManager.SpeedRecordManager.UpdatePilot(toAdd);
+                        EventManager.ResultManager.SaveResults(race);
+                    }
+                    return true;
+                }
+                return false;
+            }
+        }
+        public PilotChannel RemovePilot(Race race, Pilot pilot, bool force = false)
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                PilotChannel result = race.RemovePilot(db, pilot, force);
+                if (race.Ended)
+                {
+                    Lap[] laps = race.GetLaps(l => l.Detection.Pilot == pilot);
+                    foreach (Lap lap in laps)
+                    {
+                        lap.Detection.Valid = false;
+                    }
+
+                    EventManager.LapRecordManager.ClearPilot(pilot);
+                    EventManager.LapRecordManager.UpdatePilot(pilot);
+                    EventManager.SpeedRecordManager.UpdatePilot(pilot);
+                    EventManager.ResultManager.SaveResults(race);
+                }
+                return result;
             }
         }
     }

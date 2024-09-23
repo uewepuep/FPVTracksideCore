@@ -124,6 +124,7 @@ namespace UI.Nodes
             eventManager.RaceManager.OnRacePreStart += RaceManager_OnRacePreStart;
             eventManager.RoundManager.OnRoundAdded += UpdateNextRaceNode;
             eventManager.OnPilotRefresh += EventManager_OnPilotRefresh;
+            eventManager.ResultManager.RaceResultsChanged += ResultManager_RaceResultsChanged;
 
             SetScene(Scenes.Clear);
 
@@ -137,6 +138,12 @@ namespace UI.Nodes
             fullScreenContainer = new FullScreenAspectClosable();
             fullScreenContainer.Close += UnFullScreen;
             AddChild(fullScreenContainer);
+        }
+
+        private void ResultManager_RaceResultsChanged(Race obj)
+        {
+            UpdateNextRaceNode();
+            resultsRaceNode.SetRace(eventManager.RaceManager.CurrentRace);
         }
 
         public void SyncFinished()
@@ -187,6 +194,8 @@ namespace UI.Nodes
             eventManager.RoundManager.OnRoundAdded -= UpdateNextRaceNode;
             eventManager.RaceManager.OnRacePreStart -= RaceManager_OnRacePreStart;
             eventManager.OnPilotRefresh -= EventManager_OnPilotRefresh;
+            eventManager.ResultManager.RaceResultsChanged -= ResultManager_RaceResultsChanged;
+
         }
 
         public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)

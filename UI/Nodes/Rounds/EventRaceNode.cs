@@ -145,13 +145,22 @@ namespace UI.Nodes.Rounds
             if (mouseInputEvent.Button == MouseButtons.Right && mouseInputEvent.ButtonState == ButtonStates.Released)
             {
                 Pilot pilot = null;
+                Channel channel = null;
 
                 foreach (var pin in PilotRaceInfoNodes)
                 {
                     if (pin.Contains(mouseInputEvent.Position))
                     {
                         pilot = pin.Pilot;
+                        channel = pin.Channel;
                     }
+                }
+
+                int lapCount = 0;
+
+                if (channel != null)
+                {
+                    lapCount = Race.GetLaps(l => l.Detection.Channel == channel).Count();
                 }
 
                 bool hasStarted = Race.Start != DateTime.MinValue;
@@ -290,23 +299,62 @@ namespace UI.Nodes.Rounds
                         GetLayer<PopupLayer>().Popup(editor);
                         Refresh();
                     });
-                    mm.AddItem("Remove Pilot ",
+
+                    if (Race.Ended)
+                    {
+                        mm.AddItemConfirm("Remove Pilot", "Race has ended! Are you sure you want to remove " + pilot.Name,
                         () =>
                         {
-                            if (EventManager.RaceManager.RemovePilot(Race, pilot) != null)
+                            if (EventManager.RaceManager.RemovePilot(Race, pilot, true) != null)
                             {
                                 SyncSheetChange();
                                 Refresh();
-                            }
-                            else
-                            {
-                                GetLayer<PopupLayer>().PopupMessage("Can't remove Pilot from a race that has finished");
+                                if (lapCount > 0)
+                                {
+                                    GetLayer<PopupLayer>().PopupMessage(pilot.Name + " removed. " + lapCount + " laps are not linked to a pilot.");
+                                }
                             }
                         });
+                    }
+                    else
+                    { 
+                        mm.AddItem("Remove Pilot ",
+                         () =>
+                         {
+                             if (EventManager.RaceManager.RemovePilot(Race, pilot) != null)
+                             {
+                                 SyncSheetChange();
+                                 Refresh();
+                             }
+                             else
+                             {
+                                 GetLayer<PopupLayer>().PopupMessage("Can't remove Pilot from a race that has finished");
+                             }
+                         });
+                    }
                 }
 
-                mm.CollapseShortSubmenus();
+                if (pilot == null)
+                {
+                    Pilot[] allPilots = EventManager.Event.Pilots.Except(Race.Pilots).OrderBy(p => p.Name).ToArray();
 
+                    string menuName = "Set Pilot";
+
+                    if (lapCount > 0)
+                    {
+                        menuName += " (claim " + lapCount + " laps)";
+                    }
+
+                    mm.AddSubmenu(menuName,
+                    (toAdd) =>
+                    {
+                        if (EventManager.RaceManager.SetPilot(Race, channel, toAdd))
+                        {
+                            SyncSheetChange();
+                            Refresh();
+                        }
+                    }, allPilots);
+                }
 
                 if (EventManager.RaceManager.TimingSystemManager.HasDummyTiming)
                 {
