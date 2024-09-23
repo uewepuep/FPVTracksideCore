@@ -107,6 +107,15 @@ namespace RaceLib
                     return lastLap.Any();
                 }
 
+                if (eventManager.RaceManager.TimesUp && currentRace.Type == EventTypes.TimeTrial)
+                {
+                    DateTime timeEnd = currentRace.Start + eventManager.Event.RaceLength;
+                    if (currentRace.GetValidLaps(this, true).Any(l => l.Detection.Time > timeEnd))
+                    {
+                        return true;
+                    }
+                }
+
                 if (currentRace.Type != EventTypes.Race)
                     return false;
 
