@@ -122,6 +122,11 @@ namespace UI
         public bool AlwaysShowPosition { get; set; }
 
         [Category("Layout")]
+        [DisplayName("Position and Delta time show time seconds")]
+        [NeedsRestart]
+        public float ShowPositionDeltaTime { get; set; }
+
+        [Category("Layout")]
         public bool AlwaysSmallPilotProfile { get; set; }
 
 
@@ -363,6 +368,7 @@ namespace UI
 
             ShownDecimalPlaces = 2;
             UseDirectX9 = false;
+            ShowPositionDeltaTime = 6;
         }
 
         protected const string filename = "ProfileSettings.xml";

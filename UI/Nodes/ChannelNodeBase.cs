@@ -359,17 +359,20 @@ namespace UI.Nodes
             recentPositionNode.Style.Bold = true;
             recentPositionNode.Style.Border = true;
             recentPositionNode.RelativeBounds = new RectangleF(0.6f, 0, 0.4f, 0.3f);
+            recentPositionNode.FadeSeconds = ApplicationProfileSettings.Instance.ShowPositionDeltaTime;
             DisplayNode.AddChild(recentPositionNode);
 
 
             behindTime = new ChangeAlphaTextNode("", Theme.Current.PilotViewTheme.PositionText.XNA);
             behindTime.RelativeBounds = new RectangleF(0.7f, 0.25f, 0.3f, 0.07f);
             behindTime.Alignment = RectangleAlignment.TopRight;
+            behindTime.FadeSeconds = ApplicationProfileSettings.Instance.ShowPositionDeltaTime;
             DisplayNode.AddChild(behindTime);
 
             oldTTPositionNode = new ChangeAlphaTextNode("", Theme.Current.PilotViewTheme.PositionText.XNA);
             oldTTPositionNode.RelativeBounds = new RectangleF(0.7f, behindTime.RelativeBounds.Bottom, 0.3f, 0.07f);
             oldTTPositionNode.Alignment = RectangleAlignment.TopRight;
+            oldTTPositionNode.FadeSeconds = ApplicationProfileSettings.Instance.ShowPositionDeltaTime;
             DisplayNode.AddChild(oldTTPositionNode);
 
             crashedOut = new ColorNode(Theme.Current.PilotViewTheme.CrashedOut);
