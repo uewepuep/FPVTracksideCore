@@ -260,6 +260,9 @@ namespace Composition.Input
                     TopToBottom = false;
                 }
 
+                bounds.X = LeftToRight ? CalleeArea.Right : CalleeArea.Left;
+                bounds.Y = TopToBottom ? CalleeArea.Top : CalleeArea.Bottom;
+
                 if (!TopToBottom)
                 {
                     bounds.Y -= bounds.Height;
