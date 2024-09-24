@@ -117,7 +117,9 @@ namespace Composition.Nodes
 
             Rectangle bounds = Bounds;
 
-            if (Clip)
+            bool needsClip = Clip && Scroller != null && Scroller.Needed;
+
+            if (needsClip)
             {
                 id.PushClipRectangle(bounds);
             }
@@ -139,7 +141,7 @@ namespace Composition.Nodes
                 }
             }
 
-            if (Clip)
+            if (needsClip)
             {
                 id.PopClipRectangle();
             }
