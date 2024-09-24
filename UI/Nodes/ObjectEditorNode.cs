@@ -2,8 +2,8 @@
 using Composition.Layers;
 using Composition.Nodes;
 using ExternalData;
-using ImageServer;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using RaceLib;
 using RaceLib.Format;
 using Sound;
@@ -12,10 +12,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
-using Timing;
 using Tools;
-using UI;
-using UI.Video;
 
 namespace UI.Nodes
 {
@@ -480,9 +477,32 @@ namespace UI.Nodes
 
     class ShortcutKeyPropertyNode<T> : StaticTextPropertyNode<T>
     {
+        private TextButtonNode optionButton;
+        private HoverNode hoverNode;
+
         public ShortcutKeyPropertyNode(T obj, PropertyInfo pi, Color textColor)
             : base(obj, pi, textColor)
         {
+            hoverNode = new HoverNode(Theme.Current.Hover.XNA);
+            Value.AddChild(hoverNode);
+
+            optionButton = new TextButtonNode("...", Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, textColor);
+            optionButton.RelativeBounds = new RectangleF(0.95f, 0, 0.02f, 1);
+            optionButton.OnClick += ButtonOnClick;
+            AddChild(optionButton);
+
+            RectangleF valueBounds = Value.RelativeBounds;
+            valueBounds.Width = optionButton.RelativeBounds.X - valueBounds.X;
+            Value.RelativeBounds = valueBounds;
+        }
+
+        private void ButtonOnClick(MouseInputEvent mie)
+        {
+            MouseMenu mouseMenu = new MouseMenu(this);
+            mouseMenu.AddItem("Clear", () => SetValue(null));
+            mouseMenu.AddItem("Set to default", SetDefault);
+            mouseMenu.AddItem("Set to Esc", () => SetValue(Keys.Escape));
+            mouseMenu.Show(mie);
         }
 
         public override string ValueToString(object value)
@@ -497,7 +517,7 @@ namespace UI.Nodes
 
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
         {
-            if (mouseInputEvent.EventType == MouseInputEvent.EventTypes.Button)
+            if (mouseInputEvent.EventType == MouseInputEvent.EventTypes.Button && Value.Contains(mouseInputEvent.Position))
             {
                 GetLayer<PopupLayer>().Popup(new KeybindNode((k) =>
                 {
@@ -506,10 +526,18 @@ namespace UI.Nodes
                         SetValue(k);
                     }
                 }));
+
                 return true;
             }
 
             return base.OnMouseInput(mouseInputEvent);
+        }
+
+        private void SetDefault()
+        {
+            KeyboardShortcuts keyboardShortcuts = new KeyboardShortcuts();
+            object value = PropertyInfo.GetValue(keyboardShortcuts);
+            SetValue(value);
         }
     }
 
