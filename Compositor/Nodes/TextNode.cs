@@ -4,6 +4,7 @@ using Composition.Text;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Input.Touch;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -253,10 +254,7 @@ namespace Composition.Nodes
             {
                 if (textRenderer != null && Keyboard.GetState().IsKeyDown(Keys.LeftAlt))
                 {
-                    string filename = Address;
-                    System.Text.RegularExpressions.Regex rgx = new System.Text.RegularExpressions.Regex("[^a-zA-Z0-9 -]");
-                    filename = rgx.Replace(filename, "");
-
+                    string filename = Maths.SafeFileNameFromString(Address);
                     textRenderer.SavePNG(filename + ".png");
                 }
             }

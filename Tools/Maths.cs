@@ -333,5 +333,11 @@ namespace Tools
             src.Width = -src.Width;
             return src;
         }
+
+        public static string SafeFileNameFromString(string filename)
+        {
+            Regex rgx = new Regex("[^a-zA-Z0-9 _.-]");
+            return rgx.Replace(filename, "_");
+        }
     }
 }

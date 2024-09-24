@@ -137,7 +137,9 @@ namespace UI.Video
         {
             soundManager.PlaySound(SoundKey.PhotoboothTrigger);
 
-            string newPath = Path.Combine(PilotsDirectory.FullName, Pilot.Name + "_temp.png");
+            string filenameSafe = Maths.SafeFileNameFromString(Pilot.Name + "_temp.png");
+            
+            string newPath = Path.Combine(PilotsDirectory.FullName, filenameSafe);
             newPath = Path.GetRelativePath(Directory.GetCurrentDirectory(), newPath);
             camNode.FrameNode.SaveImage(newPath);
 
@@ -158,7 +160,9 @@ namespace UI.Video
         {
             soundManager.PlaySound(SoundKey.PhotoboothTrigger);
 
-            string newPath = Path.Combine(PilotsDirectory.FullName, Pilot.Name + "_temp");
+            string filenameSafe = Maths.SafeFileNameFromString(Pilot.Name + "_temp");
+
+            string newPath = Path.Combine(PilotsDirectory.FullName, filenameSafe);
             CaptureFrameSource.ManualRecording = true;
             CaptureFrameSource.StartRecording(newPath);
 

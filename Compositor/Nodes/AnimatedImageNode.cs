@@ -38,6 +38,8 @@ namespace Composition.Nodes
 
                 float ox = Offset.X * frameCount % BaseBoundsF.Width;
                 float oy = Offset.Y * frameCount % BaseBoundsF.Height;
+                
+                id.PushClipRectangle(BaseBoundsF.ToRectangle());
 
                 for (int x = -1; x <= 1; x++)
                 {
@@ -48,16 +50,14 @@ namespace Composition.Nodes
                         bounds.X += ox;
                         bounds.Y += oy;
 
-
                         bounds.X += x * BaseBoundsF.Width;
                         bounds.Y += y * BaseBoundsF.Height;
 
-                        id.PushClipRectangle(BaseBoundsF.ToRectangle());
                         id.Draw(texture, SourceBounds, bounds, Tint, alpha);
-                        id.PopClipRectangle();
                     }
                 }
 
+                id.PopClipRectangle();
             }
         }
     }

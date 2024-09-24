@@ -375,13 +375,6 @@ namespace Composition.Input
             return false;
         }
 
-        public override void Draw(Drawer id, float parentAlpha)
-        {
-            id.PushClipRectangle(Bounds);
-            base.Draw(id, parentAlpha);
-            id.PopClipRectangle();
-        }
-
         public void CollapseMenu()
         {
             if (ParentMenu != null && parentMenuItem != null)
