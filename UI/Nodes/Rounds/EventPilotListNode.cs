@@ -92,7 +92,8 @@ namespace UI.Nodes.Rounds
         {
             mm.AddItem("Edit Settings", EditSettings);
             mm.AddItem("Copy to Clipboard", CopyToClipboard);
-            mm.AddItem("Export CSV", ExportCSV);
+
+            FileTools.ExportMenu(mm, "Export", PlatformTools, "Save", MakeTable(), GetLayer<PopupLayer>());
             mm.AddItemConfirm("Re-calculate", Recalculate);
 
             //if (EventManager.Event.SyncWith == SyncWith.MultiGP)
@@ -136,11 +137,6 @@ namespace UI.Nodes.Rounds
             {
                 PlatformTools.Clipboard.SetText(tsv);
             }
-        }
-
-        private void ExportCSV()
-        {
-            FileTools.ExportCSV(PlatformTools, "Save CSV", MakeTable(), GetLayer<PopupLayer>());
         }
 
         public abstract string[][] MakeTable();

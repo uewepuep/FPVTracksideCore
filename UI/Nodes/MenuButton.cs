@@ -310,36 +310,10 @@ namespace UI.Nodes
                 root.AddBlank();
 
                 MouseMenu export = root.AddSubmenu("Export");
-                export.AddItem("Export PBs CSV", () =>
-                {
-                    FileTools.ExportCSV(PlatformTools, "Save Top Consecutive Laps CSV", eventManager.LapRecordManager.ExportPBs(), GetLayer<PopupLayer>());
-                });
 
-                export.AddItem("Export Raw Laps CSV", () =>
-                {
-                    FileTools.ExportCSV(PlatformTools, "Save Top Consecutive Laps CSV", eventManager.RaceManager.GetRawLaps(), GetLayer<PopupLayer>());
-                });
-
-                export.AddItem("Export Race Results CSV", () =>
-                {
-                    FileTools.ExportCSV(PlatformTools, "Save Race Results CSV", eventManager.RaceManager.GetRaceResultsText(ApplicationProfileSettings.Instance.Units), GetLayer<PopupLayer>());
-                });
-
-                export.AddItem("Export PBs XLSX", () =>
-                {
-                    FileTools.ExportXLSX(PlatformTools, "Save Top Consecutive Laps XLSX", eventManager.LapRecordManager.ExportPBs(), GetLayer<PopupLayer>());
-                });
-
-                export.AddItem("Export Raw Laps XLSX", () =>
-                {
-                    FileTools.ExportXLSX(PlatformTools, "Save Top Consecutive Laps XLSX", eventManager.RaceManager.GetRawLaps(), GetLayer<PopupLayer>());
-                });
-
-                export.AddItem("Export Race Results XLSXS", () =>
-                {
-                    FileTools.ExportXLSX(PlatformTools, "Save Race Results XLS", eventManager.RaceManager.GetRaceResultsText(ApplicationProfileSettings.Instance.Units), GetLayer<PopupLayer>());
-                });
-
+                FileTools.ExportMenu(export, "Export PBs", PlatformTools, "Save Top Consecutive Laps", eventManager.LapRecordManager.ExportPBs(), GetLayer<PopupLayer>());
+                FileTools.ExportMenu(export, "Export Raw Laps", PlatformTools, "Save Top Consecutive Laps", eventManager.RaceManager.GetRawLaps(), GetLayer<PopupLayer>());
+                FileTools.ExportMenu(export, "Export Race Results", PlatformTools, "Save Race Results", eventManager.RaceManager.GetRaceResultsText(ApplicationProfileSettings.Instance.Units), GetLayer<PopupLayer>());
 
                 MouseMenu delete = root.AddSubmenu("Delete from event");
 

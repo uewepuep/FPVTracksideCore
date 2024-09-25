@@ -1,4 +1,5 @@
 ﻿using Composition;
+using Composition.Input;
 using Composition.Layers;
 using Spreadsheets;
 using System;
@@ -53,6 +54,13 @@ namespace UI
                 Tools.Logger.UI.LogException(null, e);
             }
             return false;
+        }
+
+        public static void ExportMenu(MouseMenu menu, string name, PlatformTools platformTools, string title, string[][] table, PopupLayer popupLayer)
+        {
+            MouseMenu subMenu = menu.AddSubmenu(name);
+            subMenu.AddItem(".xlsx", () => { ExportXLSX(platformTools, title, table, popupLayer); });
+            subMenu.AddItem(".csv", () => { ExportCSV(platformTools, title, table, popupLayer); });
         }
     }
 }
