@@ -35,6 +35,8 @@ namespace UI.Nodes
             AddChild(MuteTTS);
             AddChild(MuteWAV);
 
+            AddChild(new FrameRateStatusNode());
+
             foreach (ITimingSystem timingSystem in timingSystemManager.TimingSystems)
             {
                 TimingSystemStatusNode tsn = new TimingSystemStatusNode(timingSystemManager, timingSystem);
@@ -445,6 +447,39 @@ namespace UI.Nodes
             SetStatus("", oBSRemoteControlManager.Connected);
 
             this.Visible = oBSRemoteControlManager.Enabled;
+        }
+    }
+
+    public class FrameRateStatusNode : StatusNode
+    {
+        private DateTime lastXFrame;
+        private int frameCount;
+        private TimeSpan frameMeasurementPeriod;
+        private List<TextNode> debugText;
+
+        public FrameRateStatusNode()
+            : base(@"img/frames.png")
+        {
+            Name = "FPS";
+            frameMeasurementPeriod = TimeSpan.FromSeconds(1);
+            frameCount = 0;
+
+        }
+
+        public override void Draw(Drawer id, float parentAlpha)
+        {
+            DateTime now = DateTime.Now;
+            frameCount++;
+
+            if (now - frameMeasurementPeriod > lastXFrame)
+            {
+                int frameRate = (int)(frameCount / (now - lastXFrame).TotalSeconds);
+                SetStatus(frameRate.ToString(), frameRate > 20);
+                lastXFrame = now;
+                frameCount = 0;
+            }
+
+            base.Draw(id, parentAlpha);
         }
     }
 }
