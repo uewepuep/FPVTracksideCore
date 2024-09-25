@@ -355,15 +355,19 @@ namespace UI.Video
                     }
                 }
 
-                if (keyMapper.ReplayPlus5Seconds.Match(inputEvent))
+                if (primary != null)
                 {
-                    Seek(primary.CurrentTime + TimeSpan.FromSeconds(5));
-                }
+                    if (keyMapper.ReplayPlus5Seconds.Match(inputEvent))
+                    {
+                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(5));
+                    }
 
-                if (keyMapper.ReplayMinus5Seconds.Match(inputEvent))
-                {
-                    Seek(primary.CurrentTime + TimeSpan.FromSeconds(-5));
+                    if (keyMapper.ReplayMinus5Seconds.Match(inputEvent))
+                    {
+                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(-5));
+                    }
                 }
+                
             }
             return base.OnKeyboardInput(inputEvent);
         }

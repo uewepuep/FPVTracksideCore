@@ -2,6 +2,7 @@
 using Composition.Nodes;
 using Composition.Text;
 using ImageServer;
+using Microsoft.VisualBasic.Logging;
 using Microsoft.Xna.Framework;
 using Newtonsoft.Json;
 using System;
@@ -145,12 +146,20 @@ namespace WindowsPlatform
 
         public override ISpeaker CreateSpeaker(string voice)
         {
-            ISpeaker speaker = new WindowsSpeaker();
-            if (voice != null)
+            try
             {
-                speaker.SelectVoice(voice);
+                ISpeaker speaker = new WindowsSpeaker();
+                if (voice != null)
+                {
+                    speaker.SelectVoice(voice);
+                }
+                return speaker;
             }
-            return speaker;
+            catch (Exception e)
+            {
+                Logger.SoundLog.LogException(this, e);
+                return null;
+            }
         }
 
         public static void RunAsSTAThread(Action action)

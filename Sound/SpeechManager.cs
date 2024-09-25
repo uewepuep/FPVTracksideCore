@@ -130,8 +130,10 @@ namespace Sound
                 speaker = platformTools.CreateSpeaker(Voice);
             }
 
-            speaker.SetRate(Math.Max(-10, Math.Min(10, request.Rate)));
+            if (speaker == null)
+                return;
 
+            speaker.SetRate(Math.Max(-10, Math.Min(10, request.Rate)));
 
             float factorVolume = (request.Volume / 100.0f) * (Volume / 100.0f);
 

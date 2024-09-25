@@ -56,7 +56,9 @@ namespace UI
             :base(platformTools)
         {
             IOTools.WorkingDirectory = platformTools.WorkingDirectory;
-            
+
+            InactiveSleepTime = new TimeSpan(0);
+
             Background = new WorkQueue("Game Background");
 
             hasEverShownEventSelector = false;

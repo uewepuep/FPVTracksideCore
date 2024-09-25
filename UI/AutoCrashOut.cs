@@ -120,7 +120,7 @@ namespace UI
                             continue;
                         }
 
-                        long frame = first.FrameNode.Source.SampleTime;
+                        long frame = first.FrameNode.Source.FrameProcessNumber;
                         if (lastFrame == frame)
                         {
                             Thread.Sleep(1);

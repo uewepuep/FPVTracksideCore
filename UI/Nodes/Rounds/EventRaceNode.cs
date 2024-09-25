@@ -142,6 +142,12 @@ namespace UI.Nodes.Rounds
 
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
         {
+            // Cache the race object.
+            Race Race = this.Race;
+
+            if (Race == null) 
+                return false;
+
             if (mouseInputEvent.Button == MouseButtons.Right && mouseInputEvent.ButtonState == ButtonStates.Released)
             {
                 Pilot pilot = null;
@@ -367,22 +373,24 @@ namespace UI.Nodes.Rounds
                 }
 
                 mm.Show(mouseInputEvent);
-                return true;
             }
 
-            if (!base.OnMouseInput(mouseInputEvent))
+            bool clicked = false;
+            if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Pressed)
             {
-                if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Pressed)
+                if (heading.Contains(mouseInputEvent.Position))
                 {
-                    if (heading.Contains(mouseInputEvent.Position))
-                    {
-                        GetLayer<DragLayer>()?.RegisterDrag(this, mouseInputEvent);
-                    }
-                    return true;
+                    GetLayer<DragLayer>()?.RegisterDrag(this, mouseInputEvent);
+                    clicked = true;
                 }
-                return false;
             }
-            return true;
+
+            if (base.OnMouseInput(mouseInputEvent))
+            {
+                clicked = true;
+            }
+
+            return clicked;
         }
 
         private void CopyTop(int number)

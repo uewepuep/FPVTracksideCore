@@ -84,7 +84,10 @@ namespace RaceLib
                 }
             }
 
-            maxSpeed = speedRecords.Values.Select(r => r.Speed).Max();
+            IEnumerable<float> speeds = speedRecords.Values.Select(r => r.Speed);
+
+            if (speeds.Any())
+                maxSpeed = speeds.Max();
         }
 
         private void RaceManager_OnDetectionDisqualified(Race race, Detection detection)

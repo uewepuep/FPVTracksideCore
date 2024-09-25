@@ -184,15 +184,13 @@ namespace UI
                 Current = Themes.FirstOrDefault();
             }
 
-            if (Current != null)
-            {
-                LocaliseFilenames(Current.Directory, Current);
-            }
-            else
+            if (Current == null)
             {
                 Logger.UI.Log(null, "No Themes");
+                return;
             }
 
+            LocaliseFilenames(Current.Directory, Current);
             Composition.Text.Style.DefaultFont = Current.FontFamily;
         }
 

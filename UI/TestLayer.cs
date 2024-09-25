@@ -301,7 +301,10 @@ namespace UI
                     lastXFrame = now;
                     frameCount = 0;
                 }
+            }
 
+            if (debugText.Any(d => d.Visible))
+            {
                 string[] debugTimes = DebugTimer.GetDebugTimeString(timerFrameCount).ToArray();
 
                 for (int i = debugText.Count; i < debugTimes.Length; i++)
@@ -338,17 +341,26 @@ namespace UI
 
         public override bool OnKeyboardInput(KeyboardInputEvent inputEvent)
         {
-            if (inputEvent.Key == Keys.F11 && inputEvent.ButtonState == ButtonStates.Pressed)
+            if (inputEvent.Key == Keys.F10 && inputEvent.ButtonState == ButtonStates.Pressed)
             {
                 frameRateNode.Visible = !frameRateNode.Visible;
+            }
+
+            if (inputEvent.Key == Keys.F11 && inputEvent.ButtonState == ButtonStates.Pressed)
+            {
+                var db = debugText.FirstOrDefault();
+
+                bool vis = false;
+                if (db != null)
+                    vis = db.Visible;
 
                 for (int i = 0; i < debugText.Count; i++)
                 {
-                    debugText[i].Visible = frameRateNode.Visible;
+                    debugText[i].Visible = vis;
                 }
             }
 
-            if (inputEvent.Key == Keys.F10 && inputEvent.ButtonState == ButtonStates.Pressed)
+            if (inputEvent.Key == Keys.F9 && inputEvent.ButtonState == ButtonStates.Pressed)
             {
                 TestClearDiagnosticTimers();
                 foreach (Node n in debugText) 
