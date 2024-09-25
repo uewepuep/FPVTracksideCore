@@ -312,17 +312,32 @@ namespace UI.Nodes
                 MouseMenu export = root.AddSubmenu("Export");
                 export.AddItem("Export PBs CSV", () =>
                 {
-                    ExportPBsCSV();
+                    FileTools.ExportCSV(PlatformTools, "Save Top Consecutive Laps CSV", eventManager.LapRecordManager.ExportPBs(), GetLayer<PopupLayer>());
                 });
 
                 export.AddItem("Export Raw Laps CSV", () =>
                 {
-                    ExportLapsCSV();
+                    FileTools.ExportCSV(PlatformTools, "Save Top Consecutive Laps CSV", eventManager.RaceManager.GetRawLaps(), GetLayer<PopupLayer>());
                 });
 
                 export.AddItem("Export Race Results CSV", () =>
                 {
-                    ExportRacesCSV();
+                    FileTools.ExportCSV(PlatformTools, "Save Race Results CSV", eventManager.RaceManager.GetRaceResultsText(ApplicationProfileSettings.Instance.Units), GetLayer<PopupLayer>());
+                });
+
+                export.AddItem("Export PBs XLSX", () =>
+                {
+                    FileTools.ExportXLSX(PlatformTools, "Save Top Consecutive Laps XLSX", eventManager.LapRecordManager.ExportPBs(), GetLayer<PopupLayer>());
+                });
+
+                export.AddItem("Export Raw Laps XLSX", () =>
+                {
+                    FileTools.ExportXLSX(PlatformTools, "Save Top Consecutive Laps XLSX", eventManager.RaceManager.GetRawLaps(), GetLayer<PopupLayer>());
+                });
+
+                export.AddItem("Export Race Results XLSXS", () =>
+                {
+                    FileTools.ExportXLSX(PlatformTools, "Save Race Results XLS", eventManager.RaceManager.GetRaceResultsText(ApplicationProfileSettings.Instance.Units), GetLayer<PopupLayer>());
                 });
 
 
@@ -632,21 +647,6 @@ namespace UI.Nodes
 
                 DataTools.StartBrowser(eventWebServer.Url);
             }
-        }
-
-        public void ExportPBsCSV()
-        {
-            PlatformTools.ExportCSV("Save Top Consecutive Laps CSV", eventManager.LapRecordManager.ExportPBsCSV(), GetLayer<PopupLayer>());
-        }
-
-        public void ExportRacesCSV()
-        {
-            PlatformTools.ExportCSV("Save Race Results CSV", eventManager.RaceManager.GetRaceResultsText(ApplicationProfileSettings.Instance.Units, ","), GetLayer<PopupLayer>());
-        }
-
-        public void ExportLapsCSV()
-        {
-            PlatformTools.ExportCSV("Save Top Consecutive Laps CSV", eventManager.RaceManager.GetRawLaps(), GetLayer<PopupLayer>());
         }
 
         public void DeleteAllRaceData()

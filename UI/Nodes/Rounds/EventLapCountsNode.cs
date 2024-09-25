@@ -46,26 +46,27 @@ namespace UI.Nodes.Rounds
             RequestLayout();
         }
 
-        public override string MakeCSV()
+        public override string[][] MakeTable()
         {
-            string csv = "";
+            List<string[]> output = new List<string[]>();
+
             foreach (PilotLapCountsNode pn in PilotNodes.OrderBy(pn => pn.Bounds.Y))
             {
-                string line = ",";
+                List<string> line = new List<string>();
                 if (pn.Pilot != null)
                 {
-                    line = pn.Pilot.Name + ",";
+                    line.Add(pn.Pilot.Name);
                     foreach (TextNode tn in pn.ResultNodes)
                     {
-                        line += tn.Text + ",";
+                        line.Add(tn.Text);
                     }
-                    line += pn.TotalLaps.ToString();
+                    line.Add(pn.TotalLaps.ToString());
 
-                    csv += line + "\n";
+                    output.Add(line.ToArray());
                 }
             }
 
-            return csv;
+            return output.ToArray();
         }
 
         public override void UpdateNodes()

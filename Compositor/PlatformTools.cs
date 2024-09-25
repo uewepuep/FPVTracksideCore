@@ -55,24 +55,6 @@ namespace Composition
         {
             return Features.Contains(platformFeature);
         }
-        public bool ExportCSV(string title, string csv, PopupLayer popupLayer)
-        {
-            try
-            {
-                string filename = SaveFileDialog(title, "CSV|*.csv");
-                if (filename != null)
-                {
-                    File.WriteAllText(filename, csv);
-                    return true;
-                }
-            }
-            catch (Exception e)
-            {
-                popupLayer.PopupMessage(e.Message);
-                Tools.Logger.UI.LogException(null, e);
-            }
-            return false;
-        }
 
         private string loginFile = @"data\login";
         private string key = @"P2l!OOHM@&#lWXGAjsaTf38e^*!GFrHZ";

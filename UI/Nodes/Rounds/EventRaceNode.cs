@@ -232,7 +232,7 @@ namespace UI.Nodes.Rounds
 
                     copyMenu.AddItem("Copy Results", () =>
                     {
-                        string textResults = EventManager.ResultManager.GetResultsText(Race, ApplicationProfileSettings.Instance.Units);
+                        string textResults = EventManager.ResultManager.GetResultsText(Race, ApplicationProfileSettings.Instance.Units).ToTSV();
                         PlatformTools.Clipboard.SetText(textResults);
                     });
 

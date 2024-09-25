@@ -131,19 +131,19 @@ namespace UI.Nodes.Rounds
 
         private void CopyToClipboard()
         {
-            string csv = MakeCSV();
-            if (!string.IsNullOrEmpty(csv))
+            string tsv = MakeTable().ToTSV();
+            if (!string.IsNullOrEmpty(tsv))
             {
-                PlatformTools.Clipboard.SetText(csv);
+                PlatformTools.Clipboard.SetText(tsv);
             }
         }
 
         private void ExportCSV()
         {
-            PlatformTools.ExportCSV("Save CSV", MakeCSV(), GetLayer<PopupLayer>());
+            FileTools.ExportCSV(PlatformTools, "Save CSV", MakeTable(), GetLayer<PopupLayer>());
         }
 
-        public abstract string MakeCSV();
+        public abstract string[][] MakeTable();
 
         private bool needsRefresh;
 

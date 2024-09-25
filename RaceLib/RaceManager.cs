@@ -1651,35 +1651,35 @@ namespace RaceLib
             }
         }
 
-        public string GetRaceResultsText(Units units, string delimiter = "\t")
+        public string[][] GetRaceResultsText(Units units)
         {
-            string result = "";
-
+            List<string[]> output = new List<string[]>();
             foreach (Round round in EventManager.Event.Rounds)
             {
                 foreach (Race race in GetRaces(round).OrderBy(r => r.RaceNumber))
                 {
-                    result += "Race " + race.RoundRaceNumber + "\r\n";
+                    output.Add(new string[] { "Race " + race.RoundRaceNumber });
 
+                    List<string> line = new List<string>();
                     foreach (ExportColumn ec in EventManager.ExportColumns.Where(ec1 => ec1.Enabled))
                     {
-                        result += ec.ToString() + " " + delimiter;
+                        line.Add(ec.ToString());
                     }
 
-                    result += "\r\n";
-                    result += EventManager.ResultManager.GetResultsText(race, units, delimiter);
-                    result += "\r\n";
+                    foreach (string[] resultLine in EventManager.ResultManager.GetResultsText(race, units))
+                    {
+                        output.Add(resultLine);
+                    }
                 }
-
             }
-            return result;
+            return output.ToArray();
         }
 
-        public string GetRawLaps()
+        public string[][] GetRawLaps()
         {
-            string output = "";
+            List<string[]> output = new List<string[]>();
 
-            output += Maths.MakeCSVLine("Round", "Race", "Race Start", "Pilot", "Lap Number", "Length", "Race Time", "Valid");
+            output.Add(new string[] { "Round", "Race", "Race Start", "Pilot", "Lap Number", "Length", "Race Time", "Valid" });
             foreach (Race race in Races.OrderBy(r => r.Start))
             {
                 foreach (Lap lap in race.Laps.OrderBy(l => l.End))
@@ -1697,13 +1697,13 @@ namespace RaceLib
                         line.Add(lap.Length.TotalSeconds.ToString("0.000"));
                         line.Add(lap.EndRaceTime.TotalSeconds.ToString("0.000"));
                         line.Add(lap.Detection.Valid.ToString());
-                        output += Maths.MakeCSVLine(line.ToArray());
+                        output.Add(line.ToArray());
                     }
                     
                 }
             }
 
-            return output;
+            return output.ToArray();
         }
 
         public Race GetRaceToRecover()

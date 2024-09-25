@@ -386,11 +386,11 @@ namespace RaceLib
             return false;
         }
 
-        public string ExportPBsCSV()
+        public string[][] ExportPBs()
         {
             List<string> line = new List<string>();
 
-            string output = "";
+            List<string[]> output = new List<string[]>();
 
             line.Add("Pilot");
 
@@ -423,7 +423,7 @@ namespace RaceLib
                 line.Add("");
             }
 
-            output += Maths.MakeCSVLine(line.ToArray());
+            output.Add(line.ToArray());
 
             lock (Records)
             {
@@ -459,11 +459,10 @@ namespace RaceLib
                         }
                         line.Add("");
                     }
-
-                    output += Maths.MakeCSVLine(line.ToArray());
+                    output.Add(line.ToArray());
                 }
             }
-            return output;
+            return output.ToArray();
         }
 
         public void Clear()

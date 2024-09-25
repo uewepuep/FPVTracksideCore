@@ -24,7 +24,7 @@ namespace WindowsPlatform
             {
                 if (System.Windows.Forms.Clipboard.ContainsText(System.Windows.Forms.TextDataFormat.Text))
                 {
-                    string clipboardText = System.Windows.Forms.Clipboard.GetText(System.Windows.Forms.TextDataFormat.Text);
+                    string clipboardText = System.Windows.Forms.Clipboard.GetText(System.Windows.Forms.TextDataFormat.UnicodeText);
 
                     string[] lines = clipboardText.Split('\n');
 
@@ -56,7 +56,7 @@ namespace WindowsPlatform
             {
                 if (System.Windows.Forms.Clipboard.ContainsText(System.Windows.Forms.TextDataFormat.Text))
                 {
-                    string clipboardText = System.Windows.Forms.Clipboard.GetText(System.Windows.Forms.TextDataFormat.Text);
+                    string clipboardText = System.Windows.Forms.Clipboard.GetText(System.Windows.Forms.TextDataFormat.UnicodeText);
                     return clipboardText;
                 }
                 return "";

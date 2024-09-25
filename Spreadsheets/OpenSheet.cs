@@ -94,6 +94,18 @@ namespace Spreadsheets
             }
         }
 
+        public void SetValues(string[][] table)
+        {
+            for (int r = 0; r < table.Length; r++)
+            {
+                string[] line = table[r];
+                for (int c = 0; c < line.Length; c++)
+                {
+                    SetValue(r + 1, c + 1, line[c]);
+                }
+            }
+        }
+
         public void SetFormula(int r, int c, string value)
         {
             try

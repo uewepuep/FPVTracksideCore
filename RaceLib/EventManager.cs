@@ -616,17 +616,15 @@ namespace RaceLib
             }
         }
 
-        public string GetResultsText(Units units)
+        public string[][] GetResultsText(Units units)
         {
             Race currentRace = RaceManager.CurrentRace;
             if (currentRace != null)
             {
-                string textResults = ResultManager.GetResultsText(currentRace, units);
-
-                return textResults;
+                return ResultManager.GetResultsText(currentRace, units);
             }
 
-            return "";
+            return new string[0][];
         }
 
         public Event[] GetOtherEvents()

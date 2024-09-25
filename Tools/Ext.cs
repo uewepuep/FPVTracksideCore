@@ -141,6 +141,16 @@ namespace Tools
         {
             return "#" + color.R.ToString("XX") + color.G.ToString("XX") + color.B.ToString("XX");
         }
+
+        public static string ToCSV(this string[][] table)
+        {
+            return string.Join("\r\n", table.Select(line => string.Join(",", line)));
+        }
+
+        public static string ToTSV(this string[][] table)
+        {
+            return string.Join("\r\n", table.Select(line => string.Join("\t", line)));
+        }
     }
 
     public class DateOnlyAttribute : Attribute

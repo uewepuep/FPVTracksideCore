@@ -621,14 +621,14 @@ namespace RaceLib
             }
         }
 
-        public string GetResultsText(Race race, Units units,  string delimiter = "\t")
+        public string[][] GetResultsText(Race race, Units units)
         {
             bool showDNF = PointsSettings.DNFForUnfinishedRaces;
 
-            string result = "";
+            List<string[]> output = new List<string[]>();
             foreach (IEnumerable<Channel> channelGroup in EventManager.Channels.GetChannelGroups())
             {
-                List<string> results = new List<string>();
+                List<string> line = new List<string>();
 
                 Pilot p = race.GetPilot(channelGroup);
                 Result r = GetResult(race, p);
@@ -669,114 +669,114 @@ namespace RaceLib
                         switch (ec.Type)
                         {
                             case ExportColumn.ColumnTypes.PilotName:
-                                results.Add(p.Name);
+                                line.Add(p.Name);
                                 break;
 
                             case ExportColumn.ColumnTypes.Position:
                                 if (dnfed && showDNF)
                                 {
-                                    results.Add("DNF");
+                                    line.Add("DNF");
                                 }
                                 else if (r != null)
                                 {
-                                    results.Add(r.Position.ToString());
+                                    line.Add(r.Position.ToString());
                                 }
                                 else
                                 {
-                                    results.Add("");
+                                    line.Add("");
                                 }
                                 break;
 
                             case ExportColumn.ColumnTypes.ConsecutiveLapsTime:
                                 if (lapstime == TimeSpan.MaxValue)
                                 {
-                                    results.Add("");
+                                    line.Add("");
                                 }
                                 else
                                 {
-                                    results.Add(lapsTimeString);
+                                    line.Add(lapsTimeString);
                                 }
                                 break;
 
                             case ExportColumn.ColumnTypes.FastestLapTime:
                                 if (fastestLap == TimeSpan.MaxValue)
                                 {
-                                    results.Add("");
+                                    line.Add("");
                                 }
                                 else
                                 {
-                                    results.Add(fastestLap.TotalSeconds.ToString("0.00"));
+                                    line.Add(fastestLap.TotalSeconds.ToString("0.00"));
                                 }
                                 break;
                             case ExportColumn.ColumnTypes.PBTime:
                                 if (pbTime == TimeSpan.MaxValue)
                                 {
-                                    results.Add("");
+                                    line.Add("");
                                 }
                                 else
                                 {
-                                    results.Add(pbTime.TotalSeconds.ToString("0.00"));
+                                    line.Add(pbTime.TotalSeconds.ToString("0.00"));
                                 }
                                 break;
                             case ExportColumn.ColumnTypes.RaceTime:
                                 if (raceTime == TimeSpan.MaxValue)
                                 {
-                                    results.Add("");
+                                    line.Add("");
                                 }
                                 else
                                 {
-                                    results.Add(raceTimeString);
+                                    line.Add(raceTimeString);
                                 }
                                 break;
                             case ExportColumn.ColumnTypes.RoundNumber:
-                                results.Add(race.RoundNumber.ToString());
+                                line.Add(race.RoundNumber.ToString());
                                 break;
 
                             case ExportColumn.ColumnTypes.RaceNumber:
-                                results.Add(race.RaceNumber.ToString());
+                                line.Add(race.RaceNumber.ToString());
                                 break;
 
                             case ExportColumn.ColumnTypes.FastestSpeed:
                                 float fastestSpeed = EventManager.SpeedRecordManager.GetFastestSpeed(race, p);
-                                results.Add(EventManager.SpeedRecordManager.SpeedToString(fastestSpeed, units));
+                                line.Add(EventManager.SpeedRecordManager.SpeedToString(fastestSpeed, units));
                                 break;
 
                             case ExportColumn.ColumnTypes.AverageSpeed:
-                                results.Add(EventManager.SpeedRecordManager.GetAverageSpeed(race, p).ToString());
+                                line.Add(EventManager.SpeedRecordManager.GetAverageSpeed(race, p).ToString());
                                 break;
 
                             case ExportColumn.ColumnTypes.Distance:
                                 float distance = EventManager.SpeedRecordManager.GetDistance(race, p);
-                                results.Add(Sector.LengthHuman(units, distance));
+                                line.Add(Sector.LengthHuman(units, distance));
                                 break;
 
                             case ExportColumn.ColumnTypes.Lap1Time:
-                                results.Add(GetLapTime(1, laps));
+                                line.Add(GetLapTime(1, laps));
                                 break;
                             case ExportColumn.ColumnTypes.Lap2Time:
-                                results.Add(GetLapTime(2, laps));
+                                line.Add(GetLapTime(2, laps));
                                 break;
                             case ExportColumn.ColumnTypes.Lap3Time:
-                                results.Add(GetLapTime(3, laps));
+                                line.Add(GetLapTime(3, laps));
                                 break;
                             case ExportColumn.ColumnTypes.Lap4Time:
-                                results.Add(GetLapTime(4, laps));
+                                line.Add(GetLapTime(4, laps));
                                 break;
                             case ExportColumn.ColumnTypes.Lap5Time:
-                                results.Add(GetLapTime(5, laps));
+                                line.Add(GetLapTime(5, laps));
                                 break;
                             case ExportColumn.ColumnTypes.Lap6Time:
-                                results.Add(GetLapTime(6, laps));
+                                line.Add(GetLapTime(6, laps));
                                 break;
 
                         }
                     }
                 }
 
-                result += string.Join(delimiter, results) + "\r\n";
+                output.Add(line.ToArray());
             }
 
-            return result;
+            return output.ToArray();
         }
 
         private string GetLapTime(int number, IEnumerable<Lap> laps)

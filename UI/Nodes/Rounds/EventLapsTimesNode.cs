@@ -162,17 +162,18 @@ namespace UI.Nodes.Rounds
             };
         }
 
-        public override string MakeCSV()
+        public override string[][] MakeTable()
         {
-            string csv = "Pilot, Time\n";
+            List<string[]> output = new List<string[]>();
+            output.Add(new string[] { "Pilot", "Time" });
             foreach (EventPilotTimeNode pn in PilotNodes.OrderBy(pn => pn.Bounds.Y))
             {
                 if (pn.Pilot != null)
                 {
-                    csv += Maths.MakeCSVLine(pn.Pilot.Name, pn.TimeNode.Text);
+                    output.Add(new string[] { pn.Pilot.Name, pn.TimeNode.Text });
                 }
             }
-            return csv;
+            return output.ToArray();
         }
     }
 
