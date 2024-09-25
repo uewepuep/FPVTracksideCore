@@ -80,6 +80,9 @@ namespace ImageServer
         private FrameSource frameSource;
         private GraphicsDevice graphicsDevice;
 
+        private IPlaybackFrameSource playbackFrameSource { get { return frameSource as IPlaybackFrameSource; } }
+
+
         public CachedTextureFrameSource(GraphicsDevice graphicsDevice, VideoFrameWork videoFrameWork, string filename)
             :base(new VideoConfig())
         {
@@ -106,10 +109,9 @@ namespace ImageServer
 
         private void CopyFrameSource(FrameSource frameSource)
         {
-            IPlaybackFrameSource playbackFrameSource = frameSource as IPlaybackFrameSource;
             int count = 0;
 
-            playbackFrameSource.PlaybackSpeed = PlaybackSpeed.FastAsPossible;
+            playbackFrameSource.PlaybackSpeed = PlaybackSpeed.Normal;
             frameSource.OnFrameEvent += (long sampleTime, long processNumber) =>
             {
                 if (count == 0)
@@ -136,7 +138,7 @@ namespace ImageServer
             };
             frameSource.Start();
 
-            while (!playbackFrameSource.IsAtEnd)
+            while (count == 0)
             {
                 Thread.Sleep(1);
 
@@ -155,8 +157,6 @@ namespace ImageServer
             if (frameSource != null && samples.Count == 0)
             {
                 CopyFrameSource(frameSource);
-                frameSource?.Dispose();
-                frameSource = null;
             }
 
             int count = 0;
@@ -191,6 +191,11 @@ namespace ImageServer
                         }
                     }
 
+                    if (playbackFrameSource != null && playbackFrameSource.IsAtEnd)
+                    {
+                        frameSource.Dispose();
+                        frameSource = null;
+                    }
                 }
 
                 count++;
