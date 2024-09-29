@@ -370,31 +370,28 @@ namespace UI.Nodes
 
             Lap[] editLaps = currentRace.GetLaps(l => l.Pilot == Pilot).ToArray();
 
-            if (editLaps.Any())
-            {
-                //LapEditorNode editor = new LapEditorNode(editLaps, c);
-                LapEditorNode editor = new LapEditorNode(EventManager.RaceManager, editLaps, c);
+            //LapEditorNode editor = new LapEditorNode(editLaps, c);
+            LapEditorNode editor = new LapEditorNode(EventManager.RaceManager, currentRace, Pilot, editLaps, c);
 
-                if (lapsToAdd.Any())
+            if (lapsToAdd.Any())
+            {
+                editor.AddManualLaps(lapsToAdd);
+            }
+
+            GetLayer<PopupLayer>().Popup(editor);
+            editor.OnOK += (v) =>
+            {
+                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
                 {
-                    editor.AddManualLaps(lapsToAdd);
+                    db.Update(editLaps);
+                    currentRace.ReCalculateLaps(db, Pilot);
                 }
 
-                GetLayer<PopupLayer>().Popup(editor);
-                editor.OnOK += (v) =>
-                {
-                    using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
-                    {
-                        db.Update(editLaps);
-                        currentRace.ReCalculateLaps(db, Pilot);
-                    }
-
-                    EventManager.LapRecordManager.ClearPilot(Pilot);
-                    EventManager.LapRecordManager.UpdatePilot(Pilot);
-                    EventManager.SpeedRecordManager.UpdatePilot(Pilot);
-                    RefreshData();
-                };
-            }
+                EventManager.LapRecordManager.ClearPilot(Pilot);
+                EventManager.LapRecordManager.UpdatePilot(Pilot);
+                EventManager.SpeedRecordManager.UpdatePilot(Pilot);
+                RefreshData();
+            };
         }
 
         public void SetPlaybackTime(DateTime time)

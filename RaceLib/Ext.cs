@@ -354,8 +354,14 @@ namespace RaceLib
         }
 
         public static string ToTSV(this IEnumerable<Lap> laps)
+        { 
+            return laps.Where(l => l != null).Select(l => l.Length).ToTSV();
+        }
+
+
+        public static string ToTSV(this IEnumerable<TimeSpan> lapTimes)
         {
-            return string.Join("\t", laps.Select(l => l.Length.TotalSeconds.ToString()));
+            return string.Join("\t", lapTimes.Select(lt => lt.TotalSeconds.ToString()));
         }
 
         public static IEnumerable<double> TSVToDouble(this string line)

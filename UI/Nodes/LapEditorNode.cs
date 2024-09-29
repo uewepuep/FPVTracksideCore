@@ -42,7 +42,7 @@ namespace UI.Nodes
 
         public const float DisabledAlpha = 0.3f;
 
-        public LapEditorNode(RaceManager raceManager, IEnumerable<Lap> laps, Color channel)
+        public LapEditorNode(RaceManager raceManager, Race race, Pilot pilot, IEnumerable<Lap> laps, Color channel)
         {
             RaceManager = raceManager;
             lapContainers = new List<LapEditorContainer>();
@@ -50,10 +50,10 @@ namespace UI.Nodes
             ChannelColor = channel;
 
             AspectRatio = 3;
+            Race = race;
+            Pilot = pilot;
 
-            Laps = laps.OrderBy(l => l.End).ToArray();
-            Race = Laps.FirstOrDefault().Race;
-            Pilot = laps.First().Pilot;
+            Laps = laps.Where(l => l.Race == race && l.Pilot == pilot).OrderBy(l => l.End).ToArray();
 
             BorderPanelShadowNode background = new BorderPanelShadowNode(Theme.Current.Editor.Background, Theme.Current.Editor.Border.XNA);
             AddChild(background);
@@ -117,7 +117,7 @@ namespace UI.Nodes
 
         private void CopyLapsButton_OnClick(MouseInputEvent mie)
         {
-            PlatformTools.Clipboard.SetText(orderedLapContainers.Where(lc => lc.Valid).Select(lc => lc.Lap).ToTSV());
+            PlatformTools.Clipboard.SetText(orderedLapContainers.Where(lc => lc.Valid).Select(lc => lc.Length).ToTSV());
         }
 
         private void AddLapButton_OnClick(MouseInputEvent mie)
