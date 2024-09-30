@@ -89,7 +89,7 @@ namespace ExternalData
             eventManager.RaceManager.OnRaceTimesUp -= OnRaceTimesUp;
 
 
-            workQueue.Dispose();
+            workQueue?.Dispose();
             workQueue = null;
         }
 

@@ -27,9 +27,7 @@ namespace RaceLib.Format
 
             for (int i = 0; i < heats; i++)
             {
-                Race race = new Race();
-                race.PrimaryTimingSystemLocation = EventManager.Event.PrimaryTimingSystemLocation;
-                race.Event = EventManager.Event;
+                Race race = new Race(EventManager.Event);
                 race.RaceNumber = startNumber + 1 + i;
                 race.Round = newRound;
                 races.Add(race);

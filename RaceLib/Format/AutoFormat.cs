@@ -151,9 +151,7 @@ namespace RaceLib.Format
 
                 for (int i = 0; i < heats; i++)
                 {
-                    Race race = new Race();
-                    race.PrimaryTimingSystemLocation = EventManager.Event.PrimaryTimingSystemLocation;
-                    race.Event = EventManager.Event;
+                    Race race = new Race(EventManager.Event);
                     race.RaceNumber = raceNumber + 1;
                     race.Round = newRound;
                     race.Bracket = bracket;

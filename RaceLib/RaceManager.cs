@@ -297,10 +297,8 @@ namespace RaceLib
 
             if (race == null)
             {
-                race = new Race();
+                race = new Race(EventManager.Event);
                 race.ID = iD;
-                race.Event = EventManager.Event;
-                race.PrimaryTimingSystemLocation = EventManager.Event.PrimaryTimingSystemLocation;
                 lock (races)
                 {
                     races.Add(race);
@@ -322,10 +320,8 @@ namespace RaceLib
                 }
             }
 
-            race = new Race();
+            race = new Race(EventManager.Event);
             race.AutoAssignNumbers = false;
-            race.PrimaryTimingSystemLocation = EventManager.Event.PrimaryTimingSystemLocation;
-            race.Event = EventManager.Event;
             race.RaceNumber = number;
             race.Round = round;
 
@@ -402,10 +398,8 @@ namespace RaceLib
                 int maxRoundNumber = GetMaxRoundNumber(EventType);
                 Round round = EventManager.RoundManager.GetCreateRound(maxRoundNumber, EventType);
 
-                currentRace = new Race();
+                currentRace = new Race(EventManager.Event);
                 currentRace.AutoAssignNumbers = true;
-                currentRace.PrimaryTimingSystemLocation = EventManager.Event.PrimaryTimingSystemLocation;
-                currentRace.Event = EventManager.Event;
                 currentRace.RaceNumber = GetRaceCount(round) + 1;
 
                 currentRace.Round = round;
@@ -937,6 +931,7 @@ namespace RaceLib
             Logger.RaceLog.LogCall(this, CurrentRace);
 
             race.Event = EventManager.Event;
+            race.PrimaryTimingSystemLocation = EventManager.Event.PrimaryTimingSystemLocation;
 
             if (race.Type == EventTypes.CasualPractice)
             {
@@ -960,7 +955,7 @@ namespace RaceLib
 
         public Race AddRaceToRound(Round round)
         {
-            Race race = new Race();
+            Race race = new Race(EventManager.Event);
             race.Round = round;
             race.RaceNumber = GetRaceCount(round) + 1;
 

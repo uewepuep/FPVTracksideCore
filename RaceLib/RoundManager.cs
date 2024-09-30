@@ -127,10 +127,8 @@ namespace RaceLib
 
                     if (race == null || !race.IsFrequencyFree(c))
                     {
-                        race = new Race();
+                        race = new Race(Event);
                         race.AutoAssignNumbers = true;
-                        race.PrimaryTimingSystemLocation = Event.PrimaryTimingSystemLocation;
-                        race.Event = Event;
                         race.RaceNumber = startNumber + 1 + races.Count;
                         race.Round = round;
                         races.Add(race);

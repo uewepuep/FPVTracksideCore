@@ -279,17 +279,21 @@ namespace RaceLib
             TargetLaps = 0;
         }
 
+        public Race(Event even)
+            :this()
+        {
+            Event = even;
+            PrimaryTimingSystemLocation = even.PrimaryTimingSystemLocation;
+        }
+
         public Race Clone()
         {
-            Race clone = new Race();
-
+            Race clone = new Race(Event);
             clone.AutoAssignNumbers = AutoAssignNumbers;
             clone.PilotChannels = PilotChannels.Clone().ToList();
-            clone.Event = Event;
             clone.Round = Round;
             clone.Bracket = Bracket;
             clone.RaceNumber = RaceNumber;
-
             return clone;
         }
 

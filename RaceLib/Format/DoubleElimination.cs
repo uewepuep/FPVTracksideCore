@@ -89,9 +89,7 @@ namespace RaceLib.Format
 
             for (int i = have; i < needed; i++)
             {
-                Race race = new Race();
-                race.PrimaryTimingSystemLocation = EventManager.Event.PrimaryTimingSystemLocation;
-                race.Event = EventManager.Event;
+                Race race = new Race(EventManager.Event);
                 race.RaceNumber = startNumber + 1 + i;
                 race.Round = round;
                 race.Bracket = bracket;
