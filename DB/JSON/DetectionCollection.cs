@@ -17,7 +17,7 @@ namespace DB.JSON
 
         public IEnumerable<Detection> All()
         {
-            return raceCollection.All().SelectMany(r => r.Detections);
+            return raceCollection.All().Where(r => r.Detections != null).SelectMany(r => r.Detections);
         }
 
         public bool Delete(Guid id)
