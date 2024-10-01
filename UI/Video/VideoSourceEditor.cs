@@ -267,10 +267,20 @@ namespace UI.Video
                 if (VideoManager != null)
                 {
                     mapperNode = new ChannelVideoMapperNode(Profile, VideoManager, EventManager, videoConfig, Objects);
+                    mapperNode.OnChange += MapperNode_OnChange;
                     preview.AddChild(mapperNode);
 
                     RequestLayout();
                 }
+            }
+        }
+
+        private void MapperNode_OnChange()
+        {
+            SplitsPropertyNode spn = PropertyNodes.OfType<SplitsPropertyNode>().FirstOrDefault();
+            if (spn != null)
+            {
+                spn.UpdateFromObject();
             }
         }
 
@@ -509,6 +519,8 @@ namespace UI.Video
 
         private Channel[] eventChannels;
 
+        public event Action OnChange;
+
         public ChannelVideoMapperNode(Profile profile, VideoManager videoManager, EventManager eventManager, VideoConfig videoConfig, IEnumerable<VideoConfig> others)
         {
             ChannelVideoMapNodes = new List<ChannelVideoMapNode>();
@@ -581,8 +593,10 @@ namespace UI.Video
                 {
                     table.ClearDisposeChildren();
                 }
-
-                ChannelVideoMapNodes.Clear();
+                lock (ChannelVideoMapNodes)
+                {
+                    ChannelVideoMapNodes.Clear();
+                }
 
                 int columns = (int)Math.Ceiling(Math.Sqrt(ChannelVideoInfos.Length));
                 int rows = (int)Math.Ceiling(ChannelVideoInfos.Length / (float)columns);
@@ -610,6 +624,8 @@ namespace UI.Video
                 }
                 RequestLayout();
             }
+
+            OnChange?.Invoke();
         }
 
         public override void Draw(Drawer id, float parentAlpha)

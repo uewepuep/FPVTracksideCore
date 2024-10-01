@@ -199,9 +199,13 @@ namespace ImageServer
                 }
 
                 count++;
-                OnFrame(TicksPerFrame * currentIndex, count);
 
-                Thread.Sleep(TimeSpan.FromTicks(TicksPerFrame));
+                if (TicksPerFrame > 0)
+                {
+                    OnFrame(TicksPerFrame * currentIndex, count);
+
+                    Thread.Sleep(TimeSpan.FromTicks(TicksPerFrame));
+                }
             }
         }
 
