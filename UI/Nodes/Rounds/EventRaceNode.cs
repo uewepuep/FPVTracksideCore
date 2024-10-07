@@ -133,7 +133,7 @@ namespace UI.Nodes.Rounds
             }
             if (!isDragging)
             {
-                if (mie.ButtonState == ButtonStates.Released)
+                if (mie.ButtonState == ButtonStates.Released && mie.Button == MouseButtons.Left)
                 {
                     EventManager.RaceManager.SetRace(Race);
                 }
