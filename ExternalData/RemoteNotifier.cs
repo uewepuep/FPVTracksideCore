@@ -148,7 +148,7 @@ namespace ExternalData
             int position = current.GetPosition(det.Pilot);
 
             TimeSpan time = det.Time - current.Start;
-            DetectionDetails dd = new DetectionDetails(det, color, time, det.LapNumber == current.TargetLaps, URL);
+            DetectionDetails dd = new DetectionDetails(det, color, time, det.LapNumber >= current.TargetLaps, URL);
             dd.Position = position;
 
             PutObject(dd);
