@@ -352,10 +352,12 @@ namespace UI
 
             GlobalInterceptKeys = GlobalInterceptKeys.Instance;
 
-            ShortcutKey[] globals = new ShortcutKey[] { KeyMapper.GlobalCopyResults, KeyMapper.GlobalStartStopRace, KeyMapper.GlobalNextRace, KeyMapper.GlobalPrevRace };
-            GlobalInterceptKeys.AddListen(globals.GetKeys().Distinct());
-
-            GlobalInterceptKeys.OnKeyPress += GlobalInterceptKeys_OnChange;
+            if (GlobalInterceptKeys != null)
+            {
+                ShortcutKey[] globals = new ShortcutKey[] { KeyMapper.GlobalCopyResults, KeyMapper.GlobalStartStopRace, KeyMapper.GlobalNextRace, KeyMapper.GlobalPrevRace };
+                GlobalInterceptKeys.AddListen(globals.GetKeys().Distinct());
+                GlobalInterceptKeys.OnKeyPress += GlobalInterceptKeys_OnChange;
+            }
         }
 
         protected virtual void EventEditor()
@@ -481,7 +483,7 @@ namespace UI
             OBSRemoteControlManager?.Dispose();
 
             eventWebServer?.Dispose();
-            GlobalInterceptKeys.Reset();
+            GlobalInterceptKeys?.Reset();
 
             base.Dispose();
         }
