@@ -1963,12 +1963,11 @@ namespace RaceLib
             detection.Valid = valid;
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
-                db.Update(detection);
                 race.ReCalculateLaps(db, detection.Pilot);
+                db.Update(race);
             }
 
             OnDetectionDisqualified?.Invoke(race, detection);
-
             OnLapsRecalculated?.Invoke(race);
         }
 

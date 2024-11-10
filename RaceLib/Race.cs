@@ -809,7 +809,6 @@ namespace RaceLib
                 if (d.LapNumber != i)
                 {
                     d.LapNumber = i;
-                    db.Update(d);
                 }
 
                 if (d.IsLapEnd)
@@ -824,9 +823,8 @@ namespace RaceLib
             {
                 l.Start = lapStart;
                 lapStart = l.End;
-
-                db.Update(l);
             }
+            db.Update(this);
         }
 
         public bool IsFrequencyFree(Channel c)
