@@ -669,7 +669,7 @@ namespace UI.Nodes
                         GetLayer<PopupLayer>().Popup(editor);
                     });
 
-                    if (EventManager.RaceManager.RaceRunning && !EventManager.RaceManager.RaceFinished)
+                    if (!EventManager.RaceManager.RaceRunning && !EventManager.RaceManager.RaceFinished)
                     {
                         mm.AddItem("Remove Pilot", () => { EventManager.RaceManager.RemovePilotFromCurrentRace(Pilot); });
                         mm.AddSubmenu("Change Channel", (c) => 
