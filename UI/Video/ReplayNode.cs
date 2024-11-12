@@ -345,13 +345,13 @@ namespace UI.Video
 
                 if (SeekNode.PlayButton.Visible)
                 {
-                    if (keyMapper.ReplayPrevFrame.Match(inputEvent))
-                    {
-                        PrevFrame();
-                    }
                     if (keyMapper.ReplayNextFrame.Match(inputEvent))
                     {
                         NextFrame();
+                    }
+                    if (keyMapper.ReplayPrevFrame.Match(inputEvent))
+                    {
+                        PrevFrame();
                     }
                 }
 

@@ -235,22 +235,30 @@ namespace RaceLib
 
         public IEnumerable<Race> Generate(RoundFormat roundFormat, Round newRound, RoundPlan roundPlan)
         {
-            IEnumerable<Race> preExisting = RaceManager.GetRaces(newRound);
-
-            Race[] aRound;
-            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            try
             {
-                aRound = roundFormat.GenerateRound(db, preExisting, newRound, roundPlan).ToArray();
+                IEnumerable<Race> preExisting = RaceManager.GetRaces(newRound);
+
+                Race[] aRound;
+                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                {
+                    aRound = roundFormat.GenerateRound(db, preExisting, newRound, roundPlan).ToArray();
+                }
+                foreach (Race r in aRound)
+                {
+                    RaceManager.AddRace(r);
+                }
+
+                RaceManager.UpdateRaceRoundNumbers();
+                OnRoundAdded?.Invoke();
+
+                return aRound;
             }
-            foreach (Race r in aRound)
+            catch (Exception e)
             {
-                RaceManager.AddRace(r);
+                Logger.Generation.LogException(this, e);
+                return new Race[] { };
             }
-
-            RaceManager.UpdateRaceRoundNumbers();
-            OnRoundAdded?.Invoke();
-
-            return aRound;
         }
 
         public Round GetFirstRound(EventTypes eventType, Round.RoundTypes roundType = Round.RoundTypes.Round)

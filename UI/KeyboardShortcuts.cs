@@ -162,9 +162,9 @@ namespace Composition.Input
         [Category("Replay")]
         public ShortcutKey ReplayPlayStop { get; set; }
         [Category("Replay")]
-        public ShortcutKey ReplayNextFrame { get; set; }
-        [Category("Replay")]
         public ShortcutKey ReplayPrevFrame { get; set; }
+        [Category("Replay")]
+        public ShortcutKey ReplayNextFrame { get; set; }
 
         [Category("Replay")]
         public ShortcutKey ReplayPlus5Seconds { get; set; }
@@ -262,8 +262,8 @@ namespace Composition.Input
             SceneEventStatus = new ShortcutKey(Keys.F6);
 
             ReplayPlayStop = new ShortcutKey(Keys.Space);
-            ReplayPrevFrame = new ShortcutKey(Keys.Right, true);
-            ReplayNextFrame = new ShortcutKey(Keys.Left, true);
+            ReplayNextFrame = new ShortcutKey(Keys.Right, true);
+            ReplayPrevFrame = new ShortcutKey(Keys.Left, true);
 
             ReplayPlus5Seconds = new ShortcutKey(Keys.Right);
             ReplayMinus5Seconds = new ShortcutKey(Keys.Left);

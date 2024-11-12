@@ -569,7 +569,17 @@ namespace UI.Video
             {
                 foreach (FileInfo file in raceDirectory.GetFiles("*.recordinfo.xml"))
                 {
-                    RecodingInfo videoInfo = IOTools.ReadSingle<RecodingInfo>(raceDirectory.FullName, file.Name);
+                    RecodingInfo videoInfo = null;
+
+                    try
+                    {
+                        videoInfo = IOTools.ReadSingle<RecodingInfo>(raceDirectory.FullName, file.Name);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.VideoLog.LogException(this, ex);
+                    }
+
                     if (videoInfo != null)
                     {
                         if (File.Exists(videoInfo.FilePath))

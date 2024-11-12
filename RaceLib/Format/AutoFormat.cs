@@ -15,7 +15,6 @@ namespace RaceLib.Format
         {
             Tools.Logger.Generation.LogCall(this, newRound, plan);
             List<Race> races = preExisting.Where(r => !r.Ended).ToList();
-                       
 
             Race[] lastRoundRaces;
             Brackets[] brackets;

@@ -295,19 +295,25 @@ namespace RaceLib
             {
                 if (p != null)
                 {
-                    string oldPath = p.PhotoPath;
-
-                    if (string.IsNullOrEmpty(p.PhotoPath))
+                    try
                     {
-                        IEnumerable<FileInfo> matches = media.Where(f => f.Name.ToLower().Contains(p.Name.ToLower()));
-                        if (matches.Any())
+                        string oldPath = p.PhotoPath;
+                        if (string.IsNullOrEmpty(p.PhotoPath))
                         {
-                            p.PhotoPath = matches.OrderByDescending(f => f.Extension).FirstOrDefault().FullName;
+                            IEnumerable<FileInfo> matches = media.Where(f => f.Name.ToLower().Contains(p.Name.ToLower()));
+                            if (matches.Any())
+                            {
+                                p.PhotoPath = matches.OrderByDescending(f => f.Extension).FirstOrDefault().FullName;
+                            }
+                        }
+                        if (!string.IsNullOrEmpty(p.PhotoPath))
+                        {
+                            p.PhotoPath = Path.GetRelativePath(currentDirectory, p.PhotoPath);
                         }
                     }
-                    if (!string.IsNullOrEmpty(p.PhotoPath))
+                    catch (Exception ex)
                     {
-                        p.PhotoPath = Path.GetRelativePath(currentDirectory, p.PhotoPath);
+                        Logger.UI.LogException(this, ex);
                     }
                 }
             }
