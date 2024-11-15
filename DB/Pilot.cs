@@ -20,6 +20,8 @@ namespace DB
 
         public string SillyName { get; set; }
 
+        public string DiscordID { get; set; }
+
         public string Aircraft { get; set; }
 
         public string CatchPhrase { get; set; }
