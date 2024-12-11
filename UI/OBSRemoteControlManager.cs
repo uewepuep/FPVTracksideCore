@@ -53,6 +53,8 @@ namespace UI
             ChannelGrid7,
             ChannelGrid8,
 
+            EditLaps,
+
         }
 
         private OBSRemoteControlConfig config;

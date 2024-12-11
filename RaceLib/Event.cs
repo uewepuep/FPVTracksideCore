@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Tools;
@@ -194,6 +195,8 @@ namespace RaceLib
         [Browsable(false)]
         public Sector[] Sectors { get; set; }
 
+        private static string dateFormat = "MMM d";
+
         public Event()
         {
             SyncWithFPVTrackside = false;
@@ -209,7 +212,8 @@ namespace RaceLib
             RaceLength = TimeSpan.FromMinutes(2);
             Laps = 4;
             EventType = EventTypes.Race;
-            Name = "New Event";
+            Start = DateTime.Today;
+            Name = "New Event (" + Start.ToString(dateFormat) + ")";
             MinStartDelay = TimeSpan.FromSeconds(0.5f);
             MaxStartDelay = TimeSpan.FromSeconds(5);
 
@@ -238,7 +242,18 @@ namespace RaceLib
             newEvent.RaceLength = this.RaceLength;
             newEvent.EventType = this.EventType;
 
-            newEvent.Name = this.Name + " Clone";
+            newEvent.Name = this.Name;
+            newEvent.Start = DateTime.Today;
+
+            try
+            {
+                newEvent.Name = Regex.Replace(newEvent.Name, @" \([A-z0-9 ]*\)", "");
+            }
+            catch
+            {
+            }
+
+            newEvent.Name = newEvent.Name + " (" +  Start.ToString(dateFormat) + ")";
 
             newEvent.PilotChannels = this.PilotChannels.ToList();
             newEvent.Channels = this.Channels.ToArray();
