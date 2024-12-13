@@ -38,31 +38,32 @@ namespace RaceLib
         public int Number { get; set; }
         public Band Band { get; set; }
         public char ChannelPrefix { get; set; }
-        
-        public int Frequency { get { return FrequencyLookup(Band, ChannelPrefix, Number); } }
+        public int Frequency { get; set; }
 
         public Channel()
         {
             Number = 1;
             Band = Band.None;
             ChannelPrefix = char.MinValue;
+            Frequency = 0;
         }
 
         public Channel(int id, int number, Band band)
+            :this(id, char.MinValue, number, band)
+        {
+        }
+
+        public Channel(int id, char prefix, int number, Band band)
         {
             byte[] bytes = new byte[16];
             BitConverter.GetBytes(id).CopyTo(bytes, 0);
             ID = new Guid(bytes);
             Number = number;
             Band = band;
-            ChannelPrefix = char.MinValue;
+            ChannelPrefix = prefix;
+            Frequency = FrequencyLookup(Band, ChannelPrefix, Number);
         }
 
-        public Channel(int id, char prefix, int number, Band band)
-            :this(id, number, band)
-        {
-            ChannelPrefix = prefix;
-        }
         public static IEnumerable<Band> GetBands()
         {
             List<Band> bands = new List<Band>();
@@ -368,12 +369,19 @@ namespace RaceLib
             }
             return 0;
         }
+
+        private static Channel[] allChannels;
+
         [System.ComponentModel.Browsable(false)]
-        public static IEnumerable<Channel> AllChannels
+        public static Channel[] AllChannels
         {
             get
             {
-                return Fatshark.Union(RaceBand).Union(BoscamA).Union(BoscamB).Union(DJIFPVHD).Union(E).Union(HDZero).Union(LowBand).Union(Diatone).Union(DJIO3);
+                if (allChannels == null)
+                {
+                    allChannels = Fatshark.Union(RaceBand).Union(BoscamA).Union(BoscamB).Union(DJIFPVHD).Union(E).Union(HDZero).Union(LowBand).Union(Diatone).Union(DJIO3).ToArray();
+                }
+                return allChannels;
             }
         }
 
@@ -474,6 +482,7 @@ namespace RaceLib
             public Band Band { get; set; }
 
             public char Prefix { get; set; }
+            public int FrequencyOverride { get; set; }
 
             public SimpleChannel() { }
 
@@ -486,7 +495,12 @@ namespace RaceLib
 
             public Channel GetChannel()
             {
-                return Channel.GetChannel(Band, Number, Prefix);
+                Channel channel = Channel.GetChannel(Band, Number, Prefix);
+                if (FrequencyOverride != 0)
+                {
+                    channel.Frequency = FrequencyOverride;
+                }
+                return channel;
             }
         }
     }

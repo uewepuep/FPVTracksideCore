@@ -104,7 +104,7 @@ namespace ExternalData
                 }
 
                 if (output != "")
-                    output += "&";
+                    output += " & ";
 
                 output += HttpUtility.UrlEncode(pi.Name) + "=" + HttpUtility.UrlEncode(pi.GetValue(request).ToString());
             }
