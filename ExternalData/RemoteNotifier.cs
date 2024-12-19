@@ -321,6 +321,7 @@ namespace ExternalData
     {
         public string Name { get; set; }
         public string Phonetic { get; set; }
+        public string DiscordID { get; set; }
         public byte ChannelColorR { get; set; }
         public byte ChannelColorG { get; set; }
         public byte ChannelColorB { get; set; }
@@ -333,6 +334,7 @@ namespace ExternalData
         {
             Name = pc.Pilot.Name;
             Phonetic = pc.Pilot.Phonetic;
+            DiscordID = pc.Pilot.DiscordID;
 
             ChannelColorR = color.R;
             ChannelColorG = color.G;

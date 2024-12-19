@@ -45,6 +45,9 @@ namespace RaceLib
         [Category("Name")]
         public string SillyName { get; set; }
 
+        [Category("Name")]
+        public string DiscordID { get; set; }
+
         [Category("Profile")]
         public string Aircraft { get; set; }
         
