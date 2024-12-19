@@ -404,6 +404,24 @@ namespace RaceLib
             }
         }
 
+        public Race CloneLastHeat(Round round)
+        {
+            IEnumerable<Race> races = RaceManager.Races.Where(r => r.Round == round).OrderBy(r => r.RaceNumber);
+
+            List<Race> newRaces = new List<Race>();
+            var race = races.Last();
+            
+            Race cloned = race.Clone();
+            cloned.Round = round;
+
+            RaceManager.AddRace(cloned);
+
+            RaceManager.UpdateRaceRoundNumbers();
+
+            OnRoundAdded?.Invoke();
+            return cloned;
+        }
+
         public IEnumerable<Race> CloneRound(Round round)
         {
             IEnumerable<Race> races = RaceManager.Races.Where(r => r.Round == round).OrderBy(r => r.RaceNumber);

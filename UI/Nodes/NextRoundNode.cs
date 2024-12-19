@@ -54,13 +54,18 @@ namespace UI.Nodes
             nextItems.AddChild(keep);
 
           
-            TextButtonNode clone = new TextButtonNode("Clone", Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
+            TextButtonNode clone = new TextButtonNode("Clone Round", Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
             clone.OnClick += Clone_OnClick;
             nextItems.AddChild(clone);
 
             TextButtonNode paste = new TextButtonNode("Paste Pilots", Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
             paste.OnClick += Paste_OnClick;
             nextItems.AddChild(paste);
+
+
+            TextButtonNode lastHeatAgain = new TextButtonNode("Clone Last Heat", Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
+            lastHeatAgain.OnClick += LastAgain_OnClick;
+            nextItems.AddChild(lastHeatAgain);
 
             nextItems.RequestLayout();
         }
@@ -88,6 +93,11 @@ namespace UI.Nodes
         private void Clone_OnClick(Composition.Input.MouseInputEvent mie)
         {
             eventManager.RoundManager.CloneRound(Round);
+        }
+
+        private void LastAgain_OnClick(Composition.Input.MouseInputEvent mie)
+        {
+            eventManager.RoundManager.CloneLastHeat(Round);
         }
     }
 }
