@@ -218,7 +218,7 @@ namespace Composition
             if (autoresetevent == null || sb == null || !hasBegun)
                 return;
 
-            sb.End();
+            sb?.End();
             hasBegun = false;
 
             autoresetevent.Set();
