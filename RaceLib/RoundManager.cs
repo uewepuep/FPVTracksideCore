@@ -408,8 +408,9 @@ namespace RaceLib
         {
             IEnumerable<Race> races = RaceManager.Races.Where(r => r.Round == round).OrderBy(r => r.RaceNumber);
 
-            List<Race> newRaces = new List<Race>();
-            var race = races.Last();
+            Race race = races.LastOrDefault();
+            if (race == null)
+                return null;
             
             Race cloned = race.Clone();
             cloned.Round = round;
