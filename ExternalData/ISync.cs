@@ -45,4 +45,9 @@ namespace ExternalData
 
         public bool CanUpload { get; }
     }
+
+    public class LoginException : Exception
+    {
+
+    }
 }

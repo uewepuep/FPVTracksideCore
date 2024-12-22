@@ -2,12 +2,14 @@
 using Composition.Layers;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Composition.Nodes
 {
@@ -131,31 +133,28 @@ namespace Composition.Nodes
     public class MessageNode : AspectNode
     {
         public TextButtonNode OK { get; private set; }
+        protected Node buttonsContainer;
 
         public MessageNode(string message, MenuLayer MenuLayer, System.Action onOk)
-            : this(message, MenuLayer.Background, MenuLayer.DisabledText, MenuLayer.Hover, MenuLayer.Text, onOk)
-        {
-        }
-
-        public MessageNode(string message, Color background, Color buttonBG, Color hover, Color text, System.Action onOk)
         {
             AspectRatio = (message.Length / 40.0f) * 4f;
 
             Alignment = RectangleAlignment.Center;
             RelativeBounds = new RectangleF(0, 0.4f, 1, 0.1f);
 
-            ColorNode backgroundNode = new ColorNode(background);
+            ColorNode backgroundNode = new ColorNode(MenuLayer.Background);
             AddChild(backgroundNode);
 
-            TextNode questionNode = new TextNode(message, text);
+            TextNode questionNode = new TextNode(message, MenuLayer.Text);
             questionNode.RelativeBounds = new RectangleF(0.025f, 0.1f, 0.95f, 0.3f);
             backgroundNode.AddChild(questionNode);
 
-            Node buttonsContainer = new Node();
+            buttonsContainer = new Node();
+
             buttonsContainer.RelativeBounds = new RectangleF(0.1f, 0.5f, 0.8f, 0.4f);
             backgroundNode.AddChild(buttonsContainer);
 
-            OK = new TextButtonNode("Ok", buttonBG, hover, text);
+            OK = new TextButtonNode("Ok", MenuLayer.DisabledText, MenuLayer.Hover, MenuLayer.Text);
 
             buttonsContainer.AddChild(OK);
 
@@ -166,6 +165,30 @@ namespace Composition.Nodes
                 onOk?.Invoke();
                 Dispose();
             };
+        }
+    }
+
+    public class ErrorMessageNode : MessageNode
+    {
+        public Exception Exception { get; set; }
+
+        public TextButtonNode Copy { get; set; }
+
+        public ErrorMessageNode(string message, Exception exception, MenuLayer MenuLayer, Action onOk)
+            : base(message, MenuLayer, onOk)
+        {
+            Exception = exception;
+            Copy = new TextButtonNode("Copy Exception", MenuLayer.DisabledText, MenuLayer.Hover, MenuLayer.Text);
+            buttonsContainer.AddChild(Copy);
+            Copy.OnClick += Copy_OnClick;
+
+            AlignHorizontally(0.1f, buttonsContainer.Children.ToArray());
+            RequestLayout();
+        }
+
+        private void Copy_OnClick(MouseInputEvent mie)
+        {
+            PlatformTools.Clipboard.SetText(Exception.ToString());
         }
     }
 }
