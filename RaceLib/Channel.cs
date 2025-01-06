@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -35,9 +36,16 @@ namespace RaceLib
 
     public class Channel : BaseObject
     {
+        [ReadOnly(true)]
         public int Number { get; set; }
+
+        [ReadOnly(true)]
         public Band Band { get; set; }
+
+        [Browsable(false)]
         public char ChannelPrefix { get; set; }
+
+        [ReadOnly(true)]
         public int Frequency { get; set; }
 
         public Channel()
@@ -379,9 +387,23 @@ namespace RaceLib
             {
                 if (allChannels == null)
                 {
-                    allChannels = Fatshark.Union(RaceBand).Union(BoscamA).Union(BoscamB).Union(DJIFPVHD).Union(E).Union(HDZero).Union(LowBand).Union(Diatone).Union(DJIO3).ToArray();
+                    allChannels = AllChannelsUnmodified;
                 }
                 return allChannels;
+            }
+        }
+
+        public static void LoadCustom(Profile profile)
+        {
+
+        }
+
+
+        public static Channel[] AllChannelsUnmodified
+        {
+            get
+            {
+                return Fatshark.Union(RaceBand).Union(BoscamA).Union(BoscamB).Union(DJIFPVHD).Union(E).Union(HDZero).Union(LowBand).Union(Diatone).Union(DJIO3).ToArray();
             }
         }
 
@@ -482,7 +504,6 @@ namespace RaceLib
             public Band Band { get; set; }
 
             public char Prefix { get; set; }
-            public int FrequencyOverride { get; set; }
 
             public SimpleChannel() { }
 
@@ -496,10 +517,6 @@ namespace RaceLib
             public Channel GetChannel()
             {
                 Channel channel = Channel.GetChannel(Band, Number, Prefix);
-                if (FrequencyOverride != 0)
-                {
-                    channel.Frequency = FrequencyOverride;
-                }
                 return channel;
             }
         }
