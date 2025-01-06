@@ -129,10 +129,12 @@ namespace RaceLib.Format
                                 }
                             }
 
-                            if (pilotChannels[pilot] == Channel.None)
+                            if (channelCount.Any())
                             {
-                                pilotChannels[pilot] = channelCount.OrderBy(cc => cc.Value).ThenByDescending(cc => cc.Key == oldChannel).First().Key;
-                               
+                                if (pilotChannels[pilot] == Channel.None)
+                                {
+                                    pilotChannels[pilot] = channelCount.OrderBy(cc => cc.Value).ThenByDescending(cc => cc.Key == oldChannel).First().Key;
+                                }
                             }
                         }
                     }
