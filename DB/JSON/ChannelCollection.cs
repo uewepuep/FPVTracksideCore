@@ -6,26 +6,29 @@ using System.Threading.Tasks;
 
 namespace DB.JSON
 {
-    public class ChannelCollections : IDatabaseCollection<Channel>
+    public class ChannelCollection : IDatabaseCollection<Channel>
     {
         private static bool firstRun = true;
 
-        private static Channel[] allChannels;
 
-        public ChannelCollections() 
+        public ChannelCollection() 
         {
             if (firstRun)
             {
-                allChannels = RaceLib.Channel.AllChannels.Convert<Channel>().ToArray();
-
                 JsonIO<Channel> io = new JsonIO<Channel>();
                 io.Write("httpfiles/Channels.json", All());
                 firstRun = false;
             }
         }
 
+        private Channel[] allChannels;
+
         public IEnumerable<Channel> All()
         {
+            if (allChannels == null)
+            {
+                allChannels = RaceLib.Channel.AllChannels.Convert<Channel>().ToArray();
+            }
             return allChannels;
         }
 

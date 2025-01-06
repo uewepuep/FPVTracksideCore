@@ -48,6 +48,8 @@ namespace RaceLib
         [ReadOnly(true)]
         public int Frequency { get; set; }
 
+        public string DisplayName { get; set; }
+
         public Channel()
         {
             Number = 1;
@@ -93,6 +95,11 @@ namespace RaceLib
 
         public string GetBandChannelText()
         {
+            if (!string.IsNullOrEmpty(DisplayName))
+            {
+                return DisplayName;
+            }
+
             if (Band == Band.None) return "--";
 
             if (ChannelPrefix != char.MinValue)
@@ -121,6 +128,16 @@ namespace RaceLib
 
         public string ToStringShort()
         {
+            if (!string.IsNullOrEmpty(DisplayName))
+            {
+                string output = DisplayName;
+                if (output.Length > 3)
+                {
+                    return output.Substring(3);
+                }
+                return output;
+            }
+
             if (Band == Band.None)
             {
                 return "None";
@@ -393,12 +410,6 @@ namespace RaceLib
             }
         }
 
-        public static void LoadCustom(Profile profile)
-        {
-
-        }
-
-
         public static Channel[] AllChannelsUnmodified
         {
             get
@@ -454,6 +465,11 @@ namespace RaceLib
             return pool.Where(c => InterferesWith(c));
         }
 
+        public static void LoadDisplayNames(Profile profile)
+        {
+            Channel[] loaded = Read(profile); 
+        }
+
         private const string filename = "Channels.xml";
         public static Channel[] Read(Profile profile)
         {
@@ -505,6 +521,8 @@ namespace RaceLib
 
             public char Prefix { get; set; }
 
+            public string DisplayName { get; set; }
+
             public SimpleChannel() { }
 
             public SimpleChannel(Channel channel)
@@ -512,11 +530,15 @@ namespace RaceLib
                 Band = channel.Band;
                 Number = channel.Number;
                 Prefix = channel.ChannelPrefix;
+                DisplayName = channel.DisplayName;
             }
 
             public Channel GetChannel()
             {
                 Channel channel = Channel.GetChannel(Band, Number, Prefix);
+
+                channel.DisplayName = DisplayName;
+
                 return channel;
             }
         }

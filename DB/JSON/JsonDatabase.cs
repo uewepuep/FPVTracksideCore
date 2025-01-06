@@ -23,7 +23,7 @@ namespace DB.JSON
         public JsonCollection<Pilot> Pilots { get; private set; }
         public JsonCollection<Patreon> Patreons { get; private set; }
         public JsonCollection<Club> Clubs { get; private set; }
-        public ChannelCollections Channels { get; private set; }
+        public ChannelCollection Channels { get; private set; }
 
 
         public EventCollection Events { get; private set; }
@@ -41,7 +41,7 @@ namespace DB.JSON
             Events = new EventCollection(DataDirectory);
             Patreons = new JsonCollection<Patreon>(DataDirectory);
             Clubs = new JsonCollection<Club>(DataDirectory);
-            Channels = new ChannelCollections();
+            Channels = new ChannelCollection();
 
             DirectoryInfo trackDir = new DirectoryInfo("Tracks");
             if (!trackDir.Exists)
