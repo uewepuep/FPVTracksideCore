@@ -1,5 +1,6 @@
 ﻿using Composition.Nodes;
 using ExternalData;
+using OBSWebsocketDotNet.Types;
 using RaceLib;
 using System;
 using System.Collections.Generic;
@@ -191,11 +192,24 @@ namespace UI
                         OBSRemoteControlSetSceneEvent a = rcEvent as OBSRemoteControlSetSceneEvent;
                         remoteControl.SetScene(a.SceneName);
                     }
-
-                    if (rcEvent is OBSRemoteControlSourceFilterToggleEvent)
+                    else if (rcEvent is OBSRemoteControlSourceFilterToggleEvent)
                     {
                         OBSRemoteControlSourceFilterToggleEvent a = rcEvent as OBSRemoteControlSourceFilterToggleEvent;
                         remoteControl.SetSourceFilterEnabled(a.SourceName, a.FilterName, a.Enable);
+                    }
+                    else if (rcEvent is OBSRemoteControlHotKeyEvent)
+                    {
+                        OBSRemoteControlHotKeyEvent a = rcEvent as OBSRemoteControlHotKeyEvent;
+                        remoteControl.TriggerHotKeySequence(a.HotKey, a.Modifiers);
+                    }
+                    else if (rcEvent is OBSRemoteControlActionEvent)
+                    {
+                        OBSRemoteControlActionEvent a = rcEvent as OBSRemoteControlActionEvent;
+                        remoteControl.TriggerHotKeyAction(a.ActionName);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
                     }
                 }
             }
@@ -257,7 +271,9 @@ namespace UI
 
         [XmlInclude(typeof(OBSRemoteControlEvent)),
          XmlInclude(typeof(OBSRemoteControlSetSceneEvent)),
-         XmlInclude(typeof(OBSRemoteControlSourceFilterToggleEvent))]
+         XmlInclude(typeof(OBSRemoteControlSourceFilterToggleEvent)),
+         XmlInclude(typeof(OBSRemoteControlHotKeyEvent))
+            ]
 
         public class OBSRemoteControlConfig
         {
@@ -356,6 +372,43 @@ namespace UI
             public override string ToString()
             {
                 return Trigger + " -> " + SourceName + " " + FilterName + " " + Enable;
+            }
+        }
+
+        public class OBSRemoteControlActionEvent : OBSRemoteControlEvent
+        {
+            public string ActionName { get; set; }
+
+            public override string ToString()
+            {
+                return Trigger + " -> " + ActionName;
+            }
+        }
+
+        public class OBSRemoteControlHotKeyEvent : OBSRemoteControlEvent
+        {
+            public OBSHotkey HotKey { get; set; }
+            public KeyModifier Modifier1 { get; set; }
+            public KeyModifier Modifier2 { get; set; }
+            public KeyModifier Modifier3 { get; set; }
+
+            [Browsable(false)]
+            public KeyModifier Modifiers
+            {
+                get
+                {
+                    return Modifier1 | Modifier2 | Modifier3;
+                }
+            }
+
+            public override string ToString()
+            {
+                string mods = "";
+                if (Modifier1 != KeyModifier.None) mods += Modifier1 + " + ";
+                if (Modifier2 != KeyModifier.None) mods += Modifier2 + " + ";
+                if (Modifier3 != KeyModifier.None) mods += Modifier3 + " + ";
+
+                return Trigger + " -> " + mods + HotKey;
             }
         }
     }

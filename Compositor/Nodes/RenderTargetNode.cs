@@ -98,20 +98,23 @@ namespace Composition.Nodes
         {
             disposed = true;
 
-            if (renderTarget != null)
+            lock (renderTargetLock)
             {
-                CompositorLayer.CleanUp(renderTarget);
-                renderTarget = null;
-            }
+                if (renderTarget != null)
+                {
+                    CompositorLayer.CleanUp(renderTarget);
+                    renderTarget = null;
+                }
 
-            if (drawer != null)
-            {
-                CompositorLayer.CleanUp(drawer);
-                drawer = null;
-            }
+                if (drawer != null)
+                {
+                    CompositorLayer.CleanUp(drawer);
+                    drawer = null;
+                }
 
-            Scroller.Dispose();
-            base.Dispose();
+                Scroller.Dispose();
+                base.Dispose();
+            }
         }
 
         // Need to use basebounds as ImageNode over-rides the Bounds size based on image size. But our image size is dynamic..

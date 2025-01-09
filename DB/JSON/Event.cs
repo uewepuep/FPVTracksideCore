@@ -56,6 +56,7 @@ namespace DB.JSON
 
         public Guid[] Channels { get; set; }
         public string[] ChannelColors { get; set; }
+        public string[] ChannelDisplayNames { get; set; }
 
         public bool Enabled { get; set; }
 
@@ -96,6 +97,8 @@ namespace DB.JSON
         public Event(RaceLib.Event obj)
            : base(obj)
         {
+            var orderedChannels = obj.Channels.OrderBy(c => c.Frequency).ThenBy(r => r.Band);
+
             if (obj.Rounds != null)
                 Rounds = obj.Rounds.Select(c => c.ID).ToArray();
 
@@ -103,7 +106,7 @@ namespace DB.JSON
                 PilotChannels = obj.PilotChannels.Convert<PilotChannel>().ToArray();
 
             if (obj.Channels != null)
-                Channels = obj.Channels.Select(c => c.ID).ToArray();
+                Channels = orderedChannels.Select(c => c.ID).ToArray();
 
             if (obj.RemovedPilots != null)
                 RemovedPilots = obj.RemovedPilots.Select(c => c.ID).ToArray();
@@ -113,6 +116,7 @@ namespace DB.JSON
 
             ExternalID = obj.ExternalID;
 
+            ChannelDisplayNames = orderedChannels.Select(c => c.DisplayName).ToArray();
             ChannelColors = obj.ChannelColors;
             SyncWithFPVTrackside = obj.SyncWithFPVTrackside;
             SyncWithMultiGP = obj.SyncWithMultiGP;
