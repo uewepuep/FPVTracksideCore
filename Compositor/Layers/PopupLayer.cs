@@ -94,14 +94,23 @@ namespace Composition.Layers
             FocusedNode = cfn;
         }
 
-        public void PopupMessage(string message)
+        public void PopupMessage(string message, Action onOk = null)
         {
-            PopupMessage(message, () => { });
+            if (onOk == null)
+                onOk = () => { };
+
+            MessageNode cfn = new MessageNode(message, LayerStack.GetLayer<MenuLayer>(), onOk);
+            background.AddChild(cfn);
+            RequestLayout();
+            FocusedNode = cfn;
         }
 
-        public void PopupMessage(string message, Action onOk)
+        public void PopupError(string message, Exception exception, Action onOk = null)
         {
-            MessageNode cfn = new MessageNode(message, LayerStack.GetLayer<MenuLayer>(), onOk);
+            if (onOk == null)
+                onOk = () => { };
+
+            ErrorMessageNode cfn = new ErrorMessageNode(message, exception, LayerStack.GetLayer<MenuLayer>(), onOk);
             background.AddChild(cfn);
             RequestLayout();
             FocusedNode = cfn;

@@ -780,6 +780,8 @@ namespace UI.Nodes
             MouseMenu mouseMenu = new MouseMenu(this);
             mouseMenu.TopToBottom = false;
 
+            mouseMenu.AddItem("Add Action", () => { AddNew(new OBSRemoteControlManager.OBSRemoteControlActionEvent()); });
+            mouseMenu.AddItem("Add HotKey", () => { AddNew(new OBSRemoteControlManager.OBSRemoteControlHotKeyEvent()); });
             mouseMenu.AddItem("Add Scene Change", () => { AddNew(new OBSRemoteControlManager.OBSRemoteControlSetSceneEvent() ); });
             mouseMenu.AddItem("Add Source Filter Toggle", () => { AddNew(new OBSRemoteControlManager.OBSRemoteControlSourceFilterToggleEvent()); });
             mouseMenu.Show(addButton);
@@ -808,6 +810,10 @@ namespace UI.Nodes
             {
                 return new OBSRemoteControlPropertyNode(obj, pi, ButtonBackground, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlPropertyNode.Types.SourceFilter);
             }
+            else if (pi.Name == "ActionName")
+            {
+                return new OBSRemoteControlPropertyNode(obj, pi, ButtonBackground, Theme.Current.Editor.Text.XNA, Theme.Current.Hover.XNA, Config, OBSRemoteControlPropertyNode.Types.ActionHotKey);
+            }
 
             return base.CreatePropertyNode(obj, pi);
         }
@@ -835,7 +841,8 @@ namespace UI.Nodes
             {
                 Scene,
                 Source,
-                SourceFilter
+                SourceFilter,
+                ActionHotKey
             }
             public Types OBSType { get; private set; }
 
@@ -869,6 +876,9 @@ namespace UI.Nodes
                     case Types.SourceFilter:
                         oBSRemoteControl?.GetFilters(ShowMouseMenu);
                         break;
+                    case Types.ActionHotKey:
+                        oBSRemoteControl?.GetHotKeys(ShowMouseMenu);
+                        break;
                 }
             }
 
@@ -876,6 +886,11 @@ namespace UI.Nodes
             {
                 Options = options.OfType<object>().ToList();
                 base.ShowMouseMenu();
+            }
+
+            public override string ValueToString(object value)
+            {
+                return value.ToString();
             }
         }
     }

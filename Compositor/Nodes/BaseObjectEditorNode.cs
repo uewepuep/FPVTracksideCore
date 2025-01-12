@@ -497,14 +497,11 @@ namespace Composition.Nodes
                 return null;
 
             ReadOnlyAttribute ro = pi.GetCustomAttribute<ReadOnlyAttribute>();
-            if (ro != null && ro.IsReadOnly)
-                return null;
-
             PropertyNode<T> newNode = null;
 
             bool HasPublicSetter = pi.GetSetMethod() != null;
 
-            if (!CanEdit || !HasPublicSetter)
+            if (!CanEdit || !HasPublicSetter || (ro != null && ro.IsReadOnly))
             {
                 newNode = new StaticTextPropertyNode<T>(obj, pi, TextColor);
                 return newNode;

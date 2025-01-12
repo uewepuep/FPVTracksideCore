@@ -30,7 +30,10 @@ namespace RaceLib.Format
             Dictionary<Pilot, Channel> dictionary = new Dictionary<Pilot, Channel>();
             foreach (var kvp in pilotChannels)
             {
-                dictionary.Add(kvp.Pilot, kvp.Channel);
+                if (!dictionary.ContainsKey(kvp.Pilot))
+                {
+                    dictionary.Add(kvp.Pilot, kvp.Channel);
+                }
             }
             return HeatCountFromSharedFrequencies(dictionary);
         }

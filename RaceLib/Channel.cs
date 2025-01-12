@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -35,10 +36,19 @@ namespace RaceLib
 
     public class Channel : BaseObject
     {
+        [ReadOnly(true)]
         public int Number { get; set; }
+
+        [ReadOnly(true)]
         public Band Band { get; set; }
+
+        [Browsable(false)]
         public char ChannelPrefix { get; set; }
+
+        [ReadOnly(true)]
         public int Frequency { get; set; }
+
+        public string DisplayName { get; set; }
 
         public Channel()
         {
@@ -85,6 +95,11 @@ namespace RaceLib
 
         public string GetBandChannelText()
         {
+            if (!string.IsNullOrEmpty(DisplayName))
+            {
+                return DisplayName;
+            }
+
             if (Band == Band.None) return "--";
 
             if (ChannelPrefix != char.MinValue)
@@ -113,6 +128,16 @@ namespace RaceLib
 
         public string ToStringShort()
         {
+            if (!string.IsNullOrEmpty(DisplayName))
+            {
+                string output = DisplayName;
+                if (output.Length > 3)
+                {
+                    return output.Substring(3);
+                }
+                return output;
+            }
+
             if (Band == Band.None)
             {
                 return "None";
@@ -379,9 +404,17 @@ namespace RaceLib
             {
                 if (allChannels == null)
                 {
-                    allChannels = Fatshark.Union(RaceBand).Union(BoscamA).Union(BoscamB).Union(DJIFPVHD).Union(E).Union(HDZero).Union(LowBand).Union(Diatone).Union(DJIO3).ToArray();
+                    allChannels = AllChannelsUnmodified;
                 }
                 return allChannels;
+            }
+        }
+
+        public static Channel[] AllChannelsUnmodified
+        {
+            get
+            {
+                return Fatshark.Union(RaceBand).Union(BoscamA).Union(BoscamB).Union(DJIFPVHD).Union(E).Union(HDZero).Union(LowBand).Union(Diatone).Union(DJIO3).ToArray();
             }
         }
 
@@ -430,6 +463,11 @@ namespace RaceLib
         public IEnumerable<Channel> GetInterferringChannels(IEnumerable<Channel> pool)
         {
             return pool.Where(c => InterferesWith(c));
+        }
+
+        public static void LoadDisplayNames(Profile profile)
+        {
+            Channel[] loaded = Read(profile); 
         }
 
         private const string filename = "Channels.xml";
@@ -482,7 +520,8 @@ namespace RaceLib
             public Band Band { get; set; }
 
             public char Prefix { get; set; }
-            public int FrequencyOverride { get; set; }
+
+            public string DisplayName { get; set; }
 
             public SimpleChannel() { }
 
@@ -491,15 +530,15 @@ namespace RaceLib
                 Band = channel.Band;
                 Number = channel.Number;
                 Prefix = channel.ChannelPrefix;
+                DisplayName = channel.DisplayName;
             }
 
             public Channel GetChannel()
             {
                 Channel channel = Channel.GetChannel(Band, Number, Prefix);
-                if (FrequencyOverride != 0)
-                {
-                    channel.Frequency = FrequencyOverride;
-                }
+
+                channel.DisplayName = DisplayName;
+
                 return channel;
             }
         }

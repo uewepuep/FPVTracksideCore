@@ -225,6 +225,8 @@ namespace RaceLib
 
             workQueue.Enqueue(workSet, "Loading Event", () =>
             {
+                Channel.LoadDisplayNames(Profile);
+
                 using (IDatabase db = DatabaseFactory.OpenLegacyLoad(EventId))
                 {
                     Event = db.LoadEvent();

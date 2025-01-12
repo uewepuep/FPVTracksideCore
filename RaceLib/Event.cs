@@ -153,9 +153,6 @@ namespace RaceLib
 
         [System.ComponentModel.Browsable(false)]
         public bool Enabled { get; set; }
-
-        [System.ComponentModel.Browsable(false)]
-        public MultiGPRaceFormat MultiGPRaceFormat { get; set; }
         
         [Category("Cloud")]
         [DisplayName("Sync with FPVTrackside.com")]
@@ -166,6 +163,9 @@ namespace RaceLib
         [System.ComponentModel.Browsable(false)]
         public bool VisibleOnline { get; set; }
 
+        [System.ComponentModel.Browsable(false)]
+        public MultiGPRaceFormat MultiGPRaceFormat { get; set; }
+
         [Category("Cloud")]
         [DisplayName("Sync with MultiGP")]
         public bool SyncWithMultiGP { get; set; }
@@ -173,7 +173,6 @@ namespace RaceLib
         [Category("Cloud")]
         [DisplayName("Generate heats on MultiGP.com (ZippyQ etc)")]
         public bool GenerateHeatsMultiGP { get; set; }
-
 
         [System.ComponentModel.Browsable(false)]
         public string[] ChannelColors { get; set; }

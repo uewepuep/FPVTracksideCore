@@ -107,8 +107,6 @@ namespace ExternalData
 
         private void callBackIenumerable(stringReturner input, Action<string[]> callback)
         {
-            
-
             workQueue?.Enqueue(() =>
             {
                 try
@@ -151,7 +149,6 @@ namespace ExternalData
         {
             WaitConnection();
 
-
             foreach (string scene in GetScenes()) 
             {
                 List<SceneItemDetails> sceneDetails = obsWebsocket.GetSceneItemList(scene);
@@ -167,7 +164,6 @@ namespace ExternalData
         {
             callBackIenumerable(GetFilters, callback);
         }
-
         private IEnumerable<string> GetFilters()
         {
             WaitConnection();
@@ -185,6 +181,17 @@ namespace ExternalData
                     }
                 }
             }
+        }
+
+        public void GetHotKeys(Action<string[]> callback)
+        {
+            callBackIenumerable(GetHotKeys, callback);
+        }
+
+        private IEnumerable<string> GetHotKeys()
+        {
+            WaitConnection();
+            return obsWebsocket.GetHotkeyList().Distinct().OrderBy(r => r);
         }
 
         public void SetScene(string name)
@@ -228,6 +235,52 @@ namespace ExternalData
                 try
                 {
                     obsWebsocket.SetSourceFilterEnabled(source, filter, enabled);
+                    Activity?.Invoke(true);
+                }
+                catch (Exception e)
+                {
+                    Logger.OBS.LogException(this, e);
+                    Activity?.Invoke(false);
+                }
+
+            });
+        }
+
+        public void TriggerHotKeyAction(string hotkeyactionaname)
+        {
+            workQueue?.Enqueue(() =>
+            {
+                if (!Connected || obsWebsocket == null)
+                {
+                    return;
+                }
+
+                try
+                {
+                    obsWebsocket.TriggerHotkeyByName(hotkeyactionaname);
+                    Activity?.Invoke(true);
+                }
+                catch (Exception e)
+                {
+                    Logger.OBS.LogException(this, e);
+                    Activity?.Invoke(false);
+                }
+
+            });
+        }
+
+        public void TriggerHotKeySequence(OBSHotkey hotKey, KeyModifier modifiers)
+        {
+            workQueue?.Enqueue(() =>
+            {
+                if (!Connected || obsWebsocket == null)
+                {
+                    return;
+                }
+
+                try
+                {
+                    obsWebsocket.TriggerHotkeyByKeySequence(hotKey, modifiers);
                     Activity?.Invoke(true);
                 }
                 catch (Exception e)

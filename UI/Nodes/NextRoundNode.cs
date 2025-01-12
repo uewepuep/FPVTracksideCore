@@ -15,8 +15,6 @@ namespace UI.Nodes
     {
         private ListNode<TextButtonNode> nextItems;
 
-        private TextNode instructions;
-
         private EventManager eventManager;
 
         public Round Round { get; private set; }
@@ -25,12 +23,7 @@ namespace UI.Nodes
         {
             this.eventManager = eventManager;
 
-            instructions = new TextNode("", Theme.Current.Rounds.Text.XNA);
-            instructions.RelativeBounds = new RectangleF(0, 0, 1, 0.1f);
-            AddChild(instructions);
-
             nextItems = new ListNode<TextButtonNode>(Theme.Current.ScrollBar.XNA);
-            nextItems.RelativeBounds = new RectangleF(0, instructions.RelativeBounds.Bottom, 1, 1 - instructions.RelativeBounds.Bottom);
             nextItems.Scale(0.9f);
             AddChild(nextItems);
         }
@@ -42,7 +35,6 @@ namespace UI.Nodes
             nextItems.ClearDisposeChildren();
 
             int nextRound = round.RoundNumber + 1;
-            instructions.Text = "Add round " + nextRound.ToString() + "?";
 
             TextButtonNode change = new TextButtonNode("Randomise (Random channels)", Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
             change.OnClick += Change_OnClick;
@@ -54,19 +46,19 @@ namespace UI.Nodes
             nextItems.AddChild(keep);
 
           
-            TextButtonNode clone = new TextButtonNode("Clone Round", Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
+            TextButtonNode clone = new TextButtonNode("Clone Last Round", Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
             clone.OnClick += Clone_OnClick;
             nextItems.AddChild(clone);
+
+            TextButtonNode lastHeatAgain = new TextButtonNode("Clone Last Race", Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
+            lastHeatAgain.OnClick += LastAgain_OnClick;
+            nextItems.AddChild(lastHeatAgain);
 
             TextButtonNode paste = new TextButtonNode("Paste Pilots", Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
             paste.OnClick += Paste_OnClick;
             nextItems.AddChild(paste);
 
-
-            TextButtonNode lastHeatAgain = new TextButtonNode("Clone Last Heat", Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
-            lastHeatAgain.OnClick += LastAgain_OnClick;
-            nextItems.AddChild(lastHeatAgain);
-
+            
             nextItems.RequestLayout();
         }
 

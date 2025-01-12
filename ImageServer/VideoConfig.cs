@@ -40,7 +40,7 @@ namespace ImageServer
 
     public class VideoConfig
     {
-        [System.ComponentModel.ReadOnly(true)]
+        [System.ComponentModel.Browsable(true)]
         private string deviceName;
         
         [Category("Device")]
@@ -74,17 +74,17 @@ namespace ImageServer
         [System.ComponentModel.Browsable(false)]
         public string FilePath { get; set; }
 
-        [System.ComponentModel.ReadOnly(true)]
+        [System.ComponentModel.Browsable(true)]
         public string DirectShowPath { get; set; }
 
-        [System.ComponentModel.ReadOnly(true)]
+        [System.ComponentModel.Browsable(true)]
         public string MediaFoundationPath { get; set; }
         
-        [System.ComponentModel.ReadOnly(true)]
+        [System.ComponentModel.Browsable(true)]
         public string ffmpegId { get; set; }
 
 
-        [System.ComponentModel.ReadOnly(true)]
+        [System.ComponentModel.Browsable(true)]
         public string URL { get; set; }
 
         [Category("Device")]

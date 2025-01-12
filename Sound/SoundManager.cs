@@ -149,7 +149,6 @@ namespace Sound
                 eventManager.RaceManager.OnRaceCancelled -= RaceManager_OnRaceCancelled;
                 eventManager.SpeedRecordManager.OnSpeedCalculated -= OnSpeed;
                 eventManager.RaceManager.OnSplitDetection -= OnSplit;
-
             }
 
             Logger.SoundLog.LogCall(this);
