@@ -1001,17 +1001,6 @@ namespace RaceLib
                             race.TargetLaps = EventManager.Event.Laps;
                         }
 
-                        if (race.Round == null)
-                        {
-                            int round = race.RoundNumber;
-                            if (round <= 0)
-                            {
-                                round = DiscoverRoundNumber(race);
-                            }
-
-                            race.Round = EventManager.RoundManager.GetCreateRound(round, EventManager.Event.EventType);
-                        }
-
                         foreach (Lap lap in race.Laps)
                         {
                             // When loading, we need to set the race object reference onto each Lap for performance quick access reasons.

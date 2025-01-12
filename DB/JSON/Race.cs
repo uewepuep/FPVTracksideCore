@@ -65,6 +65,27 @@ namespace DB.JSON
             race.Round = Round.Convert<RaceLib.Round>(database);
             race.Event = Event.Convert<RaceLib.Event>(database);
 
+            if (race.Round == null && Round != default(Guid))
+            {
+                IDatabaseCollection<RaceLib.Round> rounds = database.GetCollection<RaceLib.Round>();
+
+                int max = 0;
+                if (rounds.All().Any())
+                {
+                    max = rounds.All().Select(r => r.RoundNumber).Max();
+                }
+
+                RaceLib.Round r = new RaceLib.Round();
+                r.ID = Round;
+                r.Valid = true;
+                r.RoundNumber = max + 1;
+                r.RoundType = RaceLib.Round.RoundTypes.Round;
+                r.EventType = EventTypes.Unknown;
+                r.Order = r.RoundNumber * 100;
+                rounds.Insert(r);
+                race.Round = r;
+            }
+
             // Back reference for lap to race.
             foreach (RaceLib.Lap lap in race.Laps)
             {

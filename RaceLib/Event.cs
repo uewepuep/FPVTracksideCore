@@ -14,6 +14,7 @@ namespace RaceLib
 {
     public enum EventTypes
     {
+        Unknown = -1,
         Practice = 0,
         Practise = 0,
 
