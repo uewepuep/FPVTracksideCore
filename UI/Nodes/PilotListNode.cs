@@ -246,13 +246,13 @@ namespace UI.Nodes
 
             MouseMenu importMenu = mm.AddSubmenu("Import"); 
 
-            Event[] others = eventManager.GetOtherEvents();
+            SimpleEvent[] others = eventManager.GetOtherEvents();
             if (others.Any())
             {
                 MouseMenu otherEvents = importMenu.AddSubmenu("Import from another event");
-                foreach (Event e in others)
+                foreach (SimpleEvent e in others)
                 {
-                    if (e.Enabled && e.PilotCount > 0)
+                    if (e.PilotsRegistered > 0)
                     {
                         otherEvents.AddItem(e.Name, () => { ImportFromOtherEvent(e); });
                     }
@@ -377,7 +377,7 @@ namespace UI.Nodes
             return newPilots;
         }
 
-        private void ImportFromOtherEvent(Event evente)
+        private void ImportFromOtherEvent(SimpleEvent evente)
         {
             List<Pilot> newPilots = new List<Pilot>();
             foreach (Pilot p in eventManager.GetOtherEventPilots(evente))

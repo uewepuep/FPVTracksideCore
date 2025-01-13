@@ -219,15 +219,15 @@ namespace RaceLib
             OnEventChange?.Invoke();
         }
 
-        public void LoadEvent(WorkSet workSet, WorkQueue workQueue, Event eve)
+        public void LoadEvent(WorkSet workSet, WorkQueue workQueue, Guid eventId)
         {
-            EventId = eve.ID;
+            EventId = eventId;
 
             workQueue.Enqueue(workSet, "Loading Event", () =>
             {
                 Channel.LoadDisplayNames(Profile);
 
-                using (IDatabase db = DatabaseFactory.OpenLegacyLoad(EventId))
+                using (IDatabase db = DatabaseFactory.Open(EventId))
                 {
                     Event = db.LoadEvent();
                     System.Diagnostics.Debug.Assert(Event != null);
@@ -343,12 +343,12 @@ namespace RaceLib
             }
         }
 
-        public void LoadRaces(WorkSet workSet, WorkQueue workQueue, Event eve)
+        public void LoadRaces(WorkSet workSet, WorkQueue workQueue)
         {
             workQueue.Enqueue(workSet, "Loading Races", () =>
             {
                 //Load any existing races
-                RaceManager.LoadRaces(eve);
+                RaceManager.LoadRaces(Event);
             });
 
             workQueue.Enqueue(workSet, "RoundRepair", RoundRepair);
@@ -635,20 +635,19 @@ namespace RaceLib
             return new string[0][];
         }
 
-        public Event[] GetOtherEvents()
+        public SimpleEvent[] GetOtherEvents()
         {
-            using (IDatabase db = DatabaseFactory.OpenLegacyLoad(Guid.Empty))
+            using (IDatabase db = DatabaseFactory.Open(Guid.Empty))
             {
-                return db.GetEvents().Where(e => e.ID != Event.ID).ToArray();
+                return db.GetSimpleEvents().Where(e => e.ID != Event.ID).ToArray();
             }
         }
 
-        public Pilot[] GetOtherEventPilots(Event e)
+        public Pilot[] GetOtherEventPilots(SimpleEvent e)
         {
-            using (IDatabase db = DatabaseFactory.OpenLegacyLoad(e.ID))
+            using (IDatabase db = DatabaseFactory.Open(e.ID))
             {
                 Event loaded = db.LoadEvent();
-
                 return loaded.Pilots.ToArray();
             }
         }

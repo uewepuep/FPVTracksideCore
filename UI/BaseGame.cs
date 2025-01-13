@@ -279,18 +279,18 @@ namespace UI
             LayerStack.AddAbove<BackgroundLayer>(welcomeLayer);
         }
 
-        public void EventSelected(BaseObjectEditorNode<Event> ed)
+        public void EventSelected(BaseObjectEditorNode<SimpleEvent> ed)
         {
             EventSelectorEditor editor = ed as EventSelectorEditor;
 
             Logger.UI.LogCall(this, editor.Selected);
 
-            Event selected = editor.Selected;
+            SimpleEvent selected = editor.Selected;
 
             if (selected == null)
                 selected = editor.Objects.First();
 
-            StartEvent(selected, editor.Profile);
+            StartEvent(selected.ID, editor.Profile);
         }
 
         public void Restart(Event evvent)
@@ -309,7 +309,7 @@ namespace UI
                             if (eventSelectorLayer != null)
                             {
                                 eventSelectorLayer.Dispose();
-                                StartEvent(evvent, eventSelectorLayer.Editor.Profile);
+                                StartEvent(evvent.ID, eventSelectorLayer.Editor.Profile);
                             }
                         });
                     }
@@ -317,22 +317,25 @@ namespace UI
             }
         }
 
-        private void StartEvent(Event selected, Profile profile)
+        private void StartEvent(Guid eventId, Profile profile)
         {
             loadingLayer.BlockOnLoading = true;
 
-            WorkSet startEventWorkSet = new WorkSet();
-            startEventWorkSet.OnError += ErrorLoadingEvent;
+            BackgroundLayer backgroundLayer = LayerStack.GetLayer<BackgroundLayer>();
             EventManager eventManager = new EventManager(profile);
 
-            BackgroundLayer backgroundLayer = LayerStack.GetLayer<BackgroundLayer>();
+            WorkSet startEventWorkSet = new WorkSet();
+            startEventWorkSet.OnError += ErrorLoadingEvent;
 
-            eventManager.LoadEvent(startEventWorkSet, loadingLayer.WorkQueue, selected);
-            
+            eventManager.LoadEvent(startEventWorkSet, loadingLayer.WorkQueue, eventId);
+
             // Load races BEFORE sync. Sync systems need to assume this..
-            eventManager.LoadRaces(startEventWorkSet, loadingLayer.WorkQueue, selected);
+            eventManager.LoadRaces(startEventWorkSet, loadingLayer.WorkQueue);
 
-            OnStartEvent(eventManager, selected);
+            loadingLayer.WorkQueue.Enqueue(startEventWorkSet, "On Start Event", () =>
+            {
+                OnStartEvent(eventManager, eventManager.Event);
+            });
 
             loadingLayer.WorkQueue.Enqueue(startEventWorkSet, "Reloading Settings", () =>
             {

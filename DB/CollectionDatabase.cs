@@ -164,9 +164,9 @@ namespace DB
             return collection.GetCreateExternalObject(id);
         }
 
-        public IEnumerable<Event> GetEvents()
+        public IEnumerable<SimpleEvent> GetSimpleEvents()
         {
-            return database.GetEvents();
+            return database.GetSimpleEvents();
         }
 
         public Event LoadEvent() 
@@ -223,7 +223,7 @@ namespace DB
         void Init(Guid eventId);
 
         IDatabaseCollection<T> GetCollection<T>() where T : BaseObject, new();
-        IEnumerable<Event> GetEvents();
+        IEnumerable<SimpleEvent> GetSimpleEvents();
         Event LoadEvent();
         IEnumerable<Race> LoadRaces();
         IEnumerable<Result> LoadResults();

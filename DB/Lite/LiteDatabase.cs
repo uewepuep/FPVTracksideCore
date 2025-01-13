@@ -222,7 +222,7 @@ namespace DB.Lite
             return club;
         }
 
-        IEnumerable<RaceLib.Event> ICollectionDatabase.GetEvents()
+        IEnumerable<RaceLib.SimpleEvent> ICollectionDatabase.GetSimpleEvents()
         {
             var events = Events.Include(e => e.Channels)
                          .Include(e => e.Club)
@@ -231,7 +231,9 @@ namespace DB.Lite
                          .Include(e => e.PilotChannels.Select(p => p.Channel))
                          .FindAll()
                          .OrderBy(e => e.Name).ToArray();
-            return events.Convert(null);
+            IEnumerable<RaceLib.Event> rlevents = events.Convert(null);
+
+            return rlevents.Select(e => new SimpleEvent(e));
         }
 
         RaceLib.Event ICollectionDatabase.LoadEvent()

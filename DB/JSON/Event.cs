@@ -11,6 +11,7 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json;
 using RaceLib;
 using static Microsoft.IO.RecyclableMemoryStreamManager;
+using DB.Lite;
 
 namespace DB.JSON
 {
@@ -89,7 +90,9 @@ namespace DB.JSON
 
         public Guid Track { get; set; }
         public Sector[] Sectors { get; set; }
-        
+
+        public int PilotsRegistered { get; set; }
+
         public Event()
         {
         }
@@ -126,8 +129,13 @@ namespace DB.JSON
             if (obj.Track != null)
                 Track = obj.Track.ID;
 
-            Copy(obj.Sectors, out DB.JSON.Sector[] temp);
+            ReflectionTools.Copy(obj.Sectors, out DB.JSON.Sector[] temp);
             Sectors = temp;
+
+            if (obj.PilotChannels != null)
+            {
+                PilotsRegistered = obj.PilotChannels.Where(pc => pc != null && pc.Pilot != null && pc.Pilot.PracticePilot == false).Count();
+            }
         }
 
         public override RaceLib.Event GetRaceLibObject(ICollectionDatabase database)
@@ -145,34 +153,21 @@ namespace DB.JSON
 
             ev.Track = Track.Convert<RaceLib.Track>(database);
 
-            Copy(Sectors, out RaceLib.Sector[] temp);
+            ReflectionTools.Copy(Sectors, out RaceLib.Sector[] temp);
             ev.Sectors = temp;
 
             return ev;
         }
 
-        public RaceLib.Event GetSimpleRaceLibEvent(ICollectionDatabase database)
+        public RaceLib.SimpleEvent GetSimpleEvent(ICollectionDatabase database)
         {
-            RaceLib.Event ev = base.GetRaceLibObject(database);
-            ev.Channels = Channels.Convert<RaceLib.Channel>(database).ToArray();
-            ev.Club = Club.Convert<RaceLib.Club>(database);
-            ev.Rounds = Rounds.Select(id => new RaceLib.Round() { ID = id }).ToList();
+            SimpleEvent simpleEvent = new SimpleEvent(ID);
+            ReflectionTools.Copy(this, simpleEvent);
 
-            IEnumerable<PilotChannel> invalid = PilotChannels.Where(pc => pc == null || pc.Pilot == Guid.Empty && pc.Channel == Guid.Empty);
+            var channels = database.GetCollection<RaceLib.Channel>();
 
-            if (invalid.Any())
-            {
-                Logger.Input.LogCall(this, "invalid", invalid);
-            }
-
-            ev.PilotChannels = PilotChannels.Except(invalid).Select(pc => new RaceLib.PilotChannel() { ID = pc.ID, Pilot = new RaceLib.Pilot() { ID = pc.Pilot }, Channel = new RaceLib.Channel() { ID = pc.Channel } }).ToList();
-            ev.RemovedPilots = RemovedPilots.Select(id => new RaceLib.Pilot() { ID = id }).ToList();
-            ev.Track = Track.Convert<RaceLib.Track>(database);
-
-            Copy(Sectors, out RaceLib.Sector[] temp);
-            ev.Sectors = temp;
-
-            return ev;
+            simpleEvent.ChannelsString = string.Join(", ", Channels.Select(c => channels.GetObject(c).GetBandChannelText()).ToArray());
+            return simpleEvent;
         }
     }
 }

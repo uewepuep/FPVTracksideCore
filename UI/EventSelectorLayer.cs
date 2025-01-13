@@ -14,7 +14,7 @@ namespace UI
 {
     public class EventSelectorLayer : CompositorLayer
     {
-        public event Action<BaseObjectEditorNode<Event>> OnOK;
+        public event Action<BaseObjectEditorNode<SimpleEvent>> OnOK;
 
         public EventSelectorEditor Editor { get; private set; }
 
@@ -48,7 +48,7 @@ namespace UI
             }
         }
 
-        private void Editor_OnOK(BaseObjectEditorNode<Event> obj)
+        private void Editor_OnOK(BaseObjectEditorNode<SimpleEvent> obj)
         {
             LayerStack?.Remove(this);
             Dispose();

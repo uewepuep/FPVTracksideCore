@@ -5,6 +5,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 
 namespace DB.JSON
 {
@@ -25,7 +26,7 @@ namespace DB.JSON
         public Track(RaceLib.Track t)
             :base(t)
         {
-            Copy(t.TrackElements, out TrackElement[] temp);
+            ReflectionTools.Copy(t.TrackElements, out TrackElement[] temp);
             TrackElements = temp;
         }
 
@@ -33,7 +34,7 @@ namespace DB.JSON
         {
             RaceLib.Track t = base.GetRaceLibObject(database);
 
-            Copy(TrackElements, out RaceLib.TrackElement[] temp);
+            ReflectionTools.Copy(TrackElements, out RaceLib.TrackElement[] temp);
             t.TrackElements = temp;
 
             return t;

@@ -11,7 +11,7 @@ namespace RaceLib
         int Version { get; }
 
         Club GetDefaultClub();
-        IEnumerable<Event> GetEvents();
+        IEnumerable<SimpleEvent> GetSimpleEvents();
 
         void Init(Guid eventId);
 
@@ -43,7 +43,6 @@ namespace RaceLib
     public interface IDatabaseFactory
     {
         IDatabase Open(Guid eventId);
-        IDatabase OpenLegacyLoad(Guid eventId);
     }
 
     public static class DatabaseFactory
@@ -63,11 +62,6 @@ namespace RaceLib
         public static IDatabase Open(Guid eventId) 
         { 
             return databaseFactory.Open(eventId);
-        }
-
-        public static IDatabase OpenLegacyLoad(Guid eventId) 
-        {
-            return databaseFactory.OpenLegacyLoad(eventId);
         }
     }
 }

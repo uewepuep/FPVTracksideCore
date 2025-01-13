@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 
 namespace DB
 {
@@ -37,13 +38,13 @@ namespace DB
             if (obj.PointSummary != null)
             {
                 PointSummary = new PointSummary();
-                Copy(obj.PointSummary, PointSummary);   
+                ReflectionTools.Copy(obj.PointSummary, PointSummary);   
             }
 
             if (obj.TimeSummary != null)
             {
                 TimeSummary = new TimeSummary();
-                Copy(obj.TimeSummary, TimeSummary);
+                ReflectionTools.Copy(obj.TimeSummary, TimeSummary);
             }
         }
 
@@ -54,13 +55,13 @@ namespace DB
             if (PointSummary != null)
             {
                 round.PointSummary = new RaceLib.PointSummary();
-                Copy(PointSummary, round.PointSummary);
+                ReflectionTools.Copy(PointSummary, round.PointSummary);
             }
 
             if (TimeSummary != null)
             {
                 round.TimeSummary = new RaceLib.TimeSummary();
-                Copy(TimeSummary, round.TimeSummary);
+                ReflectionTools.Copy(TimeSummary, round.TimeSummary);
             }
 
             return round;

@@ -49,30 +49,5 @@ namespace DB
             db.Init(eventId);
             return db;
         }
-
-        public RaceLib.IDatabase OpenLegacyLoad(Guid eventId)
-        {
-            RaceLib.IDatabase db = null;
-
-            if (DatabaseType == DatabaseTypes.JSON)
-            {
-                try
-                {
-                    db = new BothDatabase(EventDirectory);
-                }
-                catch
-                {
-                    // try just regular json db if the litedb is failing.
-                    db = new CollectionDatabase(new JSON.JSONDatabaseConverted(EventDirectory));
-                }
-            }
-            else
-            {
-                db = new CollectionDatabase(new Lite.LiteDatabase());
-            }
-
-            db.Init(eventId);
-            return db;
-        }
     }
 }

@@ -15,20 +15,20 @@ using Tools;
 
 namespace UI.Nodes
 {
-    public class EventEditor : ObjectEditorNode<Event>
+    public class EventEditor : ObjectEditorNode<SimpleEvent>
     {
         public EventEditor(Event eventa) 
-            :this(new Event[] { eventa }, false, false)
+            :this(new SimpleEvent[] { new SimpleEvent(eventa) }, false, false)
         { 
         }
 
-        protected EventEditor(IEnumerable<Event> events, bool addRemove = true, bool cancelButtona = false)
+        protected EventEditor(IEnumerable<SimpleEvent> events, bool addRemove = true, bool cancelButtona = false)
             :base(events, addRemove, cancelButtona, false)
         {
             Text = "Select an event";
         }
 
-        protected override void CreatePropertyNodes(Event obj, IEnumerable<PropertyInfo> propertyInfos)
+        protected override void CreatePropertyNodes(SimpleEvent obj, IEnumerable<PropertyInfo> propertyInfos)
         {
             var ps = propertyInfos.ToList();
 
@@ -42,7 +42,7 @@ namespace UI.Nodes
             base.CreatePropertyNodes(obj, ps);
         }
 
-        protected override PropertyNode<Event> CreatePropertyNode(Event obj, PropertyInfo pi)
+        protected override PropertyNode<SimpleEvent> CreatePropertyNode(SimpleEvent obj, PropertyInfo pi)
         {
             if (obj.ExternalID == default)
             {
@@ -56,7 +56,7 @@ namespace UI.Nodes
                 string name = pi.GetValue(obj) as string;
                 if (!string.IsNullOrEmpty(name))
                 {
-                    var property = new StaticTextPropertyNode<Event>(obj, pi, TextColor);
+                    var property = new StaticTextPropertyNode<SimpleEvent>(obj, pi, TextColor);
 
                     if (obj.SyncWithMultiGP)
                     {
@@ -74,7 +74,7 @@ namespace UI.Nodes
             string[] locked = new string[] { "EventType", "Laps", "RaceLength" };
             if (obj.Locked && locked.Contains(pi.Name))
             {
-                return new StaticTextPropertyNode<Event>(obj, pi, TextColor);
+                return new StaticTextPropertyNode<SimpleEvent>(obj, pi, TextColor);
             }
 
             if (pi.Name.Contains("FPVTrackside"))
@@ -115,11 +115,11 @@ namespace UI.Nodes
                 int objv = (int)pi.GetValue(obj);
                 if (objv != 0)
                 {
-                    return new StaticTextPropertyNode<Event>(obj, pi, TextColor);
+                    return new StaticTextPropertyNode<SimpleEvent>(obj, pi, TextColor);
                 }
             }
 
-            PropertyNode<Event> n = base.CreatePropertyNode(obj, pi);
+            PropertyNode<SimpleEvent> n = base.CreatePropertyNode(obj, pi);
             return n;
         }
 
@@ -144,7 +144,7 @@ namespace UI.Nodes
         public MenuButton MenuButton { get; private set; }
 
         public EventSelectorEditor(Texture2D logo, Profile profile)
-            : this(new Event[0], true, false)
+            : this(new SimpleEvent[0], true, false)
         {
             heading.RelativeBounds = new RectangleF(0, 0.18f, 1, 0.05f);
             container.RelativeBounds = new RectangleF(0, heading.RelativeBounds.Bottom, 1, 1 - heading.RelativeBounds.Bottom);
@@ -187,7 +187,7 @@ namespace UI.Nodes
             GeneralSettings.Write();
         }
 
-        public EventSelectorEditor(IEnumerable<Event> events, bool addRemove = true, bool cancelButtona = false)
+        public EventSelectorEditor(IEnumerable<SimpleEvent> events, bool addRemove = true, bool cancelButtona = false)
            : base(events.Where(e => e.Enabled), addRemove, cancelButtona)
         {
             OnOK += EventEditor_OnOK;
@@ -222,7 +222,7 @@ namespace UI.Nodes
                                 db.LoadEvent();
                                 db.Insert(newEvent.Pilots);
 
-                                AddNew(newEvent);
+                                AddNew(new SimpleEvent(newEvent));
                             }
                         }
                     }
@@ -244,28 +244,24 @@ namespace UI.Nodes
             }
         }
 
-        protected override string ItemToGroupString(Event item)
+        protected override string ItemToGroupString(SimpleEvent item)
         {
             return item.Month;
         }
 
-        public override IEnumerable<Event> Order(IEnumerable<Event> ts)
+        public override IEnumerable<SimpleEvent> Order(IEnumerable<SimpleEvent> ts)
         {
             return ts.OrderByDescending(e => e.Start);
         }
 
         protected override void Remove(MouseInputEvent mie)
         {
-            Event selected = Selected;
+            SimpleEvent selected = Selected;
             if (selected != null)
             {
-                using (IDatabase db = DatabaseFactory.Open(selected.ID))
-                {
-                    selected.Enabled = false;
-                    db.Update(selected);
-                }
+                selected.Enabled = false;
+                ConvertSaveEvent(selected);
             }
-
 
             base.Remove(mie);
             RecoverButton.Visible = true;
@@ -273,6 +269,12 @@ namespace UI.Nodes
         }
 
         protected override void AddOnClick(MouseInputEvent mie)
+        {
+            Event eve = CreateNewEvent();
+            AddNew(new SimpleEvent(eve));
+        }
+
+        private Event CreateNewEvent()
         {
             Event eve;
             using (IDatabase db = DatabaseFactory.Open(Guid.Empty))
@@ -284,8 +286,7 @@ namespace UI.Nodes
                 eve.Club = club;
                 db.Insert(eve);
             }
-
-            AddNew(eve);
+            return eve;
         }
 
         private void Recover()
@@ -293,9 +294,9 @@ namespace UI.Nodes
             MouseMenu mouseMenu = new MouseMenu(this);
             mouseMenu.TopToBottom = false;
 
-            Event[] all = GetEvents(Profile);
+            SimpleEvent[] all = GetEvents(Profile);
 
-            IEnumerable<Event> notIn = all.Except(Objects);
+            IEnumerable<SimpleEvent> notIn = all.Except(Objects);
 
             foreach (var obj in notIn)
             {
@@ -305,22 +306,22 @@ namespace UI.Nodes
             mouseMenu.Show(RecoverButton);
         }
 
-        private void Recover(Event recover)
+        private void Recover(SimpleEvent recover)
         {
             recover.Enabled = true;
 
-            List<Event> elist = Objects.ToList();
+            List<SimpleEvent> elist = Objects.ToList();
             elist.Add(recover);
 
             SetObjects(elist, true, true);
         }
 
-        protected static Event[] GetEvents(Profile profile)
+        protected SimpleEvent[] GetEvents(Profile profile)
         {
-            Event[] events;
-            using (IDatabase db = DatabaseFactory.OpenLegacyLoad(Guid.Empty))
+            SimpleEvent[] events;
+            using (IDatabase db = DatabaseFactory.Open(Guid.Empty))
             {
-                events = db.GetEvents().Where(r => r.Enabled).ToArray();
+                events = db.GetSimpleEvents().Where(r => r.Enabled).ToArray();
 
                 Club club = db.All<Club>().FirstOrDefault();
                 if (club == null)
@@ -331,14 +332,14 @@ namespace UI.Nodes
 
                 if (events.Length == 0)
                 {
-                    events = new Event[] { new Event() { Club = club, Channels = Channel.Read(profile) } };
-                    db.Insert(events.First());
+                    Event eve = CreateNewEvent();
+                    events = new SimpleEvent[] { new SimpleEvent(eve) };
                 }
             }
             return events;
         }
 
-        private void EventEditor_OnOK(BaseObjectEditorNode<Event> obj)
+        private void EventEditor_OnOK(BaseObjectEditorNode<SimpleEvent> obj)
         {
             using (IDatabase db = DatabaseFactory.Open(obj.Selected.ID))
             {
@@ -353,14 +354,27 @@ namespace UI.Nodes
 
         public void SaveChanges()
         {
-            using (IDatabase db = DatabaseFactory.Open(Guid.Empty))
+            foreach (var o in Objects)
             {
-                foreach (var o in Objects)
-                {
-                    o.Enabled = true;
-                }
+                o.Enabled = true;
+            }
 
-                db.Upsert(Objects);
+            foreach (SimpleEvent simpleEvent in Objects)
+            {
+                ConvertSaveEvent(simpleEvent);
+            }
+        }
+
+        public void ConvertSaveEvent(SimpleEvent simpleEvent)
+        {
+            using (IDatabase db = DatabaseFactory.Open(simpleEvent.ID))
+            {
+                Event eventt = db.LoadEvent();
+                if (eventt != null)
+                {
+                    ReflectionTools.Copy(simpleEvent, eventt);
+                }
+                db.Update(eventt);
             }
         }
 

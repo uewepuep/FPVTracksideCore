@@ -27,10 +27,10 @@ namespace ExternalData
 
         event Action<bool> RaceSyncEvent;
 
-        void SyncEvents(WorkSet workSet, WorkQueue queue, CallBacks<RaceLib.Event> callBack);
+        void SyncEvents(WorkSet workSet, WorkQueue queue);
         void SyncDownRoundRaces(WorkSet workSet, WorkQueue queue, EventManager eventManager);
         void SyncUpResults(WorkSet workSet, WorkQueue queue, EventManager eventManager);
-        void SyncUpResults(WorkSet workSet, WorkQueue queue, IEnumerable<Guid> eventIDs, Action callBack);
+        void SyncUpResults(WorkSet workSet, WorkQueue queue, IEnumerable<Guid> eventIDs);
 
         LoginType Login(string authkey);
         void CreateAccount();

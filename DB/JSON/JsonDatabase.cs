@@ -129,11 +129,11 @@ namespace DB.JSON
             return GetCollection<T>().GetObject(id);
         }
 
-        IEnumerable<RaceLib.Event> ICollectionDatabase.GetEvents()
+        IEnumerable<RaceLib.SimpleEvent> ICollectionDatabase.GetSimpleEvents()
         {
             foreach (Event even in Events.All())
             {
-                yield return even.GetSimpleRaceLibEvent(this);
+                yield return even.GetSimpleEvent(this);
             }
         }
 

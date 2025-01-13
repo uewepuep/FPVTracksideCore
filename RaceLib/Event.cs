@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Text;
@@ -44,36 +45,12 @@ namespace RaceLib
         public EventTypes EventType { get; set; }
 
 
-        [Category("Event Info")]
         public string Name { get; set; }
 
-        [Category("Event Info")]
-        [DisplayName("Start Date (y/m/d)")]
-        [DateOnly]
         public DateTime Start { get; set; }
 
-        [Category("Event Info")]
-        [DisplayName("Club")]
-        public string ClubName
-        {
-            get
-            {
-                if (Club == null)
-                {
-                    return "";
-                }
-                return Club.Name;
-            }
-        }
-
-        [Category("Event Info")]
-        [System.ComponentModel.Browsable(false)]
-        [DateOnly]
         public DateTime End { get; set; }
 
-        [Category("Event Info")]
-        [DisplayName("Pilots Registered")]
-        
         public int PilotCount 
         { 
             get 
@@ -87,112 +64,54 @@ namespace RaceLib
                 return PilotChannels.Where(p => p.Pilot != null && !p.Pilot.PracticePilot).Count();
             } 
         }
-        
-        [Category("Event Info")]
-        [DisplayName("Channels")]
-        
-        public string ChannelString 
-        { 
-            get
-            {
-                if (Channels == null) return "";
 
-                return string.Join(", ", Channels.Select(c => c.GetBandChannelText()).ToArray()); 
-            } 
-        }
-
-        [Category("Race Rules")]
         public int Laps { get; set; }
 
-        [Category("Race Rules")]
         public int PBLaps { get; set; }
 
-        [Category("Race Rules")]
-        [DisplayName("Race Length (Seconds)")]
         public TimeSpan RaceLength { get; set; }
 
-        [Category("Race Start")]
-        [DisplayName("Minimum Start Delay (Seconds)")]
         public TimeSpan MinStartDelay { get; set; }
 
-        [Category("Race Start")]
-        [DisplayName("Maximum Start Delay (Seconds)")]
         public TimeSpan MaxStartDelay { get; set; }
 
-        [Category("Track Layout")]
         public PrimaryTimingSystemLocation PrimaryTimingSystemLocation { get; set; }
 
-        [Category("Track Layout")]
-        [DisplayName("Race Start Ignore Detections (Seconds)")]
         public TimeSpan RaceStartIgnoreDetections { get; set; }
-
-        [Category("Track Layout")]
-        [DisplayName("Smart Minimum Lap Time (Seconds)")]
         public TimeSpan MinLapTime { get; set; }
 
-        [System.ComponentModel.Browsable(false)]
         public DateTime LastOpened { get; set; }
 
-        [System.ComponentModel.Browsable(false)]
-        
         public IEnumerable<Pilot> Pilots { get { return PilotChannels.Select(pc => pc.Pilot).Where(p => p != null); } }
 
-        [System.ComponentModel.Browsable(false)]
         public List<PilotChannel> PilotChannels { get; set; }
-        [System.ComponentModel.Browsable(false)]
         public List<Pilot> RemovedPilots { get; set; }
 
-        [System.ComponentModel.Browsable(false)]
         public List<Round> Rounds { get; set; }
 
-        [System.ComponentModel.Browsable(false)]
         public Club Club { get; set; }
 
-        [System.ComponentModel.Browsable(false)]
         public Channel[] Channels { get; set; }
 
-        [System.ComponentModel.Browsable(false)]
         public bool Enabled { get; set; }
         
-        [Category("Cloud")]
-        [DisplayName("Sync with FPVTrackside.com")]
         public bool SyncWithFPVTrackside { get; set; }
 
-        [Category("Cloud")]
-        [DisplayName("Visible on FPVTrackside.com")]
         [System.ComponentModel.Browsable(false)]
         public bool VisibleOnline { get; set; }
 
-        [System.ComponentModel.Browsable(false)]
         public MultiGPRaceFormat MultiGPRaceFormat { get; set; }
 
-        [Category("Cloud")]
-        [DisplayName("Sync with MultiGP")]
         public bool SyncWithMultiGP { get; set; }
 
-        [Category("Cloud")]
-        [DisplayName("Generate heats on MultiGP.com (ZippyQ etc)")]
         public bool GenerateHeatsMultiGP { get; set; }
 
-        [System.ComponentModel.Browsable(false)]
         public string[] ChannelColors { get; set; }
-
-        [System.ComponentModel.Browsable(false)]
-        public string Month
-        {
-            get
-            {
-                return System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(Start.Month) + " " + Start.Year;
-            }
-        }
-
-        [System.ComponentModel.Browsable(false)]
+        
         public bool Locked { get; set; }
 
-        [Browsable(false)]
         public Track Track { get; set; }
 
-        [Browsable(false)]
         public Sector[] Sectors { get; set; }
 
         private static string dateFormat = "MMM d";
@@ -291,6 +210,120 @@ namespace RaceLib
                     }
                 }
             }
+        }
+    }
+
+    public class SimpleEvent
+    {
+        [Browsable(false)]
+        public Guid ID { get; set; }
+
+
+        [Category("Event Info")]
+        public string Name { get; set; }
+
+        [Category("Event Info")]
+        [DisplayName("Start Date (y/m/d)")]
+        [DateOnly]
+        public DateTime Start { get; set; }
+
+        
+        [Category("Event Info")]
+        [DisplayName("Pilots Registered")]
+
+        public int PilotsRegistered { get; set; }
+
+        [Category("Event Info")]
+        [DisplayName("Channels")]
+        public string ChannelsString { get; set; }
+
+        [Category("Race Rules")]
+        public int Laps { get; set; }
+
+        [Category("Race Rules")]
+        public int PBLaps { get; set; }
+
+        [Category("Race Rules")]
+        [DisplayName("Race Length (Seconds)")]
+        public TimeSpan RaceLength { get; set; }
+
+        [Category("Race Start")]
+        [DisplayName("Minimum Start Delay (Seconds)")]
+        public TimeSpan MinStartDelay { get; set; }
+
+        [Category("Race Start")]
+        [DisplayName("Maximum Start Delay (Seconds)")]
+        public TimeSpan MaxStartDelay { get; set; }
+
+        [Category("Track Layout")]
+        public PrimaryTimingSystemLocation PrimaryTimingSystemLocation { get; set; }
+
+        [Category("Track Layout")]
+        [DisplayName("Race Start Ignore Detections (Seconds)")]
+        public TimeSpan RaceStartIgnoreDetections { get; set; }
+
+        [Category("Track Layout")]
+        [DisplayName("Smart Minimum Lap Time (Seconds)")]
+        public TimeSpan MinLapTime { get; set; }
+
+        [Category("Cloud")]
+        [DisplayName("Sync with FPVTrackside.com")]
+        public bool SyncWithFPVTrackside { get; set; }
+
+        [Category("Cloud")]
+        [DisplayName("Visible on FPVTrackside.com")]
+        [System.ComponentModel.Browsable(false)]
+        public bool VisibleOnline { get; set; }
+
+        [System.ComponentModel.Browsable(false)]
+        public MultiGPRaceFormat MultiGPRaceFormat { get; set; }
+
+        [Category("Cloud")]
+        [DisplayName("Sync with MultiGP")]
+        public bool SyncWithMultiGP { get; set; }
+
+        [Category("Cloud")]
+        [DisplayName("Generate heats on MultiGP.com (ZippyQ etc)")]
+        public bool GenerateHeatsMultiGP { get; set; }
+        [System.ComponentModel.Browsable(false)]
+        [Category("Cloud")]
+        public int ExternalID { get; set; }
+
+
+        [System.ComponentModel.Browsable(false)]
+        public string Month
+        {
+            get
+            {
+                return System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(Start.Month) + " " + Start.Year;
+            }
+        }
+
+        [Browsable(false)]
+        public DateTime LastOpened { get; set; }
+        
+        [Browsable(false)]
+        public bool Enabled { get; set; }
+
+        [Browsable(false)]
+        public bool Locked { get; set; }
+
+        public SimpleEvent(Guid id)
+        {
+            ID = id;
+        }
+
+        public SimpleEvent(Event eventt)
+            :this(eventt.ID)
+        {
+            ReflectionTools.Copy(eventt, this);
+            PilotsRegistered = eventt.PilotCount;
+            ChannelsString = string.Join(", ", eventt.Channels.Select(c => c.GetBandChannelText()).ToArray());
+        }
+
+        public override string ToString()
+        {
+            return Name;
         }
     }
 }
