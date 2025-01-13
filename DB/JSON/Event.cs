@@ -164,9 +164,11 @@ namespace DB.JSON
             SimpleEvent simpleEvent = new SimpleEvent(ID);
             ReflectionTools.Copy(this, simpleEvent);
 
-            var channels = database.GetCollection<RaceLib.Channel>();
-
-            simpleEvent.ChannelsString = string.Join(", ", Channels.Select(c => channels.GetObject(c).GetBandChannelText()).ToArray());
+            if (Channels != null)
+            {
+                var channels = database.GetCollection<RaceLib.Channel>();
+                simpleEvent.ChannelsString = string.Join(", ", Channels.Select(c => channels.GetObject(c).GetBandChannelText()).ToArray());
+            }
             return simpleEvent;
         }
     }

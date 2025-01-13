@@ -452,7 +452,7 @@ namespace UI
         public int SecondsToShowResults { get; set; }
 
         [Category("Auto Runner")]
-        [DisplayName("Seconds to next race (inc. results)")]
+        [DisplayName("Seconds to next race")]
         public int SecondsToNextRace { get; set; }
 
         [Category("Auto Runner")]
