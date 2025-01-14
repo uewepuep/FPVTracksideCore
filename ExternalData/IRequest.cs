@@ -18,6 +18,10 @@ namespace ExternalData
         public string Error { get; set; }
         public int Code { get; set; }
 
+#if DEBUG
+        public string Contents { get; set; }
+#endif
+
         public override string ToString()
         {
             return Code.ToString() + " " + Error.ToString();    

@@ -181,6 +181,12 @@ namespace ExternalData
             try
             {
                 T os = JsonConvert.DeserializeObject<T>(pageContents);
+
+#if DEBUG
+                Response res = os as Response;
+                res.Contents = response;
+#endif
+
                 return os;
             }
             catch (Exception e) 
