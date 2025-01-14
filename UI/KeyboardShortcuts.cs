@@ -219,6 +219,11 @@ namespace Composition.Input
         public ShortcutKey Custom5 { get; set; }
 
 
+        [Category("OBS Remote")]
+        public ShortcutKey OBSPauseNotifications { get; set; }
+        [Category("OBS Remote")]
+        public ShortcutKey OBSResumeNotifications { get; set; }
+
         [Category("Global / Unfocused")]
         public ShortcutKey GlobalStartStopRace { get; set; }
 
@@ -315,6 +320,9 @@ namespace Composition.Input
 
             EnableWAVAudio = new ShortcutKey(Keys.W, true, true, false);
             DisableWAVAudio = new ShortcutKey(Keys.W, true, true, true);
+
+            OBSResumeNotifications = new ShortcutKey(Keys.B, true, true, true);
+            OBSPauseNotifications = new ShortcutKey(Keys.B, true, true, true);
         }
 
 

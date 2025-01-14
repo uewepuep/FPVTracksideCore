@@ -20,6 +20,7 @@ namespace UI.Nodes
     {
         public MuteStatusNode MuteTTS { get; private set; }
         public MuteStatusNode MuteWAV { get; private set; }
+        public OBSStatusNode OBS { get; private set; }
 
         public SystemStatusNode()
         {
@@ -51,8 +52,8 @@ namespace UI.Nodes
 
             if (oBSRemoteControlManager != null) 
             {
-                OBSStatusNode vsn = new OBSStatusNode(oBSRemoteControlManager);
-                AddChild(vsn);
+                OBS = new OBSStatusNode(oBSRemoteControlManager);
+                AddChild(OBS);
             }
 
             RequestLayout();
@@ -378,8 +379,6 @@ namespace UI.Nodes
             }
         }
 
-        private KeyboardShortcuts keyMapper;
-
         public MuteStatusNode(SoundManager soundManager, MuteStatusTypes type)
             : base("")
         {
@@ -427,13 +426,30 @@ namespace UI.Nodes
     public class OBSStatusNode : StatusNode
     {
         private OBSRemoteControlManager oBSRemoteControlManager;
+        private CheckboxNode cbn;
 
         public OBSStatusNode(OBSRemoteControlManager oBSRemoteControlManager)
-            : base(@"img/obs.png")
+            : base("")
         {
             Name = "OBS RC";
             this.oBSRemoteControlManager = oBSRemoteControlManager;
             oBSRemoteControlManager.Activity += OBSRemoteControlManager_Activity;
+
+            cbn = new CheckboxNode();
+            cbn.TickFilename = @"img/obs.png";
+            cbn.UnTickFilename = @"img/pause.png";
+            cbn.Value = oBSRemoteControlManager.Active;
+            cbn.Alignment = icon.Alignment;
+            cbn.RelativeBounds = icon.RelativeBounds;
+            cbn.ValueChanged += Cbn_ValueChanged;
+            AddChild(cbn);
+            icon.Dispose();
+            icon = cbn;
+        }
+
+        private void Cbn_ValueChanged(bool obj)
+        {
+            oBSRemoteControlManager.Active = obj;
         }
 
         private void OBSRemoteControlManager_Activity(bool obj)
@@ -445,6 +461,8 @@ namespace UI.Nodes
         {
             base.StatusUpdate();
             SetStatus("", oBSRemoteControlManager.Connected);
+
+            cbn.Value = oBSRemoteControlManager.Active;
 
             this.Visible = oBSRemoteControlManager.Enabled;
         }

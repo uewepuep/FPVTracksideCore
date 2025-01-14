@@ -85,8 +85,9 @@ namespace UI
             {
                 return config.Enabled;
             }
-
         }
+
+        public bool Active { get; set; }
 
         public IEnumerable<Triggers> ChannelGrids
         {
@@ -116,6 +117,8 @@ namespace UI
             this.tabbedMultiNode = tabbedMultiNode;
             this.eventManager = eventManager;
 
+            Active = true;
+
             config = OBSRemoteControlConfig.Load(eventManager.Profile);
 
             if (config.Enabled) 
@@ -136,6 +139,21 @@ namespace UI
                 remoteControl.Connect();
             }
         }
+        public void Dispose()
+        {
+            remoteControl?.Dispose();
+
+            if (eventsHooked)
+            {
+                sceneManagerNode.OnSceneChange -= OnSceneChange;
+                eventManager.RaceManager.OnRaceStart -= OnRaceStart;
+                eventManager.RaceManager.OnRaceResumed -= OnRaceStart;
+                eventManager.RaceManager.OnRacePreStart -= OnRacePreStart;
+                eventManager.RaceManager.OnRaceEnd -= RaceManager_OnRaceEnd;
+                tabbedMultiNode.OnTabChange -= OnTabChange;
+                sceneManagerNode.ChannelsGridNode.OnGridCountChanged -= OnGridCountChanged;
+            }
+        }
 
         private void OnGridCountChanged(int count)
         {
@@ -154,24 +172,11 @@ namespace UI
             Activity?.Invoke(success);
         }
 
-        public void Dispose()
-        {
-            remoteControl?.Dispose();
-
-            if (eventsHooked)
-            {
-                sceneManagerNode.OnSceneChange -= OnSceneChange;
-                eventManager.RaceManager.OnRaceStart -= OnRaceStart;
-                eventManager.RaceManager.OnRaceResumed -= OnRaceStart;
-                eventManager.RaceManager.OnRacePreStart -= OnRacePreStart;
-                eventManager.RaceManager.OnRaceEnd -= RaceManager_OnRaceEnd;
-                tabbedMultiNode.OnTabChange -= OnTabChange;
-                sceneManagerNode.ChannelsGridNode.OnGridCountChanged -= OnGridCountChanged;
-            }
-        }
-
         public void Trigger(Triggers type)
         {
+            if (Active)
+                return;
+
             if (remoteControl == null)
                 return;
 

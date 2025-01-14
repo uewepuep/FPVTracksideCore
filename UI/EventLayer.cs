@@ -1185,6 +1185,18 @@ namespace UI
                     return true;
                 }
 
+                if (KeyMapper.OBSPauseNotifications.Match(inputEvent) && OBSRemoteControlManager.Active)
+                {
+                    OBSRemoteControlManager.Active = false;
+                    return true;
+                }
+
+                if (KeyMapper.OBSResumeNotifications.Match(inputEvent) && !OBSRemoteControlManager.Active)
+                {
+                    OBSRemoteControlManager.Active = true;
+                    return true;
+                }
+
                 if (KeyMapper.StopSound.Match(inputEvent))
                 {
                     SoundManager.StopSound();
