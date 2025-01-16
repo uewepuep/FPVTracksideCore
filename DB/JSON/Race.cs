@@ -65,7 +65,7 @@ namespace DB.JSON
             race.Round = Round.Convert<RaceLib.Round>(database);
             race.Event = Event.Convert<RaceLib.Event>(database);
 
-            if (race.Round == null && Round != default(Guid))
+            if (race.Round == null && Round != default(Guid) && race.Valid)
             {
                 IDatabaseCollection<RaceLib.Round> rounds = database.GetCollection<RaceLib.Round>();
 
