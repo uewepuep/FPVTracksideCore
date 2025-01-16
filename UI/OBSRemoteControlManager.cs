@@ -174,7 +174,7 @@ namespace UI
 
         public void Trigger(Triggers type)
         {
-            if (Active)
+            if (!Active)
                 return;
 
             if (remoteControl == null)

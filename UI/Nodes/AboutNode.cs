@@ -1,4 +1,5 @@
 ﻿using Composition;
+using Composition.Input;
 using Composition.Nodes;
 using Microsoft.Xna.Framework.Graphics;
 using System;
@@ -49,6 +50,16 @@ namespace UI.Nodes
                 ImageNode.UpdateAspectRatioFromTexture();
             }
             base.Draw(id, parentAlpha);
+        }
+
+        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
+        {
+            if (mouseInputEvent.ButtonState == ButtonStates.Pressed)
+            {
+                Dispose();
+            }
+
+            return base.OnMouseInput(mouseInputEvent);
         }
     }
 }
