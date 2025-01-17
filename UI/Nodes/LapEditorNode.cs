@@ -404,11 +404,26 @@ namespace UI.Nodes
 
         private void LapTime_TextChanged(string obj)
         {
-            float seconds;
-            if (float.TryParse(obj, out seconds))
+            try
             {
-                TimeSpan length = TimeSpan.FromSeconds(seconds);
-                End = Start + length;
+                float seconds;
+                if (float.TryParse(obj, out seconds))
+                {
+                    if (seconds < 0)
+                    {
+                        seconds = 0;
+                    }
+                    if (seconds > 3600)
+                    {
+                        seconds = 3600;
+                    }
+
+                    End = Start + TimeSpan.FromSeconds(seconds);
+                }
+            }
+            catch
+            {
+                End = DateTime.MaxValue;
             }
 
             Refresh();

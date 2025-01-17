@@ -138,18 +138,20 @@ namespace Sound
             backgroundQueue?.Dispose();
             backgroundQueue = null;
 
-            if (eventManager != null)
+            EventManager em = eventManager;
+            if (em != null)
             {
-                eventManager.RaceManager.OnRaceStart -= RaceManager_OnRaceStart;
-                eventManager.RaceManager.OnRaceEnd -= RaceOver;
-                eventManager.RaceManager.OnLapDetected -= Lap;
-                eventManager.RaceManager.OnSplitDetection -= Sector;
-                eventManager.LapRecordManager.OnNewOveralBest -= OnNewRecord;
-                eventManager.RaceManager.OnRaceChanged -= OnRaceChanged;
-                eventManager.RaceManager.OnRaceCancelled -= RaceManager_OnRaceCancelled;
-                eventManager.SpeedRecordManager.OnSpeedCalculated -= OnSpeed;
-                eventManager.RaceManager.OnSplitDetection -= OnSplit;
+                em.RaceManager.OnRaceStart -= RaceManager_OnRaceStart;
+                em.RaceManager.OnRaceEnd -= RaceOver;
+                em.RaceManager.OnLapDetected -= Lap;
+                em.RaceManager.OnSplitDetection -= Sector;
+                em.LapRecordManager.OnNewOveralBest -= OnNewRecord;
+                em.RaceManager.OnRaceChanged -= OnRaceChanged;
+                em.RaceManager.OnRaceCancelled -= RaceManager_OnRaceCancelled;
+                em.SpeedRecordManager.OnSpeedCalculated -= OnSpeed;
+                em.RaceManager.OnSplitDetection -= OnSplit;
             }
+            eventManager = null;
 
             Logger.SoundLog.LogCall(this);
             speechManager?.Dispose();
