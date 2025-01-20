@@ -11,7 +11,7 @@ namespace DB.JSON
     public class JsonIO<T> where T : DatabaseObject
     {
         public const int FailureDelayMs = 1000;
-        public const int FailureCount = 10;
+        public const int FailureMaxDelay = 10 * FailureDelayMs;
 
         private static JsonSerializerSettings Settings = new JsonSerializerSettings()
         {
@@ -22,10 +22,10 @@ namespace DB.JSON
 
         private Dictionary<string, T[]> cache;
 
-        public JsonIO() 
+        public JsonIO()
         {
             cache = new Dictionary<string, T[]>();
-        } 
+        }
 
         public T[] Read(string filename)
         {
@@ -44,8 +44,8 @@ namespace DB.JSON
             DateTime readTime = DateTime.MinValue;
 
             bool success = false;
-            int failCount = 0;
-            while (!success && failCount < FailureCount) 
+            int failDelay = 0;
+            while (!success && failDelay < FailureMaxDelay)
             {
                 try
                 {
@@ -55,11 +55,10 @@ namespace DB.JSON
                 }
                 catch
                 {
-                    Thread.Sleep(FailureDelayMs);
-                    failCount++;    
+                    failDelay += FailureSleep();
                 }
             }
-            
+
             if (!success)
                 return new T[0];
 
@@ -75,7 +74,7 @@ namespace DB.JSON
                     return new T[0];
                 }
 
-                lock (cache) 
+                lock (cache)
                 {
                     cache[filename] = result;
                 }
@@ -101,15 +100,15 @@ namespace DB.JSON
             }
             catch
             {
-                lock(cache)
+                lock (cache)
                 {
                     cache.Remove(filename);
                 }
                 return 0;
             }
 
-            int failCount = 0;
-            while (failCount < FailureCount)
+            int failDelay = 0;
+            while (failDelay < FailureMaxDelay)
             {
                 try
                 {
@@ -124,8 +123,7 @@ namespace DB.JSON
                 }
                 catch
                 {
-                    Thread.Sleep(FailureDelayMs);
-                    failCount++;
+                    failDelay += FailureSleep();
                 }
             }
             lock (cache)
@@ -133,6 +131,13 @@ namespace DB.JSON
                 cache.Remove(filename);
             }
             return 0;
+        }
+
+        private int FailureSleep()
+        {
+            int randomSleep = (new Random()).Next(FailureDelayMs);
+            Thread.Sleep(randomSleep);
+            return randomSleep;
         }
     }
 }

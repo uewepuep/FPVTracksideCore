@@ -312,32 +312,13 @@ namespace RaceLib
 
                     Event.Rounds.Add(round);
 
-                    using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                    using (IDatabase db = DatabaseFactory.Open(Event.ID))
                     {
-                        db.Insert(round);
+                        db.Upsert(Event.Rounds);
                         db.Update(Event);
                     }
                 }
 
-                return round;
-            }
-        }
-
-
-        public Round GetCreateRound(IDatabase db, Guid ID)
-        {
-            lock (Event.Rounds)
-            {
-                Round round = Event.Rounds.FirstOrDefault(r => r.ID == ID);
-                if (round == null)
-                {
-                    round = new Round();
-                    round.ID = ID;
-                    Event.Rounds.Add(round);
-
-                    db.Insert(round);
-                    db.Update(Event);
-                }
                 return round;
             }
         }
