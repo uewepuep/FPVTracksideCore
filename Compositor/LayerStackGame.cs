@@ -51,9 +51,10 @@ namespace Composition
 
         protected override void Dispose(bool disposing)
         {
-            base.Dispose(disposing);
             LayerStack?.Dispose();
             LayerStack = null;
+
+            base.Dispose(disposing);
         }
 
         public void Restart()
@@ -152,14 +153,14 @@ namespace Composition
 
         protected override void Dispose(bool disposing)
         {
-            base.Dispose(disposing);
-
             if (background != null)
             {
                 runBackground = false;
                 drawSet.Set();
                 background.Join();
             }
+
+            base.Dispose(disposing);
         }
 
         private void Background()

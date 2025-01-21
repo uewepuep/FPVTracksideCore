@@ -40,6 +40,7 @@ namespace UI
 
         public WorkQueue Background { get; private set; }
 
+        private AlreadyRunningLayer alreadyRunning;
 
         public DirectoryInfo Log { get; private set; }
         public DirectoryInfo Data { get; private set; }
@@ -122,6 +123,12 @@ namespace UI
             
             base.Dispose(disposing);
             Tools.Logger.CleanUp();
+
+            if (alreadyRunning == null)
+            {
+                mutex.ReleaseMutex();
+                mutex.Dispose();
+            }
         }
 
         protected override void Initialize()
@@ -189,7 +196,7 @@ namespace UI
 
             if (waitingOnMutex)
             {
-                AlreadyRunningLayer alreadyRunning = new AlreadyRunningLayer(GraphicsDevice, mutex);
+                alreadyRunning = new AlreadyRunningLayer(GraphicsDevice, mutex);
                 LayerStack.Add(alreadyRunning);
             }
 
@@ -225,14 +232,6 @@ namespace UI
             }
         }
 
-        protected override void UnloadContent()
-        {
-            if (LayerStack.GetLayer<AlreadyRunningLayer>() == null)
-            {
-                mutex.ReleaseMutex();
-            }
-            base.UnloadContent();
-        }
 
         public virtual void ShowEventSelector()
         {
