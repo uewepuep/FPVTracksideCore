@@ -61,6 +61,9 @@ namespace DB.Lite
 
         public bool Sync { get; set; }
 
+        [Browsable (false)]
+        public DateTime[] Flags { get; set; }
+
         public Event()
         {
         }

@@ -1202,6 +1202,15 @@ namespace UI
                     SoundManager.StopSound();
                 }
 
+                if (KeyMapper.Flag.Match(inputEvent))
+                {
+                    if (EventManager != null)
+                    {
+                        EventManager.AddFlag();
+                    }
+                    SoundManager.PlaySound(SoundKey.Flag);
+                }
+
                 if (race != null)
                 {
                     int channelGroupId = 0;

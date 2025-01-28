@@ -1037,5 +1037,14 @@ namespace UI.Nodes
                 return base.ValueToString(value);
             }
         }
+
+        public class TimePropertyNode : ListPropertyNode<DateTime>
+        {
+            public TimePropertyNode(DateTime obj, PropertyInfo pi, Color textBackground, Color textColor, Color hover) 
+                : base(obj, pi, textBackground, textColor, hover)
+            {
+
+            }
+        }
     }
 }

@@ -251,7 +251,8 @@ namespace RaceLib
 
         public Brackets Bracket { get; set; }
 
-        
+        public DateTime ScheduledStart { get; set; }
+
         public string RaceName
         {
             get

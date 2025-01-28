@@ -131,6 +131,16 @@ namespace UI.Video
 
             AddFlagAtTime(@"img/raceflag.png", race.Start, Color.Green, "");
             AddFlagAtTime(@"img/raceflag.png", race.End, Color.White, "");
+
+            if (race.Event.Flags != null)
+            {
+                IEnumerable<DateTime> flags = race.Event.Flags.Where(f => race.Start <= f && race.End >= f);
+                foreach (DateTime flag in flags)
+                {
+                    AddFlagAtTime(@"img/raceflag.png", flag, Color.Beige, "F");
+                }
+            }
+
             RequestLayout();
         }
 

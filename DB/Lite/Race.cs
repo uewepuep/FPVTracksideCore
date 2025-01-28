@@ -42,6 +42,7 @@ namespace DB.Lite
         public bool Uploaded { get; set; }
 
         public string Bracket { get; set; }
+        public DateTime ScheduledStart { get; set; }
 
         public Race() { }
 

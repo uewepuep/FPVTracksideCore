@@ -116,6 +116,8 @@ namespace RaceLib
 
         private static string dateFormat = "MMM d";
 
+        public DateTime[] Flags { get; set; }
+
         public Event()
         {
             SyncWithFPVTrackside = false;

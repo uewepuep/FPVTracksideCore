@@ -267,7 +267,8 @@ namespace Sound
                     new Sound() { Key = SoundKey.PhotoboothTrigger, TextToSpeech = "beep", Filename = @"sounds/split.wav", Category = Sound.SoundCategories.Announcements },
 
                     new Sound() { Key = SoundKey.EmergencyStop, TextToSpeech = "Emergency Stop, PILOTS LAND NOW!", Category = Sound.SoundCategories.Announcements },
-                    
+                    new Sound() { Key = SoundKey.Flag, TextToSpeech = "Flagged", Category = Sound.SoundCategories.Announcements },
+
                 };
 
                 foreach (Sound defaultSound in defaultSounds)

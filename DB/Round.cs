@@ -30,6 +30,8 @@ namespace DB
 
         public string SheetFormatFilename { get; set; }
 
+        public DateTime ScheduledStart { get; set; }
+
         public Round() { }
 
         public Round(RaceLib.Round obj)

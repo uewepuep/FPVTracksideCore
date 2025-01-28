@@ -74,17 +74,17 @@ namespace ImageServer
         [System.ComponentModel.Browsable(false)]
         public string FilePath { get; set; }
 
-        [System.ComponentModel.Browsable(true)]
+        [System.ComponentModel.Browsable(false)]
         public string DirectShowPath { get; set; }
 
-        [System.ComponentModel.Browsable(true)]
+        [System.ComponentModel.Browsable(false)]
         public string MediaFoundationPath { get; set; }
         
-        [System.ComponentModel.Browsable(true)]
+        [System.ComponentModel.Browsable(false)]
         public string ffmpegId { get; set; }
 
 
-        [System.ComponentModel.Browsable(true)]
+        [System.ComponentModel.Browsable(false)]
         public string URL { get; set; }
 
         [Category("Device")]

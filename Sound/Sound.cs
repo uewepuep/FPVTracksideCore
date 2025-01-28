@@ -77,7 +77,9 @@ namespace Sound
         Custom2, 
         Custom3,
         Custom4,
-        Custom5
+        Custom5,
+
+        Flag
     }
 
 

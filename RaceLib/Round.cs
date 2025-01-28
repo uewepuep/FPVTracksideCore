@@ -46,8 +46,8 @@ namespace RaceLib
 
         [Category("Advanced")]
         public string SheetFormatFilename { get; set; }
+        public DateTime ScheduledStart { get; set; }
 
-        
         [Category("Advanced")]
         public bool HasSheetFormat
         {

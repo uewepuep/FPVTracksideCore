@@ -124,6 +124,9 @@ namespace Composition.Input
             }
         }
 
+        [Category("Laps")]
+        public ShortcutKey Flag { get; set; }
+
         [Category("FPV View")]
         public ShortcutKey ToggleViewChannelGroup1 { get; set; }
         [Category("FPV View")]
@@ -323,6 +326,8 @@ namespace Composition.Input
 
             OBSResumeNotifications = new ShortcutKey(Keys.B, true, true, true);
             OBSPauseNotifications = new ShortcutKey(Keys.B, true, true, true);
+
+            Flag = new ShortcutKey(Keys.F, true, false, false);
         }
 
 

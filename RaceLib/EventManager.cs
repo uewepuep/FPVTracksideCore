@@ -707,5 +707,20 @@ namespace RaceLib
 
             return new Channel[0];
         }
+
+        public void AddFlag()
+        {
+            List<DateTime> flags = new List<DateTime>();
+            if (Event.Flags != null)
+            {
+                flags.AddRange(Event.Flags);
+            }
+            Event.Flags = flags.ToArray();
+
+            using (IDatabase db = DatabaseFactory.Open(EventId))
+            {
+                db.Update(Event);
+            }
+        }
     }
 }
