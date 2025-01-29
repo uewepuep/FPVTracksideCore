@@ -715,6 +715,9 @@ namespace RaceLib
             {
                 flags.AddRange(Event.Flags);
             }
+
+            flags.Add(DateTime.Now);
+
             Event.Flags = flags.ToArray();
 
             using (IDatabase db = DatabaseFactory.Open(EventId))

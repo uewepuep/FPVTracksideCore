@@ -331,11 +331,13 @@ namespace UI.Nodes
 
             MouseMenu openDirectory = root.AddSubmenu("Open Directory");
 
-
-            openDirectory.AddItem("Open FPVTrackside Directory", () =>
+            if (hasEvent)
             {
-                OpenCurrentDirectory();
-            });
+                openDirectory.AddItem("Open Event Data Directory", () =>
+                {
+                    OpenCurrentDirectory("events\\" + eventManager.EventId + "\\");
+                });
+            }
 
             openDirectory.AddItem("Open Pilot Profile Image Directory", () =>
             {
@@ -347,13 +349,10 @@ namespace UI.Nodes
                 OpenCurrentDirectory("Tracks\\");
             });
 
-            if (hasEvent)
+            openDirectory.AddItem("Open FPVTrackside Directory", () =>
             {
-                openDirectory.AddItem("Open Event Data Directory", () =>
-                {
-                    OpenCurrentDirectory("events\\" + eventManager.EventId + "\\");
-                });
-            }
+                OpenCurrentDirectory();
+            });
 
             root.AddBlank();
 

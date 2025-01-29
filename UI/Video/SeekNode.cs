@@ -137,7 +137,7 @@ namespace UI.Video
                 IEnumerable<DateTime> flags = race.Event.Flags.Where(f => race.Start <= f && race.End >= f);
                 foreach (DateTime flag in flags)
                 {
-                    AddFlagAtTime(@"img/raceflag.png", flag, Color.Beige, "F");
+                    AddFlagAtTime(@"img/raceflag.png", flag, Color.Yellow, "F");
                 }
             }
 

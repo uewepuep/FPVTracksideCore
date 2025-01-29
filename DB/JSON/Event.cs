@@ -92,6 +92,7 @@ namespace DB.JSON
         public Sector[] Sectors { get; set; }
 
         public int PilotsRegistered { get; set; }
+        public DateTime[] Flags { get; set; }
 
         public Event()
         {
