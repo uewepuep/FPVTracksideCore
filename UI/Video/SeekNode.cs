@@ -40,7 +40,7 @@ namespace UI.Video
 
         private Node buttonsNode;
 
-        private Node flags;
+        private Node flagLabels;
 
         private EventManager eventManager;
 
@@ -52,7 +52,7 @@ namespace UI.Video
             this.eventManager = eventManager;
 
             Node container = new Node();
-            container.RelativeBounds = new RectangleF(0, 0.2f, 1, 0.5f);
+            container.RelativeBounds = new RectangleF(0, 0.0f, 1, 0.6f);
             AddChild(container);
 
             buttonsNode = new Node();
@@ -84,14 +84,14 @@ namespace UI.Video
             progressBar.RelativeBounds = new RectangleF(buttonsNode.RelativeBounds.Right, 0, 1 - (buttonsNode.RelativeBounds.Right + showAllWidth + slowWidth), 1);
             container.AddChild(progressBar);
 
-            flags = new Node();
-            flags.RelativeBounds = new RectangleF(progressBar.RelativeBounds.X, container.RelativeBounds.Bottom, progressBar.RelativeBounds.Width, 1 - container.RelativeBounds.Bottom);
-            AddChild(flags);
+            flagLabels = new Node();
+            flagLabels.RelativeBounds = new RectangleF(progressBar.RelativeBounds.X, container.RelativeBounds.Bottom, progressBar.RelativeBounds.Width, 1 - container.RelativeBounds.Bottom);
+            AddChild(flagLabels);
         }
 
         public void ClearFlags()
         {
-            flags.ClearDisposeChildren();
+            flagLabels.ClearDisposeChildren();
         }
 
         private DateTime FactorToTime(float factor)
@@ -105,7 +105,9 @@ namespace UI.Video
             TimeSpan length = End - Start;
             TimeSpan time = dateTime - Start;
 
-            return (float)(time.TotalSeconds / length.TotalSeconds);
+            float factor = (float)(time.TotalSeconds / length.TotalSeconds);
+
+            return Math.Clamp(factor, 0, 1);
         }
 
         public void SetRace(Race race, DateTime mediaStart, DateTime mediaEnd)
@@ -123,44 +125,64 @@ namespace UI.Video
                 foreach (Lap l in laps)
                 {
                     DateTime time = l.Detection.Time;
-                    AddFlagAtTime(@"img/flag.png", time, tint, l.Number.ToString());
+
+                    string lapNumber = "L" + l.Number.ToString();
+                    if (l.Number == 0)
+                    {
+                        lapNumber = "HS";
+                    }
+
+                    AddTimeMarker(time, tint, lapNumber);
                 }
             }
 
-            
-
-            AddFlagAtTime(@"img/raceflag.png", race.Start, Color.Green, "");
-            AddFlagAtTime(@"img/raceflag.png", race.End, Color.White, "");
+            AddFlagAtTime(race.Start, Color.Green);
+            AddFlagAtTime(race.End, Color.White);
 
             if (race.Event.Flags != null)
             {
                 IEnumerable<DateTime> flags = race.Event.Flags.Where(f => race.Start <= f && race.End >= f);
                 foreach (DateTime flag in flags)
                 {
-                    AddFlagAtTime(@"img/raceflag.png", flag, Color.Yellow, "F");
+                    AddFlagAtTime(flag, Color.Yellow);
                 }
             }
 
             RequestLayout();
         }
 
-        private void AddFlagAtTime(string filename, DateTime time, Color tint, string text)
+
+        private void AddFlagAtTime(DateTime time, Color tint)
         {
-            float factor = TimeToFactor(time);
+            float factor = AddLineAtTime(time, tint);
+            ImageNode flag = new ImageNode(@"img/raceflag.png", tint);
 
-            ImageNode flag = new ImageNode(filename, tint);
-
-            float width = 0.02f;
-            flag.RelativeBounds = new RectangleF(factor - width / 2, 0, width, 1f);
+            flag.RelativeBounds = new RectangleF(factor, 0, 0.02f, 1f);
             flag.KeepAspectRatio = false;
             flag.CanScale = false;
-            flag.Alignment = RectangleAlignment.Center;
-            flags.AddChild(flag);
+            flag.Alignment = RectangleAlignment.CenterLeft;
+            flagLabels.AddChild(flag);
+        }
 
+        private void AddTimeMarker(DateTime time, Color tint, string text)
+        {
+            float factor = AddLineAtTime(time, tint);
             TextNode textNode = new TextNode(text, tint);
-            textNode.RelativeBounds = new RectangleF(0.035f, 0.75f, 1, 0.5f);
-            textNode.Alignment = RectangleAlignment.BottomCenter;
-            flag.AddChild(textNode);
+            textNode.RelativeBounds = new RectangleF(factor, 0, 1, 1.2f);
+            textNode.Alignment = RectangleAlignment.BottomLeft;
+            flagLabels.AddChild(textNode);
+        }
+
+        private float AddLineAtTime(DateTime time, Color tint)
+        {
+            float factor = TimeToFactor(time);
+            ImageNode flag = new ImageNode(@"img/flag.png", tint);
+            flag.RelativeBounds = new RectangleF(factor, 0, 1, 1f);
+            flag.Alignment = RectangleAlignment.CenterLeft;
+            flag.CanScale = false;
+            progressBar.AddChild(flag);
+
+            return factor;
         }
 
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
