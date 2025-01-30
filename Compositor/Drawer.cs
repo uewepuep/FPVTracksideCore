@@ -107,6 +107,26 @@ namespace Composition
             SpriteBatch?.Draw(texture, dest.Position, src, Color.FromNonPremultiplied(new Vector4(tint.ToVector3(), alpha)), 0, Vector2.Zero, scale, SpriteEffects.None, 0);
         }
 
+        public void DrawLine(Vector2 point1, Vector2 point2, Color color, float thickness = 1f)
+        {
+            float distance = Vector2.Distance(point1, point2);
+            float angle = (float)Math.Atan2(point2.Y - point1.Y, point2.X - point1.X);
+            DrawLine(point1, distance, angle, color, thickness);
+        }
+
+        public void DrawLine(Vector2 point, float length, float angle, Color color, float thickness = 1f)
+        {
+            Texture2D texture = TextureCache.GetTextureFromColor(color);
+
+            Vector2 origin = new Vector2(0f, 0.5f);
+            Vector2 scale = new Vector2(length, thickness);
+
+            scale.X *= 1.0f / texture.Width;
+            scale.Y *= 1.0f / texture.Height;
+
+            SpriteBatch.Draw(texture, point, null, color, angle, origin, scale, SpriteEffects.None, 0);
+        }
+
         public void PushClipRectangle(Rectangle clip)
         {
             if (SpriteBatch == null)
