@@ -68,7 +68,7 @@ namespace UI.Nodes
 
         private AutoRunnerTimerNode autoRunnerTimerNode;
 
-        public LapTimesGraph LapTimesGraph { get; private set; }
+        public Node LapTimesGraph { get; private set; }
 
         public SceneManagerNode(EventManager eventManager, VideoManager videoManager, ChannelsGridNode channelsGridNode, TopBarNode topBarNode, AutoRunner autoRunner)
         {
@@ -599,12 +599,12 @@ namespace UI.Nodes
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
                     wormNode.SetAnimatedAlpha(0);
 
-                    //LapTimesGraph?.Dispose();
+                    LapTimesGraph?.Dispose();
 
-                    //LapTimesGraph = new LapTimesGraph(eventManager);
-                    //LapTimesGraph.SetRace(eventManager.RaceManager.CurrentRace);
-                    //AddChild(LapTimesGraph);
-                    //RequestLayout();
+                    LapTimesGraph = new LapTimesGraph(eventManager);
+                    LapTimesGraph.SetRace(eventManager.RaceManager.CurrentRace);
+                    AddChild(LapTimesGraph);
+                    RequestLayout();
                     break;
 
                 case Scenes.Fullscreen:

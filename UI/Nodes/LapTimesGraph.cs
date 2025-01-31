@@ -45,6 +45,16 @@ namespace UI.Nodes
             }
 
             View = new RectangleF(-1, maxLapTime, lapCount + 2, minLapTime- maxLapTime);
+
+            for (int i = 0; i <= lapCount; i++)
+            {
+                AddXLabel(i, "L" + i.ToString());
+            }
+
+            for (float i = minLapTime; i <= maxLapTime; i += 1)
+            {
+                AddYLabel(i, i.ToString("0") + "s");
+            }
         }
     }
 }

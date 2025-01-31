@@ -13,11 +13,16 @@ namespace Composition.Nodes
     {
         private List<GraphSeries> series;
 
+        private Dictionary<float, string> xLabels;
+        private Dictionary<float, string> yLabels;
+
         public RectangleF View { get; set; }
 
         public GraphNode() 
         {
             series = new List<GraphSeries>();
+            xLabels = new Dictionary<float, string>();
+            yLabels = new Dictionary<float, string>();
         }
 
         public void Clear()
@@ -25,6 +30,16 @@ namespace Composition.Nodes
             lock (series)
             {
                 series.Clear();
+            }
+
+            lock (xLabels)
+            {
+                xLabels.Clear();
+            }
+
+            lock (yLabels)
+            {
+                yLabels.Clear();    
             }
         }
 
@@ -35,21 +50,75 @@ namespace Composition.Nodes
                 GraphSeries got = series.FirstOrDefault(s => s.Name == name);
                 if (got == null)
                 {
-                    got = new GraphSeries(name, color);
+                    got = new GraphSeries(this, name, color);
                     series.Add(got);
                 }
                 return got;
             }
         }
 
+        public Vector2 ToPixel(Vector2 v)
+        {
+            Vector2 v2 = new Vector2(v.X - View.X, v.Y - View.Y);
+            v2.X = (v2.X / View.Width) * Bounds.Width;
+            v2.X += Bounds.X;
+
+            v2.Y = (v2.Y / View.Height) * Bounds.Height;
+            v2.Y += Bounds.Y;
+
+            return v2;
+        }
+
+        private void DrawGrid(Drawer id)
+        {
+            Color color = Color.Gray;
+
+            lock (xLabels)
+            {
+                foreach (var kvp in xLabels)
+                {
+                    float px = ToPixel(new Vector2(kvp.Key)).X;
+                    id.DrawLine(new Vector2(px, Bounds.Top), new Vector2(px, Bounds.Bottom), color);
+                }
+            }
+
+            lock (yLabels)
+            {
+                foreach (var kvp in yLabels)
+                {
+                    float py = ToPixel(new Vector2(kvp.Key)).Y;
+                    id.DrawLine(new Vector2(Bounds.Left, py), new Vector2(Bounds.Right, py), color);
+                }
+            }
+        }
+
+        public void AddXLabel(float value, string label)
+        {
+            lock (xLabels)
+            {
+                xLabels.Add(value, label);
+            }
+        }
+
+        public void AddYLabel(float value, string label)
+        {
+            lock (yLabels)
+            {
+                yLabels.Add(value, label);
+            }
+        }
+
         public override void Draw(Drawer id, float parentAlpha)
         {
             base.Draw(id, parentAlpha);
+
+            DrawGrid(id);
+
             lock (series)
             {
                 foreach (GraphSeries s in series)
                 {
-                    s.Draw(id, View, Bounds);
+                    s.Draw(id);
                 }
             }
         }
@@ -69,8 +138,11 @@ namespace Composition.Nodes
 
         private Texture2D texture;
 
-        public GraphSeries(string name, Color color)
+        private GraphNode graph;
+
+        public GraphSeries(GraphNode graph, string name, Color color)
         {
+            this.graph = graph;
             points = new List<Vector2>();
             Name = name;
             Color = color;
@@ -98,19 +170,7 @@ namespace Composition.Nodes
             }
         }
 
-        private static Vector2 ToPixel(Vector2 v, RectangleF view, Rectangle bounds)
-        {
-            Vector2 v2 = new Vector2(v.X - view.X, v.Y - view.Y);
-            v2.X = (v2.X / view.Width) * bounds.Width;
-            v2.X += bounds.X;
-
-            v2.Y = (v2.Y / view.Height) * bounds.Height;
-            v2.Y += bounds.Y;
-
-            return v2;
-        }
-
-        public void Draw(Drawer id, RectangleF view, Rectangle bounds)
+        public void Draw(Drawer id)
         {
             if (texture == null)
             {
@@ -120,14 +180,14 @@ namespace Composition.Nodes
             if (!Points.Any())
                 return;
 
-            int ithickness = (int)Math.Ceiling(Thickness);
-            int idoubleThickness = (int)Math.Ceiling(Thickness * 2);
+            int ithickness = (int)Math.Ceiling(Thickness) * 2;
+            int idoubleThickness = (int)Math.Ceiling(Thickness * 4);
             lock (points)
             {
-                Vector2 last = ToPixel(Points.First(), view, bounds);
+                Vector2 last = graph.ToPixel(Points.First());
                 foreach (Vector2 point in Points.Skip(1))
                 {
-                    Vector2 p = ToPixel(point, view, bounds);
+                    Vector2 p = graph.ToPixel(point);
 
                     id.DrawLine(last, p, texture, Thickness);
                     last = p;
