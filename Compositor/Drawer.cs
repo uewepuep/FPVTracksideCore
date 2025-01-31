@@ -109,14 +109,20 @@ namespace Composition
 
         public void DrawLine(Vector2 point1, Vector2 point2, Color color, float thickness = 1f)
         {
-            float distance = Vector2.Distance(point1, point2);
-            float angle = (float)Math.Atan2(point2.Y - point1.Y, point2.X - point1.X);
-            DrawLine(point1, distance, angle, color, thickness);
+            Texture2D texture = TextureCache.GetTextureFromColor(color);
+
+            DrawLine(point1, point2, texture, thickness);
         }
 
-        public void DrawLine(Vector2 point, float length, float angle, Color color, float thickness = 1f)
+        public void DrawLine(Vector2 point1, Vector2 point2, Texture2D texture, float thickness = 1f)
         {
-            Texture2D texture = TextureCache.GetTextureFromColor(color);
+            float distance = Vector2.Distance(point1, point2);
+            float angle = (float)Math.Atan2(point2.Y - point1.Y, point2.X - point1.X);
+            DrawLine(point1, distance, angle, texture, thickness);
+        }
+
+        public void DrawLine(Vector2 point, float length, float angle, Texture2D texture, float thickness = 1f)
+        {
 
             Vector2 origin = new Vector2(0f, 0.5f);
             Vector2 scale = new Vector2(length, thickness);
@@ -124,7 +130,7 @@ namespace Composition
             scale.X *= 1.0f / texture.Width;
             scale.Y *= 1.0f / texture.Height;
 
-            SpriteBatch.Draw(texture, point, null, color, angle, origin, scale, SpriteEffects.None, 0);
+            SpriteBatch.Draw(texture, point, null, Color.White, angle, origin, scale, SpriteEffects.None, 0);
         }
 
         public void PushClipRectangle(Rectangle clip)

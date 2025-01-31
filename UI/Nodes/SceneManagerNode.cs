@@ -68,6 +68,8 @@ namespace UI.Nodes
 
         private AutoRunnerTimerNode autoRunnerTimerNode;
 
+        public LapTimesGraph LapTimesGraph { get; private set; }
+
         public SceneManagerNode(EventManager eventManager, VideoManager videoManager, ChannelsGridNode channelsGridNode, TopBarNode topBarNode, AutoRunner autoRunner)
         {
             AfterRaceStart = TimeSpan.FromSeconds(2);
@@ -596,6 +598,13 @@ namespace UI.Nodes
                     ChannelsGridNode.MakeExtrasVisible(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
                     wormNode.SetAnimatedAlpha(0);
+
+                    //LapTimesGraph?.Dispose();
+
+                    //LapTimesGraph = new LapTimesGraph(eventManager);
+                    //LapTimesGraph.SetRace(eventManager.RaceManager.CurrentRace);
+                    //AddChild(LapTimesGraph);
+                    //RequestLayout();
                     break;
 
                 case Scenes.Fullscreen:
