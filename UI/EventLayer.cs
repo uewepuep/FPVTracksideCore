@@ -586,6 +586,11 @@ namespace UI
             }
         }
 
+        public void VideoCheckFileCount()
+        {
+            videoManager?.CheckFileCount();
+        }
+
         public override void SetLayerStack(LayerStack layerStack)
         {
             base.SetLayerStack(layerStack);

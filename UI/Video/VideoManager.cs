@@ -628,14 +628,14 @@ namespace UI.Video
             mutex.Set();
         }
 
-        private void CheckFileCount()
+        public void CheckFileCount()
         {
             try
             {
                 int maxCount = ApplicationProfileSettings.Instance.VideosToKeep;
                 EventDirectory.Refresh();
 
-                FileInfo[] files = EventDirectory.GetFiles("*.wmv");
+                FileInfo[] files = AllEventAllVideoFiles().ToArray();
 
                 int toDelete = files.Count() - maxCount;
 
@@ -656,6 +656,30 @@ namespace UI.Video
             }
             catch
             {
+            }
+        }
+
+        private IEnumerable<FileInfo> AllEventAllVideoFiles()
+        {
+            if (EventDirectory == null)
+                yield break;
+
+            DirectoryInfo parentDirectory = EventDirectory.Parent;
+
+            foreach (DirectoryInfo eventDir in parentDirectory.EnumerateDirectories())
+            {
+                foreach (DirectoryInfo raceDir in eventDir.EnumerateDirectories())
+                {
+                    foreach (FileInfo fileInfo in raceDir.GetFiles("*.wmv"))
+                    {
+                        yield return fileInfo;
+                    }
+
+                    foreach (FileInfo fileInfo in raceDir.GetFiles("*.mp4"))
+                    {
+                        yield return fileInfo;
+                    }
+                }
             }
         }
 

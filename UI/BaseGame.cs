@@ -366,6 +366,19 @@ namespace UI
                 }
             });
 
+            loadingLayer.WorkQueue.Enqueue(startEventWorkSet, "Cleaning up old video files", () =>
+            {
+                try
+                {
+                    eventLayer?.VideoCheckFileCount();
+                }
+                catch (Exception ex)
+                {
+                    Logger.VideoLog.LogException(this, ex);
+                    LayerStack.GetLayer<PopupLayer>().PopupMessage("Error Cleaning old videos: " + ex.Message);
+                }
+            });
+
             loadingLayer.WorkQueue.Enqueue(startEventWorkSet, "Setting Scene", () =>
             {
                 if (eventLayer != null)
