@@ -24,7 +24,8 @@ namespace RaceLib
         LowBand = 8,
         Diatone = 9,
 
-        DJIO3 = 10
+        DJIO3 = 10,
+        DJIO4 = 11
     }
 
     public enum BandType
@@ -236,7 +237,25 @@ namespace RaceLib
             new Channel(37, 5, Band.DJIFPVHD),
             new Channel(38, 6, Band.DJIFPVHD),
             new Channel(39, 7, Band.DJIFPVHD),
-            new Channel(40, 8, Band.DJIFPVHD)
+            new Channel(40, 8, Band.DJIFPVHD),
+
+
+            new Channel(75, 1, Band.DJIO3),
+            new Channel(76, 2, Band.DJIO3),
+            new Channel(77, 3, Band.DJIO3),
+            new Channel(78, 4, Band.DJIO3),
+            new Channel(79, 5, Band.DJIO3),
+            new Channel(80, 6, Band.DJIO3),
+            new Channel(81, 7, Band.DJIO3),
+
+            new Channel(59, 'R', 1, Band.DJIO4),
+            new Channel(60, 'R', 2, Band.DJIO4),
+            new Channel(61, 'R', 3, Band.DJIO4),
+            new Channel(62, 'R', 4, Band.DJIO4),
+            new Channel(63, 'R',  5, Band.DJIO4),
+            new Channel(64, 'R', 6, Band.DJIO4),
+            new Channel(65, 'R',  7, Band.DJIO4),
+            new Channel(66, 'R',  8, Band.DJIO4)
         };
 
         public static Channel[] E = new Channel[] {
@@ -297,17 +316,6 @@ namespace RaceLib
             new Channel(74, 8, Band.Diatone)
         };
 
-
-        public static Channel[] DJIO3 = new Channel[] {
-            new Channel(75, 1, Band.DJIO3),
-            new Channel(76, 2, Band.DJIO3),
-            new Channel(77, 3, Band.DJIO3),
-            new Channel(78, 4, Band.DJIO3),
-            new Channel(79, 5, Band.DJIO3),
-            new Channel(80, 6, Band.DJIO3),
-            new Channel(81, 7, Band.DJIO3),
-        };
-
         public static Channel[] IMD6C = new Channel[] {
             RaceBand[0],
             RaceBand[1],
@@ -360,6 +368,9 @@ namespace RaceLib
                         case 7: return 5912;
                     }
                     break;
+
+                case Band.DJIO4:
+                    return FrequencyLookup(Band.Raceband, prefix, channel);
 
                 case Band.E:
                     switch (channel)
@@ -414,7 +425,7 @@ namespace RaceLib
         {
             get
             {
-                return Fatshark.Union(RaceBand).Union(BoscamA).Union(BoscamB).Union(DJIFPVHD).Union(E).Union(HDZero).Union(LowBand).Union(Diatone).Union(DJIO3).ToArray();
+                return Fatshark.Union(RaceBand).Union(BoscamA).Union(BoscamB).Union(DJIFPVHD).Union(E).Union(HDZero).Union(LowBand).Union(Diatone).ToArray();
             }
         }
 

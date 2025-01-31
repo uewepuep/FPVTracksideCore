@@ -599,12 +599,12 @@ namespace UI.Nodes
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
                     wormNode.SetAnimatedAlpha(0);
 
-                    LapTimesGraph?.Dispose();
+                    //LapTimesGraph?.Dispose();
 
-                    LapTimesGraph = new LapTimesGraph(eventManager);
-                    LapTimesGraph.SetRace(eventManager.RaceManager.CurrentRace);
-                    AddChild(LapTimesGraph);
-                    RequestLayout();
+                    //LapTimesGraph = new LapTimesGraph(eventManager);
+                    //LapTimesGraph.SetRace(eventManager.RaceManager.CurrentRace);
+                    //AddChild(LapTimesGraph);
+                    //RequestLayout();
                     break;
 
                 case Scenes.Fullscreen:

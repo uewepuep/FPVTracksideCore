@@ -312,9 +312,7 @@ namespace UI.Nodes
 
                 { "HDZero", Channel.HDZero },
                 { "HDZero IMD6C", Channel.HDZeroIMD6C },
-                { "DJIFPVHD", Channel.DJIFPVHD },
-                { "DJIO3", Channel.DJIO3 },
-
+                { "DJI", Channel.DJIFPVHD },
                 { "2", null },
 
                 { "LowBand", Channel.LowBand },
