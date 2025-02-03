@@ -5,7 +5,7 @@
 		<ApplicationIcon />
 		<Platforms>x64</Platforms>
 		<StartupObject />
-		<Version>2.0.62.2</Version>
+		<Version>2.0.63.0</Version>
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
