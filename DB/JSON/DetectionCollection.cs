@@ -22,17 +22,17 @@ namespace DB.JSON
 
         public bool Delete(Guid id)
         {
-            return false;
+            return true;
         }
 
         public bool Delete(Detection obj)
         {
-            return false;
+            return true;
         }
 
-        public int Delete(IEnumerable<Detection> objs)
+        public bool Delete(IEnumerable<Detection> objs)
         {
-            return 0;
+            return true;
         }
 
         public Detection GetCreateExternalObject(int id)
@@ -57,32 +57,32 @@ namespace DB.JSON
 
         public bool Insert(Detection obj)
         {
-            return false;
+            return true;
         }
 
-        public int Insert(IEnumerable<Detection> objs)
+        public bool Insert(IEnumerable<Detection> objs)
         {
-            return 0;
+            return true;
         }
 
         public bool Update(Detection obj)
         {
-            return false;
+            return true;
         }
 
-        public int Update(IEnumerable<Detection> objs)
+        public bool Update(IEnumerable<Detection> objs)
         {
-            return 0;
+            return true;
         }
 
         public bool Upsert(Detection obj)
         {
-            return false;
+            return true;
         }
 
-        public int Upsert(IEnumerable<Detection> objs)
+        public bool Upsert(IEnumerable<Detection> objs)
         {
-            return 0;
+            return true;
         }
     }
 }

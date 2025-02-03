@@ -32,7 +32,7 @@ namespace DB.JSON
             return collection.Delete(obj);
         }
 
-        public int Delete(IEnumerable<Event> objs)
+        public bool Delete(IEnumerable<Event> objs)
         {
             return collection.Delete(objs);
         }
@@ -63,7 +63,7 @@ namespace DB.JSON
             return collection.Insert(obj);
         }
 
-        public int Insert(IEnumerable<Event> objs)
+        public bool Insert(IEnumerable<Event> objs)
         {
             Event[] events = objs.ToArray();
             foreach (Event obj in events)
@@ -79,7 +79,7 @@ namespace DB.JSON
             return collection.Update(obj);
         }
 
-        public int Update(IEnumerable<Event> objs)
+        public bool Update(IEnumerable<Event> objs)
         {
             Event[] events = objs.ToArray();
             foreach (Event obj in events)
@@ -96,7 +96,7 @@ namespace DB.JSON
             return collection.Upsert(obj);
         }
 
-        public int Upsert(IEnumerable<Event> objs)
+        public bool Upsert(IEnumerable<Event> objs)
         {
             Event[] events = objs.ToArray();
             foreach (Event obj in events)

@@ -39,7 +39,7 @@ namespace DB
             return original.Delete(obj);
         }
 
-        public int Delete(IEnumerable<T> objs)
+        public bool Delete(IEnumerable<T> objs)
         {
             cache = null;
             return original.Delete(objs);
@@ -81,7 +81,7 @@ namespace DB
             return original.Insert(obj);
         }
 
-        public int Insert(IEnumerable<T> objs)
+        public bool Insert(IEnumerable<T> objs)
         {
             cache = null;
             return original.Insert(objs);
@@ -93,7 +93,7 @@ namespace DB
             return original.Insert(obj);
         }
 
-        public int Update(IEnumerable<T> objs)
+        public bool Update(IEnumerable<T> objs)
         {
             cache = null;
             return original.Insert(objs);
@@ -105,7 +105,7 @@ namespace DB
             return original.Insert(obj);
         }
 
-        public int Upsert(IEnumerable<T> objs)
+        public bool Upsert(IEnumerable<T> objs)
         {
             cache = null;
             return original.Insert(objs);

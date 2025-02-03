@@ -322,7 +322,7 @@ namespace DB.Lite
             return collection.Delete(obj.ID);
         }
 
-        public int Delete(IEnumerable<T> objects)
+        public bool Delete(IEnumerable<T> objects)
         {
             int i = 0;
             foreach (var obj in objects)
@@ -333,7 +333,7 @@ namespace DB.Lite
                 }
             }
 
-            return i;
+            return i == objects.Count();
         }
 
         public IEnumerable<T> All()
@@ -382,13 +382,13 @@ namespace DB.Lite
             return collection.GetCreateObject(externalId);
         }
 
-        public int Insert(IEnumerable<T> documents)
+        public bool Insert(IEnumerable<T> documents)
         {
             foreach (T doc in documents)
             {
                 doc.Modified = DateTime.Now;
             }
-            return collection.Insert(documents);
+            return collection.Insert(documents) == documents.Count();
         }
 
         public bool Insert(T doc)
@@ -403,13 +403,13 @@ namespace DB.Lite
             return collection.Update(doc);
         }
 
-        public int Update(IEnumerable<T> documents)
+        public bool Update(IEnumerable<T> documents)
         {
             foreach (T doc in documents)
             {
                 doc.Modified = DateTime.Now;
             }
-            return collection.Update(documents);
+            return collection.Update(documents) == documents.Count();
         }
 
         public bool Upsert(T doc)
@@ -418,13 +418,13 @@ namespace DB.Lite
             return collection.Upsert(doc);
         }
 
-        public int Upsert(IEnumerable<T> documents)
+        public bool Upsert(IEnumerable<T> documents)
         {
             foreach (T doc in documents)
             {
                 doc.Modified = DateTime.Now;
             }
-            return collection.Upsert(documents);
+            return collection.Upsert(documents) == documents.Count();
         }
     }
 

@@ -42,9 +42,9 @@ namespace DB.JSON
             return false;
         }
 
-        public int Delete(IEnumerable<Channel> objs)
+        public bool Delete(IEnumerable<Channel> objs)
         {
-            return 0;
+            return false;
         }
 
         public Channel GetCreateExternalObject(int id)
@@ -75,9 +75,9 @@ namespace DB.JSON
             return false;
         }
 
-        public int Insert(IEnumerable<Channel> objs)
+        public bool Insert(IEnumerable<Channel> objs)
         {
-            return 0;
+            return false;
         }
 
         public bool Update(Channel obj)
@@ -85,9 +85,9 @@ namespace DB.JSON
             return false;
         }
 
-        public int Update(IEnumerable<Channel> objs)
+        public bool Update(IEnumerable<Channel> objs)
         {
-            return 0;
+            return false;
         }
 
         public bool Upsert(Channel obj)
@@ -95,9 +95,9 @@ namespace DB.JSON
             return false;
         }
 
-        public int Upsert(IEnumerable<Channel> objs)
+        public bool Upsert(IEnumerable<Channel> objs)
         {
-            return 0;
+            return false;
         }
     }
 }

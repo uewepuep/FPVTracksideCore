@@ -55,26 +55,27 @@ namespace DB.JSON
         {
             IEnumerable<T> except = All().Where(r => r.ID != obj.ID);
             IEnumerable<T> added = except.Append(obj);
-            return Write(added) > 1;
+            return Write(added) - except.Count() == 1;
         }
 
-        public int Update(IEnumerable<T> objs)
+        public bool Update(IEnumerable<T> objs)
         {
             IEnumerable<T> except = All().Where(r => !objs.Select(a => a.ID).Contains(r.ID));
             IEnumerable<T> added = except.Union(objs);
-            return Write(added);
+            return Write(added) == added.Count();
         }
 
         public bool Insert(T obj)
         {
+            int allCount = All().Count();
             IEnumerable<T> appended = All().Append(obj);
-            return Write(appended) > 1;
+            return Write(appended) == allCount + 1;
         }
 
-        public int Insert(IEnumerable<T> objs)
+        public bool Insert(IEnumerable<T> objs)
         {
             IEnumerable<T> appended = All().Union(objs);
-            return Write(appended);
+            return Write(appended) == appended.Count();
         }
 
         public bool Upsert(T obj)
@@ -89,7 +90,7 @@ namespace DB.JSON
             }
         }
 
-        public int Upsert(IEnumerable<T> objs)
+        public bool Upsert(IEnumerable<T> objs)
         {
             if (All().Any(r => objs.Select(s => s.ID).Contains(r.ID)))
             {
@@ -103,23 +104,23 @@ namespace DB.JSON
 
         public bool Delete(Guid id)
         {
-            return Delete(new Guid[] { id }) > 1;
+            return Delete(new Guid[] { id });
         }
 
         public bool Delete(T obj)
         {
-            return Delete(new Guid[] { obj.ID }) > 1;
+            return Delete(new Guid[] { obj.ID });
         }
 
-        public int Delete(IEnumerable<T> objs)
+        public bool Delete(IEnumerable<T> objs)
         {
             return Delete(objs.Select(r => r.ID));
         }
 
-        private int Delete(IEnumerable<Guid> ids)
+        private bool Delete(IEnumerable<Guid> ids)
         {
             IEnumerable<T> except = All().Where(r => !ids.Contains(r.ID));
-            return Write(except.ToArray());
+            return Write(except.ToArray()) == except.Count();
         }
 
         public IEnumerable<T> All()

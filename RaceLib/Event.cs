@@ -167,13 +167,13 @@ namespace RaceLib
 
             try
             {
-                newEvent.Name = Regex.Replace(newEvent.Name, @" \([A-z0-9 ]*\)", "");
+                newEvent.Name = Regex.Replace(newEvent.Name, @"\([A-z0-9 ]*\)", "");
             }
             catch
             {
             }
 
-            newEvent.Name = newEvent.Name + " - " +  Start.ToString(dateFormat);
+            newEvent.Name = newEvent.Name + " (" +  Start.ToString(dateFormat) + ")";
 
             newEvent.PilotChannels = this.PilotChannels.ToList();
             newEvent.Channels = this.Channels.ToArray();

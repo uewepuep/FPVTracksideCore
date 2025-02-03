@@ -34,7 +34,7 @@ namespace DB
             return collection.Delete(obj.Convert<D>());
         }
 
-        public int Delete(IEnumerable<R> objs)
+        public bool Delete(IEnumerable<R> objs)
         {
             return collection.Delete(objs.Convert<D>());
         }
@@ -64,7 +64,7 @@ namespace DB
             return collection.Insert(obj.Convert<D>());
         }
 
-        public int Insert(IEnumerable<R> objs)
+        public bool Insert(IEnumerable<R> objs)
         {
             return collection.Insert(objs.Convert<D>());
         }
@@ -74,7 +74,7 @@ namespace DB
             return collection.Update(obj.Convert<D>());
         }
 
-        public int Update(IEnumerable<R> objs)
+        public bool Update(IEnumerable<R> objs)
         {
             return collection.Update(objs.Convert<D>());
         }
@@ -84,7 +84,7 @@ namespace DB
             return collection.Upsert(obj.Convert<D>());
         }
 
-        public int Upsert(IEnumerable<R> objs)
+        public bool Upsert(IEnumerable<R> objs)
         {
             return collection.Upsert(objs.Convert<D>());
         }

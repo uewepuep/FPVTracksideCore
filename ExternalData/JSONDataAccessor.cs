@@ -184,7 +184,10 @@ namespace ExternalData
 
 #if DEBUG
                 Response res = os as Response;
-                res.Contents = response;
+                if (res != null)
+                {
+                    res.Contents = response;
+                }
 #endif
 
                 return os;

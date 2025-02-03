@@ -65,7 +65,7 @@ namespace DB.JSON
             return Append(obj);
         }
 
-        public int Update(IEnumerable<T> objs)
+        public bool Update(IEnumerable<T> objs)
         {
             cacheValid = false;
             return Append(objs);
@@ -77,7 +77,7 @@ namespace DB.JSON
             return Append(obj);
         }
 
-        public int Insert(IEnumerable<T> objs)
+        public bool Insert(IEnumerable<T> objs)
         {
             cacheValid = false;
             return Append(objs);
@@ -95,7 +95,7 @@ namespace DB.JSON
             }
         }
 
-        public int Upsert(IEnumerable<T> objs)
+        public bool Upsert(IEnumerable<T> objs)
         {
             if (All().Any(r => objs.Select(s => s.ID).Contains(r.ID)))
             {
@@ -111,25 +111,26 @@ namespace DB.JSON
         {
             cacheValid = false;
 
-            return Delete(new Guid[] { id }) > 1;
+            return Delete(new Guid[] { id });
         }
 
         public bool Delete(T obj)
         {
             cacheValid = false;
 
-            return Delete(new Guid[] { obj.ID }) > 1;
+            return Delete(new Guid[] { obj.ID });
         }
 
-        private int Delete(IEnumerable<Guid> ids)
+        private bool Delete(IEnumerable<Guid> ids)
         {
             IEnumerable<T> objs = GetObjects(ids);
             return Delete(objs);
         }
 
-        public int Delete(IEnumerable<T> objs)
+        public bool Delete(IEnumerable<T> objs)
         {
-            int count = 0;
+            int allWritten = 0;
+            int exceptCount = 0;
 
             cacheValid = false;
 
@@ -144,9 +145,12 @@ namespace DB.JSON
                 T[] existing = Read(filename);
 
                 IEnumerable<T> except = existing.Except(delValues);
-                count += jsonIO.Write(filename, except);
+
+                exceptCount += except.Count();
+
+                allWritten += jsonIO.Write(filename, except);
             }
-            return count;
+            return allWritten - exceptCount == objs.Count();
         }
 
         public IEnumerable<T> All()
@@ -184,12 +188,13 @@ namespace DB.JSON
 
         private bool Append(T value)
         {
-            return Append(new T[] { value }) > 0;
+            return Append(new T[] { value });
         }
 
-        private int Append(IEnumerable<T> values)
+        private bool Append(IEnumerable<T> values)
         {
-            int count = 0;
+            int allWritten = 0;
+            int exceptCount = 0;
             var groups = values.GroupBy(r => ObjectToID(r));
 
             foreach (var group in groups)
@@ -201,12 +206,14 @@ namespace DB.JSON
                 T[] existing = Read(filename);
 
                 IEnumerable<T> except = existing.Except(newValues);
+                exceptCount += except.Count();
 
                 IEnumerable<T> appended = except.Concat(newValues);
 
-                count += jsonIO.Write(filename, appended);
+                allWritten += jsonIO.Write(filename, appended);
             }
-            return count;
+
+            return allWritten - exceptCount == values.Count();
         }
 
         private int Write(IEnumerable<T> values)

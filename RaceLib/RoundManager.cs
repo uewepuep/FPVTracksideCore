@@ -314,8 +314,11 @@ namespace RaceLib
 
                     using (IDatabase db = DatabaseFactory.Open(Event.ID))
                     {
-                        db.Upsert(Event.Rounds);
                         db.Update(Event);
+                        if (!db.Upsert(Event.Rounds))
+                        {
+                            throw new Exception("Failed to update rounds");
+                        }
                     }
                 }
 

@@ -45,11 +45,11 @@ namespace DB
             return collection.Update(obj);
         }
 
-        public int Update<T>(IEnumerable<T> objs) where T : BaseObject, new()
+        public bool Update<T>(IEnumerable<T> objs) where T : BaseObject, new()
         {
             IDatabaseCollection<T> collection = GetCollection<T>();
             if (collection == null)
-                return 0;
+                return false;
 
             return collection.Update(objs);
         }
@@ -63,11 +63,11 @@ namespace DB
             return collection.Insert(obj);
         }
 
-        public int Insert<T>(IEnumerable<T> objs) where T : BaseObject, new()
+        public bool Insert<T>(IEnumerable<T> objs) where T : BaseObject, new()
         {
             IDatabaseCollection<T> collection = GetCollection<T>();
             if (collection == null)
-                return 0;
+                return false;
 
             return collection.Insert(objs);
         }
@@ -81,11 +81,11 @@ namespace DB
             return collection.Upsert(obj);
         }
 
-        public int Upsert<T>(IEnumerable<T> objs) where T : BaseObject, new()
+        public bool Upsert<T>(IEnumerable<T> objs) where T : BaseObject, new()
         {
             IDatabaseCollection<T> collection = GetCollection<T>();
             if (collection == null)
-                return 0;
+                return false;
 
             return collection.Upsert(objs);
         }
@@ -108,11 +108,11 @@ namespace DB
             return collection.Delete(obj);
         }
 
-        public int Delete<T>(IEnumerable<T> objs) where T : BaseObject, new()
+        public bool Delete<T>(IEnumerable<T> objs) where T : BaseObject, new()
         {
             IDatabaseCollection<T> collection = GetCollection<T>();
             if (collection == null)
-                return 0;
+                return false;
 
             return collection.Delete(objs);
         }
@@ -178,31 +178,6 @@ namespace DB
         {
             IEnumerable<Race> races = database.LoadRaces();
             return races;
-
-            //if (races.Any())
-            //{
-            //    Event ev = races.First().Event.Convert();
-            //    foreach (Race srcRace in races)
-            //    {
-            //        Race destRace = srcRace.Convert();
-            //        destRace.Event = ev;
-
-            //        // Already existing detections on the laps..
-            //        IEnumerable<Detection> lapDetections = destRace.Laps.Select(l => l.Detection);
-
-            //        foreach (Detection srcDet in srcRace.Detections)
-            //        {
-            //            Detection destDet = lapDetections.GetObject<Detection>(srcDet.ID);
-            //            if (destDet != null)
-            //            {
-            //                destDet = srcDet.Convert();
-            //            }
-            //            destRace.Detections.Add(destDet);
-            //        }
-
-            //        yield return destRace;
-            //    }
-            //}
         }
 
         public IEnumerable<Result> LoadResults()
@@ -232,14 +207,14 @@ namespace DB
     public interface IDatabaseCollection<T>
     {
         bool Update(T obj);
-        int Update(IEnumerable<T> objs);
-        public bool Insert(T obj);
-        int Insert(IEnumerable<T> objs);
+        bool Update(IEnumerable<T> objs);
+        bool Insert(T obj);
+        bool Insert(IEnumerable<T> objs);
         bool Upsert(T obj);
-        int Upsert(IEnumerable<T> objs);
+        bool Upsert(IEnumerable<T> objs);
         bool Delete(Guid id);
         bool Delete(T obj);
-        int Delete(IEnumerable<T> objs);
+        bool Delete(IEnumerable<T> objs);
         IEnumerable<T> All();
         T GetObject(Guid id);
         IEnumerable<T> GetObjects(IEnumerable<Guid> ids);
