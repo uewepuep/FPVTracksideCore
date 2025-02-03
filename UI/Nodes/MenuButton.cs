@@ -271,44 +271,6 @@ namespace UI.Nodes
 
             if (hasEvent)
             {
-                //openWindow.AddItem("Rounds", () =>
-                //{
-                //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                //    baseGame.QuickLaunchWindow<RoundsNode>(eventManager, keyMapper);
-                //});
-
-                //openWindow.AddItem("Lap Records", () =>
-                //{
-                //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                //    baseGame.QuickLaunchWindow<LapRecordsSummaryNode>(eventManager, keyMapper);
-                //});
-
-                //openWindow.AddItem("Points", () =>
-                //{
-                //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                //    baseGame.QuickLaunchWindow<PointsSummaryNode>(eventManager, keyMapper);
-                //});
-
-                //openWindow.AddItem("Lap Count", () =>
-                //{
-                //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                //    baseGame.QuickLaunchWindow<LapCountSummaryNode>(eventManager, keyMapper);
-                //});
-
-                //openWindow.AddItem("Channel List", () =>
-                //{
-                //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                //    baseGame.QuickLaunchWindow<PilotChanelList>(eventManager, keyMapper);
-                //});
-
-                //openWindow.AddItem("Event Status", () =>
-                //{
-                //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
-                //    baseGame.QuickLaunchWindow<EventStatusNodeTopBar>(eventManager, keyMapper);
-                //});
-
-                root.AddBlank();
-
                 MouseMenu export = root.AddSubmenu("Export");
 
                 FileTools.ExportMenu(export, "Export PBs", PlatformTools, "Save Top Consecutive Laps", eventManager.LapRecordManager.ExportPBs(), GetLayer<PopupLayer>());
@@ -354,6 +316,8 @@ namespace UI.Nodes
                 OpenCurrentDirectory();
             });
 
+            AddMenus(root);
+
             root.AddBlank();
 
             root.AddItem("About", () =>
@@ -362,6 +326,11 @@ namespace UI.Nodes
             });
 
             root.Show(this);
+        }
+
+        protected virtual void AddMenus(MouseMenu root)
+        {
+
         }
 
         public void ShowOnlineManual()

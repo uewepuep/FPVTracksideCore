@@ -38,7 +38,7 @@ namespace UI
         private AnimatedRelativeNode leftContainer;
         private AnimatedRelativeNode centreContainer;
 
-        private EventWebServer eventWebServer;
+        protected EventWebServer eventWebServer;
 
         public ChannelsGridNode ChannelsGridNode { get; private set; }
         public RoundsNode RoundsNode { get; private set; }
@@ -268,10 +268,11 @@ namespace UI
                 eventWebServer.Start();
             }
 
-            MenuButton = new MenuButton(Profile, EventManager, videoManager, SoundManager, eventWebServer, TabbedMultiNode, KeyMapper, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
+            MenuButton = CreateMenuButton();
             MenuButton.RelativeBounds = new RectangleF(0.7f, 0, 0.3f, 0.03f);
             MenuButton.ImageNode.Tint = Theme.Current.RightControls.Text.XNA;
             rightBar.AddChild(MenuButton);
+
 
             MenuButton.BackToEventSelector += BackToEventSelector;
             MenuButton.ChannelsChanged += () =>
@@ -345,7 +346,6 @@ namespace UI
                 RemoteNotifier = new RemoteNotifier(EventManager, ApplicationProfileSettings.Instance.NotificationURL, ApplicationProfileSettings.Instance.NotificationSerialPort);
             }
 
-
             ReloadOBSRemoteControl();
 
             SoundManager.OnHighlightPilot += sceneManagerNode.FullScreen;
@@ -358,6 +358,11 @@ namespace UI
                 GlobalInterceptKeys.AddListen(globals.GetKeys().Distinct());
                 GlobalInterceptKeys.OnKeyPress += GlobalInterceptKeys_OnChange;
             }
+        }
+
+        protected virtual MenuButton CreateMenuButton()
+        {
+            return new MenuButton(Profile, EventManager, videoManager, SoundManager, eventWebServer, TabbedMultiNode, KeyMapper, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
         }
 
         protected virtual void EventEditor()
