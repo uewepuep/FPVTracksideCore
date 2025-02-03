@@ -97,7 +97,6 @@ namespace RaceLib
         
         public bool SyncWithFPVTrackside { get; set; }
 
-        [System.ComponentModel.Browsable(false)]
         public bool VisibleOnline { get; set; }
 
         public MultiGPRaceFormat MultiGPRaceFormat { get; set; }
@@ -114,7 +113,7 @@ namespace RaceLib
 
         public Sector[] Sectors { get; set; }
 
-        private static string dateFormat = "MMM d";
+        private static string dateFormat = "d MMM";
 
         public DateTime[] Flags { get; set; }
 
@@ -174,7 +173,7 @@ namespace RaceLib
             {
             }
 
-            newEvent.Name = newEvent.Name + " (" +  Start.ToString(dateFormat) + ")";
+            newEvent.Name = newEvent.Name + " - " +  Start.ToString(dateFormat);
 
             newEvent.PilotChannels = this.PilotChannels.ToList();
             newEvent.Channels = this.Channels.ToArray();
@@ -274,7 +273,6 @@ namespace RaceLib
 
         [Category("Cloud")]
         [DisplayName("Visible on FPVTrackside.com")]
-        [System.ComponentModel.Browsable(false)]
         public bool VisibleOnline { get; set; }
 
         [System.ComponentModel.Browsable(false)]

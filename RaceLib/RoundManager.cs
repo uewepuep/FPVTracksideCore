@@ -449,12 +449,16 @@ namespace RaceLib
             {
                 using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
                 {
-                    db.Delete(Event.Rounds);
+                    Round[] rounds = Event.Rounds.ToArray();
+
+                    foreach (Round r in rounds)
+                    {
+                        r.Valid = false;
+                    }
                     Event.Rounds.Clear();
 
                     GetCreateRound(1, Event.EventType);
-
-                    db.Update(Event.Rounds);
+                    db.Update(rounds);
                 }
             }
         }

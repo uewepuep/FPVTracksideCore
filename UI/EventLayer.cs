@@ -372,11 +372,15 @@ namespace UI
 
             editor.OnOK += (e) =>
             {
-                //EventManager.Event = editor.Objects.FirstOrDefault();
-                //using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
-                //{
-                //    db.Update(EventManager.Event);
-                //}
+                SimpleEvent simpleEvent = editor.Objects.FirstOrDefault();
+                if (simpleEvent == null)
+                    return;
+
+                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                {
+                    ReflectionTools.Copy(simpleEvent, EventManager.Event);
+                    db.Update(EventManager.Event);
+                }
 
                 topBar.UpdateDetails();
                 pilotList.RebuildList();

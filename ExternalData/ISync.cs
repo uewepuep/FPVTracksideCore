@@ -27,7 +27,12 @@ namespace ExternalData
 
         event Action<bool> RaceSyncEvent;
 
-        void SyncEvents(WorkSet workSet, WorkQueue queue);
+        bool CanSyncEventsUp { get; }
+
+        void SyncDownEvents(WorkSet workSet, WorkQueue queue);
+
+        void SyncUpEvent(WorkSet workSet, WorkQueue queue, Guid eventID);
+
         void SyncDownRoundRaces(WorkSet workSet, WorkQueue queue, EventManager eventManager);
         void SyncUpResults(WorkSet workSet, WorkQueue queue, EventManager eventManager);
         void SyncUpResults(WorkSet workSet, WorkQueue queue, IEnumerable<Guid> eventIDs);

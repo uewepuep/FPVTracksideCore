@@ -197,6 +197,8 @@ namespace UI.Nodes
             {
                 eventName.Text = EventManager.Event.Name;
             }
+
+            lapSummaryNode.NeedsUpdate = true;
         }
 
         public void LogoOnBottomLine(bool bottom)

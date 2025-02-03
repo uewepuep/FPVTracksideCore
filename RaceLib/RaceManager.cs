@@ -1542,8 +1542,8 @@ namespace RaceLib
                     foreach (Race race in races)
                     {
                         race.Valid = false;
-                        db.Update(race);
                     }
+                    db.Update(races);
                 }
             }
         }

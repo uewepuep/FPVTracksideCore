@@ -19,7 +19,7 @@ namespace UI.Nodes
         public EventManager EventManager { get; private set; }
         public ReplayNode ReplayNode { get; private set; }
 
-        private bool NeedsUpdateText;
+        public bool NeedsUpdate { get; set; }
 
         public LapSummaryNode(EventManager eventManager, ReplayNode replayNode, Color text)
             : base("", text)
@@ -58,7 +58,7 @@ namespace UI.Nodes
 
         private void OnNeedsUpdateText()
         {
-            NeedsUpdateText = true;
+            NeedsUpdate = true;
         }
 
         private void UpdateText()
@@ -134,7 +134,7 @@ namespace UI.Nodes
 
         public override void Draw(Drawer drawer, float parentAlpha)
         {
-            if (NeedsUpdateText)
+            if (NeedsUpdate)
                 UpdateText();
 
             if (EventManager.RaceManager.EventType != EventTypes.Freestyle)
