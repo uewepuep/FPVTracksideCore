@@ -341,12 +341,9 @@ namespace UI.Nodes
 
         private void EventEditor_OnOK(BaseObjectEditorNode<SimpleEvent> obj)
         {
-            using (IDatabase db = DatabaseFactory.Open(obj.Selected.ID))
+            if (obj != null && obj.Selected != null)
             {
-                if (obj != null && obj.Selected != null)
-                {
-                    obj.Selected.LastOpened = DateTime.Now;
-                }
+                obj.Selected.LastOpened = DateTime.Now;
             }
 
             SaveChanges();

@@ -239,7 +239,6 @@ namespace RaceLib
             new Channel(39, 7, Band.DJIFPVHD),
             new Channel(40, 8, Band.DJIFPVHD),
 
-
             new Channel(75, 1, Band.DJIO3),
             new Channel(76, 2, Band.DJIO3),
             new Channel(77, 3, Band.DJIO3),
@@ -248,14 +247,14 @@ namespace RaceLib
             new Channel(80, 6, Band.DJIO3),
             new Channel(81, 7, Band.DJIO3),
 
-            new Channel(59, 'R', 1, Band.DJIO4),
-            new Channel(60, 'R', 2, Band.DJIO4),
-            new Channel(61, 'R', 3, Band.DJIO4),
-            new Channel(62, 'R', 4, Band.DJIO4),
-            new Channel(63, 'R',  5, Band.DJIO4),
-            new Channel(64, 'R', 6, Band.DJIO4),
-            new Channel(65, 'R',  7, Band.DJIO4),
-            new Channel(66, 'R',  8, Band.DJIO4)
+            new Channel(100, 'R', 1, Band.DJIO4),
+            new Channel(101, 'R', 2, Band.DJIO4),
+            new Channel(102, 'R', 3, Band.DJIO4),
+            new Channel(103, 'R', 4, Band.DJIO4),
+            new Channel(104, 'R',  5, Band.DJIO4),
+            new Channel(105, 'R', 6, Band.DJIO4),
+            new Channel(106, 'R',  7, Band.DJIO4),
+            new Channel(107, 'R',  8, Band.DJIO4)
         };
 
         public static Channel[] E = new Channel[] {
