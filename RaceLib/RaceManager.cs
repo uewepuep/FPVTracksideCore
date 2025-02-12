@@ -1150,7 +1150,7 @@ namespace RaceLib
         {
             foreach (Channel channel in FreeChannels)
             {
-                string bandChannel = channel.GetBandChannelText();
+                string bandChannel = channel.UIDisplayName;
 
                 Pilot pilot = Pilot.CreateFromName(bandChannel + " (" + race.Round.RoundNumber + "-" + race.RaceNumber + ")");
                 pilot.Phonetic = bandChannel;

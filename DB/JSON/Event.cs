@@ -143,6 +143,12 @@ namespace DB.JSON
         {
             RaceLib.Event ev = base.GetRaceLibObject(database);
             ev.Channels = Channels.Convert<RaceLib.Channel>(database).ToArray();
+
+            for (int i = 0; i < ChannelDisplayNames.Length && i < ev.Channels.Length; i++)
+            {
+                ev.Channels[i].DisplayName = ChannelDisplayNames[i];
+            }
+
             ev.Club = Club.Convert<RaceLib.Club>(database);
             ev.PilotChannels = PilotChannels.Convert(database).Where(pc => pc != null && pc.Pilot != null).ToList();
             ev.Rounds = Rounds.Convert<RaceLib.Round>(database).ToList();
@@ -167,8 +173,23 @@ namespace DB.JSON
 
             if (Channels != null)
             {
-                var channels = database.GetCollection<RaceLib.Channel>();
-                simpleEvent.ChannelsString = string.Join(", ", Channels.Select(c => channels.GetObject(c).GetBandChannelText()).ToArray());
+                List<string> channelNames = new List<string>();
+
+                IDatabaseCollection<RaceLib.Channel> channelCollection = database.GetCollection<RaceLib.Channel>();
+                for (int i = 0; i < Channels.Length; i++) 
+                {
+                    if (ChannelDisplayNames != null && ChannelDisplayNames.Length > i)
+                    {
+                        channelNames.Add(ChannelDisplayNames[i]);
+                    }
+                    else
+                    {
+                        Guid id = Channels[i];
+                        channelNames.Add(channelCollection.GetObject(id).DisplayName);
+                    }
+                }
+
+                simpleEvent.ChannelsString = string.Join(", ", channelNames);
             }
             return simpleEvent;
         }

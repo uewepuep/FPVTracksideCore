@@ -160,7 +160,7 @@ namespace RaceLib
 
         
         [Category("Pilots")]
-        public string ChannelNames { get { return string.Join(", ", Channels.Select(c => c.GetBandChannelText())); } }
+        public string ChannelNames { get { return string.Join(", ", Channels.Select(c => c.UIDisplayName)); } }
 
         [System.ComponentModel.Browsable(false)]
         

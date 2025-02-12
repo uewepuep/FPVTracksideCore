@@ -241,7 +241,12 @@ namespace DB.JSON
 
         public IEnumerable<T> GetObjects(IEnumerable<Guid> ids)
         {
-            return All().Where(r => ids.Contains(r.ID));
+            T[] ts = All().Where(r => ids.Contains(r.ID)).ToArray();
+
+            foreach (Guid id in ids)
+            {
+                yield return ts.FirstOrDefault(t => t.ID == id);
+            }
         }
 
         public T GetCreateObject(Guid id)

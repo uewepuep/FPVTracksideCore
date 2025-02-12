@@ -277,10 +277,10 @@ namespace UI
             MenuButton.BackToEventSelector += BackToEventSelector;
             MenuButton.ChannelsChanged += () =>
             {
-                pilotList.RebuildList();
-
-                LoadVideo();
-                RoundsNode.ChannelsChanged();
+                if (LayerStack.Game is UI.BaseGame)
+                {
+                    ((UI.BaseGame)LayerStack.Game).Restart(eventManager.Event);
+                }
             };
 
             MenuButton.TimingChanged += () =>

@@ -50,6 +50,21 @@ namespace RaceLib
         public int Frequency { get; set; }
 
         public string DisplayName { get; set; }
+        
+        [Browsable(false)]
+        public string UIDisplayName
+        {
+            get
+            {
+                if (channelNames != null && channelNames.ContainsKey(ID))
+                {
+                    return channelNames[ID];
+                }
+
+                return DisplayName;
+            }
+        }
+            
 
         public Channel()
         {
@@ -73,6 +88,7 @@ namespace RaceLib
             Band = band;
             ChannelPrefix = prefix;
             Frequency = FrequencyLookup(Band, ChannelPrefix, Number);
+            DisplayName = GetBandChannelText();
         }
 
         public static IEnumerable<Band> GetBands()
@@ -96,11 +112,6 @@ namespace RaceLib
 
         public string GetBandChannelText()
         {
-            if (!string.IsNullOrEmpty(DisplayName))
-            {
-                return DisplayName;
-            }
-
             if (Band == Band.None) return "--";
 
             if (ChannelPrefix != char.MinValue)
@@ -475,9 +486,31 @@ namespace RaceLib
             return pool.Where(c => InterferesWith(c));
         }
 
-        public static void LoadDisplayNames(Profile profile)
+        private static Dictionary<Guid, string> channelNames;
+
+        public static Channel[] LoadDisplayNames(Profile profile)
         {
-            Channel[] loaded = Read(profile); 
+            Channel[] loaded = Read(profile);
+
+            channelNames = new Dictionary<Guid, string>();
+
+            foreach (Channel channel in loaded)
+            {
+                channelNames.Add(channel.ID, channel.DisplayName);
+            }
+
+            return loaded;
+        }
+
+        public static void LoadDisplayNames(Event eventt)
+        {
+            channelNames = new Dictionary<Guid, string>();
+
+            foreach (Channel channel in eventt.Channels)
+            {
+                Channel c = allChannels.FirstOrDefault(c => c.ID == channel.ID);
+                channelNames.Add(channel.ID, channel.DisplayName);
+            }
         }
 
         private const string filename = "Channels.xml";

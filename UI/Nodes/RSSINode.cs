@@ -110,7 +110,7 @@ namespace UI.Nodes
                 RSSI.AddChild(Detected);
 
 
-                TextNode tn = new TextNode(channel.GetBandChannelText() + " " + channel.GetFrequencyText(), Theme.Current.TextMain.XNA);
+                TextNode tn = new TextNode(channel.UIDisplayName + " " + channel.GetFrequencyText(), Theme.Current.TextMain.XNA);
                 tn.RelativeBounds = new RectangleF(0, container.RelativeBounds.Bottom, 1, 1 - container.RelativeBounds.Bottom);
                 tn.Alignment = Tools.RectangleAlignment.BottomCenter;
                 AddChild(tn);

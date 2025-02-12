@@ -133,11 +133,11 @@ namespace UI.Nodes
             }
             else
             {
-                ChannelNode.Text = Channel.GetBandChannelText();
+                ChannelNode.Text = Channel.UIDisplayName;
 
                 if (Pilot == null && shared != null && shared.Any())
                 {
-                    ChannelNode.Text += "/" + string.Join("/",shared.Select(s => s.GetBandChannelText()));
+                    ChannelNode.Text += "/" + string.Join("/",shared.Select(s => s.UIDisplayName));
                 }
 
                 channelColor.Tint = eventManager.GetChannelColor(Channel);

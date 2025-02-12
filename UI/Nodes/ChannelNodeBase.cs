@@ -288,7 +288,7 @@ namespace UI.Nodes
             pilotNameNode.RelativeBounds = new RectangleF(0, 0, 1, 0.65f);
             pilotInfoContainer.AddChild(pilotNameNode);
 
-            channelInfo = new TextNode(Channel.GetBandChannelText(), Color.White);
+            channelInfo = new TextNode(Channel.UIDisplayName, Color.White);
             channelInfo.RelativeBounds = new RectangleF(0.0f, 0.01f, 0.99f, 0.1f);
             channelInfo.Alpha = pilotAlpha;
             channelInfo.Alignment = RectangleAlignment.TopRight;

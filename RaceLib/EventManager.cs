@@ -225,8 +225,6 @@ namespace RaceLib
 
             workQueue.Enqueue(workSet, "Loading Event", () =>
             {
-                Channel.LoadDisplayNames(Profile);
-
                 using (IDatabase db = DatabaseFactory.Open(EventId))
                 {
                     Event = db.LoadEvent();
@@ -237,8 +235,13 @@ namespace RaceLib
 
                 if (Event.Channels == null || !Event.Channels.Any())
                 {
-                    Event.Channels = Channel.Read(Profile);
+                    Event.Channels = Channel.LoadDisplayNames(Profile);
                 }
+                else
+                {
+                    Channel.LoadDisplayNames(Event);
+                }
+
             });
 
             workQueue.Enqueue(workSet, "Finding Profile Pictures", () =>

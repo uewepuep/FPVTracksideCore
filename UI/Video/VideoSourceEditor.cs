@@ -716,7 +716,7 @@ namespace UI.Video
                 Channel channel = eventChannels.GetOthersInChannelGroup(c).FirstOrDefault();
                 if (channel != null)
                 {
-                    mouseMenu.AddItem("Duplicate to " + channel.GetBandChannelText(), () => { Duplicate(channelVideoInfo, channel); });
+                    mouseMenu.AddItem("Duplicate to " + channel.UIDisplayName, () => { Duplicate(channelVideoInfo, channel); });
                 }
             }
 

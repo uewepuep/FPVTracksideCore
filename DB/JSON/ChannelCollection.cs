@@ -65,9 +65,14 @@ namespace DB.JSON
         public IEnumerable<Channel> GetObjects(IEnumerable<Guid> ids)
         {
             if (ids == null)
-                return null;
+                yield break;
 
-            return All().Where(r => ids.Contains(r.ID));
+            Channel[] ts = All().Where(r => ids.Contains(r.ID)).ToArray();
+
+            foreach (Guid id in ids)
+            {
+                yield return ts.FirstOrDefault(t => t.ID == id);
+            }
         }
 
         public bool Insert(Channel obj)
