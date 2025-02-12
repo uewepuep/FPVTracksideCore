@@ -140,16 +140,6 @@ namespace RaceLib
 
         public string ToStringShort()
         {
-            if (!string.IsNullOrEmpty(DisplayName))
-            {
-                string output = DisplayName;
-                if (output.Length > 3)
-                {
-                    return output.Substring(3);
-                }
-                return output;
-            }
-
             if (Band == Band.None)
             {
                 return "None";

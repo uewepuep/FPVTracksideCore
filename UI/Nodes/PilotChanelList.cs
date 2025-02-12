@@ -84,7 +84,7 @@ namespace UI.Nodes
                 if (!lane.Any())
                     continue;
 
-                string channelText = string.Join(", ", lane.Select(r => r.ToStringShort()));
+                string channelText = string.Join(", ", lane.Select(r => r.UIDisplayName));
 
                 Node headingNode = new Node();
                 headings.AddChild(headingNode);

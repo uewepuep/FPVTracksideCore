@@ -92,6 +92,7 @@ namespace UI.Video
         public void ClearFlags()
         {
             flagLabels.ClearDisposeChildren();
+            progressBar.ClearDisposeChildren();
         }
 
         private DateTime FactorToTime(float factor)
