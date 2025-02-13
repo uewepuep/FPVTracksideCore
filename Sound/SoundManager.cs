@@ -126,7 +126,7 @@ namespace Sound
                 eventManager.RaceManager.OnRaceCancelled += RaceManager_OnRaceCancelled;
                 eventManager.SpeedRecordManager.OnSpeedCalculated += OnSpeed;
                 eventManager.RaceManager.OnSplitDetection += OnSplit;
-                eventManager.RaceManager.OnGamePoint += RaceManager_OnGamePoint;
+                eventManager.RaceManager.OnGamePointChanged += RaceManager_OnGamePoint;
             }
 
             PilotAnnounceTime = TimeSpan.Zero;

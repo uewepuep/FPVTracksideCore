@@ -272,6 +272,8 @@ namespace Composition.Nodes
                 children = children.Union(nodes).ToArray();
                 foreach (Node node in nodes)
                 {
+                    System.Diagnostics.Debug.Assert(node.Parent != this);
+
                     node.SetParent(this);
                     node.SetCompositorLayer(CompositorLayer);
                 }

@@ -952,6 +952,21 @@ namespace RaceLib
             }
         }
 
+        public void RemoveGamePoint(Channel channel)
+        {
+            if (channel == null)
+                return;
+
+            lock (GamePoints)
+            {
+                GamePoint gp = GamePoints.FirstOrDefault(g => g.Channel == channel);
+                if (gp != null)
+                {
+                    GamePoints.Remove(gp);
+                }
+            }
+        }
+
         public override string ToString()
         {
             return Type + " " + RaceNumber + " (Round " + RoundNumber +  ") with " + PilotChannels.Count + " pilots.";

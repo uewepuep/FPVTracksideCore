@@ -62,7 +62,7 @@ namespace UI.Nodes
 
         public int Position { get; set; }
 
-        private TextNode gamePoints;
+        private GamePointsNode gamePoints;
 
         public TimeSpan PBTime { get { return PBNode.PBTimeNode.Time; } }
 
@@ -143,15 +143,15 @@ namespace UI.Nodes
             EventManager.RaceManager.OnLapDisqualified += RaceManager_OnLapDisqualified;
             EventManager.RaceManager.OnPilotAdded += RaceManager_OnPilotChanged;
             EventManager.RaceManager.OnPilotRemoved += RaceManager_OnPilotChanged;
-            EventManager.RaceManager.OnRaceEnd += RaceManager_OnRaceChanged;
-            EventManager.RaceManager.OnRaceClear += RaceManager_OnRaceChanged;
-            EventManager.RaceManager.OnRaceChanged += RaceManager_OnRaceChanged;
-            EventManager.RaceManager.OnRaceReset += RaceManager_OnRaceChanged;
-            EventManager.RaceManager.OnRaceResumed += RaceManager_OnRaceChanged;
+            EventManager.RaceManager.OnRaceEnd += RaceManager_OnRaceStateChanged;
+            EventManager.RaceManager.OnRaceClear += RaceManager_OnRaceStateChanged;
+            EventManager.RaceManager.OnRaceChanged += RaceManager_OnRaceStateChanged;
+            EventManager.RaceManager.OnRaceReset += RaceManager_OnRaceStateChanged;
+            EventManager.RaceManager.OnRaceResumed += RaceManager_OnRaceStateChanged;
             EventManager.RaceManager.OnLapsRecalculated += RaceManager_OnLapsRecalculated;
             EventManager.LapRecordManager.OnNewPersonalBest += RecordManager_OnNewPersonalBest;
-            EventManager.RaceManager.OnRaceResumed += RaceManager_OnRaceChanged;
-            EventManager.RaceManager.OnGamePoint += RaceManager_OnGamePoint;
+            EventManager.RaceManager.OnRaceResumed += RaceManager_OnRaceStateChanged;
+            EventManager.RaceManager.OnGamePointChanged += RaceManager_OnGamePoint;
         }
 
 
@@ -163,14 +163,14 @@ namespace UI.Nodes
             EventManager.RaceManager.OnLapDisqualified -= RaceManager_OnLapDisqualified;
             EventManager.RaceManager.OnPilotAdded -= RaceManager_OnPilotChanged;
             EventManager.RaceManager.OnPilotRemoved -= RaceManager_OnPilotChanged;
-            EventManager.RaceManager.OnRaceEnd -= RaceManager_OnRaceChanged;
-            EventManager.RaceManager.OnRaceClear -= RaceManager_OnRaceChanged;
-            EventManager.RaceManager.OnRaceChanged -= RaceManager_OnRaceChanged;
-            EventManager.RaceManager.OnRaceReset -= RaceManager_OnRaceChanged;
-            EventManager.RaceManager.OnRaceResumed -= RaceManager_OnRaceChanged;
+            EventManager.RaceManager.OnRaceEnd -= RaceManager_OnRaceStateChanged;
+            EventManager.RaceManager.OnRaceClear -= RaceManager_OnRaceStateChanged;
+            EventManager.RaceManager.OnRaceChanged -= RaceManager_OnRaceStateChanged;
+            EventManager.RaceManager.OnRaceReset -= RaceManager_OnRaceStateChanged;
+            EventManager.RaceManager.OnRaceResumed -= RaceManager_OnRaceStateChanged;
             EventManager.RaceManager.OnLapsRecalculated -= RaceManager_OnLapsRecalculated;
             EventManager.LapRecordManager.OnNewPersonalBest -= RecordManager_OnNewPersonalBest;
-            EventManager.RaceManager.OnGamePoint -= RaceManager_OnGamePoint;
+            EventManager.RaceManager.OnGamePointChanged -= RaceManager_OnGamePoint;
 
             base.Dispose();
         }
@@ -188,16 +188,19 @@ namespace UI.Nodes
             needsLapRefresh = true;
         }
 
-        private void RaceManager_OnRaceChanged(Race race)
+        private void RaceManager_OnRaceStateChanged(Race race)
         {
             needUpdatePosition = true; 
             needsLapRefresh = true; 
             needsSplitClear = true; 
             CrashedOutType = CrashOutType.None;
-
             if (race != null)
             {
                 gamePoints.Visible = race.Event.EventType.IsGame();
+            }
+            else
+            {
+               gamePoints.Clear();
             }
         }
 
@@ -232,13 +235,11 @@ namespace UI.Nodes
             needUpdatePosition = true; 
             needsLapRefresh = true;
             needsSplitClear = true;
+            gamePoints.Clear();
         }
         private void RaceManager_OnGamePoint(GamePoint obj)
         {
-            int points = EventManager.RaceManager.GetGamePoints(Pilot);
-            int target = EventManager.RaceManager.GetTargetGamePoints(Pilot);
-
-            gamePoints.Text = points.ToString() + "/" + target.ToString();
+            gamePoints.Points = EventManager.RaceManager.GetGamePoints(Pilot);
         }
 
         public void SetCrashedOutType(CrashOutType type)
@@ -379,12 +380,12 @@ namespace UI.Nodes
             recentPositionNode.FadeSeconds = ApplicationProfileSettings.Instance.ShowPositionDeltaTime;
             DisplayNode.AddChild(recentPositionNode);
 
-            gamePoints = new TextNode("", Theme.Current.PilotViewTheme.PositionText.XNA);
-            gamePoints.Alignment = RectangleAlignment.BottomLeft;
-            gamePoints.Style.Bold = true;
-            gamePoints.Style.Border = true;
-            gamePoints.RelativeBounds = new RectangleF(0.0f, 0.7f, 0.4f, 0.3f);
-            gamePoints.Visible = false;
+            gamePoints = new GamePointsNode(Theme.Current.PilotViewTheme.PositionText.XNA);
+            gamePoints.RelativeBounds = new RectangleF(0.775f, 0.8f, 0.2f, 0.2f);
+            gamePoints.OnCtrlClick += () =>
+            {
+                EventManager.RaceManager.RemoveGamePoint(Channel);
+            };
             DisplayNode.AddChild(gamePoints);
 
             behindTime = new ChangeAlphaTextNode("", Theme.Current.PilotViewTheme.PositionText.XNA);
@@ -473,6 +474,16 @@ namespace UI.Nodes
             // Set this again incase changing the pilot has changed things.
             SetProfileVisible(pilotProfileOptions);
 
+            if (EventManager.RaceManager.EventType.IsGame())
+            {
+                int points = EventManager.RaceManager.GetGamePoints(Pilot);
+                gamePoints.Points = points;
+            }
+            else
+            {
+                gamePoints.Clear();
+            }
+            
             RequestLayout();
         }
 

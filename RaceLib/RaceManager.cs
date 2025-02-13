@@ -20,7 +20,7 @@ namespace RaceLib
         public Race CurrentRace { get; private set; }
 
         public event Action<Detection> OnSplitDetection;
-        public event Action<GamePoint> OnGamePoint;
+        public event Action<GamePoint> OnGamePointChanged;
 
         public event Lap.LapDelegate OnLapDetected;
         public event Action<IEnumerable<Lap>> OnLapSplit;
@@ -2095,15 +2095,21 @@ namespace RaceLib
 
         public void AddGamePoint(Pilot pilot, Channel channel)
         {
-            if (!EventManager.RaceManager.RaceRunning)
-                return;
-
             Race race = CurrentRace;
             if (race != null)
             {
                 GamePoint gp = race.AddGamePoint(pilot, channel);
+                OnGamePointChanged?.Invoke(gp);
+            }
+        }
 
-                OnGamePoint?.Invoke(gp);
+        public void RemoveGamePoint(Channel channel)
+        {
+            Race race = CurrentRace;
+            if (race != null)
+            {
+                race.RemoveGamePoint(channel);
+                OnGamePointChanged?.Invoke(null);
             }
         }
 
