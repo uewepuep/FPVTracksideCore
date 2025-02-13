@@ -151,7 +151,9 @@ namespace UI.Nodes
             EventManager.RaceManager.OnLapsRecalculated += RaceManager_OnLapsRecalculated;
             EventManager.LapRecordManager.OnNewPersonalBest += RecordManager_OnNewPersonalBest;
             EventManager.RaceManager.OnRaceResumed += RaceManager_OnRaceChanged;
+            EventManager.RaceManager.OnGamePoint += RaceManager_OnGamePoint;
         }
+
 
         public override void Dispose()
         {
@@ -168,6 +170,7 @@ namespace UI.Nodes
             EventManager.RaceManager.OnRaceResumed -= RaceManager_OnRaceChanged;
             EventManager.RaceManager.OnLapsRecalculated -= RaceManager_OnLapsRecalculated;
             EventManager.LapRecordManager.OnNewPersonalBest -= RecordManager_OnNewPersonalBest;
+            EventManager.RaceManager.OnGamePoint -= RaceManager_OnGamePoint;
 
             base.Dispose();
         }
@@ -191,6 +194,11 @@ namespace UI.Nodes
             needsLapRefresh = true; 
             needsSplitClear = true; 
             CrashedOutType = CrashOutType.None;
+
+            if (race != null)
+            {
+                gamePoints.Visible = race.Event.EventType.IsGame();
+            }
         }
 
         private void RaceManager_OnPilotChanged(PilotChannel pc)
@@ -224,6 +232,13 @@ namespace UI.Nodes
             needUpdatePosition = true; 
             needsLapRefresh = true;
             needsSplitClear = true;
+        }
+        private void RaceManager_OnGamePoint(GamePoint obj)
+        {
+            int points = EventManager.RaceManager.GetGamePoints(Pilot);
+            int target = EventManager.RaceManager.GetTargetGamePoints(Pilot);
+
+            gamePoints.Text = points.ToString() + "/" + target.ToString();
         }
 
         public void SetCrashedOutType(CrashOutType type)
@@ -364,6 +379,13 @@ namespace UI.Nodes
             recentPositionNode.FadeSeconds = ApplicationProfileSettings.Instance.ShowPositionDeltaTime;
             DisplayNode.AddChild(recentPositionNode);
 
+            gamePoints = new TextNode("", Theme.Current.PilotViewTheme.PositionText.XNA);
+            gamePoints.Alignment = RectangleAlignment.BottomLeft;
+            gamePoints.Style.Bold = true;
+            gamePoints.Style.Border = true;
+            gamePoints.RelativeBounds = new RectangleF(0.0f, 0.7f, 0.4f, 0.3f);
+            gamePoints.Visible = false;
+            DisplayNode.AddChild(gamePoints);
 
             behindTime = new ChangeAlphaTextNode("", Theme.Current.PilotViewTheme.PositionText.XNA);
             behindTime.RelativeBounds = new RectangleF(0.7f, 0.25f, 0.3f, 0.07f);

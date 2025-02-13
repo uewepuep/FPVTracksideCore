@@ -694,6 +694,11 @@ namespace RaceLib
                 Detections.Clear();
             }
 
+            lock (GamePoints)
+            {
+                GamePoints.Clear();
+            }
+
             db.Update(this);
 
             Start = default(DateTime);
@@ -923,11 +928,11 @@ namespace RaceLib
             }
         }
 
-        public IEnumerable<GamePoint> GetValidGamePoints()
+        public IEnumerable<GamePoint> GetValidGamePoints(Pilot pilot)
         {
             lock (GamePoints)
             {
-                return GamePoints.Where(g => g.Valid);
+                return GamePoints.Where(g => g.Pilot == pilot && g.Valid);
             }
         }
 

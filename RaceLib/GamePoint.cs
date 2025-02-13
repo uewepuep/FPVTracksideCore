@@ -14,5 +14,11 @@ namespace RaceLib
 
         public Pilot Pilot { get; set; }
         public bool Valid { get; set; }
+
+        public GamePoint()
+        {
+            Valid = true;
+            Time = DateTime.Now;
+        }
     }
 }

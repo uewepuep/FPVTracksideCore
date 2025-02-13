@@ -162,7 +162,17 @@ namespace RaceLib
             }
         }
 
+        public static bool IsGame(this EventTypes eventType)
+        {
+            switch (eventType)
+            {
+                case EventTypes.PointsGame:
+                    return true;
 
+                default:
+                    return false;
+            }
+        }
         public static string GetCharacter(this Band band)
         {
             if (band == Band.HDZero)

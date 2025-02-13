@@ -2106,5 +2106,21 @@ namespace RaceLib
                 OnGamePoint?.Invoke(gp);
             }
         }
+
+        public int GetGamePoints(Pilot pilot)
+        {
+            Race race = CurrentRace;
+            if (race != null)
+            {
+                return race.GetValidGamePoints(pilot).Count();
+            }
+
+            return 0;
+        }
+
+        public int GetTargetGamePoints(Pilot pilot)
+        {
+            return 3;
+        }
     }
 }
