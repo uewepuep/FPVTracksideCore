@@ -126,6 +126,7 @@ namespace Sound
                 eventManager.RaceManager.OnRaceCancelled += RaceManager_OnRaceCancelled;
                 eventManager.SpeedRecordManager.OnSpeedCalculated += OnSpeed;
                 eventManager.RaceManager.OnSplitDetection += OnSplit;
+                eventManager.RaceManager.OnGamePoint += RaceManager_OnGamePoint;
             }
 
             PilotAnnounceTime = TimeSpan.Zero;
@@ -269,6 +270,7 @@ namespace Sound
                     new Sound() { Key = SoundKey.EmergencyStop, TextToSpeech = "Emergency Stop, PILOTS LAND NOW!", Category = Sound.SoundCategories.Announcements },
                     new Sound() { Key = SoundKey.Flag, TextToSpeech = "Flagged", Category = Sound.SoundCategories.Announcements },
 
+                    new Sound() { Key = SoundKey.GamePoint, TextToSpeech = "BEEP", Filename = @"sounds/detection.wav", Category = Sound.SoundCategories.Detection },
                 };
 
                 foreach (Sound defaultSound in defaultSounds)
@@ -307,6 +309,11 @@ namespace Sound
         private void OnSplit(Detection detection)
         {
             PlaySound(SoundKey.DetectionSplit, new SpeechParameters());
+        }
+
+        private void RaceManager_OnGamePoint(GamePoint obj)
+        {
+            PlaySound(SoundKey.GamePoint, new SpeechParameters());
         }
 
         private void RaceManager_OnRaceStart(Race race)

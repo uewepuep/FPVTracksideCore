@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -30,6 +31,7 @@ namespace RaceLib
         public string Freestyle { get; set; }
         public string Endurance { get; set; }
         public string CasualPractice { get; set; }
+        public string PointsGame { get; set; }
 
         public RaceStringFormatter()
         {
@@ -38,7 +40,7 @@ namespace RaceLib
             Race = "Race";
             Freestyle = "Freestyle";
             Endurance = "Endurance";
-            CasualPractice = "CasualPractice";
+            PointsGame = "Points Game";
         }
 
         public string GetEventTypeText(EventTypes eventType)
@@ -51,6 +53,7 @@ namespace RaceLib
                 case RaceLib.EventTypes.Freestyle: return Freestyle;
                 case RaceLib.EventTypes.Endurance: return Endurance;
                 case RaceLib.EventTypes.CasualPractice: return CasualPractice;
+                case RaceLib.EventTypes.PointsGame: return PointsGame;
             }
             return "Unknown";
         }

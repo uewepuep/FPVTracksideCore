@@ -20,6 +20,7 @@ namespace RaceLib
         public Race CurrentRace { get; private set; }
 
         public event Action<Detection> OnSplitDetection;
+        public event Action<GamePoint> OnGamePoint;
 
         public event Lap.LapDelegate OnLapDetected;
         public event Action<IEnumerable<Lap>> OnLapSplit;
@@ -721,7 +722,7 @@ namespace RaceLib
                 return false;
             }
             
-            if (currentRace.Type != EventTypes.Freestyle)
+            if (currentRace.Type.UsesTimingSystem())
             {
                 if(!TimingSystemManager.IsDetecting)
                 {
@@ -873,7 +874,7 @@ namespace RaceLib
             if (!currentRace.Running)
                 return false;
 
-            if (EventType != EventTypes.Freestyle)
+            if (currentRace.Type.UsesTimingSystem())
             {
                 TimingSystemManager.EndDetection();
             }
@@ -1299,10 +1300,10 @@ namespace RaceLib
 
             Race currentRace = CurrentRace;
 
-            if (EventType == EventTypes.Freestyle)
+            if (currentRace == null)
                 return;
 
-            if (currentRace == null)
+            if (!currentRace.Type.UsesTimingSystem())
                 return;
 
             Event eve = EventManager.Event;
@@ -2089,6 +2090,20 @@ namespace RaceLib
                     EventManager.ResultManager.SaveResults(race);
                 }
                 return result;
+            }
+        }
+
+        public void AddGamePoint(Pilot pilot, Channel channel)
+        {
+            if (!EventManager.RaceManager.RaceRunning)
+                return;
+
+            Race race = CurrentRace;
+            if (race != null)
+            {
+                GamePoint gp = race.AddGamePoint(pilot, channel);
+
+                OnGamePoint?.Invoke(gp);
             }
         }
     }

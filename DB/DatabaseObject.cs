@@ -115,6 +115,12 @@ namespace DB
 
             foreach (var obj in baseDBObjects)
             {
+                if (obj == null)
+                {
+                    yield return null;
+                    continue;
+                }
+
                 yield return obj.GetRaceLibObject(database);
             }
         }

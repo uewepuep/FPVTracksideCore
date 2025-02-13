@@ -104,7 +104,7 @@ namespace DB.JSON
             var orderedChannels = obj.Channels.OrderBy(c => c.Frequency).ThenBy(r => r.Band);
 
             if (obj.Rounds != null)
-                Rounds = obj.Rounds.Select(c => c.ID).ToArray();
+                Rounds = obj.Rounds.Where(r => r != null).Select(c => c.ID).ToArray();
 
             if (obj.PilotChannels != null)
                 PilotChannels = obj.PilotChannels.Convert<PilotChannel>().ToArray();
@@ -178,7 +178,7 @@ namespace DB.JSON
                 IDatabaseCollection<RaceLib.Channel> channelCollection = database.GetCollection<RaceLib.Channel>();
                 for (int i = 0; i < Channels.Length; i++) 
                 {
-                    if (ChannelDisplayNames != null && ChannelDisplayNames.Length > i)
+                    if (ChannelDisplayNames != null && ChannelDisplayNames.Length > i && ChannelDisplayNames[i] != null)
                     {
                         channelNames.Add(ChannelDisplayNames[i]);
                     }

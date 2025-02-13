@@ -368,7 +368,12 @@ namespace RaceLib
 
         public bool DNFed(Race race, Pilot pilot)
         {
-            if (race.Type == EventTypes.Endurance || race.Type == EventTypes.Freestyle)
+            if (race.Type == EventTypes.Endurance)
+            {
+                return false;
+            }
+
+            if (!race.Type.UsesTimingSystem())
             {
                 return false;
             }

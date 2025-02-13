@@ -1240,7 +1240,14 @@ namespace UI
                                 PilotChannel pc = race.PilotChannelsSafe.FirstOrDefault(p => group.Contains(p.Channel));
                                 if (pc != null)
                                 {
-                                    EventManager.RaceManager.AddManualLap(pc.Pilot, DateTime.Now);
+                                    if (race.Type.UsesTimingSystem())
+                                    {
+                                        EventManager.RaceManager.AddManualLap(pc.Pilot, DateTime.Now);
+                                    }
+                                    else
+                                    {
+                                        EventManager.RaceManager.AddGamePoint(pc.Pilot, pc.Channel);
+                                    }
                                 }
                             }
                         }

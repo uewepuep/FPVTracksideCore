@@ -32,7 +32,6 @@ namespace RaceLib
         public ValidityTypes ValidityType { get; set; }
 
         public bool IsLapEnd { get; set; }
-
         
         public int RaceSector { get { return RaceSectorCalculator(LapNumber, TimingSystemIndex); } }
 

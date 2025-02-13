@@ -30,7 +30,9 @@ namespace RaceLib
         Enduro = 4,
         
         CasualPractise = 5,
-        CasualPractice = 5
+        CasualPractice = 5,
+
+        PointsGame = 6
     }
 
     public enum PrimaryTimingSystemLocation
@@ -196,6 +198,7 @@ namespace RaceLib
             yield return EventTypes.Endurance;
             yield return EventTypes.Freestyle;
             yield return EventTypes.CasualPractice;
+            yield return EventTypes.PointsGame;
         }
 
         public void RefreshPilots(IEnumerable<Pilot> editedPilots)

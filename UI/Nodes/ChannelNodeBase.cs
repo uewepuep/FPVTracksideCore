@@ -62,6 +62,8 @@ namespace UI.Nodes
 
         public int Position { get; set; }
 
+        private TextNode gamePoints;
+
         public TimeSpan PBTime { get { return PBNode.PBTimeNode.Time; } }
 
         public enum CrashOutType
@@ -639,6 +641,18 @@ namespace UI.Nodes
                 return true;
             }
 
+            if (mouseInputEvent.ButtonState == ButtonStates.Released && CompositorLayer.InputEventFactory.AreAltKeysDown() && mouseInputEvent.Button == MouseButtons.Left)
+            {
+                if (EventManager.RaceManager.EventType.UsesTimingSystem())
+                {
+                    EventManager.RaceManager.AddManualLap(Pilot, DateTime.Now);
+                }
+                else
+                {
+                    EventManager.RaceManager.AddGamePoint(Pilot, Channel);
+                }
+                return true;
+            }
 
             if (mouseInputEvent.ButtonState == ButtonStates.Released)
             {

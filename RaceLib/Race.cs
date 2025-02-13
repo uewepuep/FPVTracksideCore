@@ -28,6 +28,7 @@ namespace RaceLib
         public List<Lap> Laps { get; set; }
 
         public List<Detection> Detections { get; set; }
+        public List<GamePoint> GamePoints { get; set; }
 
         [Category("Times")]
         public DateTime Start { get; set; }
@@ -276,6 +277,7 @@ namespace RaceLib
             Laps = new List<Lap>();
             PilotChannels = new List<PilotChannel>();
             Detections = new List<Detection>();
+            GamePoints = new List<GamePoint>();
             AutoAssignNumbers = false;
             TargetLaps = 0;
         }
@@ -908,14 +910,40 @@ namespace RaceLib
         {
             if (editedPilots == null)
                 return;
-
-            foreach (PilotChannel pc in PilotChannels)
+            lock (PilotChannels)
             {
-                Pilot p = editedPilots.GetObject(pc.Pilot.ID);
-                if (p != null)
+                foreach (PilotChannel pc in PilotChannels)
                 {
-                    pc.Pilot = p;
+                    Pilot p = editedPilots.GetObject(pc.Pilot.ID);
+                    if (p != null)
+                    {
+                        pc.Pilot = p;
+                    }
                 }
+            }
+        }
+
+        public IEnumerable<GamePoint> GetValidGamePoints()
+        {
+            lock (GamePoints)
+            {
+                return GamePoints.Where(g => g.Valid);
+            }
+        }
+
+        public GamePoint AddGamePoint(Pilot pilot, Channel channel)
+        {
+            if (pilot == null || channel == null)
+                return null;
+
+            GamePoint gamePoint = new GamePoint();
+            gamePoint.Pilot = pilot;
+            gamePoint.Channel = channel;
+
+            lock (GamePoints)
+            {
+                GamePoints.Add(gamePoint);
+                return gamePoint;
             }
         }
 

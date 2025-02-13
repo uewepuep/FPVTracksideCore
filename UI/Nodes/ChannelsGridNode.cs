@@ -423,8 +423,7 @@ namespace UI.Nodes
             channelNode.SetAnimatedVisibility(true);
             channelNode.SetCrashedOutType(CrashOutType.None);
 
-            bool isRace = EventManager.RaceManager.EventType != EventTypes.Freestyle;
-            channelNode.SetLapsVisible(isRace);
+            channelNode.SetLapsVisible(EventManager.RaceManager.EventType.UsesTimingSystem());
 
             // Make them all update their position...
             ChannelNodeBase[] nodes = ChannelNodes.ToArray();

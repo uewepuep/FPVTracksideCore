@@ -301,6 +301,11 @@ namespace UI.Nodes
                 });
             }
 
+            openDirectory.AddItem("Open Events Directory", () =>
+            {
+                OpenCurrentDirectory("events\\");
+            });
+
             openDirectory.AddItem("Open Pilot Profile Image Directory", () =>
             {
                 OpenCurrentDirectory("pilots\\");

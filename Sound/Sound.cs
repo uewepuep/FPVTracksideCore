@@ -65,6 +65,8 @@ namespace Sound
         Detection,
         DetectionSplit,
 
+        GamePoint,
+
         PilotsEnableVideo,
         VideoDelayingRace,
         VideoLooksGood,

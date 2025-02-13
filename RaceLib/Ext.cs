@@ -149,6 +149,20 @@ namespace RaceLib
             }
         }
 
+        public static bool UsesTimingSystem(this EventTypes eventType)
+        {
+            switch (eventType)
+            {
+                case EventTypes.Freestyle:
+                case EventTypes.PointsGame:
+                    return false;
+
+                default:
+                    return true;
+            }
+        }
+
+
         public static string GetCharacter(this Band band)
         {
             if (band == Band.HDZero)

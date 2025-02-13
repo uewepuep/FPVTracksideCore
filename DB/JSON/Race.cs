@@ -13,6 +13,7 @@ namespace DB.JSON
         public List<Lap> Laps { get; set; }
 
         public List<Detection> Detections { get; set; }
+        public List<GamePoint> GamePoints { get; set; }
 
         public DateTime Start { get; set; }
         public DateTime End { get; set; }
@@ -52,6 +53,8 @@ namespace DB.JSON
                 Round = obj.Round.ID;
             if (obj.Event != null)
                 Event = obj.Event.ID;
+            if (obj.GamePoints != null)
+                GamePoints = obj.GamePoints.Convert<GamePoint>().ToList();
         }
 
         public override RaceLib.Race GetRaceLibObject(ICollectionDatabase database)
@@ -61,6 +64,7 @@ namespace DB.JSON
             race.Laps = Laps.Convert(database).ToList();
             race.PilotChannels = PilotChannels.Convert(database).ToList();
             race.Detections = Detections.Convert(database).ToList();
+            race.GamePoints = GamePoints.Convert(database).ToList();
 
             race.Round = Round.Convert<RaceLib.Round>(database);
             race.Event = Event.Convert<RaceLib.Event>(database);
