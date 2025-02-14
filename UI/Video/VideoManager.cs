@@ -597,12 +597,7 @@ namespace UI.Video
             foreach (var videoConfig in videoConfigs)
             {
                 RemoveFrameSource(videoConfig);
-
                 FrameSource fs = CreateFrameSource(videoConfig);
-                if (fs != null)
-                {
-                    Initialize(fs);
-                }
                 list.Add(fs);
             }
 
@@ -722,9 +717,6 @@ namespace UI.Video
 
                     if (!runWorker)
                         break;
-
-                    // Run any clean up tasks..
-                    WorkerThreadCleanupTasks();
 
                     if (someFinalising)
                     {

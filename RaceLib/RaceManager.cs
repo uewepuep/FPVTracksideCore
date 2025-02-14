@@ -2113,12 +2113,12 @@ namespace RaceLib
             }
         }
 
-        public int GetGamePoints(Pilot pilot)
+        public int GetGamePoints(Func<GamePoint, bool> predicate)
         {
             Race race = CurrentRace;
             if (race != null)
             {
-                return race.GetValidGamePoints(pilot).Count();
+                return race.GetValidGamePoints(predicate).Length;
             }
 
             return 0;

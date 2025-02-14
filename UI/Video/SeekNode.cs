@@ -19,6 +19,7 @@ namespace UI.Video
         public event Action<DateTime> Seek;
 
         private ProgressBarNode progressBar;
+        private Node progressBarLineContainer;
 
         public DateTime CurrentTime
         {
@@ -84,6 +85,9 @@ namespace UI.Video
             progressBar.RelativeBounds = new RectangleF(buttonsNode.RelativeBounds.Right, 0, 1 - (buttonsNode.RelativeBounds.Right + showAllWidth + slowWidth), 1);
             container.AddChild(progressBar);
 
+            progressBarLineContainer = new Node();
+            progressBar.AddChild(progressBarLineContainer);
+
             flagLabels = new Node();
             flagLabels.RelativeBounds = new RectangleF(progressBar.RelativeBounds.X, container.RelativeBounds.Bottom, progressBar.RelativeBounds.Width, 1 - container.RelativeBounds.Bottom);
             AddChild(flagLabels);
@@ -92,7 +96,7 @@ namespace UI.Video
         public void ClearFlags()
         {
             flagLabels.ClearDisposeChildren();
-            progressBar.ClearDisposeChildren();
+            progressBarLineContainer.ClearDisposeChildren();
         }
 
         private DateTime FactorToTime(float factor)
@@ -149,6 +153,16 @@ namespace UI.Video
                 }
             }
 
+            if (race.GamePoints != null)
+            {
+                foreach (GamePoint gamePoint in race.GamePoints)
+                {
+                    Color tint = eventManager.GetChannelColor(gamePoint.Channel);
+
+                    AddTimeMarker(gamePoint.Time, tint, gamePoint.Channel.DisplayName);
+                }
+            }
+
             RequestLayout();
         }
 
@@ -181,7 +195,7 @@ namespace UI.Video
             flag.RelativeBounds = new RectangleF(factor, 0, 1, 1f);
             flag.Alignment = RectangleAlignment.CenterLeft;
             flag.CanScale = false;
-            progressBar.AddChild(flag);
+            progressBarLineContainer.AddChild(flag);
 
             return factor;
         }

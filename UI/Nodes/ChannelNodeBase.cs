@@ -25,10 +25,10 @@ namespace UI.Nodes
         public Pilot Pilot { get; private set; }
 
         public event MouseInputDelegate OnClick;
-        public event System.Action OnCloseClick;
-        public event System.Action OnCrashedOutClick;
-        public event System.Action OnFullscreen;
-        public event System.Action OnShowAll;
+        public event Action OnCloseClick;
+        public event Action OnCrashedOutClick;
+        public event Action OnFullscreen;
+        public event Action OnShowAll;
 
         public Channel Channel { get; private set; }
 
@@ -239,7 +239,7 @@ namespace UI.Nodes
         }
         private void RaceManager_OnGamePoint(GamePoint obj)
         {
-            gamePoints.Points = EventManager.RaceManager.GetGamePoints(Pilot);
+            gamePoints.Points = EventManager.RaceManager.GetGamePoints(gp => gp.Pilot == Pilot);
         }
 
         public void SetCrashedOutType(CrashOutType type)
@@ -476,7 +476,7 @@ namespace UI.Nodes
 
             if (EventManager.RaceManager.EventType.IsGame())
             {
-                int points = EventManager.RaceManager.GetGamePoints(Pilot);
+                int points = EventManager.RaceManager.GetGamePoints(gp => gp.Pilot == Pilot);
                 gamePoints.Points = points;
             }
             else
@@ -979,6 +979,9 @@ namespace UI.Nodes
             }
 
             LapsNode.SetPlaybackTime(time);
+
+            int points = EventManager.RaceManager.GetGamePoints(gp => gp.Pilot == Pilot && gp.Time <= time);
+            gamePoints.Points = points;
         }
 
         public virtual void SetBiggerInfo(bool biggerChannel, bool biggerResults)

@@ -928,11 +928,11 @@ namespace RaceLib
             }
         }
 
-        public IEnumerable<GamePoint> GetValidGamePoints(Pilot pilot)
+        public GamePoint[] GetValidGamePoints(Func<GamePoint, bool> predicate)
         {
             lock (GamePoints)
             {
-                return GamePoints.Where(g => g.Pilot == pilot && g.Valid);
+                return GamePoints.Where(g => predicate(g) && g.Valid).ToArray();
             }
         }
 
