@@ -936,7 +936,7 @@ namespace RaceLib
             }
         }
 
-        public GamePoint AddGamePoint(Pilot pilot, Channel channel)
+        public GamePoint AddGamePoint(Pilot pilot, Channel channel, DateTime time)
         {
             if (pilot == null || channel == null)
                 return null;
@@ -944,6 +944,7 @@ namespace RaceLib
             GamePoint gamePoint = new GamePoint();
             gamePoint.Pilot = pilot;
             gamePoint.Channel = channel;
+            gamePoint.Time = time;
 
             lock (GamePoints)
             {

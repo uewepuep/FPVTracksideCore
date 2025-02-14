@@ -409,7 +409,7 @@ namespace UI.Nodes
 
                 Lap[] laps = r.GetValidLaps(Pilot, true).OrderBy(l => l.End).Where(lap => lap.Detection.Time <= playbackTime.Value).ToArray();
              
-                if (laps.Length != lapNodes.Where(ln => ln != null && ln.Visible).Count() ||
+                if (laps.Length != lapNodes.Where(ln => ln != null).Where(ln => ln.Visible).Count() ||
                     laps.FirstOrDefault() != lapNodes.First().Lap)
                 {
                     RefreshData(laps);

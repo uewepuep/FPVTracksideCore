@@ -137,7 +137,7 @@ namespace UI.Nodes
             if (NeedsUpdate)
                 UpdateText();
 
-            if (EventManager.RaceManager.EventType != EventTypes.Freestyle)
+            if (EventManager.RaceManager.RaceType != EventTypes.Freestyle)
                 base.Draw(drawer, parentAlpha);
         }
 

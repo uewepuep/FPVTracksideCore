@@ -2093,12 +2093,12 @@ namespace RaceLib
             }
         }
 
-        public void AddGamePoint(Pilot pilot, Channel channel)
+        public void AddGamePoint(Pilot pilot, Channel channel, DateTime time)
         {
             Race race = CurrentRace;
             if (race != null)
             {
-                GamePoint gp = race.AddGamePoint(pilot, channel);
+                GamePoint gp = race.AddGamePoint(pilot, channel, time);
                 OnGamePointChanged?.Invoke(gp);
             }
         }

@@ -474,16 +474,18 @@ namespace UI.Nodes
             // Set this again incase changing the pilot has changed things.
             SetProfileVisible(pilotProfileOptions);
 
-            if (EventManager.RaceManager.EventType.IsGame())
+            if (EventManager.RaceManager.RaceType.IsGame())
             {
                 int points = EventManager.RaceManager.GetGamePoints(gp => gp.Pilot == Pilot);
                 gamePoints.Points = points;
+                gamePoints.Visible = true;
             }
             else
             {
                 gamePoints.Clear();
+                gamePoints.Visible = false;
             }
-            
+
             RequestLayout();
         }
 
@@ -547,7 +549,7 @@ namespace UI.Nodes
 
         public virtual void SetLapsVisible(bool visible)
         {
-            LapsNode.Visible = visible;
+            LapsNode.Visible = visible && EventManager.RaceManager.RaceType.UsesTimingSystem();
         }
 
         public void SetResult(int position, bool dnf, TimeSpan behind, Pilot behindWho)
@@ -676,13 +678,20 @@ namespace UI.Nodes
 
             if (mouseInputEvent.ButtonState == ButtonStates.Released && CompositorLayer.InputEventFactory.AreAltKeysDown() && mouseInputEvent.Button == MouseButtons.Left)
             {
-                if (EventManager.RaceManager.EventType.UsesTimingSystem())
+                DateTime time = DateTime.Now;
+
+                if (playbackTime.HasValue)
                 {
-                    EventManager.RaceManager.AddManualLap(Pilot, DateTime.Now);
+                    time = playbackTime.Value;
+                }
+
+                if (EventManager.RaceManager.RaceType.UsesTimingSystem())
+                {
+                    EventManager.RaceManager.AddManualLap(Pilot, time);
                 }
                 else
                 {
-                    EventManager.RaceManager.AddGamePoint(Pilot, Channel);
+                    EventManager.RaceManager.AddGamePoint(Pilot, Channel, time);
                 }
                 return true;
             }

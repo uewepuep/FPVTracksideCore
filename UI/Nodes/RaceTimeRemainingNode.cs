@@ -29,7 +29,7 @@ namespace UI.Nodes
                 }
             }
 
-            if (RaceManager.EventType == EventTypes.CasualPractice)
+            if (RaceManager.RaceType == EventTypes.CasualPractice)
             {
                 Text = "";
                 return;

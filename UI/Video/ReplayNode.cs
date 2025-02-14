@@ -42,6 +42,17 @@ namespace UI.Video
             }
         }
 
+        public DateTime CurrentTime
+        {
+            get
+            {
+                if (race == null || SeekNode == null)
+                    return DateTime.Now;
+
+                return SeekNode.CurrentTime;
+            }
+        }
+
         public TimeSpan ElapsedTime 
         {
             get
@@ -74,6 +85,7 @@ namespace UI.Video
             EventManager.RaceManager.OnLapDetected += OnChange;
             EventManager.RaceManager.OnLapsRecalculated += OnChange;
             EventManager.RaceManager.OnLapDisqualified += OnChange;
+            EventManager.RaceManager.OnGamePointChanged += OnChange;
 
 
             SeekNode = new SeekNode(eventManager, Theme.Current.Replay.Text.XNA);
@@ -93,6 +105,11 @@ namespace UI.Video
         }
 
         private void OnChange(Lap lap)
+        {
+            OnChange();
+        }
+
+        private void OnChange(GamePoint gamePoint)
         {
             OnChange();
         }

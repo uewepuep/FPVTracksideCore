@@ -40,7 +40,7 @@ namespace RaceLib
             Race = "Race";
             Freestyle = "Freestyle";
             Endurance = "Endurance";
-            PointsGame = "Points Game";
+            PointsGame = "Game";
         }
 
         public string GetEventTypeText(EventTypes eventType)

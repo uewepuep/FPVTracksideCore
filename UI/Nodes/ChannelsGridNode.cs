@@ -198,7 +198,7 @@ namespace UI.Nodes
 
         private void RaceManager_OnRaceStart(Race race)
         {
-            bool isRace = EventManager.RaceManager.EventType != EventTypes.Freestyle;
+            bool isRace = EventManager.RaceManager.RaceType != EventTypes.Freestyle;
             manualOverride = false;
             SetLapsVisiblity(isRace);
         }
@@ -423,7 +423,7 @@ namespace UI.Nodes
             channelNode.SetAnimatedVisibility(true);
             channelNode.SetCrashedOutType(CrashOutType.None);
 
-            channelNode.SetLapsVisible(EventManager.RaceManager.EventType.UsesTimingSystem());
+            channelNode.SetLapsVisible(EventManager.RaceManager.RaceType.UsesTimingSystem());
 
             // Make them all update their position...
             ChannelNodeBase[] nodes = ChannelNodes.ToArray();

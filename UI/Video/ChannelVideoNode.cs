@@ -63,9 +63,9 @@ namespace UI.Video
 
         public override void SetLapsVisible(bool visible)
         {
-            LapsNode.Visible = visible;
+            base.SetLapsVisible(visible);
 
-            if (visible)
+            if (LapsNode.Visible)
             {
                 DisplayNode.RelativeBounds = new RectangleF(0, 0, 1, LapsNode.RelativeBounds.Y);
             }
