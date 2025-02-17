@@ -28,6 +28,7 @@ namespace UI.Nodes
         private EventManager eventManager;
 
         private ImageNode profileIcon;
+        public bool UseTeamColor { get; set; }
 
         public PilotChannelNode(EventManager ev, ToolTexture background, Color hover, Color text, ToolTexture channelTexture)
         {
@@ -123,7 +124,6 @@ namespace UI.Nodes
                 PilotNameNode.Text = Pilot.Name;
             }
 
-
             Channel = c;
 
             if (Channel == null)
@@ -140,7 +140,14 @@ namespace UI.Nodes
                     ChannelNode.Text += "/" + string.Join("/",shared.Select(s => s.UIDisplayName));
                 }
 
-                channelColor.Tint = eventManager.GetChannelColor(Channel);
+                if (UseTeamColor)
+                {
+                    channelColor.Tint = eventManager.GetTeamColor(Channel);
+                }
+                else
+                {
+                    channelColor.Tint = eventManager.GetChannelColor(Channel);
+                }
             }
         }
     }

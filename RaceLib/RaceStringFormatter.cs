@@ -9,21 +9,7 @@ namespace RaceLib
 {
     public class RaceStringFormatter
     {
-        private static RaceStringFormatter inst;
-
-        public static RaceStringFormatter Instance
-        {
-            get
-            {
-                if (inst == null)
-                {
-                    inst = new RaceStringFormatter();
-                }
-
-                return inst;
-            }
-        }
-
+        public static RaceStringFormatter Instance { get; private set; }
 
         public string Practice { get; set; }
         public string TimeTrial { get; set; }
@@ -31,16 +17,22 @@ namespace RaceLib
         public string Freestyle { get; set; }
         public string Endurance { get; set; }
         public string CasualPractice { get; set; }
-        public string PointsGame { get; set; }
+        public string Game { get; set; }
 
-        public RaceStringFormatter()
+        public EventManager EventManager { get; set; }
+
+        public RaceStringFormatter(EventManager eventManager)
         {
+            Instance = this;
+
+            EventManager = eventManager;
+
             Practice = "Practice";
             TimeTrial = "Time Trial";
             Race = "Race";
             Freestyle = "Freestyle";
             Endurance = "Endurance";
-            PointsGame = "Game";
+            Game = "Game";
         }
 
         public string GetEventTypeText(EventTypes eventType)
@@ -53,7 +45,10 @@ namespace RaceLib
                 case RaceLib.EventTypes.Freestyle: return Freestyle;
                 case RaceLib.EventTypes.Endurance: return Endurance;
                 case RaceLib.EventTypes.CasualPractice: return CasualPractice;
-                case RaceLib.EventTypes.PointsGame: return PointsGame;
+                case RaceLib.EventTypes.Game:
+                    if (EventManager.GameType == null)
+                        return Game;
+                    return EventManager.GameType.Name;
             }
             return "Unknown";
         }

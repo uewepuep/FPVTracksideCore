@@ -196,7 +196,7 @@ namespace UI.Nodes
             CrashedOutType = CrashOutType.None;
             if (race != null)
             {
-                gamePoints.Visible = race.Event.EventType.IsGame();
+                gamePoints.Visible = race.Event.EventType == EventTypes.Game;
             }
             else
             {
@@ -239,7 +239,7 @@ namespace UI.Nodes
         }
         private void RaceManager_OnGamePoint(GamePoint obj)
         {
-            gamePoints.Points = EventManager.RaceManager.GetGamePoints(gp => gp.Pilot == Pilot);
+            gamePoints.Points = EventManager.RaceManager.GetGamePoints(Channel);
         }
 
         public void SetCrashedOutType(CrashOutType type)
@@ -474,9 +474,9 @@ namespace UI.Nodes
             // Set this again incase changing the pilot has changed things.
             SetProfileVisible(pilotProfileOptions);
 
-            if (EventManager.RaceManager.RaceType.IsGame())
+            if (EventManager.RaceManager.RaceType == EventTypes.Game)
             {
-                int points = EventManager.RaceManager.GetGamePoints(gp => gp.Pilot == Pilot);
+                int points = EventManager.RaceManager.GetGamePoints(Channel);
                 gamePoints.Points = points;
                 gamePoints.Visible = true;
             }
@@ -549,7 +549,7 @@ namespace UI.Nodes
 
         public virtual void SetLapsVisible(bool visible)
         {
-            LapsNode.Visible = visible && EventManager.RaceManager.RaceType.UsesTimingSystem();
+            LapsNode.Visible = visible && EventManager.RaceManager.RaceType.HasLaps();
         }
 
         public void SetResult(int position, bool dnf, TimeSpan behind, Pilot behindWho)
@@ -685,7 +685,7 @@ namespace UI.Nodes
                     time = playbackTime.Value;
                 }
 
-                if (EventManager.RaceManager.RaceType.UsesTimingSystem())
+                if (EventManager.RaceManager.RaceType.HasLaps())
                 {
                     EventManager.RaceManager.AddManualLap(Pilot, time);
                 }
@@ -989,7 +989,7 @@ namespace UI.Nodes
 
             LapsNode.SetPlaybackTime(time);
 
-            int points = EventManager.RaceManager.GetGamePoints(gp => gp.Pilot == Pilot && gp.Time <= time);
+            int points = EventManager.RaceManager.GetGamePoints(Channel, time);
             gamePoints.Points = points;
         }
 

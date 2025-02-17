@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Tools;
 
@@ -154,7 +155,7 @@ namespace RaceLib
             switch (eventType)
             {
                 case EventTypes.Freestyle:
-                case EventTypes.PointsGame:
+                case EventTypes.Game:
                     return false;
 
                 default:
@@ -162,17 +163,19 @@ namespace RaceLib
             }
         }
 
-        public static bool IsGame(this EventTypes eventType)
+        public static bool HasLaps(this EventTypes eventType)
         {
             switch (eventType)
             {
-                case EventTypes.PointsGame:
-                    return true;
+                case EventTypes.Freestyle:
+                case EventTypes.Game:
+                    return false;
 
                 default:
-                    return false;
+                    return true;
             }
         }
+
         public static string GetCharacter(this Band band)
         {
             if (band == Band.HDZero)
@@ -362,6 +365,20 @@ namespace RaceLib
                     channels.RemoveAll(r => interferring.Contains(r));
                 }
             }
+        }
+
+        public static int GetChannelGroupIndex(this IEnumerable<Channel> pool, Channel channel)
+        {
+            int index = 0;
+            foreach (Channel[] group in pool.GetChannelGroups())
+            {
+                if (group.Contains(channel))
+                    return index;
+
+                index++;
+            }
+
+            return -1;
         }
 
         public static int CountBandTypes(this IEnumerable<Channel> pool, BandType bandType)

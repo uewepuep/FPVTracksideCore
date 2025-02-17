@@ -366,12 +366,9 @@ namespace UI.Nodes
             if (channel == null)
                 return;
 
-            Color c = EventManager.GetChannelColor(channel);
-
             Lap[] editLaps = currentRace.GetLaps(l => l.Pilot == Pilot).ToArray();
 
-            //LapEditorNode editor = new LapEditorNode(editLaps, c);
-            LapEditorNode editor = new LapEditorNode(EventManager.RaceManager, currentRace, Pilot, editLaps, c);
+            LapEditorNode editor = new LapEditorNode(EventManager.RaceManager, currentRace, Pilot, editLaps, ChannelColor);
 
             if (lapsToAdd.Any())
             {

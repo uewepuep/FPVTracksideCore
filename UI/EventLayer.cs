@@ -1247,7 +1247,7 @@ namespace UI
                                         time = TabbedMultiNode.ReplayNode.CurrentTime;
                                     }
 
-                                    if (race.Type.UsesTimingSystem())
+                                    if (race.Type.HasLaps())
                                     {
                                         EventManager.RaceManager.AddManualLap(pc.Pilot, time);
                                     }

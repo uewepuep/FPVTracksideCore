@@ -219,6 +219,10 @@ namespace UI.Nodes
                     EventEditor?.Invoke();
                 });
             }
+            root.AddItem("GameType Settings", () =>
+            {
+                ShowGameTypeEditor();
+            });
 
             root.AddItem("Keyboard Shortcuts", () =>
             {
@@ -558,6 +562,19 @@ namespace UI.Nodes
                 KeyboardShortcuts.Write(Profile, k);
                 Restart?.Invoke(evennt);
             };
+        }
+
+        public void ShowGameTypeEditor()
+        {
+            GameType[] settings = GameType.Read(Profile);
+
+            ObjectEditorNode<GameType> editor = new ObjectEditorNode<GameType>(settings, true, true, false);
+            editor.OnOK += (a) =>
+            {
+                GameType.Write(Profile, editor.Objects.ToArray());
+                GetLayer<PopupLayer>().PopupConfirmation("Changes require restart to take effect. Restart now?", () => { Restart(evennt); });
+            };
+            GetLayer<PopupLayer>().Popup(editor);
         }
 
         public void About()

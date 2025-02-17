@@ -423,7 +423,7 @@ namespace UI.Nodes
             channelNode.SetAnimatedVisibility(true);
             channelNode.SetCrashedOutType(CrashOutType.None);
 
-            channelNode.SetLapsVisible(EventManager.RaceManager.RaceType.UsesTimingSystem());
+            channelNode.SetLapsVisible(EventManager.RaceManager.RaceType.HasLaps());
 
             // Make them all update their position...
             ChannelNodeBase[] nodes = ChannelNodes.ToArray();
@@ -479,7 +479,7 @@ namespace UI.Nodes
                 ChannelNodeBase channelNodeBase = null;
 
                 ChannelVideoInfo ci = channelInfos.FirstOrDefault(cia => cia.Channel == c);
-                Color color = EventManager.GetChannelColor(c);
+                Color color = EventManager.GetRaceChannelColor(c);
 
                 if (ci != null)
                 {

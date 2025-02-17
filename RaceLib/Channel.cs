@@ -49,7 +49,22 @@ namespace RaceLib
         [ReadOnly(true)]
         public int Frequency { get; set; }
 
-        public string DisplayName { get; set; }
+        private string displayName;
+        public string DisplayName
+        {
+            get
+            {
+                if (displayName == null)
+                {
+                    return GetBandChannelText();
+                }
+                return displayName;
+            }
+            set
+            {
+                displayName = value;
+            }
+        }
         
         [Browsable(false)]
         public string UIDisplayName

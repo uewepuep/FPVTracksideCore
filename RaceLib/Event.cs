@@ -32,7 +32,7 @@ namespace RaceLib
         CasualPractise = 5,
         CasualPractice = 5,
 
-        PointsGame = 6
+        Game = 6
     }
 
     public enum PrimaryTimingSystemLocation
@@ -119,6 +119,8 @@ namespace RaceLib
 
         public DateTime[] Flags { get; set; }
 
+        public int GameTypeIndex { get; set; }
+
         public Event()
         {
             SyncWithFPVTrackside = false;
@@ -198,7 +200,7 @@ namespace RaceLib
             yield return EventTypes.Endurance;
             yield return EventTypes.Freestyle;
             yield return EventTypes.CasualPractice;
-            yield return EventTypes.PointsGame;
+            yield return EventTypes.Game;
         }
 
         public void RefreshPilots(IEnumerable<Pilot> editedPilots)

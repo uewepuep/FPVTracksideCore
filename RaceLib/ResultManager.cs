@@ -578,7 +578,7 @@ namespace RaceLib
             return r;
         }
 
-        public string GetResultText(Race race, Pilot pilot)
+        public string GetResultText(Race race, Pilot pilot, Channel channel)
         {
             if (race.Ended && pilot != null)
             {
@@ -614,6 +614,10 @@ namespace RaceLib
                         int position = EventManager.LapRecordManager.GetPosition(pilot, EventManager.Event.Laps);
                         return position.ToStringPosition();
                     }
+                }
+                else if (race.Type == EventTypes.Game)
+                {
+                    return EventManager.RaceManager.GetGamePoints(channel) + " pts";
                 }
                 else
                 {

@@ -61,11 +61,36 @@ namespace UI.Nodes
                 foreach (EventTypes type in Event.GetEventTypes())
                 {
                     EventTypes thisType = type;
-                    string typeString = RaceStringFormatter.Instance.GetEventTypeText(thisType);
-                    mouseMenu.AddItem(typeString, () =>
+                 
+                    if (thisType == EventTypes.Game)
                     {
-                        EventManager.SetEventType(thisType);
-                    });
+                        try
+                        {
+
+                            GameType[] gameTypes = GameType.Read(EventManager.Profile);
+                            if (gameTypes.Any())
+                            {
+                                var subMenu = mouseMenu.AddSubmenu("Game");
+                                foreach (GameType gameType in gameTypes)
+                                {
+                                    var gt = gameType;
+                                    subMenu.AddItem(gameType.Name, () => { SelectGameType(gt); });
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.UI.LogException(this, e);
+                        }
+                    }
+                    else
+                    {
+                        string typeString = RaceStringFormatter.Instance.GetEventTypeText(thisType);
+                        mouseMenu.AddItem(typeString, () =>
+                        {
+                            EventManager.SetEventType(thisType);
+                        });
+                    }
                 }
 
                 mouseMenu.Show(Bounds.X, Bounds.Bottom);
@@ -74,6 +99,10 @@ namespace UI.Nodes
             return base.OnMouseInput(mouseInputEvent);
         }
 
+        private void SelectGameType(GameType gameType)
+        {
+            EventManager.GameType = gameType;
+        }
 
         public override void Draw(Drawer drawer, float parentAlpha)
         {
@@ -92,7 +121,14 @@ namespace UI.Nodes
             }
             else
             {
-                Text = RaceStringFormatter.Instance.GetEventTypeText(EventManager.RaceManager.RaceType);
+                if (EventManager.RaceManager.RaceType == EventTypes.Game && EventManager.GameType != null)
+                {
+                    Text = EventManager.GameType.ToString();
+                }
+                else
+                {
+                    Text = RaceStringFormatter.Instance.GetEventTypeText(EventManager.RaceManager.RaceType);
+                }
             }
         }
 

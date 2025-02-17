@@ -2,6 +2,7 @@
 using RaceLib.Format;
 using System;
 using System.Collections.Generic;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -43,9 +44,9 @@ namespace RaceLib
         public Profile Profile { get; private set; }
 
         public TrackFlightPath FlightPath { get; set; }
+        public GameType GameType { get; set; }
 
-
-
+        public RaceStringFormatter RaceStringFormatter { get; private set; }
         public EventManager(Profile profile)
         {
             Profile = profile;
@@ -55,6 +56,8 @@ namespace RaceLib
             TimedActionManager = new TimedActionManager();
             RoundManager = new RoundManager(this);
             SpeedRecordManager = new SpeedRecordManager(RaceManager);
+
+            RaceStringFormatter = new RaceStringFormatter(this);
 
             ExportColumns = ExportColumn.Read(Profile);
 
@@ -242,6 +245,16 @@ namespace RaceLib
                     Channel.LoadDisplayNames(Event);
                 }
 
+            });
+
+            workQueue.Enqueue(workSet, "Loading Game Types", () =>
+            {
+                int index = Event.GameTypeIndex;
+                GameType[] gameTypes = GameType.Read(Profile);
+                if (gameTypes.Length > index)
+                {
+                    GameType = gameTypes[index];
+                }
             });
 
             workQueue.Enqueue(workSet, "Finding Profile Pictures", () =>
@@ -437,20 +450,32 @@ namespace RaceLib
             OnChannelsChanged?.Invoke();
         }
         
-        public Microsoft.Xna.Framework.Color GetPilotColor(Pilot p)
+        public Color GetPilotColor(Pilot p)
         {
             Channel channel = GetChannel(p);
             return GetChannelColor(channel);
         }
 
-        public Microsoft.Xna.Framework.Color GetChannelColor(Channel c)
+        public Color GetRaceChannelColor(Channel c)
         {
-            Microsoft.Xna.Framework.Color color;
+            if (RaceManager.RaceType == EventTypes.Game)
+            {
+                if (GameType != null)
+                {
+                    return GetTeamColor(c);
+                }
+            }
+            return GetChannelColor(c);
+        }
+
+        public Color GetChannelColor(Channel c)
+        {
+            Color color;
             if (channelColour.TryGetValue(c, out color))
             {
                 return color;
             }
-            return  Microsoft.Xna.Framework.Color.Red;
+            return Color.Red;
         }
 
         public void RemovePilots()
@@ -727,6 +752,32 @@ namespace RaceLib
             {
                 db.Update(Event);
             }
+        }
+
+        public int GetTeam(Channel channel)
+        {
+            if (GameType == null || GameType.PilotsPerTeam == 0)
+                return -1;
+
+            int index = Channels.GetChannelGroupIndex(channel);
+
+            index = index / GameType.PilotsPerTeam;
+
+            return index;
+        }
+
+        public Color GetTeamColor(Channel channel)
+        {
+            int team = GetTeam(channel);
+
+            Channel[] group = Channels.GetChannelGroup(team);
+
+            Color color;
+            if (channelColour.TryGetValue(group.FirstOrDefault(), out color))
+            {
+                return color;
+            }
+            return Color.White;
         }
     }
 }

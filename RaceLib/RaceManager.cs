@@ -810,7 +810,7 @@ namespace RaceLib
                     ListeningFrequency listeningFrequency;
                     PilotChannel pilotChannel = race.PilotChannelsSafe.FirstOrDefault(r => r.Channel.Frequency == eventChannel.Frequency);
 
-                    Color color = EventManager.GetChannelColor(eventChannel);
+                    Color color = EventManager.GetRaceChannelColor(eventChannel);
 
                     if (pilotChannel != null)
                     {
@@ -830,11 +830,11 @@ namespace RaceLib
             {
                 if (race.Type == EventTypes.CasualPractice)
                 {
-                    frequencies = EventManager.Channels.Select(c => new ListeningFrequency(c.Band.ToString(), c.Number, c.Frequency, 1, EventManager.GetChannelColor(c))).ToList();
+                    frequencies = EventManager.Channels.Select(c => new ListeningFrequency(c.Band.ToString(), c.Number, c.Frequency, 1, EventManager.GetRaceChannelColor(c))).ToList();
                 }
                 else
                 {
-                    frequencies = race.PilotChannelsSafe.Select(pc => new ListeningFrequency(pc.PilotName, pc.Pilot.ID, pc.Channel.Band.ToString(), pc.Channel.Number, pc.Channel.Frequency, pc.Pilot.TimingSensitivityPercent / 100.0f, EventManager.GetChannelColor(pc.Channel))).ToList();
+                    frequencies = race.PilotChannelsSafe.Select(pc => new ListeningFrequency(pc.PilotName, pc.Pilot.ID, pc.Channel.Band.ToString(), pc.Channel.Number, pc.Channel.Frequency, pc.Pilot.TimingSensitivityPercent / 100.0f, EventManager.GetRaceChannelColor(pc.Channel))).ToList();
                 }
 
                 Logger.RaceLog.LogCall(this, race, "Frequencies dynamically assigned to receivers");
@@ -1303,7 +1303,7 @@ namespace RaceLib
             if (currentRace == null)
                 return;
 
-            if (!currentRace.Type.UsesTimingSystem())
+            if (!currentRace.Type.HasLaps())
                 return;
 
             Event eve = EventManager.Event;
@@ -2124,9 +2124,28 @@ namespace RaceLib
             return 0;
         }
 
+        public int GetGamePoints(Channel channel)
+        {
+            return GetGamePoints(channel, DateTime.MaxValue);
+        }
+
+        public int GetGamePoints(Channel channel, DateTime time)
+        {
+            int team = EventManager.GetTeam(channel);
+
+            Channel[] channels = EventManager.Channels.Where(c => team == EventManager.GetTeam(c)).ToArray();
+
+            return GetGamePoints(gp => channels.Contains(gp.Channel) && gp.Time <= time);
+        }
+
         public int GetTargetGamePoints(Pilot pilot)
         {
-            return 3;
+            if (EventManager.GameType == null)
+            {
+                return 0;
+            }
+
+            return EventManager.GameType.TargetPoints;
         }
     }
 }

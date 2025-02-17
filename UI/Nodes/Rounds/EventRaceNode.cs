@@ -105,7 +105,7 @@ namespace UI.Nodes.Rounds
                     PilotRaceInfoNode pilotRaceInfoNode = new PilotRaceInfoNode(this, pilot, channel, channelChanged, shared.Where(c => c != channel));
                     container.AddChild(pilotRaceInfoNode);
 
-                    pilotRaceInfoNode.ResultText = EventManager.ResultManager.GetResultText(Race, pilot);
+                    pilotRaceInfoNode.ResultText = EventManager.ResultManager.GetResultText(Race, pilot, channel);
                 }
 
                 int size = Math.Max(grouped.Count(), 6);
@@ -570,6 +570,7 @@ namespace UI.Nodes.Rounds
             SharedChannels = shared.ToArray();
 
             pilotNode = new PilotChannelNode(EventRaceNode.EventManager, ToolTexture.Transparent, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA, Theme.Current.Rounds.Channel);
+            pilotNode.UseTeamColor = true;
             pilotNode.SetPilotChannel(pilot, channel, shared);
             pilotNode.RelativeBounds = new RectangleF(0, 0, 0.85f, 1);
             pilotNode.PilotNameNode.TextNode.Alignment = RectangleAlignment.CenterLeft;
