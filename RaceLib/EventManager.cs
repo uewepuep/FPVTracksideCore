@@ -44,8 +44,8 @@ namespace RaceLib
         public Profile Profile { get; private set; }
 
         public TrackFlightPath FlightPath { get; set; }
-        public GameType GameType { get; set; }
 
+        public GameManager GameManager { get; set; }
         public RaceStringFormatter RaceStringFormatter { get; private set; }
         public EventManager(Profile profile)
         {
@@ -56,6 +56,8 @@ namespace RaceLib
             TimedActionManager = new TimedActionManager();
             RoundManager = new RoundManager(this);
             SpeedRecordManager = new SpeedRecordManager(RaceManager);
+
+            GameManager = new GameManager(this);
 
             RaceStringFormatter = new RaceStringFormatter(this);
 
@@ -253,7 +255,7 @@ namespace RaceLib
                 GameType[] gameTypes = GameType.Read(Profile);
                 if (gameTypes.Length > index)
                 {
-                    GameType = gameTypes[index];
+                    GameManager.SetGameType(gameTypes[index]);
                 }
             });
 
@@ -456,14 +458,17 @@ namespace RaceLib
             return GetChannelColor(channel);
         }
 
-        public Color GetRaceChannelColor(Channel c)
+        public Color GetCurrentRaceChannelColor(Channel c)
         {
-            if (RaceManager.RaceType == EventTypes.Game)
+            Race race = RaceManager.CurrentRace;
+            return GetRaceChannelColor(race, c);
+        }
+
+        public Color GetRaceChannelColor(Race race, Channel c)
+        {
+            if (race != null && race.Round != null && race.Round.EventType == EventTypes.Game)
             {
-                if (GameType != null)
-                {
-                    return GetTeamColor(c);
-                }
+                return GameManager.GetTeamColor(c);
             }
             return GetChannelColor(c);
         }
@@ -752,32 +757,6 @@ namespace RaceLib
             {
                 db.Update(Event);
             }
-        }
-
-        public int GetTeam(Channel channel)
-        {
-            if (GameType == null || GameType.PilotsPerTeam == 0)
-                return -1;
-
-            int index = Channels.GetChannelGroupIndex(channel);
-
-            index = index / GameType.PilotsPerTeam;
-
-            return index;
-        }
-
-        public Color GetTeamColor(Channel channel)
-        {
-            int team = GetTeam(channel);
-
-            Channel[] group = Channels.GetChannelGroup(team);
-
-            Color color;
-            if (channelColour.TryGetValue(group.FirstOrDefault(), out color))
-            {
-                return color;
-            }
-            return Color.White;
         }
     }
 }

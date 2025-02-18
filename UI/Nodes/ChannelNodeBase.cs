@@ -151,7 +151,7 @@ namespace UI.Nodes
             EventManager.RaceManager.OnLapsRecalculated += RaceManager_OnLapsRecalculated;
             EventManager.LapRecordManager.OnNewPersonalBest += RecordManager_OnNewPersonalBest;
             EventManager.RaceManager.OnRaceResumed += RaceManager_OnRaceStateChanged;
-            EventManager.RaceManager.OnGamePointChanged += RaceManager_OnGamePoint;
+            EventManager.GameManager.OnGamePointChanged += RaceManager_OnGamePoint;
         }
 
 
@@ -170,7 +170,7 @@ namespace UI.Nodes
             EventManager.RaceManager.OnRaceResumed -= RaceManager_OnRaceStateChanged;
             EventManager.RaceManager.OnLapsRecalculated -= RaceManager_OnLapsRecalculated;
             EventManager.LapRecordManager.OnNewPersonalBest -= RecordManager_OnNewPersonalBest;
-            EventManager.RaceManager.OnGamePointChanged -= RaceManager_OnGamePoint;
+            EventManager.GameManager.OnGamePointChanged -= RaceManager_OnGamePoint;
 
             base.Dispose();
         }
@@ -239,7 +239,7 @@ namespace UI.Nodes
         }
         private void RaceManager_OnGamePoint(GamePoint obj)
         {
-            gamePoints.Points = EventManager.RaceManager.GetGamePoints(Channel);
+            gamePoints.Points = EventManager.GameManager.GetCurrentGamePoints(Channel);
         }
 
         public void SetCrashedOutType(CrashOutType type)
@@ -300,7 +300,6 @@ namespace UI.Nodes
             pilotInfoContainer = new AnimatedRelativeNode();
             pilotInfoContainer.RelativeBounds = new RectangleF(0, 0.03f, 0.4f, 0.185f);
             DisplayNode.AddChild(pilotInfoContainer);
-
 
             pilotNameNode = new ChannelPilotNameNode(this, ChannelColor, pilotAlpha);
             pilotNameNode.RelativeBounds = new RectangleF(0, 0, 1, 0.65f);
@@ -384,7 +383,7 @@ namespace UI.Nodes
             gamePoints.RelativeBounds = new RectangleF(0.775f, 0.8f, 0.2f, 0.2f);
             gamePoints.OnCtrlClick += () =>
             {
-                EventManager.RaceManager.RemoveGamePoint(Channel);
+                EventManager.GameManager.RemoveGamePoint(Channel);
             };
             DisplayNode.AddChild(gamePoints);
 
@@ -476,7 +475,7 @@ namespace UI.Nodes
 
             if (EventManager.RaceManager.RaceType == EventTypes.Game)
             {
-                int points = EventManager.RaceManager.GetGamePoints(Channel);
+                int points = EventManager.GameManager.GetCurrentGamePoints(Channel);
                 gamePoints.Points = points;
                 gamePoints.Visible = true;
             }
@@ -691,7 +690,7 @@ namespace UI.Nodes
                 }
                 else
                 {
-                    EventManager.RaceManager.AddGamePoint(Pilot, Channel, time);
+                    EventManager.GameManager.AddGamePoint(Pilot, Channel, time);
                 }
                 return true;
             }
@@ -989,7 +988,7 @@ namespace UI.Nodes
 
             LapsNode.SetPlaybackTime(time);
 
-            int points = EventManager.RaceManager.GetGamePoints(Channel, time);
+            int points = EventManager.GameManager.GetGamePoints(current, Channel, time);
             gamePoints.Points = points;
         }
 

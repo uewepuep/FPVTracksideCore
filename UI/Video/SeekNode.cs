@@ -124,7 +124,7 @@ namespace UI.Video
 
             foreach (PilotChannel pilotChannel in race.PilotChannelsSafe)
             {
-                Color tint = eventManager.GetChannelColor(pilotChannel.Channel);
+                Color tint = eventManager.GetRaceChannelColor(race, pilotChannel.Channel);
 
                 Lap[] laps = race.GetValidLaps(pilotChannel.Pilot, true);
                 foreach (Lap l in laps)
@@ -157,7 +157,7 @@ namespace UI.Video
             {
                 foreach (GamePoint gamePoint in race.GamePoints)
                 {
-                    Color tint = eventManager.GetChannelColor(gamePoint.Channel);
+                    Color tint = eventManager.GetRaceChannelColor(race, gamePoint.Channel);
 
                     AddTimeMarker(gamePoint.Time, tint, gamePoint.Channel.DisplayName);
                 }

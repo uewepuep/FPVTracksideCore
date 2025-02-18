@@ -142,7 +142,7 @@ namespace UI.Nodes
 
                 if (UseTeamColor)
                 {
-                    channelColor.Tint = eventManager.GetTeamColor(Channel);
+                    channelColor.Tint = eventManager.GameManager.GetTeamColor(Channel);
                 }
                 else
                 {

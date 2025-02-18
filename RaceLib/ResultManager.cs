@@ -617,7 +617,8 @@ namespace RaceLib
                 }
                 else if (race.Type == EventTypes.Game)
                 {
-                    return EventManager.RaceManager.GetGamePoints(channel) + " pts";
+                    int points = EventManager.GameManager.GetGamePoints(race, channel);
+                    return points + " pts";
                 }
                 else
                 {

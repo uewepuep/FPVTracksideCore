@@ -1253,7 +1253,7 @@ namespace UI
                                     }
                                     else
                                     {
-                                        EventManager.RaceManager.AddGamePoint(pc.Pilot, pc.Channel, time);
+                                        EventManager.GameManager.AddGamePoint(pc.Pilot, pc.Channel, time);
                                     }
                                 }
                             }

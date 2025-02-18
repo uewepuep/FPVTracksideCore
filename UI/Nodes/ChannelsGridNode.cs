@@ -463,7 +463,7 @@ namespace UI.Nodes
                 ChannelNodeBase channelNodeBase = ChannelNodes.FirstOrDefault(cia => cia.Channel == c);
                 if (channelNodeBase != null)
                 {
-                    return channelNodeBase;
+                    channelNodeBase.Dispose();
                 }
 
                 channelNodeBase = CreateChannelNode(c);
@@ -479,7 +479,7 @@ namespace UI.Nodes
                 ChannelNodeBase channelNodeBase = null;
 
                 ChannelVideoInfo ci = channelInfos.FirstOrDefault(cia => cia.Channel == c);
-                Color color = EventManager.GetRaceChannelColor(c);
+                Color color = EventManager.GetCurrentRaceChannelColor(c);
 
                 if (ci != null)
                 {

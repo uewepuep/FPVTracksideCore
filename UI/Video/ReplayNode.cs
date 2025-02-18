@@ -85,7 +85,7 @@ namespace UI.Video
             EventManager.RaceManager.OnLapDetected += OnChange;
             EventManager.RaceManager.OnLapsRecalculated += OnChange;
             EventManager.RaceManager.OnLapDisqualified += OnChange;
-            EventManager.RaceManager.OnGamePointChanged += OnChange;
+            EventManager.GameManager.OnGamePointChanged += OnChange;
 
 
             SeekNode = new SeekNode(eventManager, Theme.Current.Replay.Text.XNA);

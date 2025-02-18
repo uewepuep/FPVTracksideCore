@@ -101,7 +101,7 @@ namespace UI.Nodes
 
         private void SelectGameType(GameType gameType)
         {
-            EventManager.GameType = gameType;
+            EventManager.GameManager.SetGameType(gameType);
         }
 
         public override void Draw(Drawer drawer, float parentAlpha)
@@ -121,9 +121,9 @@ namespace UI.Nodes
             }
             else
             {
-                if (EventManager.RaceManager.RaceType == EventTypes.Game && EventManager.GameType != null)
+                if (EventManager.RaceManager.RaceType == EventTypes.Game && EventManager.GameManager.GameType != null)
                 {
-                    Text = EventManager.GameType.ToString();
+                    Text = EventManager.GameManager.GameType.ToString();
                 }
                 else
                 {

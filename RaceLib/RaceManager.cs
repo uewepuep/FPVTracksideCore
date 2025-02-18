@@ -20,7 +20,6 @@ namespace RaceLib
         public Race CurrentRace { get; private set; }
 
         public event Action<Detection> OnSplitDetection;
-        public event Action<GamePoint> OnGamePointChanged;
 
         public event Lap.LapDelegate OnLapDetected;
         public event Action<IEnumerable<Lap>> OnLapSplit;
@@ -810,7 +809,7 @@ namespace RaceLib
                     ListeningFrequency listeningFrequency;
                     PilotChannel pilotChannel = race.PilotChannelsSafe.FirstOrDefault(r => r.Channel.Frequency == eventChannel.Frequency);
 
-                    Color color = EventManager.GetRaceChannelColor(eventChannel);
+                    Color color = EventManager.GetRaceChannelColor(race, eventChannel);
 
                     if (pilotChannel != null)
                     {
@@ -830,11 +829,11 @@ namespace RaceLib
             {
                 if (race.Type == EventTypes.CasualPractice)
                 {
-                    frequencies = EventManager.Channels.Select(c => new ListeningFrequency(c.Band.ToString(), c.Number, c.Frequency, 1, EventManager.GetRaceChannelColor(c))).ToList();
+                    frequencies = EventManager.Channels.Select(c => new ListeningFrequency(c.Band.ToString(), c.Number, c.Frequency, 1, EventManager.GetChannelColor(c))).ToList();
                 }
                 else
                 {
-                    frequencies = race.PilotChannelsSafe.Select(pc => new ListeningFrequency(pc.PilotName, pc.Pilot.ID, pc.Channel.Band.ToString(), pc.Channel.Number, pc.Channel.Frequency, pc.Pilot.TimingSensitivityPercent / 100.0f, EventManager.GetRaceChannelColor(pc.Channel))).ToList();
+                    frequencies = race.PilotChannelsSafe.Select(pc => new ListeningFrequency(pc.PilotName, pc.Pilot.ID, pc.Channel.Band.ToString(), pc.Channel.Number, pc.Channel.Frequency, pc.Pilot.TimingSensitivityPercent / 100.0f, EventManager.GetRaceChannelColor(race, pc.Channel))).ToList();
                 }
 
                 Logger.RaceLog.LogCall(this, race, "Frequencies dynamically assigned to receivers");
@@ -1259,6 +1258,25 @@ namespace RaceLib
             Pilot pilot = pilotChannel.Pilot;
             if (channel == null || pilot == null)
                 return;
+
+            if (RaceType == EventTypes.Game)
+            {
+                Detection d = new Detection(type, timingSystem, pilot, channel, time, 0, false, peak);
+
+                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                {
+                    db.Insert(d);
+                }
+
+                lock (currentRace.Detections)
+                {
+                    currentRace.Detections.Add(d);
+                }
+
+                EventManager.GameManager.OnDetection(d);
+                return;
+            }
+
 
             int lapCount = GetCurrentLapNumber(pilot);
             if (isLapEnd)
@@ -2093,59 +2111,5 @@ namespace RaceLib
             }
         }
 
-        public void AddGamePoint(Pilot pilot, Channel channel, DateTime time)
-        {
-            Race race = CurrentRace;
-            if (race != null)
-            {
-                GamePoint gp = race.AddGamePoint(pilot, channel, time);
-                OnGamePointChanged?.Invoke(gp);
-            }
-        }
-
-        public void RemoveGamePoint(Channel channel)
-        {
-            Race race = CurrentRace;
-            if (race != null)
-            {
-                race.RemoveGamePoint(channel);
-                OnGamePointChanged?.Invoke(null);
-            }
-        }
-
-        public int GetGamePoints(Func<GamePoint, bool> predicate)
-        {
-            Race race = CurrentRace;
-            if (race != null)
-            {
-                return race.GetValidGamePoints(predicate).Length;
-            }
-
-            return 0;
-        }
-
-        public int GetGamePoints(Channel channel)
-        {
-            return GetGamePoints(channel, DateTime.MaxValue);
-        }
-
-        public int GetGamePoints(Channel channel, DateTime time)
-        {
-            int team = EventManager.GetTeam(channel);
-
-            Channel[] channels = EventManager.Channels.Where(c => team == EventManager.GetTeam(c)).ToArray();
-
-            return GetGamePoints(gp => channels.Contains(gp.Channel) && gp.Time <= time);
-        }
-
-        public int GetTargetGamePoints(Pilot pilot)
-        {
-            if (EventManager.GameType == null)
-            {
-                return 0;
-            }
-
-            return EventManager.GameType.TargetPoints;
-        }
     }
 }

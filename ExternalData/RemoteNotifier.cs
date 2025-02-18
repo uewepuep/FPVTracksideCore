@@ -95,7 +95,7 @@ namespace ExternalData
 
         private void RaceManager_OnChannelCrashedOut(Channel channel, Pilot pilot, bool manual)
         {
-            Color color = eventManager.GetRaceChannelColor(channel);
+            Color color = eventManager.GetCurrentRaceChannelColor(channel);
             PilotCrashedOut pilotState = new PilotCrashedOut(pilot, channel, color, URL);
             pilotState.ManuallySet = manual;
             PutObject(pilotState);
@@ -124,7 +124,7 @@ namespace ExternalData
                 if (pc.Channel == null || pc.Pilot == null)
                     continue;
 
-                Color color = eventManager.GetRaceChannelColor(pc.Channel);
+                Color color = eventManager.GetRaceChannelColor(race, pc.Channel);
 
                 yield return new PilotState(pc, color);
             }
@@ -137,7 +137,7 @@ namespace ExternalData
 
         private void Detection(RaceLib.Detection det)
         {
-            Color color = eventManager.GetRaceChannelColor(det.Channel);
+            Color color = eventManager.GetCurrentRaceChannelColor(det.Channel);
 
             RaceLib.Race current = eventManager.RaceManager.CurrentRace;
             if (current == null)

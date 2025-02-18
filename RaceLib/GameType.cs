@@ -11,6 +11,7 @@ namespace RaceLib
     public enum TimingSystemPointMode
     {
         None = 0,
+        PointForDetection
     }
 
     public class GameType

@@ -570,7 +570,12 @@ namespace UI.Nodes.Rounds
             SharedChannels = shared.ToArray();
 
             pilotNode = new PilotChannelNode(EventRaceNode.EventManager, ToolTexture.Transparent, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA, Theme.Current.Rounds.Channel);
-            pilotNode.UseTeamColor = true;
+
+            if (raceNode.Race != null && raceNode.Race.Round != null && raceNode.Race.Round.EventType == EventTypes.Game)
+            {
+                pilotNode.UseTeamColor = true;
+            }
+
             pilotNode.SetPilotChannel(pilot, channel, shared);
             pilotNode.RelativeBounds = new RectangleF(0, 0, 0.85f, 1);
             pilotNode.PilotNameNode.TextNode.Alignment = RectangleAlignment.CenterLeft;

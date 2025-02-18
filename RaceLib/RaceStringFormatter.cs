@@ -46,9 +46,9 @@ namespace RaceLib
                 case RaceLib.EventTypes.Endurance: return Endurance;
                 case RaceLib.EventTypes.CasualPractice: return CasualPractice;
                 case RaceLib.EventTypes.Game:
-                    if (EventManager.GameType == null)
+                    if (EventManager.GameManager.GameType == null)
                         return Game;
-                    return EventManager.GameType.Name;
+                    return EventManager.GameManager.GameType.Name;
             }
             return "Unknown";
         }
