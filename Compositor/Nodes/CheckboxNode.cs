@@ -29,6 +29,21 @@ namespace Composition.Nodes
 
         public string TickFilename { get; set; }
         public string UnTickFilename { get; set; }
+        public string TickNoBoxFilename { get; set; }
+
+        private bool locked;
+        public bool Locked
+        {
+            get
+            {
+                return locked;
+            }
+            set
+            {
+                locked = value;
+                UpdateTexture();
+            }
+        }
 
         public CheckboxNode(Color hoverColor)
             :this()
@@ -38,6 +53,7 @@ namespace Composition.Nodes
 
         public CheckboxNode()
         {
+            TickNoBoxFilename = @"img/ticknobox.png";
             TickFilename = @"img/tick.png";
             UnTickFilename = @"img/untick.png";
             SetFilename(UnTickFilename);
@@ -48,7 +64,14 @@ namespace Composition.Nodes
             string newFilename;
             if (value)
             {
-                newFilename = TickFilename;
+                if (Locked)
+                {
+                    newFilename = TickNoBoxFilename;
+                }
+                else
+                {
+                    newFilename = TickFilename;
+                }
             }
             else
             {
@@ -65,7 +88,7 @@ namespace Composition.Nodes
 
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
         {
-            if (mouseInputEvent.ButtonState == ButtonStates.Pressed)
+            if (mouseInputEvent.ButtonState == ButtonStates.Pressed && !Locked)
             {
                 Value = !Value;
 

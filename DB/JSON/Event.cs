@@ -86,7 +86,7 @@ namespace DB.JSON
         public bool SyncWithMultiGP { get; set; }
         public bool GenerateHeatsMultiGP { get; set; }
         public bool VisibleOnline { get; set; }
-        public bool Locked { get; set; }
+        public bool RulesLocked { get; set; }
 
         public Guid Track { get; set; }
         public Sector[] Sectors { get; set; }

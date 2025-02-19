@@ -44,13 +44,6 @@ namespace UI.Nodes
 
         protected override PropertyNode<SimpleEvent> CreatePropertyNode(SimpleEvent obj, PropertyInfo pi)
         {
-            if (obj.ExternalID == default)
-            {
-                CategoryAttribute ca = pi.GetCustomAttribute<CategoryAttribute>();
-                if (ca != null && ca.Category == "MultiGP")
-                    return null;
-            }
-
             if (pi.Name == "ClubName")
             {
                 string name = pi.GetValue(obj) as string;
@@ -60,7 +53,7 @@ namespace UI.Nodes
 
                     if (obj.SyncWithMultiGP)
                     {
-                        property.Name.Text = "Chapter";
+                        property.NameNode.Text = "Chapter";
                     }
 
                     return property;
@@ -69,12 +62,6 @@ namespace UI.Nodes
                 {
                     return null;
                 }
-            }
-
-            string[] locked = new string[] { "EventType", "Laps", "RaceLength" };
-            if (obj.Locked && locked.Contains(pi.Name))
-            {
-                return new StaticTextPropertyNode<SimpleEvent>(obj, pi, TextColor);
             }
 
             if (pi.Name.Contains("FPVTrackside"))
@@ -109,17 +96,25 @@ namespace UI.Nodes
                 }
             }
 
+            PropertyNode<SimpleEvent> n = base.CreatePropertyNode(obj, pi);
 
-            if (pi.Name == "ExternalID")
+            if (obj.RulesLocked)
             {
-                int objv = (int)pi.GetValue(obj);
-                if (objv != 0)
+                CategoryAttribute cat = pi.GetCustomAttribute<CategoryAttribute>();
+                BoolPropertyNode<SimpleEvent> boolPropertyNode = n as BoolPropertyNode<SimpleEvent>;
+                TextPropertyNode<SimpleEvent> textPropertyNode = n as TextPropertyNode<SimpleEvent>;
+
+                if (cat != null && boolPropertyNode != null && cat.Category == "Cloud")
                 {
-                    return new StaticTextPropertyNode<SimpleEvent>(obj, pi, TextColor);
+                    boolPropertyNode.Locked = true;
+                }
+
+                if (cat != null && textPropertyNode != null && cat.Category == "Race Rules")
+                {
+                    textPropertyNode.Locked = true;
                 }
             }
 
-            PropertyNode<SimpleEvent> n = base.CreatePropertyNode(obj, pi);
             return n;
         }
 
@@ -230,6 +225,35 @@ namespace UI.Nodes
                 buttonContainer.AddChild(CloneButton);
             }
             itemName.Visible = false;
+        }
+
+        protected override PropertyNode<SimpleEvent> CreatePropertyNode(SimpleEvent obj, PropertyInfo pi)
+        {
+            if (pi.Name == "VisibleOnline")
+            {
+                if (!obj.SyncWithFPVTrackside)
+                    return null;
+            }
+
+            if (pi.Name == "RulesLocked")
+            {
+                if (obj.RulesLocked)
+                {
+                    if (obj.SyncWithMultiGP)
+                    {
+                        var bp = new BoolPropertyNode<SimpleEvent>(obj, pi, TextColor, ButtonHover);
+                        bp.Locked = true;
+                        bp.Name = "Rules locked";
+
+                        return bp;
+                    }
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            return base.CreatePropertyNode(obj, pi);
         }
 
         public void DisableButtons()

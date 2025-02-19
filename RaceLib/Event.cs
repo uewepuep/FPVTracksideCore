@@ -109,7 +109,7 @@ namespace RaceLib
 
         public string[] ChannelColors { get; set; }
         
-        public bool Locked { get; set; }
+        public bool RulesLocked { get; set; }
 
         public Track Track { get; set; }
 
@@ -221,6 +221,7 @@ namespace RaceLib
 
     public class SimpleEvent
     {
+        
         [Browsable(false)]
         public Guid ID { get; set; }
 
@@ -236,12 +237,19 @@ namespace RaceLib
         
         [Category("Event Info")]
         [DisplayName("Pilots Registered")]
+        [ReadOnly(true)]
 
         public int PilotsRegistered { get; set; }
 
         [Category("Event Info")]
         [DisplayName("Channels")]
+        [ReadOnly(true)]
         public string ChannelsString { get; set; }
+
+
+        [Category("Race Rules")]
+        public bool RulesLocked { get; set; }
+
 
         [Category("Race Rules")]
         public int Laps { get; set; }
@@ -290,10 +298,10 @@ namespace RaceLib
         [Category("Cloud")]
         [DisplayName("Generate heats on MultiGP.com (ZippyQ etc)")]
         public bool GenerateHeatsMultiGP { get; set; }
+       
+        
         [System.ComponentModel.Browsable(false)]
-        [Category("Cloud")]
         public int ExternalID { get; set; }
-
 
         [System.ComponentModel.Browsable(false)]
         public string Month
@@ -309,9 +317,6 @@ namespace RaceLib
         
         [Browsable(false)]
         public bool Enabled { get; set; }
-
-        [Browsable(false)]
-        public bool Locked { get; set; }
 
         public SimpleEvent(Guid id)
         {

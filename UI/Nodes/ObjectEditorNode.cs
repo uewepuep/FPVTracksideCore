@@ -850,7 +850,7 @@ namespace UI.Nodes
                 : base(obj, pi, textBackground, textColor, hover)
             {
                 Config = config;
-                Value.CanEdit = true;
+                TextValue.CanEdit = true;
                 OBSType = type;
             }
 

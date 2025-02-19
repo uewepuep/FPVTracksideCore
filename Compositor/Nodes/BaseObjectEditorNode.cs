@@ -890,7 +890,19 @@ namespace Composition.Nodes
 
     public class NamedPropertyNode<T> : PropertyNode<T>
     {
-        public TextNode Name { get; private set; }
+        public TextNode NameNode { get; private set; }
+
+        public string Name
+        {
+            get
+            {
+                return NameNode.Text;
+            }
+            set
+            {
+                NameNode.Text = value;  
+            }
+        }
 
         public NamedPropertyNode(T obj, PropertyInfo pi, Color textColor) : base(obj, pi)
         {
@@ -908,9 +920,9 @@ namespace Composition.Nodes
                 }
             }
 
-            Name = new TextNode(name, textColor);
-            Name.Alignment = RectangleAlignment.BottomLeft;
-            AddChild(Name);
+            NameNode = new TextNode(name, textColor);
+            NameNode.Alignment = RectangleAlignment.BottomLeft;
+            AddChild(NameNode);
         }
     }
 
@@ -945,19 +957,26 @@ namespace Composition.Nodes
         }
     }
 
-    public class StaticTextPropertyNode<T> : NamedPropertyNode<T>
+    public class CustomTextPropertyNode<T> : NamedPropertyNode<T>
     {
-        public TextNode Value { get; private set; }
+        public TextNode Value { get; protected set; }
 
-        public StaticTextPropertyNode(T obj, PropertyInfo pi, Color textColor)
+        public CustomTextPropertyNode(T obj, PropertyInfo pi, Color textColor, string text)
             : base(obj, pi, textColor)
         {
-            Value = new TextNode("", textColor);
+            Value = new TextNode(text, textColor);
             Value.Alignment = RectangleAlignment.BottomLeft;
             AddChild(Value);
 
             AlignHorizontally(0.01f, Children.ToArray());
+        }
+    }
 
+    public class StaticTextPropertyNode<T> : CustomTextPropertyNode<T>
+    {
+        public StaticTextPropertyNode(T obj, PropertyInfo pi, Color textColor)
+            : base(obj, pi, textColor, "")
+        {
             RequestUpdateFromObject();
         }
 
@@ -994,29 +1013,46 @@ namespace Composition.Nodes
 
     public class TextPropertyNode<T> : NamedPropertyNode<T>
     {
-        public TextEditNode Value { get; private set; }
+        public bool Locked
+        {
+            get
+            {
+                return !TextValue.CanEdit;
+            }
+            set
+            {
+                TextValue.CanEdit = !value;
+                textBackgroundNode.Visible = !value;
+            }
+        }
+
+        public TextEditNode TextValue { get; private set; }
+        private ColorNode textBackgroundNode;
 
         public TextPropertyNode(T obj, PropertyInfo pi, Color textBackground, Color textColor)
             : base(obj, pi, textColor)
         {
-            ColorNode textBackgroundNode = new ColorNode(textBackground);
-            AddChild(textBackgroundNode);
+            Node container = new Node();
+            AddChild(container);
 
-            Value = new TextEditNode("", textColor);
-            Value.TextChanged += SetValue;
-            Value.Alignment = RectangleAlignment.BottomLeft;
-            Value.OnTab += FocusNext;
-            Value.OnReturn += FocusNext;
+            textBackgroundNode = new ColorNode(textBackground);
+            container.AddChild(textBackgroundNode);
 
-            textBackgroundNode.AddChild(Value);
+            TextValue = new TextEditNode("", textColor);
+            TextValue.TextChanged += SetValue;
+            TextValue.Alignment = RectangleAlignment.BottomLeft;
+            TextValue.OnTab += FocusNext;
+            TextValue.OnReturn += FocusNext;
+
+            container.AddChild(TextValue);
 
             AlignHorizontally(0.01f, Children.ToArray());
 
-            Value.OnFocusChanged += (b) => 
+            TextValue.OnFocusChanged += (b) => 
             {
                 if (!b)
                 {
-                    SetValue(Value.Text);
+                    SetValue(TextValue.Text);
                     RequestUpdateFromObject();
                 }
             };
@@ -1030,13 +1066,13 @@ namespace Composition.Nodes
 
             if (value != null)
             {
-                Value.Text = ValueToString(value);
+                TextValue.Text = ValueToString(value);
             }
         }
 
         public override bool Focus()
         {
-            Value.HasFocus = true;
+            TextValue.HasFocus = true;
             return true;
         }
 
@@ -1109,10 +1145,10 @@ namespace Composition.Nodes
             FileChooser = new TextButtonNode("Choose", background, hover, textColor);
             AddChild(FileChooser);
 
-            RectangleF valueBounds = Value.RelativeBounds;
+            RectangleF valueBounds = TextValue.RelativeBounds;
             float right = valueBounds.Right;
             valueBounds.Width *= 0.83f;
-            Value.RelativeBounds = valueBounds;
+            TextValue.RelativeBounds = valueBounds;
 
             float start = valueBounds.Right + 0.02f;
 
@@ -1137,7 +1173,7 @@ namespace Composition.Nodes
         public override void UpdateFromObject()
         {
             object value = PropertyInfo.GetValue(Object, null);
-            Value.Text = ValueToString(value);
+            TextValue.Text = ValueToString(value);
         }
 
         public override string ValueToString(object value)
@@ -1212,7 +1248,7 @@ namespace Composition.Nodes
             if (value != null)
             {
                 string text = value.ToString();
-                Value.Text = text + "%";
+                TextValue.Text = text + "%";
             }
         }
 
@@ -1241,7 +1277,7 @@ namespace Composition.Nodes
         public override void UpdateFromObject()
         {
             int[] value = (int[])PropertyInfo.GetValue(Object, null);
-            Value.Text = string.Join(", ", value.Select(i => i.ToString()));
+            TextValue.Text = string.Join(", ", value.Select(i => i.ToString()));
         }
 
 
@@ -1408,14 +1444,14 @@ namespace Composition.Nodes
         public ListPropertyNode(T obj, PropertyInfo pi, Color textBackground, Color textColor, Color hover, System.Array options = null)
         : base(obj, pi, textBackground, textColor)
         {
-            Value.CanEdit = false;
+            TextValue.CanEdit = false;
 
             if (options != null && options.Length > 0)
             {
                 SetOptions(options.OfType<object>());
             }
 
-            Value.AddChild(new HoverNode(hover));
+            TextValue.AddChild(new HoverNode(hover));
         }
 
         //public ListPropertyNode(T obj, PropertyInfo pi, Color textColor, Color hover, System.Array options = null)
@@ -1435,7 +1471,7 @@ namespace Composition.Nodes
 
             if (value != null)
             {
-                Value.Text = ValueToString(value);
+                TextValue.Text = ValueToString(value);
             }
         }
 
@@ -1452,7 +1488,7 @@ namespace Composition.Nodes
             try
             {
                 base.SetValue(value);
-                Value.Text = ValueToString(value);
+                TextValue.Text = ValueToString(value);
 
                 onChanged?.Invoke(value);
             }
@@ -1476,10 +1512,10 @@ namespace Composition.Nodes
                 mm.AddItem(ValueToString(value), () => { SetValue(value); });
             }
 
-            Point screenPosition = Value.GetScreenPosition();
+            Point screenPosition = TextValue.GetScreenPosition();
 
             // Drop from the bottom..
-            screenPosition.Y += Value.Bounds.Height;
+            screenPosition.Y += TextValue.Bounds.Height;
 
             mm.Show(screenPosition);
         }
@@ -1544,6 +1580,18 @@ namespace Composition.Nodes
     {
         private CheckboxNode checkbox;
 
+        public bool Locked
+        {
+            get
+            {
+                return checkbox.Locked;
+            }
+            set
+            {
+                checkbox.Locked = value;
+            }
+        }
+
         public BoolPropertyNode(T obj, PropertyInfo pi, Color textColor, Color hoverColor)
             : base(obj, pi, textColor)
         {
@@ -1595,7 +1643,7 @@ namespace Composition.Nodes
         public ArrayContainsPropertyNode(T obj, PropertyInfo pi, V value, Color textColor, Color hoverColor) 
             : base(obj, pi, textColor)
         {
-            Name.Text = value.ToString();
+            NameNode.Text = value.ToString();
 
             Value = value;
 

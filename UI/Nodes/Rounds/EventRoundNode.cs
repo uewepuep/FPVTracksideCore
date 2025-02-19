@@ -268,7 +268,7 @@ namespace UI.Nodes.Rounds
 
             mm.AddItem("Edit Round", EditRound);
 
-            if (!EventManager.Event.Locked)
+            if (!EventManager.Event.RulesLocked)
             {
                 MouseMenu typeMenu = mm.AddSubmenu("Set Type");
 

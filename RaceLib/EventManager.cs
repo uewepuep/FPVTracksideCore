@@ -192,7 +192,7 @@ namespace RaceLib
 
         public void SetEventLaps(int laps)
         {
-            if (Event.Locked)
+            if (Event.RulesLocked)
                 return;
 
             using (IDatabase db = DatabaseFactory.Open(EventId))
