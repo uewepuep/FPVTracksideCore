@@ -72,23 +72,22 @@ namespace UI.Nodes
                 return;
             }
 
+            int leadLapPlus, maxLap;
+
             switch (EventManager.RaceManager.RaceType)
             {
                 case EventTypes.Freestyle:
                 case EventTypes.Practice:
-                case EventTypes.AggregateLaps:
+                case EventTypes.Game:
                     Text = "";
+                    break;
+                case EventTypes.AggregateLaps:
+                    GetLeadLapPlusMaxLap(out leadLapPlus, out maxLap);
+                    Text = "Lap " + leadLapPlus;
                     break;
 
                 case EventTypes.Race:
-                    int leadLapPlus = EventManager.RaceManager.LeadLap + 1;
-                    int maxLap = EventManager.Event.Laps;
-                    Race current = EventManager.RaceManager.CurrentRace;
-                    if (current != null)
-                    {
-                        maxLap = current.TargetLaps;
-                    }
-
+                    GetLeadLapPlusMaxLap(out leadLapPlus, out maxLap);
                     int lap = Math.Min(leadLapPlus, maxLap);
 
                     if (lap >= maxLap)
@@ -108,6 +107,17 @@ namespace UI.Nodes
                         Text = "Best " + EventManager.Event.Laps + " laps";
                     }
                     break;
+            }
+        }
+
+        private void GetLeadLapPlusMaxLap(out int leadLap, out int maxLap)
+        {
+            leadLap = EventManager.RaceManager.LeadLap + 1;
+            maxLap = EventManager.Event.Laps;
+            Race current = EventManager.RaceManager.CurrentRace;
+            if (current != null)
+            {
+                maxLap = current.TargetLaps;
             }
         }
 
