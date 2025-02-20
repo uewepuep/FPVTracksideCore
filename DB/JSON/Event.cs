@@ -144,9 +144,12 @@ namespace DB.JSON
             RaceLib.Event ev = base.GetRaceLibObject(database);
             ev.Channels = Channels.Convert<RaceLib.Channel>(database).ToArray();
 
-            for (int i = 0; i < ChannelDisplayNames.Length && i < ev.Channels.Length; i++)
+            if (ChannelDisplayNames != null)
             {
-                ev.Channels[i].DisplayName = ChannelDisplayNames[i];
+                for (int i = 0; i < ChannelDisplayNames.Length && i < ev.Channels.Length; i++)
+                {
+                    ev.Channels[i].DisplayName = ChannelDisplayNames[i];
+                }
             }
 
             ev.Club = Club.Convert<RaceLib.Club>(database);

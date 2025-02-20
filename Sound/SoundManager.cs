@@ -399,8 +399,17 @@ namespace Sound
                     pilotChannelParameters.Priority = 1000;
                     pilotChannelParameters.SecondsExpiry = 60;
                     pilotChannelParameters.Add(SpeechParameters.Types.pilot, pc.Pilot.Phonetic);
-                    pilotChannelParameters.Add(SpeechParameters.Types.band, pc.Channel.GetSpokenBandLetter());
-                    pilotChannelParameters.Add(SpeechParameters.Types.channel, pc.Channel.Number);
+
+                    if (pc.Channel.UIDisplayName != pc.Channel.GetBandChannelText())
+                    {
+                        pilotChannelParameters.Add(SpeechParameters.Types.band, "");
+                        pilotChannelParameters.Add(SpeechParameters.Types.channel, pc.Channel.UIDisplayName);
+                    }
+                    else
+                    {
+                        pilotChannelParameters.Add(SpeechParameters.Types.band, pc.Channel.GetSpokenBandLetter());
+                        pilotChannelParameters.Add(SpeechParameters.Types.channel, pc.Channel.Number);
+                    }
 
                     if (backgroundQueueStopping)
                         break;
