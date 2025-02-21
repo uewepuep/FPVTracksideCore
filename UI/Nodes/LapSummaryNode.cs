@@ -78,7 +78,6 @@ namespace UI.Nodes
             {
                 case EventTypes.Freestyle:
                 case EventTypes.Practice:
-                case EventTypes.Game:
                     Text = "";
                     break;
                 case EventTypes.AggregateLaps:
@@ -105,6 +104,17 @@ namespace UI.Nodes
                     else
                     {
                         Text = "Best " + EventManager.Event.Laps + " laps";
+                    }
+                    break;
+                case EventTypes.Game:
+
+                    if (EventManager.GameManager != null && EventManager.GameManager.GameType != null)
+                    {
+                        Text = "Target " + EventManager.GameManager.GameType.TargetPoints.ToString() + " pts";
+                    }
+                    else
+                    {
+                        Text = "";
                     }
                     break;
             }

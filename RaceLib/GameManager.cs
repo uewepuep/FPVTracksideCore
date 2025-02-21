@@ -30,6 +30,7 @@ namespace RaceLib
 
         public void SetGameType(GameType gameType)
         {
+            EventManager.SetEventType(EventTypes.Game);
             GameType = gameType;
         }
 

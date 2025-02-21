@@ -276,9 +276,32 @@ namespace UI.Nodes.Rounds
                 {
                     EventTypes typee = t;
 
-                    string typeString = RaceStringFormatter.Instance.GetEventTypeText(typee);
+                    if (typee == EventTypes.Game)
+                    {
+                        try
+                        {
 
-                    typeMenu.AddItem(typeString, () => { SetType(typee, Round); });
+                            GameType[] gameTypes = GameType.Read(EventManager.Profile);
+                            if (gameTypes.Any())
+                            {
+                                var subMenu = typeMenu.AddSubmenu("Game");
+                                foreach (GameType gameType in gameTypes)
+                                {
+                                    var gt = gameType;
+                                    subMenu.AddItem(gameType.Name, () => { SetGameType(gt); });
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.UI.LogException(this, e);
+                        }
+                    }
+                    else
+                    {
+                        string typeString = RaceStringFormatter.Instance.GetEventTypeText(typee);
+                        typeMenu.AddItem(typeString, () => { SetType(typee, Round); });
+                    }
                 }
             }
 
@@ -357,6 +380,13 @@ namespace UI.Nodes.Rounds
         {
             SetRaceTypes?.Invoke(type, Round);
             contentContainer.ClearDisposeChildren();
+            Refresh(true);
+        }
+
+        private void SetGameType(GameType gameType)
+        {
+            SetRaceTypes?.Invoke(EventTypes.Game, Round);
+            EventManager.GameManager.SetGameType(gameType);
             Refresh(true);
         }
 
