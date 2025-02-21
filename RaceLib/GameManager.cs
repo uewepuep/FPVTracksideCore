@@ -5,13 +5,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Tools;
 
 namespace RaceLib
 {
     public class GameManager
     {
         public GameType GameType { get; private set; }
-        
+
+        public GameType[] GameTypes { get; private set; }
+
         public EventManager EventManager { get; private set; }
         public event Action<GamePoint> OnGamePointChanged;
 
@@ -26,11 +29,27 @@ namespace RaceLib
         public GameManager(EventManager eventManager) 
         {
             EventManager = eventManager;
+            eventManager.RaceManager.OnRaceChanged += RaceManager_OnRaceChanged;
+        }
+
+        private void RaceManager_OnRaceChanged(Race race)
+        {
+            if (race == null)
+                return;
+
+            Round round = race.Round;
+            if (round == null)
+                return;
+
+            if (string.IsNullOrEmpty(round.GameTypeName))
+                return;
+
+            GameType gt = GetByName(round.GameTypeName);
+            SetGameType(gt);
         }
 
         public void SetGameType(GameType gameType)
         {
-            EventManager.SetEventType(EventTypes.Game);
             GameType = gameType;
         }
 
@@ -52,7 +71,12 @@ namespace RaceLib
 
             Channel[] group = EventManager.Channels.GetChannelGroup(team);
 
-            return EventManager.GetChannelColor(group.FirstOrDefault());
+            if (group != null)
+            {
+                return EventManager.GetChannelColor(group.FirstOrDefault());
+            }
+
+            return EventManager.GetChannelColor(channel);
         }
         public void AddGamePoint(Pilot pilot, Channel channel, DateTime time)
         {
@@ -125,6 +149,29 @@ namespace RaceLib
                     AddGamePoint(d.Pilot, d.Channel, d.Time);
                     break;
             }
+        }
+
+        public void LoadGameTypes(Profile profile)
+        {
+            GameTypes = GameType.Read(profile);
+        }
+
+        public bool SetByName(string name)
+        {
+            GameType gt = GetByName(name);
+
+            SetGameType(gt);
+
+            return gt != null;
+        }
+
+        public GameType GetByName(string name)
+        {
+            if (!string.IsNullOrEmpty(name))
+            {
+                return GameTypes.FirstOrDefault(gt => gt.Name == name);
+            }
+            return null;
         }
     }
 }

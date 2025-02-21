@@ -387,6 +387,20 @@ namespace UI.Nodes.Rounds
         {
             SetRaceTypes?.Invoke(EventTypes.Game, Round);
             EventManager.GameManager.SetGameType(gameType);
+
+            if (gameType != null)
+            {
+                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                {
+                    Round.GameTypeName = gameType.Name;
+                    db.Update(Round);
+                }
+            }
+            else
+            {
+                Round.GameTypeName = "";
+            }
+            
             Refresh(true);
         }
 

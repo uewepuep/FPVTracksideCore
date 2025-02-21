@@ -300,6 +300,13 @@ namespace RaceLib
                     round = new Round();
                     round.RoundNumber = roundNumber;
                     round.EventType = eventType;
+                    
+                    if (eventType == EventTypes.Game)
+                    {
+                        GameType gameType = EventManager.GameManager.GameType;
+                        if (gameType != null)
+                            round.GameTypeName = gameType.Name;
+                    }
 
                     if (Event.Rounds.Any())
                     {

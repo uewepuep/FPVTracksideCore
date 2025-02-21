@@ -119,7 +119,7 @@ namespace RaceLib
 
         public DateTime[] Flags { get; set; }
 
-        public int GameTypeIndex { get; set; }
+        public string GameTypeName { get; set; }
 
         public Event()
         {

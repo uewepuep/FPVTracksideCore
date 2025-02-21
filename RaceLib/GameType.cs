@@ -17,7 +17,6 @@ namespace RaceLib
     public class GameType
     {
         public string Name { get; set; }
-        public string Description { get; set; }
 
         public TimingSystemPointMode TimingSystemPointMode { get; set; }
 
@@ -27,8 +26,6 @@ namespace RaceLib
         public GameType() 
         {
             Name = "New Game Type";
-            Description = "";
-
             TimingSystemPointMode = TimingSystemPointMode.None;
             PilotsPerTeam = 1;
             TargetPoints = 5;

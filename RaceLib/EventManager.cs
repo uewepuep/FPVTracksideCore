@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Timing;
@@ -206,11 +207,21 @@ namespace RaceLib
             OnEventChange?.Invoke();
         }
 
-        public void SetEventType(EventTypes type)
+        public void SetEventType(EventTypes type, GameType gameType = null)
         {
             using (IDatabase db = DatabaseFactory.Open(EventId))
             {
                 Event.EventType = type;
+
+                if (gameType != null)
+                {
+                    Event.GameTypeName = gameType.Name;
+                }
+                else
+                {
+                    Event.GameTypeName = null;
+                }
+
                 db.Update(Event);
 
                 Race current = RaceManager.CurrentRace;
@@ -251,12 +262,10 @@ namespace RaceLib
 
             workQueue.Enqueue(workSet, "Loading Game Types", () =>
             {
-                int index = Event.GameTypeIndex;
-                GameType[] gameTypes = GameType.Read(Profile);
-                if (gameTypes.Length > index)
-                {
-                    GameManager.SetGameType(gameTypes[index]);
-                }
+                GameManager.LoadGameTypes(Profile);
+                
+                GameType gameType = GameManager.GetByName(Event.GameTypeName);
+                GameManager.SetGameType(gameType);
             });
 
             workQueue.Enqueue(workSet, "Finding Profile Pictures", () =>

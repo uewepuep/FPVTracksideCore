@@ -32,6 +32,8 @@ namespace DB
 
         public DateTime ScheduledStart { get; set; }
 
+        public string GameTypeName { get; set; }
+
         public Round() { }
 
         public Round(RaceLib.Round obj)

@@ -64,6 +64,10 @@ namespace RaceLib
             }
         }
 
+        [Category("Advanced")]
+        public string GameTypeName { get; set; }
+
+
         public Round()
         {
             Order = -1;

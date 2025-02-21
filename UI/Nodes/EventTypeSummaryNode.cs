@@ -101,6 +101,7 @@ namespace UI.Nodes
 
         private void SelectGameType(GameType gameType)
         {
+            EventManager.SetEventType(EventTypes.Game, gameType);
             EventManager.GameManager.SetGameType(gameType);
         }
 

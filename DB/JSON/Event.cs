@@ -94,6 +94,8 @@ namespace DB.JSON
         public int PilotsRegistered { get; set; }
         public DateTime[] Flags { get; set; }
 
+        public string GameTypeName { get; set; }
+
         public Event()
         {
         }
