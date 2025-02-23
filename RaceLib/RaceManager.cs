@@ -310,10 +310,13 @@ namespace RaceLib
 
         public Race GetCreateRace(Round round, int number)
         {
+            if (round == null)
+                return null;
+
             Race race;
             lock (races)
             {
-                race = races.FirstOrDefault(ra => ra.Round.EventType == round.EventType && ra.RoundNumber == round.RoundNumber && ra.RaceNumber == number && ra.Valid);
+                race = races.FirstOrDefault(ra => ra.Round != null && ra.Round.EventType == round.EventType && ra.RoundNumber == round.RoundNumber && ra.RaceNumber == number && ra.Valid);
                 if (race != null)
                 {
                     return race;
@@ -930,6 +933,10 @@ namespace RaceLib
         {
             Logger.RaceLog.LogCall(this, CurrentRace);
 
+            if (race == null)
+                return; 
+
+
             race.Event = EventManager.Event;
             race.PrimaryTimingSystemLocation = EventManager.Event.PrimaryTimingSystemLocation;
 
@@ -984,6 +991,9 @@ namespace RaceLib
         public void LoadRaces(IEnumerable<Race> load)
         {
             Logger.RaceLog.LogCall(this);
+
+            // no nulls.
+            load = load.Where(r => r != null);
 
             if (load.Any())
             {

@@ -206,6 +206,11 @@ namespace RaceLib
         {
             get
             {
+                if (Round == null || Valid == false)
+                {
+                    return 100000;
+                }
+
                 return Round.Order + RaceNumber;
             }
         }
