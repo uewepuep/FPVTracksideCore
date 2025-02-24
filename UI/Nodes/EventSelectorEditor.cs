@@ -225,6 +225,8 @@ namespace UI.Nodes
                 buttonContainer.AddChild(CloneButton);
             }
             itemName.Visible = false;
+
+            AlignVisibleButtons();
         }
 
         protected override PropertyNode<SimpleEvent> CreatePropertyNode(SimpleEvent obj, PropertyInfo pi)
@@ -319,10 +321,9 @@ namespace UI.Nodes
             mouseMenu.TopToBottom = false;
 
             SimpleEvent[] all = GetEvents(Profile);
+            IEnumerable<SimpleEvent> disabled = all.Where(e => !e.Enabled).OrderByDescending(e => e.Start);
 
-            IEnumerable<SimpleEvent> notIn = all.Except(Objects);
-
-            foreach (var obj in notIn)
+            foreach (var obj in disabled)
             {
                 mouseMenu.AddItem(obj.Name, () => { Recover(obj); });
             }
@@ -333,11 +334,9 @@ namespace UI.Nodes
         private void Recover(SimpleEvent recover)
         {
             recover.Enabled = true;
+            ConvertSaveEvent(recover);
 
-            List<SimpleEvent> elist = Objects.ToList();
-            elist.Add(recover);
-
-            SetObjects(elist, true, true);
+            SetObjects(GetEvents(Profile), true, true);
         }
 
         protected SimpleEvent[] GetEvents(Profile profile)
@@ -345,7 +344,7 @@ namespace UI.Nodes
             SimpleEvent[] events;
             using (IDatabase db = DatabaseFactory.Open(Guid.Empty))
             {
-                events = db.GetSimpleEvents().Where(r => r.Enabled).ToArray();
+                events = db.GetSimpleEvents().ToArray();
 
                 Club club = db.All<Club>().FirstOrDefault();
                 if (club == null)
@@ -361,6 +360,20 @@ namespace UI.Nodes
                 }
             }
             return events;
+        }
+
+        public override void SetObjects(IEnumerable<SimpleEvent> toEdit, bool addRemove = false, bool cancelButton = true)
+        {
+            IEnumerable<SimpleEvent> enabled = toEdit.Where(e => e.Enabled);
+            IEnumerable<SimpleEvent> disabled = toEdit.Where(e => !e.Enabled);
+
+            base.SetObjects(enabled, addRemove, cancelButton);
+
+            if (RecoverButton != null)
+            {
+                RecoverButton.Visible = disabled.Any();
+                AlignVisibleButtons();
+            }
         }
 
         private void EventEditor_OnOK(BaseObjectEditorNode<SimpleEvent> obj)

@@ -614,14 +614,7 @@ namespace Composition.Nodes
         {
             if (trackChanges)
             {
-                Change existing = changes.FirstOrDefault(c => c.PropertyInfo == newChange.PropertyInfo && c.Object == newChange.Object);
-
-                if (existing != null)
-                {
-                    changes.Remove(existing);
-                }
-
-                changes.Add(newChange);
+                AddChange(newChange);
             }
 
             foreach (ItemNode<T> text in multiItemBox.ChildrenOfType)
@@ -636,6 +629,18 @@ namespace Composition.Nodes
             multiItemBox.RequestLayout();
 
             UpdateCategoryVisibilities();
+        }
+
+        public void AddChange(Change newChange)
+        {
+            Change existing = changes.FirstOrDefault(c => c.PropertyInfo == newChange.PropertyInfo && c.Object == newChange.Object);
+
+            if (existing != null)
+            {
+                changes.Remove(existing);
+            }
+
+            changes.Add(newChange);
         }
 
         protected virtual string ItemToString(T item)
