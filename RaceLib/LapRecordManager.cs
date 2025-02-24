@@ -501,6 +501,9 @@ namespace RaceLib
 
         public static IEnumerable<Lap> GetBestRaceTime(IEnumerable<Race> races, Pilot pilot, int lapCount)
         {
+            if (lapCount == 0 || !races.Any())
+                return new Lap[0];
+
             Lap[] best = new Lap[0];
             foreach (Race race in races.Where(r => r.HasPilot(pilot)))
             {
@@ -508,7 +511,7 @@ namespace RaceLib
 
                 IEnumerable<Lap> bestInRace = null;
 
-                if (laps.Length >= lapCount)
+                if (laps.Length >= lapCount && laps.Any())
                 {
                     if (laps.First().Detection.IsHoleshot)
                     {
