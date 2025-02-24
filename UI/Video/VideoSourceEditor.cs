@@ -58,6 +58,7 @@ namespace UI.Video
 
             heading.Text = "Video Input Settings";
             cancelButton.Visible = true;
+            trackChanges = true;
             CanReOrder = false;
 
             SetObjects(videoManager.VideoConfigs, true);

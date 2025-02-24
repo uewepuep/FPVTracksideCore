@@ -60,7 +60,17 @@ namespace Composition.Nodes
 
         public virtual bool GroupItems { get { return false; } }
 
+        protected bool trackChanges;
+
         private List<Change> changes;
+
+        public Change[] Changes
+        {
+            get
+            {
+                return changes.ToArray();
+            }
+        }
 
         public bool NeedsRestart { get { return changes.Any(c => c.NeedsRestart); } }
 
@@ -247,9 +257,14 @@ namespace Composition.Nodes
                 removeButton.Visible = false;
             }
 
-            if (!cancelButton)
+            if (cancelButton)
+            {
+                trackChanges = true;
+            }
+            else
             {
                 this.cancelButton.Visible = false;
+                trackChanges = false;
             }
 
             SetSelected(Objects.FirstOrDefault());
@@ -597,7 +612,7 @@ namespace Composition.Nodes
 
         protected virtual void ChildValueChanged(Change newChange)
         {
-            if (cancelButton.Visible)
+            if (trackChanges)
             {
                 Change existing = changes.FirstOrDefault(c => c.PropertyInfo == newChange.PropertyInfo && c.Object == newChange.Object);
 

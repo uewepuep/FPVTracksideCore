@@ -375,14 +375,16 @@ namespace UI.Nodes
 
         public void SaveChanges()
         {
-            foreach (var o in Objects)
-            {
-                o.Enabled = true;
-            }
+            Change[] changes = Changes;
 
-            foreach (SimpleEvent simpleEvent in Objects)
+            foreach (Change change in changes)
             {
-                ConvertSaveEvent(simpleEvent);
+                SimpleEvent simpleEvent = change.Object as SimpleEvent;
+                if (simpleEvent != null)
+                {
+                    simpleEvent.Enabled = true;
+                    ConvertSaveEvent(simpleEvent);
+                }
             }
         }
 
