@@ -31,7 +31,8 @@ namespace Sound
             racetime,
             s,
             speedunits,
-            speed
+            speed,
+            points
         }
 
         Dictionary<Types, string> parameters;

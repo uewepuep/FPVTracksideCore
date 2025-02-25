@@ -416,5 +416,15 @@ namespace RaceLib
                 }
             }
         }
+
+        public static string Names(this Pilot[] pilots)
+        {
+            return string.Join(", ", pilots.Select(p => p.Name));
+        }
+
+        public static string Phonetic(this Pilot[] pilots)
+        {
+            return string.Join(", ", pilots.Select(p => p.Phonetic));
+        }
     }
 }

@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using RaceLib.Game;
 using Timing;
@@ -158,7 +159,7 @@ namespace RaceLib
 
         
         [Category("Pilots")]
-        public string PilotNames { get { return string.Join(", ", Pilots.Select(p => p.Name)); } }
+        public string PilotNames { get { return Pilots.Names(); } }
 
         
         [Category("Pilots")]
@@ -971,6 +972,14 @@ namespace RaceLib
                 {
                     GamePoints.Remove(gp);
                 }
+            }
+        }
+
+        public void ClearGamePoints()
+        {
+            lock (GamePoints)
+            {
+                GamePoints.Clear();
             }
         }
 

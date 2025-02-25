@@ -11,7 +11,8 @@ namespace RaceLib.Game
     public enum TimingSystemPointMode
     {
         None = 0,
-        PointForDetection
+        PointForDetection,
+        CaptureTheTimer
     }
 
     public class GameType
@@ -23,12 +24,15 @@ namespace RaceLib.Game
         public int PilotsPerTeam { get; set; }
         public int TargetPoints { get; set; }
 
+        public int[] PointsRemainingWarning { get; set; }
+
         public GameType()
         {
             Name = "New Game Type";
             TimingSystemPointMode = TimingSystemPointMode.None;
             PilotsPerTeam = 1;
             TargetPoints = 5;
+            PointsRemainingWarning = new int[] { 100, 50, 10, 5, 4, 3, 2, 1 };
         }
 
         public override string ToString()

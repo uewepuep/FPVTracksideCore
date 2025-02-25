@@ -2,6 +2,7 @@
 using RaceLib;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Channels;
@@ -18,6 +19,8 @@ namespace RaceLib.Game
 
         public EventManager EventManager { get; private set; }
         public event Action<GamePoint> OnGamePointChanged;
+        public event Action<Pilot[], Team, int> OnGamePointsRemaining;
+        public event Action<Pilot[], Team> OnGamePointsReached;
 
         public Race CurrentRace
         {
@@ -54,23 +57,33 @@ namespace RaceLib.Game
             GameType = gameType;
         }
 
-        public int GetTeam(Channel channel)
+        public Team GetTeam(Channel channel)
         {
             if (GameType == null || GameType.PilotsPerTeam == 0)
-                return -1;
+                return Team.None;
 
             int index = EventManager.Channels.GetChannelGroupIndex(channel);
 
             index = index / GameType.PilotsPerTeam;
 
-            return index;
+            return (Team)index;
+        }
+
+        public IEnumerable<Team> GetTeams()
+        {
+            int index = 0;
+            foreach (var group in EventManager.Channels.GetChannelGroups())
+            {
+                yield return (Team)index;
+                index++;
+            }
         }
 
         public Color GetTeamColor(Channel channel)
         {
-            int team = GetTeam(channel);
+            Team team = GetTeam(channel);
 
-            Channel[] group = EventManager.Channels.GetChannelGroup(team);
+            Channel[] group = EventManager.Channels.GetChannelGroup((int)team);
 
             if (group != null)
             {
@@ -79,13 +92,35 @@ namespace RaceLib.Game
 
             return EventManager.GetChannelColor(channel);
         }
+
         public void AddGamePoint(Pilot pilot, Channel channel, DateTime time)
         {
             Race race = CurrentRace;
-            if (race != null)
+            if (race == null)
+                return;
+
+            GamePoint gp = race.AddGamePoint(pilot, channel, time);
+            OnGamePointChanged?.Invoke(gp);
+
+            int totalPoints = GetCurrentGamePoints(channel);
+            int remaining = Math.Max(0, GameType.TargetPoints - totalPoints);
+
+            if (GameType != null && GameType.PointsRemainingWarning != null &&
+                GameType.PointsRemainingWarning.Contains(remaining) && OnGamePointsRemaining != null)
             {
-                GamePoint gp = race.AddGamePoint(pilot, channel, time);
-                OnGamePointChanged?.Invoke(gp);
+                Team t = GetTeam(channel);
+
+                Pilot[] pilots = GetPilots(t).ToArray();
+
+                OnGamePointsRemaining?.Invoke(pilots, t, remaining);
+            }
+
+            if (remaining == 0 && GetTeams().Count(t => HasWon(t)) == 1)
+            {
+                Team t = GetTeam(channel);
+
+                Pilot[] pilots = GetPilots(t).ToArray();
+                OnGamePointsReached(pilots, t);
             }
         }
 
@@ -110,6 +145,14 @@ namespace RaceLib.Game
             return 0;
         }
 
+        public bool HasWon(Team team)
+        {
+            if (GameType == null)
+                return false;
+
+            return GetGamePoints(team) > GameType.TargetPoints;
+        }
+
         public int GetCurrentGamePoints(Channel channel)
         {
             return GetGamePoints(CurrentRace, channel);
@@ -122,11 +165,31 @@ namespace RaceLib.Game
 
         public int GetGamePoints(Race race, Channel channel, DateTime time)
         {
-            int team = GetTeam(channel);
+            Team team = GetTeam(channel);
 
             Channel[] channels = EventManager.Channels.Where(c => team == GetTeam(c)).ToArray();
 
             return GetGamePoints(race, gp => channels.Contains(gp.Channel) && gp.Time <= time);
+        }
+
+        public int GetGamePoints(Team team)
+        {
+            Channel[] channels = EventManager.Channels.Where(c => team == GetTeam(c)).ToArray();
+
+            return GetGamePoints(CurrentRace, gp => channels.Contains(gp.Channel));
+        }
+
+        public IEnumerable<Pilot> GetPilots(Team t)
+        {
+            IEnumerable<Channel> channels = EventManager.Channels.Where(c => t == GetTeam(c));
+            foreach (Channel channel in channels)
+            {
+                Pilot pilot = EventManager.RaceManager.GetPilot(channel);
+                if (pilot != null)
+                {
+                    yield return pilot;
+                }
+            }
         }
 
         public int GetTargetGamePoints(Pilot pilot)
@@ -173,6 +236,11 @@ namespace RaceLib.Game
                 return GameTypes.FirstOrDefault(gt => gt.Name == name);
             }
             return null;
+        }
+
+        public void ClearRace(Race race)
+        {
+            race.GamePoints.Clear();
         }
     }
 }

@@ -1194,6 +1194,7 @@ namespace RaceLib
                 }
                 EventManager.LapRecordManager.ResetRace(race);
                 EventManager.ResultManager.ClearPoints(race);
+                EventManager.GameManager.ClearRace(race);
 
                 OnRaceReset?.Invoke(race);
             }

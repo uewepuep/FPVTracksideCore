@@ -67,6 +67,9 @@ namespace Sound
         DetectionSplit,
 
         GamePoint,
+        GamePointsRemaining,
+        GameEnded,
+        GameWins,
 
         PilotsEnableVideo,
         VideoDelayingRace,

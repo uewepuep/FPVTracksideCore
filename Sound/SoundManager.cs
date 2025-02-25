@@ -122,13 +122,18 @@ namespace Sound
                 eventManager.RaceManager.OnRaceEnd += RaceOver;
                 eventManager.RaceManager.OnLapDetected += Lap;
                 eventManager.RaceManager.OnSplitDetection += Sector;
-                eventManager.LapRecordManager.OnNewOveralBest += OnNewRecord;
                 eventManager.RaceManager.OnRaceChanged += OnRaceChanged;
                 eventManager.RaceManager.OnRaceCancelled += RaceManager_OnRaceCancelled;
-                eventManager.SpeedRecordManager.OnSpeedCalculated += OnSpeed;
                 eventManager.RaceManager.OnSplitDetection += OnSplit;
-                eventManager.GameManager.OnGamePointChanged += RaceManager_OnGamePoint;
                 eventManager.RaceManager.OnRaceResumed += RaceManager_OnRaceResumed;
+
+                eventManager.LapRecordManager.OnNewOveralBest += OnNewRecord;
+                eventManager.SpeedRecordManager.OnSpeedCalculated += OnSpeed;
+
+                eventManager.GameManager.OnGamePointChanged += OnGamePoint;
+                eventManager.GameManager.OnGamePointsReached += OnGamePointsReached;
+                eventManager.GameManager.OnGamePointsRemaining += OnGamePointsRemaining;
+
             }
 
             PilotAnnounceTime = TimeSpan.Zero;
@@ -153,13 +158,18 @@ namespace Sound
                 em.RaceManager.OnRaceEnd -= RaceOver;
                 em.RaceManager.OnLapDetected -= Lap;
                 em.RaceManager.OnSplitDetection -= Sector;
-                em.LapRecordManager.OnNewOveralBest -= OnNewRecord;
                 em.RaceManager.OnRaceChanged -= OnRaceChanged;
                 em.RaceManager.OnRaceCancelled -= RaceManager_OnRaceCancelled;
-                em.SpeedRecordManager.OnSpeedCalculated -= OnSpeed;
                 em.RaceManager.OnSplitDetection -= OnSplit;
-                em.GameManager.OnGamePointChanged -= RaceManager_OnGamePoint;
                 em.RaceManager.OnRaceResumed -= RaceManager_OnRaceResumed;
+
+                em.LapRecordManager.OnNewOveralBest -= OnNewRecord;
+                em.SpeedRecordManager.OnSpeedCalculated -= OnSpeed;
+
+
+                em.GameManager.OnGamePointChanged -= OnGamePoint;
+                em.GameManager.OnGamePointsReached -= OnGamePointsReached;
+                em.GameManager.OnGamePointsRemaining -= OnGamePointsRemaining;
             }
             eventManager = null;
 
@@ -281,6 +291,9 @@ namespace Sound
                     new Sound() { Key = SoundKey.Flag, TextToSpeech = "Flagged", Category = Sound.SoundCategories.Announcements },
 
                     new Sound() { Key = SoundKey.GamePoint, TextToSpeech = "BEEP", Filename = @"sounds/detection.wav", Category = Sound.SoundCategories.Detection },
+                    new Sound() { Key = SoundKey.GamePointsRemaining, TextToSpeech = "{pilots} {points} remaining",Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.GameWins, TextToSpeech = "{pilots} WINS!", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.GameEnded, TextToSpeech = "Game over man. Game over.", Category = Sound.SoundCategories.Announcements },
                 };
 
                 foreach (Sound defaultSound in defaultSounds)
@@ -321,9 +334,28 @@ namespace Sound
             PlaySound(SoundKey.DetectionSplit, new SpeechParameters());
         }
 
-        private void RaceManager_OnGamePoint(GamePoint obj)
+        private void OnGamePoint(GamePoint obj)
         {
             PlaySound(SoundKey.GamePoint, new SpeechParameters());
+        }
+
+        private void OnGamePointsRemaining(Pilot[] pilots, Team team, int pointsRemaining)
+        {
+            SpeechParameters parameters = new SpeechParameters();
+            parameters.Add(SpeechParameters.Types.pilots, pilots.Phonetic());
+            parameters.Add(SpeechParameters.Types.points, pointsRemaining);
+
+            PlaySound(SoundKey.GamePointsRemaining, parameters);
+        }
+
+        private void OnGamePointsReached(Pilot[] pilots, Team team)
+        {
+            StopSound();
+
+            SpeechParameters parameters = new SpeechParameters();
+            parameters.Priority = 10000;
+            parameters.Add(SpeechParameters.Types.pilots, pilots.Phonetic());
+            PlaySound(SoundKey.GameWins, parameters);
         }
 
         private void RaceManager_OnRaceStart(Race race)
@@ -445,7 +477,7 @@ namespace Sound
             SpeechParameters pilotChannelParameters = new SpeechParameters();
             pilotChannelParameters.Priority = 1000;
             pilotChannelParameters.SecondsExpiry = 5;
-            pilotChannelParameters.Add(SpeechParameters.Types.pilots, nextRace.PilotNames);
+            pilotChannelParameters.Add(SpeechParameters.Types.pilots, nextRace.Pilots.Phonetic);
 
             PlaySoundBlocking(SoundKey.InTheHole,  pilotChannelParameters);
         }
@@ -702,7 +734,20 @@ namespace Sound
         public void RaceOver()
         {
             StopSound();
-            PlaySound(SoundKey.RaceOver, new SpeechParameters() { Priority = 10000 });
+
+            SoundKey soundKey;
+
+            switch (eventManager.RaceManager.RaceType)
+            {
+                case EventTypes.Game:
+                    soundKey = SoundKey.GameEnded;
+                    break;
+                default:
+                    soundKey = SoundKey.RaceOver;
+                    break;
+            }
+
+            PlaySound(soundKey, new SpeechParameters() { Priority = 10000 });
         }
 
         public void TimesUp(Race race)
