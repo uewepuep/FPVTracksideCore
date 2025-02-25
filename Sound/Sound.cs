@@ -16,6 +16,7 @@ namespace Sound
         StartRaceIn,
         RaceStart,
         RaceOver,
+        RaceResumed,
 
         TimesUp,
         TimeRemaining,

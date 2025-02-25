@@ -127,9 +127,15 @@ namespace Sound
                 eventManager.SpeedRecordManager.OnSpeedCalculated += OnSpeed;
                 eventManager.RaceManager.OnSplitDetection += OnSplit;
                 eventManager.GameManager.OnGamePointChanged += RaceManager_OnGamePoint;
+                eventManager.RaceManager.OnRaceResumed += RaceManager_OnRaceResumed;
             }
 
             PilotAnnounceTime = TimeSpan.Zero;
+        }
+
+        private void RaceManager_OnRaceResumed(Race race)
+        {
+            PlaySound(SoundKey.RaceResumed);
         }
 
         public void Dispose()
@@ -152,6 +158,7 @@ namespace Sound
                 em.SpeedRecordManager.OnSpeedCalculated -= OnSpeed;
                 em.RaceManager.OnSplitDetection -= OnSplit;
                 em.GameManager.OnGamePointChanged -= RaceManager_OnGamePoint;
+                em.RaceManager.OnRaceResumed -= RaceManager_OnRaceResumed;
             }
             eventManager = null;
 
@@ -210,6 +217,7 @@ namespace Sound
                     new Sound() { Key = SoundKey.StartRaceIn, TextToSpeech = "Arm your quads. Starting on the tone in less than {time}", Category = Sound.SoundCategories.Race },
                     new Sound() { Key = SoundKey.RaceStart, TextToSpeech = "Go", Filename = @"sounds/tone.wav", Category = Sound.SoundCategories.Race },
                     new Sound() { Key = SoundKey.RaceOver, TextToSpeech = "Race over", Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.RaceResumed, TextToSpeech = "Race Resumed", Category = Sound.SoundCategories.Race },
 
                     new Sound() { Key = SoundKey.TimesUp, TextToSpeech = "Times Up", Filename = @"sounds/horn.wav", Category = Sound.SoundCategories.Race },
                     new Sound() { Key = SoundKey.TimeRemaining, TextToSpeech = "{time} remaining", Category = Sound.SoundCategories.Race },
