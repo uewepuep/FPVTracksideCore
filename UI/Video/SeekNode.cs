@@ -5,6 +5,7 @@ using ImageServer;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using RaceLib;
+using RaceLib.Game;
 using System;
 using System.Collections.Generic;
 using System.Linq;

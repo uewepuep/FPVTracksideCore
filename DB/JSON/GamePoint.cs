@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DB.JSON
 {
-    public class GamePoint : DatabaseObjectT<RaceLib.GamePoint>
+    public class GamePoint : DatabaseObjectT<RaceLib.Game.GamePoint>
     {
         public Guid Channel { get; set; }
         public Guid Pilot { get; set; }
@@ -15,7 +15,7 @@ namespace DB.JSON
 
         public GamePoint() { }
 
-        public GamePoint(RaceLib.GamePoint obj)
+        public GamePoint(RaceLib.Game.GamePoint obj)
             : base(obj)
         {
             if (obj.Channel != null)
@@ -24,9 +24,9 @@ namespace DB.JSON
                 Pilot = obj.Pilot.ID;
         }
 
-        public override RaceLib.GamePoint GetRaceLibObject(ICollectionDatabase database)
+        public override RaceLib.Game.GamePoint GetRaceLibObject(ICollectionDatabase database)
         {
-            RaceLib.GamePoint detection = base.GetRaceLibObject(database);
+            RaceLib.Game.GamePoint detection = base.GetRaceLibObject(database);
             detection.Pilot = Pilot.Convert<RaceLib.Pilot>(database);
             detection.Channel = Channel.Convert<RaceLib.Channel>(database);
             return detection;

@@ -221,7 +221,6 @@ namespace UI.Nodes
             if (MaxLaps == 0)
                 return;
 
-
             int count = segmentContainer.ChildCount - 1;
             for (int l = count; l < MaxLaps * Sectors; l++)
             {

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using Tools;
 using Composition;
+using RaceLib.Game;
 
 namespace Sound
 {

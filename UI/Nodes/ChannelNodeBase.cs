@@ -11,6 +11,7 @@ using ImageServer;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using RaceLib;
+using RaceLib.Game;
 using Sound;
 using Tools;
 using UI.Video;

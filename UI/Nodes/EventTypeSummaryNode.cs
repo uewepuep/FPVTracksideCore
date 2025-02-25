@@ -3,6 +3,7 @@ using Composition.Input;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
+using RaceLib.Game;
 using System;
 using System.Collections.Generic;
 using System.Linq;

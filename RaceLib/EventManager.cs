@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using RaceLib.Format;
+using RaceLib.Game;
 using System;
 using System.Collections.Generic;
 using System.Drawing.Imaging;

@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
-using static RaceLib.GameType;
+using static RaceLib.Game.GameType;
 
-namespace RaceLib
+namespace RaceLib.Game
 {
     public enum TimingSystemPointMode
     {
@@ -23,7 +23,7 @@ namespace RaceLib
         public int PilotsPerTeam { get; set; }
         public int TargetPoints { get; set; }
 
-        public GameType() 
+        public GameType()
         {
             Name = "New Game Type";
             TimingSystemPointMode = TimingSystemPointMode.None;
@@ -49,7 +49,7 @@ namespace RaceLib
                 GameType[] s = null;
                 try
                 {
-                    s = Tools.IOTools.Read<GameType>(profile, filename).Where(c => c != null).ToArray();
+                    s = IOTools.Read<GameType>(profile, filename).Where(c => c != null).ToArray();
                 }
                 catch
                 {
@@ -72,7 +72,7 @@ namespace RaceLib
 
         public static void Write(Profile profile, GameType[] s)
         {
-            Tools.IOTools.Write(profile, filename, s.ToArray());
+            IOTools.Write(profile, filename, s.ToArray());
         }
     }
 }

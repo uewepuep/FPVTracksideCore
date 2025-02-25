@@ -19,6 +19,7 @@ using UI.Video;
 using Composition;
 using ExternalData;
 using UI.Nodes.Rounds;
+using RaceLib.Game;
 
 namespace UI.Nodes
 {
@@ -219,7 +220,7 @@ namespace UI.Nodes
                     EventEditor?.Invoke();
                 });
             }
-            root.AddItem("GameType Settings", () =>
+            root.AddItem("Game Settings", () =>
             {
                 ShowGameTypeEditor();
             });

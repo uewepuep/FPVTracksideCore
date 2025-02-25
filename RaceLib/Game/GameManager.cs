@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using RaceLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Tools;
 
-namespace RaceLib
+namespace RaceLib.Game
 {
     public class GameManager
     {
@@ -26,7 +27,7 @@ namespace RaceLib
             }
         }
 
-        public GameManager(EventManager eventManager) 
+        public GameManager(EventManager eventManager)
         {
             EventManager = eventManager;
             eventManager.RaceManager.OnRaceChanged += RaceManager_OnRaceChanged;
