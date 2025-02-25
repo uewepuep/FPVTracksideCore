@@ -784,7 +784,21 @@ namespace Sound
 
             switch (eventManager.RaceManager.RaceType)
             {
-                case EventTypes.AggregateLaps:
+                case EventTypes.Endurance:
+                    {
+                        int position = lap.Race.GetPosition(lap.Pilot);
+
+                        parameters.Priority = LapNumberToPriority(lap.Detection, position);
+
+                        // don't read out laps after the end of the race.
+                        if (lap.Number > lap.Race.TargetLaps && eventManager.RaceManager.RaceType == EventTypes.Race)
+                            return;
+
+                        parameters.Add(SpeechParameters.Types.position, position);
+
+                        PlaySound(SoundKey.RaceLap, parameters);
+                        break;
+                    }
                 case EventTypes.Race:
                     {
                         int position = lap.Race.GetPosition(lap.Pilot);

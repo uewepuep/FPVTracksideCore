@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
+using UI.Video;
 
 namespace UI.Nodes
 {
@@ -15,16 +16,17 @@ namespace UI.Nodes
     {
         public EventManager EventManager { get; private set; }
 
-        private List<PilotWormNode> pilotWormList;
 
         private bool needsNewPilots;
         private bool needsWormUpdate;
 
         private Node container;
 
-        public int PilotCount { get { return pilotWormList.Count; } }
+        public int PilotCount { get { return container.ChildCount; } }
 
         public event Action RebuiltList;
+
+        private bool hasDrawnSinceUpdate;
 
         public WormNode(EventManager eventManager)
         {
@@ -35,8 +37,6 @@ namespace UI.Nodes
             container = new Node();
             container.RelativeBounds = RectangleF.Centered(0.99f, 0.8f);
             AddChild(container);
-
-            pilotWormList = new List<PilotWormNode>();
 
             EventManager = eventManager;
 
@@ -71,37 +71,66 @@ namespace UI.Nodes
 
         public override void Draw(Drawer id, float parentAlpha)
         {
-            if (needsNewPilots)
-            {
-                UpdatePilots();
-                needsNewPilots = false;
-            }
-
-            if (needsWormUpdate)
-            {
-                UpdateWorms();
-                needsWormUpdate = false;
-            }
+            hasDrawnSinceUpdate = true;
 
             base.Draw(id, parentAlpha);
         }
 
+        public override void Update(GameTime gametime)
+        {
+            base.Update(gametime);
+
+            if (!hasDrawnSinceUpdate)
+                return;
+
+            if (needsNewPilots)
+            {
+                needsNewPilots = false;
+                UpdatePilots();
+            }
+
+            if (needsWormUpdate)
+            {
+                needsWormUpdate = false;
+                UpdateWorms();
+            }
+
+            hasDrawnSinceUpdate = false;
+        }
+
         private void UpdateWorms()
         {
-            foreach (PilotWormNode pwm in pilotWormList)
+            int maxLaps;
+
+            switch (EventManager.RaceManager.RaceType)
             {
-                pwm.UpdateWorm();
+                case EventTypes.Endurance:
+                    maxLaps = EventManager.RaceManager.LeadLap + 1;
+                    break;
+
+                default:
+                    Race race = EventManager.RaceManager.CurrentRace;
+                    if (race != null)
+                    {
+                        maxLaps = race.TargetLaps;
+                    }
+                    else
+                    {
+                        maxLaps = EventManager.Event.Laps;
+                    }
+
+                    break;
+            }
+
+            foreach (PilotWormNode pwm in container.Children)
+            {
+                pwm.UpdateWorm(maxLaps);
             }
         }
 
         private void UpdatePilots()
         {
-            foreach (PilotWormNode pwm in pilotWormList)
-            {
-                pwm.Dispose();
-            }
-
-            pilotWormList.Clear();
+            container.ClearDisposeChildren();
 
             Race race = EventManager.RaceManager.CurrentRace;
             if (race != null)
@@ -111,11 +140,10 @@ namespace UI.Nodes
                     Color color = EventManager.GetChannelColor(pc.Channel);
 
                     PilotWormNode pilotWormNode = new PilotWormNode(race, pc.Pilot, color, EventManager.RaceManager.TimingSystemManager.TimingSystemCount, EventManager.Event.Laps, EventManager.Event.PrimaryTimingSystemLocation);
-                    pilotWormList.Add(pilotWormNode);
                     container.AddChild(pilotWormNode);
                 }
 
-                AlignVertically(0.05f, pilotWormList.ToArray());
+                AlignVertically(0.05f, container.Children.ToArray());
             }
 
             RebuiltList?.Invoke();
@@ -135,25 +163,33 @@ namespace UI.Nodes
 
     public class PilotWormNode : Node
     {
-        public float Laps { get; private set; }
-        public float Sectors { get; private set; }
+        public int MaxLaps { get; private set; }
+        public int Sectors { get; private set; }
 
         private TextNode pilotName;
 
         private AnimatedNode worm;
 
+        private Node segmentContainer;
+
         public Pilot Pilot { get; private set; }
         public Race Race { get; private set; }
 
         private PrimaryTimingSystemLocation primaryTimingSystemLocation;
+            
+        private const float lineWidth = 0.001f;
 
-        public PilotWormNode(Race race, Pilot pilot, Color color, int sectors, int laps, PrimaryTimingSystemLocation primaryTimingSystemLocation)
+        public PilotWormNode(Race race, Pilot pilot, Color color, int sectors, int maxLaps, PrimaryTimingSystemLocation primaryTimingSystemLocation)
         {
             this.primaryTimingSystemLocation = primaryTimingSystemLocation;
 
             pilotName = new TextNode(pilot.Name, Theme.Current.TextMain.XNA);
             pilotName.RelativeBounds = new RectangleF(0, 0, 0.1f, 1);
             AddChild(pilotName);
+
+            segmentContainer = new Node();
+            segmentContainer.RelativeBounds = new RectangleF(pilotName.RelativeBounds.Right, 0, 1 - pilotName.RelativeBounds.Right, 1f);
+            AddChild(segmentContainer);
 
             Node wormContainer = new Node();
             wormContainer.RelativeBounds = new RectangleF(pilotName.RelativeBounds.Right, 0, 1 - pilotName.RelativeBounds.Right, 1f);
@@ -163,43 +199,82 @@ namespace UI.Nodes
             Pilot = pilot;
 
             Sectors = sectors;
-            Laps = laps;
             
-            float line = 0.001f;
-
-            ColorNode lapNode = new ColorNode(Theme.Current.TextMain.XNA);
-            lapNode.RelativeBounds = new RectangleF(0, 0, line, 1);
-            wormContainer.AddChild(lapNode);
-
-            for (int l = 0; l <= Laps; l++)
-            {
-                float lapPos = GetCompletionPercent(l, 0);
-
-                lapNode = new ColorNode(Theme.Current.TextMain.XNA);
-                lapNode.RelativeBounds = new RectangleF(lapPos, 0, line, 1);
-                wormContainer.AddChild(lapNode);
-
-                for (int s = 1; s < Sectors && l < Laps; s++)
-                {
-                    float sectPos = GetCompletionPercent(l, s);
-
-                    ColorNode sectNode = new ColorNode(Theme.Current.TextAlt.XNA);
-                    sectNode.RelativeBounds = new RectangleF(sectPos, 0, line, 1);
-                    wormContainer.AddChild(sectNode);
-                }
-            }
-
             worm = new AnimatedNode();
             wormContainer.AddChild(worm);
 
             ColorNode cn = new ColorNode(color);
             worm.AddChild(cn);
 
-            UpdateWorm();
+
+            ColorNode lapNode = new ColorNode(Theme.Current.TextMain.XNA);
+            lapNode.RelativeBounds = new RectangleF(0, 0, lineWidth, 1);
+            segmentContainer.AddChild(lapNode);
+
+            UpdateSegments();
+
+            UpdateWorm(maxLaps);
         }
 
-        public void UpdateWorm()
+        private void UpdateSegments()
         {
+            if (MaxLaps == 0)
+                return;
+
+
+            int count = segmentContainer.ChildCount - 1;
+            for (int l = count; l < MaxLaps * Sectors; l++)
+            {
+                ColorNode lapNode = new ColorNode(Theme.Current.TextMain.XNA);
+                segmentContainer.AddChild(lapNode);
+
+                for (int s = 1; s < Sectors; s++)
+                {
+                    ColorNode sectNode = new ColorNode(Theme.Current.TextAlt.XNA);
+                    segmentContainer.AddChild(sectNode);
+                }
+            }
+
+            for (int i = 0; i < segmentContainer.ChildCount; i ++)
+            {
+                ColorNode node = segmentContainer.GetChild<ColorNode>(i);
+
+                int lap = i / Sectors;
+                int sector = i % Sectors;
+
+                if (sector == 0)
+                {
+                    float lapPos = GetCompletionPercent(lap, 0);
+
+                    node.Color = Theme.Current.TextMain.XNA;
+                    node.RelativeBounds = new RectangleF(lapPos, 0, lineWidth, 1);
+                }
+                else
+                {
+                    float sectPos = GetCompletionPercent(lap, sector);
+                    node.RelativeBounds = new RectangleF(sectPos, 0, lineWidth, 1);
+                    node.Color = Theme.Current.TextAlt.XNA;
+                }
+
+            }
+
+
+            for (int l = 0; l < segmentContainer.ChildCount; l += Sectors)
+            {
+               
+
+                for (int s = 1; s < Sectors; s++)
+                {
+                    
+                }
+            }
+        }
+
+        public void UpdateWorm(int maxLaps)
+        {
+            MaxLaps = maxLaps;
+            UpdateSegments();
+
             int lapNumber = -1;
             int sector = 0;
 
@@ -218,16 +293,20 @@ namespace UI.Nodes
 
         public float GetCompletionPercent(int lap, int sector)
         {
+
+            float maxLaps = MaxLaps;
+            float sectors = Sectors;
+
             float holeShotWidth;
             float remainder;
 
-            float lapWidth = 1 / Laps;
-            float sectorWidth = (1 / Sectors) * lapWidth;
+            float lapWidth = 1 / maxLaps;
+            float sectorWidth = (1 / sectors) * lapWidth;
 
 
             if (primaryTimingSystemLocation == PrimaryTimingSystemLocation.Holeshot)
             {
-                holeShotWidth = (1 / Laps) * 0.1f;
+                holeShotWidth = (1 / maxLaps) * 0.1f;
             }
             else
             {
@@ -240,9 +319,6 @@ namespace UI.Nodes
             float output =  holeShotWidth + ((lapWidth * lap) + (sector * sectorWidth)) * remainder;
 
             output = Math.Clamp(output, 0, 1);
-
-
-            Logger.TimingLog.LogCall(this, lap, sector, output);
 
             return output;
         }
