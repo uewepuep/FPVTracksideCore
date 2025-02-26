@@ -420,6 +420,11 @@ namespace RaceLib
             {
                 TimedActionManager.Update();
             }
+
+            if (GameManager != null)
+            {
+                GameManager.Update(gameTime);
+            }
         }
 
         public void SetChannelColors(IEnumerable<Microsoft.Xna.Framework.Color> colors)

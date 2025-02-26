@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,14 +18,26 @@ namespace RaceLib.Game
 
     public class GameType
     {
+        [Category("General")]
         public string Name { get; set; }
-
+     
+        [Category("General")]
         public TimingSystemPointMode TimingSystemPointMode { get; set; }
 
+        [Category("General")]
         public int PilotsPerTeam { get; set; }
+        
+        [Category("General")]
         public int TargetPoints { get; set; }
 
+        [Category("General")]
         public int[] PointsRemainingWarning { get; set; }
+
+        [Category("Capture")]
+        public int DetectionsForCapture { get; set; }
+
+        [Category("Capture")]
+        public int SecondsPerPoint { get; set; }
 
         public GameType()
         {
@@ -33,6 +46,8 @@ namespace RaceLib.Game
             PilotsPerTeam = 1;
             TargetPoints = 5;
             PointsRemainingWarning = new int[] { 100, 50, 10, 5, 4, 3, 2, 1 };
+            DetectionsForCapture = 5;
+            SecondsPerPoint = 10;
         }
 
         public override string ToString()

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Timing;
 using Tools;
 
 namespace RaceLib.Game
@@ -16,6 +17,8 @@ namespace RaceLib.Game
         public GameType GameType { get; private set; }
 
         public GameType[] GameTypes { get; private set; }
+
+        private CaptureManager captureManager;
 
         public EventManager EventManager { get; private set; }
         public event Action<GamePoint> OnGamePointChanged;
@@ -30,8 +33,10 @@ namespace RaceLib.Game
             }
         }
 
+
         public GameManager(EventManager eventManager)
         {
+            captureManager = new CaptureManager(this);
             EventManager = eventManager;
             eventManager.RaceManager.OnRaceChanged += RaceManager_OnRaceChanged;
         }
@@ -212,6 +217,9 @@ namespace RaceLib.Game
                 case TimingSystemPointMode.PointForDetection:
                     AddGamePoint(d.Pilot, d.Channel, d.Time);
                     break;
+                case TimingSystemPointMode.CaptureTheTimer:
+                    captureManager.AddDetection(d);
+                    break;
             }
         }
 
@@ -241,6 +249,12 @@ namespace RaceLib.Game
         public void ClearRace(Race race)
         {
             race.GamePoints.Clear();
+            captureManager.Clear();
+        }
+
+        public void Update(GameTime gameTime)
+        {
+
         }
     }
 }
