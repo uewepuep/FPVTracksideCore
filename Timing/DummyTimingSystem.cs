@@ -1,7 +1,9 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework.Input;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -71,6 +73,49 @@ namespace Timing
 
         public bool StartDetection(ref DateTime time, Guid raceId)
         {
+            running = true;
+
+            if (DummingSettings.GenerateFromKeyboardShortcuts)
+            {
+                Thread keyboardThread = new Thread(() =>
+                {
+                    KeyboardState lastState = Keyboard.GetState();
+
+                    Keys[] keys = new Keys[] { Keys.NumPad0, Keys.NumPad1, Keys.NumPad2, Keys.NumPad3, Keys.NumPad4, Keys.NumPad5, Keys.NumPad6, Keys.NumPad7, Keys.NumPad8, Keys.NumPad9 };
+
+                    while (running)
+                    {
+                        Thread.Sleep(100);
+
+                        KeyboardState keyboardState = Keyboard.GetState();
+
+                        if (keyboardState.IsKeyDown(Keys.LeftAlt) || keyboardState.IsKeyDown(Keys.RightAlt))
+                        {
+                            int index = 0;
+                            foreach (Keys key in keys)
+                            {
+                                if (index > frequencies.Count)
+                                    continue;
+
+                                if (keyboardState.IsKeyDown(key) && lastState.IsKeyUp(key))
+                                {
+                                    if (running)
+                                    {
+                                        OnDetectionEvent?.Invoke(this, frequencies[index], DateTime.Now, 800);
+                                    }
+                                }
+                                index++;
+                            }
+                        }
+
+                        lastState = keyboardState;
+                    }
+                });
+                keyboardThread.Name = "Dummy timing system (KB) ";
+                keyboardThread.Start();
+                threads.Add(keyboardThread);
+            }
+
             if (!DummingSettings.GenerateRandomLaps)
             {
                 return true;
@@ -89,7 +134,6 @@ namespace Timing
                     EndDetection();
                 }
 
-                running = true;
                 int index = 1;
                 foreach (int freq in frequencies)
                 {
@@ -132,6 +176,8 @@ namespace Timing
 
                     index++;
                 }
+
+
                 return true;
             }
         }
@@ -257,7 +303,10 @@ namespace Timing
         public int Receivers { get; set; }
 
 
-    [Browsable(false)]
+        [Category("Keyboard shortcuts are ALT + Numpad 0-9")]
+        public bool GenerateFromKeyboardShortcuts { get; set; }
+
+        [Browsable(false)]
         public TimeSpan TypicalLapTime { get { return TimeSpan.FromSeconds(TypicalLapTimeSeconds); } }
 
         [Browsable(false)]
@@ -274,6 +323,7 @@ namespace Timing
             FalseReadPercent = 10;
             Receivers = 8;
             GenerateAlerts = false;
+            GenerateFromKeyboardShortcuts = true;
         }
 
         public override string ToString()

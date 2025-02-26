@@ -24,6 +24,8 @@ namespace RaceLib.Game
         public event Action<GamePoint> OnGamePointChanged;
         public event Action<Pilot[], Team, int> OnGamePointsRemaining;
         public event Action<Pilot[], Team> OnGamePointsReached;
+        public event Action<Pilot[], Captured> OnCapture;
+        public event Action<Detection> OnGameDetection;
 
         public Race CurrentRace
         {
@@ -33,12 +35,18 @@ namespace RaceLib.Game
             }
         }
 
-
         public GameManager(EventManager eventManager)
         {
             captureManager = new CaptureManager(this);
+            captureManager.OnCapture += CaptureManager_OnCapture;
             EventManager = eventManager;
             eventManager.RaceManager.OnRaceChanged += RaceManager_OnRaceChanged;
+        }
+
+        private void CaptureManager_OnCapture(Captured captured)
+        {
+            Pilot[] pilots = GetPilots(captured.Team).ToArray();
+            OnCapture?.Invoke(pilots, captured);
         }
 
         private void RaceManager_OnRaceChanged(Race race)
@@ -103,12 +111,17 @@ namespace RaceLib.Game
             Race race = CurrentRace;
             if (race == null)
                 return;
+            int totalPoints = GetCurrentGamePoints(channel);
+            int remaining = Math.Max(0, GameType.TargetPoints - totalPoints);
+
+            if (remaining == 0)
+                return;
+
 
             GamePoint gp = race.AddGamePoint(pilot, channel, time);
             OnGamePointChanged?.Invoke(gp);
 
-            int totalPoints = GetCurrentGamePoints(channel);
-            int remaining = Math.Max(0, GameType.TargetPoints - totalPoints);
+            remaining = Math.Max(0, GameType.TargetPoints - totalPoints);
 
             if (GameType != null && GameType.PointsRemainingWarning != null &&
                 GameType.PointsRemainingWarning.Contains(remaining) && OnGamePointsRemaining != null)
@@ -219,6 +232,7 @@ namespace RaceLib.Game
                     break;
                 case TimingSystemPointMode.CaptureTheTimer:
                     captureManager.AddDetection(d);
+                    OnGameDetection?.Invoke(d);
                     break;
             }
         }
@@ -254,7 +268,30 @@ namespace RaceLib.Game
 
         public void Update(GameTime gameTime)
         {
+            if (GameType != null && GameType.TimingSystemPointMode == TimingSystemPointMode.CaptureTheTimer)
+            {
+                DateTime now = DateTime.Now;
+                DateTime last = now - gameTime.ElapsedGameTime;
 
+                int timingSystemsCount = EventManager.RaceManager.TimingSystemManager.TimingSystemCount;
+
+                for (int timingSystemIndex = 0; timingSystemIndex < timingSystemsCount; timingSystemIndex++)
+                {
+                    Captured captured = captureManager.GetCapturer(timingSystemIndex);
+                    if (captured == null)
+                        continue;
+
+                    int framePoints = (int)(now - captured.CaptureTime).TotalSeconds / GameType.SecondsPerPoint;
+                    int lastFramePoints = (int)(last - captured.CaptureTime).TotalSeconds / GameType.SecondsPerPoint;
+
+                    if (lastFramePoints < framePoints)
+                    {
+                        AddGamePoint(captured.Pilot, captured.Channel, DateTime.Now);
+                    }
+
+                }
+
+            }
         }
     }
 }

@@ -70,6 +70,8 @@ namespace Sound
         GamePointsRemaining,
         GameEnded,
         GameWins,
+        GameCaptured,
+        GameCaptureDetection,
 
         PilotsEnableVideo,
         VideoDelayingRace,
