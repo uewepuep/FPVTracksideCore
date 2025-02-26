@@ -2,6 +2,7 @@
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
+using RaceLib.Game;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,9 +21,10 @@ namespace UI.Nodes
         private bool needsNewPilots;
         private bool needsWormUpdate;
 
-        private Node container;
+        private Node wormContainer;
+        private Node captureContainer;
 
-        public int PilotCount { get { return container.ChildCount; } }
+        public int PilotCount { get { return wormContainer.ChildCount; } }
 
         public event Action RebuiltList;
 
@@ -34,9 +36,12 @@ namespace UI.Nodes
             backGround.Alpha = 0.5f;
             AddChild(backGround);
 
-            container = new Node();
-            container.RelativeBounds = RectangleF.Centered(0.99f, 0.8f);
-            AddChild(container);
+            wormContainer = new Node();
+            wormContainer.RelativeBounds = RectangleF.Centered(0.99f, 0.8f);
+            AddChild(wormContainer);
+
+            captureContainer = new Node();
+            AddChild(captureContainer);
 
             EventManager = eventManager;
 
@@ -51,6 +56,19 @@ namespace UI.Nodes
             EventManager.RaceManager.OnLapDisqualified += NeedsWormUpdate;
             EventManager.RaceManager.OnLapsRecalculated += NeedsWormUpdate;
             EventManager.RaceManager.OnSplitDetection += NeedsWormUpdate;
+            eventManager.GameManager.OnCapture += GameManager_OnCapture;
+        }
+
+        private void GameManager_OnCapture(Pilot[] pilots, RaceLib.Game.Captured captured)
+        {
+            IEnumerable<CapturePointNode> capturePointNodes = captureContainer.Children.OfType<CapturePointNode>();
+            foreach (CapturePointNode capturePointNode in capturePointNodes)
+            {
+                if (capturePointNode.TimingSystemIndex == captured.TimingSystemIndex)
+                {
+                    capturePointNode.SetPilots(pilots, captured);
+                }
+            }
         }
 
         public override void Dispose()
@@ -122,7 +140,7 @@ namespace UI.Nodes
                     break;
             }
 
-            foreach (PilotWormNode pwm in container.Children)
+            foreach (PilotWormNode pwm in wormContainer.Children)
             {
                 pwm.UpdateWorm(maxLaps);
             }
@@ -130,7 +148,7 @@ namespace UI.Nodes
 
         private void UpdatePilots()
         {
-            container.ClearDisposeChildren();
+            wormContainer.ClearDisposeChildren();
 
             Race race = EventManager.RaceManager.CurrentRace;
             if (race != null)
@@ -140,10 +158,34 @@ namespace UI.Nodes
                     Color color = EventManager.GetChannelColor(pc.Channel);
 
                     PilotWormNode pilotWormNode = new PilotWormNode(race, pc.Pilot, color, EventManager.RaceManager.TimingSystemManager.TimingSystemCount, EventManager.Event.Laps, EventManager.Event.PrimaryTimingSystemLocation);
-                    container.AddChild(pilotWormNode);
+                    wormContainer.AddChild(pilotWormNode);
                 }
 
-                AlignVertically(0.05f, container.Children.ToArray());
+                wormContainer.Visible = true;
+                captureContainer.Visible = false;
+
+                AlignVertically(0.05f, wormContainer.Children.ToArray());
+            }
+
+            if (EventManager.GameManager.GameType != null && 
+                EventManager.GameManager.GameType.TimingSystemPointMode == TimingSystemPointMode.CaptureTheTimer)
+            {
+                wormContainer.Visible = false;
+                captureContainer.Visible = true;
+                //wormContainer.RelativeBounds = new RectangleF(0.5f, 0.1f, 0.45f, 0.8f);
+                //captureContainer.RelativeBounds = new RectangleF(0.05f, 0.1f, 0.45f, 0.8f);
+
+                captureContainer.ClearDisposeChildren();
+
+                int index = 0;
+                foreach (Timing.ITimingSystem ts in EventManager.RaceManager.TimingSystemManager.TimingSystems)
+                {
+                    CapturePointNode capturePointNode = new CapturePointNode(EventManager, index);
+                    captureContainer.AddChild(capturePointNode);
+                    index++;
+                }
+
+                AlignHorizontally(0.05f, captureContainer.Children);
             }
 
             RebuiltList?.Invoke();
@@ -206,7 +248,6 @@ namespace UI.Nodes
             ColorNode cn = new ColorNode(color);
             worm.AddChild(cn);
 
-
             ColorNode lapNode = new ColorNode(Theme.Current.TextMain.XNA);
             lapNode.RelativeBounds = new RectangleF(0, 0, lineWidth, 1);
             segmentContainer.AddChild(lapNode);
@@ -254,18 +295,6 @@ namespace UI.Nodes
                     node.RelativeBounds = new RectangleF(sectPos, 0, lineWidth, 1);
                     node.Color = Theme.Current.TextAlt.XNA;
                 }
-
-            }
-
-
-            for (int l = 0; l < segmentContainer.ChildCount; l += Sectors)
-            {
-               
-
-                for (int s = 1; s < Sectors; s++)
-                {
-                    
-                }
             }
         }
 
@@ -292,7 +321,6 @@ namespace UI.Nodes
 
         public float GetCompletionPercent(int lap, int sector)
         {
-
             float maxLaps = MaxLaps;
             float sectors = Sectors;
 
@@ -320,6 +348,52 @@ namespace UI.Nodes
             output = Math.Clamp(output, 0, 1);
 
             return output;
+        }
+    }
+
+    public class CapturePointNode : AspectNode
+    {
+        private ColorNode colorNode;
+        private TextNode pilotsNode;
+        private EventManager eventManager;
+
+        public GameManager GameManager
+        {
+            get
+            {
+                return eventManager.GameManager;
+            }
+        }
+
+        public int TimingSystemIndex { get; private set; }
+
+        public CapturePointNode(EventManager eve, int timingSystemIndex)
+        {
+            KeepAspectRatio = true;
+            AspectRatio = 1;
+
+            TimingSystemIndex = timingSystemIndex;
+            eventManager = eve;
+
+            TextNode textNode = new TextNode("Capture Point " + (timingSystemIndex + 1), Theme.Current.TextMain.XNA);
+            textNode.RelativeBounds = new RectangleF(0, 0.8f, 1, 0.2f);
+            AddChild(textNode);
+
+            colorNode = new ColorNode(Color.Gray);
+            colorNode.RelativeBounds = new RectangleF(0, 0.0f, 1, 0.8f);
+            AddChild(colorNode);
+
+            pilotsNode = new TextNode("", Theme.Current.TextMain.XNA);
+            pilotsNode.Scale(0.9f);
+            colorNode.AddChild(pilotsNode);
+        }
+
+        public void SetPilots(Pilot[] pilots, Captured captured)
+        {
+            Color color = GameManager.GetTeamColor(captured.Channel);
+
+            colorNode.Color = color;
+            pilotsNode.Text = string.Join("\r\n", pilots.Select(p => p.Name));
         }
     }
 }

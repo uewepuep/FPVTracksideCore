@@ -88,6 +88,12 @@ namespace RaceLib.Game
             {
                 timingSystemCaptures.Clear();
             }
+
+
+            lock (currentlyCaptured)
+            {
+                currentlyCaptured.Clear();
+            }
         }
 
     }

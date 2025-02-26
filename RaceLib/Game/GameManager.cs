@@ -23,7 +23,7 @@ namespace RaceLib.Game
         public EventManager EventManager { get; private set; }
         public event Action<GamePoint> OnGamePointChanged;
         public event Action<Pilot[], Team, int> OnGamePointsRemaining;
-        public event Action<Pilot[], Team> OnGamePointsReached;
+        public event Action<Pilot[], Team, int> OnGamePointsReached;
         public event Action<Pilot[], Captured> OnCapture;
         public event Action<Detection> OnGameDetection;
 
@@ -63,6 +63,11 @@ namespace RaceLib.Game
 
             GameType gt = GetByName(round.GameTypeName);
             SetGameType(gt);
+
+            if (captureManager != null)
+            {
+                captureManager.Clear();
+            }
         }
 
         public void SetGameType(GameType gameType)
@@ -121,6 +126,8 @@ namespace RaceLib.Game
             GamePoint gp = race.AddGamePoint(pilot, channel, time);
             OnGamePointChanged?.Invoke(gp);
 
+            totalPoints = GetCurrentGamePoints(channel);
+
             remaining = Math.Max(0, GameType.TargetPoints - totalPoints);
 
             if (GameType != null && GameType.PointsRemainingWarning != null &&
@@ -138,7 +145,7 @@ namespace RaceLib.Game
                 Team t = GetTeam(channel);
 
                 Pilot[] pilots = GetPilots(t).ToArray();
-                OnGamePointsReached(pilots, t);
+                OnGamePointsReached(pilots, t, totalPoints);
             }
         }
 
@@ -168,7 +175,7 @@ namespace RaceLib.Game
             if (GameType == null)
                 return false;
 
-            return GetGamePoints(team) > GameType.TargetPoints;
+            return GetGamePoints(team) >= GameType.TargetPoints;
         }
 
         public int GetCurrentGamePoints(Channel channel)

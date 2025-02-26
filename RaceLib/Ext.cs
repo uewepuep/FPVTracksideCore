@@ -426,5 +426,10 @@ namespace RaceLib
         {
             return string.Join(", ", pilots.Select(p => p.Phonetic));
         }
+
+        public static string PhoneticNoComma(this Pilot[] pilots)
+        {
+            return string.Join(" ", pilots.Select(p => p.Phonetic));
+        }
     }
 }

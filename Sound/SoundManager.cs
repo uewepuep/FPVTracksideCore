@@ -290,7 +290,7 @@ namespace Sound
 
                     new Sound() { Key = SoundKey.GamePoint, TextToSpeech = "BEEP", Filename = @"sounds/detection.wav", Category = Sound.SoundCategories.Detection },
                     new Sound() { Key = SoundKey.GamePointsRemaining, TextToSpeech = "{pilots} {points} points remaining",Category = Sound.SoundCategories.Announcements },
-                    new Sound() { Key = SoundKey.GameWins, TextToSpeech = "{pilots} WINS!", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.GameWins, TextToSpeech = "{pilots} has {points} and WINS THE GAME!", Category = Sound.SoundCategories.Announcements },
                     new Sound() { Key = SoundKey.GameCaptured, TextToSpeech = "Timing system {count} captured by {pilots}", Category = Sound.SoundCategories.Announcements },
                     new Sound() { Key = SoundKey.GameCaptureDetection, TextToSpeech = "beep", Filename = @"sounds/split.wav", Category = Sound.SoundCategories.Announcements },
                     new Sound() { Key = SoundKey.GameEnded, TextToSpeech = "Game over man. Game over.", Category = Sound.SoundCategories.Announcements },
@@ -351,7 +351,7 @@ namespace Sound
         private void GameManager_OnCapture(Pilot[] pilots, Captured obj)
         {
             SpeechParameters parameters = new SpeechParameters();
-            parameters.Add(SpeechParameters.Types.pilots, pilots.Phonetic());
+            parameters.Add(SpeechParameters.Types.pilots, pilots.PhoneticNoComma());
             parameters.Add(SpeechParameters.Types.count, obj.TimingSystemIndex + 1);
 
             PlaySound(SoundKey.GameCaptured, parameters);
@@ -360,19 +360,20 @@ namespace Sound
         private void OnGamePointsRemaining(Pilot[] pilots, Team team, int pointsRemaining)
         {
             SpeechParameters parameters = new SpeechParameters();
-            parameters.Add(SpeechParameters.Types.pilots, pilots.Phonetic());
+            parameters.Add(SpeechParameters.Types.pilots, pilots.PhoneticNoComma());
             parameters.Add(SpeechParameters.Types.points, pointsRemaining);
 
             PlaySound(SoundKey.GamePointsRemaining, parameters);
         }
 
-        private void OnGamePointsReached(Pilot[] pilots, Team team)
+        private void OnGamePointsReached(Pilot[] pilots, Team team, int points)
         {
             StopSound();
 
             SpeechParameters parameters = new SpeechParameters();
             parameters.Priority = 10000;
-            parameters.Add(SpeechParameters.Types.pilots, pilots.Phonetic());
+            parameters.Add(SpeechParameters.Types.pilots, pilots.PhoneticNoComma());
+            parameters.Add(SpeechParameters.Types.points, points);
             PlaySound(SoundKey.GameWins, parameters);
         }
 
