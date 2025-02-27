@@ -40,6 +40,7 @@ namespace ExternalData
             eventManager.RaceManager.OnPilotRemoved += OnPilotsChanged;
             eventManager.RaceManager.OnRaceTimesUp += OnRaceTimesUp;
             eventManager.RaceManager.OnChannelCrashedOut += RaceManager_OnChannelCrashedOut;
+            eventManager.GameManager.OnCapture += GameManager_OnCapture;
 
             JSONDataAccessor = new JSONDataAccessor();
             workQueue = new WorkQueue("RemoteNotifier");
@@ -87,7 +88,7 @@ namespace ExternalData
             eventManager.RaceManager.OnPilotAdded -= OnPilotsChanged;
             eventManager.RaceManager.OnPilotRemoved -= OnPilotsChanged;
             eventManager.RaceManager.OnRaceTimesUp -= OnRaceTimesUp;
-
+            eventManager.GameManager.OnCapture -= GameManager_OnCapture;
 
             workQueue?.Dispose();
             workQueue = null;
@@ -99,6 +100,14 @@ namespace ExternalData
             PilotCrashedOut pilotState = new PilotCrashedOut(pilot, channel, color, URL);
             pilotState.ManuallySet = manual;
             PutObject(pilotState);
+        }
+
+        private void GameManager_OnCapture(Pilot[] pilots, RaceLib.Game.Captured captured)
+        {
+            Color color = eventManager.GameManager.GetTeamColor(captured.Channel);
+
+            CaptureDetails captureDetails = new CaptureDetails(captured.TimingSystemIndex, color, URL);
+            PutObject(captureDetails);
         }
 
         private void OnRaceTimesUp(Race race)
@@ -381,6 +390,23 @@ namespace ExternalData
             PilotName = detection.Pilot.Name;
             LapNumber = detection.LapNumber;
             IsRaceEnd = raceEnd;
+        }
+    }
+
+    public class CaptureDetails : Notification
+    {
+        public int TimingSystemIndex { get; set; }
+        public byte ChannelColorR { get; set; }
+        public byte ChannelColorG { get; set; }
+        public byte ChannelColorB { get; set; }
+
+        public CaptureDetails(int timingSystemIndex, Color color, string url)
+        {
+            URL = url;
+            TimingSystemIndex = TimingSystemIndex;
+            ChannelColorR = color.R;
+            ChannelColorG = color.G;
+            ChannelColorB = color.B;
         }
     }
 }
