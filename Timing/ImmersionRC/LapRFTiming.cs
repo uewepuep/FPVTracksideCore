@@ -41,6 +41,14 @@ namespace Timing.ImmersionRC
 
         protected int timeoutSeconds;
 
+        public DateTime RTCEpoch { get; set; }
+
+        private DateTime rtcRequest;
+
+        private AutoResetEvent rtcMutex;
+
+        private List<RTCEvent> rTCEvents;
+
         public int MaxPilots
         {
             get
@@ -84,12 +92,13 @@ namespace Timing.ImmersionRC
         public LapRFTiming()
         {
             detections = new List<Tuple<int, DateTime, ushort>>();
-            laprf = new LapRFProtocol();
 
             idToFreq = new Dictionary<int, int>();
             Connected = false;
             timeoutSeconds = 5;
             connectionCount = 0;
+            rtcMutex = new AutoResetEvent(false);
+            rTCEvents = new List<RTCEvent>();
         }
 
         public void Dispose()
@@ -102,7 +111,7 @@ namespace Timing.ImmersionRC
             Disconnect();
 
             laprf = new LapRFProtocol();
-            laprf.EpochOldVersionFix = settings.LegacyFirmwareTimeRangeFix;
+            laprf.OnRTC += Laprf_OnRTC;
 
             OnDataSent?.Invoke();
 
@@ -182,13 +191,12 @@ namespace Timing.ImmersionRC
                         if (passingRecord.bValid)
                         {
                             double ms = passingRecord.rtcTime / 1000.0;
-                            DateTime epoch = laprf.RTCEpoch;
-                            DateTime detectionTime = epoch.AddMilliseconds(ms);
+                            DateTime detectionTime = RTCEpoch.AddMilliseconds(ms);
 
                             // Occasionally passing record sends weird numbers. Ignore them.
                             if (passingRecord.pilotId < 1 || passingRecord.pilotId > 8)
                             {
-                                Logger.TimingLog.Log(this, "Invalid Passing Record Pilot ID", string.Join(", ", passingRecord.pilotId, passingRecord.rtcTime, detectionTime, epoch), Logger.LogType.Error);
+                                Logger.TimingLog.Log(this, "Invalid Passing Record Pilot ID", string.Join(", ", passingRecord.pilotId, passingRecord.rtcTime, detectionTime, RTCEpoch), Logger.LogType.Error);
                                 continue;
                             }
                             // Just do a quick sanity check. Times should be now +- 30 seconds.
@@ -196,7 +204,7 @@ namespace Timing.ImmersionRC
                             if (Math.Abs(diff.TotalSeconds) > 30.0)
                             {
                                 // Better to ignore this crazy time?
-                                Logger.TimingLog.Log(this, "Out of Time Range", string.Join(", ", passingRecord.pilotId, passingRecord.rtcTime, detectionTime, epoch), Logger.LogType.Error);
+                                Logger.TimingLog.Log(this, "Out of Time Range", string.Join(", ", passingRecord.pilotId, passingRecord.rtcTime, detectionTime, RTCEpoch), Logger.LogType.Error);
                                 continue;
                             }
 
@@ -210,7 +218,7 @@ namespace Timing.ImmersionRC
 
                                 lock (detections)
                                 {
-                                    Logger.TimingLog.Log(this, "Detection", string.Join(", ", passingRecord.pilotId, passingRecord.rtcTime, detectionTime, epoch), Logger.LogType.Notice);
+                                    Logger.TimingLog.Log(this, "Detection", string.Join(", ", passingRecord.pilotId, passingRecord.rtcTime, detectionTime, RTCEpoch), Logger.LogType.Notice);
                                     detections.Add(new Tuple<int, DateTime, ushort>(freq, detectionTime, peak));
                                 }
                             }
@@ -341,22 +349,79 @@ namespace Timing.ImmersionRC
 
         private bool RequestRTCTime()
         {
+            RTCEpoch = DateTime.MinValue;
+
+            lock (rTCEvents)
+            {
+                rTCEvents.Clear();
+            }
+            rtcMutex.Reset();
+
+            rtcRequest = DateTime.Now;
             if (Send(laprf.requestRTCTime()))
             {
-                int counter = 0;
-                while (laprf.RTCEpoch == DateTime.MinValue && counter < 1000)
-                {
-                    Thread.Sleep(10);
-                    counter++;
-                }
-
-                if (laprf.RTCEpoch == DateTime.MinValue)
+                if (!rtcMutex.WaitOne(10000))
                 {
                     return false;
                 }
-                return true;
             }
-            return false;
+
+            Thread.Sleep(100);
+
+            rtcRequest = DateTime.Now;
+            if (Send(laprf.requestRTCTime()))
+            {
+                if (!rtcMutex.WaitOne(10000))
+                {
+                    return false;
+                }
+            }
+
+            bool divideBy1000 = false;
+
+            lock (rTCEvents)
+            {
+                if (rTCEvents.Count != 2)
+                    return false;
+
+                ulong rtc0 = rTCEvents[0].Time;
+                ulong rtc1 = rTCEvents[1].Time;
+
+                if (rtc0.ToString().EndsWith("000") && rtc1.ToString().EndsWith("000"))
+                    divideBy1000 = true;
+
+                double OASum = 0;
+                foreach (RTCEvent rtce in rTCEvents)
+                {
+                    double time = rtce.Time;
+                    if (divideBy1000)
+                    {
+                        time /= 1000;
+                    }
+
+                    DateTime epoch = rtce.Response.AddMilliseconds(-time);
+                    OASum += epoch.ToOADate();
+
+                    Tools.Logger.TimingLog.Log(this, "RTC", string.Join(", ", rtce.Time, rtce.Request, rtce.Response, epoch.ToOADate()), Tools.Logger.LogType.Notice);
+                }
+
+                RTCEpoch = DateTime.FromOADate(OASum / 2);
+                rTCEvents.Clear();
+            }
+
+            Tools.Logger.TimingLog.Log(this, "Calculated Epoch", string.Join(", ", RTCEpoch, divideBy1000), Tools.Logger.LogType.Notice);
+
+            System.Diagnostics.Debug.Assert((RTCEpoch - DateTime.Now) < TimeSpan.FromHours(8));
+            return true;
+        }
+
+        private void Laprf_OnRTC(ulong rtcTime)
+        {
+            lock (rTCEvents)
+            {
+                rTCEvents.Add(new RTCEvent() { Request = rtcRequest, Response = DateTime.Now, Time = rtcTime });
+            }
+            rtcMutex.Set();
         }
 
         public bool SetListeningFrequencies(IEnumerable<ListeningFrequency> newFrequencies)
@@ -439,6 +504,13 @@ namespace Timing.ImmersionRC
                     yield return rssi;
                 }
             }
+        }
+
+        private struct RTCEvent
+        {
+            public ulong Time;
+            public DateTime Request;
+            public DateTime Response;
         }
     }
 }

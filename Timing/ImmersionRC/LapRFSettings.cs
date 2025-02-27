@@ -222,9 +222,6 @@ namespace Timing.ImmersionRC
         [DisplayName("Ignore frequencies, gains and thresholds")]
         public bool IgnoreFrequencies { get; set; }
 
-        [Category("Advanced")]
-        public bool LegacyFirmwareTimeRangeFix { get; set; }
-
         [Browsable(false)]
         public int[] Gains { get { return new int[] { Gain1, Gain2, Gain3, Gain4, Gain5, Gain6, Gain7, Gain8 }; } }
         [Browsable(false)]
@@ -265,8 +262,6 @@ namespace Timing.ImmersionRC
             Enable6 = true;
             Enable7 = true;
             Enable8 = true;
-
-            LegacyFirmwareTimeRangeFix = false;
 
             VoltageAlarm = 10;
             AlwaysEnableReceivers = false;

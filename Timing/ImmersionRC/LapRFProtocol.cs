@@ -89,17 +89,11 @@ namespace LapRF
 		int recordGoodPackets = 0;
 		int recordCRCMismatchCount = 0;
 
-        public DateTime RTCEpoch { get; set; }
-        public TimeSpan EpochAccuracy { get; set; }
-        public bool EpochOldVersionFix { get; set; }
-		private DateTime rtcGetStart;
+		public event Action<ulong> OnRTC;
 
         //-----------------------------------------------------------------------------------
         public LapRFProtocol()
 		{
-            RTCEpoch = DateTime.MinValue;
-			EpochOldVersionFix = false;
-
 			crcCalc = new CRCCalc();
 			passingRecords = new Queue<PassingRecord>();
 
@@ -516,22 +510,11 @@ namespace LapRF
 					switch (signature)
 					{
 						case 0x02:
-                            DateTime now = DateTime.Now;
                             rtcTime = br.ReadUInt64();
 							Debug.Print("LAPRF_TOR_TIME RTC_TIME {0} {1}", rtcTime, GetTime(rtcTime).ToString("MMMM dd, yyyy - H:mm:ss"));
 
-							double ms = rtcTime / 1000.0;
-							
-							if (EpochOldVersionFix)
-							{
-								ms = rtcTime;
-							}
-							
-							RTCEpoch = now.AddMilliseconds(-ms);
-                            EpochAccuracy = now - rtcGetStart;
-
-                            Tools.Logger.TimingLog.Log(this, "Calculated Epoch", string.Join(", ", rtcTime, RTCEpoch, EpochAccuracy.TotalSeconds), Tools.Logger.LogType.Notice);
-                            break;
+							OnRTC?.Invoke(rtcTime);
+					    break;
 
 
 						case 0x20:
@@ -681,9 +664,6 @@ namespace LapRF
             prepare_sendable_packet(laprf_type_of_record.LAPRF_TOR_TIME);
 			dataStreamWriter.Write((Byte)0x02); // RTC_TIME
 			dataStreamWriter.Write((Byte)0);
-
-            rtcGetStart = DateTime.Now;
-            RTCEpoch = DateTime.MinValue;
 
             return finalize_sendable_packet();
 		}
