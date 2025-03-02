@@ -974,6 +974,8 @@ namespace Sound
             parameters.Priority = 1000;
             parameters.Add(SpeechParameters.Types.pilot, pilot.Phonetic);
             parameters.Add(SpeechParameters.Types.count, laps.Length.ToString());
+            parameters.Add(SpeechParameters.Types.lapstime, laps.TotalTime());
+            parameters.Add(SpeechParameters.Types.s, laps.Length == 1 ? "" : "s");
 
             if (lapCount == 0)
             {

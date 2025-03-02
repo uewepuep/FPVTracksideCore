@@ -94,7 +94,7 @@ namespace Timing
                             int index = 0;
                             foreach (Keys key in keys)
                             {
-                                if (index > frequencies.Count)
+                                if (index >= frequencies.Count)
                                     continue;
 
                                 if (keyboardState.IsKeyDown(key) && lastState.IsKeyUp(key))
