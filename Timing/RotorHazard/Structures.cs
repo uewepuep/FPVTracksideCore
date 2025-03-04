@@ -151,5 +151,21 @@ namespace Timing.RotorHazard
         public string[] p_id { get; set; }
         public string[] p_color { get; set; }
     }
+
+    public struct RaceMarshalData
+    {
+        public Guid race_id { get; set; }
+        public string callsign { get; set; }
+        public string ts_pilot_id { get; set; }
+        public List<RaceMarshalLap> laps { get; set; }
+    }
+    
+    public struct RaceMarshalLap
+    {
+        public bool deleted { get; set; }
+        public double lap_time { get; set; }
+        public string lap_time_formatted { get; set; }
+        public double lap_time_stamp { get; set; }
+    }
 }
 

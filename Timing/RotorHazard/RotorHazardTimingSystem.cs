@@ -152,6 +152,9 @@ namespace Timing.RotorHazard
             }
         }
 
+        public delegate void RaceMarshalEventDelegate(ITimingSystem timingSystem, RaceMarshalData marshalData);
+        public event RaceMarshalEventDelegate OnRaceMarshalEvent;
+        
         public RotorHazardTimingSystem()
         {
             settings = new RotorHazardSettings();
@@ -191,6 +194,7 @@ namespace Timing.RotorHazard
                             {
                                 Logger.TimingLog.Log(this, "Load All");
                             });
+                            socket.On("ts_race_marshal", OnRaceMarshal);
 
                             connected = true;
                             Logger.TimingLog.Log(this, "Connected");
@@ -563,6 +567,20 @@ namespace Timing.RotorHazard
                 };
 
                 yield return rssi;
+            }
+        }
+
+        private void OnRaceMarshal(SocketIOResponse response)
+        {
+            try
+            {
+                RaceMarshalData marshalData = response.GetValue<RaceMarshalData>();
+                Logger.TimingLog.Log(this, "Received race marshal data for pilot: " + marshalData.callsign);
+                OnRaceMarshalEvent?.Invoke(this, marshalData);
+            }
+            catch (Exception ex)
+            {
+                Logger.TimingLog.LogException(this, ex);
             }
         }
     }
