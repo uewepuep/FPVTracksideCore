@@ -2184,8 +2184,7 @@ namespace RaceLib
                 }
 
                 // Find the pilot
-                PilotChannel pilotChannel = race.PilotChannels.FirstOrDefault(pc =>
-                    pc.Pilot != null && pc.Pilot.ID.ToString() == marshalData.ts_pilot_id);
+                PilotChannel pilotChannel = race.PilotChannels.FirstOrDefault(pc => pc.Pilot != null && pc.Pilot.ID.ToString() == marshalData.ts_pilot_id);
 
                 if (pilotChannel == null)
                 {
@@ -2193,26 +2192,15 @@ namespace RaceLib
                     return;
                 }
 
-                var laps = race.GetLaps(l => true == true).ToArray();
-
-
-
+                Lap[] laps = race.GetLaps(l => l.Pilot == pilotChannel.Pilot).ToArray();
                 for (int i = laps.Count() - 1; i >= 0; i--)
                 {
-                    if (laps[i].Pilot == pilotChannel.Pilot)
-                    {
-                        DisqualifyLap(laps[i], Detection.ValidityTypes.ManualOverride);
-                        using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
-                        {
-                            db.Delete(laps[i]);
-                            race.Laps.Remove(laps[i]);
-                        }
-                    }
+                    DisqualifyLap(laps[i], Detection.ValidityTypes.ManualOverride);
                 }
 
-                var previousLapTime = race.Start;
+                DateTime previousLapTime = race.Start;
 
-                var lapNumber = 0;
+                int lapNumber = 0;
                 foreach (var marshalLap in marshalData.laps.OrderBy(l => l.lap_time_stamp))
                 {
                     if (!marshalLap.deleted)
@@ -2224,14 +2212,14 @@ namespace RaceLib
                         lapNumber++;
                     }
                 }
-                EventManager.RaceManager.RecalcuateLaps(pilotChannel.Pilot, race);
 
+                EventManager.LapRecordManager.UpdatePilot(pilotChannel.Pilot);
+                EventManager.RaceManager.RecalcuateLaps(pilotChannel.Pilot, race);
             }
             catch (Exception ex)
             {
                 Logger.RaceLog.LogException(this, ex);
             }
-
         }
     }
 }
