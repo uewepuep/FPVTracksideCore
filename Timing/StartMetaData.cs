@@ -21,6 +21,6 @@ namespace Timing
         public Guid RaceId { get; set; }
         public int RaceNumber { get; set; }
         public int RoundNumber { get; set; }
-        public string Bracket { get; set; }
+        public String Bracket { get; set; }
     }
 }
