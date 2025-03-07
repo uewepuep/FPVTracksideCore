@@ -110,7 +110,7 @@ namespace Timing
         /// Return true if it started ok. 
         /// Returning false will cancel race start and system will attempt to Connect();
         /// </returns>  
-        bool StartDetection(ref DateTime time, Guid raceId);
+        bool StartDetection(ref DateTime time, StartMetaData raceMetaData);
 
         /// <summary>  
         /// Stops the system listening for detection events.  </summary>  

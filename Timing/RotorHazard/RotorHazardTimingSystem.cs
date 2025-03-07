@@ -13,6 +13,8 @@ using System.Reflection;
 using System.Timers;
 using SocketIOClient.JsonSerializer;
 
+
+
 namespace Timing.RotorHazard
 {
     public struct PilotInfo
@@ -114,9 +116,12 @@ namespace Timing.RotorHazard
                         yield return new StatusItem() { StatusOK = false, Value = connectionCount.ToString("0") + " disc" };
 
                     int len = 5;
-                    if (ServerInfo.release_version.Length > len)
+                    if (ServerInfo.release_version != null && ServerInfo.release_version.Length > len)
                     {
                         yield return new StatusItem() { StatusOK = true, Value = "V" + ServerInfo.release_version.Substring(0, len) };
+                    } else
+                    {
+                        yield return new StatusItem() { StatusOK = false, Value = "Discon" };
                     }
 
                 }
@@ -263,6 +268,7 @@ namespace Timing.RotorHazard
                 p_id = newFrequencies.Select(r => r.PilotId.ToString()).ToArray(),
                 p = newFrequencies.Select(r => r.Pilot).ToArray(),
                 p_color = newFrequencies.Select(r => r.Color.ToHex()).ToArray()
+               
             };
 
             try
@@ -481,7 +487,7 @@ namespace Timing.RotorHazard
             }
         }
 
-        public bool StartDetection(ref DateTime time, Guid raceId)
+        public bool StartDetection(ref DateTime time, StartMetaData startMetaData)
         {
             if (!Connected)
                 return false;
@@ -498,8 +504,13 @@ namespace Timing.RotorHazard
                 }
 
                 raceStartPilots.start_time_s = serverStartTime.TotalSeconds;
-                raceStartPilots.race_id = raceId;
-                
+                raceStartPilots.race_id = startMetaData.RaceId;
+                raceStartPilots.race_number = startMetaData.RaceNumber;
+                raceStartPilots.round_number = startMetaData.RoundNumber;
+                raceStartPilots.race_name = startMetaData.RaceName;
+                raceStartPilots.bracket = startMetaData.Bracket;
+
+
                 socket?.EmitAsync("ts_race_stage", (r) =>
                 { 
                     if (responseWait.IsDisposed) 
@@ -519,7 +530,6 @@ namespace Timing.RotorHazard
 
             return detecting;
         }
-
 
         public bool EndDetection()
         {

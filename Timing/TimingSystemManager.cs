@@ -274,10 +274,10 @@ namespace Timing
 
         public bool StartDetection(ref DateTime start)
         {
-            return StartDetection(ref start, Guid.Empty);
+            return StartDetection(ref start, new StartMetaData(Guid.Empty, 0, 0, "", ""));
         }
 
-        public bool StartDetection(ref DateTime start, Guid raceId)
+        public bool StartDetection(ref DateTime start, StartMetaData startMetaData)
         {
             Logger.TimingLog.LogCall(this);
 
@@ -292,7 +292,7 @@ namespace Timing
             {
                 try
                 {
-                    startedDetection &= prime.StartDetection(ref start, raceId);
+                    startedDetection &= prime.StartDetection(ref start, startMetaData);
                     if (startedDetection)
                     {
                         OnDataReceived?.Invoke(prime);
@@ -313,7 +313,7 @@ namespace Timing
                 {
                     try
                     {
-                        if (aux.StartDetection(ref auxStart, raceId))
+                        if (aux.StartDetection(ref auxStart, startMetaData))
                         {
                             OnDataReceived?.Invoke(aux);
                         }

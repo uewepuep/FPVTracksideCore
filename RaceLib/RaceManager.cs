@@ -865,8 +865,8 @@ namespace RaceLib
                 raceId = CurrentRace.ID;
             }
 
-            if (!TimingSystemManager.StartDetection(ref start, raceId))
-            {
+            if (!TimingSystemManager.StartDetection(ref start, new StartMetaData(raceId, CurrentRace.RaceNumber, CurrentRace.RoundNumber, CurrentRace.RaceName, CurrentRace.Bracket.ToString()))) 
+            { 
                 return false;
             }
             return true;
