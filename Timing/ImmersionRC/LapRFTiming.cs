@@ -34,6 +34,7 @@ namespace Timing.ImmersionRC
         public bool Connected { get; protected set; }
 
         public event DetectionEventDelegate OnDetectionEvent;
+        public event MarshallEventDelegate OnMarshallEvent;
 
         protected DateTime lastData;
 

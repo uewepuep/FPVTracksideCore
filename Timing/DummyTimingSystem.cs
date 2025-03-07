@@ -25,6 +25,7 @@ namespace Timing
         public event System.Action OnDataSent;
 
         public event DetectionEventDelegate OnDetectionEvent;
+        public event MarshallEventDelegate OnMarshallEvent;
 
         public DummySettings DummingSettings { get; private set; }
 

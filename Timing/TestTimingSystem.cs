@@ -15,6 +15,8 @@ namespace Timing
         public TimingSystemSettings Settings { get; set; }
 
         public event DetectionEventDelegate OnDetectionEvent;
+        public event MarshallEventDelegate OnMarshallEvent;
+
         public int MaxPilots { get { return int.MaxValue; } }
         public IEnumerable<StatusItem> Status { get { return new StatusItem[0]; } }
 

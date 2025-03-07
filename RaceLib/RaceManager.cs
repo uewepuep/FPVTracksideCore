@@ -9,7 +9,6 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Timers;
 using Timing;
-using Timing.RotorHazard;
 using Tools;
 
 namespace RaceLib
@@ -279,12 +278,7 @@ namespace RaceLib
             TimingSystemManager = new TimingSystemManager(eventManager.Profile);
             TimingSystemManager.DetectionEvent += OnDetection;
             TimingSystemManager.OnConnected += OnTimingSystemReconnect;
-
-            // Add handler for marshal events
-            foreach (var system in TimingSystemManager.TimingSystems.OfType<RotorHazardTimingSystem>())
-            {
-                system.OnRaceMarshalEvent += OnRaceMarshal;
-            }
+            TimingSystemManager.MarshallEvent += OnRaceMarshal;
 
             races = new List<Race>();
         }
@@ -2161,30 +2155,30 @@ namespace RaceLib
             }
         }
 
-        private void OnRaceMarshal(ITimingSystem timingSystem, RaceMarshalData marshalData)
+        private void OnRaceMarshal(ITimingSystem timingSystem, MarshalData marshalData)
         {
             try
             {
-                Logger.RaceLog.Log(this, "Processing race marshal data for pilot: " + marshalData.callsign);
+                Logger.RaceLog.Log(this, "Processing race marshal data for pilot: " + marshalData.PilotName);
 
                 // Find the race
                 Race race = null;
-                if (CurrentRace?.ID == marshalData.race_id)
+                if (CurrentRace?.ID == marshalData.RaceID)
                 {
                     race = CurrentRace;
                 }
                 else
                 {
-                    race = GetRaceByRaceId(marshalData.race_id);
+                    race = GetRaceByRaceId(marshalData.RaceID);
                     if (race == null)
                     {
-                        Logger.RaceLog.Log(this, "Could not find race with ID: " + marshalData.race_id);
+                        Logger.RaceLog.Log(this, "Could not find race with ID: " + marshalData.RaceID);
                         return;
                     }
                 }
 
                 // Find the pilot
-                PilotChannel pilotChannel = race.PilotChannels.FirstOrDefault(pc => pc.Pilot != null && pc.Pilot.ID.ToString() == marshalData.ts_pilot_id);
+                PilotChannel pilotChannel = race.PilotChannels.FirstOrDefault(pc => pc.Pilot != null && pc.Pilot.ID == marshalData.PilotID);
 
                 if (pilotChannel == null)
                 {
@@ -2193,23 +2187,41 @@ namespace RaceLib
                 }
 
                 Lap[] laps = race.GetLaps(l => l.Pilot == pilotChannel.Pilot).ToArray();
-                for (int i = laps.Count() - 1; i >= 0; i--)
-                {
-                    DisqualifyLap(laps[i], Detection.ValidityTypes.ManualOverride);
-                }
 
-                DateTime previousLapTime = race.Start;
+                DateTime start = race.Start;
 
                 int lapNumber = 0;
-                foreach (var marshalLap in marshalData.laps.OrderBy(l => l.lap_time_stamp))
+                for (;lapNumber < laps.Length; lapNumber++)
                 {
-                    if (!marshalLap.deleted)
-                    {
-                        DateTime lapTime = previousLapTime + TimeSpan.FromMilliseconds(marshalLap.lap_time);
-                        previousLapTime = lapTime;
+                    Lap lap = laps[lapNumber];
 
-                        AddManualLapWithRace(race, pilotChannel.Pilot, lapTime, lapNumber);
-                        lapNumber++;
+                    MarshalLap marshalLap = marshalData.Laps.FirstOrDefault(ml => ml.LapNumber == lapNumber);
+                    if (marshalLap == null || !marshalLap.Valid)
+                    {
+                        DisqualifyLap(lap, Detection.ValidityTypes.Marshall);
+                    }
+                    else
+                    {
+                        lap.End = start + marshalLap.RaceTime;
+                        lap.UpdateLength();
+                        SetLapValidity(lap, true, Detection.ValidityTypes.Marshall);
+
+                        using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                        {
+                            db.Update(race);
+                            db.Update(lap);
+                            db.Update(lap.Detection);
+                        }
+                    }
+                }
+
+                for (;lapNumber < marshalData.Laps.Length; lapNumber++)
+                {
+                    MarshalLap marshalLap = marshalData.Laps[lapNumber];
+                    if (marshalLap.Valid)
+                    {
+                        DateTime lapEnd = start + marshalLap.RaceTime;
+                        AddManualLapWithRace(race, pilotChannel.Pilot, lapEnd, lapNumber);
                     }
                 }
 
