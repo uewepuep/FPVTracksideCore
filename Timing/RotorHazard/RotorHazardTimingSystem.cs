@@ -116,12 +116,9 @@ namespace Timing.RotorHazard
                         yield return new StatusItem() { StatusOK = false, Value = connectionCount.ToString("0") + " disc" };
 
                     int len = 5;
-                    if (ServerInfo.release_version != null && ServerInfo.release_version.Length > len)
+                    if (ServerInfo.release_version.Length > len)
                     {
                         yield return new StatusItem() { StatusOK = true, Value = "V" + ServerInfo.release_version.Substring(0, len) };
-                    } else
-                    {
-                        yield return new StatusItem() { StatusOK = false, Value = "Discon" };
                     }
 
                 }
