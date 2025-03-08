@@ -12,6 +12,9 @@ using SocketIOClient;
 using System.Reflection;
 using System.Timers;
 using SocketIOClient.JsonSerializer;
+using System.Text.Json;
+
+
 
 namespace Timing.RotorHazard
 {
@@ -262,6 +265,7 @@ namespace Timing.RotorHazard
                 p_id = newFrequencies.Select(r => r.PilotId.ToString()).ToArray(),
                 p = newFrequencies.Select(r => r.Pilot).ToArray(),
                 p_color = newFrequencies.Select(r => r.Color.ToHex()).ToArray()
+               
             };
 
             try
@@ -480,7 +484,7 @@ namespace Timing.RotorHazard
             }
         }
 
-        public bool StartDetection(ref DateTime time, Guid raceId)
+        public bool StartDetection(ref DateTime time, StartMetaData startMetaData)
         {
             if (!Connected)
                 return false;
@@ -497,8 +501,13 @@ namespace Timing.RotorHazard
                 }
 
                 raceStartPilots.start_time_s = serverStartTime.TotalSeconds;
-                raceStartPilots.race_id = raceId;
-                
+                raceStartPilots.race_id = startMetaData.RaceId;
+                raceStartPilots.race_number = startMetaData.RaceNumber;
+                raceStartPilots.round_number = startMetaData.RoundNumber;
+                raceStartPilots.race_name = startMetaData.RaceName;
+                raceStartPilots.bracket = startMetaData.Bracket;
+
+
                 socket?.EmitAsync("ts_race_stage", (r) =>
                 { 
                     if (responseWait.IsDisposed) 
@@ -518,7 +527,6 @@ namespace Timing.RotorHazard
 
             return detecting;
         }
-
 
         public bool EndDetection()
         {
@@ -573,40 +581,95 @@ namespace Timing.RotorHazard
         {
             try
             {
-                RaceMarshalData rhmarshalData = response.GetValue<RaceMarshalData>();
-                Logger.TimingLog.Log(this, "Received race marshal data for pilot: " + rhmarshalData.callsign);
+                var text = response.ToString();
+                List<RaceMarshalData> raceMarshalDataList = new List<RaceMarshalData>();
 
-                RaceMarshalLap[] orderedLaps = rhmarshalData.laps.OrderBy(l => l.lap_time_stamp).ToArray();
-
-                // Copy to generic data types.
-
-                MarshalData data = new MarshalData();
-                data.PilotName = rhmarshalData.callsign;
-                data.PilotID = Guid.Parse(rhmarshalData.ts_pilot_id);
-                data.RaceID = rhmarshalData.race_id;
-                data.Laps = new MarshalLap[rhmarshalData.laps.Count];
-
-                for (int i = 0; i < orderedLaps.Length; i++)
+                using (JsonDocument doc = JsonDocument.Parse(text))
                 {
-                    RaceMarshalLap raceMarshalLap = orderedLaps[i];
-                    
-                    MarshalLap marshalLap = new MarshalLap();
-                    marshalLap.LapNumber = i; // Account for non-Holeshots here?
-                    marshalLap.Valid = !raceMarshalLap.deleted;
-                    marshalLap.Length = TimeSpan.FromMilliseconds(raceMarshalLap.lap_time);
-                    marshalLap.RaceTime = TimeSpan.FromMilliseconds(raceMarshalLap.lap_time_stamp);
+                    JsonElement root = doc.RootElement;
 
-                    data.Laps[i] = marshalLap;
+                    if (root.ValueKind == JsonValueKind.Array)
+                    {
+                        // Case 1: Response is an array of objects
+                        foreach (JsonElement element in root.EnumerateArray())
+                        {
+                            raceMarshalDataList.Add(ParseRaceMarshalData(element));
+                        }
+                    }
+                    else if (root.ValueKind == JsonValueKind.Object)
+                    {
+                        // Case 2: Response is a single object
+                        raceMarshalDataList.Add(ParseRaceMarshalData(root));
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Unexpected JSON format.");
+                    }
                 }
 
-                OnMarshallEvent?.Invoke(this, data);
+                foreach (var rhmarshalData in raceMarshalDataList)
+                {
+                    Logger.TimingLog.Log(this, "Received race marshal data for pilot: " + rhmarshalData.callsign);
+
+                    RaceMarshalLap[] orderedLaps = rhmarshalData.laps.OrderBy(l => l.lap_time_stamp).ToArray();
+
+                    // Copy to generic data types.
+
+                    MarshalData data = new MarshalData();
+                    data.PilotName = rhmarshalData.callsign;
+                    data.PilotID = Guid.Parse(rhmarshalData.ts_pilot_id);
+                    data.RaceID = rhmarshalData.race_id;
+                    data.Laps = new MarshalLap[rhmarshalData.laps.Count];
+
+                    for (int i = 0; i < orderedLaps.Length; i++)
+                    {
+                        RaceMarshalLap raceMarshalLap = orderedLaps[i];
+
+                        MarshalLap marshalLap = new MarshalLap();
+                        marshalLap.LapNumber = i; // Account for non-Holeshots here?
+                        marshalLap.Valid = !raceMarshalLap.deleted;
+                        marshalLap.Length = TimeSpan.FromMilliseconds(raceMarshalLap.lap_time);
+                        marshalLap.RaceTime = TimeSpan.FromMilliseconds(raceMarshalLap.lap_time_stamp);
+
+                        data.Laps[i] = marshalLap;
+                    }
+
+                    Logger.TimingLog.Log(this, "Received race marshal data for pilot: " + rhmarshalData.callsign);
+                    OnMarshallEvent?.Invoke(this, data);
+                    break; 
+                }
             }
             catch (Exception ex)
             {
                 Logger.TimingLog.LogException(this, ex);
             }
         }
+
+        private RaceMarshalData ParseRaceMarshalData(JsonElement element)
+        {
+            var raceData = new RaceMarshalData
+            {
+                race_id = element.GetProperty("race_id").GetGuid(),
+                callsign = element.GetProperty("callsign").GetString(),
+                ts_pilot_id = element.GetProperty("ts_pilot_id").GetString(),
+                laps = new List<RaceMarshalLap>()
+            };
+
+            var lapsElement = element.GetProperty("laps");
+
+            if (lapsElement.ValueKind == JsonValueKind.String)
+            {
+                // "laps" is a stringified JSON array -> Deserialize it
+                raceData.laps = System.Text.Json.JsonSerializer.Deserialize<List<RaceMarshalLap>>(lapsElement.GetString());
+            }
+            else if (lapsElement.ValueKind == JsonValueKind.Array)
+            {
+                // "laps" is a proper JSON array -> Deserialize directly
+                raceData.laps = System.Text.Json.JsonSerializer.Deserialize<List<RaceMarshalLap>>(lapsElement.GetRawText());
+            }
+
+            return raceData;
+        }
+
     }
-
-
 }

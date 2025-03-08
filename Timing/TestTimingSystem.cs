@@ -52,7 +52,7 @@ namespace Timing
             return true;
         }
 
-        public bool StartDetection(ref DateTime time, Guid raceId)
+        public bool StartDetection(ref DateTime time, StartMetaData startMetaData)
         {
             return true;
         }
