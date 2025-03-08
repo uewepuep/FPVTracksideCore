@@ -12,6 +12,7 @@ using SocketIOClient;
 using System.Reflection;
 using System.Timers;
 using SocketIOClient.JsonSerializer;
+using System.Text.Json;
 
 
 
@@ -581,16 +582,71 @@ namespace Timing.RotorHazard
         {
             try
             {
-                RaceMarshalData marshalData = response.GetValue<RaceMarshalData>();
-                Logger.TimingLog.Log(this, "Received race marshal data for pilot: " + marshalData.callsign);
-                OnRaceMarshalEvent?.Invoke(this, marshalData);
+                System.Console.WriteLine("OnRaceMarshal Data: " + response.ToString());
+                var text = response.ToString();
+
+                List<RaceMarshalData> raceMarshalDataList = new List<RaceMarshalData>();
+
+                using (JsonDocument doc = JsonDocument.Parse(text))
+                {
+                    JsonElement root = doc.RootElement;
+
+                    if (root.ValueKind == JsonValueKind.Array)
+                    {
+                        // Case 1: Response is an array of objects
+                        foreach (JsonElement element in root.EnumerateArray())
+                        {
+                            raceMarshalDataList.Add(ParseRaceMarshalData(element));
+                        }
+                    }
+                    else if (root.ValueKind == JsonValueKind.Object)
+                    {
+                        // Case 2: Response is a single object
+                        raceMarshalDataList.Add(ParseRaceMarshalData(root));
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Unexpected JSON format.");
+                    }
+                }
+
+                foreach (var marshalData in raceMarshalDataList)
+                {
+                    Logger.TimingLog.Log(this, "Received race marshal data for pilot: " + marshalData.callsign);
+                    OnRaceMarshalEvent?.Invoke(this, marshalData);
+                }
             }
             catch (Exception ex)
             {
                 Logger.TimingLog.LogException(this, ex);
             }
         }
+
+        private RaceMarshalData ParseRaceMarshalData(JsonElement element)
+        {
+            var raceData = new RaceMarshalData
+            {
+                race_id = element.GetProperty("race_id").GetGuid(),
+                callsign = element.GetProperty("callsign").GetString(),
+                ts_pilot_id = element.GetProperty("ts_pilot_id").GetString(),
+                laps = new List<RaceMarshalLap>()
+            };
+
+            var lapsElement = element.GetProperty("laps");
+
+            if (lapsElement.ValueKind == JsonValueKind.String)
+            {
+                // "laps" is a stringified JSON array -> Deserialize it
+                raceData.laps = System.Text.Json.JsonSerializer.Deserialize<List<RaceMarshalLap>>(lapsElement.GetString());
+            }
+            else if (lapsElement.ValueKind == JsonValueKind.Array)
+            {
+                // "laps" is a proper JSON array -> Deserialize directly
+                raceData.laps = System.Text.Json.JsonSerializer.Deserialize<List<RaceMarshalLap>>(lapsElement.GetRawText());
+            }
+
+            return raceData;
+        }
+
     }
-
-
 }
