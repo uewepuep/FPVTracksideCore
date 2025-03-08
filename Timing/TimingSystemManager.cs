@@ -5,6 +5,7 @@ using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 using Timing.ImmersionRC;
 using Timing.RotorHazard;
 using Tools;
@@ -29,6 +30,7 @@ namespace Timing
         public event System.Action OnInitialise;
 
         public event TimingSystemDetectionEventDelegate DetectionEvent;
+        public event MarshallEventDelegate MarshallEvent;
 
         public ITimingSystem[] PrimeSystems { get; private set; }
         public ITimingSystem[] SplitSystems { get; private set; }
@@ -140,6 +142,7 @@ namespace Timing
             foreach (ITimingSystem timingSystem in timingSystems)
             {
                 timingSystem.OnDetectionEvent += OnDetectionEvent;
+                timingSystem.OnMarshallEvent += OnMarshallEvent;
 
                 if (timingSystem is ITimingSystemWithRSSI)
                 {
@@ -395,6 +398,14 @@ namespace Timing
                     Logger.TimingLog.LogException(this, e);
                 }
             }
+        }
+
+        private void OnMarshallEvent(ITimingSystem timingSystem, MarshalData marshalData)
+        {
+            Logger.TimingLog.LogCall(this, marshalData.RaceID, marshalData.PilotID);
+            OnDataReceived?.Invoke(timingSystem);
+
+            MarshallEvent?.Invoke(timingSystem, marshalData);
         }
 
         protected void OnDetectionEvent(ITimingSystem timingSystem, int frequency, DateTime time, int peak)

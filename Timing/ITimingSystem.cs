@@ -128,6 +128,8 @@ namespace Timing
         /// </summary>  
         event DetectionEventDelegate OnDetectionEvent;
 
+        event MarshallEventDelegate OnMarshallEvent;
+
         TimingSystemSettings Settings { get; set; }
 
         IEnumerable<StatusItem> Status { get; }
@@ -194,6 +196,9 @@ namespace Timing
     /// </summary>  
     public delegate void DetectionEventDelegate(ITimingSystem system, int frequency, DateTime time, int peak);
 
+    public delegate void MarshallEventDelegate(ITimingSystem system, MarshalData marshalData);
+
+
     public interface ITimingSystemWithRSSI : ITimingSystem
     {
         IEnumerable<RSSI> GetRSSI();
@@ -206,9 +211,24 @@ namespace Timing
         public float CurrentRSSI { get; set; }
         public float ScaleMin { get; set; }
         public float ScaleMax { get; set; }
-
         public bool Detected { get; set; }
 
+    }
+
+    public class MarshalData
+    {
+        public Guid RaceID { get; set; }
+        public string PilotName { get; set; }
+        public Guid PilotID { get; set; }
+        public MarshalLap[] Laps { get; set; }
+    }
+
+    public class MarshalLap
+    {
+        public int LapNumber { get; set; }
+        public bool Valid { get; set; }
+        public TimeSpan Length { get; set; }
+        public TimeSpan RaceTime { get; set; }
     }
 }
 

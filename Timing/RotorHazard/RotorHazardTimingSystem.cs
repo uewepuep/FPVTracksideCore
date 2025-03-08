@@ -155,9 +155,8 @@ namespace Timing.RotorHazard
             }
         }
 
-        public delegate void RaceMarshalEventDelegate(ITimingSystem timingSystem, RaceMarshalData marshalData);
-        public event RaceMarshalEventDelegate OnRaceMarshalEvent;
-        
+        public event MarshallEventDelegate OnMarshallEvent;
+
         public RotorHazardTimingSystem()
         {
             settings = new RotorHazardSettings();
@@ -582,9 +581,7 @@ namespace Timing.RotorHazard
         {
             try
             {
-                System.Console.WriteLine("OnRaceMarshal Data: " + response.ToString());
                 var text = response.ToString();
-
                 List<RaceMarshalData> raceMarshalDataList = new List<RaceMarshalData>();
 
                 using (JsonDocument doc = JsonDocument.Parse(text))
@@ -610,10 +607,36 @@ namespace Timing.RotorHazard
                     }
                 }
 
-                foreach (var marshalData in raceMarshalDataList)
+                foreach (var rhmarshalData in raceMarshalDataList)
                 {
-                    Logger.TimingLog.Log(this, "Received race marshal data for pilot: " + marshalData.callsign);
-                    OnRaceMarshalEvent?.Invoke(this, marshalData);
+                    Logger.TimingLog.Log(this, "Received race marshal data for pilot: " + rhmarshalData.callsign);
+
+                    RaceMarshalLap[] orderedLaps = rhmarshalData.laps.OrderBy(l => l.lap_time_stamp).ToArray();
+
+                    // Copy to generic data types.
+
+                    MarshalData data = new MarshalData();
+                    data.PilotName = rhmarshalData.callsign;
+                    data.PilotID = Guid.Parse(rhmarshalData.ts_pilot_id);
+                    data.RaceID = rhmarshalData.race_id;
+                    data.Laps = new MarshalLap[rhmarshalData.laps.Count];
+
+                    for (int i = 0; i < orderedLaps.Length; i++)
+                    {
+                        RaceMarshalLap raceMarshalLap = orderedLaps[i];
+
+                        MarshalLap marshalLap = new MarshalLap();
+                        marshalLap.LapNumber = i; // Account for non-Holeshots here?
+                        marshalLap.Valid = !raceMarshalLap.deleted;
+                        marshalLap.Length = TimeSpan.FromMilliseconds(raceMarshalLap.lap_time);
+                        marshalLap.RaceTime = TimeSpan.FromMilliseconds(raceMarshalLap.lap_time_stamp);
+
+                        data.Laps[i] = marshalLap;
+                    }
+
+                    Logger.TimingLog.Log(this, "Received race marshal data for pilot: " + rhmarshalData.callsign);
+                    OnMarshallEvent?.Invoke(this, data);
+                    break; 
                 }
             }
             catch (Exception ex)

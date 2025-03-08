@@ -26,7 +26,8 @@ namespace RaceLib
         public enum ValidityTypes
         {
             Auto,
-            ManualOverride
+            ManualOverride,
+            Marshall
         }
 
         public ValidityTypes ValidityType { get; set; }

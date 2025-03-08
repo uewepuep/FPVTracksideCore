@@ -18,6 +18,7 @@ namespace Timing
         public TimingSystemSettings Settings { get { return VideoTimingSystemSettings; } set { VideoTimingSystemSettings = (VideoTimingSettings)value; } }
 
         public event DetectionEventDelegate OnDetectionEvent;
+        public event MarshallEventDelegate OnMarshallEvent;
 
         private VideoGateDetector[] detectors;
 
