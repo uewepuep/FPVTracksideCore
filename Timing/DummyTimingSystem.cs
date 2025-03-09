@@ -72,7 +72,7 @@ namespace Timing
             EndDetection();
         }
 
-        public bool StartDetection(ref DateTime time, Guid raceId)
+        public bool StartDetection(ref DateTime time, StartMetaData startMetaData)
         {
             running = true;
 

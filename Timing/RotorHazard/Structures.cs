@@ -150,6 +150,12 @@ namespace Timing.RotorHazard
         public string[] p { get; set; }
         public string[] p_id { get; set; }
         public string[] p_color { get; set; }
+
+        public string race_name { get; set; }
+        public int race_number { get; set; }
+        public int round_number { get; set; }
+
+        public string bracket { get; set; }
     }
 
     public struct RaceMarshalData

@@ -859,8 +859,14 @@ namespace RaceLib
                 raceId = CurrentRace.ID;
             }
 
-            if (!TimingSystemManager.StartDetection(ref start, raceId))
+            var bracketString = CurrentRace.Bracket.ToString();
+            if (CurrentRace.Bracket == Brackets.None)
             {
+                bracketString = null;
+            }
+
+            if (!TimingSystemManager.StartDetection(ref start, new StartMetaData(raceId, CurrentRace.RaceNumber, CurrentRace.RoundNumber, CurrentRace.RaceName, bracketString))) 
+            { 
                 return false;
             }
             return true;
