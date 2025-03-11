@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using Timing.Chorus;
 using Timing.ImmersionRC;
 using Timing.RotorHazard;
 using Tools;
@@ -188,6 +189,9 @@ namespace Timing
 
                 else if (settings is RotorHazardSettings)
                     timingSystem = new RotorHazardTimingSystem();
+
+                else if (settings is ChorusSettings)
+                    timingSystem = new ChorusTiming();
 
                 if (timingSystem != null)
                 {
