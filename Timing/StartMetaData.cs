@@ -10,17 +10,17 @@ namespace Timing
     {
         public StartMetaData(Guid raceId, int raceNumber, int roundNumber, string raceName, string bracket)
         {
-            this.RaceId = raceId;
-            this.RaceNumber = raceNumber;
-            this.RoundNumber = roundNumber;
-            this.RaceName = raceName;
-            this.Bracket = bracket;
+            RaceId = raceId;
+            RaceNumber = raceNumber;
+            RoundNumber = roundNumber;
+            RaceName = raceName;
+            Bracket = bracket;
         }
 
-        public String RaceName { get; set; }
+        public string RaceName { get; set; }
         public Guid RaceId { get; set; }
         public int RaceNumber { get; set; }
         public int RoundNumber { get; set; }
-        public String Bracket { get; set; }
+        public string Bracket { get; set; }
     }
 }
