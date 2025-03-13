@@ -42,7 +42,7 @@ namespace Timing
         {
         }
 
-        public bool EndDetection()
+        public bool EndDetection(EndDetectionType type)
         {
             return true;
         }

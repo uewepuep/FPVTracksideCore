@@ -82,6 +82,12 @@ namespace Timing
         Split
     }
 
+    public enum EndDetectionType
+    {
+        Normal,
+        Abort
+    }
+
     public interface ITimingSystem : IDisposable
     {
         TimingSystemType Type { get; }
@@ -118,7 +124,7 @@ namespace Timing
         /// <returns> 
         /// Return true if it stopped ok.
         /// </returns>  
-        bool EndDetection();
+        bool EndDetection(EndDetectionType type);
 
         int MaxPilots { get; }
 

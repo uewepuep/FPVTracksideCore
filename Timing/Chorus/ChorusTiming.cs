@@ -192,7 +192,7 @@ namespace Timing.Chorus
         }
 
 
-        public bool EndDetection()
+        public bool EndDetection(EndDetectionType type)
         {
             return Send("R*R0");
         }

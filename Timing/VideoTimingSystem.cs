@@ -56,7 +56,7 @@ namespace Timing
             return true;
         }
 
-        public bool EndDetection()
+        public bool EndDetection(EndDetectionType type)
         {
             detecting = false;
             return true;

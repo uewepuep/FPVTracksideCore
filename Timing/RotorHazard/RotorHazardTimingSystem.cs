@@ -528,22 +528,53 @@ namespace Timing.RotorHazard
             return detecting;
         }
 
-        public bool EndDetection()
+        public bool EndDetection(EndDetectionType type)
         {
             if (!Connected)
                 return false;
 
             detecting = false;
 
-            socket?.EmitAsync("ts_race_stop", GotRaceStop);
+            SocketIO s = socket;
+            if (s == null)
+                return false;
+
+            switch (type)
+            {
+                case EndDetectionType.Abort:
+
+                    using (AutoResetEvent wait = new AutoResetEvent(false))
+                    {
+                        s.EmitAsync("ts_race_abort", (r) =>
+                        {
+                            wait.Set();
+                            Logger.TimingLog.Log(this, "RH aborted Race");
+                        });
+
+                        // If we don't get an abort response, might be an old version, do ts_stop.
+                        if (!wait.WaitOne(1000))
+                        {
+                            Logger.TimingLog.Log(this, "RH no abort fn..");
+
+                            s.EmitAsync("ts_race_stop", (r) =>
+                            {
+                                Logger.TimingLog.Log(this, "RH stopped Race");
+                            });
+                        }
+                    }
+                    
+                    break;
+                case EndDetectionType.Normal:
+                    s.EmitAsync("ts_race_stop", () =>
+                    {
+                        Logger.TimingLog.Log(this, "RH stopped Race");
+                    });
+                    break;
+            }
 
             return true;
         }
 
-        protected void GotRaceStop(SocketIOResponse response)
-        {
-            Logger.TimingLog.Log(this, "Device stopped Race");
-        }
 
         public IEnumerable<RSSI> GetRSSI()
         {

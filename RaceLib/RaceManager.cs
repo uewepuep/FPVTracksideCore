@@ -793,7 +793,7 @@ namespace RaceLib
 
                 OnRaceCancelled?.Invoke(CurrentRace, failure);
 
-                TimingSystemManager.EndDetection();
+                TimingSystemManager.EndDetection(EndDetectionType.Abort);
 
                 return true;
             }
@@ -886,7 +886,7 @@ namespace RaceLib
 
             if (currentRace.Type.UsesTimingSystem())
             {
-                TimingSystemManager.EndDetection();
+                TimingSystemManager.EndDetection(EndDetectionType.Normal);
             }
 
             currentRace.End = DateTime.Now;

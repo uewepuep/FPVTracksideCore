@@ -69,7 +69,7 @@ namespace Timing
 
         public void Dispose()
         {
-            EndDetection();
+            EndDetection(EndDetectionType.Normal);
         }
 
         public bool StartDetection(ref DateTime time, StartMetaData startMetaData)
@@ -132,7 +132,7 @@ namespace Timing
 
                 if (threads.Any())
                 {
-                    EndDetection();
+                    EndDetection(EndDetectionType.Normal);
                 }
 
                 int index = 1;
@@ -208,7 +208,7 @@ namespace Timing
             }
         }
 
-        public bool EndDetection()
+        public bool EndDetection(EndDetectionType type)
         {
             lock (threads)
             {

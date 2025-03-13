@@ -273,7 +273,7 @@ namespace Timing.ImmersionRC
             }
         }
 
-        public bool EndDetection()
+        public bool EndDetection(EndDetectionType type)
         {
             laprf.prepare_sendable_packet(LapRF.LapRFProtocol.laprf_type_of_record.LAPRF_TOR_STATE_CONTROL);
             laprf.append_field_of_record_u8(0x20, 0);                // 0 = stop race

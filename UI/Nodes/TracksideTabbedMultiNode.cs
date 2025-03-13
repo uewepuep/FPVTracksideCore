@@ -346,7 +346,7 @@ namespace UI.Nodes
                 // if we're detecting and not in a race
                 if (!eventManager.RaceManager.RaceRunning && tsm.IsDetecting)
                 {
-                    tsm.EndDetection();
+                    tsm.EndDetection(EndDetectionType.Abort);
                 }
             }
 

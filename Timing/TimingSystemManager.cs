@@ -216,7 +216,7 @@ namespace Timing
 
             if (detectionRunning)
             {
-                EndDetection();
+                EndDetection(EndDetectionType.Normal);
             }
 
             Disconnect();
@@ -248,7 +248,7 @@ namespace Timing
 
                                 if (!detectionRunning)
                                 {
-                                    timingSystem.EndDetection();
+                                    timingSystem.EndDetection(EndDetectionType.Normal);
                                 }
                             }
                         }
@@ -338,7 +338,7 @@ namespace Timing
                 {
                     try
                     {
-                        ts.EndDetection();
+                        ts.EndDetection(EndDetectionType.Abort);
                     }
                     catch (Exception e)
                     {
@@ -352,7 +352,7 @@ namespace Timing
             }
         }
 
-        public void EndDetection()
+        public void EndDetection(EndDetectionType type)
         {
             Logger.TimingLog.LogCall(this);
 
@@ -363,7 +363,7 @@ namespace Timing
             {
                 try
                 {
-                    if (timingSystem.EndDetection())
+                    if (timingSystem.EndDetection(type))
                     {
                         OnDataReceived?.Invoke(timingSystem);
                     }
