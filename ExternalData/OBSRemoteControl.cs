@@ -47,42 +47,59 @@ namespace ExternalData
             workQueue = null;
         }
 
-        public void Connect()
+        public bool Connect()
         {
-            if (connecting)
-                return;
+            try
+            {
+                if (connecting)
+                    return false;
 
-            string url = "ws://" + host + ":" + port;
-            Logger.OBS.LogCall(this, url, password);
+                string url = "ws://" + host + ":" + port;
+                Logger.OBS.LogCall(this, url, password);
 
-            connecting = true;
-            obsWebsocket.ConnectAsync(url, password);
-            Activity?.Invoke(true);
+                connecting = true;
+                obsWebsocket.ConnectAsync(url, password);
+                Activity?.Invoke(true);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Logger.OBS.LogException(this, e);
+                return false;
+            }
         }
 
-        public bool WaitConnection()
+        public bool ConnectWait()
         {
-            if (Connected)
+            try
+            {
+                if (Connected)
                 return true;
 
-            if (!connecting)
-                Connect();
+                if (!connecting)
+                    Connect();
 
-            OBSWebsocket oBSWebsocket = obsWebsocket;
-            if (oBSWebsocket == null)
-                return false;
-
-            DateTime start = DateTime.Now;
-            while (connecting)
-            {
-                Thread.Sleep(100);
-                if (DateTime.Now - start > obsWebsocket.WSTimeout)
-                {
+                OBSWebsocket oBSWebsocket = obsWebsocket;
+                if (oBSWebsocket == null)
                     return false;
-                }
-            }
 
-            return true;
+                DateTime start = DateTime.Now;
+                while (connecting)
+                {
+                    Thread.Sleep(100);
+                    if (DateTime.Now - start > obsWebsocket.WSTimeout)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                Logger.OBS.LogException(this, e);
+                return false;
+            }
         }
 
         private void OnConnected(object sender, EventArgs e)
@@ -134,7 +151,7 @@ namespace ExternalData
 
         private IEnumerable<string> GetScenes()
         {
-            WaitConnection();
+            ConnectWait();
 
             GetSceneListInfo sceneListInfo = obsWebsocket.GetSceneList();
             return sceneListInfo.Scenes.Select(s => s.Name);
@@ -147,7 +164,7 @@ namespace ExternalData
 
         private IEnumerable<string> GetSources()
         {
-            WaitConnection();
+            ConnectWait();
 
             foreach (string scene in GetScenes()) 
             {
@@ -166,7 +183,7 @@ namespace ExternalData
         }
         private IEnumerable<string> GetFilters()
         {
-            WaitConnection();
+            ConnectWait();
 
             foreach (string scene in GetScenes())
             {
@@ -190,7 +207,7 @@ namespace ExternalData
 
         private IEnumerable<string> GetHotKeys()
         {
-            WaitConnection();
+            ConnectWait();
             return obsWebsocket.GetHotkeyList().Distinct().OrderBy(r => r);
         }
 
@@ -201,7 +218,7 @@ namespace ExternalData
                 if (!Connected || obsWebsocket == null)
                 {
                     Connect();
-                    WaitConnection();
+                    ConnectWait();
                 }
 
                 if (!Connected || obsWebsocket == null)

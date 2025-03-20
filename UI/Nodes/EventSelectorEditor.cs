@@ -197,36 +197,38 @@ namespace UI.Nodes
                 buttonContainer.AddChild(RecoverButton);
 
                 CloneButton = new TextButtonNode("Clone", ButtonBackground, ButtonHover, TextColor);
-                CloneButton.OnClick += (mie) =>
-                {
-                    if (Selected != null)
-                    {
-                        Event loaded = null;
-
-                        using (IDatabase db = DatabaseFactory.Open(Selected.ID))
-                        {
-                            loaded = db.LoadEvent();
-                        }
-                        if (loaded != null)
-                        {
-                            Event newEvent = loaded.Clone();
-                            using (IDatabase db = DatabaseFactory.Open(newEvent.ID))
-                            {
-                                db.Insert(newEvent);
-
-                                db.LoadEvent();
-                                db.Insert(newEvent.Pilots);
-
-                                AddNew(new SimpleEvent(newEvent));
-                            }
-                        }
-                    }
-                };
+                CloneButton.OnClick += Clone;
                 buttonContainer.AddChild(CloneButton);
             }
             itemName.Visible = false;
 
             AlignVisibleButtons();
+        }
+
+        private void Clone(MouseInputEvent mie)
+        {
+            if (Selected != null)
+            {
+                Event loaded = null;
+
+                using (IDatabase db = DatabaseFactory.Open(Selected.ID))
+                {
+                    loaded = db.LoadEvent();
+                }
+                if (loaded != null)
+                {
+                    Event newEvent = loaded.Clone();
+                    using (IDatabase db = DatabaseFactory.Open(newEvent.ID))
+                    {
+                        db.Insert(newEvent);
+
+                        db.LoadEvent();
+                        db.Insert(newEvent.Pilots);
+
+                        AddNew(new SimpleEvent(newEvent));
+                    }
+                }
+            }
         }
 
         protected override PropertyNode<SimpleEvent> CreatePropertyNode(SimpleEvent obj, PropertyInfo pi)
@@ -403,6 +405,9 @@ namespace UI.Nodes
 
         public void ConvertSaveEvent(SimpleEvent simpleEvent)
         {
+            if (simpleEvent == null)
+                return;
+
             using (IDatabase db = DatabaseFactory.Open(simpleEvent.ID))
             {
                 Event eventt = db.LoadEvent();

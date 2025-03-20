@@ -70,20 +70,28 @@ namespace Timing.ImmersionRC
         {
             base.Disconnect();
 
-            Connected = false;
-
-            if (comPort == null)
+            try
             {
-                return false;
-            }
+                Connected = false;
 
-            if (comPort.IsOpen)
-            {
-                comPort.Close();
+                if (comPort == null)
+                {
+                    return false;
+                }
+
+                if (comPort.IsOpen)
+                {
+                    comPort.Close();
+                    comPort = null;
+                    return true;
+                }
                 comPort = null;
-                return true;
             }
-            comPort = null;
+            catch (Exception e)
+            {
+                Tools.Logger.TimingLog.LogException(this, e);
+            }
+            
             return false;
         }
 

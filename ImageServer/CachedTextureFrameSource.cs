@@ -100,9 +100,10 @@ namespace ImageServer
 
             Stop();
 
-            foreach (FrameTextureSample frame in samples)
+            for (int i = 0; i < samples.Count; i++)
             {
-                frame.Dispose();
+                FrameTextureSample fs = samples[i];
+                fs.Dispose();
             }
             samples.Clear();
         }

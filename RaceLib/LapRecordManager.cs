@@ -473,6 +473,9 @@ namespace RaceLib
 
         public void ClearPilot(Pilot pilot)
         {
+            if (pilot == null)
+                return;
+
             lock (Records)
             {
                 Records.Remove(pilot);
@@ -524,7 +527,10 @@ namespace RaceLib
                     }
                 }
 
-                if (bestInRace != null && (best == null || bestInRace.TotalTime() < best.TotalTime()))
+                if (bestInRace == null || !bestInRace.Any())
+                    continue;
+
+                if (best == null || bestInRace.TotalTime() < best.TotalTime())
                 {
                     best = bestInRace.ToArray();
                 }
