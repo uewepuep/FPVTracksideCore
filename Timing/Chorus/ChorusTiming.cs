@@ -95,7 +95,7 @@ namespace Timing.Chorus
                     Connected = true;
 
                     Send("N0");
-
+                    NodeCount = 8;
                     return true;
                 }
             }
@@ -181,20 +181,20 @@ namespace Timing.Chorus
                 index++;
             }
 
-            return false;
+            return true;
         }
 
         public bool StartDetection(ref DateTime time, StartMetaData raceMetaData)
         {
             requestStart = DateTime.Now;
             responseStart = DateTime.Now;
-            return Send("R*R2");
+            return Send("ES*R2");
         }
 
 
         public bool EndDetection(EndDetectionType type)
         {
-            return Send("R*R0");
+            return Send("ES*R0");
         }
 
         private bool Send(string data)
@@ -260,7 +260,7 @@ namespace Timing.Chorus
                     break;
                 // Lap record
                 case 'L':
-                    int rawMilliseconds = int.Parse(data.Substring(3), System.Globalization.NumberStyles.HexNumber);
+                    int rawMilliseconds = int.Parse(data.Substring(5), System.Globalization.NumberStyles.HexNumber);
                     int node = int.Parse(data[1] + "");
 
                     DateTime start = new DateTime((requestStart.Ticks + responseStart.Ticks) / 2);
