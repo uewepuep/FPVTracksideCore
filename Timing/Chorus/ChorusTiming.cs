@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -37,6 +38,7 @@ namespace Timing.Chorus
         private float voltage;
 
         private Dictionary<int, int> nodeTofrequency;
+
 
         public IEnumerable<StatusItem> Status
         {
@@ -85,8 +87,9 @@ namespace Timing.Chorus
                 comPort.BaudRate = 115200;
                 comPort.RtsEnable = true;
                 comPort.DtrEnable = true;
-                comPort.ReadTimeout = 6000;
                 comPort.WriteTimeout = 12000;
+                comPort.ReadTimeout = 500;
+                comPort.Encoding = Encoding.ASCII;
 
                 comPort.Open();
 
@@ -94,7 +97,7 @@ namespace Timing.Chorus
                 {
                     Connected = true;
 
-                    Send("N0");
+                    Send("N");
                     NodeCount = 8;
                     return true;
                 }
@@ -170,17 +173,26 @@ namespace Timing.Chorus
                 {
                     threshold = (int)(threshold * 1 / frequencySensitivity.SensitivityFactor);
                 }
-
-                // Set the frequency.
-                Send(node + "F" + frequencySensitivity.Frequency.ToString("X4"));
+                
+                Send(node + "A1*"); // activate the node
+                
+                // Set the frequency. by setting the band and channel
+                //  Send(node + "B" + frequencySensitivity.Band.ToString() + "00"); // TODO: in chours the band is controlled by sending a number and not a letter (AKA R,F,A...), need to make a table for referense 
+                Send(node + "C" + (frequencySensitivity.Channel - 1).ToString() + "0");
                 nodeTofrequency.Add(index, frequencySensitivity.Frequency);
-
+                
                 // Set the threshold
                 Send(node + "T" + threshold.ToString("X4"));
 
                 index++;
             }
-
+            
+            while (index < 8)
+            {
+                string node = "R" + index;
+                Send(node + "A0*"); // Deactivate unused nodes
+                index++;
+            }
             return true;
         }
 
@@ -188,13 +200,14 @@ namespace Timing.Chorus
         {
             requestStart = DateTime.Now;
             responseStart = DateTime.Now;
-            return Send("ES*R2");
+            return Send("R*R2*");
         }
 
 
         public bool EndDetection(EndDetectionType type)
         {
-            return Send("ES*R0");
+            return Send("R*R0*");
+           
         }
 
         private bool Send(string data)
