@@ -565,7 +565,7 @@ namespace Timing.RotorHazard
                     
                     break;
                 case EndDetectionType.Normal:
-                    s.EmitAsync("ts_race_stop", () =>
+                    s.EmitAsync("ts_race_stop", (r) =>
                     {
                         Logger.TimingLog.Log(this, "RH stopped Race");
                     });
