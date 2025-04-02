@@ -53,10 +53,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="themes\GClass\logo.png" />
-  </ItemGroup>
-
-  <ItemGroup>
     <EmbeddedResource Include="img\banner.png" />
   </ItemGroup>
 
