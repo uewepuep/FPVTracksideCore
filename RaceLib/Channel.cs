@@ -25,7 +25,8 @@ namespace RaceLib
         Diatone = 9,
 
         DJIO3 = 10,
-        DJIO4 = 11
+        DJIO4 = 11,
+        WalkSnail = 12,
     }
 
     public enum BandType
@@ -254,7 +255,8 @@ namespace RaceLib
             new Channel(38, 6, Band.DJIFPVHD),
             new Channel(39, 7, Band.DJIFPVHD),
             new Channel(40, 8, Band.DJIFPVHD),
-
+        };
+        public static Channel[] DJIO3 = new Channel[] {
             new Channel(75, 1, Band.DJIO3),
             new Channel(76, 2, Band.DJIO3),
             new Channel(77, 3, Band.DJIO3),
@@ -262,13 +264,15 @@ namespace RaceLib
             new Channel(79, 5, Band.DJIO3),
             new Channel(80, 6, Band.DJIO3),
             new Channel(81, 7, Band.DJIO3),
+        };
 
+        public static Channel[] DJIO4 = new Channel[] {
             new Channel(100, 'R', 1, Band.DJIO4),
             new Channel(101, 'R', 2, Band.DJIO4),
             new Channel(102, 'R', 3, Band.DJIO4),
             new Channel(103, 'R', 4, Band.DJIO4),
             new Channel(104, 'R',  5, Band.DJIO4),
-            new Channel(105, 'R', 6, Band.DJIO4),
+            new Channel(105, 'R',  6, Band.DJIO4),
             new Channel(106, 'R',  7, Band.DJIO4),
             new Channel(107, 'R',  8, Band.DJIO4)
         };
@@ -295,6 +299,21 @@ namespace RaceLib
             new Channel(56, 'R', 8, Band.HDZero),
             new Channel(57, 'F', 2, Band.HDZero),
             new Channel(58, 'F', 4, Band.HDZero)
+        };
+
+        public static Channel[] HDZeroRace = new Channel[] {
+
+            HDZero[0],
+            HDZero[1],
+
+            HDZero[2],
+            HDZero[3],
+
+            HDZero[4],
+            HDZero[5],
+
+            HDZero[6],
+            HDZero[7],
         };
 
         public static Channel[] HDZeroIMD6C = new Channel[] {
@@ -342,6 +361,18 @@ namespace RaceLib
             RaceBand[7],
         };
 
+        public static Channel[] WalkSnail = new Channel[]
+        {
+            new Channel(110, 'R', 1, Band.WalkSnail),
+            new Channel(111, 'R', 2, Band.WalkSnail),
+            new Channel(112, 'R', 3, Band.WalkSnail),
+            new Channel(113, 'R', 4, Band.WalkSnail),
+            new Channel(114, 'R', 5, Band.WalkSnail),
+            new Channel(115, 'R', 6, Band.WalkSnail),
+            new Channel(116, 'R', 7, Band.WalkSnail),
+            new Channel(117, 'R', 8, Band.WalkSnail)
+        };
+
         private static int FrequencyLookup(Band band, char prefix, int channel)
         {
             switch (band)
@@ -350,6 +381,7 @@ namespace RaceLib
                     return 5740 + ((channel - 1) * 20);
 
                 case Band.Raceband:
+                case Band.WalkSnail:
                     return 5658 + ((channel - 1) * 37);
 
                 case Band.A:
@@ -440,7 +472,17 @@ namespace RaceLib
         {
             get
             {
-                return Fatshark.Union(RaceBand).Union(BoscamA).Union(BoscamB).Union(DJIFPVHD).Union(E).Union(HDZero).Union(LowBand).Union(Diatone).ToArray();
+                return Fatshark.Union(RaceBand)
+                               .Union(BoscamA)
+                               .Union(BoscamB)
+                               .Union(DJIFPVHD)
+                               .Union(DJIO3)
+                               .Union(DJIO4)
+                               .Union(E)
+                               .Union(HDZero)
+                               .Union(LowBand)
+                               .Union(Diatone)
+                               .Union(WalkSnail).ToArray();
             }
         }
 

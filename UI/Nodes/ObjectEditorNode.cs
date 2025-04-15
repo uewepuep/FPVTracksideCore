@@ -311,8 +311,12 @@ namespace UI.Nodes
                 { "1", null },
 
                 { "HDZero", Channel.HDZero },
+                { "HDZero Race", Channel.HDZeroRace },
                 { "HDZero IMD6C", Channel.HDZeroIMD6C },
                 { "DJI", Channel.DJIFPVHD },
+                { "DJIO3", Channel.DJIO3 },
+                { "DJIO4", Channel.DJIO4 },
+                { "Walksnail Race", Channel.WalkSnail },
                 { "2", null },
 
                 { "LowBand", Channel.LowBand },

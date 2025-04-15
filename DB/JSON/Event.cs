@@ -196,7 +196,14 @@ namespace DB.JSON
                     }
                 }
 
-                simpleEvent.ChannelsString = string.Join(", ", channelNames);
+                if (channelNames.Count > 16)
+                {
+                    simpleEvent.ChannelsString = channelNames.Count.ToString();
+                }
+                else
+                {
+                    simpleEvent.ChannelsString = string.Join(", ", channelNames);
+                }
             }
             return simpleEvent;
         }

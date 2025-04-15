@@ -328,7 +328,15 @@ namespace RaceLib
         {
             ReflectionTools.Copy(eventt, this);
             PilotsRegistered = eventt.PilotCount;
-            ChannelsString = string.Join(", ", eventt.Channels.Select(c => c.DisplayName).ToArray());
+
+            if (eventt.Channels.Length > 16)
+            {
+                ChannelsString = eventt.Channels.Length.ToString();
+            }
+            else
+            {
+                ChannelsString = string.Join(", ", eventt.Channels.Select(c => c.DisplayName).ToArray());
+            }
         }
 
         public override string ToString()

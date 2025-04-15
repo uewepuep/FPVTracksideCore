@@ -408,13 +408,27 @@ namespace UI
         {
             MouseMenu mm = new MouseMenu(LayerStack.GetLayer<MenuLayer>());
 
-            foreach (var cg in EventManager.Channels.GetChannelGroups())
+            if (EventManager.Channels.Length > 8)
             {
-                foreach (Channel c in cg)
+                int g = 1;
+                foreach (var cg in EventManager.Channels.GetChannelGroups())
+                {
+                    string name = "Channel Group " + g + " (" + string.Join(", ", cg.Select(c => c.UIDisplayName)) + ")";
+
+                    MouseMenu subMemnu = mm.AddSubmenu(name);
+                    foreach (Channel c in cg)
+                    {
+                        subMemnu.AddItem(c.ToString(), () => { EventManager.SetPilotChannel(p, c); });
+                    }
+                    g++;
+                }
+            }
+            else
+            {
+                foreach (Channel c in EventManager.Channels)
                 {
                     mm.AddItem(c.ToString(), () => { EventManager.SetPilotChannel(p, c); });
                 }
-                mm.AddBlank();
             }
 
             mm.Show(mie);
