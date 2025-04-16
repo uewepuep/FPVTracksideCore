@@ -18,7 +18,7 @@ namespace Composition
 
         public Color ClearColor { get; set; }
 
-        private Rectangle lastBounds;
+        private Size lastSize;
 
         public PlatformTools PlatformTools { get; protected set; }
 
@@ -29,7 +29,7 @@ namespace Composition
             GraphicsDeviceManager.PreferredBackBufferHeight = 1000;
             GraphicsDeviceManager.PreferredBackBufferWidth = 1842;
 
-            lastBounds = new Rectangle(0, 0, 0, 0);
+            lastSize = new Size(0, 0);
 
             ClearColor = Color.CornflowerBlue;
             PlatformTools = platformTools;
@@ -77,13 +77,13 @@ namespace Composition
         {
             try
             {
-                Rectangle bounds = new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height);
-                if (bounds != lastBounds)
+                Size size = new Size(Window.ClientBounds.Width, Window.ClientBounds.Height);
+                if (size.Width != lastSize.Width || size.Height != lastSize.Height)
                 {
-                    lastBounds = bounds;
+                    lastSize = size;
 
-                    GraphicsDeviceManager.PreferredBackBufferWidth = bounds.Width;
-                    GraphicsDeviceManager.PreferredBackBufferHeight = bounds.Height;
+                    GraphicsDeviceManager.PreferredBackBufferWidth = size.Width;
+                    GraphicsDeviceManager.PreferredBackBufferHeight = size.Height;
                     GraphicsDeviceManager.ApplyChanges();
                 }
 

@@ -76,8 +76,8 @@ namespace UI
 
             Content.RootDirectory = "Content";
             IsFixedTimeStep = false;
-            this.Window.Title = Assembly.GetEntryAssembly().GetName().Name + " - " + Assembly.GetEntryAssembly().GetName().Version;
-            
+            Window.Title = Assembly.GetEntryAssembly().GetName().Name + " - " + Assembly.GetEntryAssembly().GetName().Version;
+
             Logger.Init(Log);
 
 
@@ -144,6 +144,9 @@ namespace UI
                 GraphicsDeviceManager.GraphicsProfile = GraphicsProfile.HiDef;
                 GraphicsDeviceManager.ApplyChanges();
             }
+
+            Window.Position = new Point(Math.Max(Window.Position.X, 0), Math.Max(Window.Position.Y, 0));
+
             base.Initialize();
         }
 
