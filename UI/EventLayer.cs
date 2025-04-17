@@ -89,6 +89,15 @@ namespace UI
             : base(graphicsDevice)
         {
 
+            try
+            {
+                Theme.Initialise(platformTools.WorkingDirectory, ApplicationProfileSettings.Instance.Theme);
+            }
+            catch (Exception ex) 
+            {
+                Logger.UI.LogException(this, ex);
+            }
+
             DirectoryInfo eventDirectory = new DirectoryInfo(Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocation, eventManager.Event.ID.ToString()));
 
 
