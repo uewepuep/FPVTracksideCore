@@ -105,8 +105,6 @@ namespace RaceLib
 
         public bool SyncWithMultiGP { get; set; }
 
-        public bool GenerateHeatsMultiGP { get; set; }
-
         public string[] ChannelColors { get; set; }
         
         public bool RulesLocked { get; set; }
@@ -125,7 +123,6 @@ namespace RaceLib
         {
             SyncWithFPVTrackside = false;
             SyncWithMultiGP = false;
-            GenerateHeatsMultiGP = false;
             VisibleOnline = true;
             Enabled = true;
             PrimaryTimingSystemLocation = PrimaryTimingSystemLocation.Holeshot;

@@ -27,7 +27,8 @@ namespace ExternalData
 
         event Action<bool> RaceSyncEvent;
 
-        bool CanSyncEventsUp { get; }
+        bool CanSyncUp { get; }
+        bool CanSyncDown { get; }
 
         void SyncDownEvents(WorkSet workSet, WorkQueue queue);
 

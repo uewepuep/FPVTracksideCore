@@ -53,6 +53,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="img\clouddown.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="img\banner.png" />
   </ItemGroup>
 
