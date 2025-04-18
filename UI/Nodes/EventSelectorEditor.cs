@@ -95,8 +95,13 @@ namespace UI.Nodes
                     }
                 }
             }
-
+            
             PropertyNode<SimpleEvent> n = base.CreatePropertyNode(obj, pi);
+
+            if (pi.Name.Contains("RulesLocked"))
+            {
+                n.ReadOnly = true;
+            }
 
             if (obj.RulesLocked)
             {
