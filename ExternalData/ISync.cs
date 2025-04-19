@@ -10,6 +10,7 @@ namespace ExternalData
 {
     public enum SyncType
     {
+        None,  
         FPVTrackside,
         MultiGP
     }
@@ -25,7 +26,7 @@ namespace ExternalData
     {
         SyncType SyncType { get; }
 
-        event Action<bool> RaceSyncEvent;
+        event Action<SyncType, bool> RaceSyncEvent;
 
         bool CanSyncUp { get; }
         bool CanSyncDown { get; }

@@ -2,6 +2,7 @@
 using Composition.Input;
 using Composition.Layers;
 using Composition.Nodes;
+using ExternalData;
 using Microsoft.Xna.Framework;
 using RaceLib;
 using RaceLib.Format;
@@ -167,7 +168,7 @@ namespace UI.Nodes.Rounds
             }
         }
 
-        private void Refresh(bool o)
+        private void Refresh(SyncType st, bool o)
         {
             Refresh();
         }

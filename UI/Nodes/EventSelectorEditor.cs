@@ -98,10 +98,7 @@ namespace UI.Nodes
             
             PropertyNode<SimpleEvent> n = base.CreatePropertyNode(obj, pi);
 
-            if (pi.Name.Contains("RulesLocked"))
-            {
-                n.ReadOnly = true;
-            }
+           
 
             if (obj.RulesLocked)
             {
@@ -109,7 +106,7 @@ namespace UI.Nodes
                 BoolPropertyNode<SimpleEvent> boolPropertyNode = n as BoolPropertyNode<SimpleEvent>;
                 TextPropertyNode<SimpleEvent> textPropertyNode = n as TextPropertyNode<SimpleEvent>;
 
-                if (cat != null && boolPropertyNode != null && cat.Category == "Cloud")
+                if (cat != null && boolPropertyNode != null && pi.Name.Contains("MultiGP"))
                 {
                     boolPropertyNode.Locked = true;
                 }
@@ -117,6 +114,11 @@ namespace UI.Nodes
                 if (cat != null && textPropertyNode != null && cat.Category == "Race Rules")
                 {
                     textPropertyNode.Locked = true;
+                }
+
+                if (boolPropertyNode != null && pi.Name.Contains("RulesLocked"))
+                {
+                    boolPropertyNode.Locked = true;
                 }
             }
 

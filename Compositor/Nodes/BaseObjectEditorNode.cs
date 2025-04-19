@@ -853,8 +853,6 @@ namespace Composition.Nodes
 
         public string Category { get; set; }
 
-        public bool ReadOnly { get; set; }
-
         public PropertyNode(T obj, PropertyInfo pi)
         {
             Category = "";
@@ -907,16 +905,6 @@ namespace Composition.Nodes
         public void FocusNext()
         {
             OnFocusNext?.Invoke(this);
-        }
-
-        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
-        {
-            if (ReadOnly)
-            {
-                return false;
-            }    
-
-            return base.OnMouseInput(mouseInputEvent);
         }
     }
 

@@ -134,6 +134,8 @@ namespace Timing
                 {
                     EndDetection(EndDetectionType.Normal);
                 }
+                
+                running = true;
 
                 int index = 1;
                 foreach (int freq in frequencies)

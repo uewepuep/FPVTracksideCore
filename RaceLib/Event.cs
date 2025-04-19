@@ -291,11 +291,6 @@ namespace RaceLib
         [Category("Cloud")]
         [DisplayName("Sync with MultiGP")]
         public bool SyncWithMultiGP { get; set; }
-
-        [Category("Cloud")]
-        [DisplayName("Generate heats on MultiGP.com (ZippyQ etc)")]
-        public bool GenerateHeatsMultiGP { get; set; }
-       
         
         [System.ComponentModel.Browsable(false)]
         public int ExternalID { get; set; }
