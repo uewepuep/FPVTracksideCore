@@ -147,11 +147,21 @@ namespace UI.Nodes.Rounds
                 rootMenu.AddItem("Add Race", AddRace);
             }
 
+            if (EventManager.ExternalRaceProviders != null)
+            {
+                foreach (var external in EventManager.ExternalRaceProviders)
+                {
+                    var t = external;
+                    rootMenu.AddItem("Add next from " + external.Name, () => { t.TriggerCreateRaces(Round); });
+                }
+            }
+
             var sf = EventManager.RoundManager.SheetFormatManager.GetRoundSheetFormat(Round);
             if (sf != null)
             {
                 rootMenu.AddItem("Add Next Sheet Round", AddSheetFormatRound);
             }
+
 
             // Add round
             {

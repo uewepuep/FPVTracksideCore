@@ -58,7 +58,17 @@ namespace UI.Nodes
             paste.OnClick += Paste_OnClick;
             nextItems.AddChild(paste);
 
-            
+            if (eventManager.ExternalRaceProviders != null)
+            {
+                foreach (var external in eventManager.ExternalRaceProviders)
+                {
+                    var t = external;
+                    TextButtonNode externalButton = new TextButtonNode("Next from " + external.Name, Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
+                    externalButton.OnClick += (m) => { t.TriggerCreateRaces(Round); };
+                    nextItems.AddChild(externalButton);
+                }
+            }
+
             nextItems.RequestLayout();
         }
 

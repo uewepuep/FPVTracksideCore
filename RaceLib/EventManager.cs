@@ -49,6 +49,7 @@ namespace RaceLib
 
         public GameManager GameManager { get; set; }
         public RaceStringFormatter RaceStringFormatter { get; private set; }
+        public ExternalRaceProvider[] ExternalRaceProviders { get; set; }
         public EventManager(Profile profile)
         {
             Profile = profile;

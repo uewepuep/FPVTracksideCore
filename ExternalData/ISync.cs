@@ -28,16 +28,13 @@ namespace ExternalData
 
         event Action<SyncType, bool> RaceSyncEvent;
 
-        bool CanSyncUp { get; }
-        bool CanSyncDown { get; }
+        bool CanSyncDownRoundRaces { get; }
 
         void SyncDownEvents(WorkSet workSet, WorkQueue queue);
+        void SyncDownRoundRaces(WorkSet workSet, WorkQueue queue, EventManager eventManager);
 
         void SyncUpEvent(WorkSet workSet, WorkQueue queue, Guid eventID);
-
-        void SyncDownRoundRaces(WorkSet workSet, WorkQueue queue, EventManager eventManager);
         void SyncUpResults(WorkSet workSet, WorkQueue queue, EventManager eventManager);
-        void SyncUpResults(WorkSet workSet, WorkQueue queue, IEnumerable<Guid> eventIDs);
 
         LoginType Login(string authkey);
         void CreateAccount();
