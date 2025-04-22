@@ -63,7 +63,7 @@ namespace UI.Nodes
                 foreach (var external in eventManager.ExternalRaceProviders)
                 {
                     var t = external;
-                    TextButtonNode externalButton = new TextButtonNode(external.Name, Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
+                    TextButtonNode externalButton = new TextButtonNode("Next " + external.Name, Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
                     externalButton.OnClick += (m) => { t.TriggerCreateRaces(Round); };
                     nextItems.AddChild(externalButton);
                 }

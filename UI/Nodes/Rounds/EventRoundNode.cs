@@ -235,11 +235,24 @@ namespace UI.Nodes.Rounds
 
             mm.AddItem("Add Race", AddRace);
 
-
-
             if (canFill)
             {
                 mm.AddItem("Auto-Fill Round", () => { FillRound?.Invoke(Round); });
+            }
+
+            if (EventManager.ExternalRaceProviders != null)
+            {
+                if (EventManager.RoundManager.GetLastRound(Round.EventType, Round.RoundType) == Round)
+                {
+                    if (EventManager.RaceManager.GetRaces(Round).All(r => r.Ended))
+                    {
+                        foreach (var external in EventManager.ExternalRaceProviders)
+                        {
+                            var t = external;
+                            mm.AddItem("Add " + external.Name, () => { t.TriggerCreateRaces(Round); });
+                        }
+                    }
+                }
             }
 
             if (!hasRace)

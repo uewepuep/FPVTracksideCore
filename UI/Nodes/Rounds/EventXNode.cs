@@ -156,7 +156,7 @@ namespace UI.Nodes.Rounds
                         foreach (var external in EventManager.ExternalRaceProviders)
                         {
                             var t = external;
-                            rootMenu.AddItem(external.Name, () => { t.TriggerCreateRaces(Round); });
+                            rootMenu.AddItem("Add " + external.Name, () => { t.TriggerCreateRaces(Round); });
                         }
                     }
                 }
