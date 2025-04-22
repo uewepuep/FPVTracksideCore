@@ -146,7 +146,6 @@ namespace Timing.RotorHazard
 
         private RaceStartPilots raceStartPilots;
 
-
         public string Name
         {
             get
@@ -162,7 +161,7 @@ namespace Timing.RotorHazard
             settings = new RotorHazardSettings();
             serverTimeSamples = new List<ServerTimeSample>();
             TimeOut = TimeSpan.FromSeconds(10);
-            CommandTimeOut = TimeSpan.FromSeconds(3);
+            CommandTimeOut = TimeSpan.FromSeconds(10);
         }
         
         public void Dispose()
