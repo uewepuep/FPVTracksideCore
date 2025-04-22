@@ -149,10 +149,16 @@ namespace UI.Nodes.Rounds
 
             if (EventManager.ExternalRaceProviders != null)
             {
-                foreach (var external in EventManager.ExternalRaceProviders)
+                if (EventManager.RoundManager.GetLastRound(Round.EventType, Round.RoundType) == Round)
                 {
-                    var t = external;
-                    rootMenu.AddItem("Add next from " + external.Name, () => { t.TriggerCreateRaces(Round); });
+                    if (EventManager.RaceManager.GetRaces(Round).All(r => r.Ended))
+                    {
+                        foreach (var external in EventManager.ExternalRaceProviders)
+                        {
+                            var t = external;
+                            rootMenu.AddItem(external.Name, () => { t.TriggerCreateRaces(Round); });
+                        }
+                    }
                 }
             }
 
