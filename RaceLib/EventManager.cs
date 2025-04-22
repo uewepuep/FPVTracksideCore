@@ -87,6 +87,15 @@ namespace RaceLib
             return Channels.FirstOrDefault();
         }
 
+        public BandType GetBandType(Pilot p)
+        {
+            Channel channel = GetChannel(p);
+            if (channel != null)
+                return channel.Band.GetBandType();
+
+            return BandType.Analogue;
+        }
+
         public Pilot GetCreatePilot(string pilotName)
         {
             Pilot p = null;
@@ -742,12 +751,12 @@ namespace RaceLib
             return -1;
         }
 
-        public IEnumerable<Channel> GetChannelGroup(int slot)
+        public IEnumerable<Channel> GetChannelGroup(int index)
         {
             int i = 0;
             foreach (var channelGroup in Channels.GetChannelGroups())
             {
-                if (i == slot)
+                if (i == index)
                 {
                     return channelGroup;
                 }

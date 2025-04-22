@@ -386,6 +386,11 @@ namespace RaceLib
             return pool.Count(r => r.Band.GetBandType() == bandType);
         }
 
+        public static IEnumerable<Channel> OfBandTypes(this IEnumerable<Channel> pool, BandType bandType)
+        {
+            return pool.Where(r => r.Band.GetBandType() == bandType);
+        }
+
         public static void ClearPilots(this IEnumerable<Race> races, IDatabase db) 
         {
             foreach (Race race in races)
