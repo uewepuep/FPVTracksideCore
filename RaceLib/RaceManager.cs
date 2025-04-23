@@ -46,6 +46,7 @@ namespace RaceLib
         public event PilotChannelDelegate OnPilotRemoved;
 
         public event Action<Channel, Pilot, bool> OnChannelCrashedOut;
+        public event Action<Pilot, int> OnHitPackLimit;
         public bool CallOutPilotsBeforeRaceStart { get; set; }
 
         public bool CanRunRace
@@ -550,6 +551,14 @@ namespace RaceLib
                 return false;
 
             return currentRace.HasPilot(p);
+        }
+        
+        public int PackCount(Pilot p)
+        {
+            lock (races)
+            {
+                return races.Count(r => r.Valid && r.HasPilot(p) && r.UsedPack(p));
+            }
         }
 
         public PilotChannel ClearChannel(Channel channel)
@@ -1155,6 +1164,15 @@ namespace RaceLib
                 {
                     foreach (var pc in currentRace.PilotChannelsSafe)
                     {
+                        if (pc.Pilot != null && EventManager.Event.PackLimit > 0 && EventManager.Event.PackLimit < 1000 && currentRace.Ended == false)
+                        {
+                            int packCount = PackCount(pc.Pilot);
+                            if (packCount >= EventManager.Event.PackLimit)
+                            {
+                                OnHitPackLimit?.Invoke(pc.Pilot, packCount);
+                            }
+                        }
+
                         OnPilotAdded?.Invoke(pc);
                     }
                 }

@@ -105,6 +105,26 @@ namespace Composition.Layers
             FocusedNode = cfn;
         }
 
+        public void PopupCombinedMessage(string message, Action onOk = null)
+        {
+            if (onOk == null)
+                onOk = () => { };
+
+            CombinedMessageNode existing = background.Children.OfType<CombinedMessageNode>().FirstOrDefault();
+            if (existing != null)
+            {
+                existing.AddMessage(message);
+            }
+            else
+            {
+                CombinedMessageNode cfn = new CombinedMessageNode(message, LayerStack.GetLayer<MenuLayer>(), onOk);
+                background.AddChild(cfn);
+                RequestLayout();
+                FocusedNode = cfn;
+            }
+        }
+
+
         public void PopupError(string message, Exception exception, Action onOk = null)
         {
             if (onOk == null)

@@ -200,8 +200,7 @@ namespace UI.Nodes.Rounds
                 {
                     if (race.Started)
                     {
-                        int laps = race.GetValidLapsCount(Pilot, false);
-                        if (laps > 0)
+                        if (race.UsedPack(Pilot))
                         {
                             Packs++;
                         }

@@ -32,7 +32,8 @@ namespace DB.JSON
         public int Laps { get; set; }
 
         public int PBLaps { get; set; }
-
+        public int PackLimit { get; set; }
+        
         public TimeSpan RaceLength { get; set; }
 
         public TimeSpan MinStartDelay { get; set; }

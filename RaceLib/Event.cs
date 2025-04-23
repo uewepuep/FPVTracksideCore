@@ -70,6 +70,8 @@ namespace RaceLib
         public int Laps { get; set; }
 
         public int PBLaps { get; set; }
+        
+        public int PackLimit { get; set; }
 
         public TimeSpan RaceLength { get; set; }
 
@@ -133,6 +135,7 @@ namespace RaceLib
             RaceLength = TimeSpan.FromMinutes(2);
             Laps = 4;
             EventType = EventTypes.Race;
+            PackLimit = 0;
             Start = DateTime.Today;
             Name = "New Event (" + Start.ToString(dateFormat) + ")";
             MinStartDelay = TimeSpan.FromSeconds(0.5f);
@@ -159,6 +162,7 @@ namespace RaceLib
 
             newEvent.Laps = this.Laps;
             newEvent.PBLaps = this.PBLaps;
+            newEvent.PackLimit = this.PackLimit;
 
             newEvent.RaceLength = this.RaceLength;
             newEvent.EventType = this.EventType;
@@ -257,6 +261,10 @@ namespace RaceLib
         [Category("Race Rules")]
         [DisplayName("Race Length (Seconds)")]
         public TimeSpan RaceLength { get; set; }
+
+        [Category("Race Rules")]
+        [DisplayName("Pack Limit")]
+        public int PackLimit { get; set; }
 
         [Category("Race Start")]
         [DisplayName("Minimum Start Delay (Seconds)")]

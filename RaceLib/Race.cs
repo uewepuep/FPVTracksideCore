@@ -586,6 +586,11 @@ namespace RaceLib
             }
         }
 
+        public bool UsedPack(Pilot pilot)
+        {
+            return GetValidLapsCount(pilot, true) > 0;
+        }
+
         public int GetValidLapsCount(Pilot pilot, bool includeHoleshot)
         {
             lock (Laps)

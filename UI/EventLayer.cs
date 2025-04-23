@@ -367,6 +367,15 @@ namespace UI
                 GlobalInterceptKeys.AddListen(globals.GetKeys().Distinct());
                 GlobalInterceptKeys.OnKeyPress += GlobalInterceptKeys_OnChange;
             }
+
+            eventManager.RaceManager.OnHitPackLimit += RaceManager_OnHitPackLimit;
+        }
+
+        private void RaceManager_OnHitPackLimit(Pilot pilot, int packCount)
+        {
+            int limit = EventManager.Event.PackLimit;
+
+            LayerStack.GetLayer<PopupLayer>().PopupCombinedMessage(pilot.Name + " has hit the pack limit of " + limit);
         }
 
         protected virtual MenuButton CreateMenuButton()

@@ -134,24 +134,21 @@ namespace Composition.Nodes
     {
         public TextButtonNode OK { get; private set; }
         protected Node buttonsContainer;
+        protected TextNode messageNode;
+        public int Lines { get { return messageNode.Text.Split('\n').Count(); } }
 
         public MessageNode(string message, MenuLayer MenuLayer, System.Action onOk)
         {
-            AspectRatio = (message.Length / 40.0f) * 4f;
-
             Alignment = RectangleAlignment.Center;
-            RelativeBounds = new RectangleF(0, 0.4f, 1, 0.1f);
 
             ColorNode backgroundNode = new ColorNode(MenuLayer.Background);
             AddChild(backgroundNode);
 
-            TextNode questionNode = new TextNode(message, MenuLayer.Text);
-            questionNode.RelativeBounds = new RectangleF(0.025f, 0.1f, 0.95f, 0.3f);
-            backgroundNode.AddChild(questionNode);
+            messageNode = new TextNode(message, MenuLayer.Text);
+            backgroundNode.AddChild(messageNode);
 
             buttonsContainer = new Node();
 
-            buttonsContainer.RelativeBounds = new RectangleF(0.1f, 0.5f, 0.8f, 0.4f);
             backgroundNode.AddChild(buttonsContainer);
 
             OK = new TextButtonNode("Ok", MenuLayer.DisabledText, MenuLayer.Hover, MenuLayer.Text);
@@ -165,6 +162,48 @@ namespace Composition.Nodes
                 onOk?.Invoke();
                 Dispose();
             };
+        }
+
+        public override void Layout(RectangleF parentBounds)
+        {
+            int width = 10 + messageNode.Text.Length * 5;
+            int height = 100 + Lines * 20;
+
+            SetAspectRatio(width, height);
+
+            float relativeWidth = width / parentBounds.Width;
+            float relativeHeight = height / parentBounds.Height;
+
+            RelativeBounds = new RectangleF(0.5f - (relativeWidth / 2), 0.5f - (relativeHeight / 2), relativeWidth, relativeHeight);
+
+            int targetButtonHeight = 60;
+            float relButtonHeight = targetButtonHeight / (float)height;
+
+            buttonsContainer.RelativeBounds = new RectangleF(0, 1 - relButtonHeight, 1, relButtonHeight);
+            messageNode.RelativeBounds = new RectangleF(0, 0, 1, 1 - relButtonHeight);
+
+            buttonsContainer.Scale(0.7f);
+            messageNode.Scale(0.9f);
+
+            base.Layout(parentBounds);
+        }
+    }
+
+    public class CombinedMessageNode : MessageNode
+    {
+        public CombinedMessageNode(string message, MenuLayer MenuLayer, Action onOk) 
+            : base(message, MenuLayer, onOk)
+        {
+        }
+
+        public void AddMessage(string message)
+        {
+            messageNode.Text += "\n" + message;
+
+            int lines = messageNode.Text.Split('\n').Count();
+
+            AspectRatio = (message.Length / 40.0f) * 4f / lines;
+            RequestLayout();
         }
     }
 
