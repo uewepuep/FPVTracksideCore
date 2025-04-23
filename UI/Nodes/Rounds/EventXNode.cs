@@ -38,6 +38,7 @@ namespace UI.Nodes.Rounds
 
         public event RoundDelegate RemoveRound;
         public event RoundDelegate SumPoints;
+        public event RoundDelegate PackCount;
         public event RoundTimeDelegate Times;
         public event RoundDelegate LapCounts;
 
@@ -199,6 +200,8 @@ namespace UI.Nodes.Rounds
 
                 if (canAddLapCount)
                     results.AddItem("Show Lap Count", () => { LapCounts?.Invoke(Round); });
+                
+                results.AddItem("Show Pack Count", () => { PackCount?.Invoke(Round); });
             }
         }
 

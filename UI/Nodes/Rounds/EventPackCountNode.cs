@@ -12,14 +12,13 @@ using Tools;
 
 namespace UI.Nodes.Rounds
 {
-    public class EventLapCountsNode : EventPilotListNode<PilotLapCountsNode>
+    public class EventPackCountNode : EventPilotListNode<PilotPackCountNode>
     {
-        public EventLapCountsNode(EventManager ev, Round round)
+        public EventPackCountNode(EventManager ev, Round round)
             : base(ev, round)
         {
-            SetHeading("Lap Count");
+            SetHeading("Pack Count");
             Refresh();
-            EventManager.ResultManager.RaceResultsChanged += PointsManager_RaceResultsChanged;
         }
 
         protected override void UpdateButtons()
@@ -28,12 +27,6 @@ namespace UI.Nodes.Rounds
             base.UpdateButtons();
         }
 
-
-        public override void Dispose()
-        {
-            EventManager.ResultManager.RaceResultsChanged -= PointsManager_RaceResultsChanged;
-            base.Dispose();
-        }
 
         private void PointsManager_RaceResultsChanged(Race obj)
         {
@@ -50,18 +43,13 @@ namespace UI.Nodes.Rounds
         {
             List<string[]> output = new List<string[]>();
 
-            foreach (PilotLapCountsNode pn in PilotNodes.OrderBy(pn => pn.Bounds.Y))
+            foreach (PilotPackCountNode pn in PilotNodes.OrderBy(pn => pn.Bounds.Y))
             {
                 List<string> line = new List<string>();
                 if (pn.Pilot != null)
                 {
                     line.Add(pn.Pilot.Name);
-                    foreach (TextNode tn in pn.ResultNodes)
-                    {
-                        line.Add(tn.Text);
-                    }
-                    line.Add(pn.TotalLaps.ToString());
-
+                    line.Add(pn.Packs.ToString());
                     output.Add(line.ToArray());
                 }
             }
@@ -78,21 +66,21 @@ namespace UI.Nodes.Rounds
 
             if (!PilotNodes.Any(pcn => pcn.Heading))
             {
-                PilotLapCountsNode headingNode = new PilotLapCountsNode(EventManager, null);
+                PilotPackCountNode headingNode = new PilotPackCountNode(EventManager, null);
                 contentContainer.AddChild(headingNode);
             }
 
             foreach (Pilot pilot in pilots)
             {
-                PilotLapCountsNode pn = PilotNodes.FirstOrDefault(pan => pan.Pilot == pilot);
+                PilotPackCountNode pn = PilotNodes.FirstOrDefault(pan => pan.Pilot == pilot);
                 if (pn == null)
                 {
-                    pn = new PilotLapCountsNode(EventManager, pilot);
+                    pn = new PilotPackCountNode(EventManager, pilot);
                     contentContainer.AddChild(pn);
                 }
             }
 
-            foreach (PilotLapCountsNode pcn in PilotNodes.ToArray())
+            foreach (PilotPackCountNode pcn in PilotNodes.ToArray())
             {
                 if (pcn.Heading)
                 {
@@ -108,7 +96,7 @@ namespace UI.Nodes.Rounds
             Round[] rounds = races.Select(r => r.Round).Distinct().ToArray();
 
 
-            foreach (PilotLapCountsNode sn in PilotNodes)
+            foreach (PilotPackCountNode sn in PilotNodes)
             {
                 if (sn.Heading)
                 {
@@ -128,22 +116,22 @@ namespace UI.Nodes.Rounds
             }
         }
 
-        public override IEnumerable<PilotLapCountsNode> Order(IEnumerable<PilotLapCountsNode> nodes)
+        public override IEnumerable<PilotPackCountNode> Order(IEnumerable<PilotPackCountNode> nodes)
         {
             return nodes.OrderByDescending(d => d.Heading)
                         .ThenBy(d => d.Bracket)
-                        .ThenByDescending(d => d.TotalLaps)
+                        .ThenByDescending(d => d.Packs)
                         .ThenBy(d => EventManager.LapRecordManager.GetPBTimePosition(d.Pilot));
         }
 
-        public override void UpdatePositions(IEnumerable<PilotLapCountsNode> nodes)
+        public override void UpdatePositions(IEnumerable<PilotPackCountNode> nodes)
         {
             int position = 0;
             int lastScore = 0;
             int inARow = 0;
             Brackets lastBracket = Brackets.None;
 
-            foreach (PilotLapCountsNode ppn in nodes)
+            foreach (PilotPackCountNode ppn in nodes)
             {
                 if (lastBracket != ppn.Bracket)
                 {
@@ -154,11 +142,11 @@ namespace UI.Nodes.Rounds
 
                 if (!ppn.Heading)
                 {
-                    if (lastScore != ppn.TotalLaps)
+                    if (lastScore != ppn.Packs)
                     {
                         position++;
                         position += inARow;
-                        lastScore = ppn.TotalLaps;
+                        lastScore = ppn.Packs;
                         inARow = 0;
                     }
                     else
@@ -172,74 +160,60 @@ namespace UI.Nodes.Rounds
         }
     }
 
-    public class PilotLapCountsNode : EventPilotNode
+    public class PilotPackCountNode : EventPilotNode
     {
-        public int TotalLaps { get; private set; }
+        public int Packs { get; private set; }
 
-        private TextNode totalLaps;
-        public IEnumerable<TextNode> ResultNodes { get { return roundScoreContainer.Children.OfType<TextNode>(); } }
+        private TextNode packsTextNode;
 
-        public PilotLapCountsNode(EventManager eventManager, Pilot pilot)
+        public PilotPackCountNode(EventManager eventManager, Pilot pilot)
             : base(eventManager, pilot)
         {
-            totalLaps = new TextNode("0", Theme.Current.Rounds.Text.XNA);
-            totalLaps.Alignment = RectangleAlignment.BottomRight;
-            totalLaps.Style.Bold = true;
-            AddChild(totalLaps);
+            packsTextNode = new TextNode("0", Theme.Current.Rounds.Text.XNA);
+            packsTextNode.Alignment = RectangleAlignment.BottomRight;
+            packsTextNode.Style.Bold = true;
+
+            positionNode.Visible = false;
+
+            roundScoreContainer.AddChild(packsTextNode);
         }
 
         public void MakeHeadings(IEnumerable<Round> rounds)
         {
-            totalLaps.Remove();
+            packsTextNode.Remove();
             roundScoreContainer.ClearDisposeChildren();
-
-            foreach (Round round in rounds)
-            {
-                string text = round.ToStringShort();
-                TextNode pointNode = new TextNode(text, Theme.Current.Rounds.Text.XNA);
-                pointNode.Alignment = RectangleAlignment.CenterRight;
-                roundScoreContainer.AddChild(pointNode);
-            }
-
-            roundScoreContainer.AddChild(totalLaps);
-
-            totalLaps.Text = "Total";
-            positionNode.Text = "Pos.";
+            roundScoreContainer.AddChild(packsTextNode);
+            packsTextNode.Text = "Packs";
+            positionNode.Text = "";
         }
 
         public void UpdateScoreText(IEnumerable<Round> rounds, IEnumerable<Race> races, Brackets bracket)
         {
-            totalLaps.Remove();
-            roundScoreContainer.ClearDisposeChildren();
             Bracket = bracket;
-
             HasRaced = false;
-
-            TotalLaps = 0;
+            Packs = 0;
 
             foreach (Round round in rounds)
             {
-                TextNode pointNode = new TextNode("-", Theme.Current.Rounds.Text.XNA);
-                roundScoreContainer.AddChild(pointNode);
-
                 Race race = races.FirstOrDefault(r => r.Round == round && r.HasPilot(Pilot));
                 if (race != null)
                 {
                     if (race.Started)
                     {
                         int laps = race.GetValidLapsCount(Pilot, false);
-                        pointNode.Text = laps.ToString();
-                        TotalLaps += laps;
+                        if (laps > 0)
+                        {
+                            Packs++;
+                        }
                     }
                 }
             }
-            roundScoreContainer.AddChild(totalLaps);
-            totalLaps.Text = TotalLaps.ToString();
+            packsTextNode.Text = Packs.ToString();
         }
 
         protected override int GetItemWidth(Node node)
         {
-            if (node != totalLaps && node != positionNode)
+            if (node != packsTextNode && node != positionNode)
             {
                 return 20;
             }

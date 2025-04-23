@@ -141,11 +141,11 @@ namespace RaceLib
             }
         }
 
-        private IEnumerable<Race> GetRoundPointRaces(Round startRound, Round endRound)
+        private IEnumerable<Race> GetRoundRaces(Round startRound, Round endRound)
         {
             Round[] rounds = EventManager.RoundManager.GetRoundsBetween(startRound, endRound).ToArray();
 
-            Race[] races = EventManager.RaceManager.GetRaces(r => r.Type.HasPoints() && rounds.Contains(r.Round) && r.Valid);
+            Race[] races = EventManager.RaceManager.GetRaces(r => rounds.Contains(r.Round) && r.Valid);
             for (int i = startRound.RoundNumber; i <= endRound.RoundNumber; i++)
             {
                 foreach (Race r in races.Where(ra => ra.RoundNumber == i))
@@ -153,6 +153,17 @@ namespace RaceLib
                     yield return r;
                 }
             }
+        }
+
+        public IEnumerable<Race> GetRoundRaces(Round endRound)
+        {
+            Round start = GetStartRound(endRound);
+            return GetRoundRaces(start, endRound);
+        }
+
+        private IEnumerable<Race> GetRoundPointRaces(Round startRound, Round endRound)
+        {
+            return GetRoundRaces(startRound, endRound).Where(r => r.Type.HasPoints());
         }
 
         public IEnumerable<Race> GetRoundPointRaces(Round endRound)

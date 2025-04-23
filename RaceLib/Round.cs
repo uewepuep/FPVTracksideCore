@@ -38,6 +38,9 @@ namespace RaceLib
         [System.ComponentModel.Browsable(false)]
         public TimeSummary TimeSummary { get; set; }
 
+        [System.ComponentModel.Browsable(false)]
+        public bool PackCountAfterRound { get; set; }
+
         [Category("Editable Details")]
         public bool LapCountAfterRound { get; set; }
 

@@ -24,6 +24,7 @@ namespace UI.Nodes.Rounds
         public IEnumerable<EventPointsNode> EventSumNodes { get { return Children.OfType<EventPointsNode>(); } }
         public IEnumerable<EventLapsTimesNode> EventTimesNodes { get { return Children.OfType<EventLapsTimesNode>(); } }
         public IEnumerable<EventLapCountsNode> EventLapCountsNodes { get { return Children.OfType<EventLapCountsNode>(); } }
+        public IEnumerable<EventPackCountNode> EventPackCountNodes { get { return Children.OfType<EventPackCountNode>(); } }
 
         public EventManager EventManager { get; private set; }
         public RoundManager RoundManager { get { return EventManager.RoundManager; } }
@@ -194,6 +195,7 @@ namespace UI.Nodes.Rounds
             eventXNode.SumPoints += ToggleSumPoints;
             eventXNode.Times += ToggleTimePoints;
             eventXNode.LapCounts += ToggleLapCount;
+            eventXNode.PackCount += TogglePackCount;
             eventXNode.Clone += CloneRound;
             eventXNode.AddEmptyRound += AddEmptyRound;
             eventXNode.NeedsFormatLayout += RequestLayout;
@@ -257,6 +259,23 @@ namespace UI.Nodes.Rounds
                     }
                 }
 
+                if (round.PackCountAfterRound)
+                {
+                    EventPackCountNode esn = EventPackCountNodes.FirstOrDefault(d => d.Round == round);
+                    if (esn == null && ern != null)
+                    {
+                        esn = new EventPackCountNode(EventManager, round);
+                        esn.RemoveRound += TogglePackCount;
+                        HookUp(esn);
+                        AddChild(esn);
+                    }
+                    else
+                    {
+                        esn.Refresh();
+                        RequestLayout();
+                    }
+                }
+
                 if (round.LapCountAfterRound)
                 {
                     EventLapCountsNode esn = EventLapCountsNodes.FirstOrDefault(d => d.Round == round);
@@ -309,6 +328,15 @@ namespace UI.Nodes.Rounds
                     esn.Dispose();
                 }
             }
+
+            foreach (var esn in EventPackCountNodes.ToArray())
+            {
+                Round round = RoundManager.GetCreateRound(esn.Round.RoundNumber, esn.Round.EventType);
+                if (!round.PackCountAfterRound)
+                {
+                    esn.Dispose();
+                }
+            }
         }
 
         private void AddEmptyRound(Round callingRound)
@@ -354,6 +382,12 @@ namespace UI.Nodes.Rounds
             {
                 Scroller.ScrollToEnd(scrollTime);
             }
+        }
+
+        public void TogglePackCount(Round callingRound)
+        {
+            EventManager.TogglePackCount(callingRound);
+            Refresh();
         }
 
         private void ToggleLapCount(Round callingRound)
@@ -472,6 +506,11 @@ namespace UI.Nodes.Rounds
                 if (a is EventLapCountsNode)
                 {
                     return ((EventLapCountsNode)a).Round.Order + 3;
+                }
+
+                if (a is EventPackCountNode)
+                {
+                    return ((EventPackCountNode)a).Round.Order + 4;
                 }
 
                 return 0;

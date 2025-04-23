@@ -621,6 +621,17 @@ namespace RaceLib
             }
         }
 
+        public void TogglePackCount(Round round)
+        {
+            round.PackCountAfterRound = !round.PackCountAfterRound;
+
+            using (IDatabase db = DatabaseFactory.Open(EventId))
+            {
+                db.Update(Event);
+                db.Update(round);
+            }
+        }
+
         public bool CanExport(ExportColumn.ColumnTypes type)
         {
             return ExportColumns.Any(ec => ec.Enabled && ec.Type == type);
