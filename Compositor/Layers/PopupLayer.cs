@@ -12,14 +12,8 @@ namespace Composition.Layers
 {
     public class PopupLayer : CompositorLayer
     {
-        public void Popup(Node n)
-        {
-            FocusedNode = n;
-            background.AddChild(n);
-            RequestLayout();
-        }
 
-        private ColorNode background;
+        private PopupBackgroundNode background;
 
         public Node ActiveNode
         {
@@ -38,14 +32,13 @@ namespace Composition.Layers
         public PopupLayer(GraphicsDevice device) 
             : base(device)
         {
-            background = new ColorNode(Color.FromNonPremultiplied(8,8,8,128));
+            background = new PopupBackgroundNode();
             Root.AddChild(background);
         }
 
         protected override void OnUpdate(GameTime gameTime)
         {
             background.Visible = background.ChildCount > 0;
-
             base.OnUpdate(gameTime);
         }
 
@@ -81,17 +74,13 @@ namespace Composition.Layers
         public void PopupConfirmation(string question, Action onOk)
         {
             ConfirmationNode cfn = new ConfirmationNode(question, LayerStack.GetLayer<MenuLayer>(), onOk);
-            background.AddChild(cfn);
-            RequestLayout();
-            FocusedNode = cfn;
+            Popup(cfn);
         }
 
         public void PopupConfirmationDontShowAgain(string question, Action<bool> onOkDontShow)
         {
             ConfirmationDontShowAgainNode cfn = new ConfirmationDontShowAgainNode(question, LayerStack.GetLayer<MenuLayer>(), onOkDontShow);
-            background.AddChild(cfn);
-            RequestLayout();
-            FocusedNode = cfn;
+            Popup(cfn);
         }
 
         public void PopupMessage(string message, Action onOk = null)
@@ -100,9 +89,7 @@ namespace Composition.Layers
                 onOk = () => { };
 
             MessageNode cfn = new MessageNode(message, LayerStack.GetLayer<MenuLayer>(), onOk);
-            background.AddChild(cfn);
-            RequestLayout();
-            FocusedNode = cfn;
+            Popup(cfn);
         }
 
         public void PopupCombinedMessage(string message, Action onOk = null)
@@ -118,9 +105,7 @@ namespace Composition.Layers
             else
             {
                 CombinedMessageNode cfn = new CombinedMessageNode(message, LayerStack.GetLayer<MenuLayer>(), onOk);
-                background.AddChild(cfn);
-                RequestLayout();
-                FocusedNode = cfn;
+                Popup(cfn);
             }
         }
 
@@ -131,9 +116,27 @@ namespace Composition.Layers
                 onOk = () => { };
 
             ErrorMessageNode cfn = new ErrorMessageNode(message, exception, LayerStack.GetLayer<MenuLayer>(), onOk);
-            background.AddChild(cfn);
+            Popup(cfn);
+        }
+
+        public void Popup(Node n)
+        {
+            FocusedNode = n;
+            background.AddChild(n);
             RequestLayout();
-            FocusedNode = cfn;
+        }
+    }
+
+    class PopupBackgroundNode : ColorNode
+    {
+        public PopupBackgroundNode() 
+            : base(Color.FromNonPremultiplied(8, 8, 8, 128))
+        {
+        }
+
+        public override void Draw(Drawer id, float parentAlpha)
+        {
+            base.Draw(id, parentAlpha);
         }
     }
 }

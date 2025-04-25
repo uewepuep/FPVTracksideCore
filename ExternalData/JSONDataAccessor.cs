@@ -172,8 +172,9 @@ namespace ExternalData
                 return default(T);
             }
 
+#if DEBUG
             File.WriteAllText("debug/" + typeof(T).ToString() + "_" + Guid.NewGuid() + ".json", response);
-
+#endif
             string pageContents = DataTools.TrimJSON(response);
             if (string.IsNullOrEmpty(pageContents))
             {
