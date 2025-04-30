@@ -95,10 +95,21 @@ namespace UI.Nodes
                     }
                 }
             }
-            
+
+            if (pi.Name.Contains("IsGQ"))
+            {
+                object objv = pi.GetValue(obj);
+                if (objv is bool)
+                {
+                    bool value = (bool)objv;
+
+                    if (!value)
+                        return null;
+                }
+            }
+
             PropertyNode<SimpleEvent> n = base.CreatePropertyNode(obj, pi);
 
-           
 
             if (obj.RulesLocked)
             {
@@ -106,19 +117,18 @@ namespace UI.Nodes
                 BoolPropertyNode<SimpleEvent> boolPropertyNode = n as BoolPropertyNode<SimpleEvent>;
                 TextPropertyNode<SimpleEvent> textPropertyNode = n as TextPropertyNode<SimpleEvent>;
 
-                if (cat != null && boolPropertyNode != null && pi.Name.Contains("MultiGP"))
-                {
-                    boolPropertyNode.Locked = true;
-                }
-
                 if (cat != null && textPropertyNode != null && cat.Category == "Race Rules")
                 {
                     textPropertyNode.Locked = true;
                 }
 
-                if (boolPropertyNode != null && pi.Name.Contains("RulesLocked"))
+                string[] boolProperties = new string[] { "MultiGP", "RulesLocked", "IsGQ", "VisibleOnline", "SyncWithFPVTrackside" };
+                foreach (string b in boolProperties)
                 {
-                    boolPropertyNode.Locked = true;
+                    if (boolPropertyNode != null && pi.Name.Contains(b))
+                    {
+                        boolPropertyNode.Locked = true;
+                    }
                 }
             }
 
@@ -163,6 +173,7 @@ namespace UI.Nodes
             colorNode.AddChild(logoNode);
 
             addButton.Text = "New";
+            okButton.Text = "Open";
 
             MenuButton = new MenuButton(profile, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
             MenuButton.RelativeBounds = new RectangleF(0.96f, 0.01f, 0.025f, 0.025f);

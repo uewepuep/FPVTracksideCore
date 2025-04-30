@@ -280,7 +280,7 @@ namespace UI
             LayerStack.AddAbove<BackgroundLayer>(welcomeLayer);
         }
 
-        public void EventSelected(BaseObjectEditorNode<SimpleEvent> ed)
+        public virtual void EventSelected(BaseObjectEditorNode<SimpleEvent> ed)
         {
             EventSelectorEditor editor = ed as EventSelectorEditor;
 

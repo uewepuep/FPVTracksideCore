@@ -62,7 +62,7 @@ namespace DB.JSON
 
         public bool Enabled { get; set; }
 
-        public string MultiGPRaceFormat { get; set; }
+        public bool IsGQ { get; set; }
 
         public Guid[] Races { get; set; }
 

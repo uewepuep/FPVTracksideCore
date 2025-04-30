@@ -106,6 +106,7 @@ namespace RaceLib
         public MultiGPRaceFormat MultiGPRaceFormat { get; set; }
 
         public bool SyncWithMultiGP { get; set; }
+        public bool IsGQ { get; set; }
 
         public string[] ChannelColors { get; set; }
         
@@ -246,6 +247,11 @@ namespace RaceLib
         [DisplayName("Channels")]
         [ReadOnly(true)]
         public string ChannelsString { get; set; }
+
+
+        [Category("Event Info")]
+        [DisplayName("MultiGP Global Qualifier")]
+        public bool IsGQ { get; set; }
 
 
         [Category("Race Rules")]
