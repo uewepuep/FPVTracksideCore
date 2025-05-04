@@ -34,20 +34,24 @@ namespace UI.Nodes
 
         private TracksideTabbedMultiNode tabbedMultiNode;
 
-        public event System.Action BackToEventSelector;
-        public event System.Action EventEditor;
+        public event Action BackToEventSelector;
+        public event Action EventEditor;
         public event Action<Event> Restart;
-        public event System.Action ChannelsChanged;
-        public event System.Action<bool> VideoSettingsExited;
-        public event System.Action TimingChanged;
-        public event System.Action DataDeleted;
-        public event System.Action BugReport;
+        public event Action ChannelsChanged;
+        public event Action<bool> VideoSettingsExited;
+        public event Action TimingChanged;
+        public event Action DataDeleted;
+        public event Action BugReport;
 
-        public event System.Action OBSRemoteConfigSaved;
-        public event System.Action AutoRunnerConfigsSaved;
-        public event System.Action GeneralSettingsSaved;
-        public event System.Action ProfileSettingsSaved;
-        public event System.Action<Profile> ProfileSet;
+        public event Action OBSRemoteConfigSaved;
+        public event Action AutoRunnerConfigsSaved;
+        public event Action GeneralSettingsSaved;
+        public event Action ProfileSettingsSaved;
+        public event Action<Profile> ProfileSet;
+
+        public event Action OpenFPVTracksideSite;
+        public event Action OpenMultiGPSite;
+
 
         private Event evennt;
         private bool hasEvent;
@@ -157,11 +161,18 @@ namespace UI.Nodes
                 }
             }
 
-            if (eventWebServer != null)
+            bool hasLocalWebServer = eventWebServer != null;
+            if (hasLocalWebServer || OpenFPVTracksideSite != null || OpenMultiGPSite != null)
             {
-                root.AddItem("Open Local Web page", OpenWebServer);
+                MouseMenu webMenu = root.AddSubmenu("Open Web");
+                if (eventWebServer != null)
+                    webMenu.AddItem("Open Local Web page", OpenWebServer);
+                if (OpenFPVTracksideSite != null)
+                    webMenu.AddItem("Open FPVTrackside.com event page", () => { OpenFPVTracksideSite(); });
+                if (OpenMultiGPSite != null)
+                    webMenu.AddItem("Open MultiGP.com event page", () => { OpenMultiGPSite(); });
             }
-            
+
             MouseMenu openWindow = root.AddSubmenu("Open New Window");
             if (eventManager == null)
             {

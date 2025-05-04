@@ -200,10 +200,7 @@ namespace UI.Nodes.Rounds
                 {
                     if (race.Started)
                     {
-                        if (race.UsedPack(Pilot))
-                        {
-                            Packs++;
-                        }
+                        Packs++;
                     }
                 }
             }

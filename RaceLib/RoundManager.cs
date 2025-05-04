@@ -273,7 +273,15 @@ namespace RaceLib
         {
             lock (Event.Rounds)
             {
-                return Event.Rounds.LastOrDefault(r => r.EventType == eventType && r.RoundType == roundType);
+                return Event.Rounds.LastOrDefault(r => r.Valid && r.EventType == eventType && r.RoundType == roundType);
+            }
+        }
+
+        public Round GetLastRound()
+        {
+            lock (Event.Rounds)
+            {
+                return Event.Rounds.LastOrDefault(r => r.Valid);
             }
         }
 
@@ -322,11 +330,11 @@ namespace RaceLib
 
                     using (IDatabase db = DatabaseFactory.Open(Event.ID))
                     {
-                        db.Update(Event);
                         if (!db.Upsert(Event.Rounds))
                         {
                             throw new Exception("Failed to update rounds");
                         }
+                        db.Update(Event);
                     }
                 }
 
@@ -342,12 +350,19 @@ namespace RaceLib
             }
         }
 
-        public void CreateEmptyRound(EventTypes eventType)
+        public bool IsEmpty(Round round)
+        {
+            return !RaceManager.GetRaces(round).Any();
+        }
+
+        public Round CreateEmptyRound(EventTypes eventType)
         {
             int maxRoundNumber = RaceManager.GetMaxRoundNumber(eventType);
 
             Round newRound = GetCreateRound(maxRoundNumber + 1, eventType);
             OnRoundAdded?.Invoke();
+
+            return newRound;
         }
 
         public void RemoveRound(Round round)

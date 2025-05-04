@@ -557,7 +557,7 @@ namespace RaceLib
         {
             lock (races)
             {
-                return races.Count(r => r.Valid && r.HasPilot(p) && r.UsedPack(p));
+                return races.Count(r => r.Valid && r.HasPilot(p) && r.Started);
             }
         }
 
@@ -1139,8 +1139,6 @@ namespace RaceLib
 
             if (currentRace != null)
             {
-               
-
                 if (EventType != currentRace.Type)
                 {
                     EventType = currentRace.Type;

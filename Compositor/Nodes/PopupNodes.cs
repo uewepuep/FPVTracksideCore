@@ -166,7 +166,9 @@ namespace Composition.Nodes
 
         public override void Layout(RectangleF parentBounds)
         {
-            int width = 10 + messageNode.Text.Length * 5;
+            int length = Math.Max(50, messageNode.Text.Length);
+
+            int width = 10 + (length * 5);
             int height = 100 + Lines * 20;
 
             SetAspectRatio(width, height);
