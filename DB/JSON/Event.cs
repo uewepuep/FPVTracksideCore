@@ -63,6 +63,7 @@ namespace DB.JSON
         public bool Enabled { get; set; }
 
         public bool IsGQ { get; set; }
+        public int[] MultiGPDisabledSlots { get; set; }
 
         public Guid[] Races { get; set; }
 

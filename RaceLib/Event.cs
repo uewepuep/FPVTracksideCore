@@ -104,6 +104,7 @@ namespace RaceLib
         public bool VisibleOnline { get; set; }
 
         public MultiGPRaceFormat MultiGPRaceFormat { get; set; }
+        public int[] MultiGPDisabledSlots  { get; set; }
 
         public bool SyncWithMultiGP { get; set; }
         public bool IsGQ { get; set; }
@@ -308,6 +309,10 @@ namespace RaceLib
         
         [System.ComponentModel.Browsable(false)]
         public int ExternalID { get; set; }
+        
+        [System.ComponentModel.Browsable(false)]
+        public int[] MultiGPDisabledSlots { get; set; }
+
 
         [System.ComponentModel.Browsable(false)]
         public string Month
