@@ -77,8 +77,13 @@ namespace UI.Nodes.Rounds
             Syncer = syncer;
             if (syncer != null)
             {
-                syncer.RaceSyncEvent += Refresh;
+                syncer.RaceSyncEvent += Syncer_RaceSyncEvent;
             }
+        }
+
+        private void Syncer_RaceSyncEvent(SyncType arg1, bool arg2)
+        {
+            Refresh();
         }
 
         public void ChannelsChanged()
