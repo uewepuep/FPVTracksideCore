@@ -2204,8 +2204,13 @@ namespace RaceLib
 
                 if (pilotChannel == null)
                 {
-                    Logger.RaceLog.Log(this, "Could not find pilot for race marshal data");
-                    return;
+                    pilotChannel = race.PilotChannels.FirstOrDefault(pc => pc.Pilot != null && pc.Pilot.Name == marshalData.PilotName);
+                    if (pilotChannel == null)
+                    {
+                        Logger.RaceLog.Log(this, "Could not find pilot for race marshal data");
+                        return;
+                    }
+                    Logger.RaceLog.Log(this, "Mismatch on Pilot ID but override with name, sent ID: " + marshalData.PilotID + " matched name ID: " + pilotChannel.Pilot.ID);
                 }
 
                 Lap[] laps = race.GetLaps(l => l.Pilot == pilotChannel.Pilot).ToArray();
