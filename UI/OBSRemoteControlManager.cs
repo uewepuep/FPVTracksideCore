@@ -56,6 +56,17 @@ namespace UI
 
             EditLaps,
 
+            LapDetection,
+            Sector1Detection,
+            Sector2Detection,
+            Sector3Detection,
+            Sector4Detection,
+            Sector5Detection,
+            Sector6Detection,
+            Sector7Detection,
+            Sector8Detection,
+            Sector9Detection,
+            Sector10Detection,
         }
 
         private OBSRemoteControlConfig config;
@@ -109,6 +120,9 @@ namespace UI
         private Triggers lastTrigger;
         private DateTime lastTriggerTime;
 
+        private int sectorCounter;
+
+
         public OBSRemoteControlManager(SceneManagerNode sceneManagerNode, TracksideTabbedMultiNode tabbedMultiNode, EventManager eventManager)
         {
             doubleTriggerTimeout = TimeSpan.FromSeconds(5);
@@ -123,6 +137,8 @@ namespace UI
 
             if (config.Enabled) 
             {
+                sectorCounter = 0;
+
                 sceneManagerNode.OnSceneChange += OnSceneChange;
                 eventManager.RaceManager.OnRaceStart += OnRaceStart;
                 eventManager.RaceManager.OnRacePreStart += OnRacePreStart;
@@ -132,6 +148,9 @@ namespace UI
                 tabbedMultiNode.OnTabChange += OnTabChange;
                 sceneManagerNode.ChannelsGridNode.OnGridCountChanged += OnGridCountChanged;
 
+                eventManager.RaceManager.OnLapDetected += OnLap;
+                eventManager.RaceManager.OnSplitDetection += OnDetection;
+
                 eventsHooked = true;
 
                 remoteControl = new OBSRemoteControl(config.Host, config.Port, config.Password);
@@ -139,6 +158,30 @@ namespace UI
                 remoteControl.Connect();
             }
         }
+
+        private void OnDetection(Detection detection)
+        {
+            if (detection == null)
+                return;
+
+            int sector = detection.RaceSector;
+
+            if (sector > sectorCounter)
+            {
+                Triggers t = Triggers.LapDetection + detection.TimingSystemIndex;
+                Trigger(t);
+                sectorCounter = sector;
+            }
+        }
+
+        private void OnLap(Lap lap)
+        {
+            if (lap != null)
+            {
+                OnDetection(lap.Detection);
+            }
+        }
+
         public void Dispose()
         {
             remoteControl?.Dispose();
@@ -242,11 +285,13 @@ namespace UI
 
         private void OnRaceStart(Race race)
         {
+            sectorCounter = -1;
             Trigger(Triggers.StartRaceTone);
         }
 
         private void RaceManager_OnRaceEnd(Race race)
         {
+            sectorCounter = -1;
             Trigger(Triggers.RaceEnd);
         }
 
