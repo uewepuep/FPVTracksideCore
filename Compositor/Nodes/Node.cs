@@ -431,9 +431,20 @@ namespace Composition.Nodes
                 {
                     MouseInputEvent subEvent;
                     if (newContains)
-                        subEvent = new MouseInputEnterEvent(mouseInputEvent);
+                    {
+                        if (mouseInputEvent.CanEnter)
+                        {
+                            subEvent = new MouseInputEnterEvent(mouseInputEvent);
+                        }
+                        else 
+                        {
+                            return true;
+                        }
+                    }
                     else
+                    {
                         subEvent = new MouseInputLeaveEvent(mouseInputEvent);
+                    }
 
                     if (child.OnMouseInput(subEvent))
                         return true;

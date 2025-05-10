@@ -1,4 +1,5 @@
-﻿using Composition.Nodes;
+﻿using Composition.Input;
+using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
 using System;
@@ -16,6 +17,8 @@ namespace UI.Nodes
             : base(raceManager, replayNode, textColor)
         {
             Prepend = "Remaining ";
+
+            AddChild(new HoverNode(Theme.Current.Hover.XNA));
         }
 
         public override void Update(GameTime gameTime)
@@ -43,6 +46,25 @@ namespace UI.Nodes
             {
                 SetTime(RaceManager.RemainingTime);
             }
+        }
+
+        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
+        {
+            if (mouseInputEvent.ButtonState == ButtonStates.Released && !EventManager.Event.RulesLocked)
+            {
+                MouseMenu mouseMenu = new MouseMenu(this);
+
+                int inc = 60;
+                for (int i = inc; i <= 600; i += inc)
+                {
+                    int t = i;
+                    mouseMenu.AddItem("Set Race Length " + i + " seconds", () => { EventManager.SetRaceLength(t); });
+                }
+
+                mouseMenu.Show(Bounds.X, Bounds.Bottom);
+            }
+
+            return base.OnMouseInput(mouseInputEvent);
         }
     }
 }

@@ -1,7 +1,9 @@
 ﻿using Composition;
+using Composition.Input;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
+using RaceLib.Game;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,11 +20,14 @@ namespace UI.Nodes
         public ReplayNode ReplayNode { get; private set; }
         public string Prepend { get; set; }
 
+        public EventManager EventManager { get; private set; }  
+
         public RaceTimeNode(RaceManager raceManager, ReplayNode replayNode, Color textColor) 
             : base("0.00", textColor)
         {
             ReplayNode = replayNode;
             RaceManager = raceManager;
+            EventManager = raceManager.EventManager;
             Prepend = "Time ";
             Alignment = RectangleAlignment.CenterRight;
         }

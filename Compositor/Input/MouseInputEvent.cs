@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 
@@ -30,9 +31,13 @@ namespace Composition.Input
 
         public Point Translation { get; set; }
 
+        public bool CanEnter { get; set; }
+
         public Point ScreenPosition { get { return Position - Translation; } }
 
-        public Guid id;
+        private static int counter = 0;
+
+        private int id;
 
         public MouseInputEvent(MouseInputEvent mouseInputEvent, Point translation)
         {
@@ -44,8 +49,9 @@ namespace Composition.Input
             ButtonState = mouseInputEvent.ButtonState;
             EventType = mouseInputEvent.EventType;
             Translation = translation + mouseInputEvent.Translation;
-
-            id = Guid.NewGuid();    
+            CanEnter = true;
+            counter++;
+            id = counter;
         }
 
         public MouseInputEvent(MouseInputEvent mouseInputEvent, Point translatedPosition, Point translatedOldPosition)
@@ -58,7 +64,9 @@ namespace Composition.Input
             ButtonState = mouseInputEvent.ButtonState;
             EventType = mouseInputEvent.EventType;
 
-            id = Guid.NewGuid();
+            counter++;
+            id = counter;
+            CanEnter = true;
         }
 
         public MouseInputEvent(ButtonStates buttonState, MouseButtons button, Point position)
@@ -71,8 +79,9 @@ namespace Composition.Input
             EventType = EventTypes.Button;
             Translation = Point.Zero;
 
-            id = Guid.NewGuid();
-
+            counter++;
+            id = counter;
+            CanEnter = true;
         }
 
         public MouseInputEvent(int wheelChange, Point position)
@@ -85,8 +94,9 @@ namespace Composition.Input
             EventType = EventTypes.Wheel;
             Translation = Point.Zero;
 
-            id = Guid.NewGuid();
-
+            counter++;
+            id = counter;
+            CanEnter = true;
         }
 
         public MouseInputEvent(Point newPosition, Point oldPosition)
@@ -99,8 +109,9 @@ namespace Composition.Input
             Translation = Point.Zero;
             EventType = EventTypes.Move;
 
-            id = Guid.NewGuid();
-
+            counter++;
+            id = counter;
+            CanEnter = true;
         }
 
         protected MouseInputEvent(MouseInputEvent bee)
@@ -114,8 +125,9 @@ namespace Composition.Input
             Translation = Point.Zero;
             EventType = bee.EventType;
 
-            id = Guid.NewGuid();
-
+            counter++;
+            id = counter;
+            CanEnter = true;
         }
 
         public override string ToString()
