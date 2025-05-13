@@ -25,7 +25,15 @@ namespace UI.Nodes
         protected EventEditor(IEnumerable<SimpleEvent> events, bool addRemove = true, bool cancelButtona = false)
             :base(events, addRemove, cancelButtona, false)
         {
-            Text = "Select an event";
+            if (addRemove)
+            {
+                Text = "Select an event";
+            }
+            else
+            {
+                Text = "Event Settings";
+            }
+            
         }
 
         protected override void CreatePropertyNodes(SimpleEvent obj, IEnumerable<PropertyInfo> propertyInfos)
