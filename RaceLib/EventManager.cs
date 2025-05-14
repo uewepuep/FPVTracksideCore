@@ -246,6 +246,17 @@ namespace RaceLib
             OnEventChange?.Invoke();
         }
 
+        public void SetRaceLength(int seconds)
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventId))
+            {
+                Event.RaceLength = TimeSpan.FromSeconds(seconds);
+                db.Update(Event);
+            }
+
+            OnEventChange?.Invoke();
+        }
+
         public void LoadEvent(WorkSet workSet, WorkQueue workQueue, Guid eventId)
         {
             EventId = eventId;

@@ -91,11 +91,13 @@ namespace UI.Nodes
 
             type = new EventTypeSummaryNode(EventManager, Theme.Current.TopPanelText.XNA);
             type.Style.Border = border;
+            type.AddChild(new HoverNode(Theme.Current.Hover.XNA));
             lower.AddChild(type);
 
             lapSummaryNode = new LapSummaryNode(eventManager, replayNode, Theme.Current.TopPanelText.XNA);
             lapSummaryNode.Alignment = RectangleAlignment.CenterLeft;
             lapSummaryNode.Style.Border = border;
+            lapSummaryNode.AddChild(new HoverNode(Theme.Current.Hover.XNA));
             lower.AddChild(lapSummaryNode);
 
             timeNode = new RaceTimeNode(eventManager.RaceManager, replayNode, Theme.Current.TopPanelText.XNA);

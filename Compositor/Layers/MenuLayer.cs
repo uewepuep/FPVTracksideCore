@@ -38,7 +38,11 @@ namespace Composition.Layers
 
             if (Root.ChildCount > 0)
             {
-                return true;
+                if (inputEvent.EventType != MouseInputEvent.EventTypes.Move)
+                {
+                    return true;
+                }
+                inputEvent.CanEnter = false;
             }
             return result;
         }
