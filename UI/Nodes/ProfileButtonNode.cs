@@ -19,7 +19,7 @@ namespace UI.Nodes
         private Profile profile;
 
         public ProfileButtonNode(Profile profile, Color background, Color hover, Color textColor) 
-            : base(profile.Name, background, hover, textColor)
+            : base("Profile: " + profile.Name, background, hover, textColor)
         {
             this.profile = profile;
             TextNode.Alignment = RectangleAlignment.CenterRight;
@@ -53,7 +53,7 @@ namespace UI.Nodes
                 };
                 GetLayer<PopupLayer>().Popup(textPopupNode);
             });
-            mouseMenu.AddItem("Edit Profile Name '" + profile.Name + "'", () =>
+            mouseMenu.AddItem("Edit Name '" + profile.Name + "'", () =>
             {
                 TextPopupNode textPopupNode = new TextPopupNode("Edit Profile Name", "New Name", profile.Name);
                 textPopupNode.OnOK += (string name) =>

@@ -191,7 +191,7 @@ namespace UI.Nodes
             AddChild(MenuButton);
 
             ProfileButtonNode profileButtonNode = new ProfileButtonNode(profile, Color.Transparent, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
-            float profwidth = 0.1f;
+            float profwidth = 0.2f;
             profileButtonNode.RelativeBounds = new RectangleF(MenuButton.RelativeBounds.Right - profwidth, 0.80f, profwidth, 0.15f);
             profileButtonNode.ProfileSet += MenuButton_ProfileSet;
             colorNode.AddChild(profileButtonNode);
