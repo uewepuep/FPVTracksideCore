@@ -136,7 +136,6 @@ namespace UI
             GeneralSettings.Initialise();
 
             Profile = new Profile(GeneralSettings.Instance.Profile);
-
             ApplicationProfileSettings.Initialize(Profile);
 
             if (!ApplicationProfileSettings.Instance.UseDirectX9)

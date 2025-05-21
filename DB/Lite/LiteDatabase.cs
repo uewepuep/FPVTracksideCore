@@ -207,20 +207,6 @@ namespace DB.Lite
             throw new NotImplementedException();
         }
 
-        public Club GetDefaultClub()
-        {
-            Club club;
-
-            club = Clubs.All().OrderByDescending(r => r.SyncWith == "FPVTrackside").FirstOrDefault();
-
-            if (club == null)
-            {
-                club = new Club();
-                club.SyncWith = "FPVTrackside";
-                Clubs.Insert(club);
-            }
-            return club;
-        }
 
         IEnumerable<RaceLib.SimpleEvent> ICollectionDatabase.GetSimpleEvents()
         {

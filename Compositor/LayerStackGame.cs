@@ -57,7 +57,7 @@ namespace Composition
             base.Dispose(disposing);
         }
 
-        public void Restart()
+        public virtual void Restart()
         {
             PlatformTools.Invoke(() =>
             {
@@ -68,6 +68,8 @@ namespace Composition
                     LayerStack.Dispose();
                     LayerStack = null;
                 }
+
+                Initialize();
 
                 LoadContent();
             });

@@ -10,8 +10,6 @@ namespace DB
     {
         public string Name { get; set; }
 
-        public string SyncWith { get; set; }
-
         public Club()
         {
         }

@@ -56,28 +56,6 @@ namespace Composition
             return Features.Contains(platformFeature);
         }
 
-        private string loginFile = @"data\login";
-        private string key = @"P2l!OOHM@&#lWXGAjsaTf38e^*!GFrHZ";
-
-        public LoginDetails GetSavedUsernamePassword()
-        {
-            if (File.Exists(loginFile))
-            {
-                string enc = File.ReadAllText(loginFile);
-                string json = Encryptor.DecryptString(key, enc);
-
-                return JsonConvert.DeserializeObject<LoginDetails>(json);
-            }
-            return new LoginDetails();
-        }
-
-        public void SetSavedUsernamePassword(LoginDetails loginDetails)
-        {
-            string json = JsonConvert.SerializeObject(loginDetails);
-            string enc = Encryptor.EncryptString(key, json);
-            File.WriteAllText(loginFile, enc);
-        }
-
         public virtual bool Check(string toCheck)
         {
             return false;

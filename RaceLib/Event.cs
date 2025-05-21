@@ -304,6 +304,9 @@ namespace RaceLib
         public MultiGPRaceFormat MultiGPRaceFormat { get; set; }
 
         [Category("Cloud")]
+        public string ClubName { get; set; }
+
+        [Category("Cloud")]
         [DisplayName("Sync with MultiGP")]
         public bool SyncWithMultiGP { get; set; }
         
@@ -312,6 +315,7 @@ namespace RaceLib
         
         [System.ComponentModel.Browsable(false)]
         public int[] MultiGPDisabledSlots { get; set; }
+
 
 
         [System.ComponentModel.Browsable(false)]
@@ -347,6 +351,11 @@ namespace RaceLib
             else
             {
                 ChannelsString = string.Join(", ", eventt.Channels.Select(c => c.DisplayName).ToArray());
+            }
+
+            if (eventt.Club != null)
+            {
+                ClubName = eventt.Club.Name;
             }
         }
 

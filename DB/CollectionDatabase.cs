@@ -185,10 +185,6 @@ namespace DB
             return database.LoadResults();
         }
 
-        public RaceLib.Club GetDefaultClub()
-        {
-            return database.GetCollection<RaceLib.Club>().All().FirstOrDefault();
-        }
     }
 
     public interface ICollectionDatabase: IDisposable

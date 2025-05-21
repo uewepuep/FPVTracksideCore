@@ -11,7 +11,6 @@ namespace RaceLib
     {
         int Version { get; }
 
-        Club GetDefaultClub();
         IEnumerable<SimpleEvent> GetSimpleEvents();
 
         void Init(Guid eventId);
@@ -102,11 +101,6 @@ namespace RaceLib
         public T GetCreateObject<T>(Guid id) where T : BaseObject, new()
         {
             return database.GetCreateObject<T>(id);
-        }
-
-        public Club GetDefaultClub()
-        {
-            return database.GetDefaultClub();
         }
 
         public T GetObject<T>(Guid id) where T : BaseObject, new()

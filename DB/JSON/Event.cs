@@ -178,6 +178,13 @@ namespace DB.JSON
             SimpleEvent simpleEvent = new SimpleEvent(ID);
             ReflectionTools.Copy(this, simpleEvent);
 
+
+            RaceLib.Club club = Club.Convert<RaceLib.Club>(database);
+            if (club != null)
+            {
+                simpleEvent.ClubName = club.Name;
+            }
+
             if (Channels != null)
             {
                 List<string> channelNames = new List<string>();

@@ -2,6 +2,7 @@
 using Composition.Input;
 using Composition.Nodes;
 using ExternalData;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using RaceLib;
 using System;
@@ -25,15 +26,7 @@ namespace UI.Nodes
         protected EventEditor(IEnumerable<SimpleEvent> events, bool addRemove = true, bool cancelButtona = false)
             :base(events, addRemove, cancelButtona, false)
         {
-            if (addRemove)
-            {
-                Text = "Select an event";
-            }
-            else
-            {
-                Text = "Event Settings";
-            }
-            
+            Text = "Event Settings";
         }
 
         protected override void CreatePropertyNodes(SimpleEvent obj, IEnumerable<PropertyInfo> propertyInfos)
@@ -166,6 +159,7 @@ namespace UI.Nodes
         public EventSelectorEditor(Texture2D logo, Profile profile)
             : this(new SimpleEvent[0], true, false)
         {
+
             heading.RelativeBounds = new RectangleF(0, 0.18f, 1, 0.05f);
             container.RelativeBounds = new RectangleF(0, heading.RelativeBounds.Bottom, 1, 1 - heading.RelativeBounds.Bottom);
 
@@ -194,23 +188,23 @@ namespace UI.Nodes
                 }
             };
 
-            MenuButton.ProfileSet += MenuButton_ProfileSet;
             AddChild(MenuButton);
+
+            ProfileButtonNode profileButtonNode = new ProfileButtonNode(profile, Color.Transparent, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
+            float profwidth = 0.1f;
+            profileButtonNode.RelativeBounds = new RectangleF(MenuButton.RelativeBounds.Right - profwidth, 0.80f, profwidth, 0.15f);
+            profileButtonNode.ProfileSet += MenuButton_ProfileSet;
+            colorNode.AddChild(profileButtonNode);
 
             SetObjects(GetEvents(profile), true);
             AlignVisibleButtons();
         }
 
-        private void MenuButton_ProfileSet(Profile profile)
-        {
-            MenuButton.Profile = profile;
-            GeneralSettings.Instance.Profile = profile.Name;
-            GeneralSettings.Write();
-        }
-
         public EventSelectorEditor(IEnumerable<SimpleEvent> events, bool addRemove = true, bool cancelButtona = false)
            : base(events.Where(e => e.Enabled), addRemove, cancelButtona)
         {
+            Text = "Select an event";
+
             OnOK += EventEditor_OnOK;
 
             Selected = Objects.OrderByDescending(e => e.LastOpened).FirstOrDefault();
@@ -229,6 +223,18 @@ namespace UI.Nodes
             itemName.Visible = false;
 
             AlignVisibleButtons();
+        }
+
+        private void MenuButton_ProfileSet(Profile profile)
+        {
+            MenuButton.Profile = profile;
+            GeneralSettings.Instance.Profile = profile.Name;
+            GeneralSettings.Write();
+
+            if (CompositorLayer.LayerStack.Game is UI.BaseGame)
+            {
+                ((UI.BaseGame)CompositorLayer.LayerStack.Game).Restart();
+            }
         }
 
         private void Clone(MouseInputEvent mie)
@@ -333,11 +339,8 @@ namespace UI.Nodes
             Event eve;
             using (IDatabase db = DatabaseFactory.Open(Guid.Empty))
             {
-                Club club = db.GetDefaultClub();
-
                 eve = new Event();
                 eve.Channels = Channel.Read(Profile);
-                eve.Club = club;
                 db.Insert(eve);
             }
             return eve;
@@ -373,13 +376,6 @@ namespace UI.Nodes
             using (IDatabase db = DatabaseFactory.Open(Guid.Empty))
             {
                 events = db.GetSimpleEvents().ToArray();
-
-                Club club = db.All<Club>().FirstOrDefault();
-                if (club == null)
-                {
-                    club = new Club();
-                    db.Insert(club);
-                }
 
                 if (events.Length == 0)
                 {

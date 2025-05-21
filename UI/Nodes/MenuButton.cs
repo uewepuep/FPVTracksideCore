@@ -47,7 +47,6 @@ namespace UI.Nodes
         public event Action AutoRunnerConfigsSaved;
         public event Action GeneralSettingsSaved;
         public event Action ProfileSettingsSaved;
-        public event Action<Profile> ProfileSet;
 
         public event Action OpenFPVTracksideSite;
         public event Action OpenMultiGPSite;
@@ -174,34 +173,6 @@ namespace UI.Nodes
             }
 
             MouseMenu openWindow = root.AddSubmenu("Open New Window");
-            if (eventManager == null)
-            {
-                root.AddBlank();
-                MouseMenu mouseMenu = root.AddSubmenu("Profile");
-
-                mouseMenu.AddItem("Add New Profile", () =>
-                {
-                    TextPopupNode textPopupNode = new TextPopupNode("Add Profile", "Profile Name", "");
-                    textPopupNode.OnOK += (string name) =>
-                    {
-                        Profile profile = Profile.AddProfile(PlatformTools.WorkingDirectory, name);
-
-                        if (profile != null)
-                        {
-                            ProfileSet?.Invoke(profile);
-                        }
-                    };
-                    GetLayer<PopupLayer>().Popup(textPopupNode);
-                });
-                mouseMenu.AddBlank();
-
-                foreach (Profile profile in Profile.GetProfiles(PlatformTools.WorkingDirectory))
-                {
-                    Profile temp = profile;
-                    mouseMenu.AddItem(profile.Name, () => { ProfileSet?.Invoke(temp); });
-                }
-            }
-
             root.AddBlank();
 
             root.AddItem("Application Settings", () =>
