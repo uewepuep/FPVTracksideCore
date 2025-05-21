@@ -30,9 +30,9 @@ namespace Tools
 
         public static IEnumerable<Profile> GetProfiles(DirectoryInfo workingDirectory) 
         { 
-            DirectoryInfo dataInfo = new DirectoryInfo(Path.Combine(workingDirectory.FullName, dataDir));
+            DirectoryInfo profilesRoot = new DirectoryInfo(Path.Combine(workingDirectory.FullName, dataDir));
 
-            foreach (DirectoryInfo directoryInfo in dataInfo.EnumerateDirectories())
+            foreach (DirectoryInfo directoryInfo in profilesRoot.EnumerateDirectories())
             {
                 yield return new Profile(directoryInfo.Name);
             }
@@ -40,17 +40,39 @@ namespace Tools
 
         public static Profile AddProfile(DirectoryInfo workingDirectory, string name)
         {
-            DirectoryInfo dataInfo = new DirectoryInfo(Path.Combine(workingDirectory.FullName, dataDir));
+            DirectoryInfo profilesRoot = new DirectoryInfo(Path.Combine(workingDirectory.FullName, dataDir));
 
             try
             {
-                dataInfo.CreateSubdirectory(name);
+                profilesRoot.CreateSubdirectory(name);
                 return new Profile(name);
             }
 
             catch 
             {
                 return null;
+            }
+        }
+
+        public static bool RenameProfile(DirectoryInfo workingDirectory, Profile profile, string name)
+        {
+            DirectoryInfo profilesRoot = new DirectoryInfo(Path.Combine(workingDirectory.FullName, dataDir));
+
+            DirectoryInfo profileDir = new DirectoryInfo(Path.Combine(profilesRoot.FullName, profile.Name));
+            try
+            {
+                if (!profileDir.Exists)
+                    return false;
+
+                Directory.Move(profileDir.FullName, Path.Combine(profilesRoot.FullName, name));
+
+                profile.Name = name;
+
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
     }

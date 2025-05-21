@@ -186,6 +186,16 @@ namespace Composition.Nodes
             {
                 id.CleanUp(this);
             }
+            if (needsRefreshList)
+            {
+                DoRefreshList();
+            }
+
+            if (newSelected != null && !newSelected.Equals(selected))
+            {
+                DoSetSelected(newSelected);
+            }
+
             base.Draw(id, parentAlpha);
         }
 
@@ -270,8 +280,16 @@ namespace Composition.Nodes
             SetSelected(Objects.FirstOrDefault());
         }
 
+        private bool needsRefreshList;
         public void RefreshList()
         {
+            needsRefreshList = true;
+        }
+
+        public void DoRefreshList()
+        {
+            needsRefreshList = false;
+
             selectedHover?.Remove();
             multiItemBox.ClearDisposeChildren();
 
@@ -412,7 +430,14 @@ namespace Composition.Nodes
             return propertyInfos;
         }
 
+
+        private T newSelected;
         protected virtual void SetSelected(T obj)
+        {
+            newSelected = obj;
+        }
+
+        protected virtual void DoSetSelected(T obj)
         {
             ClearSelected();
 

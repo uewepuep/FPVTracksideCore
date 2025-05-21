@@ -70,9 +70,9 @@ namespace UI.Nodes
             objectProperties.AddSize(0, -Demo.RelativeBounds.Height);
         }
 
-        protected override void SetSelected(Theme theme)
+        protected override void DoSetSelected(Theme theme)
         {
-            base.SetSelected(theme);
+            base.DoSetSelected(theme);
 
             UpdateDemo(theme);
         }

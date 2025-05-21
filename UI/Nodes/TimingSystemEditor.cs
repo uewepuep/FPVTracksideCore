@@ -191,9 +191,9 @@ namespace UI.Nodes
             base.AddNew(t);
         }
 
-        protected override void SetSelected(TimingSystemSettings obj)
+        protected override void DoSetSelected(TimingSystemSettings obj)
         {
-            base.SetSelected(obj);
+            base.DoSetSelected(obj);
             CheckVisible();
         }
 

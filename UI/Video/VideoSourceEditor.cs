@@ -237,9 +237,9 @@ namespace UI.Video
             physicalLayoutContainer.RelativeBounds = new RectangleF(1.1f, preview.RelativeBounds.Y, 0.3f, preview.RelativeBounds.Height);
         }
 
-        protected override void SetSelected(VideoConfig obj)
+        protected override void DoSetSelected(VideoConfig obj)
         {
-            base.SetSelected(obj);
+            base.DoSetSelected(obj);
 
             if (obj != null)
             {

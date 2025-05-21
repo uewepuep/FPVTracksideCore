@@ -16,9 +16,12 @@ namespace UI.Nodes
 
         public event Action<Profile> ProfileSet;
 
+        private Profile profile;
+
         public ProfileButtonNode(Profile profile, Color background, Color hover, Color textColor) 
             : base(profile.Name, background, hover, textColor)
         {
+            this.profile = profile;
             TextNode.Alignment = RectangleAlignment.CenterRight;
             OnClick += ProfileButtonNode_OnClick;
         }
@@ -28,6 +31,13 @@ namespace UI.Nodes
             MouseMenu mouseMenu = new MouseMenu(this);
             mouseMenu.LeftToRight = false;
 
+            foreach (Profile profile in Profile.GetProfiles(PlatformTools.WorkingDirectory))
+            {
+                Profile temp = profile;
+                mouseMenu.AddItem(profile.Name, () => { ProfileSet?.Invoke(temp); });
+            }
+            mouseMenu.Show(this);
+            mouseMenu.AddBlank();
 
             mouseMenu.AddItem("Add New Profile", () =>
             {
@@ -43,14 +53,21 @@ namespace UI.Nodes
                 };
                 GetLayer<PopupLayer>().Popup(textPopupNode);
             });
-            mouseMenu.AddBlank();
-
-            foreach (Profile profile in Profile.GetProfiles(PlatformTools.WorkingDirectory))
+            mouseMenu.AddItem("Edit Profile Name '" + profile.Name + "'", () =>
             {
-                Profile temp = profile;
-                mouseMenu.AddItem(profile.Name, () => { ProfileSet?.Invoke(temp); });
-            }
-            mouseMenu.Show(this);
+                TextPopupNode textPopupNode = new TextPopupNode("Edit Profile Name", "New Name", profile.Name);
+                textPopupNode.OnOK += (string name) =>
+                {
+                    if (!Profile.RenameProfile(PlatformTools.WorkingDirectory, profile, name))
+                    {
+                        GetLayer<PopupLayer>().PopupMessage("Failed to rename");
+                        return;
+                    }
+
+                    ProfileSet?.Invoke(profile);
+                };
+                GetLayer<PopupLayer>().Popup(textPopupNode);
+            });
         }
 
     }
