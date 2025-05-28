@@ -68,6 +68,21 @@ namespace UI.Nodes
                 };
                 GetLayer<PopupLayer>().Popup(textPopupNode);
             });
+            mouseMenu.AddItem("Clone Profile '" + profile.Name + "'", () =>
+            {
+                TextPopupNode textPopupNode = new TextPopupNode("Clone Profile " + profile.Name, "New Name", "");
+                textPopupNode.OnOK += (string name) =>
+                {
+                    if (!Profile.CloneProfile(PlatformTools.WorkingDirectory, profile, name))
+                    {
+                        GetLayer<PopupLayer>().PopupMessage("Failed to clone");
+                        return;
+                    }
+
+                    ProfileSet?.Invoke(profile);
+                };
+                GetLayer<PopupLayer>().Popup(textPopupNode);
+            });
         }
 
     }

@@ -151,6 +151,13 @@ namespace Tools
         {
             return string.Join("\r\n", table.Select(line => string.Join("\t", line)));
         }
+
+        public static string ToString(this double? d, string f)
+        {
+            if (d == null)
+                return "null";
+            return d.Value.ToString(f);
+        }
     }
 
     public class DateOnlyAttribute : Attribute

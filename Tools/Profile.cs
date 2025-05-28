@@ -75,5 +75,35 @@ namespace Tools
                 return false;
             }
         }
+
+        public static bool CloneProfile(DirectoryInfo workingDirectory, Profile profile, string name)
+        {
+            DirectoryInfo profilesRoot = new DirectoryInfo(Path.Combine(workingDirectory.FullName, dataDir));
+
+            DirectoryInfo profileDir = new DirectoryInfo(Path.Combine(profilesRoot.FullName, profile.Name));
+            try
+            {
+                if (!profileDir.Exists)
+                    return false;
+
+                string path = Path.Combine(profilesRoot.FullName, name);
+
+                DirectoryInfo newDir = new DirectoryInfo(path);
+                newDir.Create();
+
+                foreach (FileInfo fi in profileDir.GetFiles())
+                {
+                    string target = Path.Combine(newDir.FullName, fi.Name);
+                    fi.CopyTo(target);
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
     }
 }
