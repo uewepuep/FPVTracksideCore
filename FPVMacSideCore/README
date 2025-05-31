@@ -1,0 +1,13 @@
+install:
+brew install --cask dotnet-sdk
+export PATH="/usr/local/share/dotnet:$PATH"
+
+cd FPVTracksideCore/FPVMacSideCore
+
+dotnet build FPVTrackside.sln
+
+dotnet run --project FPVMacSideCore.csproj
+.
+
+
+

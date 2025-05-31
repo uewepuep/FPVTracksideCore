@@ -13,8 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\FPVTracksideCore\RaceLib\RaceLib.csproj" />
-    <ProjectReference Include="..\..\FPVTracksideCore\Tools\Tools.csproj" />
+    <ProjectReference Include="../RaceLib/RaceLib.csproj" />
+    <ProjectReference Include="../Tools/Tools.csproj" />
   </ItemGroup>
 
 </Project>
