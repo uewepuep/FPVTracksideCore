@@ -7,7 +7,7 @@ cd FPVTracksideCore/FPVMacSideCore
 dotnet build FPVTrackside.sln
 
 dotnet run --project FPVMacSideCore.csproj
-
+.
 
 
 
