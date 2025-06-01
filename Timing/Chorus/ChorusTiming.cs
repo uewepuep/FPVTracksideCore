@@ -87,9 +87,8 @@ namespace Timing.Chorus
                 comPort.BaudRate = 115200;
                 comPort.RtsEnable = true;
                 comPort.DtrEnable = true;
-                comPort.WriteTimeout = 12000;
-                comPort.ReadTimeout = 500;
-                comPort.Encoding = Encoding.ASCII;
+                comPort.WriteTimeout = 1000;
+                comPort.ReadTimeout = 6000;
 
                 comPort.Open();
 
@@ -174,7 +173,7 @@ namespace Timing.Chorus
                     threshold = (int)(threshold * 1 / frequencySensitivity.SensitivityFactor);
                 }
                 
-                Send(node + "A1*"); // activate the node
+                Send(node + "A1"); // activate the node
                 
                 // Set the frequency. by setting the band and channel
                 //  Send(node + "B" + frequencySensitivity.Band.ToString() + "00"); // TODO: in chours the band is controlled by sending a number and not a letter (AKA R,F,A...), need to make a table for referense 
@@ -190,7 +189,7 @@ namespace Timing.Chorus
             while (index < 8)
             {
                 string node = "R" + index;
-                Send(node + "A0*"); // Deactivate unused nodes
+                Send(node + "A0"); // Deactivate unused nodes
                 index++;
             }
             return true;
@@ -200,13 +199,15 @@ namespace Timing.Chorus
         {
             requestStart = DateTime.Now;
             responseStart = DateTime.Now;
-            return Send("R*R2*");
+            Send("R*R2");
+            return Send("R*R2");
         }
 
 
         public bool EndDetection(EndDetectionType type)
         {
-            return Send("R*R0*");
+            Send("R*R0");
+            return Send("R*R0");
            
         }
 
@@ -263,7 +264,7 @@ namespace Timing.Chorus
             {
                 //Start race confirmed
                 case 'R':
-                    responseStart = DateTime.Now;
+                   // responseStart = DateTime.Now;
                     break;
 
                 // Voltage
