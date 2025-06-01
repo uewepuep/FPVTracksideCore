@@ -647,6 +647,12 @@ namespace UI
             {
                 SoundManager.SetupSpeaker(PlatformTools, ApplicationProfileSettings.Instance.Voice, ApplicationProfileSettings.Instance.TextToSpeechVolume);
             }
+
+            EventSelectorLayer eventSelectorLayer = LayerStack.GetLayer<EventSelectorLayer>();
+            if (eventSelectorLayer != null)
+            {
+                eventSelectorLayer.Dispose();
+            }
         }
 
         public void UpdateCrop(bool crop)
@@ -683,7 +689,7 @@ namespace UI
             }
         }
 
-        private void BackToEventSelector()
+        protected virtual void BackToEventSelector()
         {
             if (LayerStack.Game is UI.BaseGame)
             {
