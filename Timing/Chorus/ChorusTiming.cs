@@ -12,7 +12,7 @@ using Tools;
 
 namespace Timing.Chorus
 {
-    public class ChorusTiming : ITimingSystem
+    public class ChorusTiming : ITimingSystemWithRSSI
     {
         private SerialPort comPort;
         private TcpClient tcpClient;
@@ -21,7 +21,8 @@ namespace Timing.Chorus
         private StreamWriter tcpWriter;
         private Thread tcpListenerThread;
         private bool isDisposing = false;
-
+        private Dictionary<int, float> nodeRSSI;
+        private bool rssiRequested;
 
         public TimingSystemType Type
         {
@@ -71,6 +72,8 @@ namespace Timing.Chorus
             comPort = null;
             tcpClient = null;
             nodeTofrequency = new Dictionary<int, int>();
+            nodeRSSI = new Dictionary<int, float>();
+            rssiRequested = false;
         }
 
         private DateTime requestStart;
@@ -274,8 +277,12 @@ namespace Timing.Chorus
 
         public bool SetListeningFrequencies(IEnumerable<ListeningFrequency> newFrequencies)
         {
-            nodeTofrequency.Clear();
+            // Don't clear the dictionary - we need it for comparison  
+            Dictionary<int, int> previousFrequencies = new Dictionary<int, int>(nodeTofrequency);
+            
 
+            nodeTofrequency.Clear();
+            //Send("R*I0000");
             // Set the min laptime on all.
             Send("R*M" + Chorus32Settings.MinLapTimeSeconds.ToString("X2"));
             
@@ -290,18 +297,23 @@ namespace Timing.Chorus
                 {
                     threshold = (int)(threshold * 1 / frequencySensitivity.SensitivityFactor);
                 }
+
                 
-                Send(node + "A1"); // activate the node
+                // Only send frequency command if it changed  
+                if (!previousFrequencies.ContainsKey(index) ||
+                    previousFrequencies[index] != frequencySensitivity.Frequency)
+                {
+                    Send(node + "A1"); // activate the node
+                    // Set the frequency. by setting the band and channel
+                    // Convert Band enum to numeric value for Chorus32 protocol  
+                    int bandValue = GetBandValue(frequencySensitivity.Band);
 
-                // Set the frequency. by setting the band and channel
-                // Convert Band enum to numeric value for Chorus32 protocol  
-                int bandValue = GetBandValue(frequencySensitivity.Band);
+                    // Set the band using B{node}{band} command  
+                    Send(node + "B" + bandValue.ToString() + "0");
 
-                // Set the band using B{node}{band} command  
-                Send(node + "B" + bandValue.ToString() + "0");
-
-                // Set the channel using C{node}{channel} command    
-                Send(node + "C" + (frequencySensitivity.Channel - 1).ToString() + "0");
+                    // Set the channel using C{node}{channel} command    
+                    Send(node + "C" + (frequencySensitivity.Channel - 1).ToString() + "0");
+                }
 
                 // Store frequency for detection event mapping  
                 nodeTofrequency.Add(index, frequencySensitivity.Frequency);
@@ -351,9 +363,9 @@ namespace Timing.Chorus
 
         public bool EndDetection(EndDetectionType type)
         {
+            rssiRequested = false; // Allow next RSSI request 
             Send("R*R0");
-            return Send("R*R0");
-           
+            return Send("R*R0"); 
         }
 
         private bool Send(string data)
@@ -433,22 +445,9 @@ namespace Timing.Chorus
                     break;
                 // Lap record
                 case 'L':
-                /*    int rawMilliseconds = int.Parse(data.Substring(5), System.Globalization.NumberStyles.HexNumber);
-                    int node = int.Parse(data[1] + "");
-
-                    DateTime start = new DateTime((requestStart.Ticks + responseStart.Ticks) / 2);
-
-                    DateTime lap = start.AddMilliseconds(rawMilliseconds);
-
-                    int frequency;
-                    if (nodeTofrequency.TryGetValue(node, out frequency))
-                    {
-                        OnDetectionEvent?.Invoke(this, frequency, lap, 200);
-                    }
-                */
                     if (data.Length >= 6)
                     {
-                        int node = int.Parse(data[1].ToString(), System.Globalization.NumberStyles.HexNumber);
+                        int nod = int.Parse(data[1].ToString(), System.Globalization.NumberStyles.HexNumber);
                        
 
                         if (data.Length >= 12) // Ensure we have enough data for 8-digit hex time  
@@ -459,7 +458,7 @@ namespace Timing.Chorus
                             DateTime lap = start.AddMilliseconds(rawMilliseconds);
 
                             int frequency;
-                            if (nodeTofrequency.TryGetValue(node, out frequency))
+                            if (nodeTofrequency.TryGetValue(nod, out frequency))
                             {
                                 OnDetectionEvent?.Invoke(this, frequency, lap, 200);
                             }
@@ -478,12 +477,53 @@ namespace Timing.Chorus
                 case 'T':
                     break;
                 // RSSI response  
-                case 'r':   
-                    // Handle RSSI data if needed  
+                case 'r':
+                    int node = int.Parse(data[1] + "");
+                    int rssiValue = int.Parse(data.Substring(3), System.Globalization.NumberStyles.HexNumber);
+
+                    // Convert back to original ADC value (multiply by 12 as per your description)  
+                    float actualRSSI = rssiValue * 12.0f;
+
+                    nodeRSSI[node] = actualRSSI;
+                     
                     break;
 
                 default:
                     throw new Exception("Unknown message");
+            }
+        }
+        public IEnumerable<RSSI> GetRSSI()
+        {
+            if (!Connected)
+                yield break;
+
+            // Request RSSI data if not already requested  
+            if (!rssiRequested)
+            {
+                 
+                //Send("R*r");
+                Send("R*I01F4"); // Request RSSI data in a 500ms interval
+                rssiRequested = true;
+                yield break;
+            }
+
+            foreach (var kvp in nodeTofrequency)
+            {
+                int node = kvp.Key;
+                int frequency = kvp.Value;
+
+                float currentRSSI = 0;
+                nodeRSSI.TryGetValue(node, out currentRSSI);
+
+                yield return new RSSI()
+                {
+                    TimingSystem = this,
+                    Frequency = frequency,
+                    CurrentRSSI = currentRSSI,
+                    ScaleMin = 0,
+                    ScaleMax = 4095, // 12-bit ADC range  
+                    Detected = false
+                };
             }
         }
     }
