@@ -46,6 +46,7 @@ namespace RaceLib
         public event PilotChannelDelegate OnPilotRemoved;
 
         public event Action<Channel, Pilot, bool> OnChannelCrashedOut;
+        public event Action<Channel, Pilot> OnChannelRecovered;
         public event Action<Pilot, int> OnHitPackLimit;
         public bool CallOutPilotsBeforeRaceStart { get; set; }
 
@@ -2137,6 +2138,14 @@ namespace RaceLib
             if (EventManager.RaceManager.RaceRunning && pilot != null && channel != null)
             {
                 OnChannelCrashedOut?.Invoke(channel, pilot, manual);
+            }
+        }
+
+        public void Recovered(Pilot pilot, Channel channel)
+        {
+            if (EventManager.RaceManager.RaceRunning && pilot != null && channel != null)
+            {
+                OnChannelRecovered?.Invoke(channel, pilot);
             }
         }
 

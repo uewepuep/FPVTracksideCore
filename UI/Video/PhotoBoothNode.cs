@@ -112,7 +112,7 @@ namespace UI.Video
 
             float pilotAlpha = Theme.Current.PilotViewTheme.PilotTitleAlpha / 255.0f;
 
-            pilotNameNode = new ChannelPilotNameNode(null, Color.Transparent, pilotAlpha);
+            pilotNameNode = new ChannelPilotNameNode(eventManager, Channel.None, Color.Transparent, pilotAlpha);
             cameraAspectNode.AddChild(pilotNameNode);
             pilotNameNode.RelativeBounds = new RectangleF(0, 0.03f, 0.4f, 0.125f);
 

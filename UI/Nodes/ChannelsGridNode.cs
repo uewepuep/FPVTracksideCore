@@ -74,6 +74,8 @@ namespace UI.Nodes
 
         private object channelCreationLock;
 
+        private AnimatedNode downPilotsList;
+
         public bool SingleRow { get; set; }
 
         public bool Replay { get; private set; }
@@ -159,6 +161,10 @@ namespace UI.Nodes
             EventManager.RaceManager.OnRaceEnd += RaceManager_OnRaceEnd;
             EventManager.RaceManager.OnRaceChanged += RaceManager_OnRaceChanged;
             EventManager.OnPilotRefresh += Refresh;
+
+            downPilotsList = new DownPilotsNode(EventManager);
+            downPilotsList.Visible = false;
+            AddChild(downPilotsList);
 
             gridStatsNode = new GridStatsNode(EventManager);
             gridStatsNode.Visible = false;
@@ -257,6 +263,7 @@ namespace UI.Nodes
             {
                 count--;
             }
+
             return count;
         }
 
@@ -285,6 +292,8 @@ namespace UI.Nodes
                 {
                     camNode.SetAnimatedVisibility(camNode.VideoBounds.ShowInGrid && extrasVisible);
                 }
+
+                downPilotsList.SetAnimatedVisibility(crashed >= 1);
 
                 CheckGridStatsVisiblilty();
             }
@@ -360,6 +369,11 @@ namespace UI.Nodes
                     break;
             }
 
+            // Add in the ded pilots
+            if (downPilotsList.Visible)
+            {
+                output = output.Union(new Node[] { downPilotsList });
+            }
 
             // Add in the grid stats node
             if (gridStatsNode.Visible)
@@ -825,6 +839,11 @@ namespace UI.Nodes
             if (gridStatsNode != null)
             {
                 gridStatsNode.SetAnimationTime(timeSpan);
+            }
+
+            if (downPilotsList != null)
+            {
+                downPilotsList.SetAnimationTime(timeSpan);
             }
         }
 
