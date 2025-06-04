@@ -1486,8 +1486,18 @@ namespace RaceLib
                 from = last.Detection.Time;
             }
 
+            DateTime dateTime;
+            try
+            {
+                dateTime = from + time;
+            }
+            catch
+            {
+                dateTime = DateTime.MaxValue;
+            }
+
             Channel c = currentRace.GetChannel(pilot);
-            EventManager.RaceManager.AddLap(new Detection(TimingSystemType.Manual, 0, pilot, c, from + time, newLapNumber, true, 0));
+            EventManager.RaceManager.AddLap(new Detection(TimingSystemType.Manual, 0, pilot, c, dateTime, newLapNumber, true, 0));
             EventManager.RaceManager.RecalcuateLaps(pilot, currentRace);
         }
 
