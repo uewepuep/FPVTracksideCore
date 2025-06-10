@@ -59,10 +59,12 @@ namespace Composition.Nodes
         {
             string[] lines = messageNode.Text.Split("\n");
 
-            int length = Math.Max(50, lines.Max(l => l.Length));
+            int length = Math.Max(30, lines.Max(l => l.Length));
+
+            int targetButtonHeight = 50;
 
             int width = 10 + (length * 10);
-            int height = 100 + lines.Length * 20;
+            int height = targetButtonHeight + 10 + lines.Length * 20;
 
             SetAspectRatio(width, height);
 
@@ -71,7 +73,6 @@ namespace Composition.Nodes
 
             RelativeBounds = new RectangleF(0.5f - (relativeWidth / 2), 0.5f - (relativeHeight / 2), relativeWidth, relativeHeight);
 
-            int targetButtonHeight = 50;
             float relButtonHeight = targetButtonHeight / (float)height;
 
             buttonsContainer.RelativeBounds = new RectangleF(0, 1 - relButtonHeight, 1, relButtonHeight);

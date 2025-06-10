@@ -67,12 +67,15 @@ namespace UI.Nodes
 
         public TimeSpan PBTime { get { return PBNode.PBTimeNode.Time; } }
 
-        public enum CrashOutType
+        public enum CrashState
         {
-            None,
-            Auto,
+            AutoUp,
+            ManualUp,
+
+            AutoDown,
+            ManualDown,
+            
             Hidden,
-            Manual,
             FullScreen,
         }
 
@@ -80,11 +83,19 @@ namespace UI.Nodes
         {
             get
             {
-                return CrashedOutType != CrashOutType.None;
+                switch (CrashedOutType)
+                {
+                    case CrashState.AutoDown:
+                    case CrashState.ManualDown:
+                        return true;
+
+                    default:
+                        return false;
+                }
             }
         }
 
-        public CrashOutType CrashedOutType { get; private set; }
+        public CrashState CrashedOutType { get; private set; }
 
         public event Action<Channel, Pilot> OnCrashedOut;
 
@@ -133,7 +144,7 @@ namespace UI.Nodes
         public ChannelNodeBase(EventManager eventManager, Channel channel, Color channelColor)
         {
             EventManager = eventManager;
-            CrashedOutType = CrashOutType.None;
+            CrashedOutType = CrashState.AutoUp;
             ChannelColor = channelColor;
             Channel = channel;
             Position = EventManager.GetMaxPilotsPerRace();
@@ -193,7 +204,7 @@ namespace UI.Nodes
             needUpdatePosition = true; 
             needsLapRefresh = true; 
             needsSplitClear = true; 
-            CrashedOutType = CrashOutType.None;
+            CrashedOutType = CrashState.AutoUp;
             if (race != null)
             {
                 gamePoints.Visible = race.Event.EventType == EventTypes.Game;
@@ -206,7 +217,7 @@ namespace UI.Nodes
 
         private void RaceManager_OnPilotChanged(PilotChannel pc)
         {
-            CrashedOutType = CrashOutType.None;
+            CrashedOutType = CrashState.AutoUp;
             needUpdatePosition = true;
         }
 
@@ -242,7 +253,7 @@ namespace UI.Nodes
             gamePoints.Points = EventManager.GameManager.GetCurrentGamePoints(Channel);
         }
 
-        public void SetCrashedOutType(CrashOutType type)
+        public void SetCrashedOutType(CrashState type)
         {
             if (CrashedOutType == type)
                 return;
@@ -251,14 +262,15 @@ namespace UI.Nodes
 
             switch (type)
             {
-                case CrashOutType.Manual:
+                case CrashState.ManualDown:
                     EventManager.RaceManager.CrashedOut(Pilot, Channel, true);
                     break;
 
-                case CrashOutType.Auto:
+                case CrashState.AutoDown:
                     EventManager.RaceManager.CrashedOut(Pilot, Channel, false);
                     break;
-                case CrashOutType.None:
+                case CrashState.AutoUp:
+                case CrashState.ManualUp:
                     EventManager.RaceManager.Recovered(Pilot, Channel);
                     break;
             }
@@ -418,12 +430,12 @@ namespace UI.Nodes
             if (CrashedOut || Finished || EventManager.RaceManager.CanRunRace)
             {
                 OnCloseClick?.Invoke();
-                CrashedOutType = CrashOutType.Manual;
+                CrashedOutType = CrashState.ManualDown;
             }
             else
             {
                 OnCrashedOutClick.Invoke();
-                SetCrashedOutType(CrashOutType.Manual);
+                SetCrashedOutType(CrashState.ManualDown);
             }
         }
 
@@ -448,7 +460,7 @@ namespace UI.Nodes
             Pilot = pilot;
 
             pilotNameNode.SetPilot(Pilot);
-            CrashedOutType = CrashOutType.None;
+            CrashedOutType = CrashState.AutoUp;
 
 
             LapsNode.SetPilot(Pilot);
