@@ -13,7 +13,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace Composition.Nodes
 {
-    public class ConfirmationNode : AspectNode
+    public class ConfirmationNode : Node
     {
         public TextButtonNode OK { get; private set; }
         public TextButtonNode Cancel { get; private set; }
@@ -29,23 +29,33 @@ namespace Composition.Nodes
         }
 
         public ConfirmationNode(string question, Color background, Color buttonBG, Color hover, Color text, System.Action onOk)
-            : base(4)
         {
             onOK = onOk;
 
-            Alignment = RectangleAlignment.Center;
-            RelativeBounds = new RectangleF(0.4f, 0, 0.2f, 1);
+            float height = 0.1f;
+
+            RelativeBounds = new RectangleF(0.4f, 0.5f - (height / 2), 0.2f, height);
+
+            int chars = question.Split('\n').Max(a => a.Length);
+
+            float lengthPerChar = 0.005f;
+            float charWidth = lengthPerChar * chars;
+
+            if (RelativeBounds.Width < charWidth)
+            {
+                RelativeBounds = new RectangleF(0.5f - (charWidth / 2), RelativeBounds.Y, charWidth, RelativeBounds.Height);
+            }
 
             ColorNode backgroundNode = new ColorNode(background);
             AddChild(backgroundNode);
 
             questionNode = new TextNode(question, text);
-            questionNode.RelativeBounds = new RectangleF(0.025f, 0.1f, 0.95f, 0.3f);
+            questionNode.RelativeBounds = new RectangleF(0.025f, 0.1f, 0.95f, 0.4f);
             questionNode.Alignment = RectangleAlignment.Center;
             backgroundNode.AddChild(questionNode);
 
             buttonsContainer = new Node();
-            buttonsContainer.RelativeBounds = new RectangleF(0.1f, 0.5f, 0.8f, 0.4f);
+            buttonsContainer.RelativeBounds = new RectangleF(0.1f, 0.6f, 0.8f, 0.3f);
             backgroundNode.AddChild(buttonsContainer);
 
             OK = new TextButtonNode("Ok", buttonBG, hover, text);
