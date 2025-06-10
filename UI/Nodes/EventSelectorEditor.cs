@@ -197,6 +197,11 @@ namespace UI.Nodes
             colorNode.AddChild(profileButtonNode);
 
             SetObjects(GetEvents(profile), true);
+
+            SimpleEvent lastOpened = Objects.OrderByDescending(e => e.LastOpened).FirstOrDefault();
+
+            SetSelected(lastOpened);
+
             AlignVisibleButtons();
         }
 
@@ -402,11 +407,6 @@ namespace UI.Nodes
 
         private void EventEditor_OnOK(BaseObjectEditorNode<SimpleEvent> obj)
         {
-            if (obj != null && obj.Selected != null)
-            {
-                obj.Selected.LastOpened = DateTime.Now;
-            }
-
             SaveChanges();
         }
 

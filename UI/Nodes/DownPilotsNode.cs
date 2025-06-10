@@ -22,6 +22,8 @@ namespace UI.Nodes
         private bool needUpdatePosition;
         private bool needsLapRefresh;
 
+        public event Action<Pilot> OnClick;
+
         public IEnumerable<DownChannelNode> DownChannelNodes
         {
             get
@@ -48,9 +50,6 @@ namespace UI.Nodes
             EventManager.RaceManager.OnRaceReset += RaceChanged;
             EventManager.RaceManager.OnRaceResumed += RaceChanged;
             EventManager.RaceManager.OnLapsRecalculated += RaceChanged;
-
-            EventManager.RaceManager.OnChannelCrashedOut += RaceManager_OnChannelCrashedOut;
-            EventManager.RaceManager.OnChannelRecovered += RaceManager_OnChannelRecovered;
         }
 
         public override void Dispose()
@@ -67,50 +66,52 @@ namespace UI.Nodes
             EventManager.RaceManager.OnRaceResumed -= RaceChanged;
             EventManager.RaceManager.OnLapsRecalculated -= RaceChanged;
 
-
-            EventManager.RaceManager.OnChannelCrashedOut -= RaceManager_OnChannelCrashedOut;
-            EventManager.RaceManager.OnChannelRecovered -= RaceManager_OnChannelRecovered;
-
             base.Dispose();
         }
-        private void RaceManager_OnChannelRecovered(Channel channel, Pilot pilot)
-        {
-            Race current = RaceManager.CurrentRace;
-            if (current == null)
-            {
-                container.ClearDisposeChildren();
-                return;
-            }
 
-            if (channel != null)
+        public void UpdateDown(IEnumerable<ChannelNodeBase> channelNodeBases)
+        {
+            bool change = false;
+
+            foreach (ChannelNodeBase channelNodeBase in channelNodeBases)
             {
+                Channel channel = channelNodeBase.Channel;
+                Pilot pilot = channelNodeBase.Pilot;
+
                 DownChannelNode dcn = DownChannelNodes.FirstOrDefault(d => d.Channel == channel);
-                dcn.Dispose();
+
+                if (channelNodeBase.CrashedOut && pilot != null)
+                {
+                    if (dcn == null)
+                    {
+                        dcn = new DownChannelNode(EventManager, channel, pilot);
+                        dcn.OnClick += Dcn_OnClick;
+                        container.AddChild(dcn);
+                        change = true;
+                    }
+                }
+                else
+                {
+                    if (dcn != null)
+                    {
+                        dcn.Dispose();
+                        change = true;
+                    }
+                }
             }
 
-            Listify();
+            if (change)
+            {
+                LayoutList();
+            }
         }
 
-        private void RaceManager_OnChannelCrashedOut(Channel channel, Pilot pilot, bool manual)
+        private void Dcn_OnClick(Pilot obj)
         {
-            Race current = RaceManager.CurrentRace;
-            if (current == null)
-            {
-                container.ClearDisposeChildren();
-                return;
-            }
-
-            if (channel != null && pilot != null)
-            {
-                DownChannelNode downChannelNode = new DownChannelNode(EventManager, channel, pilot);
-                container.AddChild(downChannelNode);
-            }
-
-            Listify();
+            OnClick?.Invoke(obj);
         }
 
-
-        private void Listify()
+        private void LayoutList()
         {
             DownChannelNode[] dcns = DownChannelNodes.ToArray();
 
@@ -205,6 +206,8 @@ namespace UI.Nodes
         private TextNode positionNode;
         private PBContainerNode PBNode;
 
+        public event Action<Pilot> OnClick;
+
         public DownChannelNode(EventManager eventManager, Channel channel, Pilot pilot)
         {
             EventManager = eventManager;
@@ -215,8 +218,13 @@ namespace UI.Nodes
             pilotNameNode.RelativeBounds = new RectangleF(0, 0, 0.4f, 0.6f);
             AddChild(pilotNameNode);
 
+            ImageButtonNode restoreVideo = new ImageButtonNode("img/up.png", Color.Transparent, Theme.Current.Hover.XNA);
+            restoreVideo.RelativeBounds = new RectangleF(1 - 0.05f, 0, 0.05f, 0.3f);
+            restoreVideo.OnClick += RestoreVideo_OnClick;
+            AddChild(restoreVideo);
+
             PBNode = new PBContainerNode(EventManager, Theme.Current.PilotViewTheme.PilotOverlayText.XNA, 1);
-            PBNode.RelativeBounds = new RectangleF(pilotNameNode.RelativeBounds.Right, 0, 0.3f, 0.3f);
+            PBNode.RelativeBounds = new RectangleF(pilotNameNode.RelativeBounds.Right + 0.1f, 0, 0.15f, 0.3f);
             AddChild(PBNode);
 
             LapsNode = new LapsNode(eventManager);
@@ -228,15 +236,21 @@ namespace UI.Nodes
             positionNode.Alignment = RectangleAlignment.TopRight;
             positionNode.Style.Bold = true;
             positionNode.Style.Border = true;
-            positionNode.RelativeBounds = new RectangleF(0.6f, 0, 0.4f, pilotNameNode.RelativeBounds.Bottom);
+            positionNode.RelativeBounds = new RectangleF(0.55f, 0, 0.4f, pilotNameNode.RelativeBounds.Bottom);
             AddChild(positionNode);
 
             Pilot = pilot;
             pilotNameNode.SetPilot(pilot);
             LapsNode.SetPilot(pilot);
             PBNode.Pilot = pilot;
+
+            AddChild(new BorderNode(c));
         }
 
+        private void RestoreVideo_OnClick(Composition.Input.MouseInputEvent mie)
+        {
+            OnClick?.Invoke(Pilot);
+        }
 
         public void UpdatePosition()
         {

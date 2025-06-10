@@ -74,7 +74,7 @@ namespace UI.Nodes
 
         private object channelCreationLock;
 
-        private AnimatedNode downPilotsList;
+        private DownPilotsNode downPilotsList;
 
         public bool SingleRow { get; set; }
 
@@ -164,6 +164,7 @@ namespace UI.Nodes
 
             downPilotsList = new DownPilotsNode(EventManager);
             downPilotsList.Visible = false;
+            downPilotsList.OnClick += TogglePilotVisible;
             AddChild(downPilotsList);
 
             gridStatsNode = new GridStatsNode(EventManager);
@@ -287,6 +288,8 @@ namespace UI.Nodes
                         cbn.SetAnimatedVisibility(visible);
                     }
                 }
+
+                downPilotsList.UpdateDown(ChannelNodes);
 
                 foreach (CamGridNode camNode in CamNodes)
                 {
@@ -941,6 +944,7 @@ namespace UI.Nodes
                     }
                 }
             }
+
             Reorder(true);
             RequestLayout();
         }
