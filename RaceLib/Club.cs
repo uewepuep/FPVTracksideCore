@@ -13,5 +13,10 @@ namespace RaceLib
         public Club()
         {
         }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }
