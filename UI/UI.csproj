@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
@@ -47,7 +47,6 @@
 
   <ItemGroup>
     <Content Remove="img\banner.png" />
-    <Content Remove="img\heros.jpg" />
     <Content Remove="img\login\fpvtrackside.png" />
     <Content Remove="img\login\multigp.png" />
   </ItemGroup>
@@ -61,8 +60,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="img\heros.jpg">
-    </EmbeddedResource>
     <EmbeddedResource Include="img\login\fpvtrackside.png" />
     <EmbeddedResource Include="img\login\multigp.png" />
   </ItemGroup>

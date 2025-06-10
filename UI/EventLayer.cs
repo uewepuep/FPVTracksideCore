@@ -246,7 +246,7 @@ namespace UI
             ControlButtons.ResumeButton.OnClick += (mie) => { ResumeRace(); };
             ControlButtons.ResetButton.OnClick += (mie) => 
             {
-                LayerStack.GetLayer<PopupLayer>().PopupConfirmation("Confirm Reset Race", EventManager.RaceManager.ResetRace);
+                Popuper.PopupConfirmation("Confirm Reset Race", EventManager.RaceManager.ResetRace);
             };
             ControlButtons.WormButton.OnClick += (mie) =>
             {
@@ -375,7 +375,7 @@ namespace UI
         {
             int limit = EventManager.Event.PackLimit;
 
-            LayerStack.GetLayer<PopupLayer>().PopupCombinedMessage(pilot.Name + " has hit the pack limit of " + limit);
+            Popuper.PopupCombinedMessage(pilot.Name + " has hit the pack limit of " + limit);
         }
 
         protected virtual MenuButton CreateMenuButton()
@@ -535,7 +535,7 @@ namespace UI
             Race toRecover = EventManager.RaceManager.GetRaceToRecover();
             if (toRecover != null)
             {
-                LayerStack.GetLayer<PopupLayer>().PopupConfirmation("Recover race?", () =>
+                Popuper.PopupConfirmation("Recover race?", () =>
                 {
                     recoveredRace = RecoverRace(toRecover);
                 });
@@ -877,7 +877,7 @@ namespace UI
                     message = "There are " + race.PilotCount + " pilots in the race. \nBut the Primary Timing System supports only " + EventManager.RaceManager.TimingSystemManager.MaxPilots;
                 }
 
-                LayerStack.GetLayer<PopupLayer>().PopupConfirmation(message,
+                Popuper.PopupConfirmation(message,
                     () => { StartRace(true); });
                 return false;
             }
@@ -887,7 +887,7 @@ namespace UI
 
             if (LowDiskSpace())
             {
-                LayerStack.GetLayer<PopupLayer>().PopupMessage("Race Start Cancelled. Low on disk space (< 1gb)");
+                Popuper.PopupMessage("Race Start Cancelled. Low on disk space (< 1gb)");
                 return false;
             }
 

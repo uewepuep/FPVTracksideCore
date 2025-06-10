@@ -173,6 +173,8 @@ namespace UI
             loadingLayer.BlockOnLoading = true;
 
             PopupLayer popupLayer = new PopupLayer(GraphicsDevice);
+            Popuper.PopupProvider = popupLayer;
+
             MenuLayer menuLayer = new MenuLayer(GraphicsDevice, Theme.Current.MenuBackground.XNA, Theme.Current.Hover.XNA, Theme.Current.MenuText.XNA, Theme.Current.MenuTextInactive.XNA, Theme.Current.ScrollBar.XNA);
             DragLayer dragLayer = new DragLayer(GraphicsDevice);
 
@@ -363,7 +365,7 @@ namespace UI
                 catch (Exception ex)
                 {
                     Logger.VideoLog.LogException(this, ex);
-                    LayerStack.GetLayer<PopupLayer>().PopupMessage("Error loading Video: " + ex.Message);
+                    Popuper.PopupMessage("Error loading Video: " + ex.Message);
                 }
             });
 
@@ -376,7 +378,7 @@ namespace UI
                 catch (Exception ex)
                 {
                     Logger.VideoLog.LogException(this, ex);
-                    LayerStack.GetLayer<PopupLayer>().PopupMessage("Error Cleaning old videos: " + ex.Message);
+                    Popuper.PopupMessage("Error Cleaning old videos: " + ex.Message);
                 }
             });
 
@@ -426,7 +428,7 @@ namespace UI
 
             Logger.UI.LogException(this, arg2);
 
-            LayerStack.GetLayer<PopupLayer>().PopupMessage("Error loading event. Please check log files.", () =>
+            Popuper.PopupMessage("Error loading event. Please check log files.", () =>
             {
                 if (LayerStack.Game is UI.BaseGame)
                 {

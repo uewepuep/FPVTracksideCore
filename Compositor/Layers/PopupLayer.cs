@@ -10,7 +10,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Composition.Layers
 {
-    public class PopupLayer : CompositorLayer
+    public class PopupLayer : CompositorLayer, IPopupProvider
     {
 
         private PopupBackgroundNode background;
@@ -74,12 +74,7 @@ namespace Composition.Layers
             return false;
         }
 
-        public void PopupConfirmation(string question)
-        {
-            PopupConfirmation(question, () => { });
-        }
-
-        public void PopupConfirmation(string question, Action onOk)
+        public void PopupConfirmation(string question, Action onOk = null)
         {
             ConfirmationNode cfn = new ConfirmationNode(question, PopupBackground, PopupButtonBackground, PopupHover, PopupText, onOk);
             Popup(cfn);
