@@ -98,6 +98,7 @@ namespace FfmpegMediaPlatform
             }
             catch (Exception e)
             {
+                Console.WriteLine(e.Message);
                 return new string[] { };
             }            
         }
