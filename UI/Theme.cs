@@ -196,12 +196,12 @@ namespace UI
                 return;
             }
 
-            //Theme2 theme2 = new Theme2();
-            //theme2.Directory = new DirectoryInfo(Path.Combine(workingDirectory.FullName, "themes/New"));
+            Theme2 theme2 = new Theme2();
+            theme2.Directory = new DirectoryInfo(Path.Combine(workingDirectory.FullName, "themes/New"));
 
-            //Theme converted = theme2.ToTheme(gd, Current);
-            //themes.Add(converted);
-            //Current = converted;
+            Theme converted = theme2.ToTheme(gd, Current);
+            themes.Add(converted);
+            Current = converted;
 
             LocaliseFilenames(Current.Directory, Current);
             Composition.Text.Style.DefaultFont = Current.FontFamily;
@@ -210,10 +210,11 @@ namespace UI
         private void Upgrade()
         {
             if (Tabs == null)
-            {
                 Tabs = new PanelTheme() { Background = new ToolTexture(Panel), Foreground = new ToolTexture(PanelAlt), Text = TextMain };
+
+            if (EventSelectorTop == null)
                 EventSelectorTop = new ToolTexture(TopPanel.R, TopPanel.G, TopPanel.B, TopPanel.A);
-            }
+
         }
 
 
