@@ -82,4 +82,8 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="themes\New\" />
+  </ItemGroup>
+
 </Project>

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Tools
 {
-    public class TextureCache
+    public class TextureCache : IDisposable
     {
         private Dictionary<string, Texture2D> stringToTexture;
 
@@ -18,6 +18,15 @@ namespace Tools
         {
             GraphicsDevice = device;
             stringToTexture = new Dictionary<string, Texture2D>();
+        }
+
+        public void Dispose()
+        {
+            foreach (Texture2D texture2D in stringToTexture.Values)
+            {
+                texture2D.Dispose();
+            }
+            stringToTexture.Clear();
         }
 
         public Texture2D GetTextureFromColor(Color color)

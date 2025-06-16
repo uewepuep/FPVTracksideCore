@@ -63,12 +63,23 @@ namespace Composition.Nodes
         {
             sharedTexture = true;
             Texture = texture;
+            if (Texture != null)
+            {
+                SourceBounds = new Rectangle(0, 0, Texture.Width, Texture.Height);
+            }
             UpdateAspectRatioFromTexture();
         }
 
         public ImageNode(string filename)
             :this()
         {
+            FileName = filename;
+        }
+
+        public ImageNode(string filename, Rectangle sourceBounds)
+            : this()
+        {
+            SourceBounds = sourceBounds;
             FileName = filename;
         }
 
@@ -119,17 +130,24 @@ namespace Composition.Nodes
             Texture2D temp = texture;
             if (temp != null)
             {
-                RectangleF sourceBounds = new RectangleF();
-                sourceBounds.X = (int)(temp.Width * RelativeSourceBounds.X);
-                sourceBounds.Y = (int)(temp.Height * RelativeSourceBounds.Y);
-                sourceBounds.Width = (int)(temp.Width * RelativeSourceBounds.Width);
-                sourceBounds.Height = (int)(temp.Height * RelativeSourceBounds.Height);
-
-                if (CropToFit)
+                if (CropToFit || RelativeSourceBounds.X != 0 ||
+                    RelativeSourceBounds.Y != 0 ||
+                    RelativeSourceBounds.Width != 1 ||
+                    RelativeSourceBounds.Height != 1)
                 {
-                    sourceBounds = Maths.FitBoxMaintainAspectRatio(sourceBounds, BaseBoundsF, Alignment, FitType);
+                    RectangleF sourceBounds = new RectangleF();
+                    sourceBounds.X = (int)(temp.Width * RelativeSourceBounds.X);
+                    sourceBounds.Y = (int)(temp.Height * RelativeSourceBounds.Y);
+                    sourceBounds.Width = (int)(temp.Width * RelativeSourceBounds.Width);
+                    sourceBounds.Height = (int)(temp.Height * RelativeSourceBounds.Height);
+
+                    if (CropToFit)
+                    {
+                        sourceBounds = Maths.FitBoxMaintainAspectRatio(sourceBounds, BaseBoundsF, Alignment, FitType);
+                    }
+
+                    SourceBounds = sourceBounds.ToRectangle();
                 }
-                SourceBounds = sourceBounds.ToRectangle();
             }
         }
 
@@ -148,7 +166,10 @@ namespace Composition.Nodes
             try
             {
                 texture = id.TextureCache.GetTextureFromFilename(FileName, ReloadFromFile);
-                SourceBounds = new Rectangle(0, 0, Texture.Width, Texture.Height);
+                if (SourceBounds.Width == 0 || SourceBounds.Height == 0)
+                {
+                    SourceBounds = new Rectangle(0, 0, Texture.Width, Texture.Height);
+                }
                 sharedTexture = true;
                 UpdateAspectRatioFromTexture();
                 ReloadFromFile = false;

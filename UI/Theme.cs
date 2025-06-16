@@ -1,4 +1,5 @@
-﻿using RaceLib;
+﻿using Microsoft.Xna.Framework.Graphics;
+using RaceLib;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -38,6 +39,8 @@ namespace UI
         public ToolColor Hover { get; set; }
 
         public ToolTexture TopPanel { get; set; }
+        public ToolTexture EventSelectorTop { get; set; }
+        
         public ToolColor TopPanelText { get; set; }
         public bool TopPanelTextBorder { get; set; }
 
@@ -63,6 +66,7 @@ namespace UI
         public BorderPanelTheme Editor { get; set; }
         public RoundPanelTheme Rounds { get; set; }
         public PanelTheme RightControls { get; set; }
+        public PanelTheme Tabs { get; set; }
         public PilotListPanelTheme LeftPilotList { get; set; }
         public InfoPanelTheme InfoPanel { get; set; }
         public BorderPanelTheme Login { get; set; }
@@ -81,6 +85,7 @@ namespace UI
             InfoPanel = new InfoPanelTheme();
             Login = new BorderPanelTheme();
             Replay = new PanelTheme();
+            Tabs = new PanelTheme();
 
             FPVTracksideLogo = new ToolTexture(@"img\logo.png", 0, 0, 0, 0);
 
@@ -144,6 +149,7 @@ namespace UI
                         theme.Directory = directory;
                         theme.ReadTime = DateTime.Now;
 
+                        theme.Upgrade();
                         theme.Repair();
 
                         IOTools.Write(directory.FullName, themeFile.Name, theme);
@@ -159,7 +165,7 @@ namespace UI
             }
         }
 
-        public static void Initialise(DirectoryInfo workingDirectory, string name)
+        public static void Initialise(GraphicsDevice gd, DirectoryInfo workingDirectory, string name)
         {
             List<Theme> themes = new List<Theme>();
 
@@ -190,9 +196,26 @@ namespace UI
                 return;
             }
 
+            //Theme2 theme2 = new Theme2();
+            //theme2.Directory = new DirectoryInfo(Path.Combine(workingDirectory.FullName, "themes/New"));
+
+            //Theme converted = theme2.ToTheme(gd, Current);
+            //themes.Add(converted);
+            //Current = converted;
+
             LocaliseFilenames(Current.Directory, Current);
             Composition.Text.Style.DefaultFont = Current.FontFamily;
         }
+
+        private void Upgrade()
+        {
+            if (Tabs == null)
+            {
+                Tabs = new PanelTheme() { Background = new ToolTexture(Panel), Foreground = new ToolTexture(PanelAlt), Text = TextMain };
+                EventSelectorTop = new ToolTexture(TopPanel.R, TopPanel.G, TopPanel.B, TopPanel.A);
+            }
+        }
+
 
         private void Repair()
         {

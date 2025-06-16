@@ -53,7 +53,7 @@ namespace FPVTracksideCore
             DirectoryInfo eventDir = new DirectoryInfo(ApplicationProfileSettings.Instance.EventStorageLocation);
             DatabaseFactory.Init(new DB.DatabaseFactory(Data, eventDir));
 
-            Theme.Initialise(PlatformTools.WorkingDirectory, "Dark");
+            Theme.Initialise(GraphicsDevice, PlatformTools.WorkingDirectory, "Dark");
 
             Form form = (Form)Form.FromHandle(Window.Handle);
 

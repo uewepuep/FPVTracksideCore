@@ -343,7 +343,7 @@ namespace UI
             {
                 // Re-init the following settings so settings windows can reload event to reload settings.
                 ApplicationProfileSettings.Initialize(Profile);
-                Theme.Initialise(PlatformTools.WorkingDirectory, "Dark");
+                Theme.Initialise(GraphicsDevice, PlatformTools.WorkingDirectory, "Dark");
 
                 if (backgroundLayer != null)
                 {

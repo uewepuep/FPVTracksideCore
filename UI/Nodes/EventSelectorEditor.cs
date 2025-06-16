@@ -165,7 +165,7 @@ namespace UI.Nodes
 
             RelativeBounds = new RectangleF(0.2f, 0.01f, 0.6f, 0.98f);
 
-            ColorNode colorNode = new ColorNode(Theme.Current.TopPanel.XNA);
+            ColorNode colorNode = new ColorNode(Theme.Current.EventSelectorTop);
             colorNode.RelativeBounds = new RectangleF(0, 0, 1, 0.175f);
             AddChild(colorNode);
 

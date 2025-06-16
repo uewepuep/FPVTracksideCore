@@ -72,6 +72,8 @@ namespace Composition
                 toClean.Dispose();
             }
 
+            TextureCache.Dispose();
+
             autoresetevent?.WaitOne(5000);
             autoresetevent?.Dispose();
             autoresetevent = null;

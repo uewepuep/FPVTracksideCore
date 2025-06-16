@@ -97,14 +97,23 @@ namespace Tools
             }
         }
 
+        public Rectangle Region { get; set; }
+
         public ToolTexture()
         {
+            Region = new Rectangle();
         }
 
         public ToolTexture(string filename, byte r, byte g, byte b) 
             :base(r, g, b)
         {
             TextureFilename = filename;
+        }
+
+        public ToolTexture(string filename, byte r, byte g, byte b, byte a, Rectangle region)
+           : this(filename, r, g, b, a)
+        {
+            Region = region;
         }
 
         public ToolTexture(string filename, byte r, byte g, byte b, byte a)
@@ -121,6 +130,12 @@ namespace Tools
         public ToolTexture(byte r, byte g, byte b, byte a)
             : base(r, g, b, a)
         {
+        }
+
+        public ToolTexture(ToolColor toolColor)
+            : base(toolColor.R, toolColor.G, toolColor.B, toolColor.A)
+        {
+
         }
 
         public ToolTexture(Microsoft.Xna.Framework.Color xnaColor)
