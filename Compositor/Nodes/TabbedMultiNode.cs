@@ -126,7 +126,7 @@ namespace Composition.Nodes
         public Color HoverCover { get; private set; }
         private Color textColor;
 
-        public TabButtonsNode(Color tabBackground, Color tabButtonBackground, Color hover, Color text) 
+        public TabButtonsNode(ToolTexture tabBackground, Color tabButtonBackground, Color hover, Color text) 
         {
             Background = tabButtonBackground;
             HoverCover = hover;

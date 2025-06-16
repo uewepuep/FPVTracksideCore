@@ -31,14 +31,15 @@ namespace UI
 
         public string FontFamily { get; set; }
 
+        public bool TopPanelTextBorder { get; set; }
+
+        public byte PilotTitleAlpha { get; set; }
 
         public TextureColor TextMain { get; set; }
         public TextureColor TextAlt { get; set; }
 
         public TextureRegion TopPanel { get; set; }
         public TextureColor TopPanelText { get; set; }
-
-        public TextureRegion EventSelectorTop { get; set; }
 
         public TextureRegion Background { get; set; }
 
@@ -52,8 +53,8 @@ namespace UI
         public TextureRegion PanelForeground { get; set; }
         public TextureColor PanelText { get; set; }
         public TextureColor PanelBorder { get; set; }
-        public TextureRegion Heading { get; set; }
-        public TextureColor HeadingText { get; set; }
+        public TextureRegion PanelHeadingBackground { get; set; }
+        public TextureColor PanelHeadingText { get; set; }
 
 
         public TextureRegion LeftBackground { get; set; }
@@ -76,10 +77,22 @@ namespace UI
         public TextureRegion ChannelPilotNameBackground { get; set; }
         public TextureRegion ChannelPBBackground { get; set; }
 
+        public TextureRegion MenuBackground { get; set; }
+        public TextureColor MenuText { get; set; }
+        public TextureColor MenuInactiveText { get; set; }
+
+
+        public TextureRegion NoVideoBackground { get; set; }
+        public TextureRegion CrashedOut { get; set; }
+
+        public TextureColor[] ChannelColors { get; set; }
+
 
         public Theme2()
         {
             FontFamily = "Roboto";
+            TopPanelTextBorder = true;
+            PilotTitleAlpha = 160;
 
             ScrollBar = new TextureColor() { Filename = "theme.png", X = 2005, Y = 22 };
             TextMain = new TextureColor() { Filename = "theme.png", X = 2005, Y = 35 };
@@ -98,24 +111,44 @@ namespace UI
             PanelText = new TextureColor() { Filename = "theme.png", X = 330, Y = 167 };
             PanelBorder = new TextureColor() { Filename = "theme.png", X = 379, Y = 167 };
 
-            Heading = new TextureRegion() { Filename = "theme.png", X = 377, Y = 174, W = 1170, H = 32 };
-            HeadingText = new TextureColor() { Filename = "theme.png", X = 504, Y = 164 };
+            PanelHeadingBackground = new TextureRegion() { Filename = "theme.png", X = 377, Y = 174, W = 1170, H = 32 };
+            PanelHeadingText = new TextureColor() { Filename = "theme.png", X = 504, Y = 164 };
 
             LeftBackground = new TextureRegion() { Filename = "theme.png", X = 0, Y = 131, W = 267, H = 870 };
-            LeftPilotBackground = new TextureRegion() { Filename = "theme.png", X = 1, Y = 103, W = 263, H = 30 };
+            LeftPilotBackground = new TextureRegion() { Filename = "theme.png", X = 1, Y = 1003, W = 263, H = 30 };
             LeftPilotText = new TextureColor() { Filename = "theme.png", X = 79, Y = 1041 };
 
             RightBackground = new TextureRegion() { Filename = "theme.png", X = 1836, Y = 131, W = 64, H = 870 };
             RightButtonBackground = new TextureRegion() { Filename = "theme.png", X = 1836, Y = 1002, W = 64, H = 64 };
             RightText = new TextureColor() { Filename = "theme.png", X = 1979, Y = 1052 };
 
-            EventSelectorTop = new TextureRegion() { Filename = "theme.png", X = 377, Y = 174, W = 1170, H = 32 };
-
             ChannelPilotNameBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 223, W = 211, H = 48 };
             ChannelPBBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 271, W = 138, H = 26 };
             ChannelLapBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 606, W = 526, H = 31 };
             ChannelOverlayPanel = new TextureRegion() { Filename = "theme.png", X = 305, Y = 330, W = 526, H = 158 };
             ChannelText = new TextureColor() { Filename = "theme.png", X = 640, Y = 233 };
+
+            MenuBackground = new TextureRegion() { Filename = "theme.png", X = 916, Y = 269, W = 207, H = 173 };
+            MenuText = new TextureColor() { Filename = "theme.png", X = 968, Y = 235 };
+            MenuInactiveText = new TextureColor() { Filename = "theme.png", X = 968, Y = 254 };
+
+            NoVideoBackground = new TextureRegion() { Filename = "theme.png", X = 304, Y = 687, W = 282, H = 238 };
+            CrashedOut = new TextureRegion() { Filename = "theme.png", X = 615, Y = 688, W = 282, H = 237 };
+
+            ChannelColors = new TextureColor[]
+            {
+                new TextureColor() { Filename = "theme.png", X = 1673, Y = 209 },
+                new TextureColor() { Filename = "theme.png", X = 1673, Y = 228 },
+
+                new TextureColor() { Filename = "theme.png", X = 1673, Y = 247 },
+                new TextureColor() { Filename = "theme.png", X = 1673, Y = 266 },
+                
+                new TextureColor() { Filename = "theme.png", X = 1673, Y = 285 },
+                new TextureColor() { Filename = "theme.png", X = 1673, Y = 304 },
+                
+                new TextureColor() { Filename = "theme.png", X = 1673, Y = 324 },
+                new TextureColor() { Filename = "theme.png", X = 1673, Y = 343 },
+            };
         }
 
         public Theme ToTheme(GraphicsDevice graphicsDevice, Theme baseTheme)
@@ -131,7 +164,7 @@ namespace UI
 
                 theme.TopPanel = TopPanel.ToToolTexture(rawTextureCache);
                 theme.TopPanelText = TopPanelText.ToToolColor(rawTextureCache);
-                theme.EventSelectorTop = EventSelectorTop.ToToolTexture(rawTextureCache);
+                theme.EventSelectorTop = PanelHeadingBackground.ToToolTexture(rawTextureCache);
 
                 theme.Tabs.Background = TabsBackground.ToToolTexture(rawTextureCache);
                 theme.Tabs.Foreground = TabForeground.ToToolTexture(rawTextureCache);
@@ -149,8 +182,8 @@ namespace UI
                 theme.InfoPanel.Foreground = PanelForeground.ToToolTexture(rawTextureCache);
                 theme.InfoPanel.Text = PanelText.ToToolColor(rawTextureCache);
                 theme.InfoPanel.Border = PanelBorder.ToToolColor(rawTextureCache);
-                theme.InfoPanel.HeadingText = HeadingText.ToToolColor(rawTextureCache);
-                theme.InfoPanel.Heading = Heading.ToToolTexture(rawTextureCache);
+                theme.InfoPanel.HeadingText = PanelHeadingText.ToToolColor(rawTextureCache);
+                theme.InfoPanel.Heading = PanelHeadingBackground.ToToolTexture(rawTextureCache);
 
                 theme.LeftPilotList.Background = LeftBackground.ToToolTexture(rawTextureCache);
                 theme.LeftPilotList.Foreground = LeftPilotBackground.ToToolTexture(rawTextureCache);
@@ -165,12 +198,25 @@ namespace UI
                 theme.Rounds.Text = PanelText.ToToolColor(rawTextureCache);
                 theme.Rounds.Border = PanelBorder.ToToolColor(rawTextureCache);
                 theme.Rounds.RaceTitle = PanelForeground.ToToolTexture(rawTextureCache);
-                theme.Rounds.Heading = Heading.ToToolTexture(rawTextureCache);
+                theme.Rounds.Heading = PanelHeadingBackground.ToToolTexture(rawTextureCache);
 
                 theme.PilotViewTheme.PBBackground = ChannelPBBackground.ToToolTexture(rawTextureCache);
                 theme.PilotViewTheme.PilotNameBackground = ChannelPilotNameBackground.ToToolTexture(rawTextureCache);
                 theme.PilotViewTheme.LapBackground = ChannelLapBackground.ToToolTexture(rawTextureCache);
                 theme.PilotViewTheme.PilotOverlayPanel = ChannelOverlayPanel.ToToolTexture(rawTextureCache);
+                theme.PilotViewTheme.PilotTitleAlpha = PilotTitleAlpha;
+                theme.PilotViewTheme.CrashedOut = CrashedOut.ToToolTexture(rawTextureCache);
+                theme.PilotViewTheme.NoVideoBackground = NoVideoBackground.ToToolTexture(rawTextureCache);
+
+
+                theme.MenuBackground = MenuBackground.ToToolTexture(rawTextureCache);
+                theme.MenuTextInactive = MenuInactiveText.ToToolColor(rawTextureCache);
+                theme.MenuText = MenuText.ToToolColor(rawTextureCache);
+
+                theme.Button = PanelForeground.ToToolTexture(rawTextureCache);
+                theme.TopPanelTextBorder = TopPanelTextBorder;
+
+                theme.ChannelColors = ChannelColors.Select(c => c.ToToolColor(rawTextureCache)).ToArray();
             }
 
             return theme;

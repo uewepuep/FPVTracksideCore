@@ -215,7 +215,7 @@ namespace UI
 
             RoundsNode = new RoundsNode(EventManager);
 
-            tabButtonsNode = new TabButtonsNode(Theme.Current.Tabs.Background.XNA, Theme.Current.Tabs.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Tabs.Text.XNA);
+            tabButtonsNode = new TabButtonsNode(Theme.Current.Tabs.Background, Theme.Current.Tabs.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Tabs.Text.XNA);
             pilotListButton = tabButtonsNode.AddTab("Pilots");
             pilotListButton.OnClick += TogglePilotList;
             OnPilotRefresh();
