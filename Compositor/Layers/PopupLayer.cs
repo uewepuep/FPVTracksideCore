@@ -10,7 +10,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Composition.Layers
 {
-    public class PopupLayer : CompositorLayer
+    public class PopupLayer : CompositorLayer, IPopupProvider
     {
 
         private PopupBackgroundNode background;
@@ -28,6 +28,14 @@ namespace Composition.Layers
                 return null;
             }
         }
+
+        private MenuLayer menuLayer;
+
+        public Color PopupBackground { get { if (menuLayer == null) { menuLayer = LayerStack.GetLayer<MenuLayer>(); } return menuLayer.Background; } }
+        public Color PopupButtonBackground { get { return menuLayer.DisabledText; } }
+        public Color PopupHover { get { return menuLayer.Hover; } }
+        public Color PopupText { get { return menuLayer.Text; } }
+
 
         public PopupLayer(GraphicsDevice device) 
             : base(device)
@@ -66,20 +74,9 @@ namespace Composition.Layers
             return false;
         }
 
-        public void PopupConfirmation(string question)
+        public void PopupConfirmation(string question, Action onOk = null)
         {
-            PopupConfirmation(question, () => { });
-        }
-
-        public void PopupConfirmation(string question, Action onOk)
-        {
-            ConfirmationNode cfn = new ConfirmationNode(question, LayerStack.GetLayer<MenuLayer>(), onOk);
-            Popup(cfn);
-        }
-
-        public void PopupConfirmationDontShowAgain(string question, Action<bool> onOkDontShow)
-        {
-            ConfirmationDontShowAgainNode cfn = new ConfirmationDontShowAgainNode(question, LayerStack.GetLayer<MenuLayer>(), onOkDontShow);
+            ConfirmationNode cfn = new ConfirmationNode(question, PopupBackground, PopupButtonBackground, PopupHover, PopupText, onOk);
             Popup(cfn);
         }
 
@@ -88,7 +85,7 @@ namespace Composition.Layers
             if (onOk == null)
                 onOk = () => { };
 
-            MessageNode cfn = new MessageNode(message, LayerStack.GetLayer<MenuLayer>(), onOk);
+            MessageNode cfn = new MessageNode(message, PopupBackground, PopupButtonBackground, PopupHover, PopupText, onOk);
             Popup(cfn);
         }
 
@@ -104,7 +101,7 @@ namespace Composition.Layers
             }
             else
             {
-                CombinedMessageNode cfn = new CombinedMessageNode(message, LayerStack.GetLayer<MenuLayer>(), onOk);
+                CombinedMessageNode cfn = new CombinedMessageNode(message, PopupBackground, PopupButtonBackground, PopupHover, PopupText, onOk);
                 Popup(cfn);
             }
         }
@@ -115,7 +112,7 @@ namespace Composition.Layers
             if (onOk == null)
                 onOk = () => { };
 
-            ErrorMessageNode cfn = new ErrorMessageNode(message, exception, LayerStack.GetLayer<MenuLayer>(), onOk);
+            ErrorMessageNode cfn = new ErrorMessageNode(message, exception, PopupBackground, PopupButtonBackground, PopupHover, PopupText, onOk);
             Popup(cfn);
         }
 

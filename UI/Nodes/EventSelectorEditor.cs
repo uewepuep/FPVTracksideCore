@@ -165,7 +165,7 @@ namespace UI.Nodes
 
             RelativeBounds = new RectangleF(0.2f, 0.01f, 0.6f, 0.98f);
 
-            ColorNode colorNode = new ColorNode(Theme.Current.TopPanel.XNA);
+            ColorNode colorNode = new ColorNode(Theme.Current.EventSelectorTop);
             colorNode.RelativeBounds = new RectangleF(0, 0, 1, 0.175f);
             AddChild(colorNode);
 
@@ -197,6 +197,11 @@ namespace UI.Nodes
             colorNode.AddChild(profileButtonNode);
 
             SetObjects(GetEvents(profile), true);
+
+            SimpleEvent lastOpened = Objects.OrderByDescending(e => e.LastOpened).FirstOrDefault();
+
+            SetSelected(lastOpened);
+
             AlignVisibleButtons();
         }
 
@@ -402,11 +407,6 @@ namespace UI.Nodes
 
         private void EventEditor_OnOK(BaseObjectEditorNode<SimpleEvent> obj)
         {
-            if (obj != null && obj.Selected != null)
-            {
-                obj.Selected.LastOpened = DateTime.Now;
-            }
-
             SaveChanges();
         }
 

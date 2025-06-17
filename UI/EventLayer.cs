@@ -91,7 +91,7 @@ namespace UI
 
             try
             {
-                Theme.Initialise(platformTools.WorkingDirectory, ApplicationProfileSettings.Instance.Theme);
+                Theme.Initialise(GraphicsDevice, platformTools.WorkingDirectory, ApplicationProfileSettings.Instance.Theme);
             }
             catch (Exception ex) 
             {
@@ -215,13 +215,12 @@ namespace UI
 
             RoundsNode = new RoundsNode(EventManager);
 
-            tabButtonsNode = new TabButtonsNode(Theme.Current.Panel.XNA, Theme.Current.PanelAlt.XNA, Theme.Current.Hover.XNA, Theme.Current.TextMain.XNA);
+            tabButtonsNode = new TabButtonsNode(Theme.Current.Tabs.Background, Theme.Current.Tabs.Foreground, Theme.Current.Hover.XNA, Theme.Current.Tabs.Text.XNA);
             pilotListButton = tabButtonsNode.AddTab("Pilots");
             pilotListButton.OnClick += TogglePilotList;
             OnPilotRefresh();
 
             TabbedMultiNode = CreateTabNode();
-            TabbedMultiNode.RelativeBounds = new RectangleF(0, 0, 1, 0.99f);
             TabbedMultiNode.OnTabChange += OnTabChange;
             centreContainer.AddChild(TabbedMultiNode);
 
@@ -246,7 +245,7 @@ namespace UI
             ControlButtons.ResumeButton.OnClick += (mie) => { ResumeRace(); };
             ControlButtons.ResetButton.OnClick += (mie) => 
             {
-                LayerStack.GetLayer<PopupLayer>().PopupConfirmation("Confirm Reset Race", EventManager.RaceManager.ResetRace);
+                Popuper.PopupConfirmation("Confirm Reset Race", EventManager.RaceManager.ResetRace);
             };
             ControlButtons.WormButton.OnClick += (mie) =>
             {
@@ -375,7 +374,7 @@ namespace UI
         {
             int limit = EventManager.Event.PackLimit;
 
-            LayerStack.GetLayer<PopupLayer>().PopupCombinedMessage(pilot.Name + " has hit the pack limit of " + limit);
+            Popuper.PopupCombinedMessage(pilot.Name + " has hit the pack limit of " + limit);
         }
 
         protected virtual MenuButton CreateMenuButton()
@@ -535,7 +534,7 @@ namespace UI
             Race toRecover = EventManager.RaceManager.GetRaceToRecover();
             if (toRecover != null)
             {
-                LayerStack.GetLayer<PopupLayer>().PopupConfirmation("Recover race?", () =>
+                Popuper.PopupConfirmation("Recover race?", () =>
                 {
                     recoveredRace = RecoverRace(toRecover);
                 });
@@ -647,6 +646,12 @@ namespace UI
             {
                 SoundManager.SetupSpeaker(PlatformTools, ApplicationProfileSettings.Instance.Voice, ApplicationProfileSettings.Instance.TextToSpeechVolume);
             }
+
+            EventSelectorLayer eventSelectorLayer = LayerStack.GetLayer<EventSelectorLayer>();
+            if (eventSelectorLayer != null)
+            {
+                eventSelectorLayer.Dispose();
+            }
         }
 
         public void UpdateCrop(bool crop)
@@ -683,7 +688,7 @@ namespace UI
             }
         }
 
-        private void BackToEventSelector()
+        protected virtual void BackToEventSelector()
         {
             if (LayerStack.Game is UI.BaseGame)
             {
@@ -871,7 +876,7 @@ namespace UI
                     message = "There are " + race.PilotCount + " pilots in the race. \nBut the Primary Timing System supports only " + EventManager.RaceManager.TimingSystemManager.MaxPilots;
                 }
 
-                LayerStack.GetLayer<PopupLayer>().PopupConfirmation(message,
+                Popuper.PopupConfirmation(message,
                     () => { StartRace(true); });
                 return false;
             }
@@ -881,7 +886,7 @@ namespace UI
 
             if (LowDiskSpace())
             {
-                LayerStack.GetLayer<PopupLayer>().PopupMessage("Race Start Cancelled. Low on disk space (< 1gb)");
+                Popuper.PopupMessage("Race Start Cancelled. Low on disk space (< 1gb)");
                 return false;
             }
 

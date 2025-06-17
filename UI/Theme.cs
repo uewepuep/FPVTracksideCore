@@ -1,4 +1,5 @@
-﻿using RaceLib;
+﻿using Microsoft.Xna.Framework.Graphics;
+using RaceLib;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -24,9 +25,6 @@ namespace UI
         [XmlIgnore()]
         [Browsable(false)]
         public DirectoryInfo Directory { get; set; }
-        [XmlIgnore()]
-        [Browsable(false)]
-        public DateTime ReadTime { get; private set; }
 
         public string FontFamily { get; set; }
         public ToolTexture Background { get; set; }
@@ -38,6 +36,8 @@ namespace UI
         public ToolColor Hover { get; set; }
 
         public ToolTexture TopPanel { get; set; }
+        public ToolTexture EventSelectorTop { get; set; }
+        
         public ToolColor TopPanelText { get; set; }
         public bool TopPanelTextBorder { get; set; }
 
@@ -63,6 +63,7 @@ namespace UI
         public BorderPanelTheme Editor { get; set; }
         public RoundPanelTheme Rounds { get; set; }
         public PanelTheme RightControls { get; set; }
+        public PanelTheme Tabs { get; set; }
         public PilotListPanelTheme LeftPilotList { get; set; }
         public InfoPanelTheme InfoPanel { get; set; }
         public BorderPanelTheme Login { get; set; }
@@ -81,6 +82,7 @@ namespace UI
             InfoPanel = new InfoPanelTheme();
             Login = new BorderPanelTheme();
             Replay = new PanelTheme();
+            Tabs = new PanelTheme();
 
             FPVTracksideLogo = new ToolTexture(@"img\logo.png", 0, 0, 0, 0);
 
@@ -124,12 +126,13 @@ namespace UI
 
         public static List<Theme> Themes { get; private set; }
 
-        public static IEnumerable<Theme> Load(DirectoryInfo directoryInfo)
+        public static IEnumerable<Theme> Load(DirectoryInfo directoryInfo, GraphicsDevice graphicsDevice)
         {
             KeyValuePair<string, string>[] replacements = new KeyValuePair<string, string>[]
             {
                 new KeyValuePair<string, string>("PBPage", "InfoPanel"),
             };
+
 
             foreach (DirectoryInfo directory in directoryInfo.GetDirectories("*"))
             {
@@ -142,8 +145,8 @@ namespace UI
                         theme = IOTools.Read<Theme>(directory.FullName, themeFile.Name, replacements).FirstOrDefault();
                         theme.Name = directory.Name;
                         theme.Directory = directory;
-                        theme.ReadTime = DateTime.Now;
 
+                        theme.Upgrade();
                         theme.Repair();
 
                         IOTools.Write(directory.FullName, themeFile.Name, theme);
@@ -156,16 +159,51 @@ namespace UI
 
                     yield return theme;
                 }
+
+                //if (directory.Name == "NewDark")
+                //{
+                //    Theme2 theme2 = new Theme2();
+                //    FileInfo theme2Fil2e = new FileInfo(directory.FullName + "/theme2.xml");
+                //    IOTools.Write(directory.FullName, theme2Fil2e.Name, theme2);
+                //}
+
+                FileInfo theme2File = new FileInfo(directory.FullName + "/theme2.xml");
+                if (theme2File.Exists)
+                {
+                    Theme2 theme2;
+
+                    Theme theme = null;
+
+                    try
+                    {
+                        theme2 = IOTools.Read<Theme2>(directory.FullName, theme2File.Name, replacements).FirstOrDefault();
+                        theme2.Name = directory.Name;
+                        theme2.Directory = directory;
+
+                        IOTools.Write(directory.FullName, theme2File.Name, theme2);
+
+                        theme = theme2.ToTheme(graphicsDevice, new Theme());
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+
+                    if (theme != null)
+                    {
+                        yield return theme;
+                    }
+                }
             }
         }
 
-        public static void Initialise(DirectoryInfo workingDirectory, string name)
+        public static void Initialise(GraphicsDevice gd, DirectoryInfo workingDirectory, string name)
         {
             List<Theme> themes = new List<Theme>();
 
             DirectoryInfo themesDirectory = new DirectoryInfo(Path.Combine(workingDirectory.FullName, "themes/"));
 
-            themes.AddRange(Load(themesDirectory));
+            themes.AddRange(Load(themesDirectory, gd));
 
             Themes = themes.ToList();
 
@@ -193,6 +231,17 @@ namespace UI
             LocaliseFilenames(Current.Directory, Current);
             Composition.Text.Style.DefaultFont = Current.FontFamily;
         }
+
+        private void Upgrade()
+        {
+            if (Tabs == null)
+                Tabs = new PanelTheme() { Background = new ToolTexture(Panel), Foreground = new ToolTexture(PanelAlt), Text = TextMain };
+
+            if (EventSelectorTop == null)
+                EventSelectorTop = new ToolTexture(TopPanel.R, TopPanel.G, TopPanel.B, TopPanel.A);
+
+        }
+
 
         private void Repair()
         {
@@ -298,6 +347,9 @@ namespace UI
                 {
                     ToolTexture tt = (ToolTexture)value;
 
+                    if (tt.TextureFilename == null)
+                        continue;
+
                     string filename = tt.TextureFilename.Replace('\\','/');
 
                     if (!string.IsNullOrEmpty(filename) && !File.Exists(filename))
@@ -339,8 +391,8 @@ namespace UI
 
         public override string ToString()
         {
-            if (Name == "Dark")
-                return "Dark (Default)";
+            if (Name == "FPVTrackside")
+                return Name + " (Default)";
 
             return Name;
         }

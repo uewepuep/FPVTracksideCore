@@ -19,6 +19,7 @@ namespace Composition.Nodes
         public event MouseInputDelegate OnHover;
 
         public Color Background { get { return BackgroundNode.Color; } set { BackgroundNode.Color = value; } }
+
         public Color Hover { get { return HoverNode.Color; } set { HoverNode.Color = value; } }
 
         public string Text { get { return TextNode.Text; } set { TextNode.Text = value; } }

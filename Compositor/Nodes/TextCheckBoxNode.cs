@@ -20,6 +20,7 @@ namespace Composition.Nodes
             AddChild(Text);
             
             Checkbox = new CheckboxNode();
+            Checkbox.Tint = textColor;
             Checkbox.Value = checkead;
             AddChild(Checkbox);
 

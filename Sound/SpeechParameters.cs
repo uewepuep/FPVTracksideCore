@@ -153,6 +153,11 @@ namespace Sound
                 string name = "{" + kvp.Key + "}";
                 string value = kvp.Value;
 
+                if (kvp.Key == Types.pilot)
+                {
+                    value = "'" + value + "'";
+                }
+
                 output = output.Replace(name, value);
             }
 

@@ -13,63 +13,75 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace Composition.Nodes
 {
-    public class ConfirmationNode : AspectNode
+
+    public class MessageNode : AspectNode
     {
-        public TextButtonNode OK { get; private set; }
-        public TextButtonNode Cancel { get; private set; }
-
+        public TextButtonNode OKButton { get; private set; }
         protected Node buttonsContainer;
-        protected TextNode questionNode;
+        protected TextNode messageNode;
 
-        protected System.Action onOK;
+        private System.Action onOk;
 
-        public ConfirmationNode(string question, MenuLayer MenuLayer, System.Action onOk)
-            :this(question, MenuLayer.Background, MenuLayer.DisabledText, MenuLayer.Hover, MenuLayer.Text, onOk)
+        public MessageNode(string message, Color background, Color buttonBackground, Color hover, Color text, System.Action onOk)
         {
-        }
-
-        public ConfirmationNode(string question, Color background, Color buttonBG, Color hover, Color text, System.Action onOk)
-            : base(4)
-        {
-            onOK = onOk;
-
-            Alignment = RectangleAlignment.Center;
-            RelativeBounds = new RectangleF(0.4f, 0, 0.2f, 1);
+            this.onOk = onOk;
 
             ColorNode backgroundNode = new ColorNode(background);
             AddChild(backgroundNode);
 
-            questionNode = new TextNode(question, text);
-            questionNode.RelativeBounds = new RectangleF(0.025f, 0.1f, 0.95f, 0.3f);
-            questionNode.Alignment = RectangleAlignment.Center;
-            backgroundNode.AddChild(questionNode);
+            messageNode = new TextNode(message, text);
+            backgroundNode.AddChild(messageNode);
 
             buttonsContainer = new Node();
-            buttonsContainer.RelativeBounds = new RectangleF(0.1f, 0.5f, 0.8f, 0.4f);
+
             backgroundNode.AddChild(buttonsContainer);
 
-            OK = new TextButtonNode("Ok", buttonBG, hover, text);
-            Cancel = new TextButtonNode("Cancel", buttonBG, hover, text);
+            OKButton = new TextButtonNode("Ok", buttonBackground, hover, text);
 
-            buttonsContainer.AddChild(Cancel);
-            buttonsContainer.AddChild(OK);
+            buttonsContainer.AddChild(OKButton);
 
             AlignHorizontally(0.1f, buttonsContainer.Children.ToArray());
 
-            Cancel.OnClick += Cancel_OnClick;
-
-            OK.OnClick += OK_OnClick;
+            OKButton.OnClick += (mie) =>
+            {
+                OK();
+            };
         }
 
-        private void OK_OnClick(MouseInputEvent mie)
+
+        public virtual void OK()
         {
-            onOK?.Invoke();
+            onOk?.Invoke();
             Dispose();
         }
 
-        private void Cancel_OnClick(MouseInputEvent mie)
+        public override void Layout(RectangleF parentBounds)
         {
-            Dispose();
+            string[] lines = messageNode.Text.Split("\n");
+
+            int length = Math.Max(30, lines.Max(l => l.Length));
+
+            int targetButtonHeight = 50;
+
+            int width = 10 + (length * 10);
+            int height = targetButtonHeight + 10 + lines.Length * 20;
+
+            SetAspectRatio(width, height);
+
+            float relativeWidth = width / parentBounds.Width;
+            float relativeHeight = height / parentBounds.Height;
+
+            RelativeBounds = new RectangleF(0.5f - (relativeWidth / 2), 0.5f - (relativeHeight / 2), relativeWidth, relativeHeight);
+
+            float relButtonHeight = targetButtonHeight / (float)height;
+
+            buttonsContainer.RelativeBounds = new RectangleF(0, 1 - relButtonHeight, 1, relButtonHeight);
+            messageNode.RelativeBounds = new RectangleF(0, 0, 1, 1 - relButtonHeight);
+
+            buttonsContainer.Scale(0.7f);
+            messageNode.Scale(0.9f);
+
+            base.Layout(parentBounds);
         }
 
         public override bool OnKeyboardInput(KeyboardInputEvent inputEvent)
@@ -83,13 +95,50 @@ namespace Composition.Nodes
             {
                 if (inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.Enter)
                 {
-                    OK_OnClick(null);
+                    OK();
                     return true;
                 }
+            }
 
+            return false;
+        }
+    }
+
+
+
+    public class ConfirmationNode : MessageNode
+    {
+        public TextButtonNode CancelButton { get; private set; }
+
+        public ConfirmationNode(string question, Color background, Color buttonBG, Color hover, Color text, System.Action onOk)
+            : base(question, background, buttonBG, hover, text, onOk)
+        {
+            CancelButton = new TextButtonNode("Cancel", buttonBG, hover, text);
+
+            buttonsContainer.AddChild(CancelButton);
+
+            AlignHorizontally(0.1f, OKButton, CancelButton);
+
+            CancelButton.OnClick += (n) => { Cancel(); };
+        }
+
+        private void Cancel()
+        {
+            Dispose();
+        }
+
+        public override bool OnKeyboardInput(KeyboardInputEvent inputEvent)
+        {
+            if (base.OnKeyboardInput(inputEvent))
+            {
+                return true;
+            }
+
+            if (inputEvent.ButtonState == ButtonStates.Pressed)
+            {
                 if (inputEvent.Key == Microsoft.Xna.Framework.Input.Keys.Escape)
                 {
-                    Cancel_OnClick(null);
+                    Cancel();
                     return true;
                 }
             }
@@ -98,103 +147,10 @@ namespace Composition.Nodes
         }
     }
 
-    public class ConfirmationDontShowAgainNode : ConfirmationNode
-    {
-        public CheckboxNode DontShowAgain { get; private set; }
-
-        public ConfirmationDontShowAgainNode(string question, MenuLayer MenuLayer, Action<bool> onOkDontShowAgain)
-            : base(question, MenuLayer.Background, MenuLayer.DisabledText, MenuLayer.Hover, MenuLayer.Text, null)
-        {
-            RelativeBounds = new RectangleF(0.4f, 0, 0.3f, 1);
-
-            buttonsContainer.RelativeBounds = new RectangleF(0.1f, 0.6f, 0.8f, 0.275f);
-            questionNode.RelativeBounds = new RectangleF(0.025f, 0.09f, 0.95f, 0.2f);
-
-            Node container = new Node();
-            container.RelativeBounds = new RectangleF(0.1f, 0.38f, 0.8f, 0.125f);
-            AddChild(container);
-
-            DontShowAgain = new CheckboxNode();
-            DontShowAgain.RelativeBounds = new RectangleF(0.55f, 0.0f, 0.1f, 1f);
-            container.AddChild(DontShowAgain);
-
-            TextNode textNode = new TextNode("Don't show again", MenuLayer.Text);
-            textNode.RelativeBounds = new RectangleF(0.325f, 0.0f, 0.9f, 1);
-            textNode.Alignment = RectangleAlignment.CenterLeft;
-            container.AddChild(textNode);
-
-            OK.OnClick += (mie) =>
-            {
-                onOkDontShowAgain(DontShowAgain.Value);
-            };
-        }
-    }
-
-    public class MessageNode : AspectNode
-    {
-        public TextButtonNode OK { get; private set; }
-        protected Node buttonsContainer;
-        protected TextNode messageNode;
-        public int Lines { get { return messageNode.Text.Split('\n').Count(); } }
-
-        public MessageNode(string message, MenuLayer MenuLayer, System.Action onOk)
-        {
-            Alignment = RectangleAlignment.Center;
-
-            ColorNode backgroundNode = new ColorNode(MenuLayer.Background);
-            AddChild(backgroundNode);
-
-            messageNode = new TextNode(message, MenuLayer.Text);
-            backgroundNode.AddChild(messageNode);
-
-            buttonsContainer = new Node();
-
-            backgroundNode.AddChild(buttonsContainer);
-
-            OK = new TextButtonNode("Ok", MenuLayer.DisabledText, MenuLayer.Hover, MenuLayer.Text);
-
-            buttonsContainer.AddChild(OK);
-
-            AlignHorizontally(0.1f, buttonsContainer.Children.ToArray());
-
-            OK.OnClick += (mie) =>
-            {
-                onOk?.Invoke();
-                Dispose();
-            };
-        }
-
-        public override void Layout(RectangleF parentBounds)
-        {
-            int length = Math.Max(50, messageNode.Text.Length);
-
-            int width = 10 + (length * 5);
-            int height = 100 + Lines * 20;
-
-            SetAspectRatio(width, height);
-
-            float relativeWidth = width / parentBounds.Width;
-            float relativeHeight = height / parentBounds.Height;
-
-            RelativeBounds = new RectangleF(0.5f - (relativeWidth / 2), 0.5f - (relativeHeight / 2), relativeWidth, relativeHeight);
-
-            int targetButtonHeight = 60;
-            float relButtonHeight = targetButtonHeight / (float)height;
-
-            buttonsContainer.RelativeBounds = new RectangleF(0, 1 - relButtonHeight, 1, relButtonHeight);
-            messageNode.RelativeBounds = new RectangleF(0, 0, 1, 1 - relButtonHeight);
-
-            buttonsContainer.Scale(0.7f);
-            messageNode.Scale(0.9f);
-
-            base.Layout(parentBounds);
-        }
-    }
-
     public class CombinedMessageNode : MessageNode
     {
-        public CombinedMessageNode(string message, MenuLayer MenuLayer, Action onOk) 
-            : base(message, MenuLayer, onOk)
+        public CombinedMessageNode(string message, Color background, Color buttonBackground, Color hover, Color text, Action onOk) 
+            : base(message, background, buttonBackground, hover, text, onOk)
         {
         }
 
@@ -215,11 +171,11 @@ namespace Composition.Nodes
 
         public TextButtonNode Copy { get; set; }
 
-        public ErrorMessageNode(string message, Exception exception, MenuLayer MenuLayer, Action onOk)
-            : base(message, MenuLayer, onOk)
+        public ErrorMessageNode(string message, Exception exception, Color background, Color buttonBackground, Color hover, Color text, Action onOk)
+            : base(message, background, buttonBackground, hover, text, onOk)
         {
             Exception = exception;
-            Copy = new TextButtonNode("Copy Exception", MenuLayer.DisabledText, MenuLayer.Hover, MenuLayer.Text);
+            Copy = new TextButtonNode("Copy Exception", buttonBackground, hover, text);
             buttonsContainer.AddChild(Copy);
             Copy.OnClick += Copy_OnClick;
 

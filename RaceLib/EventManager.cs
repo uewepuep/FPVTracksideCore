@@ -266,6 +266,10 @@ namespace RaceLib
                 using (IDatabase db = DatabaseFactory.Open(EventId))
                 {
                     Event = db.LoadEvent();
+
+                    Event.LastOpened = DateTime.Now;
+                    db.Update(Event);
+
                     System.Diagnostics.Debug.Assert(Event != null);
 
                     UpdateRoundOrder(db);

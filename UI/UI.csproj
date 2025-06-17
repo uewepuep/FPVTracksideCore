@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
@@ -6,7 +6,7 @@
     <ApplicationIcon />
     <Platforms>AnyCPU;x64</Platforms>
     <StartupObject />
-    <Version>2.0.66.1</Version>
+    <Version>2.0.67.0</Version>
 	  <Self-Contained>true</Self-Contained>
   </PropertyGroup>
 
@@ -46,8 +46,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="themes\NewDark\**" />
+    <Content Remove="themes\NewDark\**" />
+    <EmbeddedResource Remove="themes\NewDark\**" />
+    <None Remove="themes\NewDark\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Remove="img\banner.png" />
-    <Content Remove="img\heros.jpg" />
     <Content Remove="img\login\fpvtrackside.png" />
     <Content Remove="img\login\multigp.png" />
   </ItemGroup>
@@ -61,8 +67,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="img\heros.jpg">
-    </EmbeddedResource>
     <EmbeddedResource Include="img\login\fpvtrackside.png" />
     <EmbeddedResource Include="img\login\multigp.png" />
   </ItemGroup>

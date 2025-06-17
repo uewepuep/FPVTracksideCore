@@ -138,7 +138,17 @@ namespace Composition.Nodes
             {
                 if (time > 0)
                 {
-                    addLapCallback(pilot, TimeSpan.FromSeconds(time));
+                    TimeSpan timeSpan;
+                    try
+                    {
+                        timeSpan = TimeSpan.FromSeconds(time);
+                    }
+                    catch
+                    {
+                        timeSpan = TimeSpan.MaxValue;
+                    }
+
+                    addLapCallback(pilot, timeSpan);
                     return;
                 }
             }

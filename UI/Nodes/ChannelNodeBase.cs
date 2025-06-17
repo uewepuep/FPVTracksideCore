@@ -67,12 +67,15 @@ namespace UI.Nodes
 
         public TimeSpan PBTime { get { return PBNode.PBTimeNode.Time; } }
 
-        public enum CrashOutType
+        public enum CrashState
         {
-            None,
-            Auto,
+            AutoUp,
+            ManualUp,
+
+            AutoDown,
+            ManualDown,
+            
             Hidden,
-            Manual,
             FullScreen,
         }
 
@@ -80,11 +83,19 @@ namespace UI.Nodes
         {
             get
             {
-                return CrashedOutType != CrashOutType.None;
+                switch (CrashedOutType)
+                {
+                    case CrashState.AutoDown:
+                    case CrashState.ManualDown:
+                        return true;
+
+                    default:
+                        return false;
+                }
             }
         }
 
-        public CrashOutType CrashedOutType { get; private set; }
+        public CrashState CrashedOutType { get; private set; }
 
         public event Action<Channel, Pilot> OnCrashedOut;
 
@@ -133,7 +144,7 @@ namespace UI.Nodes
         public ChannelNodeBase(EventManager eventManager, Channel channel, Color channelColor)
         {
             EventManager = eventManager;
-            CrashedOutType = CrashOutType.None;
+            CrashedOutType = CrashState.AutoUp;
             ChannelColor = channelColor;
             Channel = channel;
             Position = EventManager.GetMaxPilotsPerRace();
@@ -148,7 +159,6 @@ namespace UI.Nodes
             EventManager.RaceManager.OnRaceClear += RaceManager_OnRaceStateChanged;
             EventManager.RaceManager.OnRaceChanged += RaceManager_OnRaceStateChanged;
             EventManager.RaceManager.OnRaceReset += RaceManager_OnRaceStateChanged;
-            EventManager.RaceManager.OnRaceResumed += RaceManager_OnRaceStateChanged;
             EventManager.RaceManager.OnLapsRecalculated += RaceManager_OnLapsRecalculated;
             EventManager.LapRecordManager.OnNewPersonalBest += RecordManager_OnNewPersonalBest;
             EventManager.RaceManager.OnRaceResumed += RaceManager_OnRaceStateChanged;
@@ -194,7 +204,7 @@ namespace UI.Nodes
             needUpdatePosition = true; 
             needsLapRefresh = true; 
             needsSplitClear = true; 
-            CrashedOutType = CrashOutType.None;
+            CrashedOutType = CrashState.AutoUp;
             if (race != null)
             {
                 gamePoints.Visible = race.Event.EventType == EventTypes.Game;
@@ -207,7 +217,7 @@ namespace UI.Nodes
 
         private void RaceManager_OnPilotChanged(PilotChannel pc)
         {
-            CrashedOutType = CrashOutType.None;
+            CrashedOutType = CrashState.AutoUp;
             needUpdatePosition = true;
         }
 
@@ -243,7 +253,7 @@ namespace UI.Nodes
             gamePoints.Points = EventManager.GameManager.GetCurrentGamePoints(Channel);
         }
 
-        public void SetCrashedOutType(CrashOutType type)
+        public void SetCrashedOutType(CrashState type)
         {
             if (CrashedOutType == type)
                 return;
@@ -252,12 +262,16 @@ namespace UI.Nodes
 
             switch (type)
             {
-                case CrashOutType.Manual:
+                case CrashState.ManualDown:
                     EventManager.RaceManager.CrashedOut(Pilot, Channel, true);
                     break;
 
-                case CrashOutType.Auto:
+                case CrashState.AutoDown:
                     EventManager.RaceManager.CrashedOut(Pilot, Channel, false);
+                    break;
+                case CrashState.AutoUp:
+                case CrashState.ManualUp:
+                    EventManager.RaceManager.Recovered(Pilot, Channel);
                     break;
             }
         }
@@ -302,7 +316,7 @@ namespace UI.Nodes
             pilotInfoContainer.RelativeBounds = new RectangleF(0, 0.03f, 0.4f, 0.185f);
             DisplayNode.AddChild(pilotInfoContainer);
 
-            pilotNameNode = new ChannelPilotNameNode(this, ChannelColor, pilotAlpha);
+            pilotNameNode = new ChannelPilotNameNode(EventManager, Channel, ChannelColor, pilotAlpha);
             pilotNameNode.RelativeBounds = new RectangleF(0, 0, 1, 0.65f);
             pilotInfoContainer.AddChild(pilotNameNode);
 
@@ -416,12 +430,12 @@ namespace UI.Nodes
             if (CrashedOut || Finished || EventManager.RaceManager.CanRunRace)
             {
                 OnCloseClick?.Invoke();
-                CrashedOutType = CrashOutType.Manual;
+                CrashedOutType = CrashState.ManualDown;
             }
             else
             {
                 OnCrashedOutClick.Invoke();
-                SetCrashedOutType(CrashOutType.Manual);
+                SetCrashedOutType(CrashState.ManualDown);
             }
         }
 
@@ -446,7 +460,7 @@ namespace UI.Nodes
             Pilot = pilot;
 
             pilotNameNode.SetPilot(Pilot);
-            CrashedOutType = CrashOutType.None;
+            CrashedOutType = CrashState.AutoUp;
 
 
             LapsNode.SetPilot(Pilot);
@@ -1018,24 +1032,17 @@ namespace UI.Nodes
     public class ChannelPilotNameNode : ColorNode, IPilot
     {
         public Pilot Pilot { get; set; }
-        public Channel Channel 
-        { 
-            get 
-            { 
-                if (ChannelNodeBase == null)
-                    return Channel.None; 
-
-                return ChannelNodeBase.Channel; 
-            } 
-        }
+        public Channel Channel { get; private set; }
 
         private TextNode pilotName;
-        public ChannelNodeBase ChannelNodeBase { get; private set; }
 
-        public ChannelPilotNameNode(ChannelNodeBase channelNodeBase, Color channelColor, float pilotAlpha)
+        private EventManager eventManager;
+
+        public ChannelPilotNameNode(EventManager eventManager, Channel channel, Color channelColor, float pilotAlpha)
             :base(Theme.Current.PilotViewTheme.PilotNameBackground)
         {
-            this.ChannelNodeBase = channelNodeBase;
+            this.eventManager = eventManager;
+            Channel = channel;
             KeepAspectRatio = false;
             Alpha = pilotAlpha;
             Tint = channelColor;
@@ -1068,9 +1075,9 @@ namespace UI.Nodes
 
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
         {
-            if (ChannelNodeBase != null)
+            if (eventManager != null)
             {
-                if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Pressed && ChannelNodeBase.EventManager.RaceManager.CanRunRace)
+                if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Pressed && eventManager.RaceManager.CanRunRace)
                 {
                     GetLayer<DragLayer>()?.RegisterDrag(this, mouseInputEvent);
                 }

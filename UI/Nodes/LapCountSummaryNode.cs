@@ -79,19 +79,25 @@ namespace UI.Nodes
 
             foreach (Round round in rounds)
             {
-                Race race = eventManager.RaceManager.GetRaces(r => r.Round == round && r.HasPilot(pilot)).FirstOrDefault();
+                IEnumerable<Race> races = eventManager.RaceManager.GetRaces(r => r.Round == round && r.HasPilot(pilot));
+                int laps = 0;
+                foreach(Race race in races)
+                {
+                    if (race != null)
+                    {
+                        int raceLaps = race.GetValidLapsCount(pilot, false);
+                        laps += raceLaps;
+
+                        total += raceLaps;
+                    }
+                }
 
                 TextNode rn = new TextNode("", Theme.Current.Rounds.Text.XNA);
                 rn.Alignment = RectangleAlignment.TopRight;
+                rn.Text = laps.ToString();
                 nodes.Add(rn);
 
-                if (race != null)
-                {
-                    int laps = race.GetValidLapsCount(pilot, false);
-                    rn.Text = laps.ToString();
-
-                    total += laps;
-                }
+                
             }
 
             TextNode t = new TextNode(total.ToString(), Theme.Current.Rounds.Text.XNA);

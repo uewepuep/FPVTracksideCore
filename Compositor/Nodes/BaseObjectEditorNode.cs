@@ -1641,6 +1641,7 @@ namespace Composition.Nodes
             : base(obj, pi, textColor)
         {
             checkbox = new CheckboxNode(hoverColor);
+            checkbox.Tint = textColor;
             checkbox.Alignment = RectangleAlignment.CenterLeft;
             checkbox.ValueChanged += Checkbox_ValueChanged;
             AddChild(checkbox);
@@ -1693,6 +1694,7 @@ namespace Composition.Nodes
             Value = value;
 
             checkbox = new CheckboxNode(hoverColor);
+            checkbox.Tint = textColor;
             checkbox.Alignment = RectangleAlignment.CenterLeft;
             checkbox.ValueChanged += Checkbox_ValueChanged;
             AddChild(checkbox);

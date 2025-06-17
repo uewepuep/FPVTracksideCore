@@ -101,7 +101,7 @@ namespace Composition.Nodes
                 TextButtonNode oldtbn;
                 if (mapBack.TryGetValue(Showing, out oldtbn))
                 {
-                    oldtbn.Background = TabButtonsNode.Background;
+                    oldtbn.BackgroundNode.SetToolTexture(TabButtonsNode.ButtonBackground);
                 }
             }
 
@@ -122,13 +122,13 @@ namespace Composition.Nodes
     {
         private ColorNode tabBack;
 
-        public Color Background { get; private set; }
+        public ToolTexture ButtonBackground { get; private set; }
         public Color HoverCover { get; private set; }
         private Color textColor;
 
-        public TabButtonsNode(Color tabBackground, Color tabButtonBackground, Color hover, Color text) 
+        public TabButtonsNode(ToolTexture tabBackground, ToolTexture tabButtonBackground, Color hover, Color text) 
         {
-            Background = tabButtonBackground;
+            ButtonBackground = tabButtonBackground;
             HoverCover = hover;
             textColor = text;
 
@@ -138,7 +138,7 @@ namespace Composition.Nodes
 
         public TextButtonNode AddTab(string text)
         {
-            TextButtonNode textButtonNode = new TextButtonNode(text, Background, HoverCover, textColor);
+            TextButtonNode textButtonNode = new TextButtonNode(text, ButtonBackground, HoverCover, textColor);
             tabBack.AddChild(textButtonNode);
             return textButtonNode;
         }

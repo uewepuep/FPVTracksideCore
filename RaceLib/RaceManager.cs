@@ -46,6 +46,7 @@ namespace RaceLib
         public event PilotChannelDelegate OnPilotRemoved;
 
         public event Action<Channel, Pilot, bool> OnChannelCrashedOut;
+        public event Action<Channel, Pilot> OnChannelRecovered;
         public event Action<Pilot, int> OnHitPackLimit;
         public bool CallOutPilotsBeforeRaceStart { get; set; }
 
@@ -1486,8 +1487,18 @@ namespace RaceLib
                 from = last.Detection.Time;
             }
 
+            DateTime dateTime;
+            try
+            {
+                dateTime = from + time;
+            }
+            catch
+            {
+                dateTime = DateTime.MaxValue;
+            }
+
             Channel c = currentRace.GetChannel(pilot);
-            EventManager.RaceManager.AddLap(new Detection(TimingSystemType.Manual, 0, pilot, c, from + time, newLapNumber, true, 0));
+            EventManager.RaceManager.AddLap(new Detection(TimingSystemType.Manual, 0, pilot, c, dateTime, newLapNumber, true, 0));
             EventManager.RaceManager.RecalcuateLaps(pilot, currentRace);
         }
 
@@ -2127,6 +2138,14 @@ namespace RaceLib
             if (EventManager.RaceManager.RaceRunning && pilot != null && channel != null)
             {
                 OnChannelCrashedOut?.Invoke(channel, pilot, manual);
+            }
+        }
+
+        public void Recovered(Pilot pilot, Channel channel)
+        {
+            if (EventManager.RaceManager.RaceRunning && pilot != null && channel != null)
+            {
+                OnChannelRecovered?.Invoke(channel, pilot);
             }
         }
 

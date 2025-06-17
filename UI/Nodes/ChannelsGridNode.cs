@@ -68,11 +68,11 @@ namespace UI.Nodes
 
         private List<ChannelVideoInfo> channelInfos;
 
-        private bool manualOverride;
-
         private GridStatsNode gridStatsNode;
 
         private object channelCreationLock;
+
+        private DownPilotsNode downPilotsList;
 
         public bool SingleRow { get; set; }
 
@@ -160,6 +160,11 @@ namespace UI.Nodes
             EventManager.RaceManager.OnRaceChanged += RaceManager_OnRaceChanged;
             EventManager.OnPilotRefresh += Refresh;
 
+            downPilotsList = new DownPilotsNode(EventManager);
+            downPilotsList.Visible = false;
+            downPilotsList.OnClick += TogglePilotVisible;
+            AddChild(downPilotsList);
+
             gridStatsNode = new GridStatsNode(EventManager);
             gridStatsNode.Visible = false;
             AddChild(gridStatsNode);
@@ -183,7 +188,6 @@ namespace UI.Nodes
 
         private void RaceManager_OnRaceChanged(Race race)
         {
-            manualOverride = false;
             ClearPilots();
             Reorder();
         }
@@ -191,15 +195,12 @@ namespace UI.Nodes
         private void RaceManager_OnRaceEnd(Race race)
         {
             SetAssignedVisible(true);
-            manualOverride = false;
-
             Reorder();
         }
 
         private void RaceManager_OnRaceStart(Race race)
         {
             bool isRace = EventManager.RaceManager.RaceType != EventTypes.Freestyle;
-            manualOverride = false;
             SetLapsVisiblity(isRace);
         }
 
@@ -210,7 +211,6 @@ namespace UI.Nodes
        
         public void Refresh()
         {
-            manualOverride = false;
             ClearPilots();
             Reorder();
 
@@ -257,6 +257,7 @@ namespace UI.Nodes
             {
                 count--;
             }
+
             return count;
         }
 
@@ -281,10 +282,14 @@ namespace UI.Nodes
                     }
                 }
 
+                downPilotsList.UpdateDown(ChannelNodes);
+
                 foreach (CamGridNode camNode in CamNodes)
                 {
                     camNode.SetAnimatedVisibility(camNode.VideoBounds.ShowInGrid && extrasVisible);
                 }
+
+                downPilotsList.SetAnimatedVisibility(crashed >= 1);
 
                 CheckGridStatsVisiblilty();
             }
@@ -360,11 +365,16 @@ namespace UI.Nodes
                     break;
             }
 
-
             // Add in the grid stats node
             if (gridStatsNode.Visible)
             {
                 output = output.Union(new Node[] { gridStatsNode });
+            }
+
+            // Add in the ded pilots
+            if (downPilotsList.Visible)
+            {
+                output = output.Union(new Node[] { downPilotsList });
             }
 
             // And the cam nodes
@@ -421,7 +431,7 @@ namespace UI.Nodes
             channelNode.SetPilot(pilotChannel.Pilot);
             channelNode.SetAnimationTime(CurrentAnimationTime);
             channelNode.SetAnimatedVisibility(true);
-            channelNode.SetCrashedOutType(CrashOutType.None);
+            channelNode.SetCrashedOutType(CrashState.AutoUp);
 
             channelNode.SetLapsVisible(EventManager.RaceManager.RaceType.HasLaps());
 
@@ -597,25 +607,21 @@ namespace UI.Nodes
 
         public void SetPilotVisible(Pilot p, bool visible)
         {
-            if (EventManager.RaceManager.RaceRunning)
-                manualOverride = true;
-
             ChannelNodeBase cn = GetChannelNode(p);
             if (cn != null)
             {
+                cn.SetCrashedOutType(visible ? CrashState.ManualUp : CrashState.ManualDown);
                 cn.SetAnimatedVisibility(visible);
             }
         }
 
         public void TogglePilotVisible(Pilot p)
         {
-            if (EventManager.RaceManager.RaceRunning)
-                manualOverride = true;
-
             ChannelNodeBase cn = GetChannelNode(p);
             if (cn != null)
             {
                 cn.SetAnimatedVisibility(!cn.Visible);
+                cn.SetCrashedOutType(cn.Visible ? CrashState.ManualUp : CrashState.ManualDown);
             }
         }
 
@@ -651,12 +657,12 @@ namespace UI.Nodes
                     foreach (ChannelNodeBase cn in pilotNodes)
                     {
                         cn.SetAnimatedVisibility(false);
-                        cn.SetCrashedOutType(CrashOutType.FullScreen);
+                        cn.SetCrashedOutType(CrashState.FullScreen);
                     }
                 }
 
                 fullScreen.SetAnimatedVisibility(true);
-                fullScreen.SetCrashedOutType(CrashOutType.None);
+                fullScreen.SetCrashedOutType(CrashState.AutoUp);
 
                 RequestLayout();
             }
@@ -689,16 +695,13 @@ namespace UI.Nodes
         {
             ForceReOrder = true;
 
-            if (EventManager.RaceManager.RaceRunning)
-                manualOverride = true;
-
             IEnumerable<ChannelNodeBase> pilotNodes = ChannelNodes.Where(cn => cn.Pilot != null);
             if (pilotNodes.Any())
             {
                 foreach (ChannelNodeBase cn in pilotNodes)
                 {
                     cn.SetAnimatedVisibility(true);
-                    cn.SetCrashedOutType(CrashOutType.None);
+                    cn.SetCrashedOutType(CrashState.ManualUp);
                 }
 
                 RequestLayout();
@@ -713,10 +716,13 @@ namespace UI.Nodes
         {
             ForceReOrder = true;
 
-            if (manualOverride)
+            IEnumerable<ChannelNodeBase> pilotNodes = ChannelNodes.Where(cn => cn.Pilot != null);
+            foreach (ChannelNodeBase cn in pilotNodes)
             {
-                manualOverride = false;
-                return;
+                if (cn.CrashedOutType == CrashState.ManualUp)
+                {
+                    cn.SetCrashedOutType(CrashState.AutoUp);
+                }
             }
 
             IEnumerable<ChannelNodeBase> emptyNodes = ChannelNodes.Where(cn => cn.Visible && cn.Pilot == null);
@@ -737,17 +743,14 @@ namespace UI.Nodes
 
         public void AutomaticSetCrashed(ChannelNodeBase cn, bool crashed)
         {
-            if (!manualOverride)
+            if (cn != null)
             {
-                if (cn != null)
+                if (!cn.Finished && (cn.CrashedOutType == CrashState.AutoUp || cn.CrashedOutType == CrashState.AutoDown))
                 {
-                    if (!cn.Finished && cn.CrashedOutType != ChannelNodeBase.CrashOutType.Manual && cn.CrashedOutType != ChannelNodeBase.CrashOutType.FullScreen)
-                    {
-                        cn.SetCrashedOutType(crashed ? ChannelNodeBase.CrashOutType.Auto : ChannelNodeBase.CrashOutType.None);
-                    }
+                    cn.SetCrashedOutType(crashed ? CrashState.AutoDown : CrashState.AutoUp);
                 }
-                Reorder();
             }
+            Reorder();
         }
 
         public void FillChannelNodes()
@@ -825,6 +828,11 @@ namespace UI.Nodes
             if (gridStatsNode != null)
             {
                 gridStatsNode.SetAnimationTime(timeSpan);
+            }
+
+            if (downPilotsList != null)
+            {
+                downPilotsList.SetAnimationTime(timeSpan);
             }
         }
 
@@ -918,10 +926,11 @@ namespace UI.Nodes
                     }
                     else
                     {
-                        channelNode.SetCrashedOutType(CrashOutType.None);
+                        channelNode.SetCrashedOutType(CrashState.ManualUp);
                     }
                 }
             }
+
             Reorder(true);
             RequestLayout();
         }

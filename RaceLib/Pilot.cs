@@ -57,7 +57,7 @@ namespace RaceLib
         [Category("Profile")]
         public string BestResult { get; set; }
         
-        [Category("Per Pilot Timing Settings (LapRF)")]
+        [Category("Per Pilot Timing Settings (LapRF only)")]
         public int TimingSensitivityPercent { get; set; }
 
         [Category("Advanced")]
@@ -65,6 +65,20 @@ namespace RaceLib
 
         [Category("Advanced")]
         public string PhotoPath { get; set; }
+
+        [Category("Advanced")]
+
+        public int MultiGP_ID
+        {
+            get
+            {
+                return ExternalID;
+            }
+            set
+            {
+                ExternalID = value;
+            }
+        }
 
         public static Pilot CreateFromName(string name)
         {

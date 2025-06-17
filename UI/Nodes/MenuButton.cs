@@ -310,13 +310,6 @@ namespace UI.Nodes
 
             AddMenus(root);
 
-            root.AddBlank();
-
-            root.AddItem("About", () =>
-            {
-                About();
-            });
-
             root.Show(this);
         }
 
@@ -558,13 +551,6 @@ namespace UI.Nodes
                 GetLayer<PopupLayer>().PopupConfirmation("Changes require restart to take effect. Restart now?", () => { Restart(evennt); });
             };
             GetLayer<PopupLayer>().Popup(editor);
-        }
-
-        public void About()
-        {
-            AboutNode aboutNode = new AboutNode();
-            GetLayer<PopupLayer>().Popup(aboutNode);
-            RequestLayout();
         }
 
         public void OpenCurrentDirectory(string addition = "")
