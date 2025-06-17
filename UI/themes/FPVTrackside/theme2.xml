@@ -64,27 +64,27 @@
     </ScrollBar>
     <PanelBackground>
       <Filename>theme.png</Filename>
-      <X>305</X>
-      <Y>174</Y>
-      <W>32</W>
-      <H>32</H>
+      <X>35</X>
+      <Y>1105</Y>
+      <W>128</W>
+      <H>128</H>
     </PanelBackground>
     <PanelForeground>
       <Filename>theme.png</Filename>
-      <X>341</X>
-      <Y>174</Y>
-      <W>32</W>
-      <H>32</H>
+      <X>35</X>
+      <Y>1242</Y>
+      <W>128</W>
+      <H>128</H>
     </PanelForeground>
     <PanelText>
       <Filename>theme.png</Filename>
-      <X>330</X>
-      <Y>167</Y>
+      <X>58</X>
+      <Y>1090</Y>
     </PanelText>
     <PanelBorder>
       <Filename>theme.png</Filename>
-      <X>379</X>
-      <Y>167</Y>
+      <X>107</X>
+      <Y>1090</Y>
     </PanelBorder>
     <PanelHeadingBackground>
       <Filename>theme.png</Filename>
