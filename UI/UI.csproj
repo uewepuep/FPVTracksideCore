@@ -46,6 +46,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="themes\NewDark\**" />
+    <Content Remove="themes\NewDark\**" />
+    <EmbeddedResource Remove="themes\NewDark\**" />
+    <None Remove="themes\NewDark\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Remove="img\banner.png" />
     <Content Remove="img\login\fpvtrackside.png" />
     <Content Remove="img\login\multigp.png" />
@@ -80,10 +87,6 @@
     <None Update="sponsor\media\tmotor.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="themes\New\" />
   </ItemGroup>
 
 </Project>

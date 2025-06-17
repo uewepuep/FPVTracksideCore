@@ -25,9 +25,6 @@ namespace UI
         [XmlIgnore()]
         [Browsable(false)]
         public DirectoryInfo Directory { get; set; }
-        [XmlIgnore()]
-        [Browsable(false)]
-        public DateTime ReadTime { get; private set; }
 
         public string FontFamily { get; set; }
         public ToolTexture Background { get; set; }
@@ -129,12 +126,13 @@ namespace UI
 
         public static List<Theme> Themes { get; private set; }
 
-        public static IEnumerable<Theme> Load(DirectoryInfo directoryInfo)
+        public static IEnumerable<Theme> Load(DirectoryInfo directoryInfo, GraphicsDevice graphicsDevice)
         {
             KeyValuePair<string, string>[] replacements = new KeyValuePair<string, string>[]
             {
                 new KeyValuePair<string, string>("PBPage", "InfoPanel"),
             };
+
 
             foreach (DirectoryInfo directory in directoryInfo.GetDirectories("*"))
             {
@@ -147,7 +145,6 @@ namespace UI
                         theme = IOTools.Read<Theme>(directory.FullName, themeFile.Name, replacements).FirstOrDefault();
                         theme.Name = directory.Name;
                         theme.Directory = directory;
-                        theme.ReadTime = DateTime.Now;
 
                         theme.Upgrade();
                         theme.Repair();
@@ -162,6 +159,41 @@ namespace UI
 
                     yield return theme;
                 }
+
+                //if (directory.Name == "NewDark")
+                //{
+                //    Theme2 theme2 = new Theme2();
+                //    FileInfo theme2Fil2e = new FileInfo(directory.FullName + "/theme2.xml");
+                //    IOTools.Write(directory.FullName, theme2Fil2e.Name, theme2);
+                //}
+
+                FileInfo theme2File = new FileInfo(directory.FullName + "/theme2.xml");
+                if (theme2File.Exists)
+                {
+                    Theme2 theme2;
+
+                    Theme theme = null;
+
+                    try
+                    {
+                        theme2 = IOTools.Read<Theme2>(directory.FullName, theme2File.Name, replacements).FirstOrDefault();
+                        theme2.Name = directory.Name;
+                        theme2.Directory = directory;
+
+                        IOTools.Write(directory.FullName, theme2File.Name, theme2);
+
+                        theme = theme2.ToTheme(graphicsDevice, new Theme());
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+
+                    if (theme != null)
+                    {
+                        yield return theme;
+                    }
+                }
             }
         }
 
@@ -171,7 +203,7 @@ namespace UI
 
             DirectoryInfo themesDirectory = new DirectoryInfo(Path.Combine(workingDirectory.FullName, "themes/"));
 
-            themes.AddRange(Load(themesDirectory));
+            themes.AddRange(Load(themesDirectory, gd));
 
             Themes = themes.ToList();
 
@@ -195,13 +227,6 @@ namespace UI
                 Logger.UI.Log(null, "No Themes");
                 return;
             }
-
-            Theme2 theme2 = new Theme2();
-            theme2.Directory = new DirectoryInfo(Path.Combine(workingDirectory.FullName, "themes/New"));
-
-            Theme converted = theme2.ToTheme(gd, Current);
-            themes.Add(converted);
-            Current = converted;
 
             LocaliseFilenames(Current.Directory, Current);
             Composition.Text.Style.DefaultFont = Current.FontFamily;
@@ -322,6 +347,9 @@ namespace UI
                 {
                     ToolTexture tt = (ToolTexture)value;
 
+                    if (tt.TextureFilename == null)
+                        continue;
+
                     string filename = tt.TextureFilename.Replace('\\','/');
 
                     if (!string.IsNullOrEmpty(filename) && !File.Exists(filename))
@@ -363,8 +391,8 @@ namespace UI
 
         public override string ToString()
         {
-            if (Name == "Dark")
-                return "Dark (Default)";
+            if (Name == "FPVTrackside")
+                return Name + " (Default)";
 
             return Name;
         }

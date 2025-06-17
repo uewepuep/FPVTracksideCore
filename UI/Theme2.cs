@@ -37,6 +37,7 @@ namespace UI
 
         public TextureColor TextMain { get; set; }
         public TextureColor TextAlt { get; set; }
+        public TextureColor Hover { get; set; }
 
         public TextureRegion TopPanel { get; set; }
         public TextureColor TopPanelText { get; set; }
@@ -87,68 +88,9 @@ namespace UI
 
         public TextureColor[] ChannelColors { get; set; }
 
-
         public Theme2()
         {
-            FontFamily = "Roboto";
-            TopPanelTextBorder = true;
-            PilotTitleAlpha = 160;
-
-            ScrollBar = new TextureColor() { Filename = "theme.png", X = 2005, Y = 22 };
-            TextMain = new TextureColor() { Filename = "theme.png", X = 2005, Y = 35 };
-            TextAlt = new TextureColor() { Filename = "theme.png", X = 2010, Y = 35 };
-
-            TopPanel = new TextureRegion() { Filename = "theme.png", X = 0, Y = 0, W = 1900, H = 100};
-            Background = new TextureRegion() { Filename = "background.png" };
-            TopPanelText = new TextureColor() { Filename = "theme.png", X = 2005, Y = 7 };
-
-            TabsBackground = new TextureRegion() { Filename = "theme.png", X = 0, Y = 100, W = 1900, H = 31 };
-            TabForeground = new TextureRegion() { Filename = "theme.png", X = 1900, Y = 100, W = 148, H = 31 };
-            TabText = new TextureColor() { Filename = "theme.png", X = 1970, Y = 93 };
-
-            PanelBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 174, W = 32, H = 32 };
-            PanelForeground = new TextureRegion() { Filename = "theme.png", X = 341, Y = 174, W = 32, H = 32 };
-            PanelText = new TextureColor() { Filename = "theme.png", X = 330, Y = 167 };
-            PanelBorder = new TextureColor() { Filename = "theme.png", X = 379, Y = 167 };
-
-            PanelHeadingBackground = new TextureRegion() { Filename = "theme.png", X = 377, Y = 174, W = 1170, H = 32 };
-            PanelHeadingText = new TextureColor() { Filename = "theme.png", X = 504, Y = 164 };
-
-            LeftBackground = new TextureRegion() { Filename = "theme.png", X = 0, Y = 131, W = 267, H = 870 };
-            LeftPilotBackground = new TextureRegion() { Filename = "theme.png", X = 1, Y = 1003, W = 263, H = 30 };
-            LeftPilotText = new TextureColor() { Filename = "theme.png", X = 79, Y = 1041 };
-
-            RightBackground = new TextureRegion() { Filename = "theme.png", X = 1836, Y = 131, W = 64, H = 870 };
-            RightButtonBackground = new TextureRegion() { Filename = "theme.png", X = 1836, Y = 1002, W = 64, H = 64 };
-            RightText = new TextureColor() { Filename = "theme.png", X = 1979, Y = 1052 };
-
-            ChannelPilotNameBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 223, W = 211, H = 48 };
-            ChannelPBBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 271, W = 138, H = 26 };
-            ChannelLapBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 606, W = 526, H = 31 };
-            ChannelOverlayPanel = new TextureRegion() { Filename = "theme.png", X = 305, Y = 330, W = 526, H = 158 };
-            ChannelText = new TextureColor() { Filename = "theme.png", X = 640, Y = 233 };
-
-            MenuBackground = new TextureRegion() { Filename = "theme.png", X = 916, Y = 269, W = 207, H = 173 };
-            MenuText = new TextureColor() { Filename = "theme.png", X = 968, Y = 235 };
-            MenuInactiveText = new TextureColor() { Filename = "theme.png", X = 968, Y = 254 };
-
-            NoVideoBackground = new TextureRegion() { Filename = "theme.png", X = 304, Y = 687, W = 282, H = 238 };
-            CrashedOut = new TextureRegion() { Filename = "theme.png", X = 615, Y = 688, W = 282, H = 237 };
-
-            ChannelColors = new TextureColor[]
-            {
-                new TextureColor() { Filename = "theme.png", X = 1673, Y = 209 },
-                new TextureColor() { Filename = "theme.png", X = 1673, Y = 228 },
-
-                new TextureColor() { Filename = "theme.png", X = 1673, Y = 247 },
-                new TextureColor() { Filename = "theme.png", X = 1673, Y = 266 },
-                
-                new TextureColor() { Filename = "theme.png", X = 1673, Y = 285 },
-                new TextureColor() { Filename = "theme.png", X = 1673, Y = 304 },
-                
-                new TextureColor() { Filename = "theme.png", X = 1673, Y = 324 },
-                new TextureColor() { Filename = "theme.png", X = 1673, Y = 343 },
-            };
+            InitDefaultTheme();
         }
 
         public Theme ToTheme(GraphicsDevice graphicsDevice, Theme baseTheme)
@@ -158,8 +100,11 @@ namespace UI
 
             using (RawTextureCache rawTextureCache = new RawTextureCache(graphicsDevice, Directory))
             {
+                theme.Name = Name;
                 theme.Directory = Directory;
                 theme.TextMain = TextMain.ToToolColor(rawTextureCache);
+                theme.TextAlt = TextAlt.ToToolColor(rawTextureCache);
+                theme.Hover = Hover.ToToolColor(rawTextureCache);
                 theme.Background = Background.ToToolTexture(rawTextureCache);
 
                 theme.TopPanel = TopPanel.ToToolTexture(rawTextureCache);
@@ -220,6 +165,71 @@ namespace UI
             }
 
             return theme;
+        }
+
+        private void InitDefaultTheme()
+        {
+            FontFamily = "Roboto";
+            TopPanelTextBorder = true;
+            PilotTitleAlpha = 160;
+
+            ScrollBar = new TextureColor() { Filename = "theme.png", X = 2005, Y = 22 };
+            TextMain = new TextureColor() { Filename = "theme.png", X = 2005, Y = 35 };
+            TextAlt = new TextureColor() { Filename = "theme.png", X = 2010, Y = 35 };
+
+            Hover = new TextureColor() { Filename = "theme.png", X = 559, Y = 165 };
+
+            TopPanel = new TextureRegion() { Filename = "theme.png", X = 0, Y = 0, W = 1900, H = 100 };
+            Background = new TextureRegion() { Filename = "background.png" };
+            TopPanelText = new TextureColor() { Filename = "theme.png", X = 2005, Y = 7 };
+
+            TabsBackground = new TextureRegion() { Filename = "theme.png", X = 0, Y = 100, W = 1900, H = 31 };
+            TabForeground = new TextureRegion() { Filename = "theme.png", X = 1900, Y = 100, W = 148, H = 31 };
+            TabText = new TextureColor() { Filename = "theme.png", X = 1970, Y = 93 };
+
+            PanelBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 174, W = 32, H = 32 };
+            PanelForeground = new TextureRegion() { Filename = "theme.png", X = 341, Y = 174, W = 32, H = 32 };
+            PanelText = new TextureColor() { Filename = "theme.png", X = 330, Y = 167 };
+            PanelBorder = new TextureColor() { Filename = "theme.png", X = 379, Y = 167 };
+
+            PanelHeadingBackground = new TextureRegion() { Filename = "theme.png", X = 377, Y = 174, W = 1170, H = 32 };
+            PanelHeadingText = new TextureColor() { Filename = "theme.png", X = 504, Y = 164 };
+
+            LeftBackground = new TextureRegion() { Filename = "theme.png", X = 0, Y = 131, W = 267, H = 870 };
+            LeftPilotBackground = new TextureRegion() { Filename = "theme.png", X = 1, Y = 1003, W = 263, H = 30 };
+            LeftPilotText = new TextureColor() { Filename = "theme.png", X = 79, Y = 1041 };
+
+            RightBackground = new TextureRegion() { Filename = "theme.png", X = 1836, Y = 131, W = 64, H = 870 };
+            RightButtonBackground = new TextureRegion() { Filename = "theme.png", X = 1836, Y = 1002, W = 64, H = 64 };
+            RightText = new TextureColor() { Filename = "theme.png", X = 1979, Y = 1052 };
+
+            ChannelPilotNameBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 223, W = 211, H = 48 };
+            ChannelPBBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 271, W = 138, H = 26 };
+            ChannelLapBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 606, W = 526, H = 31 };
+            ChannelOverlayPanel = new TextureRegion() { Filename = "theme.png", X = 305, Y = 330, W = 526, H = 158 };
+            ChannelText = new TextureColor() { Filename = "theme.png", X = 640, Y = 233 };
+
+            MenuBackground = new TextureRegion() { Filename = "theme.png", X = 916, Y = 269, W = 207, H = 173 };
+            MenuText = new TextureColor() { Filename = "theme.png", X = 968, Y = 235 };
+            MenuInactiveText = new TextureColor() { Filename = "theme.png", X = 968, Y = 254 };
+
+            NoVideoBackground = new TextureRegion() { Filename = "theme.png", X = 304, Y = 687, W = 282, H = 238 };
+            CrashedOut = new TextureRegion() { Filename = "theme.png", X = 615, Y = 688, W = 282, H = 237 };
+
+            ChannelColors = new TextureColor[]
+            {
+                new TextureColor() { Filename = "theme.png", X = 1673, Y = 209 },
+                new TextureColor() { Filename = "theme.png", X = 1673, Y = 228 },
+
+                new TextureColor() { Filename = "theme.png", X = 1673, Y = 247 },
+                new TextureColor() { Filename = "theme.png", X = 1673, Y = 266 },
+
+                new TextureColor() { Filename = "theme.png", X = 1673, Y = 285 },
+                new TextureColor() { Filename = "theme.png", X = 1673, Y = 304 },
+
+                new TextureColor() { Filename = "theme.png", X = 1673, Y = 324 },
+                new TextureColor() { Filename = "theme.png", X = 1673, Y = 343 },
+            };
         }
     }
 

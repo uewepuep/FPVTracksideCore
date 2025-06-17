@@ -227,5 +227,11 @@ namespace Composition.Nodes
             texture = null;
             FileName = filename;
         }
+
+        public virtual void SetToolTexture(ToolTexture tt)
+        {
+            SetFilename(tt.TextureFilename);
+            SourceBounds = tt.Region;
+        }
     }
 }

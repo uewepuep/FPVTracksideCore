@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using System;
+using Tools;
 
 namespace Composition.Nodes
 {
@@ -49,6 +50,13 @@ namespace Composition.Nodes
         public ColorNode(Tools.ToolTexture tt)
            : this(tt.TextureFilename, tt.Region, tt.XNA)
         {
+        }
+
+        public override void SetToolTexture(ToolTexture tt)
+        {
+            color = tt.XNA;
+            base.SetToolTexture(tt);
+            dirty = true;
         }
 
         public override void Draw(Drawer id, float parentAlpha)
