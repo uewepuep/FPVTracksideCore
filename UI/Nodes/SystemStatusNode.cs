@@ -94,6 +94,9 @@ namespace UI.Nodes
         private bool statusOK;
 
         private Color tint;
+
+        private Color okTint;
+
         public virtual Color Tint
         {
             set
@@ -132,8 +135,10 @@ namespace UI.Nodes
         public StatusNode(string iconFilename)
         {
             updateEverySeconds = 2;
+            
+            okTint = Theme.Current.RightControls.Text.XNA;
+            tint = okTint;
 
-            tint = Color.White;
             icon = new ImageNode(iconFilename);
             icon.Alignment = RectangleAlignment.CenterLeft;
             icon.RelativeBounds = new RectangleF(0, 0, 0.5f, 1f);
@@ -142,13 +147,13 @@ namespace UI.Nodes
 
             float textLeft = 0.4f;
 
-            name = new TextNode("", Color.White);
+            name = new TextNode("", tint);
             name.RelativeBounds = new RectangleF(textLeft, 0.0f, 1 - textLeft, 0.5f);
             name.Alignment = RectangleAlignment.CenterRight;
             name.OverrideHeight = 14;
             AddChild(name);
 
-            status = new TextNode("", Color.White);
+            status = new TextNode("", tint);
             status.RelativeBounds = new RectangleF(textLeft, name.RelativeBounds.Bottom, 1 - textLeft, 0.5f);
             status.Alignment = RectangleAlignment.CenterRight;
             status.OverrideHeight = name.OverrideHeight;
@@ -174,7 +179,7 @@ namespace UI.Nodes
                 lastStatusUpdate = DateTime.Now;
             }
 
-            Color color = statusOK ? Color.White : Color.Red;
+            Color color = statusOK ? tint : Color.Red;
 
             if (recvTimeout >= DateTime.Now)
             {

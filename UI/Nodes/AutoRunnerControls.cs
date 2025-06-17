@@ -36,6 +36,7 @@ namespace UI.Nodes
 
             float pauseSize = 0.25f;
             pauseNode = new ImageNode(@"img\pause.png");
+            pauseNode.Tint = Theme.Current.RightControls.Text.XNA;
             pauseNode.Visible = false;
             pauseNode.RelativeBounds = new RectangleF(1 - pauseSize, 0, pauseSize, pauseSize);
             controlButton.AddChild(pauseNode);
