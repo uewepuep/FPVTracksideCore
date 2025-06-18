@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
@@ -6,7 +6,7 @@
     <ApplicationIcon />
     <Platforms>AnyCPU;x64</Platforms>
     <StartupObject />
-    <Version>2.0.67.0</Version>
+    <Version>2.0.68.0</Version>
 	  <Self-Contained>true</Self-Contained>
   </PropertyGroup>
 
