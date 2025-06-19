@@ -262,7 +262,7 @@ namespace UI.Nodes
             importMenu.AddItem("Import from profile picture filenames", () =>
             {
                 List<string> names = new List<string>();
-                foreach (FileInfo fileInfo in eventManager.GetPilotProfileMedia())
+                foreach (FileInfo fileInfo in eventManager.ProfilePictures.GetPilotProfileMedia())
                 {
                     string name = fileInfo.Name.Replace(fileInfo.Extension, "");
                     if (!names.Contains(name))

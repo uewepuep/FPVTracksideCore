@@ -223,6 +223,11 @@ namespace UI
 
             if (Current == null)
             {
+                Current = Themes.FirstOrDefault(t => t.Name == "FPVTrackside");
+            }
+
+            if (Current == null)
+            {
                 Current = Themes.FirstOrDefault();
             }
 

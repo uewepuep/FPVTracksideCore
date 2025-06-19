@@ -50,6 +50,8 @@ namespace RaceLib
         public GameManager GameManager { get; set; }
         public RaceStringFormatter RaceStringFormatter { get; private set; }
         public ExternalRaceProvider[] ExternalRaceProviders { get; set; }
+
+        public ProfilePictures ProfilePictures { get; private set; }
         public EventManager(Profile profile)
         {
             Profile = profile;
@@ -59,7 +61,6 @@ namespace RaceLib
             TimedActionManager = new TimedActionManager();
             RoundManager = new RoundManager(this);
             SpeedRecordManager = new SpeedRecordManager(RaceManager);
-
             GameManager = new GameManager(this);
 
             RaceStringFormatter = new RaceStringFormatter(this);
@@ -69,6 +70,7 @@ namespace RaceLib
             channelColour = new Dictionary<Channel, Microsoft.Xna.Framework.Color>();
 
             RaceManager.TimingSystemManager.Connect();
+
         }
 
         public void Dispose()
@@ -178,7 +180,7 @@ namespace RaceLib
 
             OnPilotRefresh?.Invoke();
 
-            FindProfilePicture(pc.Pilot);
+            ProfilePictures.FindProfilePicture(pc.Pilot);
 
             return true;
         }
@@ -260,6 +262,7 @@ namespace RaceLib
         public void LoadEvent(WorkSet workSet, WorkQueue workQueue, Guid eventId)
         {
             EventId = eventId;
+            ProfilePictures = new ProfilePictures(EventId);
 
             workQueue.Enqueue(workSet, "Loading Event", () =>
             {
@@ -296,7 +299,7 @@ namespace RaceLib
 
             workQueue.Enqueue(workSet, "Finding Profile Pictures", () =>
             {
-                FindProfilePictures(Event.Pilots.ToArray());
+                ProfilePictures.FindProfilePictures(Event.Pilots.ToArray());
             });
 
             workQueue.Enqueue(workSet, "Updating event object", () =>
@@ -319,65 +322,6 @@ namespace RaceLib
             FlightPath = new TrackFlightPath(Event.Track);
         }
 
-        public IEnumerable<FileInfo> GetPilotProfileMedia()
-        {
-            DirectoryInfo pilotProfileDirectory = new DirectoryInfo("pilots");
-            string[] extensions = new string[] { ".mp4", ".wmv", ".mkv", ".png", ".jpg"};
-
-            if (pilotProfileDirectory.Exists)
-            {
-                foreach (FileInfo file in pilotProfileDirectory.GetFiles())
-                {
-                    if (extensions.Contains(file.Extension))
-                    {
-                        yield return file;
-                    }
-                }
-            }
-        }
-
-        public void FindProfilePicture(Pilot pilot)
-        {
-            FindProfilePictures(new[] { pilot });
-        }
-
-        public void FindProfilePictures(Pilot[] pilots)
-        {
-            string currentDirectory = Directory.GetCurrentDirectory();
-
-            FileInfo[] media = GetPilotProfileMedia().ToArray();
-            foreach (Pilot p in pilots)
-            {
-                if (p != null)
-                {
-                    try
-                    {
-                        string oldPath = p.PhotoPath;
-                        if (string.IsNullOrEmpty(p.PhotoPath))
-                        {
-                            IEnumerable<FileInfo> matches = media.Where(f => f.Name.ToLower().Contains(p.Name.ToLower()));
-                            if (matches.Any())
-                            {
-                                p.PhotoPath = matches.OrderByDescending(f => f.Extension).FirstOrDefault().FullName;
-                            }
-                        }
-                        if (!string.IsNullOrEmpty(p.PhotoPath))
-                        {
-                            p.PhotoPath = Path.GetRelativePath(currentDirectory, p.PhotoPath);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.UI.LogException(this, ex);
-                    }
-                }
-            }
-
-            using (IDatabase db = DatabaseFactory.Open(EventId))
-            {
-                db.Update(pilots);
-            }
-        }
 
         public void UpdateRoundOrder(IDatabase db)
         {
