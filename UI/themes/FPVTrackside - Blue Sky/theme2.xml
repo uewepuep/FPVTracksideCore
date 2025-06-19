@@ -3,6 +3,7 @@
   <Theme2>
     <FontFamily>Roboto</FontFamily>
     <TopPanelTextBorder>false</TopPanelTextBorder>
+    <Shadows>false</Shadows>
     <PilotTitleAlpha>160</PilotTitleAlpha>
     <TextMain>
       <Filename>theme.png</Filename>

@@ -32,6 +32,7 @@ namespace UI
         public string FontFamily { get; set; }
 
         public bool TopPanelTextBorder { get; set; }
+        public bool Shadows { get; set; }
 
         public byte PilotTitleAlpha { get; set; }
 
@@ -102,6 +103,10 @@ namespace UI
             {
                 theme.Name = Name;
                 theme.Directory = Directory;
+
+                theme.Shadows = Shadows;
+                theme.TopPanelTextBorder = TopPanelTextBorder;
+
                 theme.TextMain = TextMain.ToToolColor(rawTextureCache);
                 theme.TextAlt = TextAlt.ToToolColor(rawTextureCache);
                 theme.Hover = Hover.ToToolColor(rawTextureCache);
@@ -152,14 +157,13 @@ namespace UI
                 theme.PilotViewTheme.PilotTitleAlpha = PilotTitleAlpha;
                 theme.PilotViewTheme.CrashedOut = CrashedOut.ToToolTexture(rawTextureCache);
                 theme.PilotViewTheme.NoVideoBackground = NoVideoBackground.ToToolTexture(rawTextureCache);
-
+                theme.PilotViewTheme.PilotOverlayText = ChannelText.ToToolColor(rawTextureCache);
 
                 theme.MenuBackground = MenuBackground.ToToolTexture(rawTextureCache);
                 theme.MenuTextInactive = MenuInactiveText.ToToolColor(rawTextureCache);
                 theme.MenuText = MenuText.ToToolColor(rawTextureCache);
 
                 theme.Button = PanelForeground.ToToolTexture(rawTextureCache);
-                theme.TopPanelTextBorder = TopPanelTextBorder;
 
                 theme.ChannelColors = ChannelColors.Select(c => c.ToToolColor(rawTextureCache)).ToArray();
             }
@@ -172,6 +176,7 @@ namespace UI
             FontFamily = "Roboto";
             TopPanelTextBorder = true;
             PilotTitleAlpha = 160;
+            Shadows = true;
 
             ScrollBar = new TextureColor() { Filename = "theme.png", X = 2005, Y = 22 };
             TextMain = new TextureColor() { Filename = "theme.png", X = 2005, Y = 35 };
@@ -280,7 +285,6 @@ namespace UI
     {
         private TextureCache textureCache;
 
-
         private Dictionary<Texture2D, Color[]> rawData;
 
         private DirectoryInfo dir;
@@ -288,7 +292,7 @@ namespace UI
         public RawTextureCache(GraphicsDevice graphicsDevice, DirectoryInfo dir)
         {
             this.dir = dir;
-            textureCache = new TextureCache(graphicsDevice);
+            textureCache = new TextureCache(graphicsDevice, false);
 
             rawData = new Dictionary<Texture2D, Color[]>();
         }
@@ -314,14 +318,14 @@ namespace UI
 
             int i = y * texture2D.Width + x;
 
-            Color output = new Color();
+            Color c = new Color();
 
             if (i < data.Length)
             {
-                output = data[i];
+                c = data[i];
             }
 
-            return output;
+            return c;
         }
 
     }

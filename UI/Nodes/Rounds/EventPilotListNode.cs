@@ -95,25 +95,8 @@ namespace UI.Nodes.Rounds
 
             FileTools.ExportMenu(mm, "Export", PlatformTools, "Save", MakeTable(), GetLayer<PopupLayer>());
             mm.AddItemConfirm("Re-calculate", Recalculate);
-
-            //if (EventManager.Event.SyncWith == SyncWith.MultiGP)
-            //{
-            //    mm.AddItem("MultiGP - Upload Overall Results", UploadMultiGPResults);
-            //}
         }
 
-        //public virtual void UploadMultiGPResults()
-        //{
-        //    EventLayer eventLayer = CompositorLayer as EventLayer; 
-        //    if (eventLayer != null)
-        //    {
-        //        if (eventLayer.SyncManager.ISync is MultiGP.MultiGPSync)
-        //        {
-        //            Pilot[] orderedPilots = GetOrderedPilots().ToArray(); 
-        //            eventLayer.SyncManager.MultiGPCaptureOverallRaceResults(orderedPilots);
-        //        }
-        //    }
-        //}
 
         public override IEnumerable<Pilot> GetOrderedPilots()
         {

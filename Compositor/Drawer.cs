@@ -42,7 +42,7 @@ namespace Composition
 
         public Drawer(GraphicsDevice device)
         {
-            TextureCache = new TextureCache(device);
+            TextureCache = new TextureCache(device, true);
             GraphicsDevice = device;
             SpriteBatch = new SpriteBatch(GraphicsDevice);
             clipRectangles = new Stack<Rectangle>();

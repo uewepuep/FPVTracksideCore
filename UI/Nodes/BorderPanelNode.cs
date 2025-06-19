@@ -73,8 +73,11 @@ namespace UI.Nodes
 
         protected override void Setup(ColorNode panel, Color borderColor)
         {
-            ShadowNode = new ShadowNode();
-            AddChild(ShadowNode);
+            if (Theme.Current.Shadows)
+            {
+                ShadowNode = new ShadowNode();
+                AddChild(ShadowNode);
+            }
 
             base.Setup(panel, borderColor);
         }

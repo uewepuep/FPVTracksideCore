@@ -40,6 +40,8 @@ namespace UI
         
         public ToolColor TopPanelText { get; set; }
         public bool TopPanelTextBorder { get; set; }
+        public bool Shadows { get; set; }
+
 
         public ToolColor PanelAlt { get; set; }
         public ToolColor Panel { get; set; }
@@ -108,6 +110,8 @@ namespace UI
             InCurrentRace = new ToolColor(255, 216, 0);
 
             FontFamily = "Roboto";
+
+            Shadows = true;
 
             ChannelColors = new ToolColor[]
             {

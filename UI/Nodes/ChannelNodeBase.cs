@@ -419,7 +419,9 @@ namespace UI.Nodes
             crashedOut.Visible = false;
             DisplayNode.AddChild(crashedOut);
 
-            AddChild(new ShadowNode());
+            if (Theme.Current.Shadows)
+                AddChild(new ShadowNode());
+
             SetPilot(null);
 
             SetBiggerInfo(true, true);

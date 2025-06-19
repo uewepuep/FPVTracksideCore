@@ -14,9 +14,12 @@ namespace Tools
 
         public GraphicsDevice GraphicsDevice { get; private set; }
 
-        public TextureCache(GraphicsDevice device)
+        public bool PreMultipliedAlpha { get; private set; }
+
+        public TextureCache(GraphicsDevice device, bool preMultipliedAlpha)
         {
             GraphicsDevice = device;
+            PreMultipliedAlpha = preMultipliedAlpha;
             stringToTexture = new Dictionary<string, Texture2D>();
         }
 
@@ -80,7 +83,7 @@ namespace Tools
                 {
                     try
                     {
-                        texture = TextureHelper.LoadTexture(GraphicsDevice, filename);
+                        texture = TextureHelper.LoadTexture(GraphicsDevice, filename, PreMultipliedAlpha);
                         if (texture != null)
                         {
                             stringToTexture.Add(filename, texture);

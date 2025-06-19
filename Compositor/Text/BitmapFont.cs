@@ -79,7 +79,7 @@ namespace Composition.Text
         {
             if (texture == null && !string.IsNullOrEmpty(filename))
             {
-                texture = TextureHelper.LoadTexture(graphicsDevice, filename);
+                texture = TextureHelper.LoadTexture(graphicsDevice, filename, true);
             }
 
             return texture;

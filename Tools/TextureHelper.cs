@@ -55,7 +55,7 @@ namespace Tools
             return newTexture;
         }
 
-        public static Texture2D LoadTexture(GraphicsDevice device, string filename)
+        public static Texture2D LoadTexture(GraphicsDevice device, string filename, bool preMultiplyAlpha)
         {
             // mac compatibility.
             filename = filename.Replace("\\", "/");
@@ -64,7 +64,10 @@ namespace Tools
             {
                 Texture2D texture = Texture2D.FromStream(device, fs);
 
-                PreMultiplyAlpha(texture);
+                if (preMultiplyAlpha)
+                {
+                    PreMultiplyAlpha(texture);
+                }
 
                 return texture;
             }
@@ -267,9 +270,9 @@ namespace Tools
             return renderTarget;
         }
 
-        public static Texture2D LoadTextureResize(GraphicsDevice graphicsDevice, string sourceImagePath, int width, int height)
+        public static Texture2D LoadTextureResize(GraphicsDevice graphicsDevice, string sourceImagePath, int width, int height, bool preMulti)
         {
-            Texture2D sourceImage = LoadTexture(graphicsDevice, sourceImagePath);
+            Texture2D sourceImage = LoadTexture(graphicsDevice, sourceImagePath, preMulti);
             return ResizeTexture(sourceImage, width, height);
         }
 
