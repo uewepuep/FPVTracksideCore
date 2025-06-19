@@ -89,4 +89,8 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="themes\Synth 2.0\" />
+  </ItemGroup>
+
 </Project>
