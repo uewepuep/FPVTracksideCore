@@ -28,6 +28,7 @@ namespace UI
         [XmlIgnore()]
         [Browsable(false)]
         public DateTime ReadTime { get; private set; }
+        public TextureRegion Background { get; set; }
 
         public string FontFamily { get; set; }
 
@@ -43,7 +44,6 @@ namespace UI
         public TextureRegion TopPanel { get; set; }
         public TextureColor TopPanelText { get; set; }
 
-        public TextureRegion Background { get; set; }
 
         public TextureRegion TabsBackground { get; set; }
         public TextureRegion TabForeground { get; set; }
@@ -209,7 +209,7 @@ namespace UI
             RightText = new TextureColor() { Filename = "theme.png", X = 1979, Y = 1052 };
 
             ChannelPilotNameBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 223, W = 211, H = 48 };
-            ChannelPBBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 271, W = 138, H = 26 };
+            ChannelPBBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 276, W = 138, H = 26 };
             ChannelLapBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 606, W = 526, H = 31 };
             ChannelOverlayPanel = new TextureRegion() { Filename = "theme.png", X = 305, Y = 330, W = 526, H = 158 };
             ChannelText = new TextureColor() { Filename = "theme.png", X = 640, Y = 233 };

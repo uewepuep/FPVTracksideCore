@@ -24,7 +24,7 @@ namespace UI.Nodes
 
         public PatreonsNode() 
         {
-            ColorNode background = new ColorNode(Theme.Current.Panel.XNA);
+            BorderPanelNode background = new BorderPanelNode();
             background.RelativeBounds = new RectangleF(0.0f, 0.02f, 1.0f, 0.98f);
             background.Scale(0.8f, 1);
             AddChild(background);
