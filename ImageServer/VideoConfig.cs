@@ -152,6 +152,8 @@ namespace ImageServer
         [DisplayName("Device Latency (seconds)")]
         public float DeviceLatency { get; set; }
 
+        [Category("Video Recording")]
+        public string AudioDevice { get; set; }
 
         [System.ComponentModel.Browsable(false)]
         [JsonIgnore]
@@ -190,6 +192,7 @@ namespace ImageServer
             RecordFrameRate = 30;
             FrameTimes = new FrameTime[0];
             DeviceLatency = 0;
+            AudioDevice = "None";
         }
 
         public override string ToString()

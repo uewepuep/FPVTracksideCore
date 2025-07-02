@@ -191,5 +191,10 @@ namespace FfmpegMediaPlatform
         {
             throw new NotImplementedException();
         }
+
+        public IEnumerable<string> GetAudioSources()
+        {
+            yield break;
+        }
     }
 }
