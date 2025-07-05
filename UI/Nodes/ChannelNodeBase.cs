@@ -712,6 +712,12 @@ namespace UI.Nodes
                 return true;
             }
 
+            if (mouseInputEvent.ButtonState == ButtonStates.Released && mouseInputEvent.Button == MouseButtons.Left)
+            {
+                OnShowAll?.Invoke();
+                return true;
+            }
+
             if (mouseInputEvent.ButtonState == ButtonStates.Released)
             {
                 OnClick?.Invoke(mouseInputEvent);

@@ -825,7 +825,7 @@ namespace UI.Nodes
 
             public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
             {
-                if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Pressed)
+                if (mouseInputEvent.ButtonState == ButtonStates.Pressed)
                 {
                     if (Children.Any())
                     {
