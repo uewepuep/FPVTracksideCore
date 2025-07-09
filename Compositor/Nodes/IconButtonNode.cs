@@ -30,6 +30,7 @@ namespace Composition.Nodes
 
             ImageNode = new ImageNode(filename);
             ImageNode.RelativeBounds = new RectangleF(0, 0, 1, 1 - verticalTextRatio);
+            ImageNode.Tint = textColor;
             AddChild(ImageNode);
 
             TextNode = new TextNode(text, textColor);

@@ -11,6 +11,7 @@ namespace ImageServer
         FrameWork FrameWork { get; }
 
         IEnumerable<VideoConfig> GetVideoConfigs();
+        IEnumerable<string> GetAudioSources();
 
         FrameSource CreateFrameSource(VideoConfig vc);
 

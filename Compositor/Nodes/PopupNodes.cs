@@ -117,7 +117,7 @@ namespace Composition.Nodes
 
             buttonsContainer.AddChild(CancelButton);
 
-            AlignHorizontally(0.1f, OKButton, CancelButton);
+            AlignHorizontally(0.1f, CancelButton, OKButton);
 
             CancelButton.OnClick += (n) => { Cancel(); };
         }

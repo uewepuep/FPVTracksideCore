@@ -31,15 +31,20 @@ namespace Composition.Layers
 
         private MenuLayer menuLayer;
 
-        public Color PopupBackground { get { if (menuLayer == null) { menuLayer = LayerStack.GetLayer<MenuLayer>(); } return menuLayer.Background; } }
-        public Color PopupButtonBackground { get { return menuLayer.DisabledText; } }
-        public Color PopupHover { get { return menuLayer.Hover; } }
-        public Color PopupText { get { return menuLayer.Text; } }
+        public Color PopupBackground { get; set; }
+        public Color PopupButtonBackground { get; set; }
+        public Color PopupHover { get; set; }
+        public Color PopupText { get; set; }
 
 
-        public PopupLayer(GraphicsDevice device) 
+        public PopupLayer(GraphicsDevice device, Color bg, Color buttonbg, Color hover, Color text) 
             : base(device)
         {
+            PopupBackground = bg;
+            PopupButtonBackground = buttonbg;
+            PopupHover = hover;
+            PopupText = text;
+
             background = new PopupBackgroundNode();
             Root.AddChild(background);
         }

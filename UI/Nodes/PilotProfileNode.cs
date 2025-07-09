@@ -119,12 +119,14 @@ namespace UI.Nodes
                 PilotPhoto?.Dispose();
                 PilotPhoto = null;
 
-                FileInfo fileInfo = new FileInfo(System.Text.RegularExpressions.Regex.Replace(filename, @"[^\w\-. \\:]", ""));
+                string repaired = System.Text.RegularExpressions.Regex.Replace(filename, @"[^\w\-. \/\\:]", "");
+
+                FileInfo fileInfo = new FileInfo(repaired);
                 if (fileInfo.Exists)
                 {
 
                     string[] videoFileTypes = new[] { ".mp4", ".wmv", ".mkv" };
-                    string[] imageFileTypes = new[] { ".png", ".jpg" };
+                    string[] imageFileTypes = new[] { ".png", ".jpg", ".jpeg" };
 
                     if (videoFileTypes.Contains(fileInfo.Extension))
                     {

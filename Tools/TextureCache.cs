@@ -8,16 +8,28 @@ using System.Threading.Tasks;
 
 namespace Tools
 {
-    public class TextureCache
+    public class TextureCache : IDisposable
     {
         private Dictionary<string, Texture2D> stringToTexture;
 
         public GraphicsDevice GraphicsDevice { get; private set; }
 
-        public TextureCache(GraphicsDevice device)
+        public bool PreMultipliedAlpha { get; private set; }
+
+        public TextureCache(GraphicsDevice device, bool preMultipliedAlpha)
         {
             GraphicsDevice = device;
+            PreMultipliedAlpha = preMultipliedAlpha;
             stringToTexture = new Dictionary<string, Texture2D>();
+        }
+
+        public void Dispose()
+        {
+            foreach (Texture2D texture2D in stringToTexture.Values)
+            {
+                texture2D.Dispose();
+            }
+            stringToTexture.Clear();
         }
 
         public Texture2D GetTextureFromColor(Color color)
@@ -71,7 +83,7 @@ namespace Tools
                 {
                     try
                     {
-                        texture = TextureHelper.LoadTexture(GraphicsDevice, filename);
+                        texture = TextureHelper.LoadTexture(GraphicsDevice, filename, PreMultipliedAlpha);
                         if (texture != null)
                         {
                             stringToTexture.Add(filename, texture);

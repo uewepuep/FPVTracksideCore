@@ -16,6 +16,8 @@ namespace DB
         public bool Active { get; set; }
         public string ThumbFilename { get; set; }
 
+        public string Handle { get; set; }
+
         public Patreon()
         { 
         }

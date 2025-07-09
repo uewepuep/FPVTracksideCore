@@ -264,6 +264,17 @@ namespace UI.Video
             return configs;
         }
 
+        public IEnumerable<string> GetAvailableAudioSources()
+        {
+            foreach (VideoFrameWork videoFramework in VideoFrameWorks.Available)
+            {
+                foreach (string audioSource in videoFramework.GetAudioSources())
+                {
+                    yield return audioSource;
+                }
+            }
+        }
+
         private VideoConfig GetMatch(IEnumerable<VideoConfig> videoConfigs, params string[] paths)
         {
             if (paths.Any())

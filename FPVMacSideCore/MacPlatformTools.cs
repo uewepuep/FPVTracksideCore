@@ -36,7 +36,8 @@ namespace FPVMacsideCore
             {
                 return new PlatformFeature[]
                 {
-                    PlatformFeature.Speech
+                    PlatformFeature.Speech,
+                    PlatformFeature.Video
                 };
             }
         }
@@ -88,7 +89,7 @@ namespace FPVMacsideCore
 
             VideoFrameWorks.Available = new VideoFrameWork[]
             {
-                //new FfmpegMediaPlatform.FfmpegMediaFramework()
+                new FfmpegMediaPlatform.FfmpegMediaFramework()
             };
         }
 

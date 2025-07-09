@@ -30,7 +30,7 @@ namespace UI.Nodes
             {
                 if (Selected != null)
                 {
-                    PlatformTools.OpenFileManager(Selected.Filename);
+                    PlatformTools.OpenFileManager(Selected.Directory.FullName);
                 }
             };
             buttonContainer.AddChild(OpenDir);

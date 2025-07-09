@@ -172,7 +172,7 @@ namespace UI
             loadingLayer = new LoadingLayer(GraphicsDevice);
             loadingLayer.BlockOnLoading = true;
 
-            PopupLayer popupLayer = new PopupLayer(GraphicsDevice);
+            PopupLayer popupLayer = new PopupLayer(GraphicsDevice, Theme.Current.Editor.Background.XNA, Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
             Popuper.PopupProvider = popupLayer;
 
             MenuLayer menuLayer = new MenuLayer(GraphicsDevice, Theme.Current.MenuBackground.XNA, Theme.Current.Hover.XNA, Theme.Current.MenuText.XNA, Theme.Current.MenuTextInactive.XNA, Theme.Current.ScrollBar.XNA);
@@ -343,7 +343,7 @@ namespace UI
             {
                 // Re-init the following settings so settings windows can reload event to reload settings.
                 ApplicationProfileSettings.Initialize(Profile);
-                Theme.Initialise(PlatformTools.WorkingDirectory, "Dark");
+                Theme.Initialise(GraphicsDevice, PlatformTools.WorkingDirectory, "FPVTrackside");
 
                 if (backgroundLayer != null)
                 {

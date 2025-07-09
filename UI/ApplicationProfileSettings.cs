@@ -284,7 +284,7 @@ namespace UI
 
         public ApplicationProfileSettings()
         {
-            Theme = "Dark";
+            Theme = "FPVTrackside";
 
             AlignChannels = RectangleAlignment.Center;
 

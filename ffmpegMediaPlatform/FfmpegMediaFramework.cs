@@ -98,6 +98,7 @@ namespace FfmpegMediaPlatform
             }
             catch (Exception e)
             {
+                Console.WriteLine(e.Message);
                 return new string[] { };
             }            
         }
@@ -189,6 +190,11 @@ namespace FfmpegMediaPlatform
         public FrameSource CreateFrameSource(string filename)
         {
             throw new NotImplementedException();
+        }
+
+        public IEnumerable<string> GetAudioSources()
+        {
+            yield break;
         }
     }
 }

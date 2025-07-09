@@ -50,7 +50,7 @@ namespace UI.Nodes
                 AddChild(vsn);
             }
 
-            if (oBSRemoteControlManager != null) 
+            if (oBSRemoteControlManager != null)
             {
                 OBS = new OBSStatusNode(oBSRemoteControlManager);
                 AddChild(OBS);
@@ -94,7 +94,10 @@ namespace UI.Nodes
         private bool statusOK;
 
         private Color tint;
-        public Color Tint
+
+        private Color okTint;
+
+        public virtual Color Tint
         {
             set
             {
@@ -132,8 +135,10 @@ namespace UI.Nodes
         public StatusNode(string iconFilename)
         {
             updateEverySeconds = 2;
+            
+            okTint = Theme.Current.RightControls.Text.XNA;
+            tint = okTint;
 
-            tint = Color.White;
             icon = new ImageNode(iconFilename);
             icon.Alignment = RectangleAlignment.CenterLeft;
             icon.RelativeBounds = new RectangleF(0, 0, 0.5f, 1f);
@@ -142,13 +147,13 @@ namespace UI.Nodes
 
             float textLeft = 0.4f;
 
-            name = new TextNode("", Color.White);
+            name = new TextNode("", tint);
             name.RelativeBounds = new RectangleF(textLeft, 0.0f, 1 - textLeft, 0.5f);
             name.Alignment = RectangleAlignment.CenterRight;
             name.OverrideHeight = 14;
             AddChild(name);
 
-            status = new TextNode("", Color.White);
+            status = new TextNode("", tint);
             status.RelativeBounds = new RectangleF(textLeft, name.RelativeBounds.Bottom, 1 - textLeft, 0.5f);
             status.Alignment = RectangleAlignment.CenterRight;
             status.OverrideHeight = name.OverrideHeight;
@@ -174,7 +179,7 @@ namespace UI.Nodes
                 lastStatusUpdate = DateTime.Now;
             }
 
-            Color color = statusOK ? Color.White : Color.Red;
+            Color color = statusOK ? tint : Color.Red;
 
             if (recvTimeout >= DateTime.Now)
             {
@@ -249,7 +254,7 @@ namespace UI.Nodes
                 StatusItem chosen = alarmed.GetFromCurrentTime(updateEverySeconds);
                 SetStatus(chosen.Value, false);
             }
-            else 
+            else
             {
                 StatusItem chosen = statuses.GetFromCurrentTime(updateEverySeconds);
                 SetStatus(chosen.Value, TimingSystem.Connected);
@@ -278,7 +283,7 @@ namespace UI.Nodes
 
             if (types.Count() == 1)
             {
-                switch(types.First())
+                switch (types.First())
                 {
                     case SourceTypes.FPVFeed: Name = "FPV"; break;
                     case SourceTypes.Commentators: Name = "COM"; break;
@@ -370,12 +375,25 @@ namespace UI.Nodes
                     case MuteStatusTypes.TTS:
                     default:
                         SoundManager.MuteTTS = value;
-                    break;
+                        break;
 
                     case MuteStatusTypes.WAV:
                         SoundManager.MuteWAV = value;
-                    break;
+                        break;
                 }
+            }
+        }
+
+        public override Color Tint 
+        {
+            get
+            {
+                return base.Tint;
+            }
+            set
+            {
+                base.Tint = value;
+                cbn.Tint = value;
             }
         }
 
@@ -398,6 +416,7 @@ namespace UI.Nodes
             }
 
             cbn = new CheckboxNode();
+            cbn.Tint = Tint;
             cbn.TickFilename = @"img/unmute.png";
             cbn.UnTickFilename = @"img/mute.png";
             cbn.Alignment = icon.Alignment;
@@ -428,6 +447,19 @@ namespace UI.Nodes
         private OBSRemoteControlManager oBSRemoteControlManager;
         private CheckboxNode cbn;
 
+        public override Color Tint
+        {
+            get
+            {
+                return base.Tint;
+            }
+            set
+            {
+                base.Tint = value;
+                cbn.Tint = value;
+            }
+        }
+
         public OBSStatusNode(OBSRemoteControlManager oBSRemoteControlManager)
             : base("")
         {
@@ -436,6 +468,7 @@ namespace UI.Nodes
             oBSRemoteControlManager.Activity += OBSRemoteControlManager_Activity;
 
             cbn = new CheckboxNode();
+            cbn.Tint = Tint;
             cbn.TickFilename = @"img/obs.png";
             cbn.UnTickFilename = @"img/pause.png";
             cbn.Value = oBSRemoteControlManager.Active;

@@ -161,6 +161,12 @@ namespace UI.Video
                 }
             }
 
+            if (pi.Name == "AudioDevice")
+            {
+                return null;
+                return new AudioDevicePropertyNode(VideoManager, obj, pi, ButtonBackground, TextColor, ButtonHover);
+            }
+
             if (pi.Name == "Channels")
             {
                 return new VideoChannelAssigner(obj, pi, TextColor);
@@ -226,8 +232,7 @@ namespace UI.Video
 
             base.SetObjects(toEdit, addRemove, cancelButton);
 
-            preview.RelativeBounds = new RectangleF(objectProperties.RelativeBounds.X, objectProperties.RelativeBounds.Y, objectProperties.RelativeBounds.Width, 0.475f);
-
+            preview.RelativeBounds = new RectangleF(objectProperties.RelativeBounds.X, objectProperties.RelativeBounds.Y, objectProperties.RelativeBounds.Width, 0.46f);
 
             objectProperties.Translate(0, preview.RelativeBounds.Height);
             objectProperties.AddSize(0, -preview.RelativeBounds.Height);
@@ -365,6 +370,30 @@ namespace UI.Video
 
 
             return base.OnMouseInput(mouseInputEvent);
+        }
+
+        private class AudioDevicePropertyNode : ListPropertyNode<VideoConfig>
+        {
+            private VideoManager vm;
+
+            public AudioDevicePropertyNode(VideoManager vm, VideoConfig obj, PropertyInfo pi, Color textBackground, Color textColor, Color hover) 
+                : base(obj, pi, textBackground, textColor, hover, null)
+            {
+                this.vm = vm;
+            }
+
+            public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
+            {
+                if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Released)
+                {
+                    List<string> audioDevices = new List<string>();
+                    audioDevices.Add("None");
+                    audioDevices.AddRange(vm.GetAvailableAudioSources());
+                    SetOptions(audioDevices);
+                }
+
+                return base.OnMouseInput(mouseInputEvent);
+            }
         }
 
         private class ModePropertyNode : ListPropertyNode<VideoConfig>

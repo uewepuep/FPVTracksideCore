@@ -32,7 +32,7 @@ namespace UI.Nodes
             AddChild(background);
             SetBack(background);
 
-            ColorNode colorNode = new ColorNode(Theme.Current.TopPanel.XNA);
+            ColorNode colorNode = new ColorNode(Theme.Current.EventSelectorTop);
             colorNode.RelativeBounds = new RectangleF(0, 0, 1, 0.21f);
             background.AddChild(colorNode);
 

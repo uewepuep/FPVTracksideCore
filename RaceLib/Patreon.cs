@@ -16,6 +16,7 @@ namespace RaceLib
         public bool Active { get; set; }
         public string ThumbFilename { get; set; }
         public int Amount { get; set; }
+        public string Handle { get; set; }
 
         public Patreon()
         {

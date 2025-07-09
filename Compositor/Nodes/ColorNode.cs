@@ -1,9 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Tools;
 
 namespace Composition.Nodes
@@ -43,9 +39,24 @@ namespace Composition.Nodes
             dirty = true;
         }
 
-        public ColorNode(Tools.ToolTexture tt)
-           : this(tt.TextureFilename, tt.XNA)
+        public ColorNode(string filename, Rectangle sourceBounds, Color color)
+            : base(filename, sourceBounds)
         {
+            this.color = color;
+            KeepAspectRatio = false;
+            dirty = true;
+        }
+
+        public ColorNode(Tools.ToolTexture tt)
+           : this(tt.TextureFilename, tt.Region, tt.XNA)
+        {
+        }
+
+        public override void SetToolTexture(ToolTexture tt)
+        {
+            color = tt.XNA;
+            base.SetToolTexture(tt);
+            dirty = true;
         }
 
         public override void Draw(Drawer id, float parentAlpha)
@@ -57,7 +68,11 @@ namespace Composition.Nodes
                 if (!string.IsNullOrEmpty(FileName) && System.IO.File.Exists(FileName))
                 {
                     Texture = id.TextureCache.GetTextureFromFilename(FileName, Color, false);
-                    SourceBounds = new Rectangle(0, 0, Texture.Width, Texture.Height);
+                    if (SourceBounds.Width == 0 || SourceBounds.Height == 0)
+                    {
+                        SourceBounds = new Rectangle(0, 0, Texture.Width, Texture.Height);
+                    }
+
                     sharedTexture = true;
                     UpdateAspectRatioFromTexture();
                 }

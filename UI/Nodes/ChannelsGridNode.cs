@@ -265,6 +265,12 @@ namespace UI.Nodes
         {
             if (reOrderRequest < DateTime.Now || ForceReOrder)
             {
+                bool anyFullscreen = input.OfType<ChannelNodeBase>().Any(c => c.CrashedOutType == CrashState.FullScreen);
+                if (anyFullscreen)
+                {
+                    return;
+                }
+
                 int crashed = input.OfType<ChannelNodeBase>().Count(c => c.CrashedOut && c.Pilot != null);
                 int all = input.OfType<ChannelNodeBase>().Count(c => c.Pilot != null);
                 bool raceFinished = EventManager.RaceManager.RaceFinished;
