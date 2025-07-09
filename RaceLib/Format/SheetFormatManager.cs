@@ -28,6 +28,17 @@ namespace RaceLib.Format
             }
         }
 
+        private RoundSheetFormat[] roundSheetFormatsSafe
+        {
+            get
+            {
+                lock (roundSheetFormats)
+                {
+                    return roundSheetFormats.ToArray();
+                }
+            }
+        }
+
         public SheetFormatManager(RoundManager roundManager)
             :this(roundManager, new DirectoryInfo("formats"))
         {
@@ -64,6 +75,18 @@ namespace RaceLib.Format
             return true;
         }
 
+        public void Clear()
+        {
+            lock (roundSheetFormats)
+            {
+                foreach (var format in roundSheetFormats)
+                {
+                    format.Dispose();
+                }
+                roundSheetFormats.Clear();
+            }
+        }
+
         public void Load()
         {
             foreach (Round r in RoundManager.Rounds)
@@ -78,11 +101,7 @@ namespace RaceLib.Format
         public void Dispose()
         {
             EventManager.OnPilotRefresh -= EventManager_OnPilot;
-
-            foreach (var format in roundSheetFormats)
-            {
-                format.Dispose();
-            }
+            Clear();
         }
 
         private IEnumerable<SheetFile> GetSheetFiles(DirectoryInfo directory)
@@ -114,7 +133,8 @@ namespace RaceLib.Format
 
         private void EventManager_OnPilot()
         {
-            foreach (var format in roundSheetFormats)
+            var formats = roundSheetFormatsSafe;
+            foreach (var format in formats)
             {
                 format.CreatePilotMap(null);
             }
@@ -137,7 +157,10 @@ namespace RaceLib.Format
 
         public RoundSheetFormat GetRoundSheetFormat(Round round)
         {
-            return roundSheetFormats.FirstOrDefault(r => r.HasRound(round));
+            lock (roundSheetFormats)
+            {
+                return roundSheetFormats.FirstOrDefault(r => r.HasRound(round));
+            }
         }
 
 
@@ -169,13 +192,17 @@ namespace RaceLib.Format
                     sheetFormat.GenerateRounds();
                 }
 
-                roundSheetFormats.Add(sheetFormat);
+                lock (roundSheetFormats)
+                {
+                    roundSheetFormats.Add(sheetFormat);
+                }
             }
         }
 
         public void OnRaceResultChange(Race race)
         {
-            foreach (var format in roundSheetFormats)
+            var formats = roundSheetFormatsSafe;
+            foreach (var format in formats)
             {
                 if (format.HasRound(race.Round))
                 {

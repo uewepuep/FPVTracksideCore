@@ -340,6 +340,32 @@ namespace RaceLib
             }
         }
 
+        public void UnloadRaces(WorkSet workSet, WorkQueue workQueue)
+        {
+            workQueue.Enqueue(workSet, "Unloading Races", () =>
+            {
+                //Load any existing races
+                RaceManager.Clear();
+            });
+
+            workQueue.Enqueue(workSet, "Unloading Results", () =>
+            {
+                // Load points
+                ResultManager.Clear();
+            });
+
+            workQueue.Enqueue(workSet, "Unloading Records", () =>
+            {
+                LapRecordManager.Clear();
+                SpeedRecordManager.Clear();
+            });
+
+            workQueue.Enqueue(workSet, "Loading Sheets", () =>
+            {
+                RoundManager.SheetFormatManager.Clear();
+            });
+        }
+
         public void LoadRaces(WorkSet workSet, WorkQueue workQueue)
         {
             workQueue.Enqueue(workSet, "Loading Races", () =>

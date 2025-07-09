@@ -258,6 +258,8 @@ namespace UI.Nodes
 
             if (hasEvent)
             {
+                root.AddBlank();
+
                 MouseMenu export = root.AddSubmenu("Export");
 
                 FileTools.ExportMenu(export, "Export PBs", PlatformTools, "Save Top Consecutive Laps", eventManager.LapRecordManager.ExportPBs(), GetLayer<PopupLayer>());
@@ -274,6 +276,17 @@ namespace UI.Nodes
                 delete.AddItemConfirm("Delete all pilots", () =>
                 {
                     RemoveAllPilots();
+                });
+
+                root.AddItem("Refresh all race data", () =>
+                {
+                    LoadingLayer ll = GetLayer<LoadingLayer>();
+                    if (ll == null)
+                        return;
+
+                    WorkSet workSet = new WorkSet();
+                    eventManager.UnloadRaces(workSet, ll.WorkQueue);
+                    eventManager.LoadRaces(workSet, ll.WorkQueue);
                 });
             }
             root.AddBlank();

@@ -339,10 +339,14 @@ namespace UI
                 OnStartEvent(eventManager, eventManager.Event);
             });
 
-            loadingLayer.WorkQueue.Enqueue(startEventWorkSet, "Reloading Settings", () =>
+            loadingLayer.WorkQueue.Enqueue(startEventWorkSet, "Loading Settings", () =>
             {
                 // Re-init the following settings so settings windows can reload event to reload settings.
                 ApplicationProfileSettings.Initialize(Profile);
+            });
+
+            loadingLayer.WorkQueue.Enqueue(startEventWorkSet, "Loading Theme", () =>
+            {
                 Theme.Initialise(GraphicsDevice, PlatformTools.WorkingDirectory, "FPVTrackside");
 
                 if (backgroundLayer != null)

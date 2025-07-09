@@ -47,6 +47,10 @@ namespace RaceLib
             speedRecords = new Dictionary<Pilot, SpeedRecord>();
         }
 
+        public void Clear()
+        {
+            speedRecords.Clear();
+        }
 
         public void Update()
         {
@@ -319,7 +323,6 @@ namespace RaceLib
             }
             return 0;
         }
-
         private struct SpeedRecord
         {
             public float Speed;

@@ -989,6 +989,14 @@ namespace RaceLib
             return race;
         }
 
+        public void Clear()
+        {
+            lock (races)
+            {
+                races.Clear();
+            }
+        }
+
         public void LoadRaces(Event eve)
         {
             Race[] races;
