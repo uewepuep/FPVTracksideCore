@@ -43,11 +43,14 @@ namespace Composition.Layers
             Window = gameWindow;
 
             layerStack = new Layer[0];
-            InputEventFactory = new InputEventFactory(this, Window, platformTools);
+            if (Window != null)
+            {
+                InputEventFactory = new InputEventFactory(this, Window, platformTools);
 
-            InputEventFactory.OnKeyboardInputEvent += OnKeyboardInputEvent;
-            InputEventFactory.OnMouseInputEvent += OnMouseInputEvent;
-            InputEventFactory.OnTextInputEvent += OnTextInputEvent;
+                InputEventFactory.OnKeyboardInputEvent += OnKeyboardInputEvent;
+                InputEventFactory.OnMouseInputEvent += OnMouseInputEvent;
+                InputEventFactory.OnTextInputEvent += OnTextInputEvent;
+            }
         }
 
         public virtual void Dispose()

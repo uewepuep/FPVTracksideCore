@@ -30,6 +30,9 @@
 
 
 	<ItemGroup>
+	  <Compile Update="GDI\GDILayerStackControl.cs">
+	    <SubType>Component</SubType>
+	  </Compile>
 	  <Compile Update="LayerStackControl.cs" />
 	  <Compile Update="LayerStackForm.cs" />
 	  <Compile Update="Properties\Settings.Designer.cs">
