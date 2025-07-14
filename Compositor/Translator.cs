@@ -13,9 +13,16 @@ namespace Composition
 
         private Dictionary<string, string> translations;
 
-        public Translator()
+        public string Language { get; private set; }
+
+        public Translator(string language)
         {
+            Language = language;
             translations = new Dictionary<string, string>();
+        }
+
+        public void MakePrimary()
+        {
             Instance = this;
         }
 
@@ -26,17 +33,17 @@ namespace Composition
                 translations.Clear();
             }
         }
-        public void Add(string englishName, string translation)
+        public void Add(string itemName, string translation)
         {
             lock (translations)
             {
-                if (translations.ContainsKey(englishName))
+                if (translations.ContainsKey(itemName))
                 {
-                    translations[englishName] = translation;
+                    translations[itemName] = translation;
                 }
                 else
                 {
-                    translations.Add(englishName, translation);
+                    translations.Add(itemName, translation);
                 }
             }
         }
@@ -45,7 +52,8 @@ namespace Composition
         {
             lock (translations)
             {
-                if (translations.TryGetValue(type, out string value))
+                string fullType = type + "." + englishName;
+                if (translations.TryGetValue(fullType, out string value))
                 {
                     return value;
                 }
@@ -59,6 +67,7 @@ namespace Composition
             string type = typeof(T).Name.Replace("Node", "");
             return Get(type, englishName);
         }
+
 
         public static string Get(string type, string englishName)
         {
@@ -75,6 +84,23 @@ namespace Composition
             if (Instance != null)
             {
                 return Instance.GetTranslation<T>(englishName);
+            }
+
+            return englishName;
+        }
+
+        public static string GetPropertyName<T>(string englishName, string defaultName)
+        {
+            if (Instance != null)
+            {
+                string type = "Editor." + typeof(T).Name;
+
+                string output = Instance.GetTranslation(type, englishName);
+                if (output == englishName)
+                {
+                    return defaultName;
+                }
+                return output;
             }
 
             return englishName;

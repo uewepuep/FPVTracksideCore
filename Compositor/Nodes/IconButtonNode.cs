@@ -33,6 +33,8 @@ namespace Composition.Nodes
             ImageNode.Tint = textColor;
             AddChild(ImageNode);
 
+            text = Translator.Get<IconButtonNode>(text);
+
             TextNode = new TextNode(text, textColor);
             TextNode.Alignment = Tools.RectangleAlignment.Center; 
             TextNode.RelativeBounds = new RectangleF(0.05f, 1 - verticalTextRatio, 0.9f, verticalTextRatio);

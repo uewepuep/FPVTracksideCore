@@ -212,6 +212,7 @@ namespace UI
 
             loadingLayer.WorkQueue.Enqueue("Database Upgrade", DatabaseUpgrade);
 
+            loadingLayer.WorkQueue.Enqueue("Load Translations", LoadTranslations);
             loadingLayer.WorkQueue.Enqueue("Startup", Startup);
         }
 
@@ -233,6 +234,15 @@ namespace UI
             {
                 ShowEventSelector();
             }
+        }
+
+        public void LoadTranslations()
+        {
+            TranslatorFactory tf = new TranslatorFactory();
+            Translator[] translators = tf.Load(new FileInfo("Translations.xlsx"), "Sheet1").ToArray();
+
+            Translator t = translators.Last();
+            t.MakePrimary();
         }
 
 

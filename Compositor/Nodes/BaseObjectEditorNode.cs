@@ -965,7 +965,9 @@ namespace Composition.Nodes
                 }
             }
 
-            NameNode = new TextNode(name, textColor);
+            string translated = Translator.GetPropertyName<T>(pi.Name, name);
+
+            NameNode = new TextNode(translated, textColor);
             NameNode.Alignment = RectangleAlignment.BottomLeft;
             AddChild(NameNode);
         }
