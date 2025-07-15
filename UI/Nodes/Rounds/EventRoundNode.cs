@@ -244,13 +244,10 @@ namespace UI.Nodes.Rounds
             {
                 if (EventManager.RoundManager.GetLastRound(Round.EventType, Round.RoundType) == Round)
                 {
-                    if (EventManager.RaceManager.GetRaces(Round).All(r => r.Ended))
+                    foreach (var external in EventManager.ExternalRaceProviders)
                     {
-                        foreach (var external in EventManager.ExternalRaceProviders)
-                        {
-                            var t = external;
-                            mm.AddItem("Add " + external.Name, () => { t.TriggerCreateRaces(Round); });
-                        }
+                        var t = external;
+                        mm.AddItem("Add " + external.Name, () => { t.TriggerCreateRaces(Round); });
                     }
                 }
             }

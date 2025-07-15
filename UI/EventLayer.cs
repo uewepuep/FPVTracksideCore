@@ -510,10 +510,9 @@ namespace UI
             {
                 sponsor.SoundManager = null;
             }
-
+            SoundManager.Dispose();
             EventManager.Dispose();
             workQueueStartRace.Dispose();
-            SoundManager.Dispose();
             videoManager.Dispose();
             sceneManagerNode.Dispose();
 

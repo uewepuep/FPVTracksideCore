@@ -161,7 +161,6 @@ namespace UI.Video
 
         public void Dispose()
         {
-            Clear();
             StopDevices();
         }
 
@@ -212,6 +211,7 @@ namespace UI.Video
         public void Clear()
         {
             Logger.VideoLog.LogCall(this);
+            mutex.Set();
             lock (frameSources)
             {
                 foreach (var source in frameSources)
@@ -220,7 +220,6 @@ namespace UI.Video
                 }
                 frameSources.Clear();
             }
-
             mutex.Set();
         }
 

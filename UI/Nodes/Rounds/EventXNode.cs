@@ -185,6 +185,19 @@ namespace UI.Nodes.Rounds
                 AddFormatMenu(rootMenu, "Set Format");
             }
 
+
+            if (EventManager.ExternalRaceProviders != null)
+            {
+                if (EventManager.RoundManager.GetLastRound(Round.EventType, Round.RoundType) == Round)
+                {
+                    foreach (var external in EventManager.ExternalRaceProviders)
+                    {
+                        var t = external;
+                        rootMenu.AddItem("Add " + external.Name, () => { t.TriggerCreateRaces(Round); });
+                    }
+                }
+            }
+
             if (canSum || canAddTimes || canAddLapCount)
             {
                 MouseMenu results = rootMenu.AddSubmenu("Show Results");

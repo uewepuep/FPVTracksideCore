@@ -229,9 +229,13 @@ namespace Timing
             {
                 try
                 {
-                    Thread.Sleep(1000);
+                    // used to be sleep 1000, but this closes with dispose faster.
+                    for (int i = 0; i < 10 && !disposing; i++)
+                    {
+                        Thread.Sleep(100);
+                    }
 
-                    if (PrimeSystems == null || !PrimeSystems.Any())
+                    if (PrimeSystems == null || !PrimeSystems.Any() || disposing)
                         continue;
 
                     int newlyConnected = 0;
