@@ -260,7 +260,7 @@ namespace UI.Nodes
             {
                 root.AddBlank();
 
-                root.AddItem("YouTube Chapter Markers", () =>
+                root.AddItem("YouTube Chapters", () =>
                 {
                     ShowChapterMarkerDialog();
                 });

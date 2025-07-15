@@ -661,7 +661,7 @@ namespace UI.Nodes
             urlInputContainer.AddChild(urlBackground);
 
             // YouTube URL input textbox (same styling as Event Settings Name field)
-            youtubeUrlInput = new TextEditWithHintNode("", Theme.Current.Editor.Text.XNA, "(e.g., https://www.youtube.com/watch?v=XFODx1hxC5o), allowing testing links");
+            youtubeUrlInput = new TextEditWithHintNode("", Theme.Current.Editor.Text.XNA, "(e.g., https://www.youtube.com/watch?v=XFODx1hxC5o), youtube links for testing");
             youtubeUrlInput.Alignment = RectangleAlignment.BottomLeft; // Same alignment as Event Settings Name field
             youtubeUrlInput.TextChanged += (newUrl) => 
             {
@@ -1453,7 +1453,13 @@ namespace UI.Nodes
         private string GenerateYouTubeUrl(int offsetSeconds)
         {
             // Get the base URL from the textbox (it should already be cleaned)
-            string baseUrl = youtubeUrlInput?.Text?.Trim() ?? "https://www.youtube.com/watch?v=XFODx1hxC5o";
+            string baseUrl = youtubeUrlInput?.Text?.Trim();
+            
+            // If no URL is configured, return empty string instead of showing ?t=
+            if (string.IsNullOrEmpty(baseUrl))
+            {
+                return "";
+            }
             
             // If URL already has parameters, use & otherwise use ?
             string separator = baseUrl.Contains("?") ? "&" : "?";
@@ -1467,6 +1473,13 @@ namespace UI.Nodes
             {
                 int offsetSeconds = CalculateTimeOffsetInSeconds(race);
                 string url = GenerateYouTubeUrl(offsetSeconds);
+                
+                // Don't try to open empty URLs
+                if (string.IsNullOrEmpty(url))
+                {
+                    Logger.UI.Log(this, "No YouTube URL configured - cannot open", Logger.LogType.Notice);
+                    return;
+                }
                 
                 Logger.UI.Log(this, $"Opening YouTube URL: {url}", Logger.LogType.Notice);
                 ExternalData.DataTools.StartBrowser(url);
