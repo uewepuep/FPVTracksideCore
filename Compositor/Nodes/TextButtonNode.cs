@@ -53,6 +53,8 @@ namespace Composition.Nodes
         {
             BackgroundNode = new ColorNode(background);
             AddChild(BackgroundNode);
+            TextNode = new TextNode(text, textColor);
+            TextNode.RelativeBounds = new RectangleF(0.05f, 0.17f, 0.9f, 0.73f);
 
             Init(text, hover, textColor);
         }
@@ -61,6 +63,8 @@ namespace Composition.Nodes
         {
             BackgroundNode = new ColorNode(background);
             AddChild(BackgroundNode);
+            TextNode = new TextNode(text, textColor);
+            TextNode.RelativeBounds = new RectangleF(0.05f, 0.17f, 0.9f, 0.73f);
 
             Init(text, hover, textColor);
         }
@@ -69,10 +73,6 @@ namespace Composition.Nodes
         {
             enabled = true;
 
-            text = Translator.Get<TextButtonNode>(text);
-
-            TextNode = new TextNode(text, textColor);
-            TextNode.RelativeBounds = new RectangleF(0.05f, 0.17f, 0.9f, 0.73f);
             AddChild(TextNode);
 
             ButtonNode = new ButtonNode();

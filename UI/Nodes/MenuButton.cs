@@ -260,6 +260,11 @@ namespace UI.Nodes
             {
                 root.AddBlank();
 
+                root.AddItem("YouTube Chapter Markers", () =>
+                {
+                    ShowChapterMarkerDialog();
+                });
+
                 MouseMenu export = root.AddSubmenu("Export");
 
                 FileTools.ExportMenu(export, "Export PBs", PlatformTools, "Save Top Consecutive Laps", eventManager.LapRecordManager.ExportPBs(), GetLayer<PopupLayer>());
@@ -609,6 +614,11 @@ namespace UI.Nodes
             eventManager.RemovePilots();
 
             DataDeleted?.Invoke();
+        }
+
+        public void ShowChapterMarkerDialog()
+        {
+            GetLayer<PopupLayer>().Popup(new ChapterMarkerDialog(eventManager, PlatformTools));
         }
 
     }

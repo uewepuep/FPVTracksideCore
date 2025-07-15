@@ -44,7 +44,7 @@ namespace RaceLib.Format
 
             int raceIndex = 0;
 
-            Pilot[] ordered = Pilots.OrderBy(p => lastRoundRaces.GetBracket(p)).ThenByDescending(p => PointsManager.GetPointsTotal(plan.CallingRound, p)).ThenBy(p => EventManager.LapRecordManager.GetPBTimePosition(p)).ToArray();
+            Pilot[] ordered = Pilots.OrderBy(p => lastRoundRaces.GetBracket(p)).ThenByDescending(p => PointsManager.GetPointsTotal(plan.CallingRound, p)).ThenBy(p => PointsManager.GetPositionTotal(plan.CallingRound, p)).ToArray();
             int pilotsRemaining = ordered.Length;
             foreach (Pilot pilot in ordered)
             {
