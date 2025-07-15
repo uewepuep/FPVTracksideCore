@@ -661,7 +661,7 @@ namespace UI.Nodes
             urlInputContainer.AddChild(urlBackground);
 
             // YouTube URL input textbox (same styling as Event Settings Name field)
-            youtubeUrlInput = new TextEditWithHintNode("", Theme.Current.Editor.Text.XNA, "(e.g., https://www.youtube.com/watch?v=XFODx1hxC5o), youtube links for testing");
+            youtubeUrlInput = new TextEditWithHintNode("", Theme.Current.Editor.Text.XNA, "(e.g., https://www.youtube.com/watch?v=XFODx1hxC5o)");
             youtubeUrlInput.Alignment = RectangleAlignment.BottomLeft; // Same alignment as Event Settings Name field
             youtubeUrlInput.TextChanged += (newUrl) => 
             {
@@ -1348,16 +1348,8 @@ namespace UI.Nodes
                 // Calculate the time this race appears in the stream
                 var raceOffsetTime = CalculateRaceOffsetTime(bestRace);
                 
-                // Format the time as H:MM:SS or MM:SS
-                string timeString;
-                if (raceOffsetTime.Hours > 0)
-                {
-                    timeString = $"{raceOffsetTime.Hours}:{raceOffsetTime.Minutes:D2}:{raceOffsetTime.Seconds:D2}";
-                }
-                else
-                {
-                    timeString = $"{raceOffsetTime.Minutes}:{raceOffsetTime.Seconds:D2}";
-                }
+                // Format the time as HH:MM:SS (YouTube standard with leading zeros)
+                string timeString = FormatTimeForChapter(raceOffsetTime);
 
                 // Format race name
                 string raceDisplayName = $"Time Trial {bestRace.RoundNumber}-{bestRace.RaceNumber}";
