@@ -21,6 +21,8 @@ namespace RaceLib
 
         public EventManager EventManager { get; set; }
 
+        public string Round { get; set; }
+
         public RaceStringFormatter(EventManager eventManager)
         {
             Instance = this;
@@ -33,6 +35,7 @@ namespace RaceLib
             Freestyle = "Freestyle";
             Endurance = "Endurance";
             Game = "Game";
+            Round = "Round";
         }
 
         public string GetEventTypeText(EventTypes eventType)
@@ -61,7 +64,7 @@ namespace RaceLib
             }
             else
             {
-                return GetEventTypeText(round.EventType) + " Round " + round.RoundNumber;
+                return GetEventTypeText(round.EventType) + " " + Round +" " + round.RoundNumber;
             }
         }
 

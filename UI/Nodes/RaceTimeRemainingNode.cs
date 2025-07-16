@@ -1,4 +1,5 @@
-﻿using Composition.Input;
+﻿using Composition;
+using Composition.Input;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
@@ -16,8 +17,7 @@ namespace UI.Nodes
         public RaceTimeRemainingNode(RaceManager raceManager, ReplayNode replayNode, Color textColor) 
             : base(raceManager, replayNode, textColor)
         {
-            Prepend = "Remaining ";
-
+            Prepend = Translator.Get("Label.Remaining", "Remaining") + " ";
             AddChild(new HoverNode(Theme.Current.Hover.XNA));
         }
 

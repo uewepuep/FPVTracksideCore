@@ -69,7 +69,7 @@ namespace Composition.Nodes
         {
             enabled = true;
 
-            text = Translator.Get<TextButtonNode>(text);
+            text = Translator.Get("Button." + text, text);
 
             TextNode = new TextNode(text, textColor);
             TextNode.RelativeBounds = new RectangleF(0.05f, 0.17f, 0.9f, 0.73f);

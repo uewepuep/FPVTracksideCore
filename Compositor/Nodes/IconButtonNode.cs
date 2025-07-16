@@ -33,7 +33,7 @@ namespace Composition.Nodes
             ImageNode.Tint = textColor;
             AddChild(ImageNode);
 
-            text = Translator.Get<IconButtonNode>(text);
+            text = Translator.Get("Button." + text, text);
 
             TextNode = new TextNode(text, textColor);
             TextNode.Alignment = Tools.RectangleAlignment.Center; 

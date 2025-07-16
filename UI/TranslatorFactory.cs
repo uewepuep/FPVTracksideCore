@@ -12,7 +12,12 @@ namespace UI
 {
     public class TranslatorFactory
     {
-        public IEnumerable<Translator> Load(FileInfo excelFile, string sheetname)
+        public static IEnumerable<Translator> Load()
+        {
+            return Load(new FileInfo("Translations.xlsx"), "Sheet1");
+        }
+
+        public static IEnumerable<Translator> Load(FileInfo excelFile, string sheetname)
         {
             List<string> translationItemNames = null;
             List<string> languages = null;
@@ -44,7 +49,7 @@ namespace UI
             }
         }
 
-        public IEnumerable<string> ReadColumn(OpenSheet openSheet, int index)
+        public static IEnumerable<string> ReadColumn(OpenSheet openSheet, int index)
         {
             int i = 1;
             string t;
@@ -61,7 +66,7 @@ namespace UI
             while (!string.IsNullOrEmpty(t));
         }
 
-        public IEnumerable<string> ReadRow(OpenSheet openSheet, int index)
+        public static IEnumerable<string> ReadRow(OpenSheet openSheet, int index)
         {
             int i = 1;
             string t;

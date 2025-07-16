@@ -28,7 +28,7 @@ namespace UI.Nodes
             ReplayNode = replayNode;
             RaceManager = raceManager;
             EventManager = raceManager.EventManager;
-            Prepend = "Time ";
+            Prepend = Translator.Get("Label.Time", "Time") + " ";
             Alignment = RectangleAlignment.CenterRight;
         }
 

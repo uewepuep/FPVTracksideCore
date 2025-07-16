@@ -74,6 +74,8 @@ namespace UI.Nodes
 
             int leadLapPlus, maxLap;
 
+            string lapText = Translator.Get("Label.Lap", "Lap") + " ";
+
             switch (EventManager.RaceManager.RaceType)
             {
                 case EventTypes.Freestyle:
@@ -82,7 +84,7 @@ namespace UI.Nodes
                     break;
                 case EventTypes.AggregateLaps:
                     GetLeadLapPlusMaxLap(out leadLapPlus, out maxLap);
-                    Text = "Lap " + leadLapPlus;
+                    Text = lapText + leadLapPlus;
                     break;
 
                 case EventTypes.Race:
@@ -90,20 +92,20 @@ namespace UI.Nodes
                     int lap = Math.Min(leadLapPlus, maxLap);
 
                     if (lap >= maxLap)
-                        Text = "Lap " + lap + " / " + maxLap;
+                        Text = lapText + lap + " / " + maxLap;
                     else
-                        Text = "Lap " + leadLapPlus + " / " + maxLap;
+                        Text = lapText + leadLapPlus + " / " + maxLap;
                     break;
 
                 case EventTypes.TimeTrial:
                 case EventTypes.CasualPractice:
                     if (EventManager.Event.Laps == 1)
                     {
-                        Text = "Best Lap";
+                        Text = Translator.Get("Label.BestLap", "Best Lap");
                     }
                     else
                     {
-                        Text = "Best " + EventManager.Event.Laps + " laps";
+                        Text = Translator.Get("Label.Best" + EventManager.Event.Laps + "Laps", "Best " + EventManager.Event.Laps + " laps");
                     }
                     break;
                 case EventTypes.Game:

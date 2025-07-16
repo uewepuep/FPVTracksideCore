@@ -174,8 +174,8 @@ namespace UI.Nodes
             logoNode.Alignment = RectangleAlignment.TopCenter;
             colorNode.AddChild(logoNode);
 
-            addButton.Text = "New";
-            okButton.Text = "Open";
+            addButton.Text = Translator.Get("Button.New", "New");
+            okButton.Text = Translator.Get("Button.Open", "Open");
 
             MenuButton = new MenuButton(profile, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
             MenuButton.RelativeBounds = new RectangleF(0.96f, 0.01f, 0.025f, 0.025f);
@@ -196,6 +196,11 @@ namespace UI.Nodes
             profileButtonNode.ProfileSet += MenuButton_ProfileSet;
             colorNode.AddChild(profileButtonNode);
 
+            LanguageButtonNode languageButtonNode = new LanguageButtonNode(Color.Transparent, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
+            languageButtonNode.RelativeBounds = new RectangleF(0.01f, 0.80f, profwidth, 0.15f);
+            languageButtonNode.OnLanguageSet += LanguageSet;
+            colorNode.AddChild(languageButtonNode);
+
             SetObjects(GetEvents(profile), true);
 
             SimpleEvent lastOpened = Objects.OrderByDescending(e => e.LastOpened).FirstOrDefault();
@@ -208,7 +213,7 @@ namespace UI.Nodes
         public EventSelectorEditor(IEnumerable<SimpleEvent> events, bool addRemove = true, bool cancelButtona = false)
            : base(events.Where(e => e.Enabled), addRemove, cancelButtona)
         {
-            Text = "Select an event";
+            Text = Translator.Get("Label.SelectEvent", "Select an event");
 
             OnOK += EventEditor_OnOK;
 
@@ -235,6 +240,17 @@ namespace UI.Nodes
             MenuButton.Profile = profile;
             GeneralSettings.Instance.Profile = profile.Name;
             GeneralSettings.Write();
+
+            if (CompositorLayer.LayerStack.Game is UI.BaseGame)
+            {
+                ((UI.BaseGame)CompositorLayer.LayerStack.Game).Restart();
+            }
+        }
+
+        private void LanguageSet(string language)
+        {
+            ApplicationProfileSettings.Instance.Language = language;
+            ApplicationProfileSettings.Write(Profile, ApplicationProfileSettings.Instance);
 
             if (CompositorLayer.LayerStack.Game is UI.BaseGame)
             {

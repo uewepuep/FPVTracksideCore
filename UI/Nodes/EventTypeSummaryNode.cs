@@ -138,7 +138,7 @@ namespace UI.Nodes
         {
             NeedsUpdateText = false;
             string eventType = RaceStringFormatter.Instance.GetEventTypeText(race.Type);
-            return "Round " + race.RoundNumber + "   " + eventType + " " + race.RaceNumber;
+            return Translator.Get("Round","Round") + " " + race.RoundNumber + "   " + eventType + " " + race.RaceNumber;
         }
 
     }

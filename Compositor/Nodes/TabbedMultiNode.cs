@@ -138,6 +138,8 @@ namespace Composition.Nodes
 
         public TextButtonNode AddTab(string text)
         {
+            text = Translator.Get("Button." + text, text);
+
             TextButtonNode textButtonNode = new TextButtonNode(text, ButtonBackground, HoverCover, textColor);
             tabBack.AddChild(textButtonNode);
             return textButtonNode;

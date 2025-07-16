@@ -220,25 +220,6 @@ namespace UI
         [DisplayName("Blank area for overlays")]
         public bool TopBlank { get; set; }
 
-        [NeedsRestart]
-        [Category("Event Type Names")]
-        public string Practice { get; set; }
-        [NeedsRestart]
-        [Category("Event Type Names")]
-        public string TimeTrial { get; set; }
-        [NeedsRestart]
-        [Category("Event Type Names")]
-        public string Race { get; set; }
-        [NeedsRestart]
-        [Category("Event Type Names")]
-        public string Freestyle { get; set; }
-        [NeedsRestart]
-        [Category("Event Type Names")]
-        public string Endurance { get; set; }
-        [NeedsRestart]
-        [Category("Event Type Names")]
-        public string CasualPractice { get; set; }
-        
         [Category("Gate / LED POST notifications")]
         [NeedsRestart]
         public string NotificationSerialPort { get; set; }
@@ -282,6 +263,9 @@ namespace UI
         [NeedsRestart]
         public int PilotProfileHoldLengthSeconds { get; set; }
 
+        [Browsable(false)]
+        public string Language { get; set; }
+
         public ApplicationProfileSettings()
         {
             Theme = "FPVTrackside";
@@ -324,13 +308,6 @@ namespace UI
 
             Voice = "Microsoft Zira Desktop";
 
-            Practice = "Practice";
-            TimeTrial = "Time Trial";
-            Race = "Race";
-            Freestyle = "Freestyle";
-            Endurance = "Endurance";
-            CasualPractice = "Casual Practice";
-
             StaggeredStartDelaySeconds = 1;
             ReOrderAtHoleshot = true;
             NotificationSerialPort = "";
@@ -369,6 +346,7 @@ namespace UI
             ShownDecimalPlaces = 2;
             UseDirectX9 = false;
             ShowPositionDeltaTime = 6;
+            Language = "English";
         }
 
         protected const string filename = "ProfileSettings.xml";

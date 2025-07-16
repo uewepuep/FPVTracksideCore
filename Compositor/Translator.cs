@@ -48,11 +48,14 @@ namespace Composition
             }
         }
 
-        public string GetTranslation(string type, string englishName)
+
+        public string GetTranslation(string fullType, string englishName)
         {
             lock (translations)
             {
-                string fullType = type + "." + englishName;
+                // Ignore spaces.
+                fullType = fullType.Replace(" ", "");
+
                 if (translations.TryGetValue(fullType, out string value))
                 {
                     return value;
@@ -62,48 +65,36 @@ namespace Composition
             return englishName;
         }
 
-        public string GetTranslation<T>(string englishName) where T : Node
-        {
-            string type = typeof(T).Name.Replace("Node", "");
-            return Get(type, englishName);
-        }
-
-
-        public static string Get(string type, string englishName)
+        public static string Get(string fullType, string englishName)
         {
             if (Instance != null)
             {
-                return Instance.GetTranslation(type, englishName);
+                return Instance.GetTranslation(fullType, englishName);
             }
 
             return englishName;
         }
 
-        public static string Get<T>(string englishName) where T : Node
+        public static string GetPropertyName<T>(string name, string defaultName)
         {
             if (Instance != null)
             {
-                return Instance.GetTranslation<T>(englishName);
-            }
+                string type = typeof(T).Name + "." + name;
 
-            return englishName;
-        }
-
-        public static string GetPropertyName<T>(string englishName, string defaultName)
-        {
-            if (Instance != null)
-            {
-                string type = "Editor." + typeof(T).Name;
-
-                string output = Instance.GetTranslation(type, englishName);
-                if (output == englishName)
+                string output = Instance.GetTranslation(type, defaultName);
+                if (output == defaultName)
                 {
                     return defaultName;
                 }
                 return output;
             }
 
-            return englishName;
+            return defaultName;
+        }
+
+        public override string ToString()
+        {
+            return Language;
         }
     }
 }

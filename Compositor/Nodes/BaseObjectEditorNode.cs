@@ -480,6 +480,8 @@ namespace Composition.Nodes
                 if (ca != null)
                 {
                     category = ca.Category;
+
+                    category = Translator.Get("EditorCategory." + category, category);
                 }
 
                 IEnumerable<PropertyNode<T>> newNodes = CreatePropertyNodes(obj, pi);
@@ -1597,6 +1599,15 @@ namespace Composition.Nodes
             }
 
             SetOptions(enums);
+        }
+
+        public override string ValueToString(object value)
+        {
+            string name = value.ToString();
+            string english = name.CamelCaseToHuman();
+            english = Translator.Get(typeof(T).Name + "." + PropertyInfo.Name + "." + value, english);
+
+            return english;
         }
     }
 
