@@ -212,7 +212,7 @@ namespace UI
 
             loadingLayer.WorkQueue.Enqueue("Database Upgrade", DatabaseUpgrade);
 
-            loadingLayer.WorkQueue.Enqueue("Load Translations", LoadTranslations);
+            //loadingLayer.WorkQueue.Enqueue("Load Translations", LoadTranslations);
             loadingLayer.WorkQueue.Enqueue("Startup", Startup);
         }
 
