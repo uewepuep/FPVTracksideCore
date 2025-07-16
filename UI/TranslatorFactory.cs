@@ -31,20 +31,22 @@ namespace UI
                 int languageIndex = 2;
                 foreach (string language in languages)
                 {
-                    List<string> replacements = ReadColumn(openSheet, languageIndex).Skip(1).ToList();
-                    languageIndex++;
-
-                    if (!replacements.Any())
-                        continue;
-
                     Translator translator = new Translator(language);
-
-                    for (int i = 0; i < replacements.Count && i < translationItemNames.Count; i++)
+                    for (int i = 0; i < translationItemNames.Count; i++)
                     {
-                        translator.Add(translationItemNames[i], replacements[i]);
+                        int row = i + 2;
+
+                        string replacement = openSheet.GetText(row, languageIndex);
+
+                        if (!string.IsNullOrEmpty(replacement))
+                        {
+                            string name = translationItemNames[i];
+                            translator.Add(name, replacement);
+                        }
                     }
 
                     yield return translator;
+                    languageIndex++;
                 }
             }
         }
