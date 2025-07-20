@@ -842,12 +842,14 @@ namespace UI.Nodes
             copyButton = new TextButtonNode("Copy to Clipboard", Theme.Current.InfoPanel.Heading.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.HeadingText.XNA);
             copyButton.RelativeBounds = new RectangleF(0, 0, 0.5f, 1);
             copyButton.OnClick += CopyButton_OnClick;
+            copyButton.Scale(0.8f);
             buttonContainer.AddChild(copyButton);
 
             // Close button - using same theme as Learn More button
             var closeButton = new TextButtonNode("Close", Theme.Current.InfoPanel.Heading.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.HeadingText.XNA);
             closeButton.RelativeBounds = new RectangleF(0.5f, 0, 0.5f, 1);
             closeButton.OnClick += (mie) => Dispose();
+            closeButton.Scale(0.8f);
             buttonContainer.AddChild(closeButton);
 
             // Generate initial chapter markers
