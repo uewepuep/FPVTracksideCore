@@ -457,6 +457,42 @@ namespace RaceLib
             return newRaces;
         }
 
+        public IEnumerable<Race> NextPointsRound(Round round)
+        {
+            //TODO seed this based on points results, currently below is a copy/paste of clone
+            IEnumerable<Race> races = RaceManager.Races.Where(r => r.Round == round).OrderBy(r => r.RaceNumber);
+
+            int maxRound = RaceManager.GetMaxRoundNumber(round.EventType);
+
+            Round newRound = GetCreateRound(maxRound + 1, round.EventType);
+            newRound.RoundType = round.RoundType;
+
+            List<Race> newRaces = new List<Race>();
+            var Pilots = new List<Pilot>();
+            // Not sure if this is the best way to get the active pilots
+            foreach (Race race in races)
+            {
+                foreach(var pilot in race.Pilots)
+                {
+                    Pilots.Add(pilot);
+                }
+               
+            }
+
+            //TODO: Get event points for all pilots
+            // Sort pilots into races based on their event total points, lowest points in earliest rounds
+            // For uneven groups push empty spots to higher groups
+
+            foreach (Race r in newRaces)
+            {
+                RaceManager.AddRace(r);
+            }
+
+            RaceManager.UpdateRaceRoundNumbers();
+            OnRoundAdded?.Invoke();
+            return newRaces;
+        }
+
         public void GenerateFinal(Round callingRound)
         {
             Round newRound = GetCreateRound(callingRound.RoundNumber + 1, EventManager.Event.EventType);

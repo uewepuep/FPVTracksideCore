@@ -500,13 +500,34 @@ namespace RaceLib
             foreach (Pilot pilot in race.Pilots)
             {
                 int position = race.GetPosition(pilot);
-                int points = GetPoints(position);
+                int points = (race.Event.PointsStyle == PointsStyle.PerHeat) ? GetPoints(position) : (race.Pilots.Length - position + 1);
                 bool dnfed = false;
 
                 if (DNFed(race, pilot))
                 {
                     points = PointsSettings.DNFPoints;
                     dnfed = true;
+                }
+                else if(race.Event.PointsStyle == PointsStyle.PerRound)
+                {
+                    TimeSpan raceTime = race.GetFinishingTime(pilot);
+                    foreach (var otherRaceInRound in EventManager.RaceManager.Races.Where(rmr => rmr.Round == race.Round && race.ID != rmr.ID))
+                    {
+                        if (otherRaceInRound.Ended)
+                        {
+                            foreach(var otherPilot in otherRaceInRound.Pilots)
+                            {
+                                TimeSpan otherTime = otherRaceInRound.GetFinishingTime(otherPilot);
+                                if(otherTime < raceTime)
+                                {
+                                    // TODO: If previous pilot has a better finishing time add point to previous pilot
+                                } else
+                                {
+                                    points++;
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Result r = new Result();

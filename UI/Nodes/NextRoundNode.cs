@@ -58,6 +58,13 @@ namespace UI.Nodes
             paste.OnClick += Paste_OnClick;
             nextItems.AddChild(paste);
 
+            if(eventManager.Event.PointsStyle == PointsStyle.PerRound)
+            {
+                TextButtonNode nextPointRound = new TextButtonNode("Next Points Round", Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
+                nextPointRound.OnClick += NextPointRound_OnClick;
+                nextItems.AddChild(nextPointRound);
+            }
+
             if (eventManager.ExternalRaceProviders != null)
             {
                 foreach (var external in eventManager.ExternalRaceProviders)
@@ -100,6 +107,11 @@ namespace UI.Nodes
         private void LastAgain_OnClick(Composition.Input.MouseInputEvent mie)
         {
             eventManager.RoundManager.CloneLastHeat(Round);
+        }
+
+        private void NextPointRound_OnClick(Composition.Input.MouseInputEvent mie)
+        {
+            eventManager.RoundManager.NextPointsRound(Round);
         }
     }
 }
