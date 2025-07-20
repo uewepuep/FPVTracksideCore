@@ -18,18 +18,35 @@ namespace UI
             try
             {
                 string csv = string.Join("\n", table.Select(line => string.Join(",", line)));
+                Console.WriteLine($"ExportCSV: Generated CSV with {csv.Length} characters");
+                Tools.Logger.UI.Log(null, $"ExportCSV: Generated CSV with {csv.Length} characters");
 
                 string filename = platformTools.SaveFileDialog(title, "CSV|*.csv");
+                Console.WriteLine($"ExportCSV: SaveFileDialog returned: '{filename}'");
+                Tools.Logger.UI.Log(null, $"ExportCSV: SaveFileDialog returned: '{filename}'");
+                
                 if (filename != null)
                 {
+                    Console.WriteLine($"ExportCSV: About to write to file: '{filename}'");
+                    Tools.Logger.UI.Log(null, $"ExportCSV: About to write to file: '{filename}'");
+                    
                     File.WriteAllText(filename, csv);
+                    
+                    Console.WriteLine($"ExportCSV: File written successfully");
+                    Tools.Logger.UI.Log(null, $"ExportCSV: File written successfully");
                     return true;
+                }
+                else
+                {
+                    Console.WriteLine("ExportCSV: filename is null, user cancelled");
+                    Tools.Logger.UI.Log(null, "ExportCSV: filename is null, user cancelled");
                 }
             }
             catch (Exception e)
             {
-                popupLayer.PopupMessage(e.Message);
+                Console.WriteLine($"ExportCSV: Exception: {e.Message}");
                 Tools.Logger.UI.LogException(null, e);
+                popupLayer.PopupMessage(e.Message);
             }
             return false;
         }
