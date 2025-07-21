@@ -743,7 +743,7 @@ namespace RaceLib
             {
                 lastValidSector = Detection.RaceSectorCalculator(TargetLaps, 0);
             }
-            var detection = Detections.Last(d => d.Valid && d.RaceSector <= lastValidSector && d.Pilot == pilot);
+            var detection = Detections.LastOrDefault(d => d.Valid && d.RaceSector <= lastValidSector && d.Pilot == pilot);
             return detection;
         }
 

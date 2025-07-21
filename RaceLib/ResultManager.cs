@@ -475,6 +475,11 @@ namespace RaceLib
                 using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
                 {
                     db.Delete(toRemove);
+
+                    if(race.Event.PointsStyle == PointsStyle.PerRound)
+                    {
+                        UpdatePointRound(db, race.Round);
+                    }
                 }
                 return true;
             }
@@ -514,8 +519,15 @@ namespace RaceLib
                 r.Points = points;
                 r.Position = position;
                 r.ResultType = Result.ResultTypes.Race;
-                r.Time = raceTime.Time - race.Start;
-                r.LapsFinished = raceTime.LapNumber;
+                if (raceTime != null)
+                {
+                    r.Time = raceTime.Time - race.Start;
+                    r.LapsFinished = raceTime.LapNumber;
+                } 
+                else
+                {
+                    r.LapsFinished = 0;
+                }
                 r.DNF = dnfed;
                 newResults.Add(r);
             }
@@ -542,7 +554,6 @@ namespace RaceLib
 
         public void UpdatePointRound(IDatabase db, Round round)
         {
-            var Results = db.LoadResults();
             var RoundResults = Results.Where(r => r.Round == round && r.Time != null).OrderBy(r => r.LapsFinished).ThenByDescending(r => r.Time).ToArray();
             for(int i = 0; i < RoundResults.Count(); i++)
             {
@@ -583,8 +594,16 @@ namespace RaceLib
                 }
             }
             var finishingTime = race.GetFinishingTime(pilot);
-            r.Time = (finishingTime.Time - race.Start);
-            r.LapsFinished = finishingTime.LapNumber;
+            if(finishingTime != null)
+            {
+                r.Time = (finishingTime.Time - race.Start);
+                r.LapsFinished = finishingTime.LapNumber;
+            } 
+            else
+            {
+                r.LapsFinished = 0;
+            }
+            
             r.Points = points;
             r.Position = position;
             r.DNF = dnf;
