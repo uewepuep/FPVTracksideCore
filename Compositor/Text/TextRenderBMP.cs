@@ -172,6 +172,8 @@ namespace Composition.Text
 
         public int HitCharacterIndex(Point point)
         {
+            lock (sourceBounds)
+            {
             int index = 0;
             foreach (Rectangle rectangle in destBounds)
             {
@@ -182,9 +184,12 @@ namespace Composition.Text
                 index++;
             }
             return index;
+            }
         }
 
         public Point CharacterPosition(int i)
+        {
+            lock (sourceBounds)
         {
             if (!destBounds.Any())
                 return Point.Zero;
@@ -198,6 +203,7 @@ namespace Composition.Text
 
             Rectangle last = destBounds.Last();
             return new Point(last.Right, last.Top);
+            }
         }
 
         public Texture2D TextToTexture(GraphicsDevice graphicsDevice, Color textColor, string font, float point, string text)

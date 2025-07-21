@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Transactions;
 
 namespace Composition
 {
@@ -14,6 +15,14 @@ namespace Composition
         private Dictionary<string, string> translations;
 
         public string Language { get; private set; }
+
+        public IEnumerable<string> ItemNames
+        {
+            get
+            {
+                return translations.Keys;
+            }
+        }
 
         public Translator(string language)
         {
@@ -33,7 +42,7 @@ namespace Composition
                 translations.Clear();
             }
         }
-        public void Add(string itemName, string translation)
+        public void Set(string itemName, string translation)
         {
             lock (translations)
             {
@@ -90,6 +99,14 @@ namespace Composition
             }
 
             return defaultName;
+        }
+
+        public bool HasTranslation(string name)
+        {
+            lock (translations)
+            {
+                return translations.ContainsKey(name);
+            }
         }
 
         public override string ToString()
