@@ -16,7 +16,7 @@ namespace RaceLib
         [Category("Points")]
         public bool DropWorstRound { get; set; }
         [Category("Points Per Heat Settings")]
-        [DisplayName("Position Points (1st, 2nd, 3rd...)(Per Heat Points only)")]
+        [DisplayName("Position Points (1st, 2nd, 3rd...)")]
         public int[] PositionPoints { get; set; }
 
         [Category("Points Per Heat Settings")]
