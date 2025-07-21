@@ -13,6 +13,10 @@ namespace RaceLib
 
         public bool Valid { get; set; }
 
+        public TimeSpan? Time { get; set; }
+
+        public int LapsFinished { get; set; }
+
         [System.ComponentModel.Browsable(false)]
         public Event Event { get; set; }
 

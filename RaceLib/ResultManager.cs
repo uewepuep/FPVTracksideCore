@@ -482,11 +482,6 @@ namespace RaceLib
 
         public bool SaveResults(Race race)
         {
-            return SaveResults(null, race);
-        }
-
-        public bool SaveResults(IDatabase db, Race race)
-        {
             if (!race.Ended)
                 return false;
 
@@ -496,39 +491,20 @@ namespace RaceLib
             ClearPointsNoTrigger(race);
 
             List<Result> newResults = new List<Result>();
-
+            
             foreach (Pilot pilot in race.Pilots)
             {
                 int position = race.GetPosition(pilot);
-                int points = (race.Event.PointsStyle == PointsStyle.PerHeat) ? GetPoints(position) : (race.Pilots.Length - position + 1);
+                int points = (race.Event.PointsStyle == PointsStyle.PerHeat) ? GetPoints(position) : 0;
                 bool dnfed = false;
+
+                var raceTime = race.GetFinishingTime(pilot);
 
                 if (DNFed(race, pilot))
                 {
                     points = PointsSettings.DNFPoints;
                     dnfed = true;
-                }
-                else if(race.Event.PointsStyle == PointsStyle.PerRound)
-                {
-                    TimeSpan raceTime = race.GetFinishingTime(pilot);
-                    foreach (var otherRaceInRound in EventManager.RaceManager.Races.Where(rmr => rmr.Round == race.Round && race.ID != rmr.ID))
-                    {
-                        if (otherRaceInRound.Ended)
-                        {
-                            foreach(var otherPilot in otherRaceInRound.Pilots)
-                            {
-                                TimeSpan otherTime = otherRaceInRound.GetFinishingTime(otherPilot);
-                                if(otherTime < raceTime)
-                                {
-                                    // TODO: If previous pilot has a better finishing time add point to previous pilot
-                                } else
-                                {
-                                    points++;
-                                }
-                            }
-                        }
-                    }
-                }
+                }                    
 
                 Result r = new Result();
                 r.Event = race.Event;
@@ -538,30 +514,41 @@ namespace RaceLib
                 r.Points = points;
                 r.Position = position;
                 r.ResultType = Result.ResultTypes.Race;
+                r.Time = raceTime.Time - race.Start;
+                r.LapsFinished = raceTime.LapNumber;
                 r.DNF = dnfed;
                 newResults.Add(r);
             }
 
-            if (db == null)
-            {
-                using (IDatabase db2 = DatabaseFactory.Open(EventManager.EventId))
-                {
-                    db2.Insert(newResults);
-                }
-            }
-            else
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
                 db.Insert(newResults);
-            }
+                
+                lock (Results)
+                {
+                    Results.AddRange(newResults);
 
-            lock (Results)
-            {
-                Results.AddRange(newResults);
+                    if (race.Event.PointsStyle == PointsStyle.PerRound)
+                    {
+                        UpdatePointRound(db, race.Round);
+                    }
+                }
             }
 
             RaceResultsChanged?.Invoke(race);
 
             return true;
+        }
+
+        public void UpdatePointRound(IDatabase db, Round round)
+        {
+            var Results = db.LoadResults();
+            var RoundResults = Results.Where(r => r.Round == round && r.Time != null).OrderBy(r => r.LapsFinished).ThenByDescending(r => r.Time).ToArray();
+            for(int i = 0; i < RoundResults.Count(); i++)
+            {
+                RoundResults[i].Points = i + 1;
+            }
+            db.Update(RoundResults);
         }
 
         public Result SetResult(Race race, Pilot pilot, int position, int points, bool dnf)
@@ -595,7 +582,9 @@ namespace RaceLib
                     Results.Add(r);
                 }
             }
-
+            var finishingTime = race.GetFinishingTime(pilot);
+            r.Time = (finishingTime.Time - race.Start);
+            r.LapsFinished = finishingTime.LapNumber;
             r.Points = points;
             r.Position = position;
             r.DNF = dnf;

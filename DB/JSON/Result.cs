@@ -25,6 +25,9 @@ namespace DB.JSON
 
         public string ResultType { get; set; }
 
+        public TimeSpan? Time { get; set; }
+        public int LapsFinished { get; set; }
+
 
         public Result() { }
 
@@ -39,6 +42,9 @@ namespace DB.JSON
                 Race = obj.Race.ID;
             if (obj.Round != null)
                 Round = obj.Round.ID;
+            if (obj.Time != null)
+                Time = obj.Time;
+            LapsFinished = obj.LapsFinished;
         }
 
         public override RaceLib.Result GetRaceLibObject(ICollectionDatabase database)
