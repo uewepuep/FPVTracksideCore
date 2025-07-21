@@ -14,10 +14,10 @@ namespace UI
     {
         public static IEnumerable<Translator> Load()
         {
-            return Load(new FileInfo("Translations.xlsx"), "Sheet1");
+            return Load(new FileInfo("Translations.xlsx"));
         }
 
-        public static IEnumerable<Translator> Load(FileInfo excelFile, string sheetname)
+        public static IEnumerable<Translator> Load(FileInfo excelFile, string sheetname = "Sheet1")
         {
             List<string> translationItemNames = null;
             List<string> languages = null;
@@ -41,7 +41,7 @@ namespace UI
                         if (!string.IsNullOrEmpty(replacement))
                         {
                             string name = translationItemNames[i];
-                            translator.Add(name, replacement);
+                            translator.Set(name, replacement);
                         }
                     }
 
@@ -83,6 +83,42 @@ namespace UI
                 i++;
             }
             while (!string.IsNullOrEmpty(t));
+        }
+
+        public static void Write(Translator[] translators, FileInfo excelFile, string sheetname = "Sheet1")
+        {
+            Translator english = translators.FirstOrDefault(t => t.Language.ToLower().ToString() == "english");
+
+            using (OpenSheet openSheet = new OpenSheet())
+            {
+                openSheet.Open(excelFile, sheetname);
+                string[] allNames = english.ItemNames.ToArray();
+
+                openSheet.SetValue(1, 1, "Name");
+                int c = 2;
+                int r = 1;
+                foreach (Translator translator in translators)
+                {
+                    openSheet.SetValue(r, c, translator.Language);
+                    c++;
+                }
+
+                foreach (string name in allNames)
+                {
+                    r++;
+                    openSheet.SetValue(r, 1, name);
+                    c = 2;
+
+                    foreach (Translator translator in translators)
+                    {
+                        string value = translator.GetTranslation(name, "");
+
+                        openSheet.SetValue(r, c, value);
+                        c++;
+                    }
+                }
+                openSheet.Save();
+            }
         }
     }
 }
