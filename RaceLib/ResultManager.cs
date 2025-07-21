@@ -15,19 +15,19 @@ namespace RaceLib
     {
         [Category("Points")]
         public bool DropWorstRound { get; set; }
-        [Category("Points")]
-        [DisplayName("Position Points (1st, 2nd, 3rd...)")]
+        [Category("Points Per Heat Settings")]
+        [DisplayName("Position Points (1st, 2nd, 3rd...)(Per Heat Points only)")]
         public int[] PositionPoints { get; set; }
 
-        [Category("Points")]
+        [Category("Points Per Heat Settings")]
         [DisplayName("DNF For Unfinished Races")]
         public bool DNFForUnfinishedRaces { get; set; }
 
-        [Category("Points")]
+        [Category("Points Per Heat Settings")]
         [DisplayName("DNF points")]
         public int DNFPoints { get; set; }
 
-        [Category("Points")]
+        [Category("Points Per Heat Settings")]
         [DisplayName("Round position Roll Over into virtual final race (RRO)")]
         public bool RoundPositionRollover { get; set; }
 
