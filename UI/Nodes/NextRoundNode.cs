@@ -58,7 +58,7 @@ namespace UI.Nodes
             paste.OnClick += Paste_OnClick;
             nextItems.AddChild(paste);
 
-            if(eventManager.Event.PointsStyle == PointsStyle.PerRound)
+            if(eventManager.Event.PointsStyle == PointsStyle.PerRound && Round.EventType == EventTypes.Race)
             {
                 TextButtonNode nextPointRound = new TextButtonNode("Next Points Round", Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
                 nextPointRound.OnClick += NextPointRound_OnClick;
