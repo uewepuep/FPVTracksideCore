@@ -488,10 +488,12 @@ namespace RaceLib
             {
                 Race r = sampleRace.Clone();
                 r.Round = newRound;
-                foreach(var pc in r.PilotChannels)
+                r.PilotChannels.Clear();
+                foreach(var pc in EventManager.Event.Channels)
                 {
-                    pc.Pilot = null;
+                    r.PilotChannels.Add(new PilotChannel(null, pc));
                 }
+                
                 List<Pilot> unassignedPilots = new List<Pilot>();
                 for(int i = (group.Count -1); i > -1; i--)
                 {
@@ -520,6 +522,8 @@ namespace RaceLib
                         }
                     }
                 }
+
+                r.PilotChannels.RemoveAll(e => e.Pilot == null);
                 newRaces.Add(r);
             }
 
