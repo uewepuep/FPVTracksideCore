@@ -17,23 +17,89 @@ namespace FfmpegMediaPlatform
 
         public override IEnumerable<Mode> GetModes()
         {
-            IEnumerable<string> modes = ffmpegMediaFramework.GetFfmpegText("-list_options true -f avfoundation -i video=\"" + VideoConfig.DeviceName + "\"", l => l.Contains("pixel_format"));
-
-            int index = 0;
-            //[dshow @ 000001ccc05aa180]   pixel_format=nv12  min s=1280x720 fps=30 max s=1280x720 fps=30
-            foreach (string format in modes)
+            Tools.Logger.VideoLog.LogCall(this, $"GetModes() called - querying actual camera capabilities for '{VideoConfig.DeviceName}'");
+            List<Mode> supportedModes = new List<Mode>();
+            
+            try
             {
-                string pixelFormat = ffmpegMediaFramework.GetValue(format, "pixel_format");
-                string size = ffmpegMediaFramework.GetValue(format, "min s");
-                string fps = ffmpegMediaFramework.GetValue(format, "fps");
-
-                string[] sizes = size.Split("x");
-                if (int.TryParse(sizes[0], out int x) && int.TryParse(sizes[1], out int y) && float.TryParse(format, out float ffps))
+                // Use invalid resolution to trigger ffmpeg to output supported modes
+                string testArgs = $"-f avfoundation -framerate 30 -video_size 1234x5678 -i \"{VideoConfig.DeviceName}\"";
+                Tools.Logger.VideoLog.LogCall(this, $"Querying supported modes with command: ffmpeg {testArgs}");
+                
+                var output = ffmpegMediaFramework.GetFfmpegText(testArgs, l => 
+                    l.Contains("Supported modes:") || 
+                    l.Contains("@[") || 
+                    l.Contains("Selected video size") ||
+                    l.Contains("Error opening"));
+                
+                bool foundSupportedModes = false;
+                int index = 0;
+                
+                foreach (string line in output)
                 {
-                    yield return new Mode { Format = pixelFormat, Width = x, Height = y, FrameRate = ffps, FrameWork = FrameWork.ffmpeg, Index = index };
+                    Tools.Logger.VideoLog.LogCall(this, $"FFmpeg output: {line}");
+                    
+                    if (line.Contains("Supported modes:"))
+                    {
+                        foundSupportedModes = true;
+                        continue;
+                    }
+                    
+                    if (foundSupportedModes && line.Contains("@["))
+                    {
+                        // Parse lines like: "   640x480@[15.000000 30.000000]fps"
+                        var match = System.Text.RegularExpressions.Regex.Match(line, @"(\d+)x(\d+)@\[([0-9.\s]+)\]fps");
+                        if (match.Success)
+                        {
+                            int width = int.Parse(match.Groups[1].Value);
+                            int height = int.Parse(match.Groups[2].Value);
+                            string frameRatesStr = match.Groups[3].Value;
+                            
+                            // Parse frame rates like "15.000000 30.000000"
+                            var frameRates = frameRatesStr.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                .Select(fr => float.Parse(fr))
+                                .ToList();
+                            
+                            foreach (var frameRate in frameRates)
+                            {
+                                var mode = new Mode
+                                {
+                                    Width = width,
+                                    Height = height,
+                                    FrameRate = frameRate,
+                                    FrameWork = FrameWork.ffmpeg,
+                                    Index = index,
+                                    Format = "uyvy422"
+                                };
+                                supportedModes.Add(mode);
+                                Tools.Logger.VideoLog.LogCall(this, $"✓ PARSED MODE: {width}x{height}@{frameRate}fps (Index {index})");
+                                index++;
+                            }
+                        }
+                    }
                 }
-                index++;
+                
+                Tools.Logger.VideoLog.LogCall(this, $"Camera capability detection complete: {supportedModes.Count} supported modes found");
+                
+                if (supportedModes.Count == 0)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "WARNING: No supported modes detected for camera!");
+                }
+                else
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"Final supported modes for '{VideoConfig.DeviceName}':");
+                    foreach (var mode in supportedModes.OrderBy(m => m.Width * m.Height).ThenBy(m => m.FrameRate))
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"  - {mode.Width}x{mode.Height}@{mode.FrameRate}fps");
+                    }
+                }
             }
+            catch (Exception ex)
+            {
+                Tools.Logger.VideoLog.LogException(this, ex);
+            }
+            
+            return supportedModes;
         }
 
         protected override ProcessStartInfo GetProcessStartInfo()

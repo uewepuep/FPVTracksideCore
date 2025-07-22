@@ -202,7 +202,29 @@ namespace FfmpegMediaPlatform
 
         public Mode PickMode(IEnumerable<Mode> modes)
         {
-            throw new NotImplementedException();
+            if (!modes.Any())
+                return null;
+
+            // 1st priority: 640x480 @ 30fps
+            var preferred = modes.FirstOrDefault(m => 
+                m.Width == 640 && m.Height == 480 && m.FrameRate >= 30);
+            if (preferred != null)
+                return preferred;
+
+            // 2nd priority: lowest resolution above 30fps
+            var above30fps = modes
+                .Where(m => m.FrameRate >= 30)
+                .OrderBy(m => m.Width * m.Height)
+                .ThenBy(m => m.FrameRate)
+                .FirstOrDefault();
+            if (above30fps != null)
+                return above30fps;
+
+            // 3rd priority: best available (highest framerate, then lowest resolution)
+            return modes
+                .OrderByDescending(m => m.FrameRate)
+                .ThenBy(m => m.Width * m.Height)
+                .First();
         }
 
         public FrameSource CreateFrameSource(string filename)

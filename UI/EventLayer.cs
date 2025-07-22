@@ -604,6 +604,7 @@ namespace UI
                 Race current = EventManager.RaceManager.CurrentRace;
                 EventManager.RaceManager.ClearRace();
 
+                videoManager.StopDevices();
                 videoManager.LoadCreateDevices((fs) =>
                 {
                     ChannelsGridNode.FillChannelNodes();
