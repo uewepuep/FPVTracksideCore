@@ -389,6 +389,7 @@ namespace UI.Nodes
         {
             videoManager?.StopDevices();
 
+
             VideoSourceEditor editor = VideoSourceEditor.GetVideoSourceEditor(eventManager, Profile);
             GetLayer<PopupLayer>().Popup(editor);
 

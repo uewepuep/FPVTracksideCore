@@ -54,8 +54,8 @@ namespace FfmpegMediaPlatform
             }
 
             IEnumerable<string> devices = GetFfmpegText("-devices");
-            dshow = devices?.Any(l => l.Contains("dshow")) ?? false;
-            avfoundation = devices?.Any(l => l.Contains("avfoundation")) ?? true; // Default to true on Mac
+            dshow = devices?.Any(l => l != null && l.Contains("dshow")) ?? false;
+            avfoundation = devices?.Any(l => l != null && l.Contains("avfoundation")) ?? true; // Default to true on Mac
 
             GetVideoConfigs();
 
@@ -173,7 +173,7 @@ namespace FfmpegMediaPlatform
 
                     if (inVideo)
                     {
-                        Regex reg = new Regex("\\] \\[([A-z0-9]*)\\] ([A-z0-9 ]*)");
+                        Regex reg = new Regex("\\[AVFoundation[^\\]]*\\] \\[(\\d+)\\] (.+)");
 
                         Match match = reg.Match(deviceLine);
                         if (match.Success)

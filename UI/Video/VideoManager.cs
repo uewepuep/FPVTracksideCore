@@ -50,6 +50,7 @@ namespace UI.Video
         public bool MaintainConnections { get; set; }
 
         private Thread videoDeviceManagerThread;
+        private CancellationTokenSource cancellationTokenSource;
         private bool runWorker;
         private List<Action> todo;
 
@@ -143,7 +144,8 @@ namespace UI.Video
             if (videoDeviceManagerThread == null)
             {
                 runWorker = true;
-                videoDeviceManagerThread = new Thread(WorkerThread);
+                cancellationTokenSource = new CancellationTokenSource();
+                videoDeviceManagerThread = new Thread(() => WorkerThread(cancellationTokenSource.Token));
                 videoDeviceManagerThread.Name = "Video Device Manager";
                 videoDeviceManagerThread.Start();
             }
@@ -189,22 +191,24 @@ namespace UI.Video
             runWorker = false;
             mutex.Set();
 
+            if (cancellationTokenSource != null)
+            {
+                cancellationTokenSource.Cancel();
+            }
+
             if (videoDeviceManagerThread != null)
             {
-                if (!videoDeviceManagerThread.Join(30000))
+                if (!videoDeviceManagerThread.Join(5000))
                 {
-                    try
-                    {
-#pragma warning disable SYSLIB0006 // Type or member is obsolete
-                        videoDeviceManagerThread.Abort();
-#pragma warning restore SYSLIB0006 // Type or member is obsolete
-                    }
-                    catch
-                    {
-                    }
+                    // Thread didn't exit within timeout - this is unusual but we'll handle it gracefully
                 }
-                videoDeviceManagerThread.Join();
                 videoDeviceManagerThread = null;
+            }
+
+            if (cancellationTokenSource != null)
+            {
+                cancellationTokenSource.Dispose();
+                cancellationTokenSource = null;
             }
         }
 
@@ -710,12 +714,12 @@ namespace UI.Video
             }
         }
 
-        private void WorkerThread()
+        private void WorkerThread(CancellationToken cancellationToken)
         {
             bool someFinalising = false;
 
             List<FrameSource> needsVideoInfoWrite = new List<FrameSource>();
-            while (runWorker)
+            while (runWorker && !cancellationToken.IsCancellationRequested)
             {
                 try
                 {
@@ -725,7 +729,7 @@ namespace UI.Video
                         
                     }
 
-                    if (!runWorker)
+                    if (!runWorker || cancellationToken.IsCancellationRequested)
                         break;
 
                     if (someFinalising)

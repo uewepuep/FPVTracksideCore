@@ -279,6 +279,10 @@ namespace ImageServer
             if (!string.IsNullOrEmpty(other.MediaFoundationPath) && other.MediaFoundationPath == MediaFoundationPath)
                 return true;
 
+            // Compare device names for camera/capture devices
+            if (!string.IsNullOrEmpty(other.DeviceName) && other.DeviceName == DeviceName)
+                return true;
+
             return false;
         }
 
@@ -287,6 +291,7 @@ namespace ImageServer
             int hash = 17;
             if (DirectShowPath != null) hash += DirectShowPath.GetHashCode();
             if (MediaFoundationPath != null) hash += MediaFoundationPath.GetHashCode();
+            if (DeviceName != null) hash += DeviceName.GetHashCode();
 
             return hash;
         }

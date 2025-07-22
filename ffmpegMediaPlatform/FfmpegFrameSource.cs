@@ -150,9 +150,27 @@ namespace FfmpegMediaPlatform
         public override bool Stop()
         {
             run = false;
-            if (process != null)
+            if (process != null && !process.HasExited)
             {
-                process.WaitForExit();
+                try
+                {
+                    // Try to terminate gracefully first
+                    process.StandardInput.Close();
+                }
+                catch { }
+
+                // Wait for a short time for graceful exit
+                if (!process.WaitForExit(2000))
+                {
+                    try
+                    {
+                        // Force kill the process if it doesn't exit gracefully
+                        process.Kill();
+                        process.WaitForExit(5000);
+                    }
+                    catch { }
+                }
+
                 try
                 {
                     process.CancelOutputRead();
@@ -202,6 +220,7 @@ namespace FfmpegMediaPlatform
                     if (totalBytesRead == bytesToRead)
                     {
                         ProcessImage();
+                        NotifyReceivedFrame();
                     }
                     else if (totalBytesRead > 0)
                     {
