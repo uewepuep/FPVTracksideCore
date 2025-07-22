@@ -39,8 +39,26 @@ namespace FfmpegMediaPlatform
         protected override ProcessStartInfo GetProcessStartInfo()
         {
             string name = VideoConfig.DeviceName;
-            string index = VideoConfig.ffmpegId;
-            return ffmpegMediaFramework.GetProcessStartInfo("-f avfoundation -framerate 30 -i \"" + index + ":0\" -pix_fmt rgb32 -f rawvideo -");
+            // string ffmpegArgs = $"-f avfoundation  -framerate {VideoConfig.VideoMode.FrameRate} -pixel_format uyvy422 -video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} -i \"{name}\" -pix_fmt rgba -f rawvideo -";
+            
+            string ffmpegArgs = $"-f avfoundation " +
+                                $"-framerate {VideoConfig.VideoMode.FrameRate} " +
+                                $"-pixel_format uyvy422 " +
+                                $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
+                                $"-i \"{name}\" " +
+                                $"-fflags nobuffer " +                 // Don't buffer input
+                                $"-flags low_delay " +                 // Enable low latency
+                                $"-strict experimental " +             // Allow experimental features
+                                $"-threads 1 " +                       // Single-threaded for deterministic low latency
+                                $"-vsync passthrough " +              // Don’t synchronize video frames — drop if needed
+                                $"-an " +                              // Disable audio
+                                $"-pix_fmt rgba " +                    // Output pixel format
+                                $"-preset ultrafast " +                // If encoding later, reduce latency
+                                $"-tune zerolatency " +                // Tune for latency if encoding
+                                    $"-f rawvideo -";                      // Output raw video
+            Tools.Logger.VideoLog.LogCall(this, $"Using direct ffmpeg with device name: {name}");
+            Tools.Logger.VideoLog.LogCall(this, $"FFmpeg args: {ffmpegArgs}");
+            return ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
         }
     }
 }

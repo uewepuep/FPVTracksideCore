@@ -25,21 +25,37 @@ namespace FfmpegMediaPlatform
 
         public FfmpegMediaFramework()
         {
-            execName = "ffmpeg";
-
-            if (!File.Exists(execName))
+            // Use Homebrew ffmpeg on Mac for better performance
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
             {
-                string exe = execName + ".exe";
-
-                if(File.Exists(exe))
+                string homebrewFfmpeg = "/opt/homebrew/bin/ffmpeg";
+                if (File.Exists(homebrewFfmpeg))
                 {
-                    execName = exe;
+                    execName = homebrewFfmpeg;
+                }
+                else
+                {
+                    execName = "ffmpeg"; // fallback to PATH
+                }
+            }
+            else
+            {
+                execName = "ffmpeg";
+
+                if (!File.Exists(execName))
+                {
+                    string exe = execName + ".exe";
+
+                    if(File.Exists(exe))
+                    {
+                        execName = exe;
+                    }
                 }
             }
 
             IEnumerable<string> devices = GetFfmpegText("-devices");
-            dshow = devices.Any(l => l.Contains("dshow"));
-            avfoundation = devices.Any(l => l.Contains("avfoundation"));
+            dshow = devices?.Any(l => l.Contains("dshow")) ?? false;
+            avfoundation = devices?.Any(l => l.Contains("avfoundation")) ?? true; // Default to true on Mac
 
             GetVideoConfigs();
 
