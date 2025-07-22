@@ -138,63 +138,10 @@ namespace UI.Video
             
             if (savedConfigs.Length == 0)
             {
-                Logger.VideoLog.LogCall(this, "No saved video configuration found - starting auto-detection");
-                
-                // No saved configuration exists, auto-detect available cameras
-                var availableConfigs = GetAvailableVideoSources();
-                Logger.VideoLog.LogCall(this, $"Auto-detection found {availableConfigs.Count()} available camera(s)");
-                
-                // Detect and set optimal video modes for auto-detected cameras
-                foreach (var config in availableConfigs)
-                {
-                    Logger.VideoLog.LogCall(this, $"Processing camera: '{config.DeviceName}' (Framework: {config.FrameWork})");
-                    
-                    if (config.VideoMode.Index == -1) // Default mode
-                    {
-                        Logger.VideoLog.LogCall(this, "Camera has default mode - detecting optimal resolution/framerate...");
-                        var optimalMode = DetectOptimalMode(config);
-                        if (optimalMode != null)
-                        {
-                            config.VideoMode = optimalMode;
-                            Logger.VideoLog.LogCall(this, $"✓ FINAL CONFIG for '{config.DeviceName}': {optimalMode.Width}x{optimalMode.Height}@{optimalMode.FrameRate}fps");
-                        }
-                        else
-                        {
-                            // Fallback to safe defaults
-                            config.VideoMode.Width = 640;
-                            config.VideoMode.Height = 480;
-                            config.VideoMode.FrameRate = 30;
-                            config.VideoMode.Format = "";
-                            config.VideoMode.FrameWork = config.FrameWork;
-                            Logger.VideoLog.LogCall(this, $"⚠ FALLBACK CONFIG for '{config.DeviceName}': Using safe defaults 640x480@30fps");
-                        }
-                    }
-                    else
-                    {
-                        Logger.VideoLog.LogCall(this, $"Camera already has configured mode: {config.VideoMode.Width}x{config.VideoMode.Height}@{config.VideoMode.FrameRate}fps");
-                    }
-                }
-                
-                VideoConfigs.AddRange(availableConfigs);
-                Logger.VideoLog.LogCall(this, $"Added {availableConfigs.Count()} camera configurations to video manager");
-                
-                // Save the auto-detected configuration
-                if (VideoConfigs.Count > 0)
-                {
-                    Logger.VideoLog.LogCall(this, "Saving auto-detected camera configurations to disk");
-                    VideoManager.WriteDeviceConfig(Profile, VideoConfigs);
-                    
-                    Logger.VideoLog.LogCall(this, "=== AUTO-DETECTION COMPLETE ===");
-                    Logger.VideoLog.LogCall(this, "Summary of configured cameras:");
-                    foreach (var config in VideoConfigs)
-                    {
-                        Logger.VideoLog.LogCall(this, $"  📹 {config.DeviceName}: {config.VideoMode.Width}x{config.VideoMode.Height}@{config.VideoMode.FrameRate}fps ({config.FrameWork})");
-                    }
-                }
-                else
-                {
-                    Logger.VideoLog.LogCall(this, "WARNING: No cameras were configured!");
-                }
+                Logger.VideoLog.LogCall(this, "No saved video configuration found - leaving video config empty for user to manually add cameras");
+                // Don't auto-populate with available cameras - let the user add them manually
+                // Save the empty configuration so we don't keep showing available cameras on restart
+                VideoManager.WriteDeviceConfig(Profile, VideoConfigs); // VideoConfigs is empty at this point
             }
             else
             {
