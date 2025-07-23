@@ -35,6 +35,11 @@ namespace Composition
             Instance = this;
         }
 
+        public static void ClearPrimary()
+        {
+            Instance = null;
+        }
+
         public void Clear()
         {
             lock (translations)
