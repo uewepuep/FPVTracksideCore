@@ -30,7 +30,7 @@ namespace UI.Nodes
         {
             AutoRunner = autoRunner;
 
-            controlButton = new IconButtonNode(@"img\auto.png", "Auto", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
+            controlButton = new IconButtonNode(@"img\auto.png", "", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
             controlButton.OnClick += ControlButton_OnClick;
             AddChild(controlButton);
 
@@ -109,32 +109,32 @@ namespace UI.Nodes
 
                     if (AutoRunner.Paused)
                     {
-                        controlButton.Text = "Paused";
+                        controlButton.Text = Translator.Get("AutoRunner.Paused", "Paused");
                     }
                     else
                     {
-                        controlButton.Text = "Idle";
+                        controlButton.Text = Translator.Get("AutoRunner.Auto", "Auto");
                     }
                     timeRemaining.Text = "";
                     break;
                     
                 case AutoRunner.States.WaitingRaceStart:
-                    controlButton.Text = "Start";
+                    controlButton.Text = Translator.Get("AutoRunner.Start", "Start");
                     timeRemaining.Text = time;
                     break;
 
                 case AutoRunner.States.WaitingRaceFinalLap:
-                    controlButton.Text = "Final Lap";
+                    controlButton.Text = Translator.Get("AutoRunner.FinalLap", "Final Lap");
                     timeRemaining.Text = time;
                     break;
 
                 case AutoRunner.States.WaitingResults:
-                    controlButton.Text = "Results";
+                    controlButton.Text = Translator.Get("AutoRunner.Results", "Results");
                     timeRemaining.Text = time;
                     break;
 
                 case AutoRunner.States.WaitVideo:
-                    controlButton.Text = "Video issue";
+                    controlButton.Text = Translator.Get("AutoRunner.Video", "Video issue");
                     timeRemaining.Text = time;
                     break;
             }

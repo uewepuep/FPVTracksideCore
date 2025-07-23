@@ -64,6 +64,7 @@ namespace Composition
             {
                 // Ignore spaces.
                 fullType = fullType.Replace(" ", "");
+                fullType = fullType.Replace("-", "");
 
                 if (translations.TryGetValue(fullType, out string value))
                 {
