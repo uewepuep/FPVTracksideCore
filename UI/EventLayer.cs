@@ -480,7 +480,7 @@ namespace UI
         {
             if (pilotListButton != null)
             {
-                pilotListButton.Text = EventManager.Event.PilotCount + " Pilots";
+                pilotListButton.Text = EventManager.Event.PilotCount + " " + Translator.Get("Label.Pilots", "Pilots");
             }
         }
 

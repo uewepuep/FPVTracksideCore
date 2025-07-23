@@ -101,6 +101,7 @@ namespace UI
 
             using (RawTextureCache rawTextureCache = new RawTextureCache(graphicsDevice, Directory))
             {
+                theme.FontFamily = FontFamily;
                 theme.Name = Name;
                 theme.Directory = Directory;
 
