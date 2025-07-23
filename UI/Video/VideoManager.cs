@@ -304,7 +304,7 @@ namespace UI.Video
             mutex.Set();
         }
 
-        private Mode DetectOptimalMode(VideoConfig config)
+        public Mode DetectOptimalMode(VideoConfig config)
         {
             Logger.VideoLog.LogCall(this, $"DetectOptimalMode() called for camera: '{config.DeviceName}' (Framework: {config.FrameWork})");
             

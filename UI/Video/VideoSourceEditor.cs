@@ -88,6 +88,33 @@ namespace UI.Video
             base.Dispose();
         }
 
+        protected override void AddNew(VideoConfig videoConfig)
+        {
+            // When adding a new camera, always detect and set optimal video mode
+            // This ensures we use supported resolutions/framerates instead of defaults
+            Tools.Logger.VideoLog.LogCall(this, $"Auto-detecting optimal mode for newly added camera: '{videoConfig.DeviceName}' (current: {videoConfig.VideoMode.Width}x{videoConfig.VideoMode.Height}@{videoConfig.VideoMode.FrameRate}fps)");
+            
+            var optimalMode = VideoManager.DetectOptimalMode(videoConfig);
+            if (optimalMode != null)
+            {
+                videoConfig.VideoMode = optimalMode;
+                Tools.Logger.VideoLog.LogCall(this, $"✓ Set optimal mode for '{videoConfig.DeviceName}': {optimalMode.Width}x{optimalMode.Height}@{optimalMode.FrameRate}fps");
+            }
+            else
+            {
+                // Fallback to safe defaults (but still better than 25fps default)
+                videoConfig.VideoMode.Width = 640;
+                videoConfig.VideoMode.Height = 480;
+                videoConfig.VideoMode.FrameRate = 30;
+                videoConfig.VideoMode.Format = "";
+                videoConfig.VideoMode.FrameWork = videoConfig.FrameWork;
+                videoConfig.VideoMode.Index = 0; // Set a valid index
+                Tools.Logger.VideoLog.LogCall(this, $"⚠ Using fallback mode for '{videoConfig.DeviceName}': 640x480@30fps");
+            }
+            
+            base.AddNew(videoConfig);
+        }
+
         protected override void AddOnClick(MouseInputEvent mie)
         {
             MouseMenu mouseMenu = new MouseMenu(this);
