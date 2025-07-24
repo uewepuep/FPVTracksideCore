@@ -101,7 +101,7 @@ namespace UI.Nodes
 
         public virtual void Init(PlatformTools platformTools)
         {
-            AddTab("Rounds", this.rounds, ShowRounds);
+            AddTab("Rounds", rounds, ShowRounds);
             liveButton = AddTab("Live", sceneManagerNode, ShowLive);
             replayButton = AddTab("Replay", ReplayNode, ShowReplay);
 

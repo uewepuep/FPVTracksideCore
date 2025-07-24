@@ -85,7 +85,7 @@ namespace UI
             while (!string.IsNullOrEmpty(t));
         }
 
-        public static void Write(Translator[] translators, FileInfo excelFile, string sheetname = "Sheet1")
+        public static bool Write(Translator[] translators, FileInfo excelFile, string sheetname = "Sheet1")
         {
             Translator english = translators.FirstOrDefault(t => t.Language.ToLower().ToString() == "english");
 
@@ -117,7 +117,7 @@ namespace UI
                         c++;
                     }
                 }
-                openSheet.Save();
+                return openSheet.Save();
             }
         }
     }

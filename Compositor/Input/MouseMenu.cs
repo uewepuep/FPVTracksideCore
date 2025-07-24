@@ -122,7 +122,7 @@ namespace Composition.Input
 
         public void AddSubmenu(string text, MouseMenu submenu)
         {
-            text = Translator.Get("Button." + text, text);
+            text = Translator.Get("Menu." + text, text);
 
             submenu.TopToBottom = TopToBottom;
             submenu.LeftToRight = LeftToRight;
@@ -150,7 +150,7 @@ namespace Composition.Input
 
         public MenuItem AddItem(string text, System.Action action)
         {
-            text = Translator.Get("Button." + text, text);
+            text = Translator.Get("Menu." + text, text);
 
             MenuItem newItem = new MenuItem(text, MenuLayer.Background, MenuLayer.Hover, MenuLayer.Text);
             newItem.TextNode.Alignment = RectangleAlignment.CenterLeft;
@@ -182,7 +182,7 @@ namespace Composition.Input
 
         public void AddItemConfirm(string text, string confirmMessage, System.Action action)
         {
-            text = Translator.Get("Button." + text, text);
+            text = Translator.Get("Menu." + text, text);
 
             MenuItem newItem = new MenuItem(text, MenuLayer.Background, MenuLayer.Hover, MenuLayer.Text);
             newItem.TextNode.Alignment = RectangleAlignment.CenterLeft;

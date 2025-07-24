@@ -95,10 +95,10 @@ namespace Composition.Nodes
         private EventManager ev;
 
         public AddPilotNode(EventManager ev)
-            :base("Add Pilot", "Name", "")
+            :base(Translator.Get("Menu.AddPilot","Add Pilot"), "Name", "")
         {
             this.ev = ev;
-            ok.Text = "Add";
+            ok.Text = Translator.Get("Button.Add", "Add");
 
             OnOK += AddPilotNode_OnOK;
         }
