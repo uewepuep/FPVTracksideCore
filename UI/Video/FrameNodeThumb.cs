@@ -50,18 +50,90 @@ namespace UI.Video
 
         public override void Dispose()
         {
-            lock (renderTargetLock)
+            Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - BEGIN");
+            Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - Current thread: {System.Threading.Thread.CurrentThread.ManagedThreadId}");
+            
+            bool lockAcquired = false;
+            try
             {
-                renderTarget?.Dispose();
-                renderTarget = null;
+                Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - Attempting to acquire renderTargetLock with 2 second timeout");
+                if (System.Threading.Monitor.TryEnter(renderTargetLock, 2000))
+                {
+                    lockAcquired = true;
+                    Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - Acquired renderTargetLock successfully");
+                    
+                    try
+                    {
+                        // Dispose renderTarget with timeout protection
+                        if (renderTarget != null)
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - Disposing renderTarget with timeout protection");
+                            var renderTargetDisposeTask = System.Threading.Tasks.Task.Run(() => 
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - RenderTarget dispose task started on thread: {System.Threading.Thread.CurrentThread.ManagedThreadId}");
+                                renderTarget.Dispose();
+                                Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - RenderTarget dispose task completed successfully");
+                            });
+                            
+                            if (renderTargetDisposeTask.Wait(100))
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - RenderTarget disposed successfully");
+                            }
+                            else
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - WARNING: RenderTarget dispose timed out after 1 second, continuing anyway");
+                            }
+                            renderTarget = null;
+                        }
 
-                drawer?.Dispose();
-                drawer = null;
+                        // Dispose drawer with timeout protection
+                        if (drawer != null)
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - Disposing drawer with timeout protection");
+                            var drawerDisposeTask = System.Threading.Tasks.Task.Run(() => 
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - Drawer dispose task started on thread: {System.Threading.Thread.CurrentThread.ManagedThreadId}");
+                                drawer.Dispose();
+                                Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - Drawer dispose task completed successfully");
+                            });
+                            
+                            if (drawerDisposeTask.Wait(100))
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - Drawer disposed successfully");
+                            }
+                            else
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - WARNING: Drawer dispose timed out after 1 second, continuing anyway");
+                            }
+                            drawer = null;
+                        }
 
-                colorData = null;
+                        colorData = null;
+                        Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - Graphics resources disposed successfully");
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Tools.Logger.VideoLog.LogException(this, ex);
+                        Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - Exception during graphics disposal, continuing");
+                    }
+                }
+                else
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - WARNING: Could not acquire renderTargetLock within 2 seconds, skipping graphics disposal to prevent deadlock");
+                }
+            }
+            finally
+            {
+                if (lockAcquired)
+                {
+                    System.Threading.Monitor.Exit(renderTargetLock);
+                    Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - Released renderTargetLock");
+                }
             }
 
+            Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - Calling base.Dispose()");
             base.Dispose();
+            Tools.Logger.VideoLog.LogCall(this, $"FrameNodeThumb.Dispose() - SUCCESS");
         }
 
         public override void Draw(Drawer id, float parentAlpha)
