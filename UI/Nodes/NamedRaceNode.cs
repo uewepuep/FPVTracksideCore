@@ -28,6 +28,8 @@ namespace UI.Nodes
             panel = new BorderPanelShadowNode(Theme.Current.Rounds.Background, Theme.Current.Rounds.Border.XNA);
             AddChild(panel);
 
+            name = Translator.Get("Button." + name, name);
+
             label = new TextNode(name, Theme.Current.TextMain.XNA);
             label.RelativeBounds = new RectangleF(0, 0.01f, 1, 0.1f);
             panel.AddChild(label);

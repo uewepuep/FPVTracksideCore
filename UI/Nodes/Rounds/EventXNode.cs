@@ -178,11 +178,13 @@ namespace UI.Nodes.Rounds
 
             if (GetOrderedPilots().Any())
             {
-                AddFormatMenu(rootMenu, "Add Format");
+                MouseMenu format = rootMenu.AddSubmenu("Add Format");
+                AddFormatMenu(format);
             }
             else
             {
-                AddFormatMenu(rootMenu, "Set Format");
+                MouseMenu format = rootMenu.AddSubmenu("Set Format");
+                AddFormatMenu(format);
             }
 
 
@@ -218,11 +220,9 @@ namespace UI.Nodes.Rounds
             }
         }
 
-        protected void AddFormatMenu(MouseMenu rootMenu, string menuname)
+        protected void AddFormatMenu(MouseMenu format)
         {
-            MouseMenu addFormat = rootMenu.AddSubmenu(menuname);
-            addFormat.AddItem("Double Elimination", () => { DoubleElim?.Invoke(Round); });
-
+            format.AddItem("Double Elimination", () => { DoubleElim?.Invoke(Round); });
 
             //add format
             if (EventManager.RoundManager.SheetFormatManager.Sheets.Any())
@@ -232,7 +232,7 @@ namespace UI.Nodes.Rounds
                     string name = sheet.Name + " (" + sheet.Pilots + " pilots)";
 
                     var sheet2 = sheet;
-                    addFormat.AddItem(name, () => { SheetFormat(sheet2); });
+                    format.AddItem(name, () => { SheetFormat(sheet2); });
                 }
             }
         }

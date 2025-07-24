@@ -60,14 +60,10 @@ namespace UI.Nodes.Rounds
             {
                 case Round.RoundTypes.DoubleElimination:
                 case Round.RoundTypes.Final:
-                    instructionText = "Races will be automatically " +
-                                      "\nadded as more results come in.";
+                    instructionText = Translator.Get("Label.RoundEmptyFinal", "Races will be automatically\nadded as more results come in.");
                     break;
                 default:
-                    instructionText = "Right click here to add a races." +
-                                      "\nDrag and drop pilots to fill the race." +
-                                      "\nAuto-Fill to generate a new round" +
-                                      "\nPaste pilots from clipboard";
+                    instructionText = Translator.Get("Label.RoundEmpty", "Right click here to add a races.\nDrag and drop pilots to fill the race.\nAuto-Fill to generate a new round\nPaste pilots from clipboard");
                     break;
             }
 
@@ -254,7 +250,8 @@ namespace UI.Nodes.Rounds
 
             if (!hasRace)
             {
-                AddFormatMenu(mm, "Set Format");
+                MouseMenu addFormat = mm.AddSubmenu("Set Format");
+                AddFormatMenu(addFormat);
             }
 
             if (hasRace)

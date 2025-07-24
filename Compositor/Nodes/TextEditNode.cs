@@ -141,6 +141,27 @@ namespace Composition.Nodes
             return base.OnMouseInput(mouseInputEvent);
         }
 
+        public override bool OnTextInput(TextInputEventArgs inputEvent)
+        {
+            switch (inputEvent.Character)
+            {
+                case '\b':
+                    // Do nothing.
+                    break;
+
+                default:
+                    Text += inputEvent.Character;
+                    break;
+            }
+
+            cursorIndex = Text.Length;
+
+            RequestRedraw();
+            TextChanged?.Invoke(Text);
+
+            return base.OnTextInput(inputEvent);
+        }
+
         public override bool OnKeyboardInput(KeyboardInputEvent inputEvent)
         {
             bool control = CompositorLayer.InputEventFactory.AreControlKeysDown();
@@ -167,18 +188,16 @@ namespace Composition.Nodes
                     if (inputEvent.Key == Keys.V)
                     {
                         input = PlatformTools.Clipboard.GetText();
-                        cursorIndex = input.Length;
                     }
                 }
                 else if (c != 0)
                 {
-                    input += c;
                 }
 
                 if (!string.IsNullOrEmpty(input))
                 {
                     Text = before + input + after;
-                    cursorIndex++;
+                    cursorIndex = Text.Length;
                 }
 
                 switch (inputEvent.Key)

@@ -35,6 +35,11 @@ namespace Composition
             Instance = this;
         }
 
+        public static void ClearPrimary()
+        {
+            Instance = null;
+        }
+
         public void Clear()
         {
             lock (translations)
@@ -64,6 +69,7 @@ namespace Composition
             {
                 // Ignore spaces.
                 fullType = fullType.Replace(" ", "");
+                fullType = fullType.Replace("-", "");
 
                 if (translations.TryGetValue(fullType, out string value))
                 {

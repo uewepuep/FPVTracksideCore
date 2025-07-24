@@ -6,6 +6,7 @@ using Composition.Layers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Input.Touch;
 using Tools;
 
 namespace Composition.Input
@@ -31,6 +32,11 @@ namespace Composition.Input
     {
         public KeyboardState OldKeyboardState { get; private set; }
         public MouseState OldMouseState { get; private set; }
+        private Point oldTouchPosition;
+        private float oldScrollTouchY;
+        private bool firstTouch; 
+        private DateTime touchStartTime;
+        private Vector2 touchStartPosition;
 
         private Dictionary<Keys, DateTime> repeatKeysTime;
 
@@ -144,6 +150,7 @@ namespace Composition.Input
                     if (CreateMouseEvents)
                     {
                         UpdateMouse();
+                        UpdateTouch();
                     }
 
                     ProcessInputs();
@@ -367,6 +374,96 @@ namespace Composition.Input
             }
             OldMouseState = Mouse.GetState();
         }
+
+        private void UpdateTouch()
+        {
+            if (OnMouseInputEvent != null)
+            {
+                TouchCollection touchCollection = TouchPanel.GetState();
+
+                if (!touchCollection.Any())
+                {
+                    firstTouch = true;
+                    return;
+                }
+
+                int fingersTouchingScreen = touchCollection.Count;
+                switch (fingersTouchingScreen)
+                {
+                    case 1:
+                        SingleTouch(touchCollection.FirstOrDefault());
+                        break;
+
+                    case 2:
+                        DraggingToScroll(touchCollection);
+                        break;
+                }
+
+                firstTouch = false;
+            }
+        }
+
+        private void SingleTouch(TouchLocation touchLocation)
+        {
+            MouseButtons button = MouseButtons.Left;
+            ButtonStates state = ButtonStates.None;
+
+            switch (touchLocation.State)
+            {
+                case TouchLocationState.Pressed:
+                    state = ButtonStates.Pressed;
+                    touchStartTime = DateTime.Now;
+                    touchStartPosition = touchLocation.Position;
+                    break;
+
+                case TouchLocationState.Released:
+                    state = ButtonStates.Released;
+                    break;
+            }
+
+            if (state == ButtonStates.Released)
+            {
+                // Long press with minimal distance is a right click
+                if ((DateTime.Now - touchStartTime).TotalSeconds > 0.5 && (touchLocation.Position - touchStartPosition).LengthSquared() < 100)
+                {
+                    button = MouseButtons.Right;
+                }
+            }
+            
+            Point position = touchLocation.Position.ToPoint();
+            if (oldTouchPosition != position)
+            {
+                OnMouseInput(position, oldTouchPosition);
+                oldTouchPosition = position;
+            }
+
+            MouseInputEvent mouseEvent = new MouseInputEvent(state, button, position);
+            OnMouseInput(mouseEvent);
+        }
+
+
+        private void DraggingToScroll(TouchCollection touchCollection)
+        {
+            const int scrollPixelsPerLine = 1; // this seems really low. But it's the value that feels right.
+            float x = touchCollection.Select(t => t.Position.X).Average();
+            float y = touchCollection.Select(t => t.Position.Y).Average();
+
+            if (firstTouch)
+            {
+                oldScrollTouchY = y;
+                return;
+            }
+
+            float scrollPixels = y - oldScrollTouchY;
+            int scrollLines = (int)(scrollPixels / scrollPixelsPerLine);
+
+            if (Math.Abs(scrollLines) >= 1)
+            {
+                OnMouseInput(scrollLines, new Point((int)x, (int)y));
+                oldScrollTouchY = y;
+            }
+        }
+
 
         private void OnMouseInput(int mouseWheelChange, Point cursorPosition)
         {

@@ -242,7 +242,15 @@ namespace UI
             Translator t = translators.FirstOrDefault(t => t.Language == ApplicationProfileSettings.Instance.Language);
             if (t != null)
             {
-                t.MakePrimary();
+                // Don't load the english translator, it's already english.
+                if (t.Language == "English")
+                {
+                    Translator.ClearPrimary();
+                }
+                else
+                {
+                    t.MakePrimary();
+                }
             }
         }
 

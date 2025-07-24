@@ -57,7 +57,7 @@ namespace UI
         private void WorkQueue_BeforeStart(WorkItem obj)
         {
             progressBar.Progress = WorkQueue.Progress;
-            LoadingText.Text = obj.Name;
+            LoadingText.Text = Translator.Get("Loading." + obj.Name, obj.Name);
 
             // This keeps the text synced but also adds a lot of loading time? 
             //while (!LoadingText.IsUpToDate)
