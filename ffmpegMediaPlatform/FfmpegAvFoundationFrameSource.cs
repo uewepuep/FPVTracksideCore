@@ -104,7 +104,7 @@ namespace FfmpegMediaPlatform
 
         protected override ProcessStartInfo GetProcessStartInfo()
         {
-            string name = VideoConfig.DeviceName;
+            string name = VideoConfig.ffmpegId;
             // string ffmpegArgs = $"-f avfoundation  -framerate {VideoConfig.VideoMode.FrameRate} -pixel_format uyvy422 -video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} -i \"{name}\" -pix_fmt rgba -f rawvideo -";
             
             string ffmpegArgs = $"-f avfoundation " +

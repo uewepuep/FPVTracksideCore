@@ -25,17 +25,66 @@ namespace FfmpegMediaPlatform
 
         public FfmpegMediaFramework()
         {
-            // Use Homebrew ffmpeg on Mac for better performance
+            // Use local ffmpeg binaries from ./ffmpeg directory on Mac
             if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
             {
-                string homebrewFfmpeg = "/opt/homebrew/bin/ffmpeg";
-                if (File.Exists(homebrewFfmpeg))
+                // Get the current directory and construct path to ffmpeg binaries
+                string currentDir = Directory.GetCurrentDirectory();
+                
+                // Try multiple possible locations for ffmpeg binaries
+                string[] possiblePaths = {
+                    Path.Combine(currentDir, "ffmpeg"), // If running from FPVMacsideCore directory
+                    Path.Combine(currentDir, "FPVMacsideCore", "ffmpeg"), // If running from parent directory
+                    Path.Combine(currentDir, "bin", "Debug", "net6.0", "ffmpeg"), // Output directory
+                    Path.Combine(currentDir, "bin", "Release", "net6.0", "ffmpeg") // Release output directory
+                };
+                
+                string ffmpegDir = null;
+                foreach (string path in possiblePaths)
                 {
-                    execName = homebrewFfmpeg;
+                    if (Directory.Exists(path))
+                    {
+                        ffmpegDir = path;
+                        Console.WriteLine($"Found ffmpeg directory: {ffmpegDir}");
+                        break;
+                    }
                 }
-                else
+                
+                // Detect Mac architecture and select appropriate ffmpeg binary
+                var processArch = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture;
+                string ffmpegPath = null;
+                
+                if (ffmpegDir != null)
+                {
+                    if (processArch == System.Runtime.InteropServices.Architecture.Arm64)
+                    {
+                        ffmpegPath = Path.Combine(ffmpegDir, "ffmpeg-arm");
+                    }
+                    else
+                    {
+                        ffmpegPath = Path.Combine(ffmpegDir, "ffmpeg-intel");
+                    }
+                    
+                    Console.WriteLine($"Looking for ffmpeg binary at: {ffmpegPath}");
+                    
+                    // Check if the local ffmpeg binary exists
+                    if (File.Exists(ffmpegPath))
+                    {
+                        execName = ffmpegPath;
+                        Console.WriteLine($"Using local ffmpeg binary: {ffmpegPath} for architecture: {processArch}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Local ffmpeg binary not found at: {ffmpegPath}");
+                        ffmpegPath = null; // Reset to null so we fall back
+                    }
+                }
+                
+                // Fallback to Homebrew ffmpeg if local binary not found
+                if (ffmpegPath == null)
                 {
                     execName = "ffmpeg"; // fallback to PATH
+                    Console.WriteLine("Local and Homebrew ffmpeg not found, using system PATH ffmpeg");
                 }
             }
             else
@@ -55,7 +104,7 @@ namespace FfmpegMediaPlatform
 
             IEnumerable<string> devices = GetFfmpegText("-devices");
             dshow = devices?.Any(l => l != null && l.Contains("dshow")) ?? false;
-            avfoundation = devices?.Any(l => l != null && l.Contains("avfoundation")) ?? true; // Default to true on Mac
+            avfoundation = devices?.Any(l => l != null && l.Contains("avfoundation")) ?? false; // Default to true on Mac
 
             GetVideoConfigs();
 
@@ -143,16 +192,14 @@ namespace FfmpegMediaPlatform
                         continue;
                     }
                     string name = splits[1];
-
-                    yield return new VideoConfig { FrameWork = FrameWork.ffmpeg, DeviceName = name, ffmpegId = name };
+                    // Remove trailing VID/PID if present (for both Windows and Mac cameras)
+                    string cleanedName = System.Text.RegularExpressions.Regex.Replace(name, @"\s*VID:[0-9A-Fa-f]+\s*PID:[0-9A-Fa-f]+", "").Trim();
+                    yield return new VideoConfig { FrameWork = FrameWork.ffmpeg, DeviceName = cleanedName, ffmpegId = cleanedName };
                 }
             }
 
             if (avfoundation)
             {
-
-                //"[AVFoundation indev @ 0x7fec24704c00] AVFoundation video devices:"
-                //"	[12]	"[AVFoundation indev @ 0x7fb47c004a00] [0] Razer Kiyo Pro"	
                 IEnumerable<string> deviceList = GetFfmpegText("-list_devices true -f avfoundation -i dummy", l => l.Contains("AVFoundation"));
 
                 bool inVideo = false;
@@ -178,8 +225,18 @@ namespace FfmpegMediaPlatform
                         Match match = reg.Match(deviceLine);
                         if (match.Success)
                         {
-
-                            yield return new VideoConfig { FrameWork = FrameWork.ffmpeg, DeviceName = match.Groups[2].Value, ffmpegId = match.Groups[1].Value };
+                            string deviceIndex = match.Groups[1].Value;
+                            string rawName = match.Groups[2].Value;
+                            // Remove trailing VID/PID if present (for mac cameras only)
+                            string cleanedName = System.Text.RegularExpressions.Regex.Replace(rawName, @"\s*VID:[0-9A-Fa-f]+\s*PID:[0-9A-Fa-f]+", "").Trim();
+                            // For AVFoundation, use cleaned device name for FFmpeg (without VID:PID)
+                            // On Mac, cameras are upside down by default, but we want UI to show "None"
+                            yield return new VideoConfig { 
+                                FrameWork = FrameWork.ffmpeg, 
+                                DeviceName = cleanedName, 
+                                ffmpegId = cleanedName,
+                                FlipMirrored = FlipMirroreds.None  // UI shows "None" but flip logic handles Mac cameras
+                            };
                         }
                     }
                 }

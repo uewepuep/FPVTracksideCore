@@ -360,9 +360,15 @@ namespace UI.Video
                 CheckVisible(propertyNode, Selected);
             }
 
-            if (newChange.PropertyInfo.Name == "VideoMode" || newChange.PropertyInfo.Name == "Flipped" || newChange.PropertyInfo.Name == "RecordVideoForReplays")
+            if (newChange.PropertyInfo.Name == "VideoMode" || newChange.PropertyInfo.Name == "Flipped" || newChange.PropertyInfo.Name == "RecordVideoForReplays" || newChange.PropertyInfo.Name == "DeviceName")
             {
                 RepairVideoPreview();
+                
+                // If DeviceName changed, also refresh available video modes for the new camera
+                if (newChange.PropertyInfo.Name == "DeviceName")
+                {
+                    RefreshVideoModes();
+                }
             }
 
             if (newChange.PropertyInfo.Name == "Splits" && Selected != null)
@@ -373,6 +379,25 @@ namespace UI.Video
             InitMapperNode(Selected);
 
             base.ChildValueChanged(newChange);
+        }
+
+        private void RefreshVideoModes()
+        {
+            if (Selected != null)
+            {
+                // Find the ModePropertyNode in the property editor and refresh its modes
+                var modePropertyNode = FindPropertyNode<ModePropertyNode>("VideoMode");
+                if (modePropertyNode != null)
+                {
+                    modePropertyNode.RefreshModes();
+                }
+            }
+        }
+
+        private T FindPropertyNode<T>(string propertyName) where T : class
+        {
+            // Search through the property editor nodes to find the specific property node
+            return objectProperties.Children.OfType<T>().FirstOrDefault();
         }
 
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
@@ -440,7 +465,7 @@ namespace UI.Video
                 rebootRequired = false;
             }
 
-            private void AcceptModes(VideoManager.ModesResult result)
+            public void AcceptModes(VideoManager.ModesResult result)
             {
                 modes = TrimModes(result.Modes).ToArray();
                 if (result.RebootRequired)
@@ -496,6 +521,13 @@ namespace UI.Video
                 {
                     Options = ordered.OfType<object>().ToList();
                 }
+            }
+
+            public void RefreshModes()
+            {
+                // Force refresh the video modes for the current camera
+                vse.VideoManager.GetModes(Object, false, AcceptModes);
+                Tools.Logger.VideoLog.LogCall(this, $"Refreshing video modes for camera: '{Object.DeviceName}'");
             }
 
             private IEnumerable<Mode> TrimModes(IEnumerable<Mode> modes)

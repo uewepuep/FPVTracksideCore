@@ -99,8 +99,23 @@ namespace UI.Video
         {
             bool flipped = Source.Direction == FrameSource.Directions.TopDown;
 
-            if (Source.VideoConfig.Flipped)
-                flipped = !flipped;
+            // Special handling for Mac cameras (AVFoundation) - they are upside down by default
+            bool isMacCamera = Source.VideoConfig.FrameWork == FrameWork.ffmpeg && 
+                              System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX);
+            
+            if (isMacCamera)
+            {
+                // On Mac: "None" should show right-side up (so flip), "Flipped" should show upside down (so don't flip)
+                if (!Source.VideoConfig.Flipped)
+                    flipped = !flipped;  // When UI shows "None", flip to make it right-side up
+                // When UI shows "Flipped", don't change flipped state (stays upside down)
+            }
+            else
+            {
+                // Original logic for non-Mac cameras
+                if (Source.VideoConfig.Flipped)
+                    flipped = !flipped;
+            }
 
             if (flipped)
                 src = src.Flip(texture.Height);
@@ -132,9 +147,23 @@ namespace UI.Video
         {
             bool flipped = Source.Direction == FrameSource.Directions.TopDown;
 
-            if (Source.VideoConfig.Flipped)
-                flipped = !flipped;
-
+            // Special handling for Mac cameras (AVFoundation) - they are upside down by default
+            bool isMacCamera = Source.VideoConfig.FrameWork == FrameWork.ffmpeg && 
+                              System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX);
+            
+            if (isMacCamera)
+            {
+                // On Mac: "None" should show right-side up (so flip), "Flipped" should show upside down (so don't flip)
+                if (!Source.VideoConfig.Flipped)
+                    flipped = !flipped;  // When UI shows "None", flip to make it right-side up
+                // When UI shows "Flipped", don't change flipped state (stays upside down)
+            }
+            else
+            {
+                // Original logic for non-Mac cameras
+                if (Source.VideoConfig.Flipped)
+                    flipped = !flipped;
+            }
 
             texture.SaveAs(filename, Source.VideoConfig.Mirrored, flipped);
         }
