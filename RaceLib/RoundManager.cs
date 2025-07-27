@@ -457,6 +457,86 @@ namespace RaceLib
             return newRaces;
         }
 
+        public IEnumerable<Race> NextPointsRound(Round round)
+        {
+            IEnumerable<Race> races = RaceManager.Races.Where(r => r.Round == round).OrderBy(r => r.RaceNumber);
+
+            int maxRound = RaceManager.GetMaxRoundNumber(round.EventType);
+
+            Round newRound = GetCreateRound(maxRound + 1, round.EventType);
+            newRound.RoundType = round.RoundType;
+
+            List<Race> newRaces = new List<Race>();
+            var Pilots = new List<Pilot>();
+
+            foreach (Race race in races)
+            {
+                foreach(var pilot in race.Pilots)
+                {
+                    Pilots.Add(pilot);
+                }
+               
+            }
+
+            // Sort pilots into races based on their event total points, lowest points in earliest rounds
+            // For uneven groups push empty spots to higher groups
+            var pilotPoints = ResultManager.Results.GroupBy(r => r.Pilot).Select(r => new {pilot= r.Key, points= r.Sum(r => r.Points)}).OrderBy(r => r.points).ToList();
+            var groupBalance = GetGroupBalance(pilotPoints.Count, races.First().Channels.Length);
+            var sampleRace = races.First();
+
+            foreach(var group in groupBalance)
+            {
+                Race r = sampleRace.Clone();
+                r.Round = newRound;
+                r.PilotChannels.Clear();
+                foreach(var pc in EventManager.Event.Channels)
+                {
+                    r.PilotChannels.Add(new PilotChannel(null, pc));
+                }
+                
+                List<Pilot> unassignedPilots = new List<Pilot>();
+                for(int i = (group.Count -1); i > -1; i--)
+                {
+                    var pilot = pilotPoints.ElementAt(group[i]).pilot;
+                    var lastRace = races.First(e => e.Pilots.Contains(pilot));
+                    var lastChannel = lastRace.PilotChannels.First(e => e.Pilot == pilot);
+                    var currentChannel = r.PilotChannels.First(e => e.Channel == lastChannel.Channel);
+                    if(currentChannel.Pilot == null)
+                    {
+                        currentChannel.Pilot = pilot;
+                    } else
+                    {
+                        unassignedPilots.Add(pilot);
+                    }
+                }
+                while(unassignedPilots.Count > 0 )
+                {
+                    var unassignedPilot = unassignedPilots.ElementAt(0);
+                    foreach(var pc in r.PilotChannels)
+                    {
+                        if(pc.Pilot == null)
+                        {
+                            pc.Pilot = unassignedPilot;
+                            unassignedPilots.RemoveAt(0);
+                            break;
+                        }
+                    }
+                }
+
+                r.PilotChannels.RemoveAll(e => e.Pilot == null);
+                newRaces.Add(r);
+            }
+
+            foreach (Race r in newRaces)
+            {
+                RaceManager.AddRace(r);
+            }
+
+            RaceManager.UpdateRaceRoundNumbers();
+            OnRoundAdded?.Invoke();
+            return newRaces;
+        }
+
         public void GenerateFinal(Round callingRound)
         {
             Round newRound = GetCreateRound(callingRound.RoundNumber + 1, EventManager.Event.EventType);
@@ -488,5 +568,64 @@ namespace RaceLib
                 }
             }
         }
+
+        public List<List<int>> GetGroupBalance(int entries, int groupSize) {
+            List<int> bigGroup = new List<int>();
+            for(int i = 0; i < entries; i++)
+            {
+                bigGroup.Add(i);
+            }
+
+            List<List<int>> chunks = new List<List<int>>();
+            for(int i = 0;i < bigGroup.Count; i+= groupSize)
+            {
+                var chunk = new List<int>();
+                for(int j = i; j < i + groupSize; j++)
+                {
+                    if (j < bigGroup.Count)
+                    {
+                        var element = bigGroup.ElementAtOrDefault(j);
+                        chunk.Add(element);
+                    }
+                }
+                chunks.Add(chunk);
+            }
+
+            if(chunks.Count > 1)
+            {
+                // Index of last but one
+                var lastChunkTakenFrom = chunks.Count - 2;
+
+                // while the graph list of the last chunk minus the graph list of the first is > 1
+                while (Math.Abs(chunks[chunks.Count - 1].Count - chunks[0].Count) > 1)
+                {
+                    // move a graph from the last but one chunk to the last chunk
+                    var movementChunk = chunks[lastChunkTakenFrom][chunks[lastChunkTakenFrom].Count - 1];
+                    chunks[lastChunkTakenFrom].RemoveAt(chunks[lastChunkTakenFrom].Count - 1);
+                    chunks[chunks.Count - 1].Add(movementChunk);
+
+                    lastChunkTakenFrom--;
+
+                    // set back to last but one index
+                    if (lastChunkTakenFrom < 0)
+                        lastChunkTakenFrom = chunks.Count - 2;
+                }
+
+            }
+
+            //Clean up the numbers
+            var fixedIndex = 0;
+            for (var i = 0; i < chunks.Count; i++)
+            {
+                for (var k = 0; k < chunks[i].Count; k++)
+                {
+                    chunks[i][k] = fixedIndex;
+                    fixedIndex++;
+                }
+            }
+
+            return chunks;
+        }
+
     }
 }

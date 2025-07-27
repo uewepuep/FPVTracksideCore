@@ -41,6 +41,12 @@ namespace RaceLib
         Holeshot
     }
 
+    public enum PointsStyle
+    {
+        PerHeat = 0,
+        PerRound
+    }
+
     public class Event : BaseObject
     {
         [System.ComponentModel.Browsable(false)]
@@ -72,6 +78,7 @@ namespace RaceLib
         public int PBLaps { get; set; }
         
         public int PackLimit { get; set; }
+        public PointsStyle PointsStyle { get; set; }
 
         public TimeSpan RaceLength { get; set; }
 
@@ -138,6 +145,7 @@ namespace RaceLib
             Laps = 4;
             EventType = EventTypes.Race;
             PackLimit = 0;
+            PointsStyle = PointsStyle.PerHeat;
             Start = DateTime.Today;
             Name = "New Event (" + Start.ToString(dateFormat) + ")";
             MinStartDelay = TimeSpan.FromSeconds(0.5f);
@@ -165,6 +173,7 @@ namespace RaceLib
             newEvent.Laps = this.Laps;
             newEvent.PBLaps = this.PBLaps;
             newEvent.PackLimit = this.PackLimit;
+            newEvent.PointsStyle = this.PointsStyle;
 
             newEvent.RaceLength = this.RaceLength;
             newEvent.EventType = this.EventType;
@@ -272,6 +281,10 @@ namespace RaceLib
         [Category("Race Rules")]
         [DisplayName("Pack Limit")]
         public int PackLimit { get; set; }
+
+        [Category("Race Rules")]
+        [DisplayName("Points Calculation")]
+        public PointsStyle PointsStyle { get; set; }
 
         [Category("Race Start")]
         [DisplayName("Minimum Start Delay (Seconds)")]
