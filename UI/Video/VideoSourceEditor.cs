@@ -112,7 +112,17 @@ namespace UI.Video
                 Tools.Logger.VideoLog.LogCall(this, $"⚠ Using fallback mode for '{videoConfig.DeviceName}': 640x480@30fps");
             }
             
+            // Add to the VideoManager's collection first to ensure persistence
+            if (VideoManager != null && !VideoManager.VideoConfigs.Contains(videoConfig))
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"Adding camera to VideoManager.VideoConfigs: '{videoConfig.DeviceName}'");
+                VideoManager.VideoConfigs.Add(videoConfig);
+            }
+            
             base.AddNew(videoConfig);
+            
+            Tools.Logger.VideoLog.LogCall(this, $"Camera added successfully: '{videoConfig.DeviceName}', starting video preview repair");
+            RepairVideoPreview();
         }
 
         protected override void AddOnClick(MouseInputEvent mie)
@@ -259,13 +269,13 @@ namespace UI.Video
 
             base.SetObjects(toEdit, addRemove, cancelButton);
 
-            preview.RelativeBounds = new RectangleF(objectProperties.RelativeBounds.X, objectProperties.RelativeBounds.Y, objectProperties.RelativeBounds.Width, 0.46f);
+            // Set preview at the top of the right panel
+            preview.RelativeBounds = new RectangleF(0, 0, 1, 0.46f);
 
-            objectProperties.Translate(0, preview.RelativeBounds.Height);
-            objectProperties.AddSize(0, -preview.RelativeBounds.Height);
+            // Move objectProperties down to make room for preview
+            objectProperties.RelativeBounds = new RectangleF(0, preview.RelativeBounds.Bottom, 1, buttonContainer.RelativeBounds.Y - preview.RelativeBounds.Bottom);
 
-            float top = 0.002f;
-
+            // Position physicalLayoutContainer to the right of the preview
             physicalLayoutContainer.RelativeBounds = new RectangleF(1.1f, preview.RelativeBounds.Y, 0.3f, preview.RelativeBounds.Height);
         }
 
@@ -291,19 +301,51 @@ namespace UI.Video
         {
             lock (locker)
             {
-                mapperNode?.Dispose();
-                mapperNode = null;
+                // Ensure complete cleanup before creating new mapper node
+                Tools.Logger.VideoLog.LogCall(this, $"InitMapperNode: Cleaning up for '{videoConfig?.DeviceName ?? "null"}'");
+                
+                // Dispose existing mapper node
+                if (mapperNode != null)
+                {
+                    mapperNode.OnChange -= MapperNode_OnChange;
+                    mapperNode.Dispose();
+                    mapperNode = null;
+                }
+                
+                // Clear preview children to prevent node disposal issues
+                if (preview != null)
+                {
+                    preview.ClearDisposeChildren();
+                }
 
                 if (videoConfig == null)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "InitMapperNode: videoConfig is null, cleanup complete");
                     return;
+                }
 
                 if (VideoManager != null)
                 {
-                    mapperNode = new ChannelVideoMapperNode(Profile, VideoManager, EventManager, videoConfig, Objects);
-                    mapperNode.OnChange += MapperNode_OnChange;
-                    preview.AddChild(mapperNode);
+                    try
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"InitMapperNode: Creating new mapper for '{videoConfig.DeviceName}'");
+                        mapperNode = new ChannelVideoMapperNode(Profile, VideoManager, EventManager, videoConfig, Objects);
+                        mapperNode.OnChange += MapperNode_OnChange;
+                        preview.AddChild(mapperNode);
 
-                    RequestLayout();
+                        RequestLayout();
+                        Tools.Logger.VideoLog.LogCall(this, $"InitMapperNode: Successfully created mapper for '{videoConfig.DeviceName}'");
+                    }
+                    catch (Exception ex)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"InitMapperNode: Error creating mapper for '{videoConfig.DeviceName}': {ex.Message}");
+                        mapperNode?.Dispose();
+                        mapperNode = null;
+                    }
+                }
+                else
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "InitMapperNode: VideoManager is null");
                 }
             }
         }
@@ -333,24 +375,97 @@ namespace UI.Video
         {
             if (VideoManager != null && Selected != null)
             {
-                VideoManager.CreateFrameSource(new VideoConfig[] { Selected }, (fs) =>
+                Tools.Logger.VideoLog.LogCall(this, $"RepairVideoPreview called for '{Selected.DeviceName}' - creating frame source and ensuring it starts");
+                
+                try
                 {
-                    if (mapperNode != null)
+                    VideoManager.CreateFrameSource(new VideoConfig[] { Selected }, (fs) =>
                     {
-                        mapperNode.MakeTable();
-                    }
-                });
+                        try
+                        {
+                            if (mapperNode != null)
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"RepairVideoPreview: Calling MakeTable for '{Selected.DeviceName}'");
+                                mapperNode.MakeTable();
+                            }
+                            else
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"RepairVideoPreview: mapperNode is null for '{Selected.DeviceName}'");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"RepairVideoPreview: Error in MakeTable for '{Selected.DeviceName}': {ex.Message}");
+                        }
+                    });
 
-                InitMapperNode(Selected);
+                    InitMapperNode(Selected);
+                }
+                catch (Exception ex)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"RepairVideoPreview: Error creating frame source for '{Selected.DeviceName}': {ex.Message}");
+                }
+                
+                // Give the frame source a moment to be created, then force another initialization
+                // This helps ensure the camera actually starts when re-added
+                System.Threading.Timer initTimer = null;
+                initTimer = new System.Threading.Timer((state) =>
+                {
+                    try
+                    {
+                        var videoConfig = state as VideoConfig;
+                        if (videoConfig != null)
+                        {
+                            var frameSource = VideoManager.GetFrameSource(videoConfig);
+                            if (frameSource != null && !frameSource.Connected)
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"Follow-up initialization for '{videoConfig.DeviceName}' - camera not connected yet");
+                                VideoManager.Initialize(frameSource);
+                            }
+                            else if (frameSource != null)
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"Camera '{videoConfig.DeviceName}' already connected - no follow-up needed");
+                            }
+                            else
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"No frame source found for '{videoConfig.DeviceName}' during follow-up");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Tools.Logger.VideoLog.LogException(this, ex);
+                    }
+                    finally
+                    {
+                        initTimer?.Dispose();
+                    }
+                }, Selected, TimeSpan.FromMilliseconds(500), System.Threading.Timeout.InfiniteTimeSpan);
             }
         }
 
         protected override void Remove(MouseInputEvent mie)
         {
             VideoConfig videoConfig = Selected;
+            Tools.Logger.VideoLog.LogCall(this, $"Removing camera '{videoConfig?.DeviceName}' and rebuilding UI");
+            
             base.Remove(mie);
 
-            VideoManager.RemoveFrameSource(videoConfig);
+            if (videoConfig != null)
+            {
+                VideoManager.RemoveFrameSource(videoConfig);
+            }
+            
+            // Rebuild the entire UI after removal - same as when settings screen loads
+            Tools.Logger.VideoLog.LogCall(this, $"Rebuilding UI after camera removal - {VideoManager.VideoConfigs.Count} cameras remaining");
+            SetObjects(VideoManager.VideoConfigs, true);
+            
+            // Clear the preview if no cameras remain
+            if (!VideoManager.VideoConfigs.Any())
+            {
+                Tools.Logger.VideoLog.LogCall(this, "No cameras remaining - clearing preview");
+                preview.Visible = false;
+            }
         }
 
         protected override void ChildValueChanged(Change newChange)

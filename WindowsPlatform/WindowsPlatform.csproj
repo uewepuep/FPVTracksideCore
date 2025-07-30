@@ -21,6 +21,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Compositor\Composition.csproj" />
+	  <ProjectReference Include="..\ffmpegMediaPlatform\FfmpegMediaPlatform.csproj" />
 	  <ProjectReference Include="..\ImageServer\ImageServer.csproj" />
 	  <ProjectReference Include="..\RaceLib\RaceLib.csproj" />
 	  <ProjectReference Include="..\Tools\Tools.csproj" />

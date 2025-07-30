@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Tools;
 
 namespace FfmpegMediaPlatform
 {
@@ -129,6 +130,7 @@ namespace FfmpegMediaPlatform
             {
                 List<string> output = new List<string>();
 
+             
                 ProcessStartInfo processStartInfo = GetProcessStartInfo(args);
 
                 using (Process process = new Process())
@@ -182,10 +184,15 @@ namespace FfmpegMediaPlatform
         {
             if (dshow)
             {
-                IEnumerable<string> deviceList = GetFfmpegText("-list_devices true -f dshow -i dummy", l => l.Contains("[dshow @") && l.Contains("(video)"));
+                string listDevicesCommand = "-list_devices true -f dshow -i dummy";
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG COMMAND (list cameras): ffmpeg {listDevicesCommand}");
+                
+                IEnumerable<string> deviceList = GetFfmpegText(listDevicesCommand, l => l.Contains("[dshow @") && l.Contains("(video)"));
 
                 foreach (string deviceLine in deviceList)
                 {
+                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG OUTPUT: {deviceLine}");
+                    
                     string[] splits = deviceLine.Split("\"");
                     if (splits.Length != 3)
                     {
@@ -194,18 +201,24 @@ namespace FfmpegMediaPlatform
                     string name = splits[1];
                     // Remove trailing VID/PID if present (for both Windows and Mac cameras)
                     string cleanedName = System.Text.RegularExpressions.Regex.Replace(name, @"\s*VID:[0-9A-Fa-f]+\s*PID:[0-9A-Fa-f]+", "").Trim();
+                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG ✓ FOUND CAMERA: {cleanedName}");
                     yield return new VideoConfig { FrameWork = FrameWork.ffmpeg, DeviceName = cleanedName, ffmpegId = cleanedName };
                 }
             }
 
             if (avfoundation)
             {
-                IEnumerable<string> deviceList = GetFfmpegText("-list_devices true -f avfoundation -i dummy", l => l.Contains("AVFoundation"));
+                string listDevicesCommand = "-list_devices true -f avfoundation -i dummy";
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG COMMAND (list cameras): ffmpeg {listDevicesCommand}");
+                
+                IEnumerable<string> deviceList = GetFfmpegText(listDevicesCommand, l => l.Contains("AVFoundation"));
 
                 bool inVideo = false;
 
                 foreach (string deviceLine in deviceList)
                 {
+                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG OUTPUT: {deviceLine}");
+                    
                     if (deviceLine.Contains("video devices:"))
                     {
                         inVideo = true;
@@ -229,6 +242,7 @@ namespace FfmpegMediaPlatform
                             string rawName = match.Groups[2].Value;
                             // Remove trailing VID/PID if present (for mac cameras only)
                             string cleanedName = System.Text.RegularExpressions.Regex.Replace(rawName, @"\s*VID:[0-9A-Fa-f]+\s*PID:[0-9A-Fa-f]+", "").Trim();
+                            Tools.Logger.VideoLog.LogCall(this, $"FFMPEG ✓ FOUND CAMERA: {cleanedName}");
                             // For AVFoundation, use cleaned device name for FFmpeg (without VID:PID)
                             // On Mac, cameras are upside down by default, but we want UI to show "None"
                             yield return new VideoConfig { 

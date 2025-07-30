@@ -55,13 +55,21 @@ namespace UI.Video
             SampleTime = sampleTime;
             ProcessNumber = processNumber;
 
+            Tools.Logger.VideoLog.LogCall(this, $"ImageArrived: processNumber={processNumber}, Visible={Visible}, texture={(texture != null ? "exists" : "null")}");
+
             if (Visible)
             {
                 if (CompositorLayer != null) 
                 {
                     CompositorLayer.PreProcess(this, true);
+                    Tools.Logger.VideoLog.LogCall(this, $"PreProcess called for frame {processNumber}");
                 }
                 RequestRedraw();
+                Tools.Logger.VideoLog.LogCall(this, $"RequestRedraw called for frame {processNumber}");
+            }
+            else
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"FrameNode not visible - skipping frame {processNumber}");
             }
         }
 
@@ -77,12 +85,14 @@ namespace UI.Video
 
             if (texture == null)
             {
+                Tools.Logger.VideoLog.LogCall(this, $"Draw: texture is null, drawing blank pattern. Bounds={Bounds}");
                 Texture2D tempTexture = id.TextureCache.GetTextureFromColor(Blank);
                 id.Draw(tempTexture, new Rectangle(0, 0, tempTexture.Width, tempTexture.Height), Bounds, Tint, alpha);
             }
             else
             {
                 Rectangle sourceBounds = Flip(SourceBounds);
+                Tools.Logger.VideoLog.LogCall(this, $"Draw: Drawing texture {texture.Width}x{texture.Height}, sourceBounds={sourceBounds}, Bounds={Bounds}");
                 id.Draw(texture, sourceBounds, Bounds, Tint, alpha);
             }
             DebugTimer.DebugEndTime(this);
@@ -99,20 +109,19 @@ namespace UI.Video
         {
             bool flipped = Source.Direction == FrameSource.Directions.TopDown;
 
-            // Special handling for Mac cameras (AVFoundation) - they are upside down by default
-            bool isMacCamera = Source.VideoConfig.FrameWork == FrameWork.ffmpeg && 
-                              System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX);
+            // Special handling for ffmpeg cameras (Mac AVFoundation and Windows DirectShow) - they are upside down by default
+            bool isFfmpegCamera = Source.VideoConfig.FrameWork == FrameWork.ffmpeg;
             
-            if (isMacCamera)
+            if (isFfmpegCamera)
             {
-                // On Mac: "None" should show right-side up (so flip), "Flipped" should show upside down (so don't flip)
+                // For ffmpeg cameras (Mac/Windows): "None" should show right-side up (so flip), "Flipped" should show upside down (so don't flip) 
                 if (!Source.VideoConfig.Flipped)
                     flipped = !flipped;  // When UI shows "None", flip to make it right-side up
                 // When UI shows "Flipped", don't change flipped state (stays upside down)
             }
             else
             {
-                // Original logic for non-Mac cameras
+                // Original logic for non-ffmpeg cameras
                 if (Source.VideoConfig.Flipped)
                     flipped = !flipped;
             }
@@ -132,13 +141,19 @@ namespace UI.Video
             if (Source != null && Source.UpdateTexture(id.GraphicsDevice, id.FrameCount, ref tryTexture))
             {
                 texture = tryTexture;
+                Tools.Logger.VideoLog.LogCall(this, $"PreProcess: Texture updated successfully, new texture: {(texture != null ? $"{texture.Width}x{texture.Height}" : "null")}");
 
                 if (NeedsAspectRatioUpdate && texture != null)
                 {
                     NeedsAspectRatioUpdate = false;
                     UpdateAspectRatioFromTexture();
                     RequestLayout();
+                    Tools.Logger.VideoLog.LogCall(this, $"PreProcess: Aspect ratio updated to {texture.Width}x{texture.Height}");
                 }
+            }
+            else
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"PreProcess: UpdateTexture failed or Source is null");
             }
             texture = tryTexture;
         }
@@ -147,20 +162,19 @@ namespace UI.Video
         {
             bool flipped = Source.Direction == FrameSource.Directions.TopDown;
 
-            // Special handling for Mac cameras (AVFoundation) - they are upside down by default
-            bool isMacCamera = Source.VideoConfig.FrameWork == FrameWork.ffmpeg && 
-                              System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX);
+            // Special handling for ffmpeg cameras (Mac AVFoundation and Windows DirectShow) - they are upside down by default
+            bool isFfmpegCamera = Source.VideoConfig.FrameWork == FrameWork.ffmpeg;
             
-            if (isMacCamera)
+            if (isFfmpegCamera)
             {
-                // On Mac: "None" should show right-side up (so flip), "Flipped" should show upside down (so don't flip)
+                // For ffmpeg cameras (Mac/Windows): "None" should show right-side up (so flip), "Flipped" should show upside down (so don't flip) 
                 if (!Source.VideoConfig.Flipped)
                     flipped = !flipped;  // When UI shows "None", flip to make it right-side up
                 // When UI shows "Flipped", don't change flipped state (stays upside down)
             }
             else
             {
-                // Original logic for non-Mac cameras
+                // Original logic for non-ffmpeg cameras
                 if (Source.VideoConfig.Flipped)
                     flipped = !flipped;
             }

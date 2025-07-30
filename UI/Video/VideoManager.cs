@@ -626,7 +626,31 @@ namespace UI.Video
 
                 foreach (FrameSource source in toRemove)
                 {
-                    DisposeOnWorkerThread(source);
+                    Logger.VideoLog.LogCall(this, $"Immediately stopping and disposing camera '{videoConfig.DeviceName}' to free resources for potential re-add");
+                    
+                    try
+                    {
+                        // Immediately stop the frame source to release camera
+                        if (source.State != FrameSource.States.Stopped)
+                        {
+                            source.Stop();
+                        }
+                        
+                        // Immediately dispose to kill ffmpeg processes
+                        // This ensures the camera is available for re-adding without delay
+                        source.Dispose();
+                        
+                        Logger.VideoLog.LogCall(this, $"Camera '{videoConfig.DeviceName}' immediately stopped and disposed");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.VideoLog.LogException(this, ex);
+                        Logger.VideoLog.LogCall(this, $"Exception during immediate disposal of '{videoConfig.DeviceName}' - adding to worker thread queue as fallback");
+                        
+                        // If immediate disposal fails, fall back to worker thread disposal
+                        DisposeOnWorkerThread(source);
+                    }
+                    
                     frameSources.Remove(source);
                 }
             }
@@ -778,6 +802,19 @@ namespace UI.Video
                 RemoveFrameSource(videoConfig);
                 FrameSource fs = CreateFrameSource(videoConfig);
                 list.Add(fs);
+                
+                // For resolution changes, ensure immediate camera restart with new settings
+                if (fs != null)
+                {
+                    Logger.VideoLog.LogCall(this, $"Resolution change detected for '{videoConfig.DeviceName}' - forcing immediate clean restart");
+                    
+                    // Force immediate initialization by adding to queue and waking up worker thread
+                    Initialize(fs);
+                    
+                    // Wake up worker thread immediately to process the initialization
+                    // This prevents delays when resolution changes
+                    mutex.Set();
+                }
             }
 
             DoOnWorkerThread(() =>
@@ -1136,6 +1173,16 @@ namespace UI.Video
                     }
                     else
                     {
+                        // Stop any existing frame source for this camera to avoid access conflicts
+                        FrameSource existingSource = GetFrameSource(vs);
+                        if (existingSource != null)
+                        {
+                            Logger.VideoLog.LogCall(this, $"Stopping existing frame source for '{vs.DeviceName}' to query modes");
+                            existingSource.Stop();
+                            // Small delay to ensure camera is fully released
+                            System.Threading.Thread.Sleep(500);
+                        }
+
                         // Clear the video mode so it's not a problem getting new modes if the current one doesnt work?
                         VideoConfig clone = vs.Clone();
                         clone.VideoMode = new Mode();
@@ -1154,6 +1201,13 @@ namespace UI.Video
                                     }
                                 }
                             }
+                        }
+                        
+                        // Restart the existing source if it was running
+                        if (existingSource != null)
+                        {
+                            Logger.VideoLog.LogCall(this, $"Restarting frame source for '{vs.DeviceName}' after mode query");
+                            Initialize(existingSource);
                         }
                     }
 

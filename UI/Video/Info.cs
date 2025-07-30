@@ -68,7 +68,7 @@ namespace UI.Video
             videoConfig.FrameTimes = FrameTimes;
             videoConfig.VideoBounds = ChannelBounds;
             videoConfig.FlipMirrored = FlipMirrored;
-            videoConfig.Pauseable = false;
+            videoConfig.Pauseable = true;  // Allow ffmpeg cameras to be paused when not visible
             videoConfig.DeviceLatency = DeviceLatency;
             return videoConfig;
         }
