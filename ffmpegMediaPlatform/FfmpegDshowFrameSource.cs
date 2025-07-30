@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Xna.Framework.Graphics;
 using System.Diagnostics;
+using System.IO;
 
 namespace FfmpegMediaPlatform
 {
@@ -76,27 +77,48 @@ namespace FfmpegMediaPlatform
         protected override ProcessStartInfo GetProcessStartInfo()
         {
             string name = VideoConfig.ffmpegId;
+            string ffmpegArgs;
             
-            // Use the working command structure without pixel_format specification (let camera use native format)
-            string ffmpegArgs = $"-f dshow " +
+            if (Recording && !string.IsNullOrEmpty(recordingFilename))
+            {
+                string recordingPath = Path.GetFullPath(recordingFilename);
+                
+                ffmpegArgs = $"-f dshow " +
+                                $"-rtbufsize 2048M " +
                                 $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                                 $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
-                                $"-rtbufsize 10M " +                    // DirectShow buffer management
                                 $"-i video=\"{name}\" " +
-                                $"-fflags nobuffer " +                 // Don't buffer input
-                                $"-flags low_delay " +                 // Enable low latency
-                                $"-strict experimental " +             // Allow experimental features
-                                $"-threads 1 " +                       // Single-threaded for deterministic low latency
-                                $"-vsync passthrough " +              // Don't synchronize video frames — drop if needed
-                                $"-an " +                              // Disable audio
-                                $"-pix_fmt rgba " +                    // Output pixel format
-                                $"-preset ultrafast " +                // If encoding later, reduce latency
-                                $"-tune zerolatency " +                // Tune for latency if encoding
-                                $"-f rawvideo -";                      // Output raw video
-                                
-            Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Using direct ffmpeg with device name: {name}");
-            Tools.Logger.VideoLog.LogCall(this, $"FFMPEG CONVERSION PIPELINE: Camera native format → RGBA (rawvideo)");
-            Tools.Logger.VideoLog.LogCall(this, $"FFMPEG COMMAND (start stream): ffmpeg {ffmpegArgs}");
+                                $"-fflags nobuffer " +
+                                $"-flags low_delay " +
+                                $"-strict experimental " +
+                                $"-threads 1 " +
+                                $"-fps_mode passthrough " +
+                                $"-an " +
+                                $"-filter_complex \"split=2[out1][out2];[out1]format=rgba[outpipe];[out2]format=yuv420p[outfile]\" " +
+                                $"-map \"[outpipe]\" -f rawvideo pipe:1 " +
+                                $"-map \"[outfile]\" -c:v libx264 -b:v 5M -f mp4 -avoid_negative_ts make_zero \"{recordingPath}\"";
+                
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Windows Recording Mode: {ffmpegArgs}");
+            }
+            else
+            {
+                // Live mode: Standard capture without recording
+                ffmpegArgs = $"-f dshow " +
+                                $"-framerate {VideoConfig.VideoMode.FrameRate} " +
+                                $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
+                                $"-rtbufsize 10M " +
+                                $"-i video=\"{name}\" " +
+                                $"-fflags nobuffer " +
+                                $"-flags low_delay " +
+                                $"-strict experimental " +
+                                $"-threads 1 " +
+                                $"-fps_mode passthrough " +
+                                $"-an " +
+                                $"-pix_fmt rgba " +
+                                $"-f rawvideo -";
+                
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Windows Live Mode: {ffmpegArgs}");
+            }
             return ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
         }
     }

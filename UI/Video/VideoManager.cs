@@ -565,10 +565,39 @@ namespace UI.Video
                         }
                         else
                         {
-                            VideoFrameWork mediaFoundation = VideoFrameWorks.GetFramework(FrameWork.MediaFoundation);
-                            if (mediaFoundation != null)
+                            // Check if this is a WMV file
+                            bool isWMV = videoConfig.FilePath.EndsWith(".wmv");
+                            
+                            if (isWMV)
                             {
-                                source = mediaFoundation.CreateFrameSource(videoConfig);
+                                // Use FFmpeg for WMV files on both Windows and Mac (FFmpeg handles WMV excellently on both platforms)
+                                bool isWindows = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+                                string platform = isWindows ? "Windows" : "Mac";
+                                Tools.Logger.VideoLog.LogCall(this, $"Using FFmpeg for WMV playback on {platform} (original system used MediaFoundation on Windows, but FFmpeg handles WMV excellently on both platforms)");
+                                
+                                VideoFrameWork ffmpegFramework = VideoFrameWorks.GetFramework(FrameWork.ffmpeg);
+                                if (ffmpegFramework != null)
+                                {
+                                    source = ffmpegFramework.CreateFrameSource(videoConfig);
+                                }
+                                else
+                                {
+                                    throw new Exception("FFmpeg framework not available for WMV playback");
+                                }
+                            }
+                            else
+                            {
+                                // Use FFmpeg framework for other video file playback (MP4, MPEG-TS, etc.)
+                                Tools.Logger.VideoLog.LogCall(this, "Using FFmpeg for video file playback");
+                                VideoFrameWork ffmpegFramework = VideoFrameWorks.GetFramework(FrameWork.ffmpeg);
+                                if (ffmpegFramework != null)
+                                {
+                                    source = ffmpegFramework.CreateFrameSource(videoConfig);
+                                }
+                                else
+                                {
+                                    throw new Exception("FFmpeg framework not available for video playback");
+                                }
                             }
                         }
 
@@ -660,8 +689,19 @@ namespace UI.Video
         {
             if (currentRace != null)
             {
-                return GetRecordings(currentRace).Any();
+                var recordings = GetRecordings(currentRace);
+                bool hasRecordings = recordings.Any();
+                Tools.Logger.VideoLog.LogCall(this, $"HasReplay check for race {currentRace.ID} - Found {recordings.Count()} recordings: {hasRecordings}");
+                
+                // Log the first few recordings for debugging
+                foreach (var recording in recordings.Take(3))
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"  Recording: {recording.DeviceName}, FilePath: {recording.FilePath}");
+                }
+                
+                return hasRecordings;
             }
+            Tools.Logger.VideoLog.LogCall(this, "HasReplay called with null race");
             return false;
         }
 
@@ -751,8 +791,7 @@ namespace UI.Video
 
         private string GetRecordingFilename(Race race, FrameSource source)
         {
-            int index = frameSources.IndexOf(source);
-            return Path.Combine(EventDirectory.FullName, race.ID.ToString(), index.ToString());
+            return Path.Combine(EventDirectory.FullName, race.ID.ToString(), source.VideoConfig.ffmpegId) + ".mp4";
         }
 
         public void LoadRecordings(Race race, FrameSourcesDelegate frameSourcesDelegate)
@@ -768,29 +807,50 @@ namespace UI.Video
         public IEnumerable<VideoConfig> GetRecordings(Race race)
         {
             DirectoryInfo raceDirectory = new DirectoryInfo(Path.Combine(EventDirectory.FullName, race.ID.ToString()));
+            Tools.Logger.VideoLog.LogCall(this, $"GetRecordings for race {race.ID} - Directory: {raceDirectory.FullName}, Exists: {raceDirectory.Exists}");
+            
             if (raceDirectory.Exists)
             {
-                foreach (FileInfo file in raceDirectory.GetFiles("*.recordinfo.xml"))
+                var recordInfoFiles = raceDirectory.GetFiles("*.recordinfo.xml");
+                Tools.Logger.VideoLog.LogCall(this, $"Found {recordInfoFiles.Length} .recordinfo.xml files");
+                
+                foreach (FileInfo file in recordInfoFiles)
                 {
+                    Tools.Logger.VideoLog.LogCall(this, $"Processing recordinfo file: {file.Name}");
                     RecodingInfo videoInfo = null;
 
                     try
                     {
                         videoInfo = IOTools.ReadSingle<RecodingInfo>(raceDirectory.FullName, file.Name);
+                        Tools.Logger.VideoLog.LogCall(this, $"Successfully read recordinfo: FilePath={videoInfo?.FilePath}");
                     }
                     catch (Exception ex)
                     {
-                        Logger.VideoLog.LogException(this, ex);
+                        Tools.Logger.VideoLog.LogException(this, ex);
                     }
 
                     if (videoInfo != null)
                     {
-                        if (File.Exists(videoInfo.FilePath))
+                        // Resolve the relative path to an absolute path for file existence check
+                        string absoluteVideoPath = Path.GetFullPath(videoInfo.FilePath);
+                        bool videoFileExists = File.Exists(absoluteVideoPath);
+                        Tools.Logger.VideoLog.LogCall(this, $"Video file exists: {videoFileExists} - {videoInfo.FilePath} (resolved to: {absoluteVideoPath})");
+                        
+                        if (videoFileExists)
                         {
+                            Tools.Logger.VideoLog.LogCall(this, $"Yielding video config for: {videoInfo.FilePath}");
                             yield return videoInfo.GetVideoConfig();
+                        }
+                        else
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"Video file not found: {videoInfo.FilePath} (resolved to: {absoluteVideoPath})");
                         }
                     }
                 }
+            }
+            else
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"Race directory does not exist: {raceDirectory.FullName}");
             }
         }
 
@@ -1009,7 +1069,22 @@ namespace UI.Video
                                 {
                                     RecodingInfo vi = new RecodingInfo(source);
 
-                                    FileInfo fileinfo = new FileInfo(vi.FilePath.Replace(".wmv", "") + ".recordinfo.xml");
+                                    // Handle both .wmv and .mp4 file extensions for metadata files
+                                    string basePath = vi.FilePath;
+                                    if (basePath.EndsWith(".wmv"))
+                                    {
+                                        basePath = basePath.Replace(".wmv", "");
+                                    }
+                                    else if (basePath.EndsWith(".mp4"))
+                                    {
+                                        basePath = basePath.Replace(".mp4", "");
+                                    }
+                                    else if (basePath.EndsWith(".ts"))
+                                    {
+                                        basePath = basePath.Replace(".ts", "");
+                                    }
+                                    
+                                    FileInfo fileinfo = new FileInfo(basePath + ".recordinfo.xml");
                                     IOTools.Write(fileinfo.Directory.FullName, fileinfo.Name, vi);
                                     needsVideoInfoWrite.Remove((FrameSource)source);
                                 }

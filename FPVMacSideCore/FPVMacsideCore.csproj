@@ -13,6 +13,9 @@
     <Content Include="ffmpeg\ffmpeg-arm">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="ffmpeg\ffprobe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="ffmpeg\ffmpeg-intel">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

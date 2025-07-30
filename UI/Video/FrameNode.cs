@@ -55,21 +55,37 @@ namespace UI.Video
             SampleTime = sampleTime;
             ProcessNumber = processNumber;
 
-            Tools.Logger.VideoLog.LogCall(this, $"ImageArrived: processNumber={processNumber}, Visible={Visible}, texture={(texture != null ? "exists" : "null")}");
+            // Log only every 120 frames to reduce spam
+            if (processNumber % 120 == 0)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"ImageArrived: processNumber={processNumber}, Visible={Visible}, texture={(texture != null ? "exists" : "null")}");
+            }
 
             if (Visible)
             {
                 if (CompositorLayer != null) 
                 {
                     CompositorLayer.PreProcess(this, true);
-                    Tools.Logger.VideoLog.LogCall(this, $"PreProcess called for frame {processNumber}");
+                    // Log only every 120 frames to reduce spam
+                    if (processNumber % 120 == 0)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"PreProcess called for frame {processNumber}");
+                    }
                 }
                 RequestRedraw();
-                Tools.Logger.VideoLog.LogCall(this, $"RequestRedraw called for frame {processNumber}");
+                // Log only every 120 frames to reduce spam
+                if (processNumber % 120 == 0)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"RequestRedraw called for frame {processNumber}");
+                }
             }
             else
             {
-                Tools.Logger.VideoLog.LogCall(this, $"FrameNode not visible - skipping frame {processNumber}");
+                // Log only every 120 frames to reduce spam
+                if (processNumber % 120 == 0)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"FrameNode not visible - skipping frame {processNumber}");
+                }
             }
         }
 
@@ -85,14 +101,22 @@ namespace UI.Video
 
             if (texture == null)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"Draw: texture is null, drawing blank pattern. Bounds={Bounds}");
+                // Log only every 120 frames to reduce spam
+                if (ProcessNumber % 120 == 0)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"Draw: texture is null, drawing blank pattern. Bounds={Bounds}");
+                }
                 Texture2D tempTexture = id.TextureCache.GetTextureFromColor(Blank);
                 id.Draw(tempTexture, new Rectangle(0, 0, tempTexture.Width, tempTexture.Height), Bounds, Tint, alpha);
             }
             else
             {
                 Rectangle sourceBounds = Flip(SourceBounds);
-                Tools.Logger.VideoLog.LogCall(this, $"Draw: Drawing texture {texture.Width}x{texture.Height}, sourceBounds={sourceBounds}, Bounds={Bounds}");
+                // Log only every 120 frames to reduce spam
+                if (ProcessNumber % 120 == 0)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"Draw: Drawing texture {texture.Width}x{texture.Height}, sourceBounds={sourceBounds}, Bounds={Bounds}");
+                }
                 id.Draw(texture, sourceBounds, Bounds, Tint, alpha);
             }
             DebugTimer.DebugEndTime(this);
@@ -141,19 +165,31 @@ namespace UI.Video
             if (Source != null && Source.UpdateTexture(id.GraphicsDevice, id.FrameCount, ref tryTexture))
             {
                 texture = tryTexture;
-                Tools.Logger.VideoLog.LogCall(this, $"PreProcess: Texture updated successfully, new texture: {(texture != null ? $"{texture.Width}x{texture.Height}" : "null")}");
+                // Log only every 120 frames to reduce spam
+                if (ProcessNumber % 120 == 0)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"PreProcess: Texture updated successfully, new texture: {(texture != null ? $"{texture.Width}x{texture.Height}" : "null")}");
+                }
 
                 if (NeedsAspectRatioUpdate && texture != null)
                 {
                     NeedsAspectRatioUpdate = false;
                     UpdateAspectRatioFromTexture();
                     RequestLayout();
-                    Tools.Logger.VideoLog.LogCall(this, $"PreProcess: Aspect ratio updated to {texture.Width}x{texture.Height}");
+                    // Log only every 120 frames to reduce spam
+                    if (ProcessNumber % 120 == 0)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"PreProcess: Aspect ratio updated to {texture.Width}x{texture.Height}");
+                    }
                 }
             }
             else
             {
-                Tools.Logger.VideoLog.LogCall(this, $"PreProcess: UpdateTexture failed or Source is null");
+                // Log only every 120 frames to reduce spam
+                if (ProcessNumber % 120 == 0)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"PreProcess: UpdateTexture failed or Source is null");
+                }
             }
             texture = tryTexture;
         }

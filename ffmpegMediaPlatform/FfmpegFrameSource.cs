@@ -13,10 +13,10 @@ using Tools;
 
 namespace FfmpegMediaPlatform
 {
-    public abstract class FfmpegFrameSource : TextureFrameSource
+    public abstract class FfmpegFrameSource : TextureFrameSource, ICaptureFrameSource
     {
-        private int width;
-        private int height;
+        protected int width;
+        protected int height;
 
         public override int FrameWidth
         {
@@ -48,19 +48,288 @@ namespace FfmpegMediaPlatform
 
         protected byte[] buffer;
 
-        private Thread thread;
-        private bool run;
-        private bool inited;
+        protected Thread thread;
+        protected bool run;
+        protected bool inited;
+
+        // Recording implementation
+        protected string recordingFilename;
+        private List<FrameTime> frameTimes;
+        private bool recordNextFrameTime;
+        private bool manualRecording;
+        private bool finalising;
+        private DateTime recordingStartTime;
+        private long frameCount;
+
+        public new bool IsVisible { get; set; }
+        public FrameTime[] FrameTimes => frameTimes?.ToArray() ?? new FrameTime[0];
+        public string Filename => recordingFilename;
+        public new bool Recording { get; private set; }
+        public bool RecordNextFrameTime 
+        { 
+            set 
+            { 
+                recordNextFrameTime = value; 
+            } 
+        }
+        public bool ManualRecording 
+        { 
+            get => manualRecording; 
+            set => manualRecording = value; 
+        }
+        public bool Finalising => finalising;
+
+        public void StartRecording(string filename)
+        {
+            if (Recording)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"Already recording to {recordingFilename}");
+                return;
+            }
+
+            recordingFilename = filename;
+            recordingStartTime = DateTime.Now;
+            frameCount = 0;
+            frameTimes.Clear();
+            Recording = true;
+            finalising = false;
+
+            // Restart FFmpeg process to switch to recording mode
+            RestartForRecording();
+
+            Tools.Logger.VideoLog.LogCall(this, $"Started recording to {filename}");
+        }
+
+        public void StopRecording()
+        {
+            if (!Recording)
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Not currently recording");
+                return;
+            }
+
+            Tools.Logger.VideoLog.LogCall(this, $"Stopping recording to {recordingFilename}");
+            Recording = false;
+            finalising = true;
+
+            // For WMV and MP4 files, we need to ensure proper finalization before restarting
+            bool isWMV = !string.IsNullOrEmpty(recordingFilename) && recordingFilename.EndsWith(".wmv");
+            bool isMP4 = !string.IsNullOrEmpty(recordingFilename) && recordingFilename.EndsWith(".mp4");
+            
+            if ((isWMV || isMP4) && process != null && !process.HasExited)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"{(isWMV ? "WMV" : "MP4")} recording detected - ensuring proper finalization before restart");
+                
+                try
+                {
+                    // Send graceful shutdown signal to finalize video file
+                    if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+                    {
+                        // Windows: Use CTRL+C equivalent
+                        process.StandardInput.WriteLine("q");
+                        process.StandardInput.Flush();
+                    }
+                    else
+                    {
+                        // Unix/Linux/macOS: Send SIGINT
+                        var killProcess = new Process();
+                        killProcess.StartInfo.FileName = "kill";
+                        killProcess.StartInfo.Arguments = $"-INT {process.Id}";
+                        killProcess.StartInfo.UseShellExecute = false;
+                        killProcess.StartInfo.CreateNoWindow = true;
+                        killProcess.Start();
+                        killProcess.WaitForExit();
+                    }
+                    
+                    // Wait for graceful shutdown to finalize the video file
+                    if (process.WaitForExit(8000)) // Give more time for video finalization
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"{(isWMV ? "WMV" : "MP4")} file finalized successfully");
+                    }
+                    else
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"{(isWMV ? "WMV" : "MP4")} finalization timeout, forcing kill");
+                        process.Kill();
+                        process.WaitForExit(3000);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"Error during {(isWMV ? "WMV" : "MP4")} finalization: {ex.Message}, falling back to kill");
+                    try
+                    {
+                        process.Kill();
+                        process.WaitForExit(3000);
+                    }
+                    catch (Exception killEx)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"Error killing process: {killEx.Message}");
+                    }
+                }
+                
+                // Clear the process reference since we've handled it manually
+                process = null;
+            }
+
+            // Restart FFmpeg process to switch back to live mode
+            RestartForRecording();
+
+            Tools.Logger.VideoLog.LogCall(this, $"Stopped recording to {recordingFilename}");
+        }
+
+        protected void InitializeFrameProcessing()
+        {
+            // Use the dimensions from VideoConfig since ffmpeg is successfully processing
+            width = VideoConfig.VideoMode?.Width ?? 640;
+            height = VideoConfig.VideoMode?.Height ?? 480;
+            
+            buffer = new byte[width * height * 4];  // RGBA = 4 bytes per pixel
+            rawTextures = new XBuffer<RawTexture>(5, width, height);
+
+            Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Initialized with {width}x{height}, buffer size: {buffer.Length} bytes");
+            inited = true;
+        }
+
+        private void ForceReinitialize()
+        {
+            Tools.Logger.VideoLog.LogCall(this, "Force re-initializing frame processing");
+            inited = false;
+            InitializeFrameProcessing();
+        }
+
+        private void RestartForRecording()
+        {
+            try
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"Restarting FFmpeg process for recording state change (Recording: {Recording})");
+                
+                // Store current state
+                bool wasRunning = State == States.Running;
+                
+                // Stop current process completely (if not already stopped for WMV finalization)
+                if (wasRunning && process != null)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "Stopping current FFmpeg process");
+                    Stop();
+                    
+                    // Reset state for clean restart
+                    inited = false;
+                    Connected = false;
+                    
+                    // Give it a moment to fully stop and ensure thread is done
+                    Thread.Sleep(2000);
+                    
+                    // Double-check that the reading thread has stopped
+                    if (thread != null && thread.IsAlive)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "Reading thread still alive, waiting for it to finish");
+                        if (!thread.Join(3000))
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, "Reading thread didn't finish, forcing cleanup");
+                            thread = null;
+                        }
+                    }
+                }
+                else if (wasRunning && process == null)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "Process already stopped (likely for WMV finalization), resetting state");
+                    inited = false;
+                    Connected = false;
+                    
+                    // Ensure thread is stopped
+                    if (thread != null && thread.IsAlive)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "Reading thread still alive after WMV finalization, waiting for it to finish");
+                        if (!thread.Join(3000))
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, "Reading thread didn't finish, forcing cleanup");
+                            thread = null;
+                        }
+                    }
+                }
+                
+                // Restart with new configuration
+                if (wasRunning)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "Starting FFmpeg process with new recording configuration");
+                    Start();
+                    
+                    // Wait a bit for the new process to initialize
+                    Thread.Sleep(1000);
+                    
+                    // Force re-initialization if needed
+                    if (!inited)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "Forcing initialization after restart");
+                        InitializeFrameProcessing();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Tools.Logger.VideoLog.LogException(this, ex);
+                Tools.Logger.VideoLog.LogCall(this, "Error restarting FFmpeg process for recording");
+                
+                // Try to recover by restarting
+                try
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "Attempting recovery restart");
+                    Stop();
+                    Thread.Sleep(3000);
+                    inited = false;
+                    Connected = false;
+                    Start();
+                }
+                catch (Exception recoveryEx)
+                {
+                    Tools.Logger.VideoLog.LogException(this, recoveryEx);
+                    Tools.Logger.VideoLog.LogCall(this, "Recovery restart failed");
+                }
+            }
+        }
 
         public FfmpegFrameSource(FfmpegMediaFramework ffmpegMediaFramework, VideoConfig videoConfig)
             : base(videoConfig)
         {
             this.ffmpegMediaFramework = ffmpegMediaFramework;
-            SurfaceFormat = SurfaceFormat.Color; // More widely supported than Bgr32
-            
-            // Initialize with default values from VideoConfig or hardcoded fallback
-            width = VideoConfig.VideoMode?.Width ?? 640;
-            height = VideoConfig.VideoMode?.Height ?? 480;
+
+            // Initialize recording fields
+            frameTimes = new List<FrameTime>();
+            recordingFilename = null;
+            recordNextFrameTime = false;
+            manualRecording = false;
+            finalising = false;
+            recordingStartTime = DateTime.MinValue;
+            frameCount = 0;
+
+            // Set surface format based on platform
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            {
+                SurfaceFormat = SurfaceFormat.Color; // More widely supported on macOS
+            }
+            else
+            {
+                SurfaceFormat = SurfaceFormat.Bgr32; // Original Windows format
+            }
+
+            // Calculate buffer size based on video mode
+            if (videoConfig.VideoMode != null)
+            {
+                width = videoConfig.VideoMode.Width;
+                height = videoConfig.VideoMode.Height;
+                
+                // For RGBA format: 4 bytes per pixel (ESSENTIAL for pipe output)
+                int bufferSize = width * height * 4;
+                buffer = new byte[bufferSize];
+                
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Initialized buffer: {width}x{height} RGBA = {bufferSize} bytes");
+            }
+            else
+            {
+                // Default buffer size if no video mode is set
+                buffer = new byte[1280 * 720 * 4]; // Default 1280x720 RGBA
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Using default buffer size: {buffer.Length} bytes");
+            }
             
             if (width <= 0 || height <= 0)
             {
@@ -71,9 +340,10 @@ namespace FfmpegMediaPlatform
             
             buffer = new byte[width * height * 4];
             rawTextures = new XBuffer<RawTexture>(5, width, height);
-            inited = true;
-            
-            Tools.Logger.VideoLog.LogCall(this, $"Pre-initialized with {width}x{height}");
+
+            // Initialize recording fields
+            frameTimes = new List<FrameTime>();
+            IsVisible = true;
         }
 
         public override void Dispose()
@@ -190,16 +460,7 @@ namespace FfmpegMediaPlatform
                 if (!inited && e.Data != null && (e.Data.Contains("frame=") && e.Data.Contains("fps=")))
                 {
                     Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Frame output detected - initializing frame processing");
-                    
-                    // Use the dimensions from VideoConfig since ffmpeg is successfully processing
-                    width = VideoConfig.VideoMode?.Width ?? 640;
-                    height = VideoConfig.VideoMode?.Height ?? 480;
-                    
-                    buffer = new byte[width * height * 4];  // RGBA = 4 bytes per pixel
-                    rawTextures = new XBuffer<RawTexture>(5, width, height);
-
-                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Initialized with {width}x{height}, buffer size: {buffer.Length} bytes");
-                    inited = true;
+                    InitializeFrameProcessing();
                 }
                 
                 // Also try to detect stream lines if they appear (fallback method)
@@ -234,6 +495,35 @@ namespace FfmpegMediaPlatform
                         Tools.Logger.VideoLog.LogCall(this, "No resolution pattern found in Stream line");
                     }
                 }
+                
+                // Additional detection for filter_complex output or other FFmpeg messages
+                if (!inited && e.Data != null && (e.Data.Contains("Output") || e.Data.Contains("Input") || e.Data.Contains("Duration") || e.Data.Contains("filter_complex")))
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"FFmpeg message detected: {e.Data}");
+                    // If we see any FFmpeg output, assume it's working and initialize after a short delay
+                    Task.Delay(1500).ContinueWith(_ => 
+                    {
+                        if (!inited && run)
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, "Fallback initialization after FFmpeg message detection");
+                            InitializeFrameProcessing();
+                        }
+                    });
+                }
+                
+                // Detection for successful filter_complex setup
+                if (!inited && e.Data != null && (e.Data.Contains("split") || e.Data.Contains("format=")))
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"Filter complex setup detected: {e.Data}");
+                    Task.Delay(1000).ContinueWith(_ => 
+                    {
+                        if (!inited && run)
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, "Initialization after filter complex setup");
+                            InitializeFrameProcessing();
+                        }
+                    });
+                }
             };
 
             if (process.Start())
@@ -246,6 +536,17 @@ namespace FfmpegMediaPlatform
                 thread.Start();
 
                 process.BeginErrorReadLine();
+                
+                // Fallback initialization after 5 seconds if not already initialized
+                Task.Delay(5000).ContinueWith(_ => 
+                {
+                    if (!inited && run)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "Timeout-based fallback initialization");
+                        InitializeFrameProcessing();
+                    }
+                });
+                
                 return base.Start();
             }
 
@@ -274,23 +575,79 @@ namespace FfmpegMediaPlatform
             
             if (process != null && !process.HasExited)
             {
-                Tools.Logger.VideoLog.LogCall(this, "FFMPEG Killing process immediately (no graceful shutdown needed for camera capture)");
-                try
+                // Check if we're recording WMV or MP4 (needs graceful shutdown)
+                bool isRecordingWMV = Recording && !string.IsNullOrEmpty(recordingFilename) && recordingFilename.EndsWith(".wmv");
+                bool isRecordingMP4 = Recording && !string.IsNullOrEmpty(recordingFilename) && recordingFilename.EndsWith(".mp4");
+                
+                if (isRecordingWMV || isRecordingMP4)
                 {
-                    // For camera capture, just kill immediately - no need for graceful shutdown
-                    process.Kill();
-                    if (!process.WaitForExit(3000))
+                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Graceful shutdown for {(isRecordingWMV ? "WMV" : "MP4")} recording (sending SIGINT)");
+                    try
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "FFMPEG Process didn't exit after kill - this is unusual");
+                        // Send SIGINT for graceful shutdown (allows FFmpeg to finalize the file)
+                        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+                        {
+                            // Windows: Use CTRL+C equivalent
+                            process.StandardInput.WriteLine("q");
+                            process.StandardInput.Flush();
+                        }
+                        else
+                        {
+                            // Unix/Linux/macOS: Send SIGINT
+                            var killProcess = new Process();
+                            killProcess.StartInfo.FileName = "kill";
+                            killProcess.StartInfo.Arguments = $"-INT {process.Id}";
+                            killProcess.StartInfo.UseShellExecute = false;
+                            killProcess.StartInfo.CreateNoWindow = true;
+                            killProcess.Start();
+                            killProcess.WaitForExit();
+                        }
+                        
+                        // Wait for graceful shutdown
+                        if (!process.WaitForExit(5000))
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, "FFMPEG Graceful shutdown timeout, forcing kill");
+                            process.Kill();
+                            process.WaitForExit(3000);
+                        }
+                        else
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, "FFMPEG Graceful shutdown completed successfully");
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "FFMPEG Process killed successfully");
+                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Error during graceful shutdown: {ex.Message}, falling back to kill");
+                        try
+                        {
+                            process.Kill();
+                            process.WaitForExit(3000);
+                        }
+                        catch (Exception killEx)
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Error killing process: {killEx.Message}");
+                        }
                     }
                 }
-                catch (Exception ex)
+                else
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Error killing process: {ex.Message}");
+                    Tools.Logger.VideoLog.LogCall(this, "FFMPEG Immediate kill (not recording WMV or MP4)");
+                    try
+                    {
+                        process.Kill();
+                        if (!process.WaitForExit(3000))
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, "FFMPEG Process didn't exit after kill - this is unusual");
+                        }
+                        else
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, "FFMPEG Process killed successfully");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Error killing process: {ex.Message}");
+                    }
                 }
 
                 try
@@ -320,49 +677,113 @@ namespace FfmpegMediaPlatform
 
         protected abstract ProcessStartInfo GetProcessStartInfo();
 
-        private void Run()
+        protected void Run()
         {
             Tools.Logger.VideoLog.LogCall(this, "Reading thread started");
             bool loggedInit = false;
+            int consecutiveErrors = 0;
+            const int maxConsecutiveErrors = 5;
+            
             while(run)
             {
-                if (!inited)
+                try
                 {
-                    System.Threading.Thread.Sleep(10); // Prevent busy waiting
-                    continue;
-                }
-                if (!loggedInit)
-                {
-                    Tools.Logger.VideoLog.LogCall(this, "Reading thread initialized, starting to read frames");
-                    loggedInit = true;
-                }
-                Stream stream = process.StandardOutput.BaseStream;
-                if (stream != null)
-                {
+                    if (!inited)
+                    {
+                        System.Threading.Thread.Sleep(10); // Prevent busy waiting
+                        continue;
+                    }
+                    
+                    if (!loggedInit)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "Reading thread initialized, starting to read frames");
+                        loggedInit = true;
+                        consecutiveErrors = 0; // Reset error counter on successful init
+                    }
+                    
+                    // Check if process is still running
+                    if (process == null || process.HasExited)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "FFmpeg process has exited, stopping reading thread");
+                        break;
+                    }
+                    
+                    Stream stream = process.StandardOutput.BaseStream;
+                    if (stream == null)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "StandardOutput stream is null, waiting...");
+                        Thread.Sleep(100);
+                        continue;
+                    }
+                    
                     int totalBytesRead = 0;
                     int bytesToRead = buffer.Length;
                     
                     // Keep reading until we have a complete frame
-                    while (totalBytesRead < bytesToRead)
+                    while (totalBytesRead < bytesToRead && run && !process.HasExited)
                     {
                         int bytesRead = stream.Read(buffer, totalBytesRead, bytesToRead - totalBytesRead);
                         if (bytesRead == 0)
-                            break; // End of stream
+                        {
+                            // End of stream or process ended
+                            if (process.HasExited)
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, "FFmpeg process ended during read");
+                                break;
+                            }
+                            Thread.Sleep(10); // Brief pause before retry
+                            continue;
+                        }
                         totalBytesRead += bytesRead;
                     }
                     
                     if (totalBytesRead == bytesToRead)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Complete frame read: {totalBytesRead} bytes, processing frame {FrameProcessNumber}");
+                        // Log only every 120 frames to reduce spam
+                        if (FrameProcessNumber % 120 == 0)
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Complete frame read: {totalBytesRead} bytes, processing frame {FrameProcessNumber}");
+                        }
                         ProcessImage();
                         NotifyReceivedFrame();
+                        consecutiveErrors = 0; // Reset error counter on successful frame
                     }
                     else if (totalBytesRead > 0)
                     {
                         Tools.Logger.VideoLog.LogCall(this, $"Incomplete frame read: {totalBytesRead}/{bytesToRead} bytes");
+                        consecutiveErrors++;
+                    }
+                    else
+                    {
+                        // No bytes read, might be a temporary issue
+                        consecutiveErrors++;
+                        Thread.Sleep(50);
+                    }
+                    
+                    // If we're getting too many consecutive errors, log a warning
+                    if (consecutiveErrors >= maxConsecutiveErrors)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"Warning: {consecutiveErrors} consecutive read errors, process may be having issues");
+                        consecutiveErrors = 0; // Reset to avoid spam
                     }
                 }
+                catch (Exception ex)
+                {
+                    consecutiveErrors++;
+                    Tools.Logger.VideoLog.LogException(this, ex);
+                    Tools.Logger.VideoLog.LogCall(this, $"Error in reading thread (error #{consecutiveErrors})");
+                    
+                    if (consecutiveErrors >= maxConsecutiveErrors)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "Too many consecutive errors, stopping reading thread");
+                        break;
+                    }
+                    
+                    Thread.Sleep(100); // Brief pause before retry
+                }
             }
+            
+            Tools.Logger.VideoLog.LogCall(this, "Reading thread finished");
         }
 
         protected override void ProcessImage()
@@ -374,7 +795,58 @@ namespace FfmpegMediaPlatform
                 if (currentRawTextures.GetWritable(out frame))
                 {
                     FrameProcessNumber++;
-                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Processing frame {FrameProcessNumber}, buffer size: {buffer.Length} bytes");
+                    
+                    // Log only every 120 frames to reduce spam
+                    if (FrameProcessNumber % 120 == 0)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Processing frame {FrameProcessNumber}, buffer size: {buffer.Length} bytes");
+                    }
+                    
+                    // Track frame timing for recording
+                    if (recordNextFrameTime)
+                    {
+                        if (frameTimes == null)
+                        {
+                            frameTimes = new List<FrameTime>();
+                        }
+                        
+                        DateTime frameTime = DateTime.Now;
+                        frameTimes.Add(new FrameTime
+                        {
+                            Frame = (int)FrameProcessNumber,
+                            Time = frameTime,
+                            Seconds = (float)(frameTime - recordingStartTime).TotalSeconds
+                        });
+                        
+                        recordNextFrameTime = false;
+                        frameCount++;
+                        
+                        // Log frame timing only every 120 frames during recording
+                        if (frameCount % 120 == 0)
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Recorded frame {FrameProcessNumber} at {frameTime:HH:mm:ss.fff}");
+                        }
+                    }
+                    
+                    // Copy buffer to texture
+                    // For video file playback, calculate SampleTime based on frame rate and current position
+                    if (this is FfmpegVideoFileFrameSource videoFileSource && VideoConfig?.VideoMode?.FrameRate > 0)
+                    {
+                        // Use frame-based calculation for accurate timeline positioning
+                        double frameBasedTime = FrameProcessNumber / VideoConfig.VideoMode.FrameRate;
+                        double actualMediaTime = videoFileSource.MediaTime.TotalSeconds;
+                        
+                        // Use the frame-based time for timeline markers
+                        SampleTime = (long)(frameBasedTime * 10000000); // Convert seconds to ticks
+                        
+                        // Log every 120 frames to see what's happening
+                        if (FrameProcessNumber % 120 == 0)
+                        {
+                            double videoLength = videoFileSource.Length.TotalSeconds;
+                            Tools.Logger.VideoLog.LogCall(this, $"SampleTime Debug: Frame {FrameProcessNumber}, FrameTime={frameBasedTime:F2}s, MediaTime={actualMediaTime:F2}s, VideoLength={videoLength:F2}s, SampleTime={SampleTime} (using FrameTime)");
+                        }
+                    }
+                    
                     // Convert byte[] to IntPtr for SetData call
                     System.Runtime.InteropServices.GCHandle handle = System.Runtime.InteropServices.GCHandle.Alloc(buffer, System.Runtime.InteropServices.GCHandleType.Pinned);
                     try
@@ -387,18 +859,8 @@ namespace FfmpegMediaPlatform
                         handle.Free();
                     }
                     currentRawTextures.WriteOne(frame);
-                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Frame {FrameProcessNumber} written to rawTextures buffer");
-                }
-                else
-                {
-                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Could not get writable frame from rawTextures buffer");
                 }
             }
-            else
-            {
-                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG rawTextures is null - cannot process frame");
-            }
-
             base.ProcessImage();
         }
     }

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace FfmpegMediaPlatform
 {
@@ -105,25 +106,48 @@ namespace FfmpegMediaPlatform
         protected override ProcessStartInfo GetProcessStartInfo()
         {
             string name = VideoConfig.ffmpegId;
-            // string ffmpegArgs = $"-f avfoundation  -framerate {VideoConfig.VideoMode.FrameRate} -pixel_format uyvy422 -video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} -i \"{name}\" -pix_fmt rgba -f rawvideo -";
+            string ffmpegArgs;
             
-            string ffmpegArgs = $"-f avfoundation " +
+            if (Recording && !string.IsNullOrEmpty(recordingFilename))
+            {
+                string recordingPath = Path.GetFullPath(recordingFilename);
+                
+                ffmpegArgs = $"-f avfoundation " +
                                 $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                                 $"-pixel_format uyvy422 " +
                                 $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
                                 $"-i \"{name}\" " +
-                                $"-fflags nobuffer " +                 // Don't buffer input
-                                $"-flags low_delay " +                 // Enable low latency
-                                $"-strict experimental " +             // Allow experimental features
-                                $"-threads 1 " +                       // Single-threaded for deterministic low latency
-                                $"-vsync passthrough " +              // Don’t synchronize video frames — drop if needed
-                                $"-an " +                              // Disable audio
-                                $"-pix_fmt rgba " +                    // Output pixel format
-                                $"-preset ultrafast " +                // If encoding later, reduce latency
-                                $"-tune zerolatency " +                // Tune for latency if encoding
-                                    $"-f rawvideo -";                      // Output raw video
-            Tools.Logger.VideoLog.LogCall(this, $"Using direct ffmpeg with device name: {name}");
-            Tools.Logger.VideoLog.LogCall(this, $"FFmpeg args: {ffmpegArgs}");
+                                $"-fflags nobuffer " +
+                                $"-flags low_delay " +
+                                $"-strict experimental " +
+                                $"-threads 1 " +
+                                $"-fps_mode passthrough " +
+                                $"-an " +
+                                $"-filter_complex \"split=2[out1][out2];[out1]format=rgba[outpipe];[out2]format=yuv420p[outfile]\" " +
+                                $"-map \"[outpipe]\" -f rawvideo pipe:1 " +
+                                $"-map \"[outfile]\" -c:v libx264 -b:v 5M -f mp4 -avoid_negative_ts make_zero \"{recordingPath}\"";
+                
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG macOS Recording Mode: {ffmpegArgs}");
+            }
+            else
+            {
+                // Live mode: Standard capture without recording
+                ffmpegArgs = $"-f avfoundation " +
+                                $"-framerate {VideoConfig.VideoMode.FrameRate} " +
+                                $"-pixel_format uyvy422 " +
+                                $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
+                                $"-i \"{name}\" " +
+                                $"-fflags nobuffer " +
+                                $"-flags low_delay " +
+                                $"-strict experimental " +
+                                $"-threads 1 " +
+                                $"-fps_mode passthrough " +
+                                $"-an " +
+                                $"-pix_fmt rgba " +
+                                $"-f rawvideo -";
+                
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG macOS Live Mode: {ffmpegArgs}");
+            }
             return ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
         }
     }

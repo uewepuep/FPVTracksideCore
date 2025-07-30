@@ -2,6 +2,7 @@
 using Composition.Input;
 using Composition.Nodes;
 using ExternalData;
+using ImageServer;
 using Microsoft.Xna.Framework;
 using RaceLib;
 using Sound;
@@ -129,12 +130,20 @@ namespace UI.Nodes
 
         private void UpdateReplayButton(Race race)
         {
+            Tools.Logger.VideoLog.LogCall(this, $"UpdateReplayButton called - Race: {(race?.ID.ToString() ?? "null")}, Ended: {race?.Ended}, HasReplay: {VideoManager?.HasReplay(race)}, Finalising: {VideoManager?.Finalising}");
+            
             if (race != null && race.Ended)
             {
-                replayButton.Enabled = VideoManager.HasReplay(race) && !VideoManager.Finalising;
+                bool hasReplay = VideoManager.HasReplay(race);
+                bool finalising = VideoManager.Finalising;
+                bool shouldEnable = hasReplay && !finalising;
+                
+                Tools.Logger.VideoLog.LogCall(this, $"Race ended - HasReplay: {hasReplay}, Finalising: {finalising}, Enabling replay button: {shouldEnable}");
+                replayButton.Enabled = shouldEnable;
             }
             else
             {
+                Tools.Logger.VideoLog.LogCall(this, $"Race not ended or null - Enabling replay button: false");
                 replayButton.Enabled = false;
             }
 
@@ -333,6 +342,10 @@ namespace UI.Nodes
         public void ShowReplay(MouseInputEvent mie)
         {
             Race current = eventManager.RaceManager.CurrentRace;
+            
+            // Stop live video feeds before entering replay to free up resources
+            StopLiveVideoFeeds();
+            
             Show(ReplayNode);
             ReplayNode.ReplayRace(current);
         }
@@ -357,9 +370,89 @@ namespace UI.Nodes
                 sceneManagerNode.ChannelsGridNode.ReloadPilotProfileImages();
             }
 
+            // If we're leaving the replay tab, restart live video feeds
+            if (Showing == ReplayNode && node != ReplayNode)
+            {
+                RestartLiveVideoFeeds();
+            }
+
             base.Show(node);
             ReplayNode.CleanUp();
             GC.Collect();
+        }
+
+        private void StopLiveVideoFeeds()
+        {
+            try
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Stopping live video feeds for replay tab");
+                
+                if (VideoManager != null)
+                {
+                    // Get all running live video frame sources (not recording)
+                    var liveFrameSources = VideoManager.FrameSources
+                        .Where(fs => fs.State == FrameSource.States.Running && !fs.Recording)
+                        .ToArray();
+
+                    foreach (var frameSource in liveFrameSources)
+                    {
+                        try
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"Pausing live video feed: {frameSource.VideoConfig.DeviceName}");
+                            frameSource.Pause();
+                        }
+                        catch (Exception ex)
+                        {
+                            Tools.Logger.VideoLog.LogException(this, ex);
+                            Tools.Logger.VideoLog.LogCall(this, $"Error pausing live video feed: {frameSource.VideoConfig.DeviceName}");
+                        }
+                    }
+
+                    Tools.Logger.VideoLog.LogCall(this, $"Stopped {liveFrameSources.Length} live video feeds for replay");
+                }
+            }
+            catch (Exception ex)
+            {
+                Tools.Logger.VideoLog.LogException(this, ex);
+                Tools.Logger.VideoLog.LogCall(this, "Error stopping live video feeds for replay");
+            }
+        }
+
+        private void RestartLiveVideoFeeds()
+        {
+            try
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Restarting live video feeds after leaving replay tab");
+                
+                if (VideoManager != null)
+                {
+                    // Get all paused live video frame sources (not recording)
+                    var pausedFrameSources = VideoManager.FrameSources
+                        .Where(fs => fs.State == FrameSource.States.Paused && !fs.Recording)
+                        .ToArray();
+
+                    foreach (var frameSource in pausedFrameSources)
+                    {
+                        try
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"Resuming live video feed: {frameSource.VideoConfig.DeviceName}");
+                            frameSource.Unpause();
+                        }
+                        catch (Exception ex)
+                        {
+                            Tools.Logger.VideoLog.LogException(this, ex);
+                            Tools.Logger.VideoLog.LogCall(this, $"Error resuming live video feed: {frameSource.VideoConfig.DeviceName}");
+                        }
+                    }
+
+                    Tools.Logger.VideoLog.LogCall(this, $"Restarted {pausedFrameSources.Length} live video feeds");
+                }
+            }
+            catch (Exception ex)
+            {
+                Tools.Logger.VideoLog.LogException(this, ex);
+                Tools.Logger.VideoLog.LogCall(this, "Error restarting live video feeds after replay");
+            }
         }
     }
 }

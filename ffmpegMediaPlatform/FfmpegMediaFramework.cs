@@ -21,6 +21,8 @@ namespace FfmpegMediaPlatform
 
         private string execName;
 
+        public string ExecName => execName;
+
         private bool avfoundation;
         private bool dshow;
 
@@ -174,10 +176,20 @@ namespace FfmpegMediaPlatform
 
         public FrameSource CreateFrameSource(VideoConfig vc)
         {
-            if (dshow)
-                return new FfmpegDshowFrameSource(this, vc);
+            // Check if this is a video file playback (has FilePath) or camera capture
+            if (!string.IsNullOrEmpty(vc.FilePath))
+            {
+                // Create video file playback frame source
+                return new FfmpegVideoFileFrameSource(this, vc);
+            }
             else
-                return new FfmpegAvFoundationFrameSource(this, vc);
+            {
+                // Create camera capture frame source
+                if (dshow)
+                    return new FfmpegDshowFrameSource(this, vc);
+                else
+                    return new FfmpegAvFoundationFrameSource(this, vc);
+            }
         }
 
         public IEnumerable<VideoConfig> GetVideoConfigs()

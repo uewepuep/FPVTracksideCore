@@ -8,7 +8,7 @@
 		<Platforms>x64</Platforms>
 		<StartupObject />
 		<Version>2.0.69.1</Version>
-		<usewpf>true</usewpf>	
+		<usewpf>true</usewpf>
 	</PropertyGroup>
 
 
@@ -25,7 +25,6 @@
 	  <ProjectReference Include="..\ImageServer\ImageServer.csproj" />
 	  <ProjectReference Include="..\RaceLib\RaceLib.csproj" />
 	  <ProjectReference Include="..\Tools\Tools.csproj" />
-	  <ProjectReference Include="..\UI\UI.csproj" />
 	  <ProjectReference Include="..\WinFormsGraphicsDevice\WinFormsGraphicsDevice.csproj" />
 	</ItemGroup>
 

@@ -153,7 +153,11 @@ namespace ImageServer
 
         protected virtual void ProcessImage()
         {
-            Tools.Logger.VideoLog.LogCall(this, $"TextureFrameSource.ProcessImage: Firing OnFrame event with SampleTime={SampleTime}, FrameProcessNumber={FrameProcessNumber}");
+            // Log only every 120 frames to reduce spam
+            if (FrameProcessNumber % 120 == 0)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"TextureFrameSource.ProcessImage: Firing OnFrame event with SampleTime={SampleTime}, FrameProcessNumber={FrameProcessNumber}");
+            }
             OnFrame(SampleTime, FrameProcessNumber);
         }
 
@@ -187,11 +191,19 @@ namespace ImageServer
             // Maybe update the texture
             if (rawTextures.ReadOne(out frame, drawFrameCount))
             {
-                Tools.Logger.VideoLog.LogCall(this, $"UI Reading frame from rawTextures buffer for draw frame {drawFrameCount}");
+                // Log only every 120 frames to reduce spam
+                if (drawFrameCount % 120 == 0)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"UI Reading frame from rawTextures buffer for draw frame {drawFrameCount}");
+                }
                 DebugTimer.DebugStartTime("UpdateTexture");
 
                 result = frame.UpdateTexture(texture);
-                Tools.Logger.VideoLog.LogCall(this, $"UI UpdateTexture result: {result}");
+                // Log only every 120 frames to reduce spam
+                if (drawFrameCount % 120 == 0)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"UI UpdateTexture result: {result}");
+                }
 
                 if (result)
                 {

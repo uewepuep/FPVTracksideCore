@@ -453,7 +453,16 @@ namespace UI.Video
 
             if (videoConfig != null)
             {
+                // Remove from VideoManager's frame sources
                 VideoManager.RemoveFrameSource(videoConfig);
+                
+                // Remove from VideoManager's VideoConfigs list
+                VideoManager.VideoConfigs.Remove(videoConfig);
+                
+                // Persist the change to disk
+                VideoManager.WriteCurrentDeviceConfig();
+                
+                Tools.Logger.VideoLog.LogCall(this, $"Camera '{videoConfig.DeviceName}' removed from VideoConfigs and changes persisted");
             }
             
             // Rebuild the entire UI after removal - same as when settings screen loads

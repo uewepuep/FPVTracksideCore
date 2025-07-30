@@ -107,7 +107,11 @@ namespace ImageServer
 
         public void OnFrame(long sampleTime, long processNumber)
         {
-            Tools.Logger.VideoLog.LogCall(this, $"OnFrame: processNumber={processNumber}, OnFrameEvent subscribers={(OnFrameEvent?.GetInvocationList()?.Length ?? 0)}");
+            // Log only every 120 frames to reduce spam
+            if (processNumber % 120 == 0)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"OnFrame: processNumber={processNumber}, OnFrameEvent subscribers={(OnFrameEvent?.GetInvocationList()?.Length ?? 0)}");
+            }
             OnFrameEvent?.Invoke(sampleTime, processNumber);
         }
     }
