@@ -140,7 +140,7 @@ namespace FfmpegMediaPlatform
                                $"-threads 1 " +
                                $"-an " +  // No audio
                                $"-vf \"vflip\" " +  // Flip video vertically to fix upside down orientation
-                               $"-r {frameRate:F2} " +  // Use detected frame rate for output timing
+                               // Let FFmpeg preserve original video timing instead of forcing frame rate
                                $"-pix_fmt rgba " +
                                $"-f rawvideo pipe:1";
 
@@ -811,7 +811,7 @@ namespace FfmpegMediaPlatform
                                    $"-threads 1 " +
                                    $"-an " +
                                    $"-vf \"vflip\" " +  // Flip video vertically to fix upside down orientation
-                                   $"-r {frameRate:F2} " +  // Use detected frame rate for output timing
+                                   // Let FFmpeg preserve original video timing instead of forcing frame rate
                                    $"-pix_fmt rgba " +
                                    $"-f rawvideo pipe:1";
 
@@ -926,7 +926,7 @@ namespace FfmpegMediaPlatform
                                $"-avoid_negative_ts make_zero " +
                                $"-threads 1 " +
                                $"-an " +
-                               $"-r {frameRate:F2} " +  // Use detected frame rate for output timing
+                               // Let FFmpeg preserve original video timing instead of forcing frame rate
                                $"-vf \"vflip,transpose=2,transpose=2\" " +  // Flip vertically and rotate 180 degrees
                                $"-pix_fmt rgba " +
                                $"-f rawvideo pipe:1";
