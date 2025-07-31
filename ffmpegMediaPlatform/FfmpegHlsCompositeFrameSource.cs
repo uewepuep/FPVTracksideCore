@@ -183,7 +183,7 @@ namespace FfmpegMediaPlatform
         }
 
         /// <summary>
-        /// Check if the HLS live stream is actually healthy by verifying the playlist file exists
+        /// Check if the live stream is actually healthy by verifying RGBA frames are flowing
         /// </summary>
         private bool IsLiveStreamHealthy()
         {
@@ -191,16 +191,12 @@ namespace FfmpegMediaPlatform
             {
                 if (liveFrameSource == null) return false;
                 
-                // Check if HLS playlist file exists (indicates stream is generating content)
-                string hlsDir = Path.Combine(Directory.GetCurrentDirectory(), "trackside_hls");
-                string playlistPath = Path.Combine(hlsDir, "stream.m3u8");
+                // Check if RGBA frames are flowing from pipe:1 for live display
+                bool framesFlowing = liveFrameSource.Connected;
                 
-                bool playlistExists = File.Exists(playlistPath);
-                bool httpServerRunning = liveFrameSource.IsHttpServerRunning;
+                Tools.Logger.VideoLog.LogCall(this, $"Live Stream Health Check - RGBA frames flowing: {framesFlowing}");
                 
-                Tools.Logger.VideoLog.LogCall(this, $"HLS Health Check - Playlist exists: {playlistExists}, HTTP server: {httpServerRunning}");
-                
-                return playlistExists && httpServerRunning;
+                return framesFlowing;
             }
             catch (Exception ex)
             {
