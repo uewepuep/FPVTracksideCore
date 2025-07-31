@@ -31,6 +31,7 @@ namespace UI.Video
             Source = s;
             Source.References++;
 
+            Tools.Logger.VideoLog.LogCall(this, $"FrameNode subscribing to OnFrameEvent for source: {Source.GetType().Name} (Instance: {Source.GetHashCode()})");
             Source.OnFrameEvent += ImageArrived;
 
             SetAspectRatio(Source.FrameWidth, Source.FrameHeight);

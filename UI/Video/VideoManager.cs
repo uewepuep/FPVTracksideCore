@@ -541,7 +541,21 @@ namespace UI.Video
         {
             lock (frameSources)
             {
-                return frameSources.FirstOrDefault(dsss => dsss.VideoConfig == vs);
+                FrameSource existing = frameSources.FirstOrDefault(dsss => dsss.VideoConfig == vs);
+                if (existing != null)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Found existing source {existing.GetType().Name} (Instance: {existing.GetHashCode()}) for device: {vs.DeviceName}");
+                    return existing;
+                }
+                
+                // Create new frame source if not found
+                Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Creating new source for device: {vs.DeviceName}");
+                FrameSource newSource = CreateFrameSource(vs);
+                if (newSource != null)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Created new source {newSource.GetType().Name} (Instance: {newSource.GetHashCode()}) for device: {vs.DeviceName}");
+                }
+                return newSource;
             }
         }
 
@@ -712,21 +726,35 @@ namespace UI.Video
 
         public IEnumerable<ChannelVideoInfo> CreateChannelVideoInfos(IEnumerable<VideoConfig> videoSources)
         {
+            Tools.Logger.VideoLog.LogCall(this, $"CreateChannelVideoInfos called with {videoSources?.Count() ?? 0} video sources");
+            
             List<ChannelVideoInfo> channelVideoInfos = new List<ChannelVideoInfo>();
             foreach (VideoConfig videoConfig in videoSources)
             {
+                Tools.Logger.VideoLog.LogCall(this, $"Processing VideoConfig: {videoConfig.DeviceName}, VideoBounds count: {videoConfig.VideoBounds?.Length ?? 0}");
+                
                 foreach (VideoBounds videoBounds in videoConfig.VideoBounds)
                 {
+                    Tools.Logger.VideoLog.LogCall(this, $"Processing VideoBounds: SourceType={videoBounds.SourceType}, Channel={videoBounds.GetChannel()?.ToString() ?? "null"}");
+                    
                     FrameSource source = null;
                     try
                     {
                         source = GetFrameSource(videoConfig);
+                        Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource returned: {source?.GetType()?.Name ?? "null"} (Instance: {source?.GetHashCode()})");
                     }
                     catch (System.Runtime.InteropServices.COMException e)
                     {
                         // Failed to load the camera..
                         Logger.VideoLog.LogException(this, e);
+                        Tools.Logger.VideoLog.LogCall(this, $"COM Exception getting frame source: {e.Message}");
                     }
+                    catch (Exception e)
+                    {
+                        Logger.VideoLog.LogException(this, e);
+                        Tools.Logger.VideoLog.LogCall(this, $"Exception getting frame source: {e.Message}");
+                    }
+                    
                     if (source != null)
                     {
                         Channel channel = videoBounds.GetChannel();
@@ -737,10 +765,16 @@ namespace UI.Video
 
                         ChannelVideoInfo cvi = new ChannelVideoInfo(videoBounds, channel, source);
                         channelVideoInfos.Add(cvi);
+                        Tools.Logger.VideoLog.LogCall(this, $"Created ChannelVideoInfo: Channel={channel}, FrameSource={source.GetType().Name} (Instance: {source.GetHashCode()})");
+                    }
+                    else
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "No frame source - skipping ChannelVideoInfo creation");
                     }
                 }
             }
 
+            Tools.Logger.VideoLog.LogCall(this, $"CreateChannelVideoInfos completed - returning {channelVideoInfos.Count} ChannelVideoInfos");
             return channelVideoInfos;
         }
 
@@ -748,24 +782,51 @@ namespace UI.Video
         public void StartRecording(Race race)
         {
             this.race = race;
+            Tools.Logger.VideoLog.LogCall(this, $"StartRecording called for race: {race?.ToString() ?? "null"}");
+            
             lock (recording)
             {
-                foreach (ICaptureFrameSource source in frameSources.OfType<ICaptureFrameSource>().Where(r => r.VideoConfig.RecordVideoForReplays))
+                var captureFrameSources = frameSources.OfType<ICaptureFrameSource>().ToList();
+                Tools.Logger.VideoLog.LogCall(this, $"Found {captureFrameSources.Count} ICaptureFrameSource instances");
+                
+                var recordingSources = captureFrameSources.Where(r => r.VideoConfig.RecordVideoForReplays).ToList();
+                Tools.Logger.VideoLog.LogCall(this, $"Found {recordingSources.Count} sources with RecordVideoForReplays=true");
+                
+                foreach (ICaptureFrameSource source in recordingSources)
                 {
+                    Tools.Logger.VideoLog.LogCall(this, $"Evaluating source: {source.GetType().Name} (Instance: {source.GetHashCode()})");
+                    Tools.Logger.VideoLog.LogCall(this, $"  - IsVisible: {source.IsVisible}");
+                    Tools.Logger.VideoLog.LogCall(this, $"  - VideoBounds count: {source.VideoConfig?.VideoBounds?.Length ?? 0}");
+                    
+                    if (source.VideoConfig?.VideoBounds != null)
+                    {
+                        var sourceTypes = source.VideoConfig.VideoBounds.Select(vb => vb.SourceType).ToArray();
+                        Tools.Logger.VideoLog.LogCall(this, $"  - Source types: [{string.Join(", ", sourceTypes)}]");
+                        bool allFPV = source.VideoConfig.VideoBounds.All(r => r.SourceType == SourceTypes.FPVFeed);
+                        Tools.Logger.VideoLog.LogCall(this, $"  - All FPV feeds: {allFPV}");
+                    }
+                    
                     // if all feeds on this source are FPV, only record if they're visible..
                     if (source.VideoConfig.VideoBounds.All(r => r.SourceType == SourceTypes.FPVFeed))
                     {
                         if (source.IsVisible)
                         {
+                            Tools.Logger.VideoLog.LogCall(this, $"  - Adding FPV source to recording (visible)");
                             recording.Add(source);
+                        }
+                        else
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"  - Skipping FPV source (not visible)");
                         }
                     }
                     else
                     {
-                        // record
+                        Tools.Logger.VideoLog.LogCall(this, $"  - Adding non-FPV source to recording");
                         recording.Add(source);
                     }
                 }
+                
+                Tools.Logger.VideoLog.LogCall(this, $"Recording collection now has {recording.Count} sources");
             }
             mutex.Set();
         }
@@ -1022,6 +1083,7 @@ namespace UI.Video
                                     }
                                     
                                     string filename = GetRecordingFilename(race, (FrameSource)source);
+                                    Tools.Logger.VideoLog.LogCall(this, $"Calling StartRecording on {source.GetType().Name} (Instance: {source.GetHashCode()}) with filename: {filename}");
                                     source.StartRecording(filename);
                                     doCountClean = true;
 

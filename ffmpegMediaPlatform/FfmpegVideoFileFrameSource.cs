@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Tools;
+using UI.Video;
 
 namespace FfmpegMediaPlatform
 {
@@ -85,6 +86,8 @@ namespace FfmpegMediaPlatform
         public FfmpegVideoFileFrameSource(FfmpegMediaFramework ffmpegMediaFramework, VideoConfig videoConfig)
             : base(ffmpegMediaFramework, videoConfig)
         {
+            Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR FfmpegVideoFileFrameSource constructor called");
+            
             // Initialize playback properties
             startTime = DateTime.Now; // Default start time
             length = TimeSpan.Zero;
@@ -97,6 +100,11 @@ namespace FfmpegMediaPlatform
             mediaTime = TimeSpan.Zero;
             currentFrameIndex = 0;
             totalFrames = 0;
+            
+            // Load frame times from .recordinfo.xml file if it exists
+            Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR About to call LoadFrameTimesFromRecordInfo");
+            LoadFrameTimesFromRecordInfo();
+            Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR LoadFrameTimesFromRecordInfo completed");
         }
 
         protected override ProcessStartInfo GetProcessStartInfo()
@@ -933,6 +941,114 @@ namespace FfmpegMediaPlatform
             process = new Process();
             process.StartInfo = processStartInfo;
             Start();
+        }
+        
+        /// <summary>
+        /// Load frame times from the .recordinfo.xml file associated with this video file
+        /// </summary>
+        private void LoadFrameTimesFromRecordInfo()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(VideoConfig.FilePath) || !File.Exists(VideoConfig.FilePath))
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR No video file path available for frame times loading");
+                    return;
+                }
+                
+                // Calculate the .recordinfo.xml file path
+                string videoFilePath = VideoConfig.FilePath;
+                string basePath = videoFilePath;
+                if (basePath.EndsWith(".mp4"))
+                {
+                    basePath = basePath.Replace(".mp4", "");
+                }
+                else if (basePath.EndsWith(".wmv"))
+                {
+                    basePath = basePath.Replace(".wmv", "");
+                }
+                else if (basePath.EndsWith(".ts"))
+                {
+                    basePath = basePath.Replace(".ts", "");
+                }
+                
+                string recordInfoPath = basePath + ".recordinfo.xml";
+                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Looking for record info file: {recordInfoPath}");
+                
+                // Convert to absolute path for proper file checking and IOTools usage
+                string absoluteRecordInfoPath = Path.GetFullPath(recordInfoPath);
+                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Absolute record info path: {absoluteRecordInfoPath}");
+                
+                if (!File.Exists(absoluteRecordInfoPath))
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR No .recordinfo.xml file found at {absoluteRecordInfoPath}");
+                    return;
+                }
+                
+                // Load the recording info using absolute paths
+                var recordingInfo = IOTools.ReadSingle<RecodingInfo>(Path.GetDirectoryName(absoluteRecordInfoPath), Path.GetFileName(absoluteRecordInfoPath));
+                if (recordingInfo != null && recordingInfo.FrameTimes != null && recordingInfo.FrameTimes.Length > 0)
+                {
+                    // Set the loaded frame times - need to access via reflection or create a protected setter
+                    SetFrameTimes(recordingInfo.FrameTimes);
+                    
+                    Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Loaded {recordingInfo.FrameTimes.Length} frame times from {recordInfoPath}");
+                    
+                    // Update the start time based on the first frame
+                    var firstFrame = recordingInfo.FrameTimes.OrderBy(f => f.Time).First();
+                    var lastFrame = recordingInfo.FrameTimes.OrderBy(f => f.Time).Last();
+                    startTime = firstFrame.Time;
+                    length = lastFrame.Time - firstFrame.Time;
+                    
+                    Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Video timeline: start={startTime:HH:mm:ss.fff}, length={length.TotalSeconds:F1}s");
+                }
+                else
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR .recordinfo.xml file exists but contains no frame times");
+                }
+            }
+            catch (Exception ex)
+            {
+                Tools.Logger.VideoLog.LogException(this, ex);
+                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Failed to load frame times from .recordinfo.xml: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// Set the frame times for this video file source
+        /// </summary>
+        private void SetFrameTimes(FrameTime[] newFrameTimes)
+        {
+            try
+            {
+                // Use reflection to access the private frameTimes field from the base class
+                var frameTimesField = typeof(FfmpegFrameSource).GetField("frameTimes", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                
+                if (frameTimesField != null)
+                {
+                    var frameTimesList = (List<FrameTime>)frameTimesField.GetValue(this);
+                    if (frameTimesList != null)
+                    {
+                        frameTimesList.Clear();
+                        frameTimesList.AddRange(newFrameTimes);
+                        Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR SetFrameTimes: Set {newFrameTimes.Length} frame times via reflection");
+                    }
+                    else
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR SetFrameTimes: frameTimes field is null");
+                    }
+                }
+                else
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR SetFrameTimes: Could not find frameTimes field via reflection");
+                }
+            }
+            catch (Exception ex)
+            {
+                Tools.Logger.VideoLog.LogException(this, ex);
+                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR SetFrameTimes failed: {ex.Message}");
+            }
         }
     }
 } 

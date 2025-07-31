@@ -771,7 +771,11 @@ namespace UI.Video
 
         private void CreateChannelVideoInfos()
         {
-            ChannelVideoInfos = videoManager.CreateChannelVideoInfos(others).Where(cc => cc.FrameSource.VideoConfig == videoConfig).ToArray();
+            var allChannelVideoInfos = videoManager.CreateChannelVideoInfos(others);
+            Tools.Logger.VideoLog.LogCall(this, $"VideoManager returned {allChannelVideoInfos?.Count() ?? 0} ChannelVideoInfos");
+            
+            ChannelVideoInfos = allChannelVideoInfos.Where(cc => cc.FrameSource.VideoConfig == videoConfig).ToArray();
+            Tools.Logger.VideoLog.LogCall(this, $"After filtering by VideoConfig ({videoConfig.DeviceName}), got {ChannelVideoInfos.Length} ChannelVideoInfos");
 
             foreach (ChannelVideoInfo cvi in ChannelVideoInfos)
             {
@@ -800,6 +804,8 @@ namespace UI.Video
 
         public void MakeTable()
         {
+            Tools.Logger.VideoLog.LogCall(this, $"MakeTable called with {ChannelVideoInfos?.Length ?? 0} ChannelVideoInfos");
+            
             lock (table)
             {
                 if (table != null)
@@ -813,6 +819,8 @@ namespace UI.Video
 
                 int columns = (int)Math.Ceiling(Math.Sqrt(ChannelVideoInfos.Length));
                 int rows = (int)Math.Ceiling(ChannelVideoInfos.Length / (float)columns);
+                
+                Tools.Logger.VideoLog.LogCall(this, $"Table layout: {rows}x{columns} for {ChannelVideoInfos.Length} items");
                 table.SetSize(rows, columns);
 
                 Color transparentForeground = new Color(Theme.Current.Editor.Foreground.XNA, 0.5f);
@@ -823,6 +831,8 @@ namespace UI.Video
                     ChannelVideoInfo channelVideoInfo = ChannelVideoInfos[i];
                     Node cell = table.GetCell(i);
 
+                    Tools.Logger.VideoLog.LogCall(this, $"Creating video nodes: cell={cell != null}, frameSource={channelVideoInfo?.FrameSource?.GetType()?.Name ?? "null"} (Instance: {channelVideoInfo?.FrameSource?.GetHashCode()})");
+                    
                     if (cell != null && channelVideoInfo.FrameSource != null)
                     {
                         ChannelVideoMapNode cvmn = new ChannelVideoMapNode(channelVideoInfo);
@@ -1200,16 +1210,26 @@ namespace UI.Video
         public ChannelVideoMapNode(ChannelVideoInfo channelVideoInfo)
         {
             ChannelVideoInfo = channelVideoInfo;
+            
+            Tools.Logger.VideoLog.LogCall(this, $"ChannelVideoMapNode constructor called with FrameSource: {channelVideoInfo?.FrameSource?.GetType()?.Name ?? "null"} (Instance: {channelVideoInfo?.FrameSource?.GetHashCode()})");
 
             SetData();
         }
 
         private void SetData()
         {
+            Tools.Logger.VideoLog.LogCall(this, $"SetData called for ChannelVideoMapNode");
             ClearDisposeChildren();
+
+            if (ChannelVideoInfo?.FrameSource == null)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"SetData: ChannelVideoInfo.FrameSource is null, skipping FrameNode creation");
+                return;
+            }
 
             VideoConfig videoConfig = ChannelVideoInfo.FrameSource.VideoConfig;
 
+            Tools.Logger.VideoLog.LogCall(this, $"VideoSourceEditor creating FrameNode with source: {ChannelVideoInfo.FrameSource.GetType().Name} (Instance: {ChannelVideoInfo.FrameSource.GetHashCode()})");
             FrameNode = new FrameNode(ChannelVideoInfo.FrameSource);
             FrameNode.RelativeSourceBounds = ChannelVideoInfo.ScaledRelativeSourceBounds;
             FrameNode.KeepAspectRatio = true;

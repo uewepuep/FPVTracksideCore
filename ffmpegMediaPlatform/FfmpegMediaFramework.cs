@@ -184,11 +184,10 @@ namespace FfmpegMediaPlatform
             }
             else
             {
-                // Create camera capture frame source
-                if (dshow)
-                    return new FfmpegDshowFrameSource(this, vc);
-                else
-                    return new FfmpegAvFoundationFrameSource(this, vc);
+                // Create camera capture frame source with HLS streaming capability
+                // This provides persistent live streaming with independent recording
+                Tools.Logger.VideoLog.LogCall(this, $"Creating HLS composite frame source for camera: {vc.DeviceName}");
+                return new FfmpegHlsCompositeFrameSource(this, vc);
             }
         }
 

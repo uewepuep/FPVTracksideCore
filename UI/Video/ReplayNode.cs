@@ -119,7 +119,9 @@ namespace UI.Video
         {
             if (primary != null && race != null)
             {
-                SeekNode.SetRace(race, minStart, maxEnd);
+                // Get frame times for timeline positioning
+                var frameTimes = GetFrameTimesFromFrameSources();
+                SeekNode.SetRace(race, minStart, maxEnd, frameTimes);
                 ChannelsGridNode.SetPlaybackTime(race.Start);
             }
         }
@@ -291,7 +293,9 @@ namespace UI.Video
                     }
 
 
-                    SeekNode.SetRace(race, minStart, maxEnd);
+                    // Get frame times for timeline positioning
+                    var frameTimes = GetFrameTimesFromFrameSources();
+                    SeekNode.SetRace(race, minStart, maxEnd, frameTimes);
 
                     RequestLayout();
                 });
@@ -410,6 +414,46 @@ namespace UI.Video
                         ChannelsGridNode.Reorder();
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Get frame times from the frame sources for timeline positioning
+        /// </summary>
+        private FrameTime[] GetFrameTimesFromFrameSources()
+        {
+            try
+            {
+                Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR GetFrameTimesFromFrameSources() - START");
+                
+                if (PlaybackVideoManager != null)
+                {
+                    var allFrameSources = PlaybackVideoManager.GetFrameSources();
+                    Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Found {allFrameSources.Count()} total frame sources");
+                    
+                    var frameSources = allFrameSources.OfType<ICaptureFrameSource>();
+                    Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Found {frameSources.Count()} ICaptureFrameSource frame sources");
+                    
+                    foreach (var frameSource in frameSources)
+                    {
+                        var frameTimes = frameSource.FrameTimes;
+                        Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Frame source {frameSource.GetType().Name}: {frameTimes?.Length ?? 0} frame times");
+                        if (frameTimes != null && frameTimes.Length > 0)
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Returning {frameTimes.Length} frame times from {frameSource.GetType().Name}");
+                            return frameTimes;
+                        }
+                    }
+                }
+                
+                Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR No frame times found, returning empty array");
+                return new FrameTime[0];
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't crash the UI
+                Tools.Logger.VideoLog.LogException(this, ex);
+                return new FrameTime[0];
             }
         }
 
