@@ -18,7 +18,6 @@
   <ItemGroup>
     <ProjectReference Include="..\ImageServer\ImageServer.csproj" />
     <ProjectReference Include="..\Tools\Tools.csproj" />
-    <ProjectReference Include="..\UI\UI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

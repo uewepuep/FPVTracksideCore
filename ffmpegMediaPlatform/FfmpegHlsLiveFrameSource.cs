@@ -300,16 +300,16 @@ namespace FfmpegMediaPlatform
         {
             // Try to detect available encoders (this is a simplified approach)
             // In a full implementation, you might query FFmpeg for available encoders
-            
+
             // Try NVIDIA NVENC first (most common for gaming/streaming)
             if (IsEncoderAvailable("h264_nvenc"))
             {
                 Tools.Logger.VideoLog.LogCall(this, "Using NVIDIA NVENC hardware encoding");
-                return "-c:v h264_nvenc -preset p1 -tune ll -rc vbr " +
+                return "-c:v h264_nvenc -preset p3 -tune ll -rc vbr " +
                        "-cq 18 -b:v 8M -maxrate 12M -bufsize 2M " +
-                       "-pix_fmt yuv420p -profile:v high -level 4.0";
+                       "-pix_fmt yuv420p -profile:v high -level 4.0";   
             }
-            
+
             // Try Intel Quick Sync Video
             if (IsEncoderAvailable("h264_qsv"))
             {

@@ -424,29 +424,23 @@ namespace UI.Video
         {
             try
             {
-                Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR GetFrameTimesFromFrameSources() - START");
                 
                 if (PlaybackVideoManager != null)
                 {
                     var allFrameSources = PlaybackVideoManager.GetFrameSources();
-                    Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Found {allFrameSources.Count()} total frame sources");
                     
                     var frameSources = allFrameSources.OfType<ICaptureFrameSource>();
-                    Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Found {frameSources.Count()} ICaptureFrameSource frame sources");
                     
                     foreach (var frameSource in frameSources)
                     {
                         var frameTimes = frameSource.FrameTimes;
-                        Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Frame source {frameSource.GetType().Name}: {frameTimes?.Length ?? 0} frame times");
                         if (frameTimes != null && frameTimes.Length > 0)
                         {
-                            Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Returning {frameTimes.Length} frame times from {frameSource.GetType().Name}");
                             return frameTimes;
                         }
                     }
                 }
                 
-                Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR No frame times found, returning empty array");
                 return new FrameTime[0];
             }
             catch (Exception ex)

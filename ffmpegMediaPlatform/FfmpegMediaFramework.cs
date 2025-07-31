@@ -92,15 +92,27 @@ namespace FfmpegMediaPlatform
             }
             else
             {
-                execName = "ffmpeg";
-
-                if (!File.Exists(execName))
+                // On Windows, try to find ffmpeg.exe in the ffmpeg subdirectory first
+                string localFfmpegPath = Path.Combine("ffmpeg", "ffmpeg.exe");
+                
+                if (File.Exists(localFfmpegPath))
                 {
-                    string exe = execName + ".exe";
+                    execName = localFfmpegPath;
+                    Console.WriteLine($"Using local ffmpeg binary: {localFfmpegPath}");
+                }
+                else
+                {
+                    // Fallback to looking for ffmpeg in current directory or PATH
+                    execName = "ffmpeg";
 
-                    if(File.Exists(exe))
+                    if (!File.Exists(execName))
                     {
-                        execName = exe;
+                        string exe = execName + ".exe";
+
+                        if(File.Exists(exe))
+                        {
+                            execName = exe;
+                        }
                     }
                 }
             }

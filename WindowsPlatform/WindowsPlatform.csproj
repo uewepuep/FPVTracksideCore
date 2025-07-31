@@ -25,6 +25,7 @@
 	  <ProjectReference Include="..\ImageServer\ImageServer.csproj" />
 	  <ProjectReference Include="..\RaceLib\RaceLib.csproj" />
 	  <ProjectReference Include="..\Tools\Tools.csproj" />
+	  <ProjectReference Include="..\UI\UI.csproj" />
 	  <ProjectReference Include="..\WinFormsGraphicsDevice\WinFormsGraphicsDevice.csproj" />
 	</ItemGroup>
 

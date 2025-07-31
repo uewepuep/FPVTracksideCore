@@ -9,7 +9,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Tools;
-using UI.Video;
 
 namespace FfmpegMediaPlatform
 {
@@ -86,7 +85,6 @@ namespace FfmpegMediaPlatform
         public FfmpegVideoFileFrameSource(FfmpegMediaFramework ffmpegMediaFramework, VideoConfig videoConfig)
             : base(ffmpegMediaFramework, videoConfig)
         {
-            Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR FfmpegVideoFileFrameSource constructor called");
             
             // Initialize playback properties
             startTime = DateTime.Now; // Default start time
@@ -102,9 +100,7 @@ namespace FfmpegMediaPlatform
             totalFrames = 0;
             
             // Load frame times from .recordinfo.xml file if it exists
-            Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR About to call LoadFrameTimesFromRecordInfo");
             LoadFrameTimesFromRecordInfo();
-            Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR LoadFrameTimesFromRecordInfo completed");
         }
 
         protected override ProcessStartInfo GetProcessStartInfo()
@@ -321,7 +317,20 @@ namespace FfmpegMediaPlatform
                 }
 
                 // Use FFprobe to get video file information
-                string ffprobePath = ffmpegMediaFramework.ExecName.Replace("ffmpeg", "ffprobe");
+                string ffprobePath;
+                if (ffmpegMediaFramework.ExecName.Contains(Path.DirectorySeparatorChar.ToString()))
+                {
+                    // If ffmpeg path contains directory separator, construct ffprobe path in same directory
+                    string ffmpegDir = Path.GetDirectoryName(ffmpegMediaFramework.ExecName);
+                    string ffmpegFile = Path.GetFileName(ffmpegMediaFramework.ExecName);
+                    string ffprobeFile = ffmpegFile.Replace("ffmpeg", "ffprobe");
+                    ffprobePath = Path.Combine(ffmpegDir, ffprobeFile);
+                }
+                else
+                {
+                    // Simple replacement for cases where ffmpeg is just "ffmpeg" or "ffmpeg.exe"
+                    ffprobePath = ffmpegMediaFramework.ExecName.Replace("ffmpeg", "ffprobe");
+                }
                 
                 Tools.Logger.VideoLog.LogCall(this, $"Looking for FFprobe at: {ffprobePath}");
                 Tools.Logger.VideoLog.LogCall(this, $"FFmpeg framework exec name: {ffmpegMediaFramework.ExecName}");
@@ -952,7 +961,6 @@ namespace FfmpegMediaPlatform
             {
                 if (string.IsNullOrEmpty(VideoConfig.FilePath) || !File.Exists(VideoConfig.FilePath))
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR No video file path available for frame times loading");
                     return;
                 }
                 
@@ -973,15 +981,12 @@ namespace FfmpegMediaPlatform
                 }
                 
                 string recordInfoPath = basePath + ".recordinfo.xml";
-                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Looking for record info file: {recordInfoPath}");
                 
                 // Convert to absolute path for proper file checking and IOTools usage
                 string absoluteRecordInfoPath = Path.GetFullPath(recordInfoPath);
-                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Absolute record info path: {absoluteRecordInfoPath}");
                 
                 if (!File.Exists(absoluteRecordInfoPath))
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR No .recordinfo.xml file found at {absoluteRecordInfoPath}");
                     return;
                 }
                 
@@ -992,7 +997,6 @@ namespace FfmpegMediaPlatform
                     // Set the loaded frame times - need to access via reflection or create a protected setter
                     SetFrameTimes(recordingInfo.FrameTimes);
                     
-                    Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Loaded {recordingInfo.FrameTimes.Length} frame times from {recordInfoPath}");
                     
                     // Update the start time based on the first frame
                     var firstFrame = recordingInfo.FrameTimes.OrderBy(f => f.Time).First();
@@ -1000,17 +1004,14 @@ namespace FfmpegMediaPlatform
                     startTime = firstFrame.Time;
                     length = lastFrame.Time - firstFrame.Time;
                     
-                    Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Video timeline: start={startTime:HH:mm:ss.fff}, length={length.TotalSeconds:F1}s");
                 }
                 else
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR .recordinfo.xml file exists but contains no frame times");
                 }
             }
             catch (Exception ex)
             {
                 Tools.Logger.VideoLog.LogException(this, ex);
-                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Failed to load frame times from .recordinfo.xml: {ex.Message}");
             }
         }
         
@@ -1032,22 +1033,18 @@ namespace FfmpegMediaPlatform
                     {
                         frameTimesList.Clear();
                         frameTimesList.AddRange(newFrameTimes);
-                        Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR SetFrameTimes: Set {newFrameTimes.Length} frame times via reflection");
                     }
                     else
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR SetFrameTimes: frameTimes field is null");
                     }
                 }
                 else
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR SetFrameTimes: Could not find frameTimes field via reflection");
                 }
             }
             catch (Exception ex)
             {
                 Tools.Logger.VideoLog.LogException(this, ex);
-                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR SetFrameTimes failed: {ex.Message}");
             }
         }
     }

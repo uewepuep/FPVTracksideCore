@@ -41,8 +41,6 @@ namespace ImageServer
             TimeSpan offsetFromRecordingStart = dateTime - firstFrame.Time;
             
             // Debug logging
-            Tools.Logger.VideoLog.LogCall(null, $"PROGRESSBAR GetMediaTime: dateTime={dateTime:HH:mm:ss.fff}, firstFrame.Time={firstFrame.Time:HH:mm:ss.fff}");
-            Tools.Logger.VideoLog.LogCall(null, $"PROGRESSBAR GetMediaTime: offsetFromRecordingStart={offsetFromRecordingStart.TotalSeconds:F3}s, latency={latency.TotalSeconds:F3}s");
             
             // Return the offset as the media time position
             return offsetFromRecordingStart + latency;
