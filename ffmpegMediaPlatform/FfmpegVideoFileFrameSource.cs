@@ -43,7 +43,21 @@ namespace FfmpegMediaPlatform
         public PlaybackSpeed PlaybackSpeed 
         { 
             get => playbackSpeed; 
-            set => playbackSpeed = value; 
+            set 
+            {
+                if (playbackSpeed != value)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"PlaybackSpeed changed from {playbackSpeed} to {value}");
+                    playbackSpeed = value;
+                    
+                    // If currently playing, restart with new speed settings
+                    if (State == States.Running)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "Restarting video with new playback speed");
+                        RestartWithSeek(mediaTime);
+                    }
+                }
+            }
         }
         public bool Repeat 
         { 
@@ -158,14 +172,28 @@ namespace FfmpegMediaPlatform
 
             // Build FFmpeg command for video file playback with interactive seeking support
             // Use proper settings for smooth video file playback
-            string ffmpegArgs = $"-re " +  // Read input at native frame rate for proper timing
+            
+            // Build video filter chain based on playback speed
+            string videoFilter = "vflip"; // Base filter to flip video vertically
+            string reFlag = "-re"; // Default: use -re for proper timing
+            
+            // Add playback speed control if slow motion is enabled
+            if (playbackSpeed == PlaybackSpeed.Slow)
+            {
+                // Use setpts filter to slow down video to 25% speed
+                // setpts=4*PTS makes video 4x slower (25% speed)
+                videoFilter += ",setpts=4*PTS";
+                reFlag = ""; // Remove -re flag for slow motion to allow setpts to work properly
+                Tools.Logger.VideoLog.LogCall(this, "Slow motion enabled - video will play at 25% speed using setpts filter (no -re)");
+            }
+            
+            string ffmpegArgs = $"{(string.IsNullOrEmpty(reFlag) ? "" : reFlag + " ")}" +  // Read input at native frame rate (only for normal speed)
                                $"-i \"{filePath}\" " +
                                $"-fflags +genpts " +  // Generate presentation timestamps
                                $"-avoid_negative_ts make_zero " +  // Handle negative timestamps
                                $"-threads 1 " +
                                $"-an " +  // No audio
-                               $"-vf \"vflip\" " +  // Flip video vertically to fix upside down orientation
-                               // Let FFmpeg preserve original video timing instead of forcing frame rate
+                               $"-vf \"{videoFilter}\" " +  // Apply video filters (vflip and optionally setpts for slow motion)
                                $"-pix_fmt rgba " +
                                $"-f rawvideo pipe:1";
 
@@ -350,8 +378,9 @@ namespace FfmpegMediaPlatform
                         isSeekOperation = false;
                         Tools.Logger.VideoLog.LogCall(this, $"SEEK: Timing stabilized, continuing from: {mediaTime.TotalSeconds:F3}s");
                     }
-                    // During stabilization, keep mediaTime at the seek position - don't update it yet
-                    // This prevents the progress bar from jumping around during seek stabilization
+                    // During stabilization, keep mediaTime FROZEN at the seek position
+                    // This prevents the progress bar from moving until frames are actually being processed
+                    // mediaTime stays at the seek position until timing stabilizes
                 }
                 else
                 {
@@ -374,6 +403,15 @@ namespace FfmpegMediaPlatform
                         // Restart from beginning
                         SetPosition(TimeSpan.Zero);
                     }
+                }
+            }
+            else
+            {
+                // If startTime hasn't been set yet, don't update mediaTime at all
+                // This prevents the progress bar from moving before the FFmpeg process starts
+                if (isSeekOperation)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"SEEK: Waiting for FFmpeg process to start before updating timing (mediaTime frozen at: {mediaTime.TotalSeconds:F3}s)");
                 }
             }
         }
@@ -733,15 +771,13 @@ namespace FfmpegMediaPlatform
 
         public void Play()
         {
+            Tools.Logger.VideoLog.LogCall(this, $"Play() called, current state: {State}, mediaTime: {mediaTime}");
+            
             if (State == States.Paused)
             {
-                // Try to unpause first
-                if (!Unpause())
-                {
-                    // If unpause fails, restart from current position
-                    Tools.Logger.VideoLog.LogCall(this, "Unpause failed, restarting video from current position");
-                    RestartWithSeek(mediaTime);
-                }
+                // When paused, we stopped the FFmpeg process, so we need to restart from current position
+                Tools.Logger.VideoLog.LogCall(this, "Resuming from pause by restarting video from current position");
+                RestartWithSeek(mediaTime);
             }
             else if (State == States.Stopped)
             {
@@ -749,34 +785,67 @@ namespace FfmpegMediaPlatform
                 Tools.Logger.VideoLog.LogCall(this, "Video stopped, restarting from current position");
                 RestartWithSeek(mediaTime);
             }
+            else if (State == States.Running)
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Video is already playing");
+            }
+            else
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"Play() called from unexpected state: {State}");
+                // Try to start from current position anyway
+                RestartWithSeek(mediaTime);
+            }
         }
 
         public override bool Pause()
         {
-            if (State == States.Running && process != null && !process.HasExited)
+            Tools.Logger.VideoLog.LogCall(this, $"Pause() called, current state: {State}");
+            
+            if (State == States.Running)
             {
                 try
                 {
-                    // Send pause signal to FFmpeg process
-                    if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+                    Tools.Logger.VideoLog.LogCall(this, "Pausing video playback by stopping FFmpeg process");
+                    
+                    // For video file playback, we can't easily pause FFmpeg, so we stop it instead
+                    // The current mediaTime position is preserved so Play() can resume from there
+                    
+                    // Stop the FFmpeg process immediately and synchronously
+                    if (process != null && !process.HasExited)
                     {
-                        // Windows: Use space key to toggle pause
-                        process.StandardInput.WriteLine(" ");
-                        process.StandardInput.Flush();
+                        Tools.Logger.VideoLog.LogCall(this, $"Killing FFmpeg process {process.Id} for pause");
+                        try
+                        {
+                            process.Kill();
+                            // Give it a short time to exit gracefully, but don't wait too long
+                            if (process.WaitForExit(1000))
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, "FFmpeg process stopped successfully for pause");
+                            }
+                            else
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, "FFmpeg process didn't exit quickly, but continuing with pause");
+                            }
+                        }
+                        catch (Exception killEx)
+                        {
+                            Tools.Logger.VideoLog.LogException(this, killEx);
+                            Tools.Logger.VideoLog.LogCall(this, "Error killing FFmpeg process during pause, but continuing");
+                        }
+                    }
+                    else if (process != null)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "FFmpeg process already exited");
                     }
                     else
                     {
-                        // macOS/Linux: Use SIGSTOP to pause the process
-                        var pauseProcess = new Process();
-                        pauseProcess.StartInfo.FileName = "kill";
-                        pauseProcess.StartInfo.Arguments = $"-STOP {process.Id}";
-                        pauseProcess.StartInfo.UseShellExecute = false;
-                        pauseProcess.Start();
-                        // Don't wait for exit to avoid UI lockup
-                        // pauseProcess.WaitForExit();
+                        Tools.Logger.VideoLog.LogCall(this, "No FFmpeg process to kill");
                     }
                     
-                    return base.Pause();
+                    // Set state to paused 
+                    bool result = base.Pause();
+                    Tools.Logger.VideoLog.LogCall(this, $"Pause completed, state now: {State}");
+                    return result;
                 }
                 catch (Exception ex)
                 {
@@ -784,35 +853,92 @@ namespace FfmpegMediaPlatform
                     return false;
                 }
             }
-            return false;
+            else
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"Cannot pause from state: {State}");
+                return false;
+            }
+        }
+        
+        public override bool Stop()
+        {
+            Tools.Logger.VideoLog.LogCall(this, $"Stop() called, current state: {State}");
+            
+            if (State != States.Stopped)
+            {
+                try
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "Stopping video playback by killing FFmpeg process");
+                    
+                    // Kill the FFmpeg process immediately and synchronously BEFORE calling base.Stop()
+                    // This prevents the base class's async cleanup from racing with our sync cleanup
+                    if (process != null && !process.HasExited)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"Killing FFmpeg process {process.Id} for stop");
+                        try
+                        {
+                            process.Kill();
+                            // Give it a short time to exit gracefully, but don't wait too long
+                            if (process.WaitForExit(1000))
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, "FFmpeg process stopped successfully");
+                            }
+                            else
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, "FFmpeg process didn't exit quickly, but continuing with stop");
+                            }
+                        }
+                        catch (Exception killEx)
+                        {
+                            Tools.Logger.VideoLog.LogException(this, killEx);
+                            Tools.Logger.VideoLog.LogCall(this, "Error killing FFmpeg process during stop, but continuing");
+                        }
+                    }
+                    else if (process != null)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "FFmpeg process already exited");
+                    }
+                    else
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "No FFmpeg process to kill");
+                    }
+                    
+                    // Now call base stop to set state and handle other cleanup
+                    // Since we already killed the process, the base class's async cleanup won't find it
+                    bool result = base.Stop();
+                    Tools.Logger.VideoLog.LogCall(this, $"Stop completed, state now: {State}");
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    Tools.Logger.VideoLog.LogException(this, ex);
+                    return false;
+                }
+            }
+            else
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Already stopped");
+                return true;
+            }
         }
         
         public override bool Unpause()
         {
-            if (State == States.Paused && process != null && !process.HasExited)
+            Tools.Logger.VideoLog.LogCall(this, $"Unpause() called, current state: {State}");
+            
+            if (State == States.Paused)
             {
                 try
                 {
-                    // Send unpause signal to FFmpeg process
-                    if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
-                    {
-                        // Windows: Use space key to toggle pause
-                        process.StandardInput.WriteLine(" ");
-                        process.StandardInput.Flush();
-                    }
-                    else
-                    {
-                        // macOS/Linux: Use SIGCONT to resume the process
-                        var resumeProcess = new Process();
-                        resumeProcess.StartInfo.FileName = "kill";
-                        resumeProcess.StartInfo.Arguments = $"-CONT {process.Id}";
-                        resumeProcess.StartInfo.UseShellExecute = false;
-                        resumeProcess.Start();
-                        // Don't wait for exit to avoid UI lockup
-                        // resumeProcess.WaitForExit();
-                    }
+                    Tools.Logger.VideoLog.LogCall(this, "Unpausing by restarting video from current position");
                     
-                    return base.Unpause();
+                    // Since we stopped the FFmpeg process in Pause(), we need to restart it from the current position
+                    // The mediaTime should be preserved from when we paused
+                    RestartWithSeek(mediaTime);
+                    
+                    bool result = base.Unpause();
+                    Tools.Logger.VideoLog.LogCall(this, $"Unpause completed, state now: {State}");
+                    return result;
                 }
                 catch (Exception ex)
                 {
@@ -820,7 +946,11 @@ namespace FfmpegMediaPlatform
                     return false;
                 }
             }
-            return false;
+            else
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"Cannot unpause from state: {State}");
+                return false;
+            }
         }
 
         public void SetPosition(TimeSpan timeSpan)
@@ -867,19 +997,27 @@ namespace FfmpegMediaPlatform
                 string fileName = Path.GetFileName(VideoConfig.FilePath);
                 Tools.Logger.VideoLog.LogCall(this, $"Restarting video playback ({fileName}) with seek to: {seekTime}");
                 
-                // For seeking, immediately kill the current process - no graceful shutdown needed
+                // For seeking, immediately kill the current process synchronously - no graceful shutdown needed
                 if (process != null)
                 {
                     if (!process.HasExited)
                     {
                         Tools.Logger.VideoLog.LogCall(this, $"Immediately killing FFmpeg process for seek (PID: {process.Id})");
                         
-                        // Force kill the process immediately
+                        // Force kill the process immediately and wait for it to exit
                         run = false;
                         try
                         {
                             process.Kill();
-                            Tools.Logger.VideoLog.LogCall(this, $"Process.Kill() called successfully");
+                            // Wait for the process to actually exit (synchronous)
+                            if (process.WaitForExit(1000))
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"FFmpeg process killed and exited successfully for seek");
+                            }
+                            else
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"FFmpeg process didn't exit quickly after kill, but continuing");
+                            }
                         }
                         catch (Exception killEx)
                         {
@@ -891,32 +1029,18 @@ namespace FfmpegMediaPlatform
                         Tools.Logger.VideoLog.LogCall(this, $"Process was already exited (Exit Code: {process.ExitCode})");
                     }
                     
-                    // Clean up with timeout
-                    var processToDispose = process;
-                    process = null; // Set to null immediately
-                    
-                    Tools.Logger.VideoLog.LogCall(this, $"Starting async process cleanup");
-                    
-                    // Dispose asynchronously with timeout to avoid UI blocking
-                    Task.Run(() =>
+                    // Dispose the process immediately
+                    try
                     {
-                        try
-                        {
-                            var disposeTask = Task.Run(() => processToDispose?.Dispose());
-                            if (!disposeTask.Wait(100)) // Increased timeout to 100ms for more reliable cleanup
-                            {
-                                Tools.Logger.VideoLog.LogCall(this, "Process dispose timed out after 100ms, proceeding anyway");
-                            }
-                            else
-                            {
-                                Tools.Logger.VideoLog.LogCall(this, "Process disposed successfully");
-                            }
-                        }
-                        catch (Exception disposeEx)
-                        {
-                            Tools.Logger.VideoLog.LogCall(this, $"Process dispose exception: {disposeEx.Message}");
-                        }
-                    });
+                        process.Dispose();
+                        Tools.Logger.VideoLog.LogCall(this, "Process disposed successfully for seek");
+                    }
+                    catch (Exception disposeEx)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"Process dispose exception: {disposeEx.Message}");
+                    }
+                    
+                    process = null; // Set to null after disposal
                 }
                 else
                 {
@@ -1008,14 +1132,29 @@ namespace FfmpegMediaPlatform
                 // Build FFmpeg command with seek parameter
                 // Put -ss BEFORE -i for efficient input seeking (avoids decoding unnecessary frames)
                 // Input options (-ss, -re) must come before -i, output options come after
+                
+                // Build video filter chain based on playback speed (same as GetProcessStartInfo)
+                string videoFilter = "vflip"; // Base filter to flip video vertically
+                string reFlag = "-re"; // Default: use -re for proper timing
+                
+                // Add playback speed control if slow motion is enabled
+                if (playbackSpeed == PlaybackSpeed.Slow)
+                {
+                    // Use setpts filter to slow down video to 25% speed
+                    // setpts=4*PTS makes video 4x slower (25% speed)
+                    videoFilter += ",setpts=4*PTS";
+                    reFlag = ""; // Remove -re flag for slow motion to allow setpts to work properly
+                    Tools.Logger.VideoLog.LogCall(this, "SEEK: Slow motion enabled - video will play at 25% speed using setpts filter (no -re)");
+                }
+                
                 string ffmpegArgs = $"-ss {seekTime.TotalSeconds:F3} " +  // Seek to specific time (BEFORE input for fast seek)
-                                   $"-re " +  // Read input at native frame rate (BEFORE input file)
+                                   $"{(string.IsNullOrEmpty(reFlag) ? "" : reFlag + " ")}" +  // Read input at native frame rate (only for normal speed)
                                    $"-i \"{filePath}\" " +  // Input file
                                    $"-fflags +genpts " +  // Generate presentation timestamps (output option)
                                    $"-avoid_negative_ts make_zero " +  // Handle negative timestamps (output option)
                                    $"-threads 1 " +  // Single thread (output option)
                                    $"-an " +  // No audio (output option)
-                                   $"-vf \"vflip\" " +  // Same video filter as normal streaming (output option)
+                                   $"-vf \"{videoFilter}\" " +  // Apply video filters (vflip and optionally setpts for slow motion)
                                    $"-pix_fmt rgba " +  // RGBA pixel format (output option)
                                    $"-f rawvideo pipe:1";  // Raw video output to stdout (output option)
 
