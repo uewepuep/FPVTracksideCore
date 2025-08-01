@@ -1127,8 +1127,25 @@ namespace UI.Video
                         {
                             try
                             {
-                                if (source.FrameTimes != null && source.FrameTimes.Any())
+                                // For RGBA recording, only generate XML when recording is completely finished
+                                bool isRgbaRecording = source.GetType().Name.Contains("Composite") || source.GetType().Name.Contains("Hls");
+                                bool canGenerateXml = false;
+                                
+                                if (isRgbaRecording)
                                 {
+                                    // Wait for RGBA recording to be completely finished
+                                    canGenerateXml = !source.Recording && !source.Finalising;
+                                }
+                                else
+                                {
+                                    // For non-RGBA recording, use existing logic
+                                    canGenerateXml = source.FrameTimes != null && source.FrameTimes.Any();
+                                }
+                                
+                                if (canGenerateXml && source.FrameTimes != null && source.FrameTimes.Any())
+                                {
+                                    Tools.Logger.VideoLog.LogCall(this, $"Generating XML for {source.GetType().Name} with {source.FrameTimes.Length} frame times");
+                                    
                                     RecodingInfo vi = new RecodingInfo(source);
 
                                     // Handle both .wmv and .mp4 file extensions for metadata files
@@ -1149,6 +1166,12 @@ namespace UI.Video
                                     FileInfo fileinfo = new FileInfo(basePath + ".recordinfo.xml");
                                     IOTools.Write(fileinfo.Directory.FullName, fileinfo.Name, vi);
                                     needsVideoInfoWrite.Remove((FrameSource)source);
+                                    
+                                    Tools.Logger.VideoLog.LogCall(this, $"Generated XML file: {fileinfo.FullName} with {source.FrameTimes.Length} frame times");
+                                }
+                                else if (isRgbaRecording && (source.Recording || source.Finalising))
+                                {
+                                    Tools.Logger.VideoLog.LogCall(this, $"RGBA recording still active for {source.GetType().Name} - waiting to generate XML");
                                 }
                             }
                             catch (Exception e)

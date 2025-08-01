@@ -209,21 +209,27 @@ namespace FfmpegMediaPlatform
             // Get hardware-accelerated encoding settings
             string encodingArgs = GetHardwareEncodingArgs();
             
+            // Fix: Let camera provide frames at its natural rate, don't force frame rate conversion
+            float targetFrameRate = VideoConfig.VideoMode?.FrameRate ?? 30.0f;
+            
+            // No frame rate filtering needed - recording now handles 60fps correctly
             string ffmpegArgs = $"{inputArgs} " +
                                $"-fflags nobuffer " +
                                $"-flags low_delay " +
                                $"-strict experimental " +
                                $"-threads 1 " +
-                               $"-fps_mode passthrough " +
+                               $"-fps_mode passthrough " +  // Use camera's natural frame rate
                                $"-an " +
                                $"-filter_complex \"[0:v]split=2[out1][out2];[out1]format=rgba[outpipe];[out2]format=yuv420p[outfile]\" " +
-                               $"-map \"[outpipe]\" -f rawvideo pipe:1 " +
-                               $"-map \"[outfile]\" {encodingArgs} " +
-                               $"-g {VideoConfig.VideoMode?.FrameRate ?? 30} -keyint_min {VideoConfig.VideoMode?.FrameRate ?? 30} " +
+                               $"-map \"[outpipe]\" -f rawvideo pipe:1 " +  // RGBA output for live display
+                               $"-map \"[outfile]\" {encodingArgs} " +  // HLS output
+                               $"-g {targetFrameRate} -keyint_min {targetFrameRate} " +
                                $"-hls_time 0.5 -hls_list_size 3 -hls_flags delete_segments+independent_segments " +  // Ultra-low latency: 0.5s segments, only 3 segments
                                $"-hls_segment_type mpegts " +  // Use MPEG-TS for better streaming
                                $"-start_number 0 " +  // Start numbering from 0
                                $"-f hls \"{hlsPath}\"";
+            
+            Tools.Logger.VideoLog.LogCall(this, $"LIVE STREAM DEBUG: Using passthrough mode, no frame filtering");
 
             Tools.Logger.VideoLog.LogCall(this, $"Hardware Accelerated HLS FFmpeg Command:");
             Tools.Logger.VideoLog.LogCall(this, ffmpegArgs);
@@ -236,6 +242,7 @@ namespace FfmpegMediaPlatform
             
             if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
             {
+                Tools.Logger.VideoLog.LogCall(this, $"CAMERA DEBUG: Requesting {VideoConfig.VideoMode.FrameRate}fps from camera '{name}'");
                 return $"-f avfoundation " +
                        $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                        $"-pixel_format uyvy422 " +

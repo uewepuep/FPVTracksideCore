@@ -1,0 +1,452 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using Tools;
+using ImageServer;
+
+namespace FfmpegMediaPlatform
+{
+    /// <summary>
+    /// Manages recording by accepting RGBA frames and piping them to ffmpeg stdin for MP4 output.
+    /// Collects frame timing data for .recordinfo.xml generation.
+    /// </summary>
+    public class RgbaRecorderManager : IDisposable
+    {
+        private readonly FfmpegMediaFramework ffmpegMediaFramework;
+        private Process recordingProcess;
+        private bool isRecording;
+        private string currentOutputPath;
+        private readonly object recordingLock = new object();
+        private ICaptureFrameSource frameSourceForRecordInfo;
+        
+        // Frame timing collection
+        private List<FrameTime> frameTimes;
+        private DateTime recordingStartTime;
+        private int frameWidth;
+        private int frameHeight;
+        private float frameRate;
+        private int recordingFrameCounter;
+        private DateTime lastFrameWriteTime;
+        private float detectedFrameRate;
+        private bool frameRateDetected;
+
+        public bool IsRecording => isRecording;
+        public string CurrentOutputPath => currentOutputPath;
+        public FrameTime[] FrameTimes => frameTimes?.ToArray() ?? new FrameTime[0];
+
+        public event Action<string> RecordingStarted;
+        public event Action<string, bool> RecordingStopped; // path, success
+
+        public RgbaRecorderManager(FfmpegMediaFramework ffmpegMediaFramework)
+        {
+            this.ffmpegMediaFramework = ffmpegMediaFramework ?? throw new ArgumentNullException(nameof(ffmpegMediaFramework));
+            this.frameTimes = new List<FrameTime>();
+        }
+
+        /// <summary>
+        /// Start recording RGBA frames to an MP4 file
+        /// </summary>
+        /// <param name="outputPath">The output MP4 file path</param>
+        /// <param name="frameWidth">Width of RGBA frames</param>
+        /// <param name="frameHeight">Height of RGBA frames</param>
+        /// <param name="frameRate">Frame rate for recording</param>
+        /// <param name="captureFrameSource">The frame source to use for .recordinfo.xml generation (optional)</param>
+        /// <returns>True if recording started successfully</returns>
+        public bool StartRecording(string outputPath, int frameWidth, int frameHeight, float frameRate, ICaptureFrameSource captureFrameSource = null)
+        {
+            lock (recordingLock)
+            {
+                if (isRecording)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "Recording already in progress, cannot start new recording");
+                    return false;
+                }
+
+                try
+                {
+                    // Ensure output directory exists
+                    string outputDir = Path.GetDirectoryName(outputPath);
+                    if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
+                    {
+                        Directory.CreateDirectory(outputDir);
+                    }
+
+                    currentOutputPath = outputPath;
+                    frameSourceForRecordInfo = captureFrameSource;
+                    this.frameWidth = frameWidth;
+                    this.frameHeight = frameHeight;
+                    this.frameRate = frameRate;
+                    
+                    // Reset frame timing collection
+                    frameTimes.Clear();
+                    recordingStartTime = DateTime.Now;
+                    recordingFrameCounter = 0; // Reset frame counter for this recording session
+                    lastFrameWriteTime = DateTime.MinValue;
+                    detectedFrameRate = frameRate; // Start with configured rate
+                    frameRateDetected = false;
+
+                    // Build FFmpeg command to accept RGBA frames from stdin
+                    string ffmpegArgs = BuildRecordingCommand(outputPath, frameWidth, frameHeight, frameRate);
+                    
+                    Tools.Logger.VideoLog.LogCall(this, $"Starting RGBA recording: {ffmpegArgs}");
+
+                    var processStartInfo = ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
+                    processStartInfo.RedirectStandardInput = true;
+                    processStartInfo.UseShellExecute = false;
+                    
+                    recordingProcess = new Process();
+                    recordingProcess.StartInfo = processStartInfo;
+                    
+                    // Set up error monitoring
+                    recordingProcess.ErrorDataReceived += RecordingProcess_ErrorDataReceived;
+                    recordingProcess.Exited += RecordingProcess_Exited;
+                    recordingProcess.EnableRaisingEvents = true;
+
+                    if (recordingProcess.Start())
+                    {
+                        recordingProcess.BeginErrorReadLine();
+                        isRecording = true;
+                        
+                        Tools.Logger.VideoLog.LogCall(this, $"RGBA recording started successfully - PID: {recordingProcess.Id}, Output: {outputPath}");
+                        RecordingStarted?.Invoke(outputPath);
+                        
+                        return true;
+                    }
+                    else
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "Failed to start RGBA recording process");
+                        return false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Tools.Logger.VideoLog.LogException(this, ex);
+                    Tools.Logger.VideoLog.LogCall(this, $"Exception while starting RGBA recording: {ex.Message}");
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Write an RGBA frame to the recording ffmpeg process
+        /// </summary>
+        /// <param name="rgbaData">RGBA frame data</param>
+        /// <param name="frameNumber">Frame number for XML timing</param>
+        /// <returns>True if frame was written successfully</returns>
+        public bool WriteFrame(byte[] rgbaData, int frameNumber)
+        {
+            lock (recordingLock)
+            {
+                if (!isRecording || recordingProcess == null || recordingProcess.HasExited)
+                {
+                    return false;
+                }
+
+                try
+                {
+                    var currentTime = DateTime.Now;
+                    
+                    // DEBUG: Track frame sources and timing to detect duplicates
+                    if (recordingFrameCounter % 30 == 0) // Log every 30 frames to see patterns
+                    {
+                        var caller = new System.Diagnostics.StackTrace().GetFrame(2)?.GetMethod()?.DeclaringType?.Name ?? "Unknown";
+                        double intervalMs = lastFrameWriteTime != DateTime.MinValue ? (currentTime - lastFrameWriteTime).TotalMilliseconds : 0;
+                        double avgFps = recordingFrameCounter > 0 ? recordingFrameCounter / (currentTime - recordingStartTime).TotalSeconds : 0;
+                        Tools.Logger.VideoLog.LogCall(this, $"FRAME DEBUG: #{recordingFrameCounter + 1} from {caller}, Ext#{frameNumber}, Interval:{intervalMs:F1}ms, AvgFPS:{avgFps:F1}");
+                    }
+                    
+                    // Calculate expected frame interval based on frame rate
+                    double expectedIntervalMs = 1000.0 / frameRate;
+                    
+                    // Detect actual frame rate from incoming frames
+                    // if (lastFrameWriteTime != DateTime.MinValue && recordingFrameCounter > 0)
+                    // {
+                    //     double actualIntervalMs = (currentTime - lastFrameWriteTime).TotalMilliseconds;
+                        
+                    //     // Monitor frame rate but don't restart - just log for debugging
+                    //     if (!frameRateDetected && recordingFrameCounter >= 30)
+                    //     {
+                    //         double totalSeconds = (currentTime - recordingStartTime).TotalSeconds;
+                    //         float measuredFrameRate = recordingFrameCounter / (float)totalSeconds;
+                            
+                    //         // Log the measured frame rate for debugging
+                    //         Tools.Logger.VideoLog.LogCall(this, $"Frame rate measurement: Configured {frameRate:F2}fps, Measured {measuredFrameRate:F2}fps");
+                            
+                    //         detectedFrameRate = measuredFrameRate;
+                    //         frameRateDetected = true;
+                    //     }
+                        
+                    //     // Log frame timing more frequently to see the pattern
+                    //     if (recordingFrameCounter % 30 == 0) // Log every 30 frames to see timing patterns
+                    //     {
+                    //         double currentRate = 1000.0 / actualIntervalMs;
+                    //         Tools.Logger.VideoLog.LogCall(this, $"Frame timing: Expected {expectedIntervalMs:F2}ms ({frameRate:F1}fps), Actual {actualIntervalMs:F2}ms ({currentRate:F1}fps), Frame {recordingFrameCounter + 1}");
+                    //     }
+                    // }
+                    
+                    // Write RGBA frame data to ffmpeg stdin
+                    recordingProcess.StandardInput.BaseStream.Write(rgbaData, 0, rgbaData.Length);
+                    recordingProcess.StandardInput.BaseStream.Flush();
+
+                    // Collect frame timing for XML file
+                    recordingFrameCounter++; // Increment our internal frame counter (starts from 1)
+                    lastFrameWriteTime = currentTime;
+                    
+                    var frameTime = new FrameTime
+                    {
+                        Frame = recordingFrameCounter, // Use our internal counter, not the external frameNumber
+                        Time = currentTime,
+                        Seconds = (currentTime - recordingStartTime).TotalSeconds
+                    };
+                    frameTimes.Add(frameTime);
+
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Tools.Logger.VideoLog.LogException(this, ex);
+                    Tools.Logger.VideoLog.LogCall(this, $"Error writing RGBA frame: {ex.Message}");
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Stop the current recording
+        /// </summary>
+        /// <param name="timeoutMs">Timeout in milliseconds to wait for graceful shutdown</param>
+        /// <returns>True if stopped successfully</returns>
+        public bool StopRecording(int timeoutMs = 10000)
+        {
+            lock (recordingLock)
+            {
+                if (!isRecording || recordingProcess == null)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "No recording in progress to stop");
+                    return true;
+                }
+
+                try
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"Stopping RGBA recording - PID: {recordingProcess.Id}");
+
+                    bool success = false;
+                    string outputPath = currentOutputPath;
+
+                    if (!recordingProcess.HasExited)
+                    {
+                        // Close stdin to signal end of input to FFmpeg
+                        try
+                        {
+                            recordingProcess.StandardInput.BaseStream.Close();
+                            recordingProcess.StandardInput.Close();
+                        }
+                        catch (Exception ex)
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"Could not close stdin to FFmpeg: {ex.Message}");
+                        }
+
+                        // Wait for graceful exit
+                        if (recordingProcess.WaitForExit(timeoutMs))
+                        {
+                            success = recordingProcess.ExitCode == 0;
+                            Tools.Logger.VideoLog.LogCall(this, $"RGBA recording stopped gracefully - Exit code: {recordingProcess.ExitCode}");
+                        }
+                        else
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, "RGBA recording did not stop gracefully, force killing");
+                            recordingProcess.Kill();
+                            recordingProcess.WaitForExit(5000);
+                            success = false;
+                        }
+                    }
+                    else
+                    {
+                        success = recordingProcess.ExitCode == 0;
+                        Tools.Logger.VideoLog.LogCall(this, $"RGBA recording process already exited - Exit code: {recordingProcess.ExitCode}");
+                    }
+
+                    // Verify output file was created and has content
+                    if (success && File.Exists(outputPath))
+                    {
+                        var fileInfo = new FileInfo(outputPath);
+                        if (fileInfo.Length > 0)
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"RGBA recording completed successfully - File size: {fileInfo.Length} bytes");
+                        }
+                        else
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, "RGBA recording file is empty, marking as failed");
+                            success = false;
+                        }
+                    }
+                    else if (success)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "RGBA recording file does not exist, marking as failed");
+                        success = false;
+                    }
+
+                    isRecording = false;
+                    
+                    // XML generation is handled by the calling frame source using FrameTimes property
+                    // No need to generate XML here as it would create duplicates
+                    
+                    RecordingStopped?.Invoke(outputPath, success);
+                    
+                    return success;
+                }
+                catch (Exception ex)
+                {
+                    Tools.Logger.VideoLog.LogException(this, ex);
+                    Tools.Logger.VideoLog.LogCall(this, $"Exception while stopping RGBA recording: {ex.Message}");
+                    isRecording = false;
+                    RecordingStopped?.Invoke(currentOutputPath, false);
+                    return false;
+                }
+                finally
+                {
+                    CleanupRecordingProcess();
+                }
+            }
+        }
+
+        private string BuildRecordingCommand(string outputPath, int frameWidth, int frameHeight, float frameRate)
+        {
+            // FFmpeg command to read RGBA frames from stdin and encode to H264 MP4 
+            // Use 60fps since that's what the camera actually provides
+            float actualFrameRate = 60.0f; // Camera provides 60fps regardless of config
+            
+            string ffmpegArgs = $"-f rawvideo " +                          // Input format: raw video
+                               $"-pix_fmt rgba " +                         // Pixel format: RGBA
+                               $"-s {frameWidth}x{frameHeight} " +         // Frame size
+                               $"-r {actualFrameRate} " +                  // INPUT frame rate - use actual 60fps
+                               $"-i pipe:0 " +                             // Input from stdin
+                               $"-c:v libx264 " +                          // H264 codec
+                               $"-r {actualFrameRate} " +                  // OUTPUT frame rate - use actual 60fps
+                               $"-preset fast " +                          // Faster preset for real-time
+                               $"-crf 23 " +                               // Slightly lower quality for speed
+                               $"-pix_fmt yuv420p " +                      // Output pixel format
+                               $"-movflags +faststart " +                  // Optimize for streaming
+                               $"-y " +                                    // Overwrite output file
+                               $"\"{outputPath}\"";
+
+            Tools.Logger.VideoLog.LogCall(this, $"RGBA Recording ffmpeg command (using 60fps): {ffmpegArgs}");
+            return ffmpegArgs;
+        }
+
+        private void RecordingProcess_ErrorDataReceived(object sender, DataReceivedEventArgs e)
+        {
+            if (e.Data != null)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"RGBA Recording FFmpeg: {e.Data}");
+                
+                // Log any errors or warnings
+                if (e.Data.Contains("error") || e.Data.Contains("Error") || 
+                    e.Data.Contains("warning") || e.Data.Contains("Warning"))
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"RGBA Recording Issue: {e.Data}");
+                }
+            }
+        }
+
+        private void RecordingProcess_Exited(object sender, EventArgs e)
+        {
+            lock (recordingLock)
+            {
+                if (isRecording)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"RGBA recording process exited unexpectedly - Exit code: {recordingProcess?.ExitCode}");
+                    
+                    bool success = recordingProcess?.ExitCode == 0;
+                    string outputPath = currentOutputPath;
+                    
+                    isRecording = false;
+                    RecordingStopped?.Invoke(outputPath, success);
+                }
+            }
+        }
+
+        private void CleanupRecordingProcess()
+        {
+            try
+            {
+                if (recordingProcess != null)
+                {
+                    recordingProcess.ErrorDataReceived -= RecordingProcess_ErrorDataReceived;
+                    recordingProcess.Exited -= RecordingProcess_Exited;
+                    
+                    if (!recordingProcess.HasExited)
+                    {
+                        recordingProcess.Kill();
+                    }
+                    
+                    recordingProcess.Dispose();
+                    recordingProcess = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Tools.Logger.VideoLog.LogException(this, ex);
+            }
+        }
+
+        /// <summary>
+        /// Generate .recordinfo.xml file for the recorded video using collected frame timing data
+        /// </summary>
+        /// <param name="videoFilePath">Path to the recorded video file</param>
+        private void GenerateRecordInfoFile(string videoFilePath)
+        {
+            try
+            {
+                if (frameSourceForRecordInfo == null)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "No frame source available for .recordinfo.xml generation");
+                    return;
+                }
+
+                // Create RecodingInfo using collected frame timing data
+                var recordingInfo = new RecodingInfo(frameSourceForRecordInfo);
+                
+                // Override frame times with our collected data
+                recordingInfo.FrameTimes = frameTimes.ToArray();
+                
+                // Use relative path for the recording info
+                recordingInfo.FilePath = Path.GetRelativePath(Directory.GetCurrentDirectory(), videoFilePath);
+                
+                // Generate .recordinfo.xml filename alongside the video file
+                string basePath = videoFilePath;
+                if (basePath.EndsWith(".mp4"))
+                {
+                    basePath = basePath.Replace(".mp4", "");
+                }
+                
+                FileInfo recordInfoFile = new FileInfo(basePath + ".recordinfo.xml");
+                
+                // Write the .recordinfo.xml file
+                IOTools.Write(recordInfoFile.Directory.FullName, recordInfoFile.Name, recordingInfo);
+                
+                Tools.Logger.VideoLog.LogCall(this, $"Generated .recordinfo.xml file: {recordInfoFile.FullName}");
+                Tools.Logger.VideoLog.LogCall(this, $"Frame times count: {frameTimes.Count}");
+            }
+            catch (Exception ex)
+            {
+                Tools.Logger.VideoLog.LogException(this, ex);
+                Tools.Logger.VideoLog.LogCall(this, $"Failed to generate .recordinfo.xml file for {videoFilePath}: {ex.Message}");
+            }
+        }
+
+
+        public void Dispose()
+        {
+            if (isRecording)
+            {
+                StopRecording();
+            }
+            
+            CleanupRecordingProcess();
+        }
+    }
+}

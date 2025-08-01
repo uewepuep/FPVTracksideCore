@@ -60,9 +60,24 @@ namespace FfmpegMediaPlatform
         private bool finalising;
         private DateTime recordingStartTime;
         private long frameCount;
+        
+        // RGBA recording using separate ffmpeg process
+        protected RgbaRecorderManager rgbaRecorderManager;
 
         public new bool IsVisible { get; set; }
-        public FrameTime[] FrameTimes => frameTimes?.ToArray() ?? new FrameTime[0];
+        public FrameTime[] FrameTimes 
+        {
+            get
+            {
+                // If RGBA recorder exists and has frame times, use those for accuracy
+                if (rgbaRecorderManager != null && rgbaRecorderManager.FrameTimes.Length > 0)
+                {
+                    return rgbaRecorderManager.FrameTimes;
+                }
+                // Otherwise use the base class frame times
+                return frameTimes?.ToArray() ?? new FrameTime[0];
+            }
+        }
         public string Filename => recordingFilename;
         public new bool Recording { get; private set; }
         public bool RecordNextFrameTime 
@@ -94,10 +109,18 @@ namespace FfmpegMediaPlatform
             Recording = true;
             finalising = false;
 
-            // Restart FFmpeg process to switch to recording mode
-            RestartForRecording();
+            // Start RGBA recording with separate ffmpeg process
+            // Use a reasonable default frame rate, the recorder will detect the actual rate
+            float initialFrameRate = VideoConfig.VideoMode?.FrameRate ?? 30.0f;
+            bool started = rgbaRecorderManager.StartRecording(filename, width, height, initialFrameRate, this);
+            if (!started)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"Failed to start RGBA recording to {filename}");
+                Recording = false;
+                return;
+            }
 
-            Tools.Logger.VideoLog.LogCall(this, $"Started recording to {filename} - timer will start on first frame");
+            Tools.Logger.VideoLog.LogCall(this, $"Started RGBA recording to {filename}");
         }
 
         public void StopRecording()
@@ -108,73 +131,19 @@ namespace FfmpegMediaPlatform
                 return;
             }
 
-            Tools.Logger.VideoLog.LogCall(this, $"Stopping recording to {recordingFilename}");
+            Tools.Logger.VideoLog.LogCall(this, $"Stopping RGBA recording to {recordingFilename}");
             Recording = false;
             finalising = true;
 
-            // For WMV and MP4 files, we need to ensure proper finalization before restarting
-            bool isWMV = !string.IsNullOrEmpty(recordingFilename) && recordingFilename.EndsWith(".wmv");
-            bool isMP4 = !string.IsNullOrEmpty(recordingFilename) && recordingFilename.EndsWith(".mp4");
-            
-            if ((isWMV || isMP4) && process != null && !process.HasExited)
+            // Stop RGBA recording
+            bool stopped = rgbaRecorderManager.StopRecording();
+            if (!stopped)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"{(isWMV ? "WMV" : "MP4")} recording detected - ensuring proper finalization before restart");
-                
-                try
-                {
-                    // Send graceful shutdown signal to finalize video file
-                    if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
-                    {
-                        // Windows: Use CTRL+C equivalent
-                        process.StandardInput.WriteLine("q");
-                        process.StandardInput.Flush();
-                    }
-                    else
-                    {
-                        // Unix/Linux/macOS: Send SIGINT
-                        var killProcess = new Process();
-                        killProcess.StartInfo.FileName = "kill";
-                        killProcess.StartInfo.Arguments = $"-INT {process.Id}";
-                        killProcess.StartInfo.UseShellExecute = false;
-                        killProcess.StartInfo.CreateNoWindow = true;
-                        killProcess.Start();
-                        killProcess.WaitForExit();
-                    }
-                    
-                    // Wait for graceful shutdown to finalize the video file
-                    if (process.WaitForExit(8000)) // Give more time for video finalization
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, $"{(isWMV ? "WMV" : "MP4")} file finalized successfully");
-                    }
-                    else
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, $"{(isWMV ? "WMV" : "MP4")} finalization timeout, forcing kill");
-                        process.Kill();
-                        process.WaitForExit(3000);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Tools.Logger.VideoLog.LogCall(this, $"Error during {(isWMV ? "WMV" : "MP4")} finalization: {ex.Message}, falling back to kill");
-                    try
-                    {
-                        process.Kill();
-                        process.WaitForExit(3000);
-                    }
-                    catch (Exception killEx)
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, $"Error killing process: {killEx.Message}");
-                    }
-                }
-                
-                // Clear the process reference since we've handled it manually
-                process = null;
+                Tools.Logger.VideoLog.LogCall(this, $"Warning: RGBA recording may not have stopped cleanly");
             }
 
-            // Restart FFmpeg process to switch back to live mode
-            RestartForRecording();
-
-            Tools.Logger.VideoLog.LogCall(this, $"Stopped recording to {recordingFilename}");
+            finalising = false;
+            Tools.Logger.VideoLog.LogCall(this, $"Stopped RGBA recording to {recordingFilename}");
         }
 
         protected void InitializeFrameProcessing()
@@ -199,93 +168,9 @@ namespace FfmpegMediaPlatform
 
         private void RestartForRecording()
         {
-            try
-            {
-                Tools.Logger.VideoLog.LogCall(this, $"Restarting FFmpeg process for recording state change (Recording: {Recording})");
-                
-                // Store current state
-                bool wasRunning = State == States.Running;
-                
-                // Stop current process completely (if not already stopped for WMV finalization)
-                if (wasRunning && process != null)
-                {
-                    Tools.Logger.VideoLog.LogCall(this, "Stopping current FFmpeg process");
-                    Stop();
-                    
-                    // Reset state for clean restart
-                    inited = false;
-                    Connected = false;
-                    
-                    // Give it a moment to fully stop and ensure thread is done
-                    Thread.Sleep(2000);
-                    
-                    // Double-check that the reading thread has stopped
-                    if (thread != null && thread.IsAlive)
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, "Reading thread still alive, waiting for it to finish");
-                        if (!thread.Join(3000))
-                        {
-                            Tools.Logger.VideoLog.LogCall(this, "Reading thread didn't finish, forcing cleanup");
-                            thread = null;
-                        }
-                    }
-                }
-                else if (wasRunning && process == null)
-                {
-                    Tools.Logger.VideoLog.LogCall(this, "Process already stopped (likely for WMV finalization), resetting state");
-                    inited = false;
-                    Connected = false;
-                    
-                    // Ensure thread is stopped
-                    if (thread != null && thread.IsAlive)
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, "Reading thread still alive after WMV finalization, waiting for it to finish");
-                        if (!thread.Join(3000))
-                        {
-                            Tools.Logger.VideoLog.LogCall(this, "Reading thread didn't finish, forcing cleanup");
-                            thread = null;
-                        }
-                    }
-                }
-                
-                // Restart with new configuration
-                if (wasRunning)
-                {
-                    Tools.Logger.VideoLog.LogCall(this, "Starting FFmpeg process with new recording configuration");
-                    Start();
-                    
-                    // Wait a bit for the new process to initialize
-                    Thread.Sleep(1000);
-                    
-                    // Force re-initialization if needed
-                    if (!inited)
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, "Forcing initialization after restart");
-                        InitializeFrameProcessing();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Tools.Logger.VideoLog.LogException(this, ex);
-                Tools.Logger.VideoLog.LogCall(this, "Error restarting FFmpeg process for recording");
-                
-                // Try to recover by restarting
-                try
-                {
-                    Tools.Logger.VideoLog.LogCall(this, "Attempting recovery restart");
-                    Stop();
-                    Thread.Sleep(3000);
-                    inited = false;
-                    Connected = false;
-                    Start();
-                }
-                catch (Exception recoveryEx)
-                {
-                    Tools.Logger.VideoLog.LogException(this, recoveryEx);
-                    Tools.Logger.VideoLog.LogCall(this, "Recovery restart failed");
-                }
-            }
+            // No longer needed - RGBA recording uses separate ffmpeg process
+            // Live stream continues unchanged
+            Tools.Logger.VideoLog.LogCall(this, "RestartForRecording called - no action needed with RGBA recording");
         }
 
         public FfmpegFrameSource(FfmpegMediaFramework ffmpegMediaFramework, VideoConfig videoConfig)
@@ -297,6 +182,9 @@ namespace FfmpegMediaPlatform
             frameTimes = new List<FrameTime>();
             recordingFilename = null;
             recordNextFrameTime = false;
+            
+            // Initialize RGBA recorder manager
+            rgbaRecorderManager = new RgbaRecorderManager(ffmpegMediaFramework);
             manualRecording = false;
             finalising = false;
             recordingStartTime = DateTime.MinValue;
@@ -349,6 +237,10 @@ namespace FfmpegMediaPlatform
         public override void Dispose()
         {
             Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Disposing frame source for '{VideoConfig.DeviceName}'");
+            
+            // Stop and dispose RGBA recorder
+            rgbaRecorderManager?.Dispose();
+            
             Stop();
             
             // Kill ALL ffmpeg processes that might be using this camera - aggressive cleanup (Windows only)
@@ -828,39 +720,54 @@ namespace FfmpegMediaPlatform
                         Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Processing frame {FrameProcessNumber}, buffer size: {buffer.Length} bytes");
                     }
                     
-                    // Track frame timing for recording - but ONLY if this is not part of HLS composite setup
-                    // HLS composite sources handle their own FrameTime tracking to avoid double counting
+                    // Legacy frame timing collection - DISABLED for RGBA recording
+                    // The RGBA recorder now handles ALL frame timing collection internally
+                    // This ensures complete coverage from recording start to stop button
                     if (recordNextFrameTime && !VideoConfig.FilePath.Contains("hls"))
                     {
-                        if (frameTimes == null)
+                        // For non-RGBA recording sources, maintain legacy behavior
+                        if (!Recording || !rgbaRecorderManager.IsRecording)
                         {
-                            frameTimes = new List<FrameTime>();
+                            if (frameTimes == null)
+                            {
+                                frameTimes = new List<FrameTime>();
+                            }
+                            
+                            DateTime frameTime = DateTime.Now;
+                            
+                            // Start recording timer on first actual frame to eliminate FFmpeg initialization delay
+                            if (recordingStartTime == DateTime.MinValue)
+                            {
+                                recordingStartTime = frameTime;
+                                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Recording timer started on first frame: {recordingStartTime:HH:mm:ss.fff}");
+                            }
+                            
+                            frameTimes.Add(new FrameTime
+                            {
+                                Frame = (int)FrameProcessNumber,
+                                Time = frameTime,
+                                Seconds = (float)(frameTime - recordingStartTime).TotalSeconds
+                            });
+                            
+                            frameCount++;
+                            
+                            // Log frame timing only every 120 frames during recording
+                            if (frameCount % 120 == 0)
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Recorded frame {FrameProcessNumber} at {frameTime:HH:mm:ss.fff}, offset: {(frameTime - recordingStartTime).TotalSeconds:F3}s");
+                            }
                         }
-                        
-                        DateTime frameTime = DateTime.Now;
-                        
-                        // Start recording timer on first actual frame to eliminate FFmpeg initialization delay
-                        if (recordingStartTime == DateTime.MinValue)
+                        else
                         {
-                            recordingStartTime = frameTime;
-                            Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Recording timer started on first frame: {recordingStartTime:HH:mm:ss.fff}");
+                            // RGBA recording active - frame timing handled by RgbaRecorderManager
+                            // Log every 120 frames to confirm RGBA timing collection
+                            if (FrameProcessNumber % 120 == 0)
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Frame {FrameProcessNumber} - RGBA recorder handling timing collection");
+                            }
                         }
-                        
-                        frameTimes.Add(new FrameTime
-                        {
-                            Frame = (int)FrameProcessNumber,
-                            Time = frameTime,
-                            Seconds = (float)(frameTime - recordingStartTime).TotalSeconds
-                        });
                         
                         recordNextFrameTime = false;
-                        frameCount++;
-                        
-                        // Log frame timing only every 120 frames during recording
-                        if (frameCount % 120 == 0)
-                        {
-                            Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Recorded frame {FrameProcessNumber} at {frameTime:HH:mm:ss.fff}, offset: {(frameTime - recordingStartTime).TotalSeconds:F3}s");
-                        }
                     }
                     else if (recordNextFrameTime)
                     {
@@ -900,6 +807,19 @@ namespace FfmpegMediaPlatform
                     }
                     
                     currentRawTextures.WriteOne(frame);
+                    
+                    // Write RGBA frame to recording if active
+                    if (Recording && rgbaRecorderManager.IsRecording)
+                    {
+                        // Write the RGBA frame data to the recorder
+                        // The RGBA recorder handles ALL frame timing collection internally
+                        // This ensures XML timing covers the complete recording session
+                        byte[] frameData = new byte[buffer.Length];
+                        Array.Copy(buffer, frameData, buffer.Length);
+                        
+                        // RGBA recorder collects timing for ALL frames from start to stop
+                        rgbaRecorderManager.WriteFrame(frameData, (int)FrameProcessNumber);
+                    }
                     
                     // Enhanced logging for video file sources to track frame writing
                     bool isVideoFile = this.GetType().Name.Contains("VideoFile");

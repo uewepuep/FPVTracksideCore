@@ -9,8 +9,8 @@ using ImageServer;
 namespace FfmpegMediaPlatform
 {
     /// <summary>
-    /// Manages recording from HLS streams to MP4 files.
-    /// This allows starting and stopping recordings independently of the live stream.
+    /// Manages HLS streaming for HTTP access only.
+    /// Note: MP4 recording is now handled by RgbaRecorderManager using RGBA frames directly.
     /// </summary>
     public class HlsRecorderManager : IDisposable
     {
@@ -36,6 +36,8 @@ namespace FfmpegMediaPlatform
 
         /// <summary>
         /// Start recording from an HLS stream to an MP4 file
+        /// LEGACY: This method is deprecated in favor of RgbaRecorderManager which provides better sync and quality.
+        /// HLS recording introduces latency and timing issues. Use RgbaRecorderManager for new implementations.
         /// </summary>
         /// <param name="hlsStreamUrl">The HLS stream URL (e.g., http://localhost:8000/hls/stream.m3u8)</param>
         /// <param name="outputPath">The output MP4 file path</param>
