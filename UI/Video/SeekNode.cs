@@ -113,7 +113,7 @@ namespace UI.Video
 
             float factor = (float)(time.TotalSeconds / length.TotalSeconds);
 
-            // Debug logging for troubleshooting
+            // Debug logging removed to reduce log spam
 
             return Math.Clamp(factor, 0, 1);
         }
@@ -128,11 +128,16 @@ namespace UI.Video
             End = mediaEnd;
             
             // Debug logging for frame times
+            Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR SetRace called: mediaStart={mediaStart:HH:mm:ss.fff}, mediaEnd={mediaEnd:HH:mm:ss.fff}");
+            Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR FrameTimes provided: {frameTimes?.Length ?? 0} frame times");
+            Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Race Start: {race.Start:HH:mm:ss.fff}, Race End: {race.End:HH:mm:ss.fff}");
             
             if (frameTimes != null && frameTimes.Length > 0)
             {
                 var firstFrame = frameTimes.First();
                 var lastFrame = frameTimes.Last();
+                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR First FrameTime: Frame={firstFrame.Frame}, Time={firstFrame.Time:HH:mm:ss.fff}, Seconds={firstFrame.Seconds:F3}");
+                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Last FrameTime: Frame={lastFrame.Frame}, Time={lastFrame.Time:HH:mm:ss.fff}, Seconds={lastFrame.Seconds:F3}");
             }
 
             foreach (PilotChannel pilotChannel in race.PilotChannelsSafe)
@@ -244,35 +249,43 @@ namespace UI.Video
         {
             try
             {
+                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Converting detection time: {detectionTime:HH:mm:ss.fff}");
                 
                 if (frameTimes == null || frameTimes.Length == 0)
                 {
+                    Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR No frame times available, returning original detection time");
                     return detectionTime;
                 }
 
                 // Use the FrameTime extension method to convert detection time to video timeline  
                 TimeSpan mediaTimeSpan = frameTimes.GetMediaTime(detectionTime, TimeSpan.Zero);
+                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR GetMediaTime returned: {mediaTimeSpan.TotalSeconds:F3} seconds");
                 
                 // Convert the media time offset to the progress bar timeline
                 // The progress bar uses mediaStart to mediaEnd, so we add the offset to mediaStart
                 DateTime videoTime = mediaStart.Add(mediaTimeSpan);
+                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Calculated video time (mediaStart + offset): {videoTime:HH:mm:ss.fff}");
                 
                 // Clamp to video bounds
                 if (videoTime < mediaStart) 
                 {
+                    Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Clamping to mediaStart: {mediaStart:HH:mm:ss.fff}");
                     videoTime = mediaStart;
                 }
                 if (videoTime > mediaEnd) 
                 {
+                    Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Clamping to mediaEnd: {mediaEnd:HH:mm:ss.fff}");
                     videoTime = mediaEnd;
                 }
                 
+                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Final video time: {videoTime:HH:mm:ss.fff}");
                 return videoTime;
             }
             catch (Exception ex)
             {
                 // Log error and fall back to original detection time
                 Tools.Logger.VideoLog.LogException(this, ex);
+                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Exception occurred, returning original detection time: {detectionTime:HH:mm:ss.fff}");
                 return detectionTime;
             }
         }

@@ -34,6 +34,9 @@ namespace UI.Video
 
         private DateTime minStart;
         private DateTime maxEnd;
+        
+        private DateTime? lastSeekTime;
+        private DateTime lastSeekTimeSet;
 
         public bool Active
         {
@@ -161,7 +164,18 @@ namespace UI.Video
         {
             foreach (IPlaybackFrameSource frameSource in GetFileFrameSources())
             {
-                frameSource.Play();
+                // Check if we can access the state by casting to FrameSource
+                if (frameSource is FrameSource fs && fs.State == FrameSource.States.Paused)
+                {
+                    frameSource.Play();
+                }
+                else
+                {
+                    // If not paused or can't check state, restart from current position
+                    DateTime currentTime = SeekNode.CurrentTime;
+                    frameSource.SetPosition(currentTime);
+                    frameSource.Play();
+                }
             }
 
             SeekNode.PlayButton.Visible = false;
@@ -172,10 +186,28 @@ namespace UI.Video
 
         public void Seek(DateTime seekTime)
         {
+            Tools.Logger.VideoLog.LogCall(this, $"ReplayNode.Seek called with seekTime: {seekTime:HH:mm:ss.fff}");
+            
+            // Track the seek operation to prevent Update from overriding the position immediately
+            lastSeekTime = seekTime;
+            lastSeekTimeSet = DateTime.Now;
+            
             foreach (IPlaybackFrameSource frameSource in GetFileFrameSources())
             {
+                Tools.Logger.VideoLog.LogCall(this, $"ReplayNode.Seek calling SetPosition on frameSource: {frameSource.GetType().Name}");
                 frameSource.SetPosition(seekTime);
+                
+                // If the video is currently playing (stop button visible), continue playing after seek
+                if (SeekNode.StopButton.Visible)
+                {
+                    frameSource.Play();
+                }
             }
+            
+            // Update the seek node's current time to reflect the new position
+            SeekNode.CurrentTime = seekTime;
+            SeekNode.RequestLayout();
+            Tools.Logger.VideoLog.LogCall(this, $"ReplayNode.Seek updated SeekNode.CurrentTime to: {seekTime:HH:mm:ss.fff}");
         }
 
         public void PrevFrame()
@@ -403,6 +435,25 @@ namespace UI.Video
                 if (primary != null)
                 {
                     DateTime currentTime = primary.CurrentTime;
+
+                    // Check if we recently performed a seek operation
+                    bool recentSeek = lastSeekTime.HasValue && (DateTime.Now - lastSeekTimeSet).TotalMilliseconds < 3000; // 3 second grace period
+                    
+                    if (recentSeek)
+                    {
+                        // During seek grace period, use the seek time if the primary time hasn't caught up yet
+                        if (Math.Abs((lastSeekTime.Value - currentTime).TotalSeconds) > 2.0) // If primary time is still far from seek target
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"Update: Using seek time {lastSeekTime.Value:HH:mm:ss.fff} instead of primary time {currentTime:HH:mm:ss.fff}");
+                            currentTime = lastSeekTime.Value;
+                        }
+                        else
+                        {
+                            // Primary has caught up, clear the seek tracking
+                            Tools.Logger.VideoLog.LogCall(this, $"Update: Primary time caught up, clearing seek tracking");
+                            lastSeekTime = null;
+                        }
+                    }
 
                     if (Math.Abs((SeekNode.CurrentTime - currentTime).TotalMilliseconds) > 10)
                     {

@@ -898,7 +898,15 @@ namespace FfmpegMediaPlatform
                     {
                         handle.Free();
                     }
+                    
                     currentRawTextures.WriteOne(frame);
+                    
+                    // Enhanced logging for video file sources to track frame writing
+                    bool isVideoFile = this.GetType().Name.Contains("VideoFile");
+                    if (isVideoFile && FrameProcessNumber % 10 == 0)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"VIDEO WRITE: Wrote frame {FrameProcessNumber} to rawTextures buffer, SampleTime: {SampleTime}");
+                    }
                 }
             }
             base.ProcessImage();
