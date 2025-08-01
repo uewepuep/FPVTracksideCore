@@ -122,6 +122,34 @@ namespace UI.Video
         {
             if (primary != null && race != null)
             {
+                // Recalculate timeline to ensure consistency
+                var frameSources = GetFileFrameSources();
+                if (frameSources.Any())
+                {
+                    minStart = frameSources.Select(r => r.StartTime).Min();
+                    
+                    // Calculate maxEnd using the same XML frame timing method as video duration
+                    var maxEndDuration = TimeSpan.Zero;
+                    foreach (var frameSource in frameSources)
+                    {
+                        // If this frame source has frame timing data, use XML timing
+                        if (frameSource is ICaptureFrameSource captureSource && captureSource.FrameTimes != null && captureSource.FrameTimes.Length > 0)
+                        {
+                            var sourceFrameTimes = captureSource.FrameTimes;
+                            var firstFrame = sourceFrameTimes.First();
+                            var lastFrame = sourceFrameTimes.Last();
+                            var xmlDuration = lastFrame.Time - firstFrame.Time;
+                            maxEndDuration = TimeSpan.FromSeconds(Math.Max(maxEndDuration.TotalSeconds, xmlDuration.TotalSeconds));
+                        }
+                        else
+                        {
+                            // Fallback to Length property
+                            maxEndDuration = TimeSpan.FromSeconds(Math.Max(maxEndDuration.TotalSeconds, frameSource.Length.TotalSeconds));
+                        }
+                    }
+                    maxEnd = minStart + maxEndDuration;
+                }
+                
                 // Get frame times for timeline positioning
                 var frameTimes = GetFrameTimesFromFrameSources();
                 SeekNode.SetRace(race, minStart, maxEnd, frameTimes);
@@ -287,7 +315,32 @@ namespace UI.Video
                     if (frameSources.Any())
                     {
                         minStart = frameSources.Select(r => r.StartTime).Min();
-                        maxEnd = frameSources.Select(r => r.StartTime + r.Length).Max();
+                        
+                        // Calculate maxEnd using the same XML frame timing method as video duration
+                        // This ensures progress bar timeline matches video duration calculation
+                        var maxEndDuration = TimeSpan.Zero;
+                        foreach (var frameSource in frameSources)
+                        {
+                            // If this frame source has frame timing data, use XML timing
+                            if (frameSource is ICaptureFrameSource captureSource && captureSource.FrameTimes != null && captureSource.FrameTimes.Length > 0)
+                            {
+                                var sourceFrameTimes = captureSource.FrameTimes;
+                                var firstFrame = sourceFrameTimes.First();
+                                var lastFrame = sourceFrameTimes.Last();
+                                var xmlDuration = lastFrame.Time - firstFrame.Time;
+                                
+                                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Timeline: Using XML frame timing duration {xmlDuration.TotalSeconds:F1}s for {frameSource.GetType().Name}");
+                                maxEndDuration = TimeSpan.FromSeconds(Math.Max(maxEndDuration.TotalSeconds, xmlDuration.TotalSeconds));
+                            }
+                            else
+                            {
+                                // Fallback to Length property
+                                maxEndDuration = TimeSpan.FromSeconds(Math.Max(maxEndDuration.TotalSeconds, frameSource.Length.TotalSeconds));
+                            }
+                        }
+                        
+                        maxEnd = minStart + maxEndDuration;
+                        Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Timeline: minStart={minStart:HH:mm:ss.fff}, maxEnd={maxEnd:HH:mm:ss.fff}, duration={maxEndDuration.TotalSeconds:F1}s");
                     }
                     else
                     {

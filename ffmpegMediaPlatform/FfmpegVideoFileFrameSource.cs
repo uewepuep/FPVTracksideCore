@@ -1383,22 +1383,101 @@ namespace FfmpegMediaPlatform
                     // Set the loaded frame times - need to access via reflection or create a protected setter
                     SetFrameTimes(recordingInfo.FrameTimes);
                     
-                    
                     // Update the start time based on the first frame
                     var firstFrame = recordingInfo.FrameTimes.OrderBy(f => f.Time).First();
                     var lastFrame = recordingInfo.FrameTimes.OrderBy(f => f.Time).Last();
                     startTime = firstFrame.Time;
                     originalVideoStartTime = firstFrame.Time; // Preserve the original video start time for seeking
+                    
+                    // Calculate length directly from XML frame timing data
+                    // Use the actual time difference between first and last frames
                     length = lastFrame.Time - firstFrame.Time;
                     
+                    Tools.Logger.VideoLog.LogCall(this, $"LENGTH DEBUG: Using XML frame timing duration: {length.TotalSeconds:F1}s (last frame: {lastFrame.Time:HH:mm:ss.fff} - first frame: {firstFrame.Time:HH:mm:ss.fff})");
                 }
                 else
                 {
+                    // No XML timing data - use actual MP4 duration as fallback
+                    TimeSpan actualMp4Duration = DetermineActualDuration(videoFilePath);
+                    if (actualMp4Duration > TimeSpan.Zero)
+                    {
+                        length = actualMp4Duration;
+                        Tools.Logger.VideoLog.LogCall(this, $"LENGTH DEBUG: No XML timing - using MP4 duration={actualMp4Duration.TotalSeconds:F1}s");
+                    }
+                    else
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "LENGTH DEBUG: Could not determine video duration - using default");
+                    }
                 }
             }
             catch (Exception ex)
             {
                 Tools.Logger.VideoLog.LogException(this, ex);
+            }
+        }
+
+        /// <summary>
+        /// Determine the actual duration of the MP4 file using ffprobe
+        /// </summary>
+        private TimeSpan DetermineActualDuration(string videoFilePath)
+        {
+            try
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"Determining actual MP4 duration for: {videoFilePath}");
+                
+                // Use ffprobe to get video information
+                string ffprobeArgs = $"-v quiet -print_format json -show_format -show_streams \"{videoFilePath}\"";
+                var processStartInfo = ffmpegMediaFramework.GetProcessStartInfo($"ffprobe {ffprobeArgs}");
+                processStartInfo.RedirectStandardOutput = true;
+                processStartInfo.UseShellExecute = false;
+                processStartInfo.CreateNoWindow = true;
+
+                using (var process = new Process())
+                {
+                    process.StartInfo = processStartInfo;
+                    process.Start();
+                    
+                    string jsonOutput = process.StandardOutput.ReadToEnd();
+                    process.WaitForExit();
+                    
+                    if (process.ExitCode == 0 && !string.IsNullOrEmpty(jsonOutput))
+                    {
+                        // Parse duration from JSON output - use existing parsing logic
+                        var durationMatch = Regex.Match(jsonOutput, @"""duration"":\s*""([^""]+)""");
+                        if (durationMatch.Success)
+                        {
+                            string durationStr = durationMatch.Groups[1].Value;
+                            if (double.TryParse(durationStr, out double durationSeconds))
+                            {
+                                TimeSpan duration = TimeSpan.FromSeconds(durationSeconds);
+                                Tools.Logger.VideoLog.LogCall(this, $"MP4 duration determined: {duration.TotalSeconds:F1}s");
+                                return duration;
+                            }
+                        }
+                        
+                        // Try alternative pattern without quotes
+                        var altDurationMatch = Regex.Match(jsonOutput, @"""duration"":\s*([0-9.]+)");
+                        if (altDurationMatch.Success)
+                        {
+                            string durationStr = altDurationMatch.Groups[1].Value;
+                            if (double.TryParse(durationStr, out double durationSeconds))
+                            {
+                                TimeSpan duration = TimeSpan.FromSeconds(durationSeconds);
+                                Tools.Logger.VideoLog.LogCall(this, $"MP4 duration determined (alt pattern): {duration.TotalSeconds:F1}s");
+                                return duration;
+                            }
+                        }
+                    }
+                }
+                
+                Tools.Logger.VideoLog.LogCall(this, "Could not determine MP4 duration from ffprobe");
+                return TimeSpan.Zero;
+            }
+            catch (Exception ex)
+            {
+                Tools.Logger.VideoLog.LogException(this, ex);
+                Tools.Logger.VideoLog.LogCall(this, $"Error determining MP4 duration: {ex.Message}");
+                return TimeSpan.Zero;
             }
         }
         
