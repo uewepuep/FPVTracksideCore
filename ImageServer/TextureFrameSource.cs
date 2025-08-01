@@ -153,8 +153,8 @@ namespace ImageServer
 
         protected virtual void ProcessImage()
         {
-            // Log only every 120 frames to reduce spam
-            if (FrameProcessNumber % 120 == 0)
+            // Log only every 1800 frames to reduce spam (every 30 seconds at 60fps)
+            if (FrameProcessNumber % 1800 == 0)
             {
                 Tools.Logger.VideoLog.LogCall(this, $"TextureFrameSource.ProcessImage: Firing OnFrame event with SampleTime={SampleTime}, FrameProcessNumber={FrameProcessNumber}");
             }

@@ -345,7 +345,37 @@ namespace FfmpegMediaPlatform
             process.StartInfo = processStartInfo;
             process.ErrorDataReceived += (s, e) =>
             {
-                Logger.VideoLog.LogCall(this, e.Data);
+                // Filter out spammy HLS logs to reduce noise
+                if (e.Data != null)
+                {
+                    bool shouldLog = true;
+                    
+                    // Skip HLS file creation/writing logs
+                    if (e.Data.Contains("Opening") && e.Data.Contains("trackside_hls"))
+                        shouldLog = false;
+                    if (e.Data.Contains("hls @") && e.Data.Contains("stream"))
+                        shouldLog = false;
+                        
+                    // Only log frame progress every 10 seconds (at time ending in 0)
+                    if (e.Data.Contains("frame=") && e.Data.Contains("fps=") && e.Data.Contains("time="))
+                    {
+                        try
+                        {
+                            var timePart = e.Data.Split(new[] { "time=" }, StringSplitOptions.None)[1].Split(' ')[0];
+                            if (!timePart.EndsWith(":00"))
+                                shouldLog = false;
+                        }
+                        catch
+                        {
+                            // If parsing fails, log it anyway
+                        }
+                    }
+                    
+                    if (shouldLog)
+                    {
+                        Logger.VideoLog.LogCall(this, e.Data);
+                    }
+                }
 
                 // Initialize immediately when we see the first frame progress update
                 // This means ffmpeg is successfully reading from camera and outputting frames
@@ -657,8 +687,8 @@ namespace FfmpegMediaPlatform
                     
                     if (totalBytesRead == bytesToRead)
                     {
-                        // Log only every 120 frames to reduce spam
-                        if (FrameProcessNumber % 120 == 0)
+                        // Log only every 1800 frames to reduce spam (every 30 seconds at 60fps)
+                        if (FrameProcessNumber % 1800 == 0)
                         {
                             Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Complete frame read: {totalBytesRead} bytes, processing frame {FrameProcessNumber}");
                         }
@@ -714,8 +744,8 @@ namespace FfmpegMediaPlatform
                 {
                     FrameProcessNumber++;
                     
-                    // Log only every 120 frames to reduce spam
-                    if (FrameProcessNumber % 120 == 0)
+                    // Log only every 600 frames to reduce spam (every 10 seconds at 60fps)
+                    if (FrameProcessNumber % 600 == 0)
                     {
                         Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Processing frame {FrameProcessNumber}, buffer size: {buffer.Length} bytes");
                     }

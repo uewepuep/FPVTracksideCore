@@ -155,7 +155,6 @@ namespace FfmpegMediaPlatform
                         var caller = new System.Diagnostics.StackTrace().GetFrame(2)?.GetMethod()?.DeclaringType?.Name ?? "Unknown";
                         double intervalMs = lastFrameWriteTime != DateTime.MinValue ? (currentTime - lastFrameWriteTime).TotalMilliseconds : 0;
                         double avgFps = recordingFrameCounter > 0 ? recordingFrameCounter / (currentTime - recordingStartTime).TotalSeconds : 0;
-                        Tools.Logger.VideoLog.LogCall(this, $"FRAME DEBUG: #{recordingFrameCounter + 1} from {caller}, Ext#{frameNumber}, Interval:{intervalMs:F1}ms, AvgFPS:{avgFps:F1}");
                     }
                     
                     // Calculate expected frame interval based on frame rate

@@ -113,11 +113,11 @@ namespace UI.Video
             else
             {
                 Rectangle sourceBounds = Flip(SourceBounds);
-                // Log only every 120 frames to reduce spam
-                if (ProcessNumber % 120 == 0)
-                {
-                    Tools.Logger.VideoLog.LogCall(this, $"Draw: Drawing texture {texture.Width}x{texture.Height}, sourceBounds={sourceBounds}, Bounds={Bounds}");
-                }
+                // Disable draw logging to reduce spam - only log on errors
+                // if (ProcessNumber % 1800 == 0)
+                // {
+                //     Tools.Logger.VideoLog.LogCall(this, $"Draw: Drawing texture {texture.Width}x{texture.Height}, sourceBounds={sourceBounds}, Bounds={Bounds}");
+                // }
                 id.Draw(texture, sourceBounds, Bounds, Tint, alpha);
             }
             DebugTimer.DebugEndTime(this);

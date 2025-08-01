@@ -107,8 +107,8 @@ namespace ImageServer
 
         public void OnFrame(long sampleTime, long processNumber)
         {
-            // Log only every 120 frames to reduce spam
-            if (processNumber % 120 == 0)
+            // Log only every 3600 frames to reduce spam (every 60 seconds at 60fps)
+            if (processNumber % 3600 == 0)
             {
                 Tools.Logger.VideoLog.LogCall(this, $"OnFrame: processNumber={processNumber}, OnFrameEvent subscribers={(OnFrameEvent?.GetInvocationList()?.Length ?? 0)}");
             }
