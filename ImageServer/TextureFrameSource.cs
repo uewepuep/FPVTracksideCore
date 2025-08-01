@@ -168,7 +168,7 @@ namespace ImageServer
             
             if (isVideoFile && drawFrameCount % 30 == 0) // Log every 30 frames for video files
             {
-                Tools.Logger.VideoLog.LogCall(this, $"VIDEO UI: UpdateTexture called - drawFrameCount: {drawFrameCount}, rawTextures: {rawTextures != null}, textures: {textures != null}");
+                // Tools.Logger.VideoLog.LogCall(this, $"VIDEO UI: UpdateTexture called - drawFrameCount: {drawFrameCount}, rawTextures: {rawTextures != null}, textures: {textures != null}");
             }
             
             if (rawTextures == null || textures == null)
@@ -191,7 +191,7 @@ namespace ImageServer
                 forceRecreateTexture = true;
                 if (texture != null)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"VIDEO UI: Force recreating texture to prevent caching (drawFrameCount: {drawFrameCount})");
+                    // Tools.Logger.VideoLog.LogCall(this, $"VIDEO UI: Force recreating texture to prevent caching (drawFrameCount: {drawFrameCount})");
                     texture.Dispose();
                     texture = null;
                     texture2D = null;
@@ -211,7 +211,7 @@ namespace ImageServer
                     
                     if (isVideoFile)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"VIDEO UI: Created new texture {FrameWidth}x{FrameHeight} for video file");
+                        // Tools.Logger.VideoLog.LogCall(this, $"VIDEO UI: Created new texture {FrameWidth}x{FrameHeight} for video file");
                     }
                 }
                 texture2D = texture;
@@ -237,7 +237,7 @@ namespace ImageServer
                 if ((isVideoFile && drawFrameCount % 10 == 0) || (!isVideoFile && drawFrameCount % 120 == 0))
                 {
                     string prefix = isVideoFile ? "VIDEO UI" : "UI";
-                    Tools.Logger.VideoLog.LogCall(this, $"{prefix}: UpdateTexture result: {result}");
+                    // Tools.Logger.VideoLog.LogCall(this, $"{prefix}: UpdateTexture result: {result}");
                 }
 
                 if (result)
@@ -272,7 +272,7 @@ namespace ImageServer
                 // Log when frames aren't available for video files (this could indicate the problem)
                 if (isVideoFile && drawFrameCount % 60 == 0)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"VIDEO UI: No frame available to read from rawTextures buffer (drawFrameCount: {drawFrameCount})");
+                    // Tools.Logger.VideoLog.LogCall(this, $"VIDEO UI: No frame available to read from rawTextures buffer (drawFrameCount: {drawFrameCount})");
                 }
             }
             return result;

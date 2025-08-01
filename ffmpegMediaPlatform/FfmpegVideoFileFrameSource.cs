@@ -358,11 +358,11 @@ namespace FfmpegMediaPlatform
                 {
                     // For seek operations, adjust start time to account for seek position
                     startTime = DateTime.Now - mediaTime;
-                    Tools.Logger.VideoLog.LogCall(this, $"SEEK: Video file playback started at: {startTime} (seek position: {mediaTime.TotalSeconds:F3}s)");
+                    // Tools.Logger.VideoLog.LogCall(this, $"SEEK: Video file playback started at: {startTime} (seek position: {mediaTime.TotalSeconds:F3}s)");
                 }
                 else
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"Video file playback started at: {startTime}");
+                    // Tools.Logger.VideoLog.LogCall(this, $"Video file playback started at: {startTime}");
                 }
             }
 
@@ -376,7 +376,7 @@ namespace FfmpegMediaPlatform
                     if (seekStabilizationFrames > 5) // Allow more frames for stabilization
                     {
                         isSeekOperation = false;
-                        Tools.Logger.VideoLog.LogCall(this, $"SEEK: Timing stabilized, continuing from: {mediaTime.TotalSeconds:F3}s");
+                        // Tools.Logger.VideoLog.LogCall(this, $"SEEK: Timing stabilized, continuing from: {mediaTime.TotalSeconds:F3}s");
                     }
                     // During stabilization, keep mediaTime FROZEN at the seek position
                     // This prevents the progress bar from moving until frames are actually being processed
@@ -411,7 +411,7 @@ namespace FfmpegMediaPlatform
                 // This prevents the progress bar from moving before the FFmpeg process starts
                 if (isSeekOperation)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"SEEK: Waiting for FFmpeg process to start before updating timing (mediaTime frozen at: {mediaTime.TotalSeconds:F3}s)");
+                    // Tools.Logger.VideoLog.LogCall(this, $"SEEK: Waiting for FFmpeg process to start before updating timing (mediaTime frozen at: {mediaTime.TotalSeconds:F3}s)");
                 }
             }
         }
@@ -1107,12 +1107,12 @@ namespace FfmpegMediaPlatform
                     height = VideoConfig.VideoMode.Height;
                     buffer = new byte[width * height * 4];  // RGBA = 4 bytes per pixel
                     rawTextures = new XBuffer<RawTexture>(5, width, height);
-                    Tools.Logger.VideoLog.LogCall(this, $"SEEK: Buffers reinitialized: {width}x{height}");
+                    // Tools.Logger.VideoLog.LogCall(this, $"SEEK: Buffers reinitialized: {width}x{height}");
                 }
                 
                 // Update the FFmpeg command to include seek
                 string filePath = VideoConfig.FilePath;
-                Tools.Logger.VideoLog.LogCall(this, $"SEEK: Original file path: {filePath}");
+                // Tools.Logger.VideoLog.LogCall(this, $"SEEK: Original file path: {filePath}");
                 
                 if (!Path.IsPathRooted(filePath))
                 {
@@ -1123,11 +1123,11 @@ namespace FfmpegMediaPlatform
                 // Verify file exists before attempting to start FFmpeg
                 if (!File.Exists(filePath))
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"SEEK: ERROR - Video file does not exist: {filePath}");
+                    // Tools.Logger.VideoLog.LogCall(this, $"SEEK: ERROR - Video file does not exist: {filePath}");
                     return; // Don't try to start FFmpeg with a non-existent file
                 }
                 
-                Tools.Logger.VideoLog.LogCall(this, $"SEEK: File verified to exist, size: {new FileInfo(filePath).Length} bytes");
+                // Tools.Logger.VideoLog.LogCall(this, $"SEEK: File verified to exist, size: {new FileInfo(filePath).Length} bytes");
 
                 // Build FFmpeg command with seek parameter
                 // Put -ss BEFORE -i for efficient input seeking (avoids decoding unnecessary frames)
@@ -1144,7 +1144,7 @@ namespace FfmpegMediaPlatform
                     // setpts=4*PTS makes video 4x slower (25% speed)
                     videoFilter += ",setpts=4*PTS";
                     reFlag = ""; // Remove -re flag for slow motion to allow setpts to work properly
-                    Tools.Logger.VideoLog.LogCall(this, "SEEK: Slow motion enabled - video will play at 25% speed using setpts filter (no -re)");
+                    // Tools.Logger.VideoLog.LogCall(this, "SEEK: Slow motion enabled - video will play at 25% speed using setpts filter (no -re)");
                 }
                 
                 string ffmpegArgs = $"-ss {seekTime.TotalSeconds:F3} " +  // Seek to specific time (BEFORE input for fast seek)
@@ -1158,30 +1158,30 @@ namespace FfmpegMediaPlatform
                                    $"-pix_fmt rgba " +  // RGBA pixel format (output option)
                                    $"-f rawvideo pipe:1";  // Raw video output to stdout (output option)
 
-                Tools.Logger.VideoLog.LogCall(this, $"SEEK: FFMPEG Video File Seek ({fileName}): {ffmpegArgs}");
+                // Tools.Logger.VideoLog.LogCall(this, $"SEEK: FFMPEG Video File Seek ({fileName}): {ffmpegArgs}");
                 
                 // Mark this as a seek operation for logging
                 isSeekOperation = true;
                 
                 // Use the base class infrastructure for proper process management
-                Tools.Logger.VideoLog.LogCall(this, $"SEEK: About to start process using base infrastructure...");
+                // Tools.Logger.VideoLog.LogCall(this, $"SEEK: About to start process using base infrastructure...");
                 
                 // Temporarily store the seek args in a field that GetProcessStartInfo can use
                 currentSeekArgs = ffmpegArgs;
                 
                 // Use base.Start() which handles all the process setup correctly
-                Tools.Logger.VideoLog.LogCall(this, $"SEEK: Calling base.Start() with currentSeekArgs set");
+                // Tools.Logger.VideoLog.LogCall(this, $"SEEK: Calling base.Start() with currentSeekArgs set");
                 bool result = base.Start();
                 
                 if (result)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"SEEK: FFmpeg seek process started successfully via base.Start()");
-                    Tools.Logger.VideoLog.LogCall(this, $"SEEK: Process ID: {process?.Id}, HasExited: {process?.HasExited}");
+                    // Tools.Logger.VideoLog.LogCall(this, $"SEEK: FFmpeg seek process started successfully via base.Start()");
+                    // Tools.Logger.VideoLog.LogCall(this, $"SEEK: Process ID: {process?.Id}, HasExited: {process?.HasExited}");
                     
                     // For seek operations, we need to ensure initialization happens
                     if (process != null)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"SEEK: Adding VideoFileErrorDataReceived event handler");
+                        // Tools.Logger.VideoLog.LogCall(this, $"SEEK: Adding VideoFileErrorDataReceived event handler");
                         process.ErrorDataReceived += VideoFileErrorDataReceived;
                         
                         // For seek operations, force initialization after a short delay since FFmpeg 
@@ -1190,7 +1190,7 @@ namespace FfmpegMediaPlatform
                         {
                             if (!inited && run)
                             {
-                                Tools.Logger.VideoLog.LogCall(this, $"SEEK: Force initializing frame processing for seek operation");
+                                // Tools.Logger.VideoLog.LogCall(this, $"SEEK: Force initializing frame processing for seek operation");
                                 InitializeFrameProcessing();
                             }
                         });
@@ -1198,18 +1198,18 @@ namespace FfmpegMediaPlatform
                         // Check if the process is actually running
                         if (process.HasExited)
                         {
-                            Tools.Logger.VideoLog.LogCall(this, $"SEEK: WARNING - Process exited immediately with exit code: {process.ExitCode}");
+                            // Tools.Logger.VideoLog.LogCall(this, $"SEEK: WARNING - Process exited immediately with exit code: {process.ExitCode}");
                         }
                     }
                     else
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"SEEK: WARNING - Process is null after successful base.Start()");
+                        // Tools.Logger.VideoLog.LogCall(this, $"SEEK: WARNING - Process is null after successful base.Start()");
                     }
                 }
                 else
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"SEEK: Failed to start FFmpeg seek process via base.Start()");
-                    Tools.Logger.VideoLog.LogCall(this, $"SEEK: State after failed start: {State}, Connected: {Connected}");
+                    // Tools.Logger.VideoLog.LogCall(this, $"SEEK: Failed to start FFmpeg seek process via base.Start()");
+                    // Tools.Logger.VideoLog.LogCall(this, $"SEEK: State after failed start: {State}, Connected: {Connected}");
                 }
                 
                 // Clear the seek args
@@ -1227,8 +1227,8 @@ namespace FfmpegMediaPlatform
             // The dateTime comes from SeekNode and represents a position in the overall timeline
             // We need to convert this to a TimeSpan offset from THIS video file's beginning
             
-            Tools.Logger.VideoLog.LogCall(this, $"SEEK: SetPosition(DateTime): dateTime={dateTime:HH:mm:ss.fff}");
-            Tools.Logger.VideoLog.LogCall(this, $"SEEK: Video file StartTime={StartTime:HH:mm:ss.fff}, Length={Length.TotalSeconds:F3}s");
+            // Tools.Logger.VideoLog.LogCall(this, $"SEEK: SetPosition(DateTime): dateTime={dateTime:HH:mm:ss.fff}");
+            // Tools.Logger.VideoLog.LogCall(this, $"SEEK: Video file StartTime={StartTime:HH:mm:ss.fff}, Length={Length.TotalSeconds:F3}s");
             
             TimeSpan seekTimeSpan;
             
@@ -1237,31 +1237,31 @@ namespace FfmpegMediaPlatform
             {
                 // dateTime is absolute timeline position, StartTime is this video file's start
                 seekTimeSpan = dateTime - StartTime;
-                Tools.Logger.VideoLog.LogCall(this, $"SEEK: Calculated offset: {seekTimeSpan.TotalSeconds:F3}s (dateTime - StartTime)");
+                // Tools.Logger.VideoLog.LogCall(this, $"SEEK: Calculated offset: {seekTimeSpan.TotalSeconds:F3}s (dateTime - StartTime)");
             }
             else
             {
                 // Fallback: if StartTime not available, assume dateTime is already relative
                 // This shouldn't normally happen, but provides a safety net
                 seekTimeSpan = TimeSpan.Zero;
-                Tools.Logger.VideoLog.LogCall(this, $"SEEK: StartTime not available, defaulting to 0");
+                // Tools.Logger.VideoLog.LogCall(this, $"SEEK: StartTime not available, defaulting to 0");
             }
             
             // Ensure we don't seek to negative time
             if (seekTimeSpan < TimeSpan.Zero)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"SEEK: Clamping negative offset {seekTimeSpan.TotalSeconds:F3}s to 0");
+                // Tools.Logger.VideoLog.LogCall(this, $"SEEK: Clamping negative offset {seekTimeSpan.TotalSeconds:F3}s to 0");
                 seekTimeSpan = TimeSpan.Zero;
             }
             
             // Clamp to video length if known
             if (Length > TimeSpan.Zero && seekTimeSpan > Length)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"SEEK: Clamping offset {seekTimeSpan.TotalSeconds:F3}s to video length {Length.TotalSeconds:F3}s");
+                // Tools.Logger.VideoLog.LogCall(this, $"SEEK: Clamping offset {seekTimeSpan.TotalSeconds:F3}s to video length {Length.TotalSeconds:F3}s");
                 seekTimeSpan = Length;
             }
             
-            Tools.Logger.VideoLog.LogCall(this, $"SEEK: Final seek offset: {seekTimeSpan.TotalSeconds:F3}s");
+            // Tools.Logger.VideoLog.LogCall(this, $"SEEK: Final seek offset: {seekTimeSpan.TotalSeconds:F3}s");
             SetPosition(seekTimeSpan);
         }
 

@@ -855,7 +855,7 @@ namespace FfmpegMediaPlatform
                     bool isVideoFile = this.GetType().Name.Contains("VideoFile");
                     if (isVideoFile && FrameProcessNumber % 10 == 0)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"VIDEO WRITE: Wrote frame {FrameProcessNumber} to rawTextures buffer, SampleTime: {SampleTime}");
+                        // Tools.Logger.VideoLog.LogCall(this, $"VIDEO WRITE: Wrote frame {FrameProcessNumber} to rawTextures buffer, SampleTime: {SampleTime}");
                     }
                 }
             }
