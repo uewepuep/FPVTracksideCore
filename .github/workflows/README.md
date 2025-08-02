@@ -1,142 +1,172 @@
-# GitHub Actions Workflows
+# FPV Trackside Core - GitHub Actions Pipeline
 
-This directory contains GitHub Actions workflows for building and releasing FPV Trackside Core across multiple platforms.
+This directory contains the GitHub Actions workflows for the FPV Trackside Core project. The pipeline is designed to provide comprehensive CI/CD coverage for all branches with different levels of testing and building.
 
-## 🚀 Workflows Overview
+## Workflow Overview
 
-### 1. `build-and-release.yml` - Automatic Build & Release
-**Triggers:**
-- Push to `master` or `main` branch
-- New tags starting with `v*`
-- Manual dispatch with release option
+### 🔄 Continuous Integration (`ci.yml`)
+**Triggers:** All pushes and pull requests on all branches
+**Purpose:** Fast feedback for developers
 
-**What it does:**
-- Automatically detects version numbers from project files
-- Builds both macOS (Apple Silicon) and Windows (x64) versions
-- Creates app bundles with proper structure
-- Automatically creates GitHub releases with generated release notes
-- Uses semantic versioning for release tags
+- **Quick Build Check**: Verifies both macOS and Windows projects compile successfully
+- **Code Quality**: Checks formatting, common issues, and code analysis
+- **Dependency Check**: Scans for outdated and vulnerable packages
+- **Branch Info**: Provides context about the current branch and changes
 
-### 2. `build-test.yml` - Pull Request Testing
-**Triggers:**
-- Pull requests to `master` or `main`
-- Manual dispatch
+### 🧪 Build Test (`build-test.yml`)
+**Triggers:** All pushes and pull requests on all branches
+**Purpose:** Comprehensive testing and validation
 
-**What it does:**
-- Tests building both platforms in Debug and Release modes
-- Runs code formatting checks
-- Quick validation without creating releases
-- Faster feedback for development
+- **Test Builds**: Builds both Debug and Release configurations for macOS and Windows
+- **Test Execution**: Runs any existing test projects
+- **Linting**: Code formatting verification
+- **Security Scan**: Dependency vulnerability scanning
 
-### 3. `manual-release.yml` - Manual Release Creation
-**Triggers:**
-- Manual dispatch only
+### 🚀 Build and Release (`build-and-release.yml`)
+**Triggers:** All pushes and pull requests on all branches, with special handling for releases
+**Purpose:** Full builds and release management
 
-**What it does:**
-- Allows custom release tags and titles
-- Supports custom release notes
-- Option to mark as pre-release
-- Full control over release timing and content
+- **Smart Branch Detection**: Differentiates between release branches (master, main, release/*) and feature branches
+- **Full Builds**: Creates complete macOS app bundles and Windows executables
+- **Conditional Artifacts**: 
+  - Release branches: Full DMG/ZIP packages with proper naming
+  - Feature branches: Simple ZIP packages with branch-specific naming
+- **Release Creation**: Automatically creates GitHub releases for release branches and tags
 
-## 📋 Version Detection
+### 🌙 Nightly Build and Test (`nightly.yml`)
+**Triggers:** Daily at 2 AM UTC, manual dispatch
+**Purpose:** Comprehensive overnight testing and analysis
 
-The workflows automatically extract version numbers from:
-- **macOS**: `FPVMacSideCore/FPVMacsideCore.csproj` → `<Version>2.0.42.3</Version>`
-- **Windows**: `FPVTracksideCore/FPVTracksideCore.csproj` → `<Version>2.0.69.1</Version>`
+- **Full Builds**: Complete macOS and Windows builds with timestamps
+- **Comprehensive Testing**: Runs all tests with detailed reporting
+- **Code Coverage**: Analyzes test coverage for both projects
+- **Performance Testing**: Build performance analysis
+- **Security Audit**: Comprehensive security scanning
 
-## 🏗️ Build Outputs
+## Branch Strategy
 
-### macOS
-- **Target**: Apple Silicon (ARM64) with universal compatibility
-- **Output**: Self-contained app bundle in ZIP archive
-- **Structure**: Proper `.app` bundle with Info.plist
-- **Naming**: `FPV-Trackside-Core-macOS-v{version}.zip`
+### Release Branches
+- `master` / `main`: Primary release branches
+- `release/*`: Release candidate branches
+- **Behavior**: Full builds, DMG creation, automatic releases
 
-### Windows
+### Feature Branches
+- All other branches (feature/, hotfix/, etc.)
+- **Behavior**: Simple builds, ZIP artifacts, no automatic releases
+
+## Artifact Naming Convention
+
+### Release Branches
+- macOS: `FPV-Trackside-Core-macOS-v{version}.zip` / `.dmg`
+- Windows: `FPV-Trackside-Core-Windows-v{version}.zip`
+
+### Feature Branches
+- macOS: `FPV-Trackside-Core-macOS-{branch}-v{version}.zip`
+- Windows: `FPV-Trackside-Core-Windows-{branch}-v{version}.zip`
+
+### Nightly Builds
+- macOS: `FPV-Trackside-Core-macOS-nightly-{branch}-{timestamp}.zip`
+- Windows: `FPV-Trackside-Core-Windows-nightly-{branch}-{timestamp}.zip`
+
+## Project Structure
+
+The pipeline handles two main projects:
+
+### macOS Project (`FPVMacSideCore/`)
+- **Solution**: `FPVTrackside.sln`
+- **Main Project**: `FPVMacsideCore.csproj`
+- **Target**: Apple Silicon (ARM64)
+- **Output**: macOS App Bundle + DMG
+
+### Windows Project (`FPVTracksideCore/`)
+- **Solution**: `FPVTracksideCore.sln`
+- **Main Project**: `FPVTracksideCore.csproj`
 - **Target**: Windows x64
-- **Output**: Self-contained executable in ZIP archive  
-- **Includes**: All dependencies and FFmpeg binaries
-- **Naming**: `FPV-Trackside-Core-Windows-v{version}.zip`
+- **Output**: Windows Executable + ZIP
 
-## 🎯 Usage Instructions
+## Shared Libraries
 
-### Automatic Releases
-1. **Push to main branch**: Triggers build and auto-release
-2. **Create git tag**: Push with `git tag v1.2.3 && git push origin v1.2.3`
-3. **Version bump**: Update version in project files and push
+Both projects share common libraries:
+- `Compositor/`: Graphics composition engine
+- `RaceLib/`: Core racing logic
+- `Sound/`: Audio processing
+- `Timing/`: Timing system integration
+- `UI/`: User interface components
+- `DB/`: Database layer
+- `Tools/`: Utility functions
+- `ExternalData/`: External data integration
+- `ImageServer/`: Image processing server
+- `ffmpegMediaPlatform/`: FFmpeg integration
 
-### Manual Releases
-1. Go to GitHub Actions tab
-2. Select "Manual Release" workflow
-3. Click "Run workflow"
-4. Fill in:
-   - **Release tag**: `v2.0.42.4` (must follow semantic versioning)
-   - **Release title**: Optional custom title
-   - **Release notes**: Optional additional notes
-   - **Pre-release**: Check if this is a beta/preview
+## Environment Variables
 
-### Testing Pull Requests
-- Automatically runs on all PRs
-- Check build status before merging
-- Validates both platforms compile correctly
+- `DOTNET_VERSION`: Set to '6.0.x' for all workflows
+- All workflows use the latest .NET 6.0 SDK
 
-## 🔧 Configuration
+## Manual Triggers
 
-### Required Repository Settings
-1. **Actions permissions**: Allow GitHub Actions to create releases
-2. **GITHUB_TOKEN**: Automatically provided (no setup needed)
+### Workflow Dispatch
+All workflows support manual triggering via GitHub Actions UI:
 
-### Optional Customizations
-- Modify `.NET` version in `env.DOTNET_VERSION`
-- Change target frameworks in build commands
-- Adjust artifact retention days (currently 90 days)
-- Customize release note templates
+1. **Build and Release**: 
+   - `create_release`: Boolean to force release creation
+   - `target_branch`: Optional branch specification
 
-## 📦 Artifacts
+2. **Build Test**: No additional parameters
 
-All workflows upload build artifacts that can be downloaded from the Actions tab:
-- **Retention**: 90 days
-- **Access**: Available to repository collaborators
-- **Auto-cleanup**: Artifacts are automatically deleted after retention period
+3. **Nightly**: No additional parameters
 
-## 🐛 Troubleshooting
+## Monitoring and Debugging
+
+### Build Status
+- ✅ **Green**: All checks passed
+- ⚠️ **Yellow**: Some non-critical checks failed (formatting, warnings)
+- ❌ **Red**: Critical failures (compilation errors, test failures)
 
 ### Common Issues
+1. **Formatting Issues**: Run `dotnet format` locally
+2. **Dependency Issues**: Check for outdated or vulnerable packages
+3. **Build Failures**: Verify .NET 6.0 compatibility
+4. **Test Failures**: Check test project configurations
 
-**Build fails on macOS:**
-- Check .NET 6.0 compatibility
-- Verify project references are correct
-- Ensure FFmpeg binaries are present
+### Logs and Artifacts
+- All builds produce downloadable artifacts
+- Detailed logs available in GitHub Actions UI
+- Nightly builds include comprehensive analysis reports
 
-**Build fails on Windows:**
-- Check Windows-specific dependencies
-- Verify DirectX/MonoGame references
-- Check file path lengths (Windows limitation)
+## Performance Considerations
 
-**Release creation fails:**
-- Ensure repository has proper permissions
-- Check if tag already exists
-- Verify GITHUB_TOKEN has write access
+- **CI**: Fast feedback (< 10 minutes)
+- **Build Test**: Comprehensive validation (< 15 minutes)
+- **Build and Release**: Full builds (~30-60 minutes)
+- **Nightly**: Complete analysis (~2 hours)
 
-**Version detection fails:**
-- Ensure `<Version>` tags are properly formatted in `.csproj` files
-- Check for XML parsing issues
-- Verify file paths in workflow
+## Security Features
 
-### Debug Tips
-1. Check workflow logs in GitHub Actions tab
-2. Look for red X marks indicating failed steps
-3. Download and test artifacts manually
-4. Compare successful runs with failed ones
+- Dependency vulnerability scanning
+- License compliance checking
+- Code quality analysis
+- Security audit in nightly builds
 
-## 🔄 Workflow Dependencies
+## Contributing
 
-```mermaid
-graph TD
-    A[detect-version] --> B[build-macos]
-    A --> C[build-windows]
-    B --> D[create-release]
-    C --> D
-```
+When contributing to the project:
 
-Each workflow is designed to be independent and can be run separately as needed.
+1. **Feature Branches**: Create from main/master
+2. **Testing**: Ensure all CI checks pass
+3. **Formatting**: Run `dotnet format` before committing
+4. **Documentation**: Update relevant documentation
+
+## Support
+
+For pipeline issues:
+1. Check the GitHub Actions logs
+2. Verify .NET 6.0 compatibility
+3. Review the workflow configurations
+4. Contact the development team
+
+---
+
+**Last Updated**: December 2024
+**Pipeline Version**: 2.0
+**Supported Platforms**: macOS (Apple Silicon), Windows (x64)

@@ -1,0 +1,164 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ '**' ]
+
+env:
+  DOTNET_VERSION: '6.0.x'
+
+jobs:
+  quick-build-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Quick Build Check - macOS Project
+      run: |
+        echo "🔍 Quick build check for macOS project..."
+        dotnet restore FPVMacSideCore/FPVTrackside.sln --verbosity minimal
+        dotnet build FPVMacSideCore/FPVTrackside.sln --configuration Debug --no-restore --verbosity minimal
+        echo "✅ macOS project builds successfully"
+    
+    - name: Quick Build Check - Windows Project
+      run: |
+        echo "🔍 Quick build check for Windows project..."
+        dotnet restore FPVTracksideCore/FPVTracksideCore.sln --verbosity minimal
+        dotnet build FPVTracksideCore/FPVTracksideCore.sln --configuration Debug --no-restore --verbosity minimal
+        echo "✅ Windows project builds successfully"
+    
+    - name: Check for Compilation Errors
+      run: |
+        echo "🔍 Checking for compilation errors..."
+        
+        # Check macOS project
+        if ! dotnet build FPVMacSideCore/FPVTrackside.sln --configuration Debug --no-restore --verbosity quiet; then
+          echo "❌ macOS project has compilation errors"
+          exit 1
+        fi
+        
+        # Check Windows project
+        if ! dotnet build FPVTracksideCore/FPVTracksideCore.sln --configuration Debug --no-restore --verbosity quiet; then
+          echo "❌ Windows project has compilation errors"
+          exit 1
+        fi
+        
+        echo "✅ No compilation errors found"
+
+  code-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Check Code Format
+      run: |
+        echo "🎨 Checking code format..."
+        
+        # Check macOS project format
+        echo "Checking macOS project format..."
+        dotnet format FPVMacSideCore/FPVTrackside.sln --verify-no-changes --verbosity normal || {
+          echo "⚠️ macOS project has formatting issues. Run 'dotnet format FPVMacSideCore/FPVTrackside.sln' to fix."
+        }
+        
+        # Check Windows project format
+        echo "Checking Windows project format..."
+        dotnet format FPVTracksideCore/FPVTracksideCore.sln --verify-no-changes --verbosity normal || {
+          echo "⚠️ Windows project has formatting issues. Run 'dotnet format FPVTracksideCore/FPVTracksideCore.sln' to fix."
+        }
+      continue-on-error: true
+    
+    - name: Check for Common Issues
+      run: |
+        echo "🔍 Checking for common code issues..."
+        
+        # Check for TODO comments in production code
+        echo "Checking for TODO comments..."
+        TODO_COUNT=$(find . -name "*.cs" -not -path "./obj/*" -not -path "./bin/*" -exec grep -l "TODO" {} \; | wc -l)
+        if [ "$TODO_COUNT" -gt 0 ]; then
+          echo "⚠️ Found $TODO_COUNT files with TODO comments"
+          find . -name "*.cs" -not -path "./obj/*" -not -path "./bin/*" -exec grep -l "TODO" {} \;
+        else
+          echo "✅ No TODO comments found"
+        fi
+        
+        # Check for hardcoded paths
+        echo "Checking for hardcoded paths..."
+        HARDCODED_PATHS=$(find . -name "*.cs" -not -path "./obj/*" -not -path "./bin/*" -exec grep -l "C:\\\|/Users/\|/home/" {} \; | wc -l)
+        if [ "$HARDCODED_PATHS" -gt 0 ]; then
+          echo "⚠️ Found $HARDCODED_PATHS files with potentially hardcoded paths"
+        else
+          echo "✅ No hardcoded paths found"
+        fi
+      continue-on-error: true
+
+  dependency-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Check Dependencies
+      run: |
+        echo "📦 Checking dependencies..."
+        
+        # Check for outdated packages
+        echo "Checking for outdated packages in macOS project..."
+        dotnet list FPVMacSideCore/FPVTrackside.sln package --outdated || true
+        
+        echo "Checking for outdated packages in Windows project..."
+        dotnet list FPVTracksideCore/FPVTracksideCore.sln package --outdated || true
+        
+        # Check for vulnerable packages
+        echo "Checking for vulnerable packages in macOS project..."
+        dotnet list FPVMacSideCore/FPVTrackside.sln package --vulnerable || true
+        
+        echo "Checking for vulnerable packages in Windows project..."
+        dotnet list FPVTracksideCore/FPVTracksideCore.sln package --vulnerable || true
+      continue-on-error: true
+
+  branch-info:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Branch Information
+      run: |
+        echo "🌿 Branch Information"
+        echo "Current branch: ${{ github.ref_name }}"
+        echo "Event type: ${{ github.event_name }}"
+        echo "Commit SHA: ${{ github.sha }}"
+        echo "Commit message: ${{ github.event.head_commit.message }}"
+        
+        # Show recent commits
+        echo ""
+        echo "📝 Recent commits:"
+        git log --oneline -5
+        
+        # Show changed files
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          echo ""
+          echo "📁 Changed files in PR:"
+          git diff --name-only origin/${{ github.base_ref }}...HEAD
+        fi 

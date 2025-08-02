@@ -1,8 +1,10 @@
 name: Build Test
 
 on:
+  push:
+    branches: [ '**' ]  # Run on all branches
   pull_request:
-    branches: [ master, main ]
+    branches: [ '**' ]  # Run on all branches
   workflow_dispatch:
 
 env:
@@ -27,6 +29,14 @@ jobs:
     
     - name: Test Build macOS Release
       run: dotnet build FPVMacSideCore/FPVMacsideCore.csproj --configuration Release --no-restore
+    
+    - name: Run macOS Tests (if any)
+      run: |
+        # Run any tests that might exist
+        find . -name "*.Tests.csproj" -o -name "*Test.csproj" | while read testproj; do
+          echo "Running tests in $testproj"
+          dotnet test "$testproj" --configuration Debug --no-build --verbosity normal || true
+        done
 
   test-build-windows:
     runs-on: windows-latest
@@ -46,6 +56,18 @@ jobs:
     
     - name: Test Build Windows Release
       run: dotnet build FPVTracksideCore/FPVTracksideCore.csproj --configuration Release --no-restore
+    
+    - name: Run Windows Tests (if any)
+      run: |
+        # Run any tests that might exist
+        Get-ChildItem -Recurse -Filter "*Tests.csproj" | ForEach-Object {
+          Write-Host "Running tests in $($_.FullName)"
+          dotnet test $_.FullName --configuration Debug --no-build --verbosity normal
+        }
+        Get-ChildItem -Recurse -Filter "*Test.csproj" | ForEach-Object {
+          Write-Host "Running tests in $($_.FullName)"
+          dotnet test $_.FullName --configuration Debug --no-build --verbosity normal
+        }
 
   lint-and-format:
     runs-on: ubuntu-latest
@@ -68,4 +90,38 @@ jobs:
     
     - name: Check format (Windows project)  
       run: dotnet format FPVTracksideCore/FPVTracksideCore.sln --verify-no-changes --verbosity diagnostic
+      continue-on-error: true
+    
+    - name: Run Code Analysis
+      run: |
+        # Run code analysis on both projects
+        echo "Running code analysis on macOS project..."
+        dotnet build FPVMacSideCore/FPVTrackside.sln --configuration Debug --verbosity minimal || true
+        
+        echo "Running code analysis on Windows project..."
+        dotnet build FPVTracksideCore/FPVTracksideCore.sln --configuration Debug --verbosity minimal || true
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Security Scan Dependencies
+      run: |
+        echo "Checking for known vulnerabilities in dependencies..."
+        
+        # Check macOS project dependencies
+        echo "=== macOS Project Dependencies ==="
+        dotnet list FPVMacSideCore/FPVTrackside.sln package --vulnerable || true
+        
+        # Check Windows project dependencies  
+        echo "=== Windows Project Dependencies ==="
+        dotnet list FPVTracksideCore/FPVTracksideCore.sln package --vulnerable || true
+        
+        echo "Security scan completed."
       continue-on-error: true

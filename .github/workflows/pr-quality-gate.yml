@@ -1,0 +1,262 @@
+name: Pull Request Quality Gate
+
+on:
+  pull_request:
+    branches: [ '**' ]
+    types: [ opened, synchronize, reopened, ready_for_review ]
+
+env:
+  DOTNET_VERSION: '6.0.x'
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: PR Analysis
+      run: |
+        echo "🔍 Analyzing Pull Request..."
+        
+        # Get PR information
+        PR_NUMBER="${{ github.event.number }}"
+        PR_TITLE="${{ github.event.pull_request.title }}"
+        PR_BODY="${{ github.event.pull_request.body }}"
+        BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
+        HEAD_BRANCH="${{ github.event.pull_request.head.ref }}"
+        
+        echo "PR #$PR_NUMBER: $PR_TITLE"
+        echo "From: $HEAD_BRANCH → To: $BASE_BRANCH"
+        
+        # Check PR title format
+        if [[ ! "$PR_TITLE" =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: ]]; then
+          echo "⚠️ PR title should follow conventional commit format: type(scope): description"
+          echo "   Examples: feat(camera): add new camera support"
+          echo "             fix(ui): resolve button alignment issue"
+        else
+          echo "✅ PR title follows conventional commit format"
+        fi
+        
+        # Check PR description
+        if [ -z "$PR_BODY" ] || [ "$PR_BODY" = "null" ]; then
+          echo "⚠️ PR description is empty. Please add a description of your changes."
+        else
+          echo "✅ PR has a description"
+        fi
+        
+        # Check for breaking changes
+        if [[ "$PR_TITLE" =~ BREAKING CHANGE ]] || [[ "$PR_BODY" =~ BREAKING CHANGE ]]; then
+          echo "⚠️ Breaking changes detected. Please ensure this is intentional."
+        fi
+        
+        # Check changed files
+        echo ""
+        echo "📁 Changed files:"
+        git diff --name-only origin/$BASE_BRANCH...HEAD | while read file; do
+          echo "  - $file"
+        done
+        
+        # Count changes
+        TOTAL_CHANGES=$(git diff --stat origin/$BASE_BRANCH...HEAD | tail -1 | awk '{print $4}')
+        echo ""
+        echo "📊 Total changes: $TOTAL_CHANGES lines"
+        
+        # Warn about large PRs
+        if [ "$TOTAL_CHANGES" -gt 1000 ]; then
+          echo "⚠️ Large PR detected ($TOTAL_CHANGES lines). Consider breaking into smaller PRs."
+        fi
+    
+    - name: Code Quality Check
+      run: |
+        echo "🎨 Checking code quality..."
+        
+        # Check for formatting issues
+        echo "Checking code formatting..."
+        FORMAT_ISSUES=0
+        
+        # Check macOS project
+        if ! dotnet format FPVMacSideCore/FPVTrackside.sln --verify-no-changes --verbosity quiet; then
+          echo "⚠️ macOS project has formatting issues"
+          FORMAT_ISSUES=$((FORMAT_ISSUES + 1))
+        fi
+        
+        # Check Windows project
+        if ! dotnet format FPVTracksideCore/FPVTracksideCore.sln --verify-no-changes --verbosity quiet; then
+          echo "⚠️ Windows project has formatting issues"
+          FORMAT_ISSUES=$((FORMAT_ISSUES + 1))
+        fi
+        
+        if [ "$FORMAT_ISSUES" -eq 0 ]; then
+          echo "✅ Code formatting is correct"
+        fi
+        
+        # Check for common issues
+        echo "Checking for common code issues..."
+        
+        # Check for TODO comments
+        TODO_COUNT=$(git diff origin/${{ github.event.pull_request.base.ref }}...HEAD --name-only | xargs grep -l "TODO" 2>/dev/null | wc -l || echo "0")
+        if [ "$TODO_COUNT" -gt 0 ]; then
+          echo "⚠️ Found $TODO_COUNT files with TODO comments in changes"
+        else
+          echo "✅ No TODO comments in changes"
+        fi
+        
+        # Check for hardcoded paths
+        HARDCODED_PATHS=$(git diff origin/${{ github.event.pull_request.base.ref }}...HEAD --name-only | xargs grep -l "C:\\\|/Users/\|/home/" 2>/dev/null | wc -l || echo "0")
+        if [ "$HARDCODED_PATHS" -gt 0 ]; then
+          echo "⚠️ Found $HARDCODED_PATHS files with potentially hardcoded paths"
+        else
+          echo "✅ No hardcoded paths in changes"
+        fi
+    
+    - name: Build Validation
+      run: |
+        echo "🔨 Validating builds..."
+        
+        # Quick build check for macOS project
+        echo "Building macOS project..."
+        dotnet restore FPVMacSideCore/FPVTrackside.sln --verbosity minimal
+        if dotnet build FPVMacSideCore/FPVTrackside.sln --configuration Debug --no-restore --verbosity minimal; then
+          echo "✅ macOS project builds successfully"
+        else
+          echo "❌ macOS project build failed"
+          exit 1
+        fi
+        
+        # Quick build check for Windows project
+        echo "Building Windows project..."
+        dotnet restore FPVTracksideCore/FPVTracksideCore.sln --verbosity minimal
+        if dotnet build FPVTracksideCore/FPVTracksideCore.sln --configuration Debug --no-restore --verbosity minimal; then
+          echo "✅ Windows project builds successfully"
+        else
+          echo "❌ Windows project build failed"
+          exit 1
+        fi
+    
+    - name: Test Validation
+      run: |
+        echo "🧪 Validating tests..."
+        
+        # Run any tests that exist
+        TEST_COUNT=0
+        PASSED_TESTS=0
+        
+        # Find and run test projects
+        find . -name "*.Tests.csproj" -o -name "*Test.csproj" | while read testproj; do
+          TEST_COUNT=$((TEST_COUNT + 1))
+          echo "Running tests in $testproj"
+          if dotnet test "$testproj" --configuration Debug --no-build --verbosity minimal --logger "console;verbosity=minimal"; then
+            PASSED_TESTS=$((PASSED_TESTS + 1))
+            echo "✅ Tests passed in $testproj"
+          else
+            echo "❌ Tests failed in $testproj"
+          fi
+        done
+        
+        if [ "$TEST_COUNT" -eq 0 ]; then
+          echo "ℹ️ No test projects found"
+        else
+          echo "📊 Test Summary: $PASSED_TESTS/$TEST_COUNT test projects passed"
+        fi
+      continue-on-error: true
+    
+    - name: Security Check
+      run: |
+        echo "🔒 Checking security..."
+        
+        # Check for vulnerable dependencies
+        echo "Checking for vulnerable dependencies..."
+        
+        VULNERABLE_MACOS=$(dotnet list FPVMacSideCore/FPVTrackside.sln package --vulnerable 2>/dev/null | grep -c "vulnerable" || echo "0")
+        VULNERABLE_WINDOWS=$(dotnet list FPVTracksideCore/FPVTracksideCore.sln package --vulnerable 2>/dev/null | grep -c "vulnerable" || echo "0")
+        
+        TOTAL_VULNERABLE=$((VULNERABLE_MACOS + VULNERABLE_WINDOWS))
+        
+        if [ "$TOTAL_VULNERABLE" -gt 0 ]; then
+          echo "⚠️ Found $TOTAL_VULNERABLE vulnerable packages"
+          echo "macOS project: $VULNERABLE_MACOS vulnerable packages"
+          echo "Windows project: $VULNERABLE_WINDOWS vulnerable packages"
+        else
+          echo "✅ No vulnerable packages found"
+        fi
+        
+        # Check for sensitive data in changes
+        echo "Checking for sensitive data in changes..."
+        
+        SENSITIVE_FILES=$(git diff origin/${{ github.event.pull_request.base.ref }}...HEAD --name-only | xargs grep -l -i "password\|secret\|key\|token\|api_key" 2>/dev/null | wc -l || echo "0")
+        
+        if [ "$SENSITIVE_FILES" -gt 0 ]; then
+          echo "⚠️ Found $SENSITIVE_FILES files with potentially sensitive data"
+        else
+          echo "✅ No sensitive data detected in changes"
+        fi
+      continue-on-error: true
+    
+    - name: Generate Quality Report
+      run: |
+        echo "📊 Generating quality report..."
+        
+        # Create a quality report
+        cat > quality-report.md << EOF
+        # Pull Request Quality Report
+        
+        **PR #${{ github.event.number }}**: ${{ github.event.pull_request.title }}
+        **Branch**: ${{ github.event.pull_request.head.ref }} → ${{ github.event.pull_request.base.ref }}
+        **Generated**: $(date)
+        
+        ## ✅ Quality Checks
+        
+        - [x] Build validation passed
+        - [x] Code quality analysis completed
+        - [x] Security scan completed
+        - [x] Test validation completed
+        
+        ## 📋 Recommendations
+        
+        $(if [[ ! "${{ github.event.pull_request.title }}" =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: ]]; then
+          echo "- [ ] Update PR title to follow conventional commit format"
+        fi)
+        
+        $(if [ -z "${{ github.event.pull_request.body }}" ] || [ "${{ github.event.pull_request.body }}" = "null" ]; then
+          echo "- [ ] Add a description to the PR"
+        fi)
+        
+        $(if [ "$(git diff --stat origin/${{ github.event.pull_request.base.ref }}...HEAD | tail -1 | awk '{print $4}')" -gt 1000 ]; then
+          echo "- [ ] Consider breaking this large PR into smaller ones"
+        fi)
+        
+        ## 🔧 Next Steps
+        
+        1. Review the automated checks above
+        2. Address any warnings or issues
+        3. Request code review from team members
+        4. Merge when all checks pass and reviews are approved
+        
+        ---
+        
+        *This report was generated automatically by the PR Quality Gate workflow.*
+        EOF
+        
+        echo "Quality report generated: quality-report.md"
+    
+    - name: Comment on PR
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const report = fs.readFileSync('quality-report.md', 'utf8');
+          
+          await github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: report
+          }); 
