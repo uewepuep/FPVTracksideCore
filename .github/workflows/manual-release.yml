@@ -231,4 +231,4 @@ jobs:
           FPV-Trackside-Core-macOS-${{ inputs.release_tag }}.zip
           FPV-Trackside-Core-Windows-${{ inputs.release_tag }}.zip
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
