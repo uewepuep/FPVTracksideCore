@@ -84,7 +84,7 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
     
     - name: Restore dependencies
-      run: dotnet restore "FPVMacside - Core.sln"
+      run: dotnet restore "FPVMacside - Core.sln" --verbosity minimal
     
     - name: Build macOS Release
       run: |
@@ -93,7 +93,7 @@ jobs:
           --runtime osx-arm64 \
           --self-contained true \
           --output "./build/macos-arm64" \
-          -p:PublishSingleFile=true \
+          -p:PublishSingleFile=false \
           -p:PublishReadyToRun=false \
           -p:TieredCompilation=false
     
@@ -102,16 +102,8 @@ jobs:
         mkdir -p "FPVTrackside.app/Contents/MacOS"
         mkdir -p "FPVTrackside.app/Contents/Resources"
         
-        # Copy the executable
-        cp "./build/macos-arm64/FPVMacsideCore" "FPVTrackside.app/Contents/MacOS/"
-        
-        # Copy additional resources
-        if [ -d "./build/macos-arm64/ffmpeg" ]; then
-          cp -r "./build/macos-arm64/ffmpeg" "FPVTrackside.app/Contents/MacOS/"
-        fi
-        if [ -d "./build/macos-arm64/bitmapfonts" ]; then
-          cp -r "./build/macos-arm64/bitmapfonts" "FPVTrackside.app/Contents/MacOS/"
-        fi
+        # Copy ALL files from the build directory to MacOS
+        cp -r "./build/macos-arm64/"* "FPVTrackside.app/Contents/MacOS/"
         
         # Copy app icon if it exists
         if [ -f "./build/macos-arm64/square.icns" ]; then
