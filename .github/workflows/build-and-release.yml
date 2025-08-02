@@ -271,7 +271,9 @@ jobs:
         ## 🚀 FPV Trackside Core Release ${{ needs.detect-version.outputs.release-tag }}
         
         ### 📦 Downloads
-        - **macOS (Apple Silicon)**: FPV-Trackside-Core-macOS-v${{ needs.detect-version.outputs.macos-version }}.zip
+        - **macOS (Apple Silicon)**: 
+          - **DMG Installer**: FPV-Trackside-Core-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg (Recommended)
+          - **ZIP Archive**: FPV-Trackside-Core-macOS-v${{ needs.detect-version.outputs.macos-version }}.zip
         - **Windows (x64)**: FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.zip
         
         ### 📱 Platform Versions
@@ -305,6 +307,15 @@ jobs:
         ### 📋 Installation
         
         #### macOS
+        **Option 1 - DMG Installer (Recommended):**
+        1. Download the macOS DMG file
+        2. Double-click the DMG to mount it
+        3. Drag "FPV Trackside Core.app" to your Applications folder
+        4. Eject the DMG when finished
+        5. Right-click and select "Open" for first launch (Gatekeeper)
+        6. Grant screen recording permissions if using screen capture
+        
+        **Option 2 - ZIP Archive:**
         1. Download the macOS ZIP file
         2. Extract the ZIP archive
         3. Move "FPV Trackside Core.app" to your Applications folder
@@ -331,6 +342,7 @@ jobs:
         draft: false
         prerelease: false
         files: |
+          FPV-Trackside-Core-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg
           FPV-Trackside-Core-macOS-v${{ needs.detect-version.outputs.macos-version }}.zip
           FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.zip
       env:
