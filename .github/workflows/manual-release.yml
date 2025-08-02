@@ -1,0 +1,234 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag (e.g., v2.0.42.4)'
+        required: true
+        type: string
+      release_title:
+        description: 'Release title (optional)'
+        required: false
+        type: string
+      release_notes:
+        description: 'Additional release notes (optional)'
+        required: false
+        type: string
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  DOTNET_VERSION: '6.0.x'
+
+jobs:
+  validate-input:
+    runs-on: ubuntu-latest
+    outputs:
+      macos-version: ${{ steps.get-version.outputs.macos-version }}
+      windows-version: ${{ steps.get-version.outputs.windows-version }}
+      release-title: ${{ steps.get-version.outputs.release-title }}
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Validate and extract versions
+      id: get-version
+      run: |
+        # Validate release tag format
+        if [[ ! "${{ inputs.release_tag }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+          echo "❌ Invalid release tag format. Use format: v1.2.3 or v1.2.3.4"
+          exit 1
+        fi
+        
+        # Extract version numbers from project files
+        MACOS_VERSION=$(grep -o '<Version>[^<]*</Version>' FPVMacSideCore/FPVMacsideCore.csproj | sed 's/<Version>\(.*\)<\/Version>/\1/')
+        WINDOWS_VERSION=$(grep -o '<Version>[^<]*</Version>' FPVTracksideCore/FPVTracksideCore.csproj | sed 's/<Version>\(.*\)<\/Version>/\1/')
+        
+        echo "macos-version=$MACOS_VERSION" >> $GITHUB_OUTPUT
+        echo "windows-version=$WINDOWS_VERSION" >> $GITHUB_OUTPUT
+        
+        # Set release title
+        if [ -n "${{ inputs.release_title }}" ]; then
+          echo "release-title=${{ inputs.release_title }}" >> $GITHUB_OUTPUT
+        else
+          echo "release-title=FPV Trackside Core ${{ inputs.release_tag }}" >> $GITHUB_OUTPUT
+        fi
+        
+        echo "✅ Release tag: ${{ inputs.release_tag }}"
+        echo "🍎 macOS Version: $MACOS_VERSION"
+        echo "🪟 Windows Version: $WINDOWS_VERSION"
+
+  build-macos:
+    runs-on: macos-latest
+    needs: validate-input
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore and Build macOS
+      run: |
+        dotnet restore FPVMacSideCore/FPVTrackside.sln
+        dotnet publish FPVMacSideCore/FPVMacsideCore.csproj \
+          --configuration Release \
+          --runtime osx-arm64 \
+          --self-contained true \
+          --output "./build/macos-arm64" \
+          -p:PublishSingleFile=true \
+          -p:PublishReadyToRun=false \
+          -p:TieredCompilation=false
+    
+    - name: Create macOS App Bundle
+      run: |
+        mkdir -p "FPV Trackside Core.app/Contents/MacOS"
+        mkdir -p "FPV Trackside Core.app/Contents/Resources"
+        
+        cp "./build/macos-arm64/FPVMacsideCore" "FPV Trackside Core.app/Contents/MacOS/"
+        
+        # Copy resources if they exist
+        for dir in ffmpeg bitmapfonts; do
+          if [ -d "./build/macos-arm64/$dir" ]; then
+            cp -r "./build/macos-arm64/$dir" "FPV Trackside Core.app/Contents/MacOS/"
+          fi
+        done
+        
+        # Create Info.plist with manual release version
+        cat > "FPV Trackside Core.app/Contents/Info.plist" << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>CFBundleDisplayName</key>
+            <string>FPV Trackside Core</string>
+            <key>CFBundleExecutable</key>
+            <string>FPVMacsideCore</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.fpvtrackside.core</string>
+            <key>CFBundleName</key>
+            <string>FPV Trackside Core</string>
+            <key>CFBundleShortVersionString</key>
+            <string>${{ inputs.release_tag }}</string>
+            <key>CFBundleVersion</key>
+            <string>${{ needs.validate-input.outputs.macos-version }}</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+            <key>LSMinimumSystemVersion</key>
+            <string>10.15</string>
+        </dict>
+        </plist>
+        EOF
+        
+        chmod +x "FPV Trackside Core.app/Contents/MacOS/FPVMacsideCore"
+        zip -r "FPV-Trackside-Core-macOS-${{ inputs.release_tag }}.zip" "FPV Trackside Core.app"
+    
+    - name: Upload macOS Build
+      uses: actions/upload-artifact@v4
+      with:
+        name: fpv-trackside-core-macos-manual
+        path: "FPV-Trackside-Core-macOS-${{ inputs.release_tag }}.zip"
+
+  build-windows:
+    runs-on: windows-latest
+    needs: validate-input
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore and Build Windows
+      run: |
+        dotnet restore FPVTracksideCore/FPVTracksideCore.sln
+        dotnet publish FPVTracksideCore/FPVTracksideCore.csproj `
+          --configuration Release `
+          --runtime win-x64 `
+          --self-contained true `
+          --output "./build/windows-x64" `
+          -p:PublishSingleFile=true `
+          -p:PublishReadyToRun=false `
+          -p:TieredCompilation=false
+        
+        Compress-Archive -Path "./build/windows-x64/*" -DestinationPath "FPV-Trackside-Core-Windows-${{ inputs.release_tag }}.zip"
+    
+    - name: Upload Windows Build
+      uses: actions/upload-artifact@v4
+      with:
+        name: fpv-trackside-core-windows-manual
+        path: "FPV-Trackside-Core-Windows-${{ inputs.release_tag }}.zip"
+
+  create-manual-release:
+    runs-on: ubuntu-latest
+    needs: [validate-input, build-macos, build-windows]
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: fpv-trackside-core-*-manual
+        merge-multiple: true
+    
+    - name: Generate Release Notes
+      run: |
+        cat > release_notes.md << EOF
+        ## 🚀 ${{ needs.validate-input.outputs.release-title }}
+        
+        **Manual Release Created**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+        
+        ### 📦 Downloads
+        - **macOS (Apple Silicon)**: FPV-Trackside-Core-macOS-${{ inputs.release_tag }}.zip
+        - **Windows (x64)**: FPV-Trackside-Core-Windows-${{ inputs.release_tag }}.zip
+        
+        ### 📱 Project Versions
+        - **macOS Project Version**: ${{ needs.validate-input.outputs.macos-version }}
+        - **Windows Project Version**: ${{ needs.validate-input.outputs.windows-version }}
+        - **Release Tag**: ${{ inputs.release_tag }}
+        EOF
+        
+        if [ -n "${{ inputs.release_notes }}" ]; then
+          cat >> release_notes.md << EOF
+        
+        ### 📝 Release Notes
+        ${{ inputs.release_notes }}
+        EOF
+        fi
+        
+        cat >> release_notes.md << EOF
+        
+        ### 💻 System Requirements & Installation
+        
+        #### macOS
+        - macOS 10.15 (Catalina) or later
+        - Apple Silicon (M1/M2) recommended
+        - Extract ZIP and move app to Applications folder
+        - Right-click "Open" for first launch (bypass Gatekeeper)
+        
+        #### Windows  
+        - Windows 10 x64 or later
+        - Extract ZIP and run FPVTracksideCore.exe
+        - Self-contained (no additional .NET installation required)
+        EOF
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ inputs.release_tag }}
+        name: ${{ needs.validate-input.outputs.release-title }}
+        body_path: release_notes.md
+        draft: false
+        prerelease: ${{ inputs.prerelease }}
+        files: |
+          FPV-Trackside-Core-macOS-${{ inputs.release_tag }}.zip
+          FPV-Trackside-Core-Windows-${{ inputs.release_tag }}.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }

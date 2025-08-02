@@ -1,0 +1,71 @@
+name: Build Test
+
+on:
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '6.0.x'
+
+jobs:
+  test-build-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore dependencies
+      run: dotnet restore FPVMacSideCore/FPVTrackside.sln
+    
+    - name: Build macOS Debug
+      run: dotnet build FPVMacSideCore/FPVTrackside.sln --configuration Debug --no-restore
+    
+    - name: Test Build macOS Release
+      run: dotnet build FPVMacSideCore/FPVMacsideCore.csproj --configuration Release --no-restore
+
+  test-build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore dependencies
+      run: dotnet restore FPVTracksideCore/FPVTracksideCore.sln
+    
+    - name: Build Windows Debug  
+      run: dotnet build FPVTracksideCore/FPVTracksideCore.sln --configuration Debug --no-restore
+    
+    - name: Test Build Windows Release
+      run: dotnet build FPVTracksideCore/FPVTracksideCore.csproj --configuration Release --no-restore
+
+  lint-and-format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore dependencies
+      run: |
+        dotnet restore FPVMacSideCore/FPVTrackside.sln
+        dotnet restore FPVTracksideCore/FPVTracksideCore.sln
+    
+    - name: Check format (macOS project)
+      run: dotnet format FPVMacSideCore/FPVTrackside.sln --verify-no-changes --verbosity diagnostic
+      continue-on-error: true
+    
+    - name: Check format (Windows project)  
+      run: dotnet format FPVTracksideCore/FPVTracksideCore.sln --verify-no-changes --verbosity diagnostic
+      continue-on-error: true
