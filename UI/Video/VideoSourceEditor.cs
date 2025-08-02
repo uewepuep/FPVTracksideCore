@@ -34,7 +34,9 @@ namespace UI.Video
         private Node physicalLayoutContainer;
         private Node physicalLayout;
 
-        public Profile Profile { get; private set; }    
+        public Profile Profile { get; private set; }
+        
+        private bool wasEmpty = false;    
 
         public static VideoSourceEditor GetVideoSourceEditor(EventManager em, Profile profile)
         {
@@ -120,6 +122,19 @@ namespace UI.Video
             }
             
             base.AddNew(videoConfig);
+            
+            // INVESTIGATION: Check if this is a re-add after empty state
+            if (wasEmpty)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"INVESTIGATION: Camera re-added after empty state - objectProperties children: {objectProperties?.Children?.Count() ?? 0}");
+                
+                // Force property editor rebuild since ClearSelected corrupted it
+                Tools.Logger.VideoLog.LogCall(this, $"Forcing property editor rebuild by calling DoSetSelected directly");
+                DoSetSelected(videoConfig);
+                Tools.Logger.VideoLog.LogCall(this, $"After forced DoSetSelected - objectProperties children: {objectProperties?.Children?.Count() ?? 0}");
+                
+                wasEmpty = false;
+            }
             
             Tools.Logger.VideoLog.LogCall(this, $"Camera added successfully: '{videoConfig.DeviceName}', starting video preview repair");
             RepairVideoPreview();
@@ -477,9 +492,16 @@ namespace UI.Video
                     }
                     else
                     {
+                        // INVESTIGATION: Add debugging around ClearSelected to see what it does
+                        Tools.Logger.VideoLog.LogCall(this, "No cameras remaining - investigating ClearSelected behavior");
+                        Tools.Logger.VideoLog.LogCall(this, $"Before ClearSelected - objectProperties children: {objectProperties?.Children?.Count() ?? 0}");
+                        
                         ClearSelected();
+                        
+                        Tools.Logger.VideoLog.LogCall(this, $"After ClearSelected - objectProperties children: {objectProperties?.Children?.Count() ?? 0}");
                         Tools.Logger.VideoLog.LogCall(this, "No cameras remaining - clearing preview");
                         preview.Visible = false;
+                        wasEmpty = true; // Track that we became empty
                     }
                 });
             }
