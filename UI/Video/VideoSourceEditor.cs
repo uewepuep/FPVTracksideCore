@@ -123,16 +123,10 @@ namespace UI.Video
             
             base.AddNew(videoConfig);
             
-            // INVESTIGATION: Check if this is a re-add after empty state
             if (wasEmpty)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"INVESTIGATION: Camera re-added after empty state - objectProperties children: {objectProperties?.Children?.Count() ?? 0}");
-                
                 // Force property editor rebuild since ClearSelected corrupted it
-                Tools.Logger.VideoLog.LogCall(this, $"Forcing property editor rebuild by calling DoSetSelected directly");
                 DoSetSelected(videoConfig);
-                Tools.Logger.VideoLog.LogCall(this, $"After forced DoSetSelected - objectProperties children: {objectProperties?.Children?.Count() ?? 0}");
-                
                 wasEmpty = false;
             }
             
