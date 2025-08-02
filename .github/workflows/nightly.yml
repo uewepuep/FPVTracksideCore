@@ -57,21 +57,14 @@ jobs:
         # Copy app icon if it exists
         if [ -f "./build/macos-arm64/AppIcon.icns" ]; then
           cp "./build/macos-arm64/AppIcon.icns" "FPV Trackside Core.app/Contents/Resources/"
-        elif [ -f "./build/macos-arm64/square.icns" ]; then
-          cp "./build/macos-arm64/square.icns" "FPV Trackside Core.app/Contents/Resources/"
         elif [ -f "FPVMacSideCore/AppIcon.icns" ]; then
           cp "FPVMacSideCore/AppIcon.icns" "FPV Trackside Core.app/Contents/Resources/"
-        elif [ -f "FPVMacSideCore/square.icns" ]; then
-          cp "FPVMacSideCore/square.icns" "FPV Trackside Core.app/Contents/Resources/"
         fi
         
         # Ensure the icon file exists and has correct permissions
         if [ -f "FPV Trackside Core.app/Contents/Resources/AppIcon.icns" ]; then
           chmod 644 "FPV Trackside Core.app/Contents/Resources/AppIcon.icns"
           echo "✅ AppIcon.icns copied successfully"
-        elif [ -f "FPV Trackside Core.app/Contents/Resources/square.icns" ]; then
-          chmod 644 "FPV Trackside Core.app/Contents/Resources/square.icns"
-          echo "✅ square.icns copied successfully"
         else
           echo "⚠️ Warning: Icon file not found, app will use default icon"
         fi

@@ -30,7 +30,7 @@
     <ProjectReference Include="..\..\FPVTracksideCore\UI\UI.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="square.icns">
+    <None Update="AppIcon.icns">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

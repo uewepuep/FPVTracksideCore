@@ -24,9 +24,6 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <None Update="square.icns">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="AppIcon.icns">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
