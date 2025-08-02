@@ -140,7 +140,7 @@ jobs:
             <key>CFBundleExecutable</key>
             <string>FPVMacsideCore</string>
             <key>CFBundleIconFile</key>
-            <string>AppIcon.icns</string>
+            <string>AppIcon</string>
             <key>CFBundleIdentifier</key>
             <string>com.fpvtrackside</string>
             <key>CFBundleName</key>
