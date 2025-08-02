@@ -447,33 +447,41 @@ namespace UI.Video
         protected override void Remove(MouseInputEvent mie)
         {
             VideoConfig videoConfig = Selected;
-            Tools.Logger.VideoLog.LogCall(this, $"Removing camera '{videoConfig?.DeviceName}' and rebuilding UI");
-            
-            base.Remove(mie);
-
             if (videoConfig != null)
             {
-                // Remove from VideoManager's frame sources
-                VideoManager.RemoveFrameSource(videoConfig);
-                
-                // Remove from VideoManager's VideoConfigs list
-                VideoManager.VideoConfigs.Remove(videoConfig);
-                
-                // Persist the change to disk
-                VideoManager.WriteCurrentDeviceConfig();
-                
-                Tools.Logger.VideoLog.LogCall(this, $"Camera '{videoConfig.DeviceName}' removed from VideoConfigs and changes persisted");
-            }
-            
-            // Rebuild the entire UI after removal - same as when settings screen loads
-            Tools.Logger.VideoLog.LogCall(this, $"Rebuilding UI after camera removal - {VideoManager.VideoConfigs.Count} cameras remaining");
-            SetObjects(VideoManager.VideoConfigs, true);
-            
-            // Clear the preview if no cameras remain
-            if (!VideoManager.VideoConfigs.Any())
-            {
-                Tools.Logger.VideoLog.LogCall(this, "No cameras remaining - clearing preview");
-                preview.Visible = false;
+                GetLayer<PopupLayer>()?.PopupConfirmation("Remove camera '" + videoConfig.DeviceName + "'?", () =>
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"Removing camera '{videoConfig.DeviceName}' and rebuilding UI");
+                    
+                    // Remove from Objects list (replaces base.Remove call)
+                    Objects.Remove(videoConfig);
+
+                    // Remove from VideoManager's frame sources
+                    VideoManager.RemoveFrameSource(videoConfig);
+                    
+                    // Remove from VideoManager's VideoConfigs list
+                    VideoManager.VideoConfigs.Remove(videoConfig);
+                    
+                    // Persist the change to disk
+                    VideoManager.WriteCurrentDeviceConfig();
+                    
+                    Tools.Logger.VideoLog.LogCall(this, $"Camera '{videoConfig.DeviceName}' removed from VideoConfigs and changes persisted");
+                    
+                    // Refresh the UI list (same as base.Remove does)
+                    RefreshList();
+                    
+                    // Handle selection like base.Remove does
+                    if (Objects.Any())
+                    {
+                        SetSelected(Objects.FirstOrDefault());
+                    }
+                    else
+                    {
+                        ClearSelected();
+                        Tools.Logger.VideoLog.LogCall(this, "No cameras remaining - clearing preview");
+                        preview.Visible = false;
+                    }
+                });
             }
         }
 
