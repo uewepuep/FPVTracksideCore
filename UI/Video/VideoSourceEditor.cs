@@ -129,8 +129,6 @@ namespace UI.Video
                 DoSetSelected(videoConfig);
                 wasEmpty = false;
             }
-            
-            Tools.Logger.VideoLog.LogCall(this, $"Camera added successfully: '{videoConfig.DeviceName}', starting video preview repair");
             RepairVideoPreview();
         }
 
