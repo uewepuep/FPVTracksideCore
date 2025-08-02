@@ -49,9 +49,62 @@ jobs:
         
         # Create app bundle
         mkdir -p "FPV Trackside Core.app/Contents/MacOS"
+        mkdir -p "FPV Trackside Core.app/Contents/Resources"
         
         # Copy ALL files from the build directory to MacOS
         cp -r "./build/macos-arm64/"* "FPV Trackside Core.app/Contents/MacOS/"
+        
+        # Copy app icon if it exists
+        if [ -f "./build/macos-arm64/square.icns" ]; then
+          cp "./build/macos-arm64/square.icns" "FPV Trackside Core.app/Contents/Resources/"
+        elif [ -f "FPVMacSideCore/square.icns" ]; then
+          cp "FPVMacSideCore/square.icns" "FPV Trackside Core.app/Contents/Resources/"
+        fi
+        
+        # Ensure the icon file exists and has correct permissions
+        if [ -f "FPV Trackside Core.app/Contents/Resources/square.icns" ]; then
+          chmod 644 "FPV Trackside Core.app/Contents/Resources/square.icns"
+          echo "✅ Icon file copied successfully"
+        else
+          echo "⚠️ Warning: Icon file not found, app will use default icon"
+        fi
+        
+        # Create Info.plist with proper icon configuration
+        cat > "FPV Trackside Core.app/Contents/Info.plist" << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>CFBundleDisplayName</key>
+            <string>FPV Trackside Core</string>
+            <key>CFBundleExecutable</key>
+            <string>FPVMacsideCore</string>
+            <key>CFBundleIconFile</key>
+            <string>square.icns</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.fpvtrackside.core</string>
+            <key>CFBundleName</key>
+            <string>FPV Trackside Core</string>
+            <key>CFBundleShortVersionString</key>
+            <string>2.1.0.1</string>
+            <key>CFBundleVersion</key>
+            <string>2.1.0.1</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+            <key>LSMinimumSystemVersion</key>
+            <string>10.15</string>
+            <key>LSApplicationCategoryType</key>
+            <string>public.app-category.games</string>
+            <key>NSHighResolutionCapable</key>
+            <true/>
+            <key>LSUIElement</key>
+            <false/>
+        </dict>
+        </plist>
+        EOF
+        
+        # Make executable
+        chmod +x "FPV Trackside Core.app/Contents/MacOS/FPVMacsideCore"
         
         # Create ZIP
         zip -r "FPV-Trackside-Core-macOS-nightly-$BRANCH_NAME-$TIMESTAMP.zip" "FPV Trackside Core.app"

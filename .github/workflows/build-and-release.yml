@@ -114,6 +114,14 @@ jobs:
           cp "dist/FPVTrackside.app/Contents/Resources/square.icns" "FPVTrackside.app/Contents/Resources/"
         fi
         
+        # Ensure the icon file exists and has correct permissions
+        if [ -f "FPVTrackside.app/Contents/Resources/square.icns" ]; then
+          chmod 644 "FPVTrackside.app/Contents/Resources/square.icns"
+          echo "✅ Icon file copied successfully"
+        else
+          echo "⚠️ Warning: Icon file not found, app will use default icon"
+        fi
+        
         # Create Info.plist
         cat > "FPVTrackside.app/Contents/Info.plist" << EOF
         <?xml version="1.0" encoding="UTF-8"?>
@@ -138,12 +146,26 @@ jobs:
             <string>APPL</string>
             <key>LSMinimumSystemVersion</key>
             <string>10.15</string>
+            <key>LSApplicationCategoryType</key>
+            <string>public.app-category.games</string>
+            <key>NSHighResolutionCapable</key>
+            <true/>
+            <key>LSUIElement</key>
+            <false/>
         </dict>
         </plist>
         EOF
         
         # Make executable
         chmod +x "FPVTrackside.app/Contents/MacOS/FPVMacsideCore"
+        
+        # Verify app bundle structure
+        echo "📁 App Bundle Structure:"
+        ls -la "FPVTrackside.app/Contents/"
+        echo "📁 Resources Directory:"
+        ls -la "FPVTrackside.app/Contents/Resources/" || echo "Resources directory is empty"
+        echo "📁 MacOS Directory (first 10 files):"
+        ls -la "FPVTrackside.app/Contents/MacOS/" | head -10
     
     - name: Create macOS DMG
       if: needs.detect-version.outputs.is-release-branch == 'true'
