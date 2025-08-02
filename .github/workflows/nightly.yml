@@ -22,13 +22,13 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
     
     - name: Restore dependencies
-      run: dotnet restore FPVMacSideCore/FPVTrackside.sln
+      run: dotnet restore "FPVMacside - Core.sln"
     
     - name: Build macOS Debug
-      run: dotnet build FPVMacSideCore/FPVTrackside.sln --configuration Debug --no-restore
+      run: dotnet build "FPVMacside - Core.sln" --configuration Debug --no-restore
     
     - name: Build macOS Release
-      run: dotnet build FPVMacSideCore/FPVTrackside.sln --configuration Release --no-restore
+      run: dotnet build "FPVMacside - Core.sln" --configuration Release --no-restore
     
     - name: Publish macOS Release
       run: |
@@ -164,7 +164,7 @@ jobs:
         
         # Run coverage on both projects
         echo "=== macOS Project Coverage ==="
-        dotnet test FPVMacSideCore/FPVTrackside.sln --collect:"XPlat Code Coverage" --results-directory ./coverage-macos || true
+        dotnet test "FPVMacside - Core.sln" --collect:"XPlat Code Coverage" --results-directory ./coverage-macos || true
         
         echo "=== Windows Project Coverage ==="
         dotnet test FPVTracksideCore/FPVTracksideCore.sln --collect:"XPlat Code Coverage" --results-directory ./coverage-windows || true
@@ -189,7 +189,7 @@ jobs:
         
         # Build both projects with performance profiling
         echo "Building macOS project with performance profiling..."
-        dotnet build FPVMacSideCore/FPVTrackside.sln --configuration Release --verbosity minimal
+        dotnet build "FPVMacside - Core.sln" --configuration Release --verbosity minimal
         
         echo "Building Windows project with performance profiling..."
         dotnet build FPVTracksideCore/FPVTracksideCore.sln --configuration Release --verbosity minimal

@@ -24,8 +24,8 @@ jobs:
     - name: Quick Build Check - macOS Project
       run: |
         echo "🔍 Quick build check for macOS project..."
-        dotnet restore FPVMacSideCore/FPVTrackside.sln --verbosity minimal
-        dotnet build FPVMacSideCore/FPVTrackside.sln --configuration Debug --no-restore --verbosity minimal
+        dotnet restore "FPVMacside - Core.sln" --verbosity minimal
+        dotnet build "FPVMacside - Core.sln" --configuration Debug --no-restore --verbosity minimal
         echo "✅ macOS project builds successfully"
     
     - name: Quick Build Check - Windows Project
@@ -40,7 +40,7 @@ jobs:
         echo "🔍 Checking for compilation errors..."
         
         # Check macOS project
-        if ! dotnet build FPVMacSideCore/FPVTrackside.sln --configuration Debug --no-restore --verbosity quiet; then
+        if ! dotnet build "FPVMacside - Core.sln" --configuration Debug --no-restore --verbosity quiet; then
           echo "❌ macOS project has compilation errors"
           exit 1
         fi
@@ -70,8 +70,8 @@ jobs:
         
         # Check macOS project format
         echo "Checking macOS project format..."
-        dotnet format FPVMacSideCore/FPVTrackside.sln --verify-no-changes --verbosity normal || {
-          echo "⚠️ macOS project has formatting issues. Run 'dotnet format FPVMacSideCore/FPVTrackside.sln' to fix."
+        dotnet format "FPVMacside - Core.sln" --verify-no-changes --verbosity normal || {
+          echo "⚠️ macOS project has formatting issues. Run 'dotnet format \"FPVMacside - Core.sln\"' to fix."
         }
         
         # Check Windows project format
@@ -122,14 +122,14 @@ jobs:
         
         # Check for outdated packages
         echo "Checking for outdated packages in macOS project..."
-        dotnet list FPVMacSideCore/FPVTrackside.sln package --outdated || true
+        dotnet list "FPVMacside - Core.sln" package --outdated || true
         
         echo "Checking for outdated packages in Windows project..."
         dotnet list FPVTracksideCore/FPVTracksideCore.sln package --outdated || true
         
         # Check for vulnerable packages
         echo "Checking for vulnerable packages in macOS project..."
-        dotnet list FPVMacSideCore/FPVTrackside.sln package --vulnerable || true
+        dotnet list "FPVMacside - Core.sln" package --vulnerable || true
         
         echo "Checking for vulnerable packages in Windows project..."
         dotnet list FPVTracksideCore/FPVTracksideCore.sln package --vulnerable || true

@@ -83,7 +83,7 @@ jobs:
         FORMAT_ISSUES=0
         
         # Check macOS project
-        if ! dotnet format FPVMacSideCore/FPVTrackside.sln --verify-no-changes --verbosity quiet; then
+        if ! dotnet format "FPVMacside - Core.sln" --verify-no-changes --verbosity quiet; then
           echo "⚠️ macOS project has formatting issues"
           FORMAT_ISSUES=$((FORMAT_ISSUES + 1))
         fi
@@ -123,8 +123,8 @@ jobs:
         
         # Quick build check for macOS project
         echo "Building macOS project..."
-        dotnet restore FPVMacSideCore/FPVTrackside.sln --verbosity minimal
-        if dotnet build FPVMacSideCore/FPVTrackside.sln --configuration Debug --no-restore --verbosity minimal; then
+        dotnet restore "FPVMacside - Core.sln" --verbosity minimal
+        if dotnet build "FPVMacside - Core.sln" --configuration Debug --no-restore --verbosity minimal; then
           echo "✅ macOS project builds successfully"
         else
           echo "❌ macOS project build failed"
@@ -175,7 +175,7 @@ jobs:
         # Check for vulnerable dependencies
         echo "Checking for vulnerable dependencies..."
         
-        VULNERABLE_MACOS=$(dotnet list FPVMacSideCore/FPVTrackside.sln package --vulnerable 2>/dev/null | grep -c "vulnerable" || echo "0")
+        VULNERABLE_MACOS=$(dotnet list "FPVMacside - Core.sln" package --vulnerable 2>/dev/null | grep -c "vulnerable" || echo "0")
         VULNERABLE_WINDOWS=$(dotnet list FPVTracksideCore/FPVTracksideCore.sln package --vulnerable 2>/dev/null | grep -c "vulnerable" || echo "0")
         
         TOTAL_VULNERABLE=$((VULNERABLE_MACOS + VULNERABLE_WINDOWS))

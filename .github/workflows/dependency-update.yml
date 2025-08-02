@@ -32,13 +32,13 @@ jobs:
         echo "📦 Checking macOS project dependencies..."
         
         echo "=== Outdated Packages ==="
-        dotnet list FPVMacSideCore/FPVTrackside.sln package --outdated || true
+        dotnet list "FPVMacside - Core.sln" package --outdated || true
         
         echo "=== Vulnerable Packages ==="
-        dotnet list FPVMacSideCore/FPVTrackside.sln package --vulnerable || true
+        dotnet list "FPVMacside - Core.sln" package --vulnerable || true
         
         echo "=== Package Licenses ==="
-        dotnet list FPVMacSideCore/FPVTrackside.sln package --license || true
+        dotnet list "FPVMacside - Core.sln" package --license || true
     
     - name: Check Windows Project Dependencies
       run: |
@@ -68,12 +68,12 @@ jobs:
         
         ### Outdated Packages
         \`\`\`
-        $(dotnet list FPVMacSideCore/FPVTrackside.sln package --outdated 2>/dev/null || echo "No outdated packages found")
+        $(dotnet list "FPVMacside - Core.sln" package --outdated 2>/dev/null || echo "No outdated packages found")
         \`\`\`
         
         ### Vulnerable Packages
         \`\`\`
-        $(dotnet list FPVMacSideCore/FPVTrackside.sln package --vulnerable 2>/dev/null || echo "No vulnerable packages found")
+        $(dotnet list "FPVMacside - Core.sln" package --vulnerable 2>/dev/null || echo "No vulnerable packages found")
         \`\`\`
         
         ## Windows Project (FPVTracksideCore)
@@ -100,7 +100,7 @@ jobs:
         
         \`\`\`bash
         # macOS project
-        dotnet add FPVMacSideCore/FPVTrackside.sln package [PackageName] --version [Version]
+        dotnet add "FPVMacside - Core.sln" package [PackageName] --version [Version]
         
         # Windows project  
         dotnet add FPVTracksideCore/FPVTracksideCore.sln package [PackageName] --version [Version]
@@ -138,13 +138,13 @@ jobs:
         echo "🔄 Updating macOS project dependencies..."
         
         # Get list of outdated packages
-        OUTDATED=$(dotnet list FPVMacSideCore/FPVTrackside.sln package --outdated --format json | jq -r '.packages[] | select(.resolvedVersion != .latestVersion) | "\(.id) \(.latestVersion)"' 2>/dev/null || true)
+        OUTDATED=$(dotnet list "FPVMacside - Core.sln" package --outdated --format json | jq -r '.packages[] | select(.resolvedVersion != .latestVersion) | "\(.id) \(.latestVersion)"' 2>/dev/null || true)
         
         if [ -n "$OUTDATED" ]; then
           echo "$OUTDATED" | while read package version; do
             if [ -n "$package" ] && [ -n "$version" ]; then
               echo "Updating $package to $version"
-              dotnet add FPVMacSideCore/FPVTrackside.sln package "$package" --version "$version" || true
+              dotnet add "FPVMacside - Core.sln" package "$package" --version "$version" || true
             fi
           done
         else
@@ -175,8 +175,8 @@ jobs:
         
         # Test macOS project
         echo "Testing macOS project..."
-        dotnet restore FPVMacSideCore/FPVTrackside.sln
-        dotnet build FPVMacSideCore/FPVTrackside.sln --configuration Debug --no-restore || exit 1
+        dotnet restore "FPVMacside - Core.sln"
+        dotnet build "FPVMacside - Core.sln" --configuration Debug --no-restore || exit 1
         
         # Test Windows project
         echo "Testing Windows project..."

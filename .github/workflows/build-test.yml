@@ -22,10 +22,10 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
     
     - name: Restore dependencies
-      run: dotnet restore FPVMacSideCore/FPVTrackside.sln
+      run: dotnet restore "FPVMacside - Core.sln"
     
     - name: Build macOS Debug
-      run: dotnet build FPVMacSideCore/FPVTrackside.sln --configuration Debug --no-restore
+      run: dotnet build "FPVMacside - Core.sln" --configuration Debug --no-restore
     
     - name: Test Build macOS Release
       run: dotnet build FPVMacSideCore/FPVMacsideCore.csproj --configuration Release --no-restore
@@ -81,11 +81,11 @@ jobs:
     
     - name: Restore dependencies
       run: |
-        dotnet restore FPVMacSideCore/FPVTrackside.sln
+        dotnet restore "FPVMacside - Core.sln"
         dotnet restore FPVTracksideCore/FPVTracksideCore.sln
     
     - name: Check format (macOS project)
-      run: dotnet format FPVMacSideCore/FPVTrackside.sln --verify-no-changes --verbosity diagnostic
+      run: dotnet format "FPVMacside - Core.sln" --verify-no-changes --verbosity diagnostic
       continue-on-error: true
     
     - name: Check format (Windows project)  
@@ -96,7 +96,7 @@ jobs:
       run: |
         # Run code analysis on both projects
         echo "Running code analysis on macOS project..."
-        dotnet build FPVMacSideCore/FPVTrackside.sln --configuration Debug --verbosity minimal || true
+        dotnet build "FPVMacside - Core.sln" --configuration Debug --verbosity minimal || true
         
         echo "Running code analysis on Windows project..."
         dotnet build FPVTracksideCore/FPVTracksideCore.sln --configuration Debug --verbosity minimal || true
@@ -117,7 +117,7 @@ jobs:
         
         # Check macOS project dependencies
         echo "=== macOS Project Dependencies ==="
-        dotnet list FPVMacSideCore/FPVTrackside.sln package --vulnerable || true
+        dotnet list "FPVMacside - Core.sln" package --vulnerable || true
         
         # Check Windows project dependencies  
         echo "=== Windows Project Dependencies ==="

@@ -84,7 +84,7 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
     
     - name: Restore dependencies
-      run: dotnet restore FPVMacSideCore/FPVTrackside.sln
+      run: dotnet restore "FPVMacside - Core.sln"
     
     - name: Build macOS Release
       run: |
@@ -99,34 +99,45 @@ jobs:
     
     - name: Create macOS App Bundle
       run: |
-        mkdir -p "FPV Trackside Core.app/Contents/MacOS"
-        mkdir -p "FPV Trackside Core.app/Contents/Resources"
+        mkdir -p "FPVTrackside.app/Contents/MacOS"
+        mkdir -p "FPVTrackside.app/Contents/Resources"
         
         # Copy the executable
-        cp "./build/macos-arm64/FPVMacsideCore" "FPV Trackside Core.app/Contents/MacOS/"
+        cp "./build/macos-arm64/FPVMacsideCore" "FPVTrackside.app/Contents/MacOS/"
         
         # Copy additional resources
         if [ -d "./build/macos-arm64/ffmpeg" ]; then
-          cp -r "./build/macos-arm64/ffmpeg" "FPV Trackside Core.app/Contents/MacOS/"
+          cp -r "./build/macos-arm64/ffmpeg" "FPVTrackside.app/Contents/MacOS/"
         fi
         if [ -d "./build/macos-arm64/bitmapfonts" ]; then
-          cp -r "./build/macos-arm64/bitmapfonts" "FPV Trackside Core.app/Contents/MacOS/"
+          cp -r "./build/macos-arm64/bitmapfonts" "FPVTrackside.app/Contents/MacOS/"
+        fi
+        
+        # Copy app icon if it exists
+        if [ -f "./build/macos-arm64/square.icns" ]; then
+          cp "./build/macos-arm64/square.icns" "FPVTrackside.app/Contents/Resources/"
+        elif [ -f "FPVMacSideCore/square.icns" ]; then
+          cp "FPVMacSideCore/square.icns" "FPVTrackside.app/Contents/Resources/"
+        elif [ -f "dist/FPVTrackside.app/Contents/Resources/square.icns" ]; then
+          cp "dist/FPVTrackside.app/Contents/Resources/square.icns" "FPVTrackside.app/Contents/Resources/"
         fi
         
         # Create Info.plist
-        cat > "FPV Trackside Core.app/Contents/Info.plist" << EOF
+        cat > "FPVTrackside.app/Contents/Info.plist" << EOF
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
         <plist version="1.0">
         <dict>
             <key>CFBundleDisplayName</key>
-            <string>FPV Trackside Core</string>
+            <string>FPVTrackside</string>
             <key>CFBundleExecutable</key>
             <string>FPVMacsideCore</string>
+            <key>CFBundleIconFile</key>
+            <string>square.icns</string>
             <key>CFBundleIdentifier</key>
-            <string>com.fpvtrackside.core</string>
+            <string>com.fpvtrackside</string>
             <key>CFBundleName</key>
-            <string>FPV Trackside Core</string>
+            <string>FPVTrackside</string>
             <key>CFBundleShortVersionString</key>
             <string>${{ needs.detect-version.outputs.macos-version }}</string>
             <key>CFBundleVersion</key>
@@ -140,7 +151,7 @@ jobs:
         EOF
         
         # Make executable
-        chmod +x "FPV Trackside Core.app/Contents/MacOS/FPVMacsideCore"
+        chmod +x "FPVTrackside.app/Contents/MacOS/FPVMacsideCore"
     
     - name: Create macOS DMG
       if: needs.detect-version.outputs.is-release-branch == 'true'
@@ -150,47 +161,48 @@ jobs:
         
         # Create a temporary directory for DMG contents
         mkdir -p dmg-temp
-        cp -r "FPV Trackside Core.app" dmg-temp/
+        cp -r "FPVTrackside.app" dmg-temp/
         
         # Create DMG with professional layout
         create-dmg \
-          --volname "FPV Trackside Core v${{ needs.detect-version.outputs.macos-version }}" \
+          --volname "FPVTrackside v${{ needs.detect-version.outputs.macos-version }}" \
+          --volicon "FPVTrackside.app/Contents/Resources/square.icns" \
           --window-pos 200 120 \
           --window-size 800 450 \
           --icon-size 100 \
-          --icon "FPV Trackside Core.app" 200 190 \
-          --hide-extension "FPV Trackside Core.app" \
+          --icon "FPVTrackside.app" 200 190 \
+          --hide-extension "FPVTrackside.app" \
           --app-drop-link 600 190 \
           --hdiutil-verbose \
-          "FPV-Trackside-Core-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg" \
+          "FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg" \
           dmg-temp/ || {
             # Fallback if create-dmg fails - use hdiutil directly
             echo "create-dmg failed, using hdiutil fallback..."
-            hdiutil create -volname "FPV Trackside Core v${{ needs.detect-version.outputs.macos-version }}" \
+            hdiutil create -volname "FPVTrackside v${{ needs.detect-version.outputs.macos-version }}" \
               -srcfolder dmg-temp \
               -ov -format UDZO \
-              "FPV-Trackside-Core-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg"
+              "FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg"
           }
         
         # Verify DMG was created
         ls -la *.dmg
         
         # Also create a ZIP backup for compatibility
-        zip -r "FPV-Trackside-Core-macOS-v${{ needs.detect-version.outputs.macos-version }}.zip" "FPV Trackside Core.app"
+        zip -r "FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.zip" "FPVTrackside.app"
     
     - name: Create macOS ZIP (all branches)
       if: needs.detect-version.outputs.is-release-branch == 'false'
       run: |
         # Create a simple ZIP for non-release branches
-        zip -r "FPV-Trackside-Core-macOS-${{ github.ref_name }}-v${{ needs.detect-version.outputs.macos-version }}.zip" "FPV Trackside Core.app"
+        zip -r "FPVTrackside-macOS-${{ github.ref_name }}-v${{ needs.detect-version.outputs.macos-version }}.zip" "FPVTrackside.app"
     
     - name: Upload macOS Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: fpv-trackside-core-macos-${{ needs.detect-version.outputs.macos-version }}-${{ github.ref_name }}
+        name: fpvtrackside-macos-${{ needs.detect-version.outputs.macos-version }}-${{ github.ref_name }}
         path: |
-          FPV-Trackside-Core-macOS-*.zip
-          FPV-Trackside-Core-macOS-*.dmg
+          FPVTrackside-macOS-*.zip
+          FPVTrackside-macOS-*.dmg
         retention-days: 90
 
   build-windows:
@@ -248,7 +260,7 @@ jobs:
     - name: Download macOS Artifact
       uses: actions/download-artifact@v4
       with:
-        name: fpv-trackside-core-macos-${{ needs.detect-version.outputs.macos-version }}-${{ github.ref_name }}
+        name: fpvtrackside-macos-${{ needs.detect-version.outputs.macos-version }}-${{ github.ref_name }}
     
     - name: Download Windows Artifact
       uses: actions/download-artifact@v4
@@ -272,8 +284,8 @@ jobs:
         
         ### 📦 Downloads
         - **macOS (Apple Silicon)**: 
-          - **DMG Installer**: FPV-Trackside-Core-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg (Recommended)
-          - **ZIP Archive**: FPV-Trackside-Core-macOS-v${{ needs.detect-version.outputs.macos-version }}.zip
+          - **DMG Installer**: FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg (Recommended)
+          - **ZIP Archive**: FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.zip
         - **Windows (x64)**: FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.zip
         
         ### 📱 Platform Versions
@@ -310,7 +322,7 @@ jobs:
         **Option 1 - DMG Installer (Recommended):**
         1. Download the macOS DMG file
         2. Double-click the DMG to mount it
-        3. Drag "FPV Trackside Core.app" to your Applications folder
+        3. Drag "FPVTrackside.app" to your Applications folder
         4. Eject the DMG when finished
         5. Right-click and select "Open" for first launch (Gatekeeper)
         6. Grant screen recording permissions if using screen capture
@@ -318,7 +330,7 @@ jobs:
         **Option 2 - ZIP Archive:**
         1. Download the macOS ZIP file
         2. Extract the ZIP archive
-        3. Move "FPV Trackside Core.app" to your Applications folder
+        3. Move "FPVTrackside.app" to your Applications folder
         4. Right-click and select "Open" for first launch (Gatekeeper)
         5. Grant screen recording permissions if using screen capture
         
@@ -342,8 +354,8 @@ jobs:
         draft: false
         prerelease: false
         files: |
-          FPV-Trackside-Core-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg
-          FPV-Trackside-Core-macOS-v${{ needs.detect-version.outputs.macos-version }}.zip
+          FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg
+          FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.zip
           FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

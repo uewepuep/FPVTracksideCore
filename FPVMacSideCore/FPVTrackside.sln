@@ -15,7 +15,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageServer", "..\ImageServ
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Composition", "..\Compositor\Composition.csproj", "{AC853565-625A-4F85-9C5A-168987BFC1B7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FPVMacSideCore", "FPVMacSideCore.csproj", "{0BA45215-6AB7-451E-80A5-10DDE2E12C9F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FPVMacSideCore", "FPVMacsideCore.csproj", "{0BA45215-6AB7-451E-80A5-10DDE2E12C9F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
