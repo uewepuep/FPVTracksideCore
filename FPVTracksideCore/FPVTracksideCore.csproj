@@ -9,6 +9,8 @@
 	  <usewpf>true</usewpf>
 	  <Version>2.1.0.1</Version>
 	  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+	  <SelfContained>true</SelfContained>
+	  <EnableWindowsTargeting>true</EnableWindowsTargeting>
 	  <PublishReadyToRun>false</PublishReadyToRun>
 	  <TieredCompilation>false</TieredCompilation>
 	  <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>

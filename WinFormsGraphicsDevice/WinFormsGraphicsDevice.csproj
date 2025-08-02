@@ -8,6 +8,7 @@
     <StartupObject />
     <Version>2.1.0.1</Version>
 	  <usewpf>true</usewpf>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 
   <ItemGroup>

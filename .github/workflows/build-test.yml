@@ -55,7 +55,7 @@ jobs:
       run: dotnet build FPVTracksideCore/FPVTracksideCore.sln --configuration Debug --no-restore
     
     - name: Test Build Windows Release
-      run: dotnet build FPVTracksideCore/FPVTracksideCore.csproj --configuration Release --no-restore
+      run: dotnet build FPVTracksideCore/FPVTracksideCore.csproj --configuration Release
     
     - name: Run Windows Tests (if any)
       run: |

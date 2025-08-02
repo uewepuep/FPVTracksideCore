@@ -55,16 +55,23 @@ jobs:
         cp -r "./build/macos-arm64/"* "FPV Trackside Core.app/Contents/MacOS/"
         
         # Copy app icon if it exists
-        if [ -f "./build/macos-arm64/square.icns" ]; then
+        if [ -f "./build/macos-arm64/AppIcon.icns" ]; then
+          cp "./build/macos-arm64/AppIcon.icns" "FPV Trackside Core.app/Contents/Resources/"
+        elif [ -f "./build/macos-arm64/square.icns" ]; then
           cp "./build/macos-arm64/square.icns" "FPV Trackside Core.app/Contents/Resources/"
+        elif [ -f "FPVMacSideCore/AppIcon.icns" ]; then
+          cp "FPVMacSideCore/AppIcon.icns" "FPV Trackside Core.app/Contents/Resources/"
         elif [ -f "FPVMacSideCore/square.icns" ]; then
           cp "FPVMacSideCore/square.icns" "FPV Trackside Core.app/Contents/Resources/"
         fi
         
         # Ensure the icon file exists and has correct permissions
-        if [ -f "FPV Trackside Core.app/Contents/Resources/square.icns" ]; then
+        if [ -f "FPV Trackside Core.app/Contents/Resources/AppIcon.icns" ]; then
+          chmod 644 "FPV Trackside Core.app/Contents/Resources/AppIcon.icns"
+          echo "✅ AppIcon.icns copied successfully"
+        elif [ -f "FPV Trackside Core.app/Contents/Resources/square.icns" ]; then
           chmod 644 "FPV Trackside Core.app/Contents/Resources/square.icns"
-          echo "✅ Icon file copied successfully"
+          echo "✅ square.icns copied successfully"
         else
           echo "⚠️ Warning: Icon file not found, app will use default icon"
         fi
@@ -80,7 +87,7 @@ jobs:
             <key>CFBundleExecutable</key>
             <string>FPVMacsideCore</string>
             <key>CFBundleIconFile</key>
-            <string>square.icns</string>
+            <string>AppIcon.icns</string>
             <key>CFBundleIdentifier</key>
             <string>com.fpvtrackside.core</string>
             <key>CFBundleName</key>
@@ -136,7 +143,7 @@ jobs:
       run: dotnet build FPVTracksideCore/FPVTracksideCore.sln --configuration Debug --no-restore
     
     - name: Build Windows Release
-      run: dotnet build FPVTracksideCore/FPVTracksideCore.sln --configuration Release --no-restore
+      run: dotnet build FPVTracksideCore/FPVTracksideCore.sln --configuration Release
     
     - name: Publish Windows Release
       run: |

@@ -106,8 +106,12 @@ jobs:
         cp -r "./build/macos-arm64/"* "FPVTrackside.app/Contents/MacOS/"
         
         # Copy app icon if it exists
-        if [ -f "./build/macos-arm64/square.icns" ]; then
+        if [ -f "./build/macos-arm64/AppIcon.icns" ]; then
+          cp "./build/macos-arm64/AppIcon.icns" "FPVTrackside.app/Contents/Resources/"
+        elif [ -f "./build/macos-arm64/square.icns" ]; then
           cp "./build/macos-arm64/square.icns" "FPVTrackside.app/Contents/Resources/"
+        elif [ -f "FPVMacSideCore/AppIcon.icns" ]; then
+          cp "FPVMacSideCore/AppIcon.icns" "FPVTrackside.app/Contents/Resources/"
         elif [ -f "FPVMacSideCore/square.icns" ]; then
           cp "FPVMacSideCore/square.icns" "FPVTrackside.app/Contents/Resources/"
         elif [ -f "dist/FPVTrackside.app/Contents/Resources/square.icns" ]; then
@@ -115,9 +119,12 @@ jobs:
         fi
         
         # Ensure the icon file exists and has correct permissions
-        if [ -f "FPVTrackside.app/Contents/Resources/square.icns" ]; then
+        if [ -f "FPVTrackside.app/Contents/Resources/AppIcon.icns" ]; then
+          chmod 644 "FPVTrackside.app/Contents/Resources/AppIcon.icns"
+          echo "✅ AppIcon.icns copied successfully"
+        elif [ -f "FPVTrackside.app/Contents/Resources/square.icns" ]; then
           chmod 644 "FPVTrackside.app/Contents/Resources/square.icns"
-          echo "✅ Icon file copied successfully"
+          echo "✅ square.icns copied successfully"
         else
           echo "⚠️ Warning: Icon file not found, app will use default icon"
         fi
@@ -133,7 +140,7 @@ jobs:
             <key>CFBundleExecutable</key>
             <string>FPVMacsideCore</string>
             <key>CFBundleIconFile</key>
-            <string>square.icns</string>
+            <string>AppIcon.icns</string>
             <key>CFBundleIdentifier</key>
             <string>com.fpvtrackside</string>
             <key>CFBundleName</key>
@@ -180,7 +187,7 @@ jobs:
         # Create DMG with professional layout
         create-dmg \
           --volname "FPVTrackside v${{ needs.detect-version.outputs.macos-version }}" \
-          --volicon "FPVTrackside.app/Contents/Resources/square.icns" \
+          --volicon "FPVTrackside.app/Contents/Resources/AppIcon.icns" \
           --window-pos 200 120 \
           --window-size 800 450 \
           --icon-size 100 \
