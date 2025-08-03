@@ -39,6 +39,23 @@ namespace FPVMacsideCore
 
             base.LoadContent();
             BitmapFontLibrary.Init(PlatformTools.WorkingDirectory);
+            
+            // Set application icon after everything is loaded
+            Platform.SetApplicationIcon();
+        }
+
+        protected override void BeginRun()
+        {
+            base.BeginRun();
+            // Also try setting the icon after the game window is fully created
+            Platform.SetApplicationIcon();
+        }
+
+        protected override void Initialize()
+        {
+            // Set icon before MonoGame initializes its window
+            Platform.SetApplicationIcon();
+            base.Initialize();
         }
     }
 

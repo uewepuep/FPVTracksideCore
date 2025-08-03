@@ -94,6 +94,9 @@ namespace FPVMacsideCore
             {
                 new FfmpegMediaPlatform.FfmpegMediaFramework()
             };
+
+            // Set application icon immediately during platform initialization
+            SetApplicationIcon();
         }
 
         private void CopyToHomeDir(DirectoryInfo oldWorkDir)
@@ -443,6 +446,137 @@ namespace FPVMacsideCore
         }
 
         #endregion
+
+        public void SetApplicationIcon()
+        {
+            try
+            {
+                // Look for AppIcon.icns in the application bundle or base directory
+                string[] possiblePaths = {
+                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AppIcon.icns"),
+                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "Resources", "AppIcon.icns"),
+                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "AppIcon.icns")
+                };
+
+                string iconPath = null;
+                foreach (string path in possiblePaths)
+                {
+                    Console.WriteLine($"Checking icon path: {path}");
+                    if (File.Exists(path))
+                    {
+                        iconPath = path;
+                        Console.WriteLine($"Found icon at: {iconPath}");
+                        break;
+                    }
+                }
+
+                if (iconPath != null)
+                {
+                    // Check if we can access Cocoa APIs (might not be available in all contexts)
+                    var nsImageClass = objc_getClass("NSImage");
+                    if (nsImageClass == IntPtr.Zero)
+                    {
+                        Console.WriteLine("NSImage class not available, skipping programmatic icon setting");
+                        return;
+                    }
+
+                    // Load the icon using NSImage
+                    var allocSelector = sel_registerName("alloc");
+                    var initWithContentsOfFileSelector = sel_registerName("initWithContentsOfFile:");
+                    
+                    var nsImage = objc_msgSend(nsImageClass, allocSelector);
+                    if (nsImage == IntPtr.Zero)
+                    {
+                        Console.WriteLine("Failed to allocate NSImage");
+                        return;
+                    }
+
+                    var iconPathNSString = CreateNSString(iconPath);
+                    if (iconPathNSString == IntPtr.Zero)
+                    {
+                        Console.WriteLine("Failed to create NSString");
+                        objc_msgSend(nsImage, sel_registerName("release"));
+                        return;
+                    }
+
+                    nsImage = objc_msgSend(nsImage, initWithContentsOfFileSelector, iconPathNSString);
+                    objc_msgSend(iconPathNSString, sel_registerName("release"));
+                    
+                    if (nsImage != IntPtr.Zero)
+                    {
+                        // Set the icon on NSApplication - but only if we have an application instance
+                        var nsAppClass = objc_getClass("NSApplication");
+                        if (nsAppClass != IntPtr.Zero)
+                        {
+                            var sharedApplicationSelector = sel_registerName("sharedApplication");
+                            var setApplicationIconImageSelector = sel_registerName("setApplicationIconImage:");
+                            
+                            var nsApp = objc_msgSend(nsAppClass, sharedApplicationSelector);
+                            if (nsApp != IntPtr.Zero)
+                            {
+                                objc_msgSend(nsApp, setApplicationIconImageSelector, nsImage);
+                                Console.WriteLine($"Application icon set from: {iconPath}");
+                                
+                                // Also try to set it as the dock tile image
+                                try
+                                {
+                                    var dockTileSelector = sel_registerName("dockTile");
+                                    var setContentViewSelector = sel_registerName("setContentView:");
+                                    var dockTile = objc_msgSend(nsApp, dockTileSelector);
+                                    if (dockTile != IntPtr.Zero)
+                                    {
+                                        // Create an NSImageView with our icon
+                                        var nsImageViewClass = objc_getClass("NSImageView");
+                                        if (nsImageViewClass != IntPtr.Zero)
+                                        {
+                                            var imageView = objc_msgSend(nsImageViewClass, allocSelector);
+                                            var initSelector = sel_registerName("init");
+                                            imageView = objc_msgSend(imageView, initSelector);
+                                            
+                                            var setImageSelector = sel_registerName("setImage:");
+                                            objc_msgSend(imageView, setImageSelector, nsImage);
+                                            objc_msgSend(dockTile, setContentViewSelector, imageView);
+                                            
+                                            var displaySelector = sel_registerName("display");
+                                            objc_msgSend(dockTile, displaySelector);
+                                            
+                                            objc_msgSend(imageView, sel_registerName("release"));
+                                        }
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"Failed to set dock tile: {ex.Message}");
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine("NSApplication instance not available");
+                            }
+                        }
+                        
+                        objc_msgSend(nsImage, sel_registerName("release"));
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Failed to load icon from: {iconPath}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("AppIcon.icns not found in any expected location");
+                    foreach (string path in possiblePaths)
+                    {
+                        Console.WriteLine($"  Checked: {path}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error setting application icon: {ex.Message}");
+                // Don't log to Logger.AllLog here as it might not be initialized yet
+            }
+        }
     }
 }
 
