@@ -346,12 +346,12 @@ jobs:
         echo '    </Directory>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
         echo '  <Fragment>' >> FPVTracksideCore.wxs
-        echo '    <Component Id="MainExecutable" Directory="INSTALLFOLDER" Guid="*">' >> FPVTracksideCore.wxs
+        echo '    <Component Id="MainExecutable" Directory="INSTALLFOLDER" Guid="{A1B2C3D4-E5F6-7890-ABCD-123456789ABC}">' >> FPVTracksideCore.wxs
         echo '      <File Id="FPVTracksideCore.exe" Name="FPVTracksideCore.exe" Source="build\windows-x64\FPVTracksideCore.exe" KeyPath="yes" />' >> FPVTracksideCore.wxs
         echo '    </Component>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
         echo '  <Fragment>' >> FPVTracksideCore.wxs
-        echo '    <Component Id="AllApplicationFiles" Directory="INSTALLFOLDER" Guid="*">' >> FPVTracksideCore.wxs
+        echo '    <Component Id="AllApplicationFiles" Directory="INSTALLFOLDER" Guid="{B2C3D4E5-F6A7-8901-BCDE-23456789ABCD}">' >> FPVTracksideCore.wxs
         
         # Add all files recursively using a single component
         $fileCounter = 1
@@ -367,7 +367,7 @@ jobs:
         echo '    </Component>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
         echo '  <Fragment>' >> FPVTracksideCore.wxs
-        echo '    <Component Id="ApplicationShortcut" Directory="INSTALLFOLDER" Guid="*">' >> FPVTracksideCore.wxs
+        echo '    <Component Id="ApplicationShortcut" Directory="INSTALLFOLDER" Guid="{C3D4E5F6-A7B8-9012-CDEF-3456789ABCDE}">' >> FPVTracksideCore.wxs
         echo '      <Shortcut Id="ApplicationStartMenuShortcut" Name="FPVTrackside" Description="FPVTrackside Application" Target="[INSTALLFOLDER]FPVTracksideCore.exe" WorkingDirectory="INSTALLFOLDER" Directory="ApplicationProgramsFolder" />' >> FPVTracksideCore.wxs
         echo '      <Shortcut Id="ApplicationDesktopShortcut" Name="FPVTrackside" Description="FPVTrackside Application" Target="[INSTALLFOLDER]FPVTracksideCore.exe" WorkingDirectory="INSTALLFOLDER" Directory="DesktopFolder" />' >> FPVTracksideCore.wxs
         echo '      <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall" />' >> FPVTracksideCore.wxs
@@ -402,7 +402,7 @@ jobs:
         
         # Link to create MSI
         echo "Linking MSI..."
-        light.exe -nologo -ext WixUIExtension FPVTracksideCore.wixobj -out $msiName
+        light.exe -nologo -ext WixUIExtension -sw1070 -sw1071 FPVTracksideCore.wixobj -out $msiName
         if ($LASTEXITCODE -ne 0) {
           Write-Error "WiX linking failed"
           exit 1
