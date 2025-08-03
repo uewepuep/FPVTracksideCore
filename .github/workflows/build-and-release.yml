@@ -401,15 +401,10 @@ jobs:
         echo '    </Directory>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
         
-        # Main executable component with proper permissions
+        # Main executable component
         echo '  <Fragment>' >> FPVTracksideCore.wxs
         echo '    <Component Id="MainExecutable" Directory="INSTALLFOLDER" Guid="{A1B2C3D4-E5F6-7890-ABCD-123456789ABC}">' >> FPVTracksideCore.wxs
-        echo '      <File Id="FPVTracksideCore.exe" Name="FPVTracksideCore.exe" Source="build\windows-x64\FPVTracksideCore.exe" KeyPath="yes">' >> FPVTracksideCore.wxs
-        echo '        <Permission User="Everyone" GenericAll="yes" />' >> FPVTracksideCore.wxs
-        echo '      </File>' >> FPVTracksideCore.wxs
-        echo '      <CreateFolder>' >> FPVTracksideCore.wxs
-        echo '        <Permission User="Everyone" GenericAll="yes" />' >> FPVTracksideCore.wxs
-        echo '      </CreateFolder>' >> FPVTracksideCore.wxs
+        echo '      <File Id="FPVTracksideCore.exe" Name="FPVTracksideCore.exe" Source="build\windows-x64\FPVTracksideCore.exe" KeyPath="yes" />' >> FPVTracksideCore.wxs
         echo '    </Component>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
         
@@ -447,9 +442,7 @@ jobs:
           
           echo "  <Fragment>" >> FPVTracksideCore.wxs
           echo "    <Component Id=`"$componentId`" Directory=`"$targetDirId`" Guid=`"{$guid1}`">" >> FPVTracksideCore.wxs
-          echo "      <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\$relativePath`" KeyPath=`"yes`">" >> FPVTracksideCore.wxs
-          echo "        <Permission User=`"Everyone`" GenericAll=`"yes`" />" >> FPVTracksideCore.wxs
-          echo "      </File>" >> FPVTracksideCore.wxs
+          echo "      <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\$relativePath`" KeyPath=`"yes`" />" >> FPVTracksideCore.wxs
           echo "    </Component>" >> FPVTracksideCore.wxs
           echo "  </Fragment>" >> FPVTracksideCore.wxs
           
@@ -466,12 +459,9 @@ jobs:
         echo '    </Component>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
         
-        # Data directory permissions component
+        # Data directory permissions component (simplified without explicit permissions)
         echo '  <Fragment>' >> FPVTracksideCore.wxs
         echo '    <Component Id="DataDirectoryPermissions" Directory="INSTALLFOLDER" Guid="{F7E8D9C0-B1A2-3456-789A-BCDEF0123456}">' >> FPVTracksideCore.wxs
-        echo '      <CreateFolder>' >> FPVTracksideCore.wxs
-        echo '        <Permission User="Everyone" GenericAll="yes" />' >> FPVTracksideCore.wxs
-        echo '      </CreateFolder>' >> FPVTracksideCore.wxs
         echo '      <RegistryValue Root="HKCU" Key="Software\Microsoft\FPVTrackside" Name="DataDirectoryCreated" Type="integer" Value="1" KeyPath="yes" />' >> FPVTracksideCore.wxs
         echo '    </Component>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
