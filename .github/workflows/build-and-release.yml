@@ -312,13 +312,13 @@ jobs:
           $iconAttribute = ' Icon="icon.ico" IconIndex="0"'
         }
         
-        echo '      <Component Id="StartMenuShortcut" Guid="{11111111-1111-1111-1111-111111111111}" Directory="ProgramMenuDir">' >> FPVTracksideCore.wxs
-        echo "        <Shortcut Id=`"StartMenuShortcut`" Name=`"FPVTrackside`" Description=`"FPVTrackside Application`" Target=`"[INSTALLFOLDER]FPVTracksideCore.exe`" WorkingDirectory=`"INSTALLFOLDER`"$iconAttribute />" >> FPVTracksideCore.wxs
+        echo '      <Component Id="StartMenuShortcut" Guid="{11111111-1111-1111-1111-111111111111}">' >> FPVTracksideCore.wxs
+        echo "        <Shortcut Id=`"StartMenuShortcut`" Name=`"FPVTrackside`" Description=`"FPVTrackside Application`" Target=`"[INSTALLFOLDER]FPVTracksideCore.exe`" WorkingDirectory=`"INSTALLFOLDER`"$iconAttribute Directory=`"ProgramMenuDir`" />" >> FPVTracksideCore.wxs
         echo '        <RemoveFolder Id="ProgramMenuDir" On="uninstall" />' >> FPVTracksideCore.wxs
         echo '        <RegistryValue Root="HKCU" Key="Software\FPVTrackside" Name="installed" Type="integer" Value="1" KeyPath="yes" />' >> FPVTracksideCore.wxs
         echo '      </Component>' >> FPVTracksideCore.wxs
-        echo '      <Component Id="DesktopShortcut" Guid="{22222222-2222-2222-2222-222222222222}" Directory="DesktopFolder">' >> FPVTracksideCore.wxs
-        echo "        <Shortcut Id=`"DesktopShortcut`" Name=`"FPVTrackside`" Description=`"FPVTrackside Application`" Target=`"[INSTALLFOLDER]FPVTracksideCore.exe`" WorkingDirectory=`"INSTALLFOLDER`"$iconAttribute />" >> FPVTracksideCore.wxs
+        echo '      <Component Id="DesktopShortcut" Guid="{22222222-2222-2222-2222-222222222222}">' >> FPVTracksideCore.wxs
+        echo "        <Shortcut Id=`"DesktopShortcut`" Name=`"FPVTrackside`" Description=`"FPVTrackside Application`" Target=`"[INSTALLFOLDER]FPVTracksideCore.exe`" WorkingDirectory=`"INSTALLFOLDER`"$iconAttribute Directory=`"DesktopFolder`" />" >> FPVTracksideCore.wxs
         echo '        <RegistryValue Root="HKCU" Key="Software\FPVTrackside" Name="desktop_shortcut" Type="integer" Value="1" KeyPath="yes" />' >> FPVTracksideCore.wxs
         echo '      </Component>' >> FPVTracksideCore.wxs
         echo '    </ComponentGroup>' >> FPVTracksideCore.wxs
