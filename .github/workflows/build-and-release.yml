@@ -323,7 +323,7 @@ jobs:
         echo '<?xml version="1.0" encoding="UTF-8"?>' > FPVTracksideCore.wxs
         echo '<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">' >> FPVTracksideCore.wxs
         echo '  <Product Id="*" Name="FPVTrackside" Language="1033" Version="${{ needs.detect-version.outputs.windows-version }}" Manufacturer="FPV Trackside" UpgradeCode="{12345678-1234-1234-1234-123456789012}">' >> FPVTracksideCore.wxs
-        echo '    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />' >> FPVTracksideCore.wxs
+        echo '    <Package InstallerVersion="200" Compressed="yes" InstallScope="perUser" InstallPrivileges="limited" />' >> FPVTracksideCore.wxs
         echo '    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />' >> FPVTracksideCore.wxs
         echo '    <MediaTemplate EmbedCab="yes" />' >> FPVTracksideCore.wxs
         echo '    <Feature Id="ProductFeature" Title="FPVTrackside" Level="1">' >> FPVTracksideCore.wxs
@@ -338,6 +338,7 @@ jobs:
         }
         
         echo '      <ComponentRef Id="ApplicationShortcut" />' >> FPVTracksideCore.wxs
+        echo '      <ComponentRef Id="DataDirectoryPermissions" />' >> FPVTracksideCore.wxs
         echo '    </Feature>' >> FPVTracksideCore.wxs
         echo '    <UIRef Id="WixUI_Minimal" />' >> FPVTracksideCore.wxs
         echo '    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />' >> FPVTracksideCore.wxs
@@ -346,7 +347,7 @@ jobs:
         # Directory structure with subdirectories
         echo '  <Fragment>' >> FPVTracksideCore.wxs
         echo '    <Directory Id="TARGETDIR" Name="SourceDir">' >> FPVTracksideCore.wxs
-        echo '      <Directory Id="ProgramFilesFolder">' >> FPVTracksideCore.wxs
+        echo '      <Directory Id="LocalAppDataFolder">' >> FPVTracksideCore.wxs
         echo '        <Directory Id="INSTALLFOLDER" Name="FPVTracksideCore">' >> FPVTracksideCore.wxs
         
         # Build directory tree structure
@@ -400,10 +401,15 @@ jobs:
         echo '    </Directory>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
         
-        # Main executable component
+        # Main executable component with proper permissions
         echo '  <Fragment>' >> FPVTracksideCore.wxs
         echo '    <Component Id="MainExecutable" Directory="INSTALLFOLDER" Guid="{A1B2C3D4-E5F6-7890-ABCD-123456789ABC}">' >> FPVTracksideCore.wxs
-        echo '      <File Id="FPVTracksideCore.exe" Name="FPVTracksideCore.exe" Source="build\windows-x64\FPVTracksideCore.exe" KeyPath="yes" />' >> FPVTracksideCore.wxs
+        echo '      <File Id="FPVTracksideCore.exe" Name="FPVTracksideCore.exe" Source="build\windows-x64\FPVTracksideCore.exe" KeyPath="yes">' >> FPVTracksideCore.wxs
+        echo '        <Permission User="Everyone" GenericAll="yes" />' >> FPVTracksideCore.wxs
+        echo '      </File>' >> FPVTracksideCore.wxs
+        echo '      <CreateFolder>' >> FPVTracksideCore.wxs
+        echo '        <Permission User="Everyone" GenericAll="yes" />' >> FPVTracksideCore.wxs
+        echo '      </CreateFolder>' >> FPVTracksideCore.wxs
         echo '    </Component>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
         
@@ -441,7 +447,9 @@ jobs:
           
           echo "  <Fragment>" >> FPVTracksideCore.wxs
           echo "    <Component Id=`"$componentId`" Directory=`"$targetDirId`" Guid=`"{$guid1}`">" >> FPVTracksideCore.wxs
-          echo "      <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\$relativePath`" KeyPath=`"yes`" />" >> FPVTracksideCore.wxs
+          echo "      <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\$relativePath`" KeyPath=`"yes`">" >> FPVTracksideCore.wxs
+          echo "        <Permission User=`"Everyone`" GenericAll=`"yes`" />" >> FPVTracksideCore.wxs
+          echo "      </File>" >> FPVTracksideCore.wxs
           echo "    </Component>" >> FPVTracksideCore.wxs
           echo "  </Fragment>" >> FPVTracksideCore.wxs
           
@@ -455,6 +463,16 @@ jobs:
         echo '      <Shortcut Id="ApplicationDesktopShortcut" Name="FPVTrackside" Description="FPVTrackside Application" Target="[INSTALLFOLDER]FPVTracksideCore.exe" WorkingDirectory="INSTALLFOLDER" Directory="DesktopFolder" />' >> FPVTracksideCore.wxs
         echo '      <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall" />' >> FPVTracksideCore.wxs
         echo '      <RegistryValue Root="HKCU" Key="Software\Microsoft\FPVTrackside" Name="installed" Type="integer" Value="1" KeyPath="yes" />' >> FPVTracksideCore.wxs
+        echo '    </Component>' >> FPVTracksideCore.wxs
+        echo '  </Fragment>' >> FPVTracksideCore.wxs
+        
+        # Data directory permissions component
+        echo '  <Fragment>' >> FPVTracksideCore.wxs
+        echo '    <Component Id="DataDirectoryPermissions" Directory="INSTALLFOLDER" Guid="{F7E8D9C0-B1A2-3456-789A-BCDEF0123456}">' >> FPVTracksideCore.wxs
+        echo '      <CreateFolder>' >> FPVTracksideCore.wxs
+        echo '        <Permission User="Everyone" GenericAll="yes" />' >> FPVTracksideCore.wxs
+        echo '      </CreateFolder>' >> FPVTracksideCore.wxs
+        echo '      <RegistryValue Root="HKCU" Key="Software\Microsoft\FPVTrackside" Name="DataDirectoryCreated" Type="integer" Value="1" KeyPath="yes" />' >> FPVTracksideCore.wxs
         echo '    </Component>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
         echo '</Wix>' >> FPVTracksideCore.wxs
