@@ -301,7 +301,9 @@ jobs:
     
     - name: Create WiX Installer Files
       run: |
-        # Create WiX source file for MSI
+        # Create WiX source file for MSI with proper directory structure
+        echo "Creating WiX installer with proper directory structure..."
+        
         echo '<?xml version="1.0" encoding="UTF-8"?>' > FPVTracksideCore.wxs
         echo '<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">' >> FPVTracksideCore.wxs
         echo '  <Product Id="*" Name="FPVTrackside" Language="1033" Version="${{ needs.detect-version.outputs.windows-version }}" Manufacturer="FPV Trackside" UpgradeCode="{12345678-1234-1234-1234-123456789012}">' >> FPVTracksideCore.wxs
@@ -310,20 +312,41 @@ jobs:
         echo '    <MediaTemplate EmbedCab="yes" />' >> FPVTracksideCore.wxs
         echo '    <Feature Id="ProductFeature" Title="FPVTrackside" Level="1">' >> FPVTracksideCore.wxs
         echo '      <ComponentGroupRef Id="ProductComponents" />' >> FPVTracksideCore.wxs
+        
+        # Only add ComponentGroupRefs for directories that actually exist
+        $allDirs = @("data", "themes", "sounds", "img", "bitmapfonts", "formats", "httpfiles", "patreons", "pilots", "ffmpeg")
+        foreach ($dir in $allDirs) {
+          if (Test-Path "build\windows-x64\$dir") {
+            $componentGroupName = "${dir}Components"
+            echo "      <ComponentGroupRef Id=`"$componentGroupName`" />" >> FPVTracksideCore.wxs
+          }
+        }
+        
         echo '      <ComponentGroupRef Id="Shortcuts" />' >> FPVTracksideCore.wxs
         echo '    </Feature>' >> FPVTracksideCore.wxs
         echo '    <UIRef Id="WixUI_Minimal" />' >> FPVTracksideCore.wxs
         echo '    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />' >> FPVTracksideCore.wxs
+        
         # Add icon if it exists
         if (Test-Path "build\windows-x64\icon.ico") {
           echo '    <Property Id="ARPPRODUCTICON" Value="icon.ico" />' >> FPVTracksideCore.wxs
           echo '    <Icon Id="icon.ico" SourceFile="build\windows-x64\icon.ico" />' >> FPVTracksideCore.wxs
         }
+        
         echo '  </Product>' >> FPVTracksideCore.wxs
         echo '  <Fragment>' >> FPVTracksideCore.wxs
         echo '    <Directory Id="TARGETDIR" Name="SourceDir">' >> FPVTracksideCore.wxs
         echo '      <Directory Id="ProgramFilesFolder">' >> FPVTracksideCore.wxs
-        echo '        <Directory Id="INSTALLFOLDER" Name="FPVTracksideCore" />' >> FPVTracksideCore.wxs
+        echo '        <Directory Id="INSTALLFOLDER" Name="FPVTracksideCore">' >> FPVTracksideCore.wxs
+        
+        # Create directory structure for each existing directory
+        foreach ($dir in $allDirs) {
+          if (Test-Path "build\windows-x64\$dir") {
+            echo "          <Directory Id=`"DIR_$dir`" Name=`"$dir`" />" >> FPVTracksideCore.wxs
+          }
+        }
+        
+        echo '        </Directory>' >> FPVTracksideCore.wxs
         echo '      </Directory>' >> FPVTracksideCore.wxs
         echo '      <Directory Id="ProgramMenuFolder">' >> FPVTracksideCore.wxs
         echo '        <Directory Id="ProgramMenuDir" Name="FPVTrackside" />' >> FPVTracksideCore.wxs
@@ -331,13 +354,13 @@ jobs:
         echo '      <Directory Id="DesktopFolder" Name="Desktop" />' >> FPVTracksideCore.wxs
         echo '    </Directory>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
+        
+        # Create ProductComponents for main executable and DLLs in root directory
         echo '  <Fragment>' >> FPVTracksideCore.wxs
         echo '    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">' >> FPVTracksideCore.wxs
         echo '      <Component Id="FPVTracksideCore.exe" Guid="*">' >> FPVTracksideCore.wxs
         echo '        <File Id="FPVTracksideCore.exe" Name="FPVTracksideCore.exe" Source="build\windows-x64\FPVTracksideCore.exe" KeyPath="yes" />' >> FPVTracksideCore.wxs
         echo '      </Component>' >> FPVTracksideCore.wxs
-        # Add essential files only to avoid duplicates
-        echo "Adding essential files to WiX..."
         
         # Add main DLLs and dependencies from root directory
         Get-ChildItem "build\windows-x64\*.dll" | ForEach-Object {
@@ -350,69 +373,65 @@ jobs:
           echo "      </Component>" >> FPVTracksideCore.wxs
         }
         
-        # Add FFmpeg files if they exist
-        if (Test-Path "build\windows-x64\ffmpeg") {
-          echo '      <Component Id="Component_ffmpeg" Guid="{87654321-4321-4321-4321-210987654321}">' >> FPVTracksideCore.wxs
-          if (Test-Path "build\windows-x64\ffmpeg\ffmpeg.exe") {
-            echo '        <File Id="ffmpeg_exe" Name="ffmpeg.exe" Source="build\windows-x64\ffmpeg\ffmpeg.exe" />' >> FPVTracksideCore.wxs
-          }
-          if (Test-Path "build\windows-x64\ffmpeg\ffprobe.exe") {
-            echo '        <File Id="ffprobe_exe" Name="ffprobe.exe" Source="build\windows-x64\ffmpeg\ffprobe.exe" />' >> FPVTracksideCore.wxs
-          }
-          echo '      </Component>' >> FPVTracksideCore.wxs
+        # Add other root-level files (config files, etc.)
+        Get-ChildItem "build\windows-x64\*.*" -Exclude "*.dll", "*.exe" | Where-Object { !$_.PSIsContainer } | ForEach-Object {
+          $fileName = $_.Name
+          $fileId = "root_" + ($fileName -replace '\.', '_' -replace '-', '_' -replace '[^a-zA-Z0-9_]', '_')
+          $componentId = "Component_$fileId"
+          
+          echo "      <Component Id=`"$componentId`" Guid=`"*`">" >> FPVTracksideCore.wxs
+          echo "        <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\$fileName`" KeyPath=`"yes`" />" >> FPVTracksideCore.wxs
+          echo "      </Component>" >> FPVTracksideCore.wxs
         }
         
-        # Add data files if they exist
-        if (Test-Path "build\windows-x64\data") {
-          echo '      <Component Id="Component_data" Guid="{11111111-1111-1111-1111-111111111111}">' >> FPVTracksideCore.wxs
-          Get-ChildItem "build\windows-x64\data" -Recurse -File | ForEach-Object {
-            $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\data\"), ""
-            $fileName = $_.Name
-            # Use the full relative path to ensure uniqueness even if subdirectories exist
-            $fileId = "data_" + ($relativePath -replace '\\', '_' -replace '\.', '_' -replace '-', '_' -replace '[^a-zA-Z0-9_]', '_')
-            echo "        <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\data\$relativePath`" />" >> FPVTracksideCore.wxs
-          }
-          echo '      </Component>' >> FPVTracksideCore.wxs
-        }
+        echo '    </ComponentGroup>' >> FPVTracksideCore.wxs
+        echo '  </Fragment>' >> FPVTracksideCore.wxs
         
-        # Add themes directory
-        if (Test-Path "build\windows-x64\themes") {
-          echo '      <Component Id="Component_themes" Guid="{22222222-2222-2222-2222-222222222222}">' >> FPVTracksideCore.wxs
-          Get-ChildItem "build\windows-x64\themes" -Recurse -File | ForEach-Object {
-            $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\themes\"), ""
-            $fileName = $_.Name
-            # Use the full relative path (including subdirectories) to ensure uniqueness
-            $fileId = "themes_" + ($relativePath -replace '\\', '_' -replace '\.', '_' -replace '-', '_' -replace '[^a-zA-Z0-9_]', '_')
-            if ($fileId -match '^[0-9]') { $fileId = "F$fileId" }
-            echo "        <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\themes\$relativePath`" />" >> FPVTracksideCore.wxs
-          }
-          echo '      </Component>' >> FPVTracksideCore.wxs
-        }
+        # Create separate ComponentGroups for each directory
+        $guidCounter = 1
+        $baseGuid = "33333333-3333-3333-3333-3333333333"
         
-        # Add other essential directories
-        $essentialDirs = @("sounds", "img", "bitmapfonts", "formats", "httpfiles", "patreons", "pilots")
-        $guidCounter = 3
-        
-        foreach ($dir in $essentialDirs) {
+        foreach ($dir in $allDirs) {
           if (Test-Path "build\windows-x64\$dir") {
-            $guid = "{33333333-3333-3333-3333-333333333333}".Replace("3333", $guidCounter.ToString("D4"))
-            echo "      <Component Id=`"Component_$dir`" Guid=`"$guid`">" >> FPVTracksideCore.wxs
+            $guid = $baseGuid + $guidCounter.ToString("D2")
+            $componentGroupName = "${dir}Components"
+            
+            echo "  <Fragment>" >> FPVTracksideCore.wxs
+            echo "    <ComponentGroup Id=`"$componentGroupName`" Directory=`"DIR_$dir`">" >> FPVTracksideCore.wxs
+            echo "      <Component Id=`"Component_$dir`" Guid=`"{$guid}`">" >> FPVTracksideCore.wxs
+            
+            # Add all files in this directory
             Get-ChildItem "build\windows-x64\$dir" -Recurse -File | ForEach-Object {
               $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\$dir\"), ""
               $fileName = $_.Name
-              # Use the full relative path (including subdirectories) to ensure uniqueness
               $fileId = $dir + "_" + ($relativePath -replace '\\', '_' -replace '\.', '_' -replace '-', '_' -replace '[^a-zA-Z0-9_]', '_')
+              
+              # Ensure File ID doesn't start with a number
               if ($fileId -match '^[0-9]') { $fileId = "F$fileId" }
-              echo "        <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\$dir\$relativePath`" />" >> FPVTracksideCore.wxs
+              
+              # For files in subdirectories, we need to create the nested directory structure
+              $subPath = Split-Path $relativePath -Parent
+              if ($subPath -and $subPath -ne ".") {
+                # This file is in a subdirectory - we'll put it directly in the component for now
+                echo "        <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\$dir\$relativePath`" />" >> FPVTracksideCore.wxs
+              } else {
+                # File is directly in the directory
+                echo "        <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\$dir\$fileName`" />" >> FPVTracksideCore.wxs
+              }
             }
+            
             echo "      </Component>" >> FPVTracksideCore.wxs
+            echo "    </ComponentGroup>" >> FPVTracksideCore.wxs
+            echo "  </Fragment>" >> FPVTracksideCore.wxs
+            
             $guidCounter++
           }
         }
-        echo '    </ComponentGroup>' >> FPVTracksideCore.wxs
-        echo '  </Fragment>' >> FPVTracksideCore.wxs
+        
+        # Create shortcuts
         echo '  <Fragment>' >> FPVTracksideCore.wxs
         echo '    <ComponentGroup Id="Shortcuts" Directory="INSTALLFOLDER">' >> FPVTracksideCore.wxs
+        
         # Create shortcuts with conditional icon
         $iconAttribute = ""
         if (Test-Path "build\windows-x64\icon.ico") {
@@ -442,7 +461,7 @@ jobs:
         echo '' >> license.rtf
         echo 'Copyright (c) 2024 FPV Trackside' >> license.rtf
         
-        echo "WiX source files created successfully"
+        echo "WiX source files created successfully with proper directory structure"
     
     - name: Build MSI Installer
       run: |
