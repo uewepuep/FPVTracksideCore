@@ -243,9 +243,42 @@ jobs:
           --runtime win-x64 `
           --self-contained true `
           --output "./build/windows-x64" `
-          -p:PublishSingleFile=true `
+          -p:PublishSingleFile=false `
           -p:PublishReadyToRun=false `
           -p:TieredCompilation=false
+        
+        # List what was published for debugging
+        echo "Files published to build directory:"
+        Get-ChildItem "build\windows-x64" -Recurse | ForEach-Object {
+          $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\"), ""
+          echo "  $relativePath"
+        }
+        
+        # Copy ALL files from the project directory to build directory
+        echo "Copying ALL project files to build directory..."
+        
+        # Get all files and folders from the project directory
+        Get-ChildItem "FPVTracksideCore" -Recurse | Where-Object { !$_.PSIsContainer } | ForEach-Object {
+          $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\FPVTracksideCore\"), ""
+          $targetPath = "build\windows-x64\$relativePath"
+          $targetDir = Split-Path $targetPath -Parent
+          
+          # Create target directory if it doesn't exist
+          if (!(Test-Path $targetDir)) {
+            New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+          }
+          
+          # Copy the file
+          Copy-Item $_.FullName $targetPath -Force
+        }
+        
+        echo "Copied all project files to build directory"
+        
+        echo "Final build directory contents:"
+        Get-ChildItem "build\windows-x64" -Recurse | ForEach-Object {
+          $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\"), ""
+          echo "  $relativePath"
+        }
     
     - name: Create WiX Installer Files
       run: |
