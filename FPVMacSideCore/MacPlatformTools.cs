@@ -95,8 +95,7 @@ namespace FPVMacsideCore
                 new FfmpegMediaPlatform.FfmpegMediaFramework()
             };
 
-            // Set application icon immediately during platform initialization
-            SetApplicationIcon();
+            // Don't set icon here - MonoGame will override it during window creation
         }
 
         private void CopyToHomeDir(DirectoryInfo oldWorkDir)
