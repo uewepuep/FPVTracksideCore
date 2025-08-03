@@ -198,22 +198,14 @@ jobs:
         
         # Verify DMG was created
         ls -la *.dmg
-        
-        # Also create a ZIP backup for compatibility
-        zip -r "FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.zip" "FPVTrackside.app"
     
-    - name: Create macOS ZIP (all branches)
-      if: needs.detect-version.outputs.is-release-branch == 'false'
-      run: |
-        # Create a simple ZIP for non-release branches
-        zip -r "FPVTrackside-macOS-${{ github.ref_name }}-v${{ needs.detect-version.outputs.macos-version }}.zip" "FPVTrackside.app"
+
     
     - name: Upload macOS Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: fpvtrackside-macos-${{ needs.detect-version.outputs.macos-version }}-${{ github.ref_name }}
         path: |
-          FPVTrackside-macOS-*.zip
           FPVTrackside-macOS-*.dmg
         retention-days: 90
 
@@ -227,6 +219,19 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Install WiX Toolset
+      run: |
+        # Download and install WiX Toolset v3.11.2
+        $wixUrl = "https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311.exe"
+        $wixInstaller = "wix311.exe"
+        Invoke-WebRequest -Uri $wixUrl -OutFile $wixInstaller
+        Start-Process -FilePath $wixInstaller -ArgumentList "/quiet" -Wait
+        Remove-Item $wixInstaller
+        
+        # Add WiX to PATH
+        $env:PATH += ";C:\Program Files (x86)\WiX Toolset v3.11\bin"
+        echo "WiX Toolset installed successfully"
     
     - name: Restore dependencies
       run: dotnet restore FPVTracksideCore/FPVTracksideCore.sln
@@ -242,20 +247,95 @@ jobs:
           -p:PublishReadyToRun=false `
           -p:TieredCompilation=false
     
-    - name: Create Windows Archive
+    - name: Create WiX Installer Files
       run: |
-        # Create ZIP archive for Windows
+        # Create WiX source file for MSI
+        echo '<?xml version="1.0" encoding="UTF-8"?>' > FPVTracksideCore.wxs
+        echo '<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">' >> FPVTracksideCore.wxs
+        echo '  <Product Id="*" Name="FPV Trackside Core" Language="1033" Version="${{ needs.detect-version.outputs.windows-version }}" Manufacturer="FPV Trackside" UpgradeCode="PUT-GUID-HERE">' >> FPVTracksideCore.wxs
+        echo '    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />' >> FPVTracksideCore.wxs
+        echo '    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />' >> FPVTracksideCore.wxs
+        echo '    <MediaTemplate EmbedCab="yes" />' >> FPVTracksideCore.wxs
+        echo '    <Feature Id="ProductFeature" Title="FPV Trackside Core" Level="1">' >> FPVTracksideCore.wxs
+        echo '      <ComponentGroupRef Id="ProductComponents" />' >> FPVTracksideCore.wxs
+        echo '    </Feature>' >> FPVTracksideCore.wxs
+        echo '    <UIRef Id="WixUI_Minimal" />' >> FPVTracksideCore.wxs
+        echo '    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />' >> FPVTracksideCore.wxs
+        echo '  </Product>' >> FPVTracksideCore.wxs
+        echo '  <Fragment>' >> FPVTracksideCore.wxs
+        echo '    <Directory Id="TARGETDIR" Name="SourceDir">' >> FPVTracksideCore.wxs
+        echo '      <Directory Id="ProgramFilesFolder">' >> FPVTracksideCore.wxs
+        echo '        <Directory Id="INSTALLFOLDER" Name="FPVTracksideCore" />' >> FPVTracksideCore.wxs
+        echo '      </Directory>' >> FPVTracksideCore.wxs
+        echo '    </Directory>' >> FPVTracksideCore.wxs
+        echo '  </Fragment>' >> FPVTracksideCore.wxs
+        echo '  <Fragment>' >> FPVTracksideCore.wxs
+        echo '    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">' >> FPVTracksideCore.wxs
+        echo '      <Component Id="FPVTracksideCore.exe" Guid="*">' >> FPVTracksideCore.wxs
+        echo '        <File Id="FPVTracksideCore.exe" Name="FPVTracksideCore.exe" Source="build\windows-x64\FPVTracksideCore.exe" KeyPath="yes" />' >> FPVTracksideCore.wxs
+        echo '      </Component>' >> FPVTracksideCore.wxs
+        echo '      <Component Id="FFmpegFiles" Guid="*">' >> FPVTracksideCore.wxs
+        echo '        <File Id="ffmpeg.exe" Name="ffmpeg.exe" Source="build\windows-x64\ffmpeg\ffmpeg.exe" />' >> FPVTracksideCore.wxs
+        echo '        <File Id="ffprobe.exe" Name="ffprobe.exe" Source="build\windows-x64\ffmpeg\ffprobe.exe" />' >> FPVTracksideCore.wxs
+        echo '      </Component>' >> FPVTracksideCore.wxs
+        echo '      <Component Id="DllFiles" Guid="*">' >> FPVTracksideCore.wxs
+        echo '        <File Id="*.dll" Source="build\windows-x64\*.dll" />' >> FPVTracksideCore.wxs
+        echo '      </Component>' >> FPVTracksideCore.wxs
+        echo '    </ComponentGroup>' >> FPVTracksideCore.wxs
+        echo '  </Fragment>' >> FPVTracksideCore.wxs
+        echo '</Wix>' >> FPVTracksideCore.wxs
+        
+        # Create simple license file
+        echo '{\rtf1\ansi\deff0 {\fonttbl {\f0 Times New Roman;}}' > license.rtf
+        echo '\f0\fs24' >> license.rtf
+        echo '' >> license.rtf
+        echo 'FPV Trackside Core License Agreement' >> license.rtf
+        echo '' >> license.rtf
+        echo 'This software is provided as-is without any warranty. Use at your own risk.' >> license.rtf
+        echo '' >> license.rtf
+        echo 'Copyright (c) 2024 FPV Trackside' >> license.rtf
+        
+        echo "WiX source files created successfully"
+    
+    - name: Build MSI Installer
+      run: |
+        # Add WiX to PATH for this step
+        $env:PATH += ";C:\Program Files (x86)\WiX Toolset v3.11\bin"
+        
+        # Compile WiX source to MSI
         if ("${{ needs.detect-version.outputs.is-release-branch }}" -eq "true") {
-          Compress-Archive -Path "./build/windows-x64/*" -DestinationPath "FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.zip"
+          $msiName = "FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.msi"
         } else {
-          Compress-Archive -Path "./build/windows-x64/*" -DestinationPath "FPV-Trackside-Core-Windows-${{ github.ref_name }}-v${{ needs.detect-version.outputs.windows-version }}.zip"
+          $msiName = "FPV-Trackside-Core-Windows-${{ github.ref_name }}-v${{ needs.detect-version.outputs.windows-version }}.msi"
+        }
+        
+        # Build the MSI
+        candle.exe -ext WixUIExtension FPVTracksideCore.wxs -out FPVTracksideCore.wixobj
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "WiX compilation failed"
+          exit 1
+        }
+        
+        light.exe -ext WixUIExtension FPVTracksideCore.wixobj -out $msiName
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "WiX linking failed"
+          exit 1
+        }
+        
+        # Verify MSI was created
+        if (Test-Path $msiName) {
+          Write-Host "MSI installer created successfully: $msiName"
+          Get-ChildItem $msiName | Select-Object Name, Length
+        } else {
+          Write-Error "MSI installer was not created"
+          exit 1
         }
     
     - name: Upload Windows Artifact
       uses: actions/upload-artifact@v4
       with:
         name: fpv-trackside-core-windows-${{ needs.detect-version.outputs.windows-version }}-${{ github.ref_name }}
-        path: "FPV-Trackside-Core-Windows-*.zip"
+        path: "FPV-Trackside-Core-Windows-*.msi"
         retention-days: 90
 
   create-release:
@@ -295,10 +375,8 @@ jobs:
         ## 🚀 FPV Trackside Core Release ${{ needs.detect-version.outputs.release-tag }}
         
         ### 📦 Downloads
-        - **macOS (Apple Silicon)**: 
-          - **DMG Installer**: FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg (Recommended)
-          - **ZIP Archive**: FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.zip
-        - **Windows (x64)**: FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.zip
+        - **macOS (Apple Silicon)**: FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg
+        - **Windows (x64)**: FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.msi
         
         ### 📱 Platform Versions
         - **macOS Version**: ${{ needs.detect-version.outputs.macos-version }}
@@ -331,7 +409,6 @@ jobs:
         ### 📋 Installation
         
         #### macOS
-        **Option 1 - DMG Installer (Recommended):**
         1. Download the macOS DMG file
         2. Double-click the DMG to mount it
         3. Drag "FPVTrackside.app" to your Applications folder
@@ -339,18 +416,12 @@ jobs:
         5. Right-click and select "Open" for first launch (Gatekeeper)
         6. Grant screen recording permissions if using screen capture
         
-        **Option 2 - ZIP Archive:**
-        1. Download the macOS ZIP file
-        2. Extract the ZIP archive
-        3. Move "FPVTrackside.app" to your Applications folder
-        4. Right-click and select "Open" for first launch (Gatekeeper)
-        5. Grant screen recording permissions if using screen capture
-        
         #### Windows
-        1. Download the Windows ZIP file
-        2. Extract to your desired location
-        3. Run FPVTracksideCore.exe
-        4. Windows Defender may require approval for first launch
+        1. Download the Windows MSI installer
+        2. Double-click the MSI file to run the installer
+        3. Follow the installation wizard
+        4. Launch FPVTracksideCore from the Start Menu or desktop shortcut
+        5. Windows Defender may require approval for first launch
         
         ---
         
@@ -367,7 +438,6 @@ jobs:
         prerelease: false
         files: |
           FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg
-          FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.zip
-          FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.zip
+          FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.msi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
