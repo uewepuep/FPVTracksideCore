@@ -493,7 +493,7 @@ jobs:
         
         # Link to create MSI
         echo "Linking MSI..."
-        light.exe -nologo -ext WixUIExtension -sw1070 -sw1071 -sw1076 FPVTracksideCore.wixobj -out $msiName
+        light.exe -nologo -ext WixUIExtension -sw1070 -sw1071 -sw1076 -sice:ICE38 -sice:ICE64 FPVTracksideCore.wixobj -out $msiName
         if ($LASTEXITCODE -ne 0) {
           Write-Error "WiX linking failed"
           exit 1
