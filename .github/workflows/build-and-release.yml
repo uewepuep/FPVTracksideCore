@@ -411,19 +411,17 @@ jobs:
         fi
         
         # Generate release notes
-        cat > release_notes.md << EOF
-        ## 🚀 FPVTrackside Release ${{ needs.detect-version.outputs.release-tag }}
-        
-        ### 📦 Downloads
-        - **macOS (Apple Silicon)**: FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg
-        - **Windows (x64)**: FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.msi
-        
-        ### 📱 Platform Versions
-        - **macOS Version**: ${{ needs.detect-version.outputs.macos-version }}
-        - **Windows Version**: ${{ needs.detect-version.outputs.windows-version }}
-        
-        ### 🔄 Recent Changes
-        EOF
+        echo "## 🚀 FPVTrackside Release ${{ needs.detect-version.outputs.release-tag }}" > release_notes.md
+        echo "" >> release_notes.md
+        echo "### 📦 Downloads" >> release_notes.md
+        echo "- **macOS (Apple Silicon)**: FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg" >> release_notes.md
+        echo "- **Windows (x64)**: FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.msi" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "### 📱 Platform Versions" >> release_notes.md
+        echo "- **macOS Version**: ${{ needs.detect-version.outputs.macos-version }}" >> release_notes.md
+        echo "- **Windows Version**: ${{ needs.detect-version.outputs.windows-version }}" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "### 🔄 Recent Changes" >> release_notes.md
         
         if [ -n "$COMMITS" ]; then
           echo "$COMMITS" | while read line; do
@@ -433,46 +431,44 @@ jobs:
           echo "- Initial release or no recent changes" >> release_notes.md
         fi
         
-        cat >> release_notes.md << EOF
-        
-        ### 💻 System Requirements
-        
-        #### macOS
-        - macOS 10.15 (Catalina) or later
-        - Apple Silicon (M1/M2) or Intel processor
-        - Screen recording permissions may be required for screen capture features
-        
-        #### Windows
-        - Windows 10 x64 or later
-        - .NET 6.0 runtime (included in self-contained build)
-        
-        ### 📋 Installation
-        
-        #### macOS
-        1. Download the macOS DMG file
-        2. Double-click the DMG to mount it
-        3. Drag "FPVTrackside.app" to your Applications folder
-        4. Eject the DMG when finished
-        5. Right-click and select "Open" for first launch (Gatekeeper)
-        6. Grant screen recording permissions if using screen capture
-        
-        #### Windows
-        1. Download the Windows MSI installer
-        2. Double-click the MSI file to run the installer
-        3. Follow the installation wizard
-        4. Launch FPVTracksideCore from the Start Menu or desktop shortcut
-        5. Windows Defender may require approval for first launch
-        
-        ---
-        
-        **Note**: Both versions include all necessary dependencies and FFmpeg binaries.
-        EOF
+        echo "" >> release_notes.md
+        echo "### 💻 System Requirements" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "#### macOS" >> release_notes.md
+        echo "- macOS 10.15 (Catalina) or later" >> release_notes.md
+        echo "- Apple Silicon (M1/M2) or Intel processor" >> release_notes.md
+        echo "- Screen recording permissions may be required for screen capture features" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "#### Windows" >> release_notes.md
+        echo "- Windows 10 x64 or later" >> release_notes.md
+        echo "- .NET 6.0 runtime (included in self-contained build)" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "### 📋 Installation" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "#### macOS" >> release_notes.md
+        echo "1. Download the macOS DMG file" >> release_notes.md
+        echo "2. Double-click the DMG to mount it" >> release_notes.md
+        echo "3. Drag \"FPVTrackside.app\" to your Applications folder" >> release_notes.md
+        echo "4. Eject the DMG when finished" >> release_notes.md
+        echo "5. Right-click and select \"Open\" for first launch (Gatekeeper)" >> release_notes.md
+        echo "6. Grant screen recording permissions if using screen capture" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "#### Windows" >> release_notes.md
+        echo "1. Download the Windows MSI installer" >> release_notes.md
+        echo "2. Double-click the MSI file to run the installer" >> release_notes.md
+        echo "3. Follow the installation wizard" >> release_notes.md
+        echo "4. Launch FPVTrackside from the Start Menu or desktop shortcut" >> release_notes.md
+        echo "5. Windows Defender may require approval for first launch" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "---" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "**Note**: Both versions include all necessary dependencies and FFmpeg binaries." >> release_notes.md
     
-            - name: Create Release
-          uses: softprops/action-gh-release@v1
-          with:
-            tag_name: ${{ needs.detect-version.outputs.release-tag }}
-            name: "FPVTrackside ${{ needs.detect-version.outputs.release-tag }}"
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ needs.detect-version.outputs.release-tag }}
+        name: "FPVTrackside ${{ needs.detect-version.outputs.release-tag }}"
         body_path: release_notes.md
         draft: false
         prerelease: false
