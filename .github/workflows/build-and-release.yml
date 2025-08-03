@@ -252,7 +252,7 @@ jobs:
         # Create WiX source file for MSI
         echo '<?xml version="1.0" encoding="UTF-8"?>' > FPVTracksideCore.wxs
         echo '<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">' >> FPVTracksideCore.wxs
-        echo '  <Product Id="*" Name="FPV Trackside Core" Language="1033" Version="${{ needs.detect-version.outputs.windows-version }}" Manufacturer="FPV Trackside" UpgradeCode="PUT-GUID-HERE">' >> FPVTracksideCore.wxs
+        echo '  <Product Id="*" Name="FPV Trackside Core" Language="1033" Version="${{ needs.detect-version.outputs.windows-version }}" Manufacturer="FPV Trackside" UpgradeCode="{12345678-1234-1234-1234-123456789012}">' >> FPVTracksideCore.wxs
         echo '    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />' >> FPVTracksideCore.wxs
         echo '    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />' >> FPVTracksideCore.wxs
         echo '    <MediaTemplate EmbedCab="yes" />' >> FPVTracksideCore.wxs
@@ -274,12 +274,22 @@ jobs:
         echo '      <Component Id="FPVTracksideCore.exe" Guid="*">' >> FPVTracksideCore.wxs
         echo '        <File Id="FPVTracksideCore.exe" Name="FPVTracksideCore.exe" Source="build\windows-x64\FPVTracksideCore.exe" KeyPath="yes" />' >> FPVTracksideCore.wxs
         echo '      </Component>' >> FPVTracksideCore.wxs
-        echo '      <Component Id="FFmpegFiles" Guid="*">' >> FPVTracksideCore.wxs
-        echo '        <File Id="ffmpeg.exe" Name="ffmpeg.exe" Source="build\windows-x64\ffmpeg\ffmpeg.exe" />' >> FPVTracksideCore.wxs
-        echo '        <File Id="ffprobe.exe" Name="ffprobe.exe" Source="build\windows-x64\ffmpeg\ffprobe.exe" />' >> FPVTracksideCore.wxs
-        echo '      </Component>' >> FPVTracksideCore.wxs
+        # Add FFmpeg files if they exist
+        if (Test-Path "build\windows-x64\ffmpeg\ffmpeg.exe") {
+          echo '      <Component Id="FFmpegFiles" Guid="*">' >> FPVTracksideCore.wxs
+          echo '        <File Id="ffmpeg.exe" Name="ffmpeg.exe" Source="build\windows-x64\ffmpeg\ffmpeg.exe" />' >> FPVTracksideCore.wxs
+          if (Test-Path "build\windows-x64\ffmpeg\ffprobe.exe") {
+            echo '        <File Id="ffprobe.exe" Name="ffprobe.exe" Source="build\windows-x64\ffmpeg\ffprobe.exe" />' >> FPVTracksideCore.wxs
+          }
+          echo '      </Component>' >> FPVTracksideCore.wxs
+        }
         echo '      <Component Id="DllFiles" Guid="*">' >> FPVTracksideCore.wxs
-        echo '        <File Id="*.dll" Source="build\windows-x64\*.dll" />' >> FPVTracksideCore.wxs
+        # Add DLL files dynamically
+        Get-ChildItem "build\windows-x64\*.dll" | ForEach-Object {
+          $dllName = $_.Name
+          $dllId = $dllName -replace '\.', '_'
+          echo "        <File Id=`"$dllId`" Name=`"$dllName`" Source=`"build\windows-x64\$dllName`" />" >> FPVTracksideCore.wxs
+        }
         echo '      </Component>' >> FPVTracksideCore.wxs
         echo '    </ComponentGroup>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
