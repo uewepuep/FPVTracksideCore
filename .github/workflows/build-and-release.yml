@@ -269,9 +269,25 @@ jobs:
               New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
             }
             
-            # Copy the directory contents
-            Copy-Item "FPVTracksideCore\$dir\*" $targetDir -Recurse -Force
-            echo "Copied $dir directory"
+            # Copy files, but skip if they already exist in the build directory
+            Get-ChildItem "FPVTracksideCore\$dir" -Recurse | Where-Object { !$_.PSIsContainer } | ForEach-Object {
+              $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\FPVTracksideCore\$dir\"), ""
+              $targetPath = "$targetDir\$relativePath"
+              $targetFileDir = Split-Path $targetPath -Parent
+              
+              # Create subdirectory if it doesn't exist
+              if (!(Test-Path $targetFileDir)) {
+                New-Item -ItemType Directory -Path $targetFileDir -Force | Out-Null
+              }
+              
+              # Only copy if the target file doesn't already exist
+              if (!(Test-Path $targetPath)) {
+                Copy-Item $_.FullName $targetPath -Force
+              } else {
+                echo "Skipped existing file: $relativePath"
+              }
+            }
+            echo "Processed $dir directory"
           }
         }
         
@@ -320,10 +336,23 @@ jobs:
         echo '      <Component Id="FPVTracksideCore.exe" Guid="*">' >> FPVTracksideCore.wxs
         echo '        <File Id="FPVTracksideCore.exe" Name="FPVTracksideCore.exe" Source="build\windows-x64\FPVTracksideCore.exe" KeyPath="yes" />' >> FPVTracksideCore.wxs
         echo '      </Component>' >> FPVTracksideCore.wxs
-        # Add ALL files from build directory dynamically
+        # Add ALL files from build directory dynamically with deduplication
+        $processedFiles = @{}
+        
         Get-ChildItem "build\windows-x64" -Recurse | Where-Object { !$_.PSIsContainer } | ForEach-Object {
           $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\"), ""
           $fileName = $_.Name
+          
+          # Create a unique key based on relative path to avoid duplicates
+          $fileKey = $relativePath.ToLower()
+          
+          # Skip if we've already processed this file
+          if ($processedFiles.ContainsKey($fileKey)) {
+            echo "Skipping duplicate file: $relativePath"
+            continue
+          }
+          
+          $processedFiles[$fileKey] = $true
           
           # Create valid WiX ID by removing/replacing invalid characters
           $fileId = $fileName -replace '[^a-zA-Z0-9_]', '_'  # Replace invalid chars with underscore
@@ -337,7 +366,12 @@ jobs:
             $fileId = "F$fileId"
           }
           
-          $componentId = "Component_$fileId"
+          # Make component ID unique by including path information
+          $componentId = "Component_$($relativePath.Replace('\', '_').Replace('/', '_').Replace('.', '_'))"
+          $componentId = $componentId -replace '[^a-zA-Z0-9_]', '_'
+          $componentId = $componentId -replace '^[0-9]', 'F$&'
+          $componentId = $componentId -replace '_+', '_'
+          $componentId = $componentId.Trim('_')
           
           # Skip the main executable as it's already included
           if ($fileName -ne "FPVTracksideCore.exe") {
