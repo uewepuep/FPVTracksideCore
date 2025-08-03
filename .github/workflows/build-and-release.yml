@@ -276,21 +276,22 @@ jobs:
         echo '      </Component>' >> FPVTracksideCore.wxs
         # Add FFmpeg files if they exist
         if (Test-Path "build\windows-x64\ffmpeg\ffmpeg.exe") {
-          echo '      <Component Id="FFmpegFiles" Guid="*">' >> FPVTracksideCore.wxs
+          echo '      <Component Id="FFmpegFiles" Guid="{87654321-4321-4321-4321-210987654321}">' >> FPVTracksideCore.wxs
           echo '        <File Id="ffmpeg.exe" Name="ffmpeg.exe" Source="build\windows-x64\ffmpeg\ffmpeg.exe" />' >> FPVTracksideCore.wxs
           if (Test-Path "build\windows-x64\ffmpeg\ffprobe.exe") {
             echo '        <File Id="ffprobe.exe" Name="ffprobe.exe" Source="build\windows-x64\ffmpeg\ffprobe.exe" />' >> FPVTracksideCore.wxs
           }
           echo '      </Component>' >> FPVTracksideCore.wxs
         }
-        echo '      <Component Id="DllFiles" Guid="*">' >> FPVTracksideCore.wxs
-        # Add DLL files dynamically
+        # Add DLL files dynamically - create separate components for each DLL
         Get-ChildItem "build\windows-x64\*.dll" | ForEach-Object {
           $dllName = $_.Name
           $dllId = $dllName -replace '\.', '_'
-          echo "        <File Id=`"$dllId`" Name=`"$dllName`" Source=`"build\windows-x64\$dllName`" />" >> FPVTracksideCore.wxs
+          $componentId = "Component_$dllId"
+          echo "      <Component Id=`"$componentId`" Guid=`"*`">" >> FPVTracksideCore.wxs
+          echo "        <File Id=`"$dllId`" Name=`"$dllName`" Source=`"build\windows-x64\$dllName`" KeyPath=`"yes`" />" >> FPVTracksideCore.wxs
+          echo "      </Component>" >> FPVTracksideCore.wxs
         }
-        echo '      </Component>' >> FPVTracksideCore.wxs
         echo '    </ComponentGroup>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
         echo '</Wix>' >> FPVTracksideCore.wxs
