@@ -471,6 +471,19 @@ namespace UI.Video
             recording = false;
             height = 0;
 
+            // For FPV feeds, check if they're configured and device is available (not necessarily streaming)
+            bool isFPVFeed = videoConfig.VideoBounds.Any(vb => vb.SourceType == SourceTypes.FPVFeed);
+            if (isFPVFeed)
+            {
+                // FPV monitor should show green if cameras are configured and device exists
+                connected = !string.IsNullOrEmpty(videoConfig.DeviceName) && videoConfig.DeviceName != "No Device";
+                recording = false; // FPV monitors don't show recording status
+                height = 480; // Default height for status display
+                Tools.Logger.VideoLog.LogCall(this, $"GetStatus: FPV feed status - Device: '{videoConfig.DeviceName}', Connected: {connected}");
+                return true;
+            }
+
+            // For non-FPV feeds, check actual frame source connection
             FrameSource frameSource = GetFrameSource(videoConfig);
             if (frameSource != null)
             {
@@ -541,12 +554,27 @@ namespace UI.Video
         {
             lock (frameSources)
             {
+                // First try exact object match
                 FrameSource existing = frameSources.FirstOrDefault(dsss => dsss.VideoConfig == vs);
                 if (existing != null)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Found existing source {existing.GetType().Name} (Instance: {existing.GetHashCode()}) for device: {vs.DeviceName}");
+                    Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Found existing source by object reference {existing.GetType().Name} (Instance: {existing.GetHashCode()}) for device: {vs.DeviceName}");
                     return existing;
                 }
+                
+                // Fall back to device name match (for FPV monitor to share with race channels)
+                Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Looking for device name match, target: '{vs.DeviceName}', existing sources: {frameSources.Count}");
+                foreach (var source in frameSources)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Comparing '{vs.DeviceName}' with '{source.VideoConfig.DeviceName}'");
+                }
+                existing = frameSources.FirstOrDefault(dsss => dsss.VideoConfig.DeviceName == vs.DeviceName);
+                if (existing != null)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Found existing source by device name {existing.GetType().Name} (Instance: {existing.GetHashCode()}) for device: {vs.DeviceName}");
+                    return existing;
+                }
+                Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: No device name match found for '{vs.DeviceName}'");
                 
                 // Create new frame source if not found
                 Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Creating new source for device: {vs.DeviceName}");

@@ -653,6 +653,7 @@ namespace FfmpegMediaPlatform
                     if (process == null || process.HasExited)
                     {
                         Tools.Logger.VideoLog.LogCall(this, "FFmpeg process has exited, stopping reading thread");
+                        Connected = false;
                         break;
                     }
                     
@@ -695,6 +696,7 @@ namespace FfmpegMediaPlatform
                         ProcessImage();
                         NotifyReceivedFrame();
                         consecutiveErrors = 0; // Reset error counter on successful frame
+                        Connected = true; // Ensure we're marked as connected when receiving data
                     }
                     else if (totalBytesRead > 0)
                     {
@@ -724,6 +726,7 @@ namespace FfmpegMediaPlatform
                     if (consecutiveErrors >= maxConsecutiveErrors)
                     {
                         Tools.Logger.VideoLog.LogCall(this, "Too many consecutive errors, stopping reading thread");
+                        Connected = false;
                         break;
                     }
                     
