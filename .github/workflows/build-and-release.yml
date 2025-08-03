@@ -327,15 +327,9 @@ jobs:
         echo '    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />' >> FPVTracksideCore.wxs
         echo '    <MediaTemplate EmbedCab="yes" />' >> FPVTracksideCore.wxs
         echo '    <Feature Id="ProductFeature" Title="FPVTrackside" Level="1">' >> FPVTracksideCore.wxs
-        echo '      <ComponentGroupRef Id="MainFiles" />' >> FPVTracksideCore.wxs
-        
-        # Add references for existing subdirectories
-        foreach ($dir in $subdirs) {
-          if (Test-Path "build\windows-x64\$dir") {
-            echo "      <ComponentGroupRef Id=`"${dir}Files`" />" >> FPVTracksideCore.wxs
-          }
-        }
-        
+        echo '      <ComponentRef Id="MainExecutable" />' >> FPVTracksideCore.wxs
+        echo '      <ComponentRef Id="AllApplicationFiles" />' >> FPVTracksideCore.wxs
+        echo '      <ComponentRef Id="ApplicationShortcut" />' >> FPVTracksideCore.wxs
         echo '    </Feature>' >> FPVTracksideCore.wxs
         echo '    <UIRef Id="WixUI_Minimal" />' >> FPVTracksideCore.wxs
         echo '    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />' >> FPVTracksideCore.wxs
@@ -343,16 +337,7 @@ jobs:
         echo '  <Fragment>' >> FPVTracksideCore.wxs
         echo '    <Directory Id="TARGETDIR" Name="SourceDir">' >> FPVTracksideCore.wxs
         echo '      <Directory Id="ProgramFilesFolder">' >> FPVTracksideCore.wxs
-        echo '        <Directory Id="INSTALLFOLDER" Name="FPVTracksideCore">' >> FPVTracksideCore.wxs
-        
-        # Create directory structure for subdirectories
-        foreach ($dir in $subdirs) {
-          if (Test-Path "build\windows-x64\$dir") {
-            echo "          <Directory Id=`"DIR_$dir`" Name=`"$dir`" />" >> FPVTracksideCore.wxs
-          }
-        }
-        
-        echo '        </Directory>' >> FPVTracksideCore.wxs
+        echo '        <Directory Id="INSTALLFOLDER" Name="FPVTracksideCore" />' >> FPVTracksideCore.wxs
         echo '      </Directory>' >> FPVTracksideCore.wxs
         echo '      <Directory Id="ProgramMenuFolder">' >> FPVTracksideCore.wxs
         echo '        <Directory Id="ApplicationProgramsFolder" Name="FPVTrackside" />' >> FPVTracksideCore.wxs
@@ -361,14 +346,33 @@ jobs:
         echo '    </Directory>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
         echo '  <Fragment>' >> FPVTracksideCore.wxs
-        echo '    <ComponentGroup Id="ProductShortcuts" Directory="INSTALLFOLDER">' >> FPVTracksideCore.wxs
-        echo '      <Component Id="ApplicationShortcut" Guid="*">' >> FPVTracksideCore.wxs
-        echo '        <Shortcut Id="ApplicationStartMenuShortcut" Name="FPVTrackside" Description="FPVTrackside Application" Target="[INSTALLFOLDER]FPVTracksideCore.exe" WorkingDirectory="INSTALLFOLDER" Directory="ApplicationProgramsFolder" />' >> FPVTracksideCore.wxs
-        echo '        <Shortcut Id="ApplicationDesktopShortcut" Name="FPVTrackside" Description="FPVTrackside Application" Target="[INSTALLFOLDER]FPVTracksideCore.exe" WorkingDirectory="INSTALLFOLDER" Directory="DesktopFolder" />' >> FPVTracksideCore.wxs
-        echo '        <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall" />' >> FPVTracksideCore.wxs
-        echo '        <RegistryValue Root="HKCU" Key="Software\Microsoft\FPVTrackside" Name="installed" Type="integer" Value="1" KeyPath="yes" />' >> FPVTracksideCore.wxs
-        echo '      </Component>' >> FPVTracksideCore.wxs
-        echo '    </ComponentGroup>' >> FPVTracksideCore.wxs
+        echo '    <Component Id="MainExecutable" Directory="INSTALLFOLDER" Guid="*">' >> FPVTracksideCore.wxs
+        echo '      <File Id="FPVTracksideCore.exe" Name="FPVTracksideCore.exe" Source="build\windows-x64\FPVTracksideCore.exe" KeyPath="yes" />' >> FPVTracksideCore.wxs
+        echo '    </Component>' >> FPVTracksideCore.wxs
+        echo '  </Fragment>' >> FPVTracksideCore.wxs
+        echo '  <Fragment>' >> FPVTracksideCore.wxs
+        echo '    <Component Id="AllApplicationFiles" Directory="INSTALLFOLDER" Guid="*">' >> FPVTracksideCore.wxs
+        
+        # Add all files recursively using a single component
+        $fileCounter = 1
+        Get-ChildItem "build\windows-x64" -Recurse -File | Where-Object { $_.Name -ne "FPVTracksideCore.exe" } | ForEach-Object {
+          $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\"), ""
+          $fileName = $_.Name
+          $fileId = "File_$fileCounter"
+          
+          echo "      <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\$relativePath`" />" >> FPVTracksideCore.wxs
+          $fileCounter++
+        }
+        
+        echo '    </Component>' >> FPVTracksideCore.wxs
+        echo '  </Fragment>' >> FPVTracksideCore.wxs
+        echo '  <Fragment>' >> FPVTracksideCore.wxs
+        echo '    <Component Id="ApplicationShortcut" Directory="INSTALLFOLDER" Guid="*">' >> FPVTracksideCore.wxs
+        echo '      <Shortcut Id="ApplicationStartMenuShortcut" Name="FPVTrackside" Description="FPVTrackside Application" Target="[INSTALLFOLDER]FPVTracksideCore.exe" WorkingDirectory="INSTALLFOLDER" Directory="ApplicationProgramsFolder" />' >> FPVTracksideCore.wxs
+        echo '      <Shortcut Id="ApplicationDesktopShortcut" Name="FPVTrackside" Description="FPVTrackside Application" Target="[INSTALLFOLDER]FPVTracksideCore.exe" WorkingDirectory="INSTALLFOLDER" Directory="DesktopFolder" />' >> FPVTracksideCore.wxs
+        echo '      <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall" />' >> FPVTracksideCore.wxs
+        echo '      <RegistryValue Root="HKCU" Key="Software\Microsoft\FPVTrackside" Name="installed" Type="integer" Value="1" KeyPath="yes" />' >> FPVTracksideCore.wxs
+        echo '    </Component>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
         echo '</Wix>' >> FPVTracksideCore.wxs
         
@@ -388,22 +392,17 @@ jobs:
           $msiName = "FPV-Trackside-Core-Windows-${{ github.ref_name }}-v${{ needs.detect-version.outputs.windows-version }}.msi"
         }
         
-        # Compile all WiX files
-        echo "Compiling WiX files..."
-        $wixObjFiles = @()
-        foreach ($file in $heatFiles + @("FPVTracksideCore.wxs")) {
-          $objFile = $file -replace '\.wxs$', '.wixobj'
-          candle.exe -nologo -dSourceDir="build\windows-x64" $file -out $objFile
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "WiX compilation failed for $file"
-            exit 1
-          }
-          $wixObjFiles += $objFile
+        # Compile WiX file
+        echo "Compiling WiX file..."
+        candle.exe -nologo FPVTracksideCore.wxs -out FPVTracksideCore.wixobj
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "WiX compilation failed"
+          exit 1
         }
         
         # Link to create MSI
         echo "Linking MSI..."
-        light.exe -nologo -ext WixUIExtension $wixObjFiles -out $msiName
+        light.exe -nologo -ext WixUIExtension FPVTracksideCore.wixobj -out $msiName
         if ($LASTEXITCODE -ne 0) {
           Write-Error "WiX linking failed"
           exit 1
