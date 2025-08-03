@@ -284,23 +284,19 @@ jobs:
         echo '      <Component Id="FPVTracksideCore.exe" Guid="*">' >> FPVTracksideCore.wxs
         echo '        <File Id="FPVTracksideCore.exe" Name="FPVTracksideCore.exe" Source="build\windows-x64\FPVTracksideCore.exe" KeyPath="yes" />' >> FPVTracksideCore.wxs
         echo '      </Component>' >> FPVTracksideCore.wxs
-        # Add FFmpeg files if they exist
-        if (Test-Path "build\windows-x64\ffmpeg\ffmpeg.exe") {
-          echo '      <Component Id="FFmpegFiles" Guid="{87654321-4321-4321-4321-210987654321}">' >> FPVTracksideCore.wxs
-          echo '        <File Id="ffmpeg.exe" Name="ffmpeg.exe" Source="build\windows-x64\ffmpeg\ffmpeg.exe" />' >> FPVTracksideCore.wxs
-          if (Test-Path "build\windows-x64\ffmpeg\ffprobe.exe") {
-            echo '        <File Id="ffprobe.exe" Name="ffprobe.exe" Source="build\windows-x64\ffmpeg\ffprobe.exe" />' >> FPVTracksideCore.wxs
+        # Add ALL files from build directory dynamically
+        Get-ChildItem "build\windows-x64" -Recurse | Where-Object { !$_.PSIsContainer } | ForEach-Object {
+          $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\"), ""
+          $fileName = $_.Name
+          $fileId = $fileName -replace '\.', '_' -replace '-', '_'
+          $componentId = "Component_$fileId"
+          
+          # Skip the main executable as it's already included
+          if ($fileName -ne "FPVTracksideCore.exe") {
+            echo "      <Component Id=`"$componentId`" Guid=`"*`">" >> FPVTracksideCore.wxs
+            echo "        <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\$relativePath`" KeyPath=`"yes`" />" >> FPVTracksideCore.wxs
+            echo "      </Component>" >> FPVTracksideCore.wxs
           }
-          echo '      </Component>' >> FPVTracksideCore.wxs
-        }
-        # Add DLL files dynamically - create separate components for each DLL
-        Get-ChildItem "build\windows-x64\*.dll" | ForEach-Object {
-          $dllName = $_.Name
-          $dllId = $dllName -replace '\.', '_'
-          $componentId = "Component_$dllId"
-          echo "      <Component Id=`"$componentId`" Guid=`"*`">" >> FPVTracksideCore.wxs
-          echo "        <File Id=`"$dllId`" Name=`"$dllName`" Source=`"build\windows-x64\$dllName`" KeyPath=`"yes`" />" >> FPVTracksideCore.wxs
-          echo "      </Component>" >> FPVTracksideCore.wxs
         }
         echo '    </ComponentGroup>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
