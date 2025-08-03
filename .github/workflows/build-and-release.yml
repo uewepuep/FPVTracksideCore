@@ -316,10 +316,10 @@ jobs:
             return $safeId
         }
         
-        # Generate a single comprehensive WiX file
-        echo "Generating WiX installer file..."
+        # Generate a comprehensive WiX file with individual components for each file
+        echo "Generating WiX installer file with individual components..."
         
-        # Create main WiX file
+        # Start the WiX file
         echo '<?xml version="1.0" encoding="UTF-8"?>' > FPVTracksideCore.wxs
         echo '<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">' >> FPVTracksideCore.wxs
         echo '  <Product Id="*" Name="FPVTrackside" Language="1033" Version="${{ needs.detect-version.outputs.windows-version }}" Manufacturer="FPV Trackside" UpgradeCode="{12345678-1234-1234-1234-123456789012}">' >> FPVTracksideCore.wxs
@@ -328,12 +328,22 @@ jobs:
         echo '    <MediaTemplate EmbedCab="yes" />' >> FPVTracksideCore.wxs
         echo '    <Feature Id="ProductFeature" Title="FPVTrackside" Level="1">' >> FPVTracksideCore.wxs
         echo '      <ComponentRef Id="MainExecutable" />' >> FPVTracksideCore.wxs
-        echo '      <ComponentRef Id="AllApplicationFiles" />' >> FPVTracksideCore.wxs
+        
+        # Add component references for all other files
+        $componentCounter = 1
+        Get-ChildItem "build\windows-x64" -Recurse -File | Where-Object { $_.Name -ne "FPVTracksideCore.exe" } | ForEach-Object {
+          $componentId = "Component_$componentCounter"
+          echo "      <ComponentRef Id=`"$componentId`" />" >> FPVTracksideCore.wxs
+          $componentCounter++
+        }
+        
         echo '      <ComponentRef Id="ApplicationShortcut" />' >> FPVTracksideCore.wxs
         echo '    </Feature>' >> FPVTracksideCore.wxs
         echo '    <UIRef Id="WixUI_Minimal" />' >> FPVTracksideCore.wxs
         echo '    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />' >> FPVTracksideCore.wxs
         echo '  </Product>' >> FPVTracksideCore.wxs
+        
+        # Directory structure
         echo '  <Fragment>' >> FPVTracksideCore.wxs
         echo '    <Directory Id="TARGETDIR" Name="SourceDir">' >> FPVTracksideCore.wxs
         echo '      <Directory Id="ProgramFilesFolder">' >> FPVTracksideCore.wxs
@@ -345,27 +355,37 @@ jobs:
         echo '      <Directory Id="DesktopFolder" Name="Desktop" />' >> FPVTracksideCore.wxs
         echo '    </Directory>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
+        
+        # Main executable component
         echo '  <Fragment>' >> FPVTracksideCore.wxs
         echo '    <Component Id="MainExecutable" Directory="INSTALLFOLDER" Guid="{A1B2C3D4-E5F6-7890-ABCD-123456789ABC}">' >> FPVTracksideCore.wxs
         echo '      <File Id="FPVTracksideCore.exe" Name="FPVTracksideCore.exe" Source="build\windows-x64\FPVTracksideCore.exe" KeyPath="yes" />' >> FPVTracksideCore.wxs
         echo '    </Component>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
-        echo '  <Fragment>' >> FPVTracksideCore.wxs
-        echo '    <Component Id="AllApplicationFiles" Directory="INSTALLFOLDER" Guid="{B2C3D4E5-F6A7-8901-BCDE-23456789ABCD}">' >> FPVTracksideCore.wxs
         
-        # Add all files recursively using a single component
+        # Create individual components for each file
         $fileCounter = 1
+        $componentCounter = 1
+        
         Get-ChildItem "build\windows-x64" -Recurse -File | Where-Object { $_.Name -ne "FPVTracksideCore.exe" } | ForEach-Object {
           $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\"), ""
           $fileName = $_.Name
           $fileId = "File_$fileCounter"
+          $componentId = "Component_$componentCounter"
           
-          echo "      <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\$relativePath`" />" >> FPVTracksideCore.wxs
+          # Generate unique GUID for each component
+          $guid1 = [System.Guid]::NewGuid().ToString().ToUpper()
+          
+          echo "  <Fragment>" >> FPVTracksideCore.wxs
+          echo "    <Component Id=`"$componentId`" Directory=`"INSTALLFOLDER`" Guid=`"{$guid1}`">" >> FPVTracksideCore.wxs
+          echo "      <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\$relativePath`" KeyPath=`"yes`" />" >> FPVTracksideCore.wxs
+          echo "    </Component>" >> FPVTracksideCore.wxs
+          echo "  </Fragment>" >> FPVTracksideCore.wxs
+          
           $fileCounter++
+          $componentCounter++
         }
-        
-        echo '    </Component>' >> FPVTracksideCore.wxs
-        echo '  </Fragment>' >> FPVTracksideCore.wxs
+        # Shortcuts component
         echo '  <Fragment>' >> FPVTracksideCore.wxs
         echo '    <Component Id="ApplicationShortcut" Directory="INSTALLFOLDER" Guid="{C3D4E5F6-A7B8-9012-CDEF-3456789ABCDE}">' >> FPVTracksideCore.wxs
         echo '      <Shortcut Id="ApplicationStartMenuShortcut" Name="FPVTrackside" Description="FPVTrackside Application" Target="[INSTALLFOLDER]FPVTracksideCore.exe" WorkingDirectory="INSTALLFOLDER" Directory="ApplicationProgramsFolder" />' >> FPVTracksideCore.wxs
