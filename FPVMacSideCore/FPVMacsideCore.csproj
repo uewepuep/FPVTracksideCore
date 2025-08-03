@@ -42,4 +42,9 @@
     <Message Text="Restoring dotnet tools" Importance="High" />
     <Exec Command="dotnet tool restore" />
   </Target>
+  <Target Name="FixMacIcon" AfterTargets="Build" Condition="'$(OS)' == 'Unix'">
+    <Message Text="Fixing Mac app icon configuration" Importance="High" />
+    <Exec Command="chmod +x $(ProjectDir)fix-icon.sh" />
+    <Exec Command="$(ProjectDir)fix-icon.sh &quot;$(OutputPath)FPV Trackside Core.app&quot; &quot;$(ProjectDir)AppIcon.icns&quot;" />
+  </Target>
 </Project>
