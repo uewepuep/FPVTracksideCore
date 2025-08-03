@@ -252,21 +252,31 @@ jobs:
         # Create WiX source file for MSI
         echo '<?xml version="1.0" encoding="UTF-8"?>' > FPVTracksideCore.wxs
         echo '<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">' >> FPVTracksideCore.wxs
-        echo '  <Product Id="*" Name="FPV Trackside Core" Language="1033" Version="${{ needs.detect-version.outputs.windows-version }}" Manufacturer="FPV Trackside" UpgradeCode="{12345678-1234-1234-1234-123456789012}">' >> FPVTracksideCore.wxs
+        echo '  <Product Id="*" Name="FPVTrackside" Language="1033" Version="${{ needs.detect-version.outputs.windows-version }}" Manufacturer="FPV Trackside" UpgradeCode="{12345678-1234-1234-1234-123456789012}">' >> FPVTracksideCore.wxs
         echo '    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />' >> FPVTracksideCore.wxs
         echo '    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />' >> FPVTracksideCore.wxs
         echo '    <MediaTemplate EmbedCab="yes" />' >> FPVTracksideCore.wxs
-        echo '    <Feature Id="ProductFeature" Title="FPV Trackside Core" Level="1">' >> FPVTracksideCore.wxs
+        echo '    <Feature Id="ProductFeature" Title="FPVTrackside" Level="1">' >> FPVTracksideCore.wxs
         echo '      <ComponentGroupRef Id="ProductComponents" />' >> FPVTracksideCore.wxs
+        echo '      <ComponentGroupRef Id="Shortcuts" />' >> FPVTracksideCore.wxs
         echo '    </Feature>' >> FPVTracksideCore.wxs
         echo '    <UIRef Id="WixUI_Minimal" />' >> FPVTracksideCore.wxs
         echo '    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />' >> FPVTracksideCore.wxs
+        # Add icon if it exists
+        if (Test-Path "build\windows-x64\icon.ico") {
+          echo '    <Property Id="ARPPRODUCTICON" Value="icon.ico" />' >> FPVTracksideCore.wxs
+          echo '    <Icon Id="icon.ico" SourceFile="build\windows-x64\icon.ico" />' >> FPVTracksideCore.wxs
+        }
         echo '  </Product>' >> FPVTracksideCore.wxs
         echo '  <Fragment>' >> FPVTracksideCore.wxs
         echo '    <Directory Id="TARGETDIR" Name="SourceDir">' >> FPVTracksideCore.wxs
         echo '      <Directory Id="ProgramFilesFolder">' >> FPVTracksideCore.wxs
         echo '        <Directory Id="INSTALLFOLDER" Name="FPVTracksideCore" />' >> FPVTracksideCore.wxs
         echo '      </Directory>' >> FPVTracksideCore.wxs
+        echo '      <Directory Id="ProgramMenuFolder">' >> FPVTracksideCore.wxs
+        echo '        <Directory Id="ProgramMenuDir" Name="FPVTrackside" />' >> FPVTracksideCore.wxs
+        echo '      </Directory>' >> FPVTracksideCore.wxs
+        echo '      <Directory Id="DesktopFolder" Name="Desktop" />' >> FPVTracksideCore.wxs
         echo '    </Directory>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
         echo '  <Fragment>' >> FPVTracksideCore.wxs
@@ -292,6 +302,25 @@ jobs:
           echo "        <File Id=`"$dllId`" Name=`"$dllName`" Source=`"build\windows-x64\$dllName`" KeyPath=`"yes`" />" >> FPVTracksideCore.wxs
           echo "      </Component>" >> FPVTracksideCore.wxs
         }
+        echo '    </ComponentGroup>' >> FPVTracksideCore.wxs
+        echo '  </Fragment>' >> FPVTracksideCore.wxs
+        echo '  <Fragment>' >> FPVTracksideCore.wxs
+        echo '    <ComponentGroup Id="Shortcuts" Directory="INSTALLFOLDER">' >> FPVTracksideCore.wxs
+        # Create shortcuts with conditional icon
+        $iconAttribute = ""
+        if (Test-Path "build\windows-x64\icon.ico") {
+          $iconAttribute = ' Icon="icon.ico" IconIndex="0"'
+        }
+        
+        echo '      <Component Id="StartMenuShortcut" Guid="{11111111-1111-1111-1111-111111111111}" Directory="ProgramMenuDir">' >> FPVTracksideCore.wxs
+        echo "        <Shortcut Id=`"StartMenuShortcut`" Name=`"FPVTrackside`" Description=`"FPVTrackside Application`" Target=`"[INSTALLFOLDER]FPVTracksideCore.exe`" WorkingDirectory=`"INSTALLFOLDER`"$iconAttribute />" >> FPVTracksideCore.wxs
+        echo '        <RemoveFolder Id="ProgramMenuDir" On="uninstall" />' >> FPVTracksideCore.wxs
+        echo '        <RegistryValue Root="HKCU" Key="Software\FPVTrackside" Name="installed" Type="integer" Value="1" KeyPath="yes" />' >> FPVTracksideCore.wxs
+        echo '      </Component>' >> FPVTracksideCore.wxs
+        echo '      <Component Id="DesktopShortcut" Guid="{22222222-2222-2222-2222-222222222222}" Directory="DesktopFolder">' >> FPVTracksideCore.wxs
+        echo "        <Shortcut Id=`"DesktopShortcut`" Name=`"FPVTrackside`" Description=`"FPVTrackside Application`" Target=`"[INSTALLFOLDER]FPVTracksideCore.exe`" WorkingDirectory=`"INSTALLFOLDER`"$iconAttribute />" >> FPVTracksideCore.wxs
+        echo '        <RegistryValue Root="HKCU" Key="Software\FPVTrackside" Name="desktop_shortcut" Type="integer" Value="1" KeyPath="yes" />' >> FPVTracksideCore.wxs
+        echo '      </Component>' >> FPVTracksideCore.wxs
         echo '    </ComponentGroup>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
         echo '</Wix>' >> FPVTracksideCore.wxs
@@ -383,7 +412,7 @@ jobs:
         
         # Generate release notes
         cat > release_notes.md << EOF
-        ## 🚀 FPV Trackside Core Release ${{ needs.detect-version.outputs.release-tag }}
+        ## 🚀 FPVTrackside Release ${{ needs.detect-version.outputs.release-tag }}
         
         ### 📦 Downloads
         - **macOS (Apple Silicon)**: FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg
@@ -439,11 +468,11 @@ jobs:
         **Note**: Both versions include all necessary dependencies and FFmpeg binaries.
         EOF
     
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ needs.detect-version.outputs.release-tag }}
-        name: "FPV Trackside Core ${{ needs.detect-version.outputs.release-tag }}"
+            - name: Create Release
+          uses: softprops/action-gh-release@v1
+          with:
+            tag_name: ${{ needs.detect-version.outputs.release-tag }}
+            name: "FPVTrackside ${{ needs.detect-version.outputs.release-tag }}"
         body_path: release_notes.md
         draft: false
         prerelease: false
