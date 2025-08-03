@@ -343,11 +343,55 @@ jobs:
         echo '    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />' >> FPVTracksideCore.wxs
         echo '  </Product>' >> FPVTracksideCore.wxs
         
-        # Directory structure
+        # Directory structure with subdirectories
         echo '  <Fragment>' >> FPVTracksideCore.wxs
         echo '    <Directory Id="TARGETDIR" Name="SourceDir">' >> FPVTracksideCore.wxs
         echo '      <Directory Id="ProgramFilesFolder">' >> FPVTracksideCore.wxs
-        echo '        <Directory Id="INSTALLFOLDER" Name="FPVTracksideCore" />' >> FPVTracksideCore.wxs
+        echo '        <Directory Id="INSTALLFOLDER" Name="FPVTracksideCore">' >> FPVTracksideCore.wxs
+        
+        # Build directory tree structure
+        $directoryTree = @{}
+        
+        # Collect all unique directory paths
+        Get-ChildItem "build\windows-x64" -Recurse -Directory | ForEach-Object {
+          $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\"), ""
+          $directoryTree[$relativePath] = $true
+        }
+        
+        # Function to recursively create directory structure
+        function Create-DirectoryStructure {
+          param($parentPath, $indent)
+          
+          $childDirs = $directoryTree.Keys | Where-Object { 
+            $_ -like "$parentPath\*" -and ($_.Substring($parentPath.Length).TrimStart('\') -split '\\').Count -eq 1
+          } | Sort-Object
+          
+          foreach ($childPath in $childDirs) {
+            $dirName = Split-Path $childPath -Leaf
+            $dirId = "DIR_" + ($childPath -replace '\\', '_' -replace '[^a-zA-Z0-9_]', '_')
+            
+            echo "$indent<Directory Id=`"$dirId`" Name=`"$dirName`">" >> FPVTracksideCore.wxs
+            
+            # Recursively create subdirectories
+            Create-DirectoryStructure -parentPath $childPath -indent "$indent  "
+            
+            echo "$indent</Directory>" >> FPVTracksideCore.wxs
+          }
+        }
+        
+        # Create top-level directories under INSTALLFOLDER
+        $topLevelDirs = $directoryTree.Keys | Where-Object { ($_ -split '\\').Count -eq 1 } | Sort-Object
+        foreach ($topDir in $topLevelDirs) {
+          $dirId = "DIR_" + ($topDir -replace '\\', '_' -replace '[^a-zA-Z0-9_]', '_')
+          echo "          <Directory Id=`"$dirId`" Name=`"$topDir`">" >> FPVTracksideCore.wxs
+          
+          # Create subdirectories
+          Create-DirectoryStructure -parentPath $topDir -indent "            "
+          
+          echo "          </Directory>" >> FPVTracksideCore.wxs
+        }
+        
+        echo '        </Directory>' >> FPVTracksideCore.wxs
         echo '      </Directory>' >> FPVTracksideCore.wxs
         echo '      <Directory Id="ProgramMenuFolder">' >> FPVTracksideCore.wxs
         echo '        <Directory Id="ApplicationProgramsFolder" Name="FPVTrackside" />' >> FPVTracksideCore.wxs
@@ -363,21 +407,40 @@ jobs:
         echo '    </Component>' >> FPVTracksideCore.wxs
         echo '  </Fragment>' >> FPVTracksideCore.wxs
         
-        # Create individual components for each file
+        # Create individual components for each file in proper directories
         $fileCounter = 1
         $componentCounter = 1
         
+        echo "Generating file components..." | Write-Output
         Get-ChildItem "build\windows-x64" -Recurse -File | Where-Object { $_.Name -ne "FPVTracksideCore.exe" } | ForEach-Object {
           $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\"), ""
           $fileName = $_.Name
           $fileId = "File_$fileCounter"
           $componentId = "Component_$componentCounter"
           
+          # Determine target directory based on file path
+          $targetDirId = "INSTALLFOLDER"
+          $dirPath = ""
+          
+          if ($relativePath.Contains("\")) {
+            $dirPath = Split-Path $relativePath -Parent
+            $targetDirId = "DIR_" + ($dirPath -replace '\\', '_' -replace '[^a-zA-Z0-9_]', '_')
+            echo "File: $fileName -> Directory: $targetDirId (Path: $dirPath)" | Write-Output
+            
+            # Verify the target directory exists in our directory tree
+            if (-not $directoryTree.ContainsKey($dirPath)) {
+              echo "WARNING: Target directory $targetDirId not found for file $fileName, falling back to INSTALLFOLDER" | Write-Output
+              $targetDirId = "INSTALLFOLDER"
+            }
+          } else {
+            echo "File: $fileName -> Directory: $targetDirId (Root)" | Write-Output
+          }
+          
           # Generate unique GUID for each component
           $guid1 = [System.Guid]::NewGuid().ToString().ToUpper()
           
           echo "  <Fragment>" >> FPVTracksideCore.wxs
-          echo "    <Component Id=`"$componentId`" Directory=`"INSTALLFOLDER`" Guid=`"{$guid1}`">" >> FPVTracksideCore.wxs
+          echo "    <Component Id=`"$componentId`" Directory=`"$targetDirId`" Guid=`"{$guid1}`">" >> FPVTracksideCore.wxs
           echo "      <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\$relativePath`" KeyPath=`"yes`" />" >> FPVTracksideCore.wxs
           echo "    </Component>" >> FPVTracksideCore.wxs
           echo "  </Fragment>" >> FPVTracksideCore.wxs
