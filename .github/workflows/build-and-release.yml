@@ -365,10 +365,12 @@ jobs:
         # Add data files if they exist
         if (Test-Path "build\windows-x64\data") {
           echo '      <Component Id="Component_data" Guid="{11111111-1111-1111-1111-111111111111}">' >> FPVTracksideCore.wxs
-          Get-ChildItem "build\windows-x64\data\*" -File | ForEach-Object {
+          Get-ChildItem "build\windows-x64\data" -Recurse -File | ForEach-Object {
+            $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\data\"), ""
             $fileName = $_.Name
-            $fileId = "data_" + ($fileName -replace '\.', '_' -replace '-', '_')
-            echo "        <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\data\$fileName`" />" >> FPVTracksideCore.wxs
+            # Use the full relative path to ensure uniqueness even if subdirectories exist
+            $fileId = "data_" + ($relativePath -replace '\\', '_' -replace '\.', '_' -replace '-', '_' -replace '[^a-zA-Z0-9_]', '_')
+            echo "        <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\data\$relativePath`" />" >> FPVTracksideCore.wxs
           }
           echo '      </Component>' >> FPVTracksideCore.wxs
         }
@@ -379,7 +381,8 @@ jobs:
           Get-ChildItem "build\windows-x64\themes" -Recurse -File | ForEach-Object {
             $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\themes\"), ""
             $fileName = $_.Name
-            $fileId = "themes_" + ($fileName -replace '\.', '_' -replace '-', '_' -replace '[^a-zA-Z0-9_]', '_')
+            # Use the full relative path (including subdirectories) to ensure uniqueness
+            $fileId = "themes_" + ($relativePath -replace '\\', '_' -replace '\.', '_' -replace '-', '_' -replace '[^a-zA-Z0-9_]', '_')
             if ($fileId -match '^[0-9]') { $fileId = "F$fileId" }
             echo "        <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\themes\$relativePath`" />" >> FPVTracksideCore.wxs
           }
@@ -397,7 +400,8 @@ jobs:
             Get-ChildItem "build\windows-x64\$dir" -Recurse -File | ForEach-Object {
               $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\$dir\"), ""
               $fileName = $_.Name
-              $fileId = $dir + "_" + ($fileName -replace '\.', '_' -replace '-', '_' -replace '[^a-zA-Z0-9_]', '_')
+              # Use the full relative path (including subdirectories) to ensure uniqueness
+              $fileId = $dir + "_" + ($relativePath -replace '\\', '_' -replace '\.', '_' -replace '-', '_' -replace '[^a-zA-Z0-9_]', '_')
               if ($fileId -match '^[0-9]') { $fileId = "F$fileId" }
               echo "        <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\$dir\$relativePath`" />" >> FPVTracksideCore.wxs
             }
