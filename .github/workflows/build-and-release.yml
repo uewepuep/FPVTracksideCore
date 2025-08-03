@@ -302,31 +302,22 @@ jobs:
 
     - name: Create Simple MSI Installer
       run: |
-        # Create a simple WiX installer using Heat to auto-generate file list
+        # Create a simple WiX installer with manually generated components to avoid ID conflicts
         echo "Creating simple MSI installer..."
         
         # Add WiX to PATH for this step
         $env:PATH += ";C:\Program Files (x86)\WiX Toolset v3.11\bin"
         
-        # Use Heat to generate component groups for each directory
-        echo "Generating file lists with Heat..."
-        
-        # Generate main files component
-        heat.exe dir "build\windows-x64" -nologo -sfrag -sreg -suid -scom -dr INSTALLFOLDER -cg MainFiles -var var.SourceDir -gg -out MainFiles.wxs -exclude "data" -exclude "themes" -exclude "sounds" -exclude "img" -exclude "bitmapfonts" -exclude "formats" -exclude "httpfiles" -exclude "patreons" -exclude "pilots" -exclude "ffmpeg"
-        
-        # Generate component groups for each subdirectory if they exist
-        $subdirs = @("data", "themes", "sounds", "img", "bitmapfonts", "formats", "httpfiles", "patreons", "pilots", "ffmpeg")
-        $heatFiles = @("MainFiles.wxs")
-        
-        foreach ($dir in $subdirs) {
-          if (Test-Path "build\windows-x64\$dir") {
-            $componentGroup = "${dir}Files"
-            $dirId = "DIR_$dir"
-            $outputFile = "${dir}Files.wxs"
-            heat.exe dir "build\windows-x64\$dir" -nologo -sfrag -sreg -suid -scom -dr $dirId -cg $componentGroup -var var.SourceDir -gg -out $outputFile
-            $heatFiles += $outputFile
-          }
+        # Function to sanitize file names for WiX IDs
+        function Get-SafeId {
+            param($name, $prefix = "")
+            $safeId = $prefix + ($name -replace '[^a-zA-Z0-9_]', '_')
+            if ($safeId -match '^[0-9]') { $safeId = "F$safeId" }
+            return $safeId
         }
+        
+        # Generate a single comprehensive WiX file
+        echo "Generating WiX installer file..."
         
         # Create main WiX file
         echo '<?xml version="1.0" encoding="UTF-8"?>' > FPVTracksideCore.wxs
