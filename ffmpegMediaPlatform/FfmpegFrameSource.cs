@@ -190,15 +190,8 @@ namespace FfmpegMediaPlatform
             recordingStartTime = DateTime.MinValue;
             frameCount = 0;
 
-            // Set surface format based on platform
-            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
-            {
-                SurfaceFormat = SurfaceFormat.Color; // More widely supported on macOS
-            }
-            else
-            {
-                SurfaceFormat = SurfaceFormat.Bgr32; // Original Windows format
-            }
+            // Set surface format - both platforms output RGBA from ffmpeg
+            SurfaceFormat = SurfaceFormat.Color; // RGBA format for consistent color channels across platforms
 
             // Calculate buffer size based on video mode
             if (videoConfig.VideoMode != null)
