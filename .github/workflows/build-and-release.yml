@@ -321,7 +321,19 @@ jobs:
         Get-ChildItem "build\windows-x64" -Recurse | Where-Object { !$_.PSIsContainer } | ForEach-Object {
           $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\"), ""
           $fileName = $_.Name
-          $fileId = $fileName -replace '\.', '_' -replace '-', '_'
+          
+          # Create valid WiX ID by removing/replacing invalid characters
+          $fileId = $fileName -replace '[^a-zA-Z0-9_]', '_'  # Replace invalid chars with underscore
+          $fileId = $fileId -replace '^[0-9]', 'F$&'        # Prefix numbers with 'F'
+          $fileId = $fileId -replace '^_', 'F'               # Replace leading underscore with 'F'
+          $fileId = $fileId -replace '_+', '_'               # Replace multiple underscores with single
+          $fileId = $fileId.Trim('_')                        # Remove leading/trailing underscores
+          
+          # Ensure ID starts with a letter
+          if ($fileId -match '^[0-9]') {
+            $fileId = "F$fileId"
+          }
+          
           $componentId = "Component_$fileId"
           
           # Skip the main executable as it's already included
