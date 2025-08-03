@@ -254,25 +254,28 @@ jobs:
           echo "  $relativePath"
         }
         
-        # Copy ALL files from the project directory to build directory
-        echo "Copying ALL project files to build directory..."
+        # Copy additional project files that aren't already published
+        echo "Copying additional project files to build directory..."
         
-        # Get all files and folders from the project directory
-        Get-ChildItem "FPVTracksideCore" -Recurse | Where-Object { !$_.PSIsContainer } | ForEach-Object {
-          $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\FPVTracksideCore\"), ""
-          $targetPath = "build\windows-x64\$relativePath"
-          $targetDir = Split-Path $targetPath -Parent
-          
-          # Create target directory if it doesn't exist
-          if (!(Test-Path $targetDir)) {
-            New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+        # Define directories that contain additional files not published by dotnet
+        $additionalDirs = @("data", "themes", "sounds", "img", "bitmapfonts", "formats", "httpfiles", "patreons", "pilots", "ffmpeg")
+        
+        foreach ($dir in $additionalDirs) {
+          if (Test-Path "FPVTracksideCore\$dir") {
+            $targetDir = "build\windows-x64\$dir"
+            
+            # Create target directory if it doesn't exist
+            if (!(Test-Path $targetDir)) {
+              New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+            }
+            
+            # Copy the directory contents
+            Copy-Item "FPVTracksideCore\$dir\*" $targetDir -Recurse -Force
+            echo "Copied $dir directory"
           }
-          
-          # Copy the file
-          Copy-Item $_.FullName $targetPath -Force
         }
         
-        echo "Copied all project files to build directory"
+        echo "Copied additional project files to build directory"
         
         echo "Final build directory contents:"
         Get-ChildItem "build\windows-x64" -Recurse | ForEach-Object {
