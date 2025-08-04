@@ -1387,8 +1387,34 @@ namespace FfmpegMediaPlatform
                     startTime = firstFrame.Time;
                     originalVideoStartTime = firstFrame.Time; // Preserve the original video start time for seeking
                     
-                    // Use unified duration calculation logic for consistency across platforms
-                    length = UnifiedFrameTimingManager.CalculateVideoDuration(recordingInfo.FrameTimes, TimeSpan.Zero);
+                    // Get ffprobe duration first to use as fallback
+                    TimeSpan ffprobeDuration = DetermineActualDuration(videoFilePath);
+                    
+                    // Use unified duration calculation logic with ffprobe as fallback
+                    var xmlDuration = UnifiedFrameTimingManager.CalculateVideoDuration(recordingInfo.FrameTimes, ffprobeDuration);
+                    
+                    // XML validation: Check if XML duration seems suspiciously short compared to ffprobe duration
+                    // This can occur when frame timing data is incomplete or corrupted
+                    bool xmlDurationSeemsIncorrect = false;
+                    
+                    if (ffprobeDuration > TimeSpan.Zero && xmlDuration > TimeSpan.Zero)
+                    {
+                        double ratio = ffprobeDuration.TotalSeconds / xmlDuration.TotalSeconds;
+                        xmlDurationSeemsIncorrect = ratio > 2.0; // XML is less than 50% of ffprobe duration
+                        
+                        Tools.Logger.VideoLog.LogCall(this, $"Duration comparison: XML={xmlDuration.TotalSeconds:F1}s, ffprobe={ffprobeDuration.TotalSeconds:F1}s, ratio={ratio:F2}");
+                    }
+                    
+                    if (xmlDurationSeemsIncorrect)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"WARNING: XML frame timing duration ({xmlDuration.TotalSeconds:F1}s) appears incomplete compared to ffprobe duration ({ffprobeDuration.TotalSeconds:F1}s) - using ffprobe duration to prevent early stopping");
+                        length = ffprobeDuration;
+                    }
+                    else
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"Using XML frame timing duration ({xmlDuration.TotalSeconds:F1}s) for playback length");
+                        length = xmlDuration;
+                    }
                     
                     // Validate frame timing consistency to detect platform-specific issues
                     bool isConsistent = UnifiedFrameTimingManager.ValidateFrameTimingConsistency(
