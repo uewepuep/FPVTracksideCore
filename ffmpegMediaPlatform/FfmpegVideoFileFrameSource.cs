@@ -84,6 +84,7 @@ namespace FfmpegMediaPlatform
                 mediaTime = value;
                 if (mediaTime >= length)
                 {
+                    Tools.Logger.VideoLog.LogCall(this, $"VIDEO END DETECTED (setter): mediaTime={mediaTime.TotalSeconds:F1}s >= length={length.TotalSeconds:F1}s, setting isAtEnd=true");
                     isAtEnd = true;
                     if (repeat)
                     {
@@ -395,6 +396,7 @@ namespace FfmpegMediaPlatform
                 // Check if we've reached the end of the video
                 if (length > TimeSpan.Zero && mediaTime >= length)
                 {
+                    Tools.Logger.VideoLog.LogCall(this, $"VIDEO END DETECTED: mediaTime={mediaTime.TotalSeconds:F1}s >= length={length.TotalSeconds:F1}s, setting isAtEnd=true");
                     isAtEnd = true;
                     if (repeat)
                     {
@@ -1409,11 +1411,13 @@ namespace FfmpegMediaPlatform
                     {
                         Tools.Logger.VideoLog.LogCall(this, $"WARNING: XML frame timing duration ({xmlDuration.TotalSeconds:F1}s) appears incomplete compared to ffprobe duration ({ffprobeDuration.TotalSeconds:F1}s) - using ffprobe duration to prevent early stopping");
                         length = ffprobeDuration;
+                        Tools.Logger.VideoLog.LogCall(this, $"FINAL LENGTH SET: {length.TotalSeconds:F1}s (from ffprobe)");
                     }
                     else
                     {
                         Tools.Logger.VideoLog.LogCall(this, $"Using XML frame timing duration ({xmlDuration.TotalSeconds:F1}s) for playback length");
                         length = xmlDuration;
+                        Tools.Logger.VideoLog.LogCall(this, $"FINAL LENGTH SET: {length.TotalSeconds:F1}s (from XML)");
                     }
                     
                     // Validate frame timing consistency to detect platform-specific issues
