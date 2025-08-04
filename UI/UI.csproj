@@ -23,6 +23,7 @@
     <ProjectReference Include="..\DB\DB.csproj" />
     <ProjectReference Include="..\Compositor\Composition.csproj" />
     <ProjectReference Include="..\ExternalData\ExternalData.csproj" />
+    <ProjectReference Include="..\ffmpegMediaPlatform\FfmpegMediaPlatform.csproj" />
     <ProjectReference Include="..\ImageServer\ImageServer.csproj" />
     <ProjectReference Include="..\RaceLib\RaceLib.csproj" />
     <ProjectReference Include="..\Sound\Sound.csproj" />

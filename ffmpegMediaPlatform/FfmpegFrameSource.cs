@@ -759,7 +759,7 @@ namespace FfmpegMediaPlatform
                                 frameTimes = new List<FrameTime>();
                             }
                             
-                            DateTime frameTime = DateTime.Now;
+                            DateTime frameTime = UnifiedFrameTimingManager.GetHighPrecisionTimestamp();
                             
                             // Start recording timer on first actual frame to eliminate FFmpeg initialization delay
                             if (recordingStartTime == DateTime.MinValue)
@@ -768,12 +768,10 @@ namespace FfmpegMediaPlatform
                                 Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Recording timer started on first frame: {recordingStartTime:HH:mm:ss.fff}");
                             }
                             
-                            frameTimes.Add(new FrameTime
-                            {
-                                Frame = (int)FrameProcessNumber,
-                                Time = frameTime,
-                                Seconds = (float)(frameTime - recordingStartTime).TotalSeconds
-                            });
+                            // Use unified frame timing logic for consistency across platforms
+                            var frameTimeEntry = UnifiedFrameTimingManager.CreateFrameTime(
+                                (int)FrameProcessNumber, frameTime, recordingStartTime);
+                            frameTimes.Add(frameTimeEntry);
                             
                             frameCount++;
                             

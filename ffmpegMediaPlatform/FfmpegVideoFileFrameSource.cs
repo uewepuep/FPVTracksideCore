@@ -159,7 +159,6 @@ namespace FfmpegMediaPlatform
                 throw new FileNotFoundException($"Video file not found: {filePath}");
             }
             bool isWMV = filePath.EndsWith(".wmv", StringComparison.OrdinalIgnoreCase);
-            bool isMac = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX);
             
             // Get just the filename for logging
             string fileName = Path.GetFileName(filePath);
@@ -168,7 +167,6 @@ namespace FfmpegMediaPlatform
             Tools.Logger.VideoLog.LogCall(this, $"File exists: {File.Exists(filePath)}");
             Tools.Logger.VideoLog.LogCall(this, $"File size: {new FileInfo(filePath).Length} bytes");
             Tools.Logger.VideoLog.LogCall(this, $"Is WMV: {isWMV}");
-            Tools.Logger.VideoLog.LogCall(this, $"Is Mac: {isMac}");
 
             // Build FFmpeg command for video file playback with interactive seeking support
             // Use proper settings for smooth video file playback
@@ -197,11 +195,11 @@ namespace FfmpegMediaPlatform
                                $"-pix_fmt rgba " +
                                $"-f rawvideo pipe:1";
 
-            // Add special handling for WMV files on Mac if needed
-            if (isWMV && isMac)
+            // Add special handling for WMV files if needed
+            if (isWMV)
             {
-                Tools.Logger.VideoLog.LogCall(this, "WMV file detected on Mac - using standard FFmpeg WMV support");
-                // FFmpeg handles WMV files well on Mac, no special parameters needed
+                Tools.Logger.VideoLog.LogCall(this, "WMV file detected - using standard FFmpeg WMV support");
+                // FFmpeg handles WMV files well across platforms, no special parameters needed
             }
 
             Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Video File Playback ({fileName}): {ffmpegArgs}");
@@ -1389,11 +1387,17 @@ namespace FfmpegMediaPlatform
                     startTime = firstFrame.Time;
                     originalVideoStartTime = firstFrame.Time; // Preserve the original video start time for seeking
                     
-                    // Calculate length directly from XML frame timing data
-                    // Use the actual time difference between first and last frames
-                    length = lastFrame.Time - firstFrame.Time;
+                    // Use unified duration calculation logic for consistency across platforms
+                    length = UnifiedFrameTimingManager.CalculateVideoDuration(recordingInfo.FrameTimes, TimeSpan.Zero);
                     
-                    Tools.Logger.VideoLog.LogCall(this, $"LENGTH DEBUG: Using XML frame timing duration: {length.TotalSeconds:F1}s (last frame: {lastFrame.Time:HH:mm:ss.fff} - first frame: {firstFrame.Time:HH:mm:ss.fff})");
+                    // Validate frame timing consistency to detect platform-specific issues
+                    bool isConsistent = UnifiedFrameTimingManager.ValidateFrameTimingConsistency(
+                        recordingInfo.FrameTimes, VideoConfig.VideoMode?.FrameRate ?? 30.0f);
+                    
+                    if (!isConsistent)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "WARNING: Frame timing data appears inconsistent - this may cause playback issues");
+                    }
                 }
                 else
                 {

@@ -80,9 +80,9 @@ namespace FfmpegMediaPlatform
                     this.frameHeight = frameHeight;
                     this.frameRate = frameRate;
                     
-                    // Reset frame timing collection
+                    // Reset frame timing collection using unified timing logic
                     frameTimes.Clear();
-                    recordingStartTime = DateTime.Now;
+                    recordingStartTime = UnifiedFrameTimingManager.InitializeRecordingStartTime();
                     recordingFrameCounter = 0; // Reset frame counter for this recording session
                     lastFrameWriteTime = DateTime.MinValue;
                     detectedFrameRate = frameRate; // Start with configured rate
@@ -147,7 +147,7 @@ namespace FfmpegMediaPlatform
 
                 try
                 {
-                    var currentTime = DateTime.Now;
+                    var currentTime = UnifiedFrameTimingManager.GetHighPrecisionTimestamp();
                     
                     // DEBUG: Track frame sources and timing to detect duplicates
                     if (recordingFrameCounter % 30 == 0) // Log every 30 frames to see patterns
@@ -194,12 +194,9 @@ namespace FfmpegMediaPlatform
                     recordingFrameCounter++; // Increment our internal frame counter (starts from 1)
                     lastFrameWriteTime = currentTime;
                     
-                    var frameTime = new FrameTime
-                    {
-                        Frame = recordingFrameCounter, // Use our internal counter, not the external frameNumber
-                        Time = currentTime,
-                        Seconds = (currentTime - recordingStartTime).TotalSeconds
-                    };
+                    // Use unified frame timing logic for consistency across platforms
+                    var frameTime = UnifiedFrameTimingManager.CreateFrameTime(
+                        recordingFrameCounter, currentTime, recordingStartTime);
                     frameTimes.Add(frameTime);
 
                     return true;
