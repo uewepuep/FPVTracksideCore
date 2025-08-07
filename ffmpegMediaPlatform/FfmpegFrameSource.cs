@@ -112,6 +112,12 @@ namespace FfmpegMediaPlatform
             // Start RGBA recording with separate ffmpeg process
             // Use a reasonable default frame rate, the recorder will detect the actual rate
             float initialFrameRate = VideoConfig.VideoMode?.FrameRate ?? 30.0f;
+            
+            // Debug logging to track frame rate on different platforms
+            string platform = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ? "Windows" : "Mac";
+            Tools.Logger.VideoLog.LogCall(this, $"PLATFORM DEBUG [{platform}]: Starting RGBA recording with frame rate: {initialFrameRate}fps");
+            Tools.Logger.VideoLog.LogCall(this, $"PLATFORM DEBUG [{platform}]: VideoConfig.VideoMode details - Width: {VideoConfig.VideoMode?.Width}, Height: {VideoConfig.VideoMode?.Height}, FrameRate: {VideoConfig.VideoMode?.FrameRate}fps");
+            
             bool started = rgbaRecorderManager.StartRecording(filename, width, height, initialFrameRate, this);
             if (!started)
             {
