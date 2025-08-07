@@ -149,42 +149,17 @@ namespace FfmpegMediaPlatform
                 {
                     var currentTime = UnifiedFrameTimingManager.GetHighPrecisionTimestamp();
                     
-                    // DEBUG: Track frame sources and timing to detect duplicates
-                    if (recordingFrameCounter % 30 == 0) // Log every 30 frames to see patterns
+                    // Track actual frame timing for debugging
+                    if (recordingFrameCounter % 100 == 0) // Log every 100 frames to see timing
                     {
-                        var caller = new System.Diagnostics.StackTrace().GetFrame(2)?.GetMethod()?.DeclaringType?.Name ?? "Unknown";
                         double intervalMs = lastFrameWriteTime != DateTime.MinValue ? (currentTime - lastFrameWriteTime).TotalMilliseconds : 0;
-                        double avgFps = recordingFrameCounter > 0 ? recordingFrameCounter / (currentTime - recordingStartTime).TotalSeconds : 0;
+                        double actualFps = intervalMs > 0 ? (1000.0 / intervalMs) * 100 : 0; // 100 frames over the interval
+                        double totalSeconds = (currentTime - recordingStartTime).TotalSeconds;
+                        double avgFps = recordingFrameCounter > 0 ? recordingFrameCounter / totalSeconds : 0;
+                        
+                        Tools.Logger.VideoLog.LogCall(this, $"RECORDING TIMING: Frame {recordingFrameCounter}, Recent: {actualFps:F1}fps, Average: {avgFps:F1}fps, Interval: {intervalMs/100:F1}ms");
+                        lastFrameWriteTime = currentTime;
                     }
-                    
-                    // Calculate expected frame interval based on frame rate
-                    double expectedIntervalMs = 1000.0 / frameRate;
-                    
-                    // Detect actual frame rate from incoming frames
-                    // if (lastFrameWriteTime != DateTime.MinValue && recordingFrameCounter > 0)
-                    // {
-                    //     double actualIntervalMs = (currentTime - lastFrameWriteTime).TotalMilliseconds;
-                        
-                    //     // Monitor frame rate but don't restart - just log for debugging
-                    //     if (!frameRateDetected && recordingFrameCounter >= 30)
-                    //     {
-                    //         double totalSeconds = (currentTime - recordingStartTime).TotalSeconds;
-                    //         float measuredFrameRate = recordingFrameCounter / (float)totalSeconds;
-                            
-                    //         // Log the measured frame rate for debugging
-                    //         Tools.Logger.VideoLog.LogCall(this, $"Frame rate measurement: Configured {frameRate:F2}fps, Measured {measuredFrameRate:F2}fps");
-                            
-                    //         detectedFrameRate = measuredFrameRate;
-                    //         frameRateDetected = true;
-                    //     }
-                        
-                    //     // Log frame timing more frequently to see the pattern
-                    //     if (recordingFrameCounter % 30 == 0) // Log every 30 frames to see timing patterns
-                    //     {
-                    //         double currentRate = 1000.0 / actualIntervalMs;
-                    //         Tools.Logger.VideoLog.LogCall(this, $"Frame timing: Expected {expectedIntervalMs:F2}ms ({frameRate:F1}fps), Actual {actualIntervalMs:F2}ms ({currentRate:F1}fps), Frame {recordingFrameCounter + 1}");
-                    //     }
-                    // }
                     
                     // Write RGBA frame data to ffmpeg stdin
                     recordingProcess.StandardInput.BaseStream.Write(rgbaData, 0, rgbaData.Length);
@@ -192,7 +167,6 @@ namespace FfmpegMediaPlatform
 
                     // Collect frame timing for XML file
                     recordingFrameCounter++; // Increment our internal frame counter (starts from 1)
-                    lastFrameWriteTime = currentTime;
                     
                     // Use unified frame timing logic for consistency across platforms
                     var frameTime = UnifiedFrameTimingManager.CreateFrameTime(
@@ -316,21 +290,22 @@ namespace FfmpegMediaPlatform
         private string BuildRecordingCommand(string outputPath, int frameWidth, int frameHeight, float frameRate)
         {
             // FFmpeg command to read RGBA frames from stdin and encode to H264 MP4 
-            // Let FFmpeg auto-detect frame rate from actual frame timing - no rate specified
+            // Use variable frame rate (VFR) to preserve actual frame timing from camera
             
             string ffmpegArgs = $"-f rawvideo " +                          // Input format: raw video
                                $"-pix_fmt rgba " +                         // Pixel format: RGBA
                                $"-s {frameWidth}x{frameHeight} " +         // Frame size
-                               $"-i pipe:0 " +                             // Input from stdin (no -r specified = auto-detect)
+                               $"-i pipe:0 " +                             // Input from stdin
                                $"-c:v libx264 " +                          // H264 codec
                                $"-preset fast " +                          // Faster preset for real-time
                                $"-crf 23 " +                               // Slightly lower quality for speed
                                $"-pix_fmt yuv420p " +                      // Output pixel format
+                               $"-vsync vfr " +                            // Variable frame rate - preserve input timing
                                $"-movflags +faststart " +                  // Optimize for streaming
                                $"-y " +                                    // Overwrite output file
                                $"\"{outputPath}\"";
 
-            Tools.Logger.VideoLog.LogCall(this, $"RGBA Recording ffmpeg command (auto-detect frame rate from camera timing): {ffmpegArgs}");
+            Tools.Logger.VideoLog.LogCall(this, $"RGBA Recording ffmpeg command (variable frame rate preserves camera timing): {ffmpegArgs}");
             return ffmpegArgs;
         }
 
