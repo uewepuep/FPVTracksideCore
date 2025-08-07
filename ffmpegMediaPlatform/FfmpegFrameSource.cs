@@ -61,6 +61,9 @@ namespace FfmpegMediaPlatform
         private DateTime recordingStartTime;
         private long frameCount;
         
+        // Frame timing tracking for camera loop
+        private DateTime lastFrameTime = DateTime.MinValue;
+        
         // RGBA recording using separate ffmpeg process
         protected RgbaRecorderManager rgbaRecorderManager;
 
@@ -747,7 +750,6 @@ namespace FfmpegMediaPlatform
             FrameProcessNumber++;
             
             // Track actual frame timing to detect frame rate discrepancies
-            static DateTime lastFrameTime = DateTime.MinValue;
             DateTime currentFrameTime = DateTime.UtcNow;
             
             if (FrameProcessNumber % 300 == 0) // Log every 300 frames to track actual timing
