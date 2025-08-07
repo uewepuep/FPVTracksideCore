@@ -755,21 +755,24 @@ namespace FfmpegMediaPlatform
             // Track actual frame timing to detect frame rate discrepancies
             DateTime currentFrameTime = DateTime.UtcNow;
             
-            if (FrameProcessNumber % 300 == 0) // Log every 300 frames to track actual timing
+            if (FrameProcessNumber % 60 == 0) // Check every 60 frames (about 3 seconds)
             {
-                double actualInterval = lastFrameTime != DateTime.MinValue ? (currentFrameTime - lastFrameTime).TotalMilliseconds / 300.0 : 0;
+                double actualInterval = lastFrameTime != DateTime.MinValue ? (currentFrameTime - lastFrameTime).TotalMilliseconds / 60.0 : 0;
                 double actualFps = actualInterval > 0 ? 1000.0 / actualInterval : 0;
                 double configuredFps = VideoConfig.VideoMode?.FrameRate ?? 30.0f;
                 
                 string platform = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ? "Windows" : "Mac";
                 Tools.Logger.VideoLog.LogCall(this, $"CAMERA TIMING [{platform}]: Frame {FrameProcessNumber} - Configured: {configuredFps:F1}fps, Actual: {actualFps:F1}fps, Interval: {actualInterval:F1}ms");
                 
-                // Update measured frame rate after we have enough samples
-                if (FrameProcessNumber >= 600 && actualFps > 0)
+                // Update measured frame rate after just 120 frames (about 6 seconds)
+                if (FrameProcessNumber >= 120 && actualFps > 0)
                 {
                     measuredFrameRate = (float)actualFps;
-                    frameRateMeasured = true;
-                    Tools.Logger.VideoLog.LogCall(this, $"CAMERA MEASUREMENT [{platform}]: Measured frame rate updated to {measuredFrameRate:F1}fps");
+                    if (!frameRateMeasured)
+                    {
+                        frameRateMeasured = true;
+                        Tools.Logger.VideoLog.LogCall(this, $"CAMERA MEASUREMENT [{platform}]: Measured frame rate READY: {measuredFrameRate:F1}fps (after {FrameProcessNumber} frames)");
+                    }
                 }
                 
                 lastFrameTime = currentFrameTime;
