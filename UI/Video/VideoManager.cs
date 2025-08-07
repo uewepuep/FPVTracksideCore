@@ -176,13 +176,14 @@ namespace UI.Video
                             
                             if (modeChanged)
                             {
-                                Logger.VideoLog.LogCall(this, $"Updating saved mode from {savedConfig.VideoMode.Width}x{savedConfig.VideoMode.Height}@{savedConfig.VideoMode.FrameRate}fps to {optimalMode.Width}x{optimalMode.Height}@{optimalMode.FrameRate}fps");
+                                Logger.VideoLog.LogCall(this, $"Camera capability update: {savedConfig.DeviceName} from {savedConfig.VideoMode.Width}x{savedConfig.VideoMode.Height}@{savedConfig.VideoMode.FrameRate}fps to {optimalMode.Width}x{optimalMode.Height}@{optimalMode.FrameRate}fps");
+                                Logger.VideoLog.LogCall(this, $"RECORDING FIX: This should eliminate frame rate mismatch for {savedConfig.DeviceName}");
                                 savedConfig.VideoMode = optimalMode;
                                 configurationUpdated = true;
                             }
                             else
                             {
-                                Logger.VideoLog.LogCall(this, "Current saved mode is already optimal - no changes needed");
+                                Logger.VideoLog.LogCall(this, $"Camera {savedConfig.DeviceName}: Configuration matches capabilities - no frame rate issues expected");
                             }
                         }
                         else
