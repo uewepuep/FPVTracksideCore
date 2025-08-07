@@ -287,8 +287,12 @@ namespace FfmpegMediaPlatform
 
                     isRecording = false;
                     
-                    // XML generation is handled by the calling frame source using FrameTimes property
-                    // No need to generate XML here as it would create duplicates
+                    // Generate XML metadata file from the camera loop timing data
+                    // This ensures the XML metadata is generated with camera-native timing
+                    if (success)
+                    {
+                        GenerateRecordInfoFile(outputPath);
+                    }
                     
                     RecordingStopped?.Invoke(outputPath, success);
                     
@@ -312,16 +316,16 @@ namespace FfmpegMediaPlatform
         private string BuildRecordingCommand(string outputPath, int frameWidth, int frameHeight, float frameRate)
         {
             // FFmpeg command to read RGBA frames from stdin and encode to H264 MP4 
-            // Use 60fps since that's what the camera actually provides
-            float actualFrameRate = 60.0f; // Camera provides 60fps regardless of config
+            // Use the camera's actual frame rate to ensure correct playback speed
+            float actualFrameRate = frameRate; // Use the camera's configured frame rate
             
             string ffmpegArgs = $"-f rawvideo " +                          // Input format: raw video
                                $"-pix_fmt rgba " +                         // Pixel format: RGBA
                                $"-s {frameWidth}x{frameHeight} " +         // Frame size
-                               $"-r {actualFrameRate} " +                  // INPUT frame rate - use actual 60fps
+                               $"-r {actualFrameRate} " +                  // INPUT frame rate - use camera's actual rate
                                $"-i pipe:0 " +                             // Input from stdin
                                $"-c:v libx264 " +                          // H264 codec
-                               $"-r {actualFrameRate} " +                  // OUTPUT frame rate - use actual 60fps
+                               $"-r {actualFrameRate} " +                  // OUTPUT frame rate - use camera's actual rate
                                $"-preset fast " +                          // Faster preset for real-time
                                $"-crf 23 " +                               // Slightly lower quality for speed
                                $"-pix_fmt yuv420p " +                      // Output pixel format
@@ -329,7 +333,7 @@ namespace FfmpegMediaPlatform
                                $"-y " +                                    // Overwrite output file
                                $"\"{outputPath}\"";
 
-            Tools.Logger.VideoLog.LogCall(this, $"RGBA Recording ffmpeg command (using 60fps): {ffmpegArgs}");
+            Tools.Logger.VideoLog.LogCall(this, $"RGBA Recording ffmpeg command (using camera rate {actualFrameRate}fps): {ffmpegArgs}");
             return ffmpegArgs;
         }
 
