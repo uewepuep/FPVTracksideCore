@@ -316,16 +316,13 @@ namespace FfmpegMediaPlatform
         private string BuildRecordingCommand(string outputPath, int frameWidth, int frameHeight, float frameRate)
         {
             // FFmpeg command to read RGBA frames from stdin and encode to H264 MP4 
-            // Use the camera's actual frame rate to ensure correct playback speed
-            float actualFrameRate = frameRate; // Use the camera's configured frame rate
+            // Let FFmpeg auto-detect frame rate from actual frame timing - no rate specified
             
             string ffmpegArgs = $"-f rawvideo " +                          // Input format: raw video
                                $"-pix_fmt rgba " +                         // Pixel format: RGBA
                                $"-s {frameWidth}x{frameHeight} " +         // Frame size
-                               $"-r {actualFrameRate} " +                  // INPUT frame rate - use camera's actual rate
-                               $"-i pipe:0 " +                             // Input from stdin
+                               $"-i pipe:0 " +                             // Input from stdin (no -r specified = auto-detect)
                                $"-c:v libx264 " +                          // H264 codec
-                               $"-r {actualFrameRate} " +                  // OUTPUT frame rate - use camera's actual rate
                                $"-preset fast " +                          // Faster preset for real-time
                                $"-crf 23 " +                               // Slightly lower quality for speed
                                $"-pix_fmt yuv420p " +                      // Output pixel format
@@ -333,7 +330,7 @@ namespace FfmpegMediaPlatform
                                $"-y " +                                    // Overwrite output file
                                $"\"{outputPath}\"";
 
-            Tools.Logger.VideoLog.LogCall(this, $"RGBA Recording ffmpeg command (using camera rate {actualFrameRate}fps): {ffmpegArgs}");
+            Tools.Logger.VideoLog.LogCall(this, $"RGBA Recording ffmpeg command (auto-detect frame rate from camera timing): {ffmpegArgs}");
             return ffmpegArgs;
         }
 
