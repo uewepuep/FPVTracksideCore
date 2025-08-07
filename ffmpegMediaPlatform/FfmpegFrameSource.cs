@@ -63,6 +63,8 @@ namespace FfmpegMediaPlatform
         
         // Frame timing tracking for camera loop
         private DateTime lastFrameTime = DateTime.MinValue;
+        private float measuredFrameRate = 0f;
+        private bool frameRateMeasured = false;
         
         // RGBA recording using separate ffmpeg process
         protected RgbaRecorderManager rgbaRecorderManager;
@@ -113,15 +115,16 @@ namespace FfmpegMediaPlatform
             finalising = false;
 
             // Start RGBA recording with separate ffmpeg process
-            // Use a reasonable default frame rate, the recorder will detect the actual rate
-            float initialFrameRate = VideoConfig.VideoMode?.FrameRate ?? 30.0f;
+            // Use measured frame rate if available, otherwise fall back to configured rate
+            float recordingFrameRate = frameRateMeasured ? measuredFrameRate : (VideoConfig.VideoMode?.FrameRate ?? 30.0f);
             
             // Debug logging to track frame rate on different platforms
             string platform = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ? "Windows" : "Mac";
-            Tools.Logger.VideoLog.LogCall(this, $"PLATFORM DEBUG [{platform}]: Starting RGBA recording with frame rate: {initialFrameRate}fps");
-            Tools.Logger.VideoLog.LogCall(this, $"PLATFORM DEBUG [{platform}]: VideoConfig.VideoMode details - Width: {VideoConfig.VideoMode?.Width}, Height: {VideoConfig.VideoMode?.Height}, FrameRate: {VideoConfig.VideoMode?.FrameRate}fps");
+            string rateSource = frameRateMeasured ? "MEASURED" : "CONFIGURED";
+            Tools.Logger.VideoLog.LogCall(this, $"RECORDING START [{platform}]: Using {rateSource} frame rate: {recordingFrameRate:F1}fps for recording");
+            Tools.Logger.VideoLog.LogCall(this, $"RECORDING START [{platform}]: VideoConfig details - Width: {VideoConfig.VideoMode?.Width}, Height: {VideoConfig.VideoMode?.Height}, ConfiguredRate: {VideoConfig.VideoMode?.FrameRate}fps, MeasuredRate: {measuredFrameRate:F1}fps");
             
-            bool started = rgbaRecorderManager.StartRecording(filename, width, height, initialFrameRate, this);
+            bool started = rgbaRecorderManager.StartRecording(filename, width, height, recordingFrameRate, this);
             if (!started)
             {
                 Tools.Logger.VideoLog.LogCall(this, $"Failed to start RGBA recording to {filename}");
@@ -760,6 +763,14 @@ namespace FfmpegMediaPlatform
                 
                 string platform = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ? "Windows" : "Mac";
                 Tools.Logger.VideoLog.LogCall(this, $"CAMERA TIMING [{platform}]: Frame {FrameProcessNumber} - Configured: {configuredFps:F1}fps, Actual: {actualFps:F1}fps, Interval: {actualInterval:F1}ms");
+                
+                // Update measured frame rate after we have enough samples
+                if (FrameProcessNumber >= 600 && actualFps > 0)
+                {
+                    measuredFrameRate = (float)actualFps;
+                    frameRateMeasured = true;
+                    Tools.Logger.VideoLog.LogCall(this, $"CAMERA MEASUREMENT [{platform}]: Measured frame rate updated to {measuredFrameRate:F1}fps");
+                }
                 
                 lastFrameTime = currentFrameTime;
             }

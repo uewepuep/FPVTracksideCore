@@ -290,22 +290,23 @@ namespace FfmpegMediaPlatform
         private string BuildRecordingCommand(string outputPath, int frameWidth, int frameHeight, float frameRate)
         {
             // FFmpeg command to read RGBA frames from stdin and encode to H264 MP4 
-            // Use variable frame rate (VFR) to preserve actual frame timing from camera
+            // Use the measured camera frame rate for accurate playback timing
             
             string ffmpegArgs = $"-f rawvideo " +                          // Input format: raw video
                                $"-pix_fmt rgba " +                         // Pixel format: RGBA
                                $"-s {frameWidth}x{frameHeight} " +         // Frame size
+                               $"-r {frameRate:F2} " +                     // INPUT frame rate - use measured rate
                                $"-i pipe:0 " +                             // Input from stdin
                                $"-c:v libx264 " +                          // H264 codec
+                               $"-r {frameRate:F2} " +                     // OUTPUT frame rate - use measured rate
                                $"-preset fast " +                          // Faster preset for real-time
                                $"-crf 23 " +                               // Slightly lower quality for speed
                                $"-pix_fmt yuv420p " +                      // Output pixel format
-                               $"-vsync vfr " +                            // Variable frame rate - preserve input timing
                                $"-movflags +faststart " +                  // Optimize for streaming
                                $"-y " +                                    // Overwrite output file
                                $"\"{outputPath}\"";
 
-            Tools.Logger.VideoLog.LogCall(this, $"RGBA Recording ffmpeg command (variable frame rate preserves camera timing): {ffmpegArgs}");
+            Tools.Logger.VideoLog.LogCall(this, $"RGBA Recording ffmpeg command (using measured camera rate {frameRate:F2}fps): {ffmpegArgs}");
             return ffmpegArgs;
         }
 
