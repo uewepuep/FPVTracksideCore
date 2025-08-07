@@ -746,10 +746,20 @@ namespace FfmpegMediaPlatform
         {
             FrameProcessNumber++;
             
-            // Log only every 1800 frames to reduce spam (every 30 seconds at 60fps)
-            if (FrameProcessNumber % 1800 == 0)
+            // Track actual frame timing to detect frame rate discrepancies
+            static DateTime lastFrameTime = DateTime.MinValue;
+            DateTime currentFrameTime = DateTime.UtcNow;
+            
+            if (FrameProcessNumber % 300 == 0) // Log every 300 frames to track actual timing
             {
-                Tools.Logger.VideoLog.LogCall(this, $"CAMERA LOOP: Processing frame {FrameProcessNumber} at native camera rate");
+                double actualInterval = lastFrameTime != DateTime.MinValue ? (currentFrameTime - lastFrameTime).TotalMilliseconds / 300.0 : 0;
+                double actualFps = actualInterval > 0 ? 1000.0 / actualInterval : 0;
+                double configuredFps = VideoConfig.VideoMode?.FrameRate ?? 30.0f;
+                
+                string platform = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ? "Windows" : "Mac";
+                Tools.Logger.VideoLog.LogCall(this, $"CAMERA TIMING [{platform}]: Frame {FrameProcessNumber} - Configured: {configuredFps:F1}fps, Actual: {actualFps:F1}fps, Interval: {actualInterval:F1}ms");
+                
+                lastFrameTime = currentFrameTime;
             }
 
             // STEP 1: Send frame to recording FIRST (camera-native timing)
@@ -766,10 +776,11 @@ namespace FfmpegMediaPlatform
                 {
                     rgbaRecorderManager.WriteFrame(frameData, (int)FrameProcessNumber);
                     
-                    // Log every 300 frames during recording to track camera-driven recording
+                    // Log every 300 frames during recording with timing info
                     if (FrameProcessNumber % 300 == 0)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"CAMERA LOOP: Frame {FrameProcessNumber} written to recording at camera rate");
+                        string platform = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ? "Windows" : "Mac";
+                        Tools.Logger.VideoLog.LogCall(this, $"CAMERA RECORDING [{platform}]: Frame {FrameProcessNumber} written to recording - check timing above");
                     }
                 }
                 catch (Exception ex)
