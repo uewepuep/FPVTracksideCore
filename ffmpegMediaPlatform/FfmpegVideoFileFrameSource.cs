@@ -1365,6 +1365,10 @@ namespace FfmpegMediaPlatform
                 {
                     basePath = basePath.Replace(".ts", "");
                 }
+                else if (basePath.EndsWith(".mkv"))
+                {
+                    basePath = basePath.Replace(".mkv", "");
+                }
                 
                 string recordInfoPath = basePath + ".recordinfo.xml";
                 

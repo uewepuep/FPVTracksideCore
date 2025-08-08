@@ -881,7 +881,8 @@ namespace UI.Video
 
         private string GetRecordingFilename(Race race, FrameSource source)
         {
-            return Path.Combine(EventDirectory.FullName, race.ID.ToString(), source.VideoConfig.ffmpegId) + ".mp4";
+            // Use .mkv for better seekability and timestamp preservation as per specification
+            return Path.Combine(EventDirectory.FullName, race.ID.ToString(), source.VideoConfig.ffmpegId) + ".mkv";
         }
 
         public void LoadRecordings(Race race, FrameSourcesDelegate frameSourcesDelegate)
@@ -1007,7 +1008,22 @@ namespace UI.Video
                     {
                         file.Delete();
 
-                        FileInfo xmlconfig = new FileInfo(file.FullName.Replace(".wmv", ".recordinfo.xml"));
+                        // Handle different video file extensions for XML cleanup
+                        string xmlPath = file.FullName;
+                        if (xmlPath.EndsWith(".wmv"))
+                        {
+                            xmlPath = xmlPath.Replace(".wmv", ".recordinfo.xml");
+                        }
+                        else if (xmlPath.EndsWith(".mp4"))
+                        {
+                            xmlPath = xmlPath.Replace(".mp4", ".recordinfo.xml");
+                        }
+                        else if (xmlPath.EndsWith(".mkv"))
+                        {
+                            xmlPath = xmlPath.Replace(".mkv", ".recordinfo.xml");
+                        }
+                        
+                        FileInfo xmlconfig = new FileInfo(xmlPath);
                         if (xmlconfig.Exists)
                         {
                             xmlconfig.Delete();
@@ -1037,6 +1053,11 @@ namespace UI.Video
                     }
 
                     foreach (FileInfo fileInfo in raceDir.GetFiles("*.mp4"))
+                    {
+                        yield return fileInfo;
+                    }
+
+                    foreach (FileInfo fileInfo in raceDir.GetFiles("*.mkv"))
                     {
                         yield return fileInfo;
                     }
@@ -1190,6 +1211,10 @@ namespace UI.Video
                                         else if (basePath.EndsWith(".ts"))
                                         {
                                             basePath = basePath.Replace(".ts", "");
+                                        }
+                                        else if (basePath.EndsWith(".mkv"))
+                                        {
+                                            basePath = basePath.Replace(".mkv", "");
                                         }
                                         
                                         FileInfo fileinfo = new FileInfo(basePath + ".recordinfo.xml");

@@ -164,7 +164,7 @@ namespace UI.Video
 
         private void AddVideoFile()
         {
-            string filename = PlatformTools.OpenFileDialog("Open WMV / JPG", "Video or Image files|*.wmv;*.jpg");
+            string filename = PlatformTools.OpenFileDialog("Open Video / Image", "Video or Image files|*.wmv;*.mp4;*.mkv;*.jpg");
             if (!string.IsNullOrWhiteSpace(filename))
             {
                 VideoConfig vs = new VideoConfig();

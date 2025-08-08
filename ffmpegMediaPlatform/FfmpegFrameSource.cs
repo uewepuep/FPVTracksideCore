@@ -525,13 +525,15 @@ namespace FfmpegMediaPlatform
             {
                 if (process != null && !process.HasExited)
                 {
-                    // Check if we're recording WMV or MP4 (needs graceful shutdown)
+                    // Check if we're recording video files (needs graceful shutdown)
                     bool isRecordingWMV = Recording && !string.IsNullOrEmpty(recordingFilename) && recordingFilename.EndsWith(".wmv");
                     bool isRecordingMP4 = Recording && !string.IsNullOrEmpty(recordingFilename) && recordingFilename.EndsWith(".mp4");
+                    bool isRecordingMKV = Recording && !string.IsNullOrEmpty(recordingFilename) && recordingFilename.EndsWith(".mkv");
                     
-                    if (isRecordingWMV || isRecordingMP4)
+                    if (isRecordingWMV || isRecordingMP4 || isRecordingMKV)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Graceful shutdown for {(isRecordingWMV ? "WMV" : "MP4")} recording (sending SIGINT)");
+                        string format = isRecordingWMV ? "WMV" : (isRecordingMP4 ? "MP4" : "MKV");
+                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Graceful shutdown for {format} recording (sending SIGINT)");
                         try
                         {
                             // Send SIGINT for graceful shutdown (allows FFmpeg to finalize the file)
