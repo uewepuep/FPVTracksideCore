@@ -158,6 +158,21 @@ namespace Tools
                 return "null";
             return d.Value.ToString(f);
         }
+
+        public static string ToASCII(this string input)
+        {
+            StringBuilder sb = new StringBuilder(input.Length);
+            foreach (char c in input)
+            {
+                if ((int)c > 127)
+                    continue;
+                if ((int)c < 32)  
+                    continue;
+                sb.Append(c);
+            }
+
+            return sb.ToString();
+        }
     }
 
     public class DateOnlyAttribute : Attribute
