@@ -210,6 +210,7 @@ namespace FfmpegMediaPlatform
         public override bool Start()
         {
             Tools.Logger.VideoLog.LogCall(this, $"FfmpegVideoFileFrameSource.Start() called, current state: {State}");
+            Tools.Logger.VideoLog.LogCall(this, "PLAYBACK ENGINE: ffmpeg BINARY (external process)");
             
             // This is normal playback, not a seek operation
             isSeekOperation = false;

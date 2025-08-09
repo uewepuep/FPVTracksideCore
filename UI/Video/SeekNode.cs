@@ -102,20 +102,54 @@ namespace UI.Video
 
         private DateTime FactorToTime(float factor)
         {
-            TimeSpan length = End - Start;
-            return Start + TimeSpan.FromSeconds(length.TotalSeconds * factor);
+            // Clamp factor and guard against invalid/zero timeline length
+            if (float.IsNaN(factor) || float.IsInfinity(factor))
+            {
+                factor = 0f;
+            }
+            factor = Math.Clamp(factor, 0f, 1f);
+
+            TimeSpan len = End - Start;
+            double lenSec = len.TotalSeconds;
+            if (double.IsNaN(lenSec) || double.IsInfinity(lenSec) || lenSec <= 0)
+            {
+                Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR FactorToTime: invalid or zero length timeline, returning Start");
+                return Start;
+            }
+
+            double seconds = lenSec * factor;
+            if (double.IsNaN(seconds) || double.IsInfinity(seconds))
+            {
+                Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR FactorToTime: computed seconds invalid, returning Start");
+                return Start;
+            }
+            return Start + TimeSpan.FromSeconds(seconds);
         }
 
         private float TimeToFactor(DateTime dateTime)
         {
-            TimeSpan length = End - Start;
-            TimeSpan time = dateTime - Start;
+            TimeSpan len = End - Start;
+            double lenSec = len.TotalSeconds;
+            if (double.IsNaN(lenSec) || double.IsInfinity(lenSec) || lenSec <= 0)
+            {
+                Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR TimeToFactor: invalid or zero length timeline, returning 0");
+                return 0f;
+            }
 
-            float factor = (float)(time.TotalSeconds / length.TotalSeconds);
+            double timeSec = (dateTime - Start).TotalSeconds;
+            if (double.IsNaN(timeSec) || double.IsInfinity(timeSec))
+            {
+                Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR TimeToFactor: invalid time, returning 0");
+                return 0f;
+            }
 
-            // Debug logging removed to reduce log spam
-
-            return Math.Clamp(factor, 0, 1);
+            double factor = timeSec / lenSec;
+            if (double.IsNaN(factor) || double.IsInfinity(factor))
+            {
+                Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR TimeToFactor: invalid factor, returning 0");
+                factor = 0.0;
+            }
+            return (float)Math.Clamp(factor, 0.0, 1.0);
         }
 
         public void SetRace(Race race, DateTime mediaStart, DateTime mediaEnd, FrameTime[] frameTimes = null)
