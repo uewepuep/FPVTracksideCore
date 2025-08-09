@@ -34,11 +34,11 @@ namespace FfmpegMediaPlatform
 
         /// <summary>
         /// Calculate video duration using unified logic across platforms
-        /// Prioritizes XML frame timing data over file-based duration for consistency
+        /// Uses the longer of XML frame timing or fallback duration to handle buffered frames
         /// </summary>
         /// <param name="frameTimes">Frame timing data from recording</param>
-        /// <param name="fallbackDuration">Fallback duration if frame times unavailable</param>
-        /// <returns>Consistent duration calculation</returns>
+        /// <param name="fallbackDuration">Fallback duration (typically from FFprobe)</param>
+        /// <returns>Consistent duration calculation that accounts for buffering</returns>
         public static TimeSpan CalculateVideoDuration(FrameTime[] frameTimes, TimeSpan fallbackDuration)
         {
             if (frameTimes != null && frameTimes.Length > 1)
@@ -48,14 +48,17 @@ namespace FfmpegMediaPlatform
                 var firstFrame = sortedFrames.First();
                 var lastFrame = sortedFrames.Last();
                 
-                // Use XML frame timing for consistent duration calculation
+                // Calculate XML duration from frame timing
                 var xmlDuration = lastFrame.Time - firstFrame.Time;
                 
+                // Use the longer duration to account for buffered frames at the end
+                var finalDuration = xmlDuration > fallbackDuration ? xmlDuration : fallbackDuration;
+                
                 Tools.Logger.VideoLog.LogCall(typeof(UnifiedFrameTimingManager), 
-                    $"Unified duration calculation: Using XML frame timing = {xmlDuration.TotalSeconds:F3}s " +
+                    $"Unified duration calculation: XML={xmlDuration.TotalSeconds:F3}s, Fallback={fallbackDuration.TotalSeconds:F3}s, Using={finalDuration.TotalSeconds:F3}s " +
                     $"(first: {firstFrame.Time:HH:mm:ss.fff}, last: {lastFrame.Time:HH:mm:ss.fff})");
                 
-                return xmlDuration;
+                return finalDuration;
             }
             
             Tools.Logger.VideoLog.LogCall(typeof(UnifiedFrameTimingManager), 

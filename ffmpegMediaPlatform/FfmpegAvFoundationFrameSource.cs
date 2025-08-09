@@ -112,9 +112,8 @@ namespace FfmpegMediaPlatform
             {
                 string recordingPath = Path.GetFullPath(recordingFilename);
                 
-                // Use hardware-accelerated H.264 encoding for recording as per specification
+                // Use hardware-accelerated H.264 encoding for recording - let camera use its natural framerate
                 ffmpegArgs = $"-f avfoundation " +
-                                $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                                 $"-pixel_format uyvy422 " +
                                 $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
                                 $"-i \"{name}\" " +
@@ -133,9 +132,8 @@ namespace FfmpegMediaPlatform
             }
             else
             {
-                // Live mode: Standard capture without recording
+                // Live mode: Standard capture without recording - let camera use its natural framerate
                 ffmpegArgs = $"-f avfoundation " +
-                                $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                                 $"-pixel_format uyvy422 " +
                                 $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
                                 $"-i \"{name}\" " +

@@ -339,6 +339,10 @@ namespace FfmpegMediaPlatform
             string args;
             string hardwareEncoder = GetHardwareEncoder();
             
+            // Use 0.1s GOP for better seeking
+            int gop = Math.Max(1, (int)Math.Round(videoConfig.VideoMode.FrameRate * 0.1f));
+            string gopArgs = $"-g {gop} -keyint_min {gop} -force_key_frames \"expr:gte(t,n_forced*0.1)\" ";
+            
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 // macOS with AVFoundation
@@ -350,7 +354,7 @@ namespace FfmpegMediaPlatform
                        $"-vsync passthrough -copyts " +
                        $"-filter_complex \"[0:v]split=2[out1][out2]\" " +
                        $"-map \"[out1]\" -pix_fmt rgba -f rawvideo \"{rgbaPipePath}\" " +
-                       $"-map \"[out2]\" -c:v {hardwareEncoder} -preset ultrafast -tune zerolatency -f mpegts \"{h264PipePath}\"";
+                       $"-map \"[out2]\" -c:v {hardwareEncoder} -preset ultrafast -tune zerolatency {gopArgs}-f mpegts \"{h264PipePath}\"";
             }
             else
             {
@@ -363,7 +367,7 @@ namespace FfmpegMediaPlatform
                        $"-vsync passthrough -copyts " +
                        $"-filter_complex \"[0:v]split=2[out1][out2]\" " +
                        $"-map \"[out1]\" -pix_fmt rgba -f rawvideo \"{rgbaPipePath}\" " +
-                       $"-map \"[out2]\" -c:v {hardwareEncoder} -preset llhp -tune zerolatency -f mpegts \"{h264PipePath}\"";
+                       $"-map \"[out2]\" -c:v {hardwareEncoder} -preset llhp -tune zerolatency {gopArgs}-f mpegts \"{h264PipePath}\"";
             }
 
             return args;

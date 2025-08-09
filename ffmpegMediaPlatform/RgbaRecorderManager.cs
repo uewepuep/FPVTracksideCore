@@ -32,6 +32,7 @@ namespace FfmpegMediaPlatform
         private DateTime lastFrameWriteTime;
         private float detectedFrameRate;
         private bool frameRateDetected;
+        private double targetFrameInterval; // Target interval between frames in milliseconds
 
         public bool IsRecording => isRecording;
         public string CurrentOutputPath => currentOutputPath;
@@ -79,6 +80,7 @@ namespace FfmpegMediaPlatform
                     this.frameWidth = frameWidth;
                     this.frameHeight = frameHeight;
                     this.frameRate = frameRate;
+                    this.targetFrameInterval = 1000.0 / frameRate; // Calculate target frame interval
                     
                     // Reset frame timing collection using unified timing logic
                     frameTimes.Clear();
@@ -131,7 +133,7 @@ namespace FfmpegMediaPlatform
         }
 
         /// <summary>
-        /// Write an RGBA frame to the recording ffmpeg process
+        /// Write an RGBA frame to the recording ffmpeg process with precise timing control
         /// </summary>
         /// <param name="rgbaData">RGBA frame data</param>
         /// <param name="frameNumber">Frame number for XML timing</param>
@@ -149,19 +151,21 @@ namespace FfmpegMediaPlatform
                 {
                     var currentTime = UnifiedFrameTimingManager.GetHighPrecisionTimestamp();
                     
-                    // Track actual frame timing for debugging
-                    if (recordingFrameCounter % 100 == 0) // Log every 100 frames to see timing
+                    // Track actual frame timing for debugging and verification
+                    if (recordingFrameCounter % 100 == 0) // Log every 100 frames to see timing precision
                     {
                         double intervalMs = lastFrameWriteTime != DateTime.MinValue ? (currentTime - lastFrameWriteTime).TotalMilliseconds : 0;
                         double actualFps = intervalMs > 0 ? (1000.0 / intervalMs) * 100 : 0; // 100 frames over the interval
                         double totalSeconds = (currentTime - recordingStartTime).TotalSeconds;
                         double avgFps = recordingFrameCounter > 0 ? recordingFrameCounter / totalSeconds : 0;
                         
-                        Tools.Logger.VideoLog.LogCall(this, $"RECORDING TIMING: Frame {recordingFrameCounter}, Recent: {actualFps:F1}fps, Average: {avgFps:F1}fps, Interval: {intervalMs/100:F1}ms");
+                        Tools.Logger.VideoLog.LogCall(this, $"RECORDING TIMING: Frame {recordingFrameCounter}, Recent: {actualFps:F3}fps, Average: {avgFps:F3}fps, PerFrame: {intervalMs/100:F2}ms (wallclock-driven)");
                         lastFrameWriteTime = currentTime;
                     }
                     
-                    // Write RGBA frame data to ffmpeg stdin
+                    // Write RGBA frame data to ffmpeg stdin with timing control
+                    // The -use_wallclock_as_timestamps flag will use the real-time arrival of frames
+                    // for PTS calculation, ensuring proper timing in the output video
                     recordingProcess.StandardInput.BaseStream.Write(rgbaData, 0, rgbaData.Length);
                     recordingProcess.StandardInput.BaseStream.Flush();
 
@@ -266,6 +270,11 @@ namespace FfmpegMediaPlatform
                     if (success)
                     {
                         GenerateRecordInfoFile(outputPath);
+                        
+                        // Add a small delay to ensure file system has time to register the new file
+                        // This prevents race conditions where the UI checks for recordings before
+                        // the .recordinfo.xml file is fully written to disk
+                        Task.Delay(100).Wait();
                     }
                     
                     RecordingStopped?.Invoke(outputPath, success);
@@ -289,25 +298,31 @@ namespace FfmpegMediaPlatform
 
         private string BuildRecordingCommand(string outputPath, int frameWidth, int frameHeight, float frameRate)
         {
-            // FFmpeg command to read RGBA frames from stdin and encode to H264 MP4 
-            // Use FFmpeg's frame duplication detection to maintain proper timing
+            // FFmpeg command to read RGBA frames from stdin preserving source timing
+            // Use wallclock timestamps to ensure recording framerate matches source exactly
+            
+            int gop = Math.Max(1, (int)Math.Round(frameRate * 0.1f)); // 0.1s GOP at the configured/measured fps
             
             string ffmpegArgs = $"-f rawvideo " +                          // Input format: raw video
-                               $"-pix_fmt rgba " +                         // Pixel format: RGBA
+                               $"-pix_fmt rgba " +                         // Pixel format: RGBA  
                                $"-s {frameWidth}x{frameHeight} " +         // Frame size
+                               $"-use_wallclock_as_timestamps 1 " +       // Use wallclock time for PTS (critical for timing accuracy)
+                               $"-fflags +genpts " +                       // Generate presentation timestamps
                                $"-i pipe:0 " +                             // Input from stdin
                                $"-c:v libx264 " +                          // H264 codec
-                               $"-preset fast " +                          // Faster preset for real-time
-                               $"-crf 23 " +                               // Slightly lower quality for speed
+                               $"-preset medium " +                        // Balanced preset for quality
+                               $"-crf 18 " +                               // Higher quality
+                               $"-g {gop} -keyint_min {gop} " +            // Tighter keyframe interval to improve seeking
+                               $"-force_key_frames \"expr:gte(t,n_forced*0.1)\" " + // Keyframe at least every 0.1s
                                $"-pix_fmt yuv420p " +                      // Output pixel format
-                               $"-fps_mode passthrough " +                 // Pass through original timing
-                               $"-vsync vfr " +                            // Variable frame rate
+                               $"-fps_mode passthrough " +                 // Preserve original frame timing (VFR)
+                               $"-video_track_timescale 90000 " +          // Standard video timescale for precise timing
                                $"-avoid_negative_ts make_zero " +          // Handle timing issues
                                $"-movflags +faststart " +                  // Optimize for streaming
                                $"-y " +                                    // Overwrite output file
                                $"\"{outputPath}\"";
 
-            Tools.Logger.VideoLog.LogCall(this, $"RGBA Recording ffmpeg command (passthrough timing - no rate forcing): {ffmpegArgs}");
+            Tools.Logger.VideoLog.LogCall(this, $"RGBA Recording ffmpeg command (preserving source timing - no framerate forcing): {ffmpegArgs}");
             return ffmpegArgs;
         }
 
@@ -406,7 +421,17 @@ namespace FfmpegMediaPlatform
                 // Write the .recordinfo.xml file
                 IOTools.Write(recordInfoFile.Directory.FullName, recordInfoFile.Name, recordingInfo);
                 
-                Tools.Logger.VideoLog.LogCall(this, $"Generated .recordinfo.xml file: {recordInfoFile.FullName}");
+                // Verify the file was written successfully
+                if (recordInfoFile.Exists)
+                {
+                    var fileInfo = new FileInfo(recordInfoFile.FullName);
+                    Tools.Logger.VideoLog.LogCall(this, $"Generated .recordinfo.xml file: {recordInfoFile.FullName} ({fileInfo.Length} bytes)");
+                }
+                else
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"WARNING: .recordinfo.xml file was not created: {recordInfoFile.FullName}");
+                }
+                
                 Tools.Logger.VideoLog.LogCall(this, $"Frame times count: {frameTimes.Count}");
             }
             catch (Exception ex)

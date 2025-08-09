@@ -252,6 +252,18 @@ namespace FfmpegMediaPlatform
                 if (process != null)
                 {
                     process.ErrorDataReceived += VideoFileErrorDataReceived;
+                    try
+                    {
+                        process.EnableRaisingEvents = true;
+                        process.Exited += (s, e) =>
+                        {
+                            // Clamp media time to exact length when process ends
+                            Tools.Logger.VideoLog.LogCall(this, $"VIDEO FILE: Process exited - clamping mediaTime to length {length.TotalSeconds:F3}s");
+                            mediaTime = length;
+                            isAtEnd = true;
+                        };
+                    }
+                    catch { }
                     
                     // Set a timeout to check if initialization happened
                     Task.Delay(10000).ContinueWith(_ => 
@@ -640,14 +652,17 @@ namespace FfmpegMediaPlatform
                     Tools.Logger.VideoLog.LogCall(this, $"Test duration value: '{testMatch.Groups[1].Value}'");
                 }
                 
+                // We'll compute parsedLength locally to avoid overriding an already-determined XML-based length
+                TimeSpan parsedLength = TimeSpan.Zero;
+
                 if (durationMatch.Success)
                 {
                     string durationStr = durationMatch.Groups[1].Value;
                     Tools.Logger.VideoLog.LogCall(this, $"Duration string found: '{durationStr}'");
                     if (double.TryParse(durationStr, out double durationSeconds))
                     {
-                        length = TimeSpan.FromSeconds(durationSeconds);
-                        Tools.Logger.VideoLog.LogCall(this, $"Video duration parsed successfully: {length}");
+                        parsedLength = TimeSpan.FromSeconds(durationSeconds);
+                        Tools.Logger.VideoLog.LogCall(this, $"Video duration parsed successfully (ffprobe): {parsedLength}");
                     }
                     else
                     {
@@ -661,8 +676,8 @@ namespace FfmpegMediaPlatform
                     Tools.Logger.VideoLog.LogCall(this, $"Duration string found via test pattern: '{durationStr}'");
                     if (double.TryParse(durationStr, out double durationSeconds))
                     {
-                        length = TimeSpan.FromSeconds(durationSeconds);
-                        Tools.Logger.VideoLog.LogCall(this, $"Video duration parsed successfully via test pattern: {length}");
+                        parsedLength = TimeSpan.FromSeconds(durationSeconds);
+                        Tools.Logger.VideoLog.LogCall(this, $"Video duration parsed successfully via test pattern (ffprobe): {parsedLength}");
                     }
                     else
                     {
@@ -686,8 +701,8 @@ namespace FfmpegMediaPlatform
                         Tools.Logger.VideoLog.LogCall(this, $"Alternative duration string found: '{durationStr}'");
                         if (double.TryParse(durationStr, out double durationSeconds))
                         {
-                            length = TimeSpan.FromSeconds(durationSeconds);
-                            Tools.Logger.VideoLog.LogCall(this, $"Video duration parsed from alternative pattern: {length}");
+                            parsedLength = TimeSpan.FromSeconds(durationSeconds);
+                            Tools.Logger.VideoLog.LogCall(this, $"Video duration parsed from alternative pattern (ffprobe): {parsedLength}");
                         }
                         else
                         {
@@ -705,6 +720,21 @@ namespace FfmpegMediaPlatform
                         {
                             Tools.Logger.VideoLog.LogCall(this, $"Debug duration entry: {match.Value}");
                         }
+                    }
+                }
+                
+                // Apply parsedLength conservatively: if we already have a non-zero length (e.g., from XML timing),
+                // do not extend it. Only set if length is zero or parsedLength is shorter.
+                if (parsedLength > TimeSpan.Zero)
+                {
+                    if (length == TimeSpan.Zero || parsedLength < length)
+                    {
+                        length = parsedLength;
+                        Tools.Logger.VideoLog.LogCall(this, $"FINAL LENGTH SET (from ffprobe, conservative): {length}");
+                    }
+                    else
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"Keeping existing length {length} (XML-derived) over longer ffprobe {parsedLength}");
                     }
                 }
                 
@@ -1183,6 +1213,17 @@ namespace FfmpegMediaPlatform
                     {
                         // Tools.Logger.VideoLog.LogCall(this, $"SEEK: Adding VideoFileErrorDataReceived event handler");
                         process.ErrorDataReceived += VideoFileErrorDataReceived;
+                        try
+                        {
+                            process.EnableRaisingEvents = true;
+                            process.Exited += (s, e) =>
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"SEEK: Process exited - clamping mediaTime to length {length.TotalSeconds:F3}s");
+                                mediaTime = length;
+                                isAtEnd = true;
+                            };
+                        }
+                        catch { }
                         
                         // For seek operations, force initialization after a short delay since FFmpeg 
                         // might not produce the exact patterns the base class expects
@@ -1399,29 +1440,27 @@ namespace FfmpegMediaPlatform
                     // Use unified duration calculation logic with ffprobe as fallback
                     var xmlDuration = UnifiedFrameTimingManager.CalculateVideoDuration(recordingInfo.FrameTimes, ffprobeDuration);
                     
-                    // XML validation: Check if XML duration seems suspiciously short compared to ffprobe duration
-                    // This can occur when frame timing data is incomplete or corrupted
-                    bool xmlDurationSeemsIncorrect = false;
-                    
+                    // Duration selection: prefer the shorter of XML-derived duration and container duration
+                    // This avoids progress bar overhang when one source slightly overestimates length
                     if (ffprobeDuration > TimeSpan.Zero && xmlDuration > TimeSpan.Zero)
                     {
-                        double ratio = ffprobeDuration.TotalSeconds / xmlDuration.TotalSeconds;
-                        xmlDurationSeemsIncorrect = ratio > 2.0; // XML is less than 50% of ffprobe duration
-                        
-                        Tools.Logger.VideoLog.LogCall(this, $"Duration comparison: XML={xmlDuration.TotalSeconds:F1}s, ffprobe={ffprobeDuration.TotalSeconds:F1}s, ratio={ratio:F2}");
+                        double xmlS = xmlDuration.TotalSeconds;
+                        double ffS = ffprobeDuration.TotalSeconds;
+                        double diff = Math.Abs(xmlS - ffS);
+                        Tools.Logger.VideoLog.LogCall(this, $"Duration comparison: XML={xmlS:F3}s, ffprobe={ffS:F3}s, |diff|={diff:F3}s");
+                        var chosen = TimeSpan.FromSeconds(Math.Min(xmlS, ffS));
+                        length = chosen;
+                        Tools.Logger.VideoLog.LogCall(this, $"FINAL LENGTH SET (min of XML/ffprobe): {length.TotalSeconds:F3}s");
                     }
-                    
-                    if (xmlDurationSeemsIncorrect)
+                    else if (xmlDuration > TimeSpan.Zero)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"WARNING: XML frame timing duration ({xmlDuration.TotalSeconds:F1}s) appears incomplete compared to ffprobe duration ({ffprobeDuration.TotalSeconds:F1}s) - using ffprobe duration to prevent early stopping");
-                        length = ffprobeDuration;
-                        Tools.Logger.VideoLog.LogCall(this, $"FINAL LENGTH SET: {length.TotalSeconds:F1}s (from ffprobe)");
-                    }
-                    else
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, $"Using XML frame timing duration ({xmlDuration.TotalSeconds:F1}s) for playback length");
                         length = xmlDuration;
-                        Tools.Logger.VideoLog.LogCall(this, $"FINAL LENGTH SET: {length.TotalSeconds:F1}s (from XML)");
+                        Tools.Logger.VideoLog.LogCall(this, $"FINAL LENGTH SET: {length.TotalSeconds:F3}s (XML only)");
+                    }
+                    else if (ffprobeDuration > TimeSpan.Zero)
+                    {
+                        length = ffprobeDuration;
+                        Tools.Logger.VideoLog.LogCall(this, $"FINAL LENGTH SET: {length.TotalSeconds:F3}s (ffprobe only)");
                     }
                     
                     // Validate frame timing consistency to detect platform-specific issues
