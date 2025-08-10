@@ -466,14 +466,24 @@ namespace UI.Video
 
                 if (primary != null)
                 {
-                    if (keyMapper.ReplayPlus5Seconds.Match(inputEvent))
+                    if (keyMapper.ReplayPlus2Seconds.Match(inputEvent))
                     {
-                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(5));
+                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(2));
                     }
 
-                    if (keyMapper.ReplayMinus5Seconds.Match(inputEvent))
+                    if (keyMapper.ReplayMinus2Seconds.Match(inputEvent))
                     {
-                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(-5));
+                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(-2));
+                    }
+
+                    if (keyMapper.ReplayPlus10Seconds.Match(inputEvent))
+                    {
+                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(10));
+                    }
+
+                    if (keyMapper.ReplayMinus10Seconds.Match(inputEvent))
+                    {
+                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(-10));
                     }
                 }
                 
