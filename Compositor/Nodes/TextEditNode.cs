@@ -29,6 +29,8 @@ namespace Composition.Nodes
 
         protected ITextRenderer cursorRenderer;
 
+        public bool AllowsUnicode { get; set; }
+
         public TextEditNode(string text, Color textColor) 
             : base(text, textColor)
         {
@@ -39,6 +41,8 @@ namespace Composition.Nodes
             {
                 cursorIndex = text.Length;
             }
+
+            AllowsUnicode = true;
         }
 
         public override void Dispose()
@@ -143,21 +147,24 @@ namespace Composition.Nodes
 
         public override bool OnTextInput(TextInputEventArgs inputEvent)
         {
-            switch (inputEvent.Character)
+            if (AllowsUnicode)
             {
-                case '\b':
-                    // Do nothing.
-                    break;
+                switch (inputEvent.Character)
+                {
+                    case '\b':
+                        // Do nothing.
+                        break;
 
-                default:
-                    Text += inputEvent.Character;
-                    break;
+                    default:
+                        Text += inputEvent.Character;
+                        break;
+                }
+
+                cursorIndex = Text.Length;
+
+                RequestRedraw();
+                TextChanged?.Invoke(Text);
             }
-
-            cursorIndex = Text.Length;
-
-            RequestRedraw();
-            TextChanged?.Invoke(Text);
 
             return base.OnTextInput(inputEvent);
         }
@@ -189,9 +196,6 @@ namespace Composition.Nodes
                     {
                         input = PlatformTools.Clipboard.GetText();
                     }
-                }
-                else if (c != 0)
-                {
                 }
 
                 if (!string.IsNullOrEmpty(input))
