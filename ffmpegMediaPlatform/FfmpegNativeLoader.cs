@@ -70,30 +70,45 @@ namespace FfmpegMediaPlatform
                 ffmpeg.RootPath = bundledPath;
                 Console.WriteLine($"FFmpeg native libraries loaded from: {bundledPath}");
                 
-                // Check if essential DLLs exist
-                string[] requiredDlls = { "avcodec-61.dll", "avformat-61.dll", "avutil-59.dll", "swscale-8.dll", "swresample-5.dll" };
-                bool allDllsExist = true;
-                foreach (var dll in requiredDlls)
+                // Check if essential libraries exist (platform-specific)
+                string[] requiredLibs;
+                string[] dependencyLibs = new string[0]; // Initialize empty for non-Windows
+                
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    var dllPath = Path.Combine(bundledPath, dll);
-                    bool exists = File.Exists(dllPath);
-                    Console.WriteLine($"  {dll}: {(exists ? "EXISTS" : "MISSING")}");
-                    if (!exists) allDllsExist = false;
+                    requiredLibs = new[] { "avcodec-61.dll", "avformat-61.dll", "avutil-59.dll", "swscale-8.dll", "swresample-5.dll" };
+                    dependencyLibs = new[] { "libiconv-2.dll", "libwinpthread-1.dll", "zlib1.dll" };
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    requiredLibs = new[] { "libavcodec.dylib", "libavformat.dylib", "libavutil.dylib", "libswscale.dylib", "libswresample.dylib" };
+                }
+                else
+                {
+                    requiredLibs = new[] { "libavcodec.so", "libavformat.so", "libavutil.so", "libswscale.so", "libswresample.so" };
                 }
                 
-                // Check dependency DLLs that are critical for Windows
-                string[] dependencyDlls = { "libiconv-2.dll", "libwinpthread-1.dll", "zlib1.dll" };
-                foreach (var dll in dependencyDlls)
+                bool allLibsExist = true;
+                foreach (var lib in requiredLibs)
                 {
-                    var dllPath = Path.Combine(bundledPath, dll);
-                    bool exists = File.Exists(dllPath);
-                    Console.WriteLine($"  {dll} (dependency): {(exists ? "EXISTS" : "MISSING")}");
-                    if (!exists) allDllsExist = false;
+                    var libPath = Path.Combine(bundledPath, lib);
+                    bool exists = File.Exists(libPath);
+                    Console.WriteLine($"  {lib}: {(exists ? "EXISTS" : "MISSING")}");
+                    if (!exists) allLibsExist = false;
                 }
                 
-                if (!allDllsExist)
+                // Check dependency libraries (Windows only)
+                foreach (var lib in dependencyLibs)
                 {
-                    throw new FileNotFoundException("Required FFmpeg library dependencies are missing. Please ensure all FFmpeg DLLs and dependencies are present.");
+                    var libPath = Path.Combine(bundledPath, lib);
+                    bool exists = File.Exists(libPath);
+                    Console.WriteLine($"  {lib} (dependency): {(exists ? "EXISTS" : "MISSING")}");
+                    if (!exists) allLibsExist = false;
+                }
+                
+                if (!allLibsExist)
+                {
+                    throw new FileNotFoundException("Required FFmpeg library dependencies are missing. Please ensure all FFmpeg libraries and dependencies are present.");
                 }
                 
                 // Add bundled path to PATH environment variable for dependency resolution
