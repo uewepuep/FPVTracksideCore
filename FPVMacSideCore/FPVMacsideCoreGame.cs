@@ -1,6 +1,7 @@
 ﻿using Composition;
 using Composition.Text;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using UI;
 using RaceLib;
 
@@ -21,7 +22,12 @@ namespace FPVMacsideCore
         public FPVMacsideCoreGame()
             :base(new MacPlatformTools())
         {
-          
+            // Mac-specific graphics configuration
+            GraphicsDeviceManager.PreferredBackBufferWidth = 1842;
+            GraphicsDeviceManager.PreferredBackBufferHeight = 1000;
+            GraphicsDeviceManager.GraphicsProfile = GraphicsProfile.HiDef;
+            GraphicsDeviceManager.SynchronizeWithVerticalRetrace = false; // Disable VSync on Mac for better performance
+            GraphicsDeviceManager.ApplyChanges();
         }
 
         private bool iconSetAfterLoad = false;
@@ -65,6 +71,14 @@ namespace FPVMacsideCore
         protected override void Initialize()
         {
             base.Initialize();
+            
+            // macOS Black Screen Fix: Force initial draw to ensure graphics device is properly initialized
+            if (GraphicsDevice != null)
+            {
+                this.GraphicsDevice.Clear(ClearColor);
+                this.Draw(new GameTime());
+                this.GraphicsDevice.Present();
+            }
         }
     }
 

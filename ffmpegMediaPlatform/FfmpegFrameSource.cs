@@ -61,6 +61,11 @@ namespace FfmpegMediaPlatform
         private DateTime recordingStartTime;
         private long frameCount;
         
+        // Frame timing tracking for camera loop
+        private DateTime lastFrameTime = DateTime.MinValue;
+        private float measuredFrameRate = 0f;
+        private bool frameRateMeasured = false;
+        
         // RGBA recording using separate ffmpeg process
         protected RgbaRecorderManager rgbaRecorderManager;
 
@@ -110,9 +115,16 @@ namespace FfmpegMediaPlatform
             finalising = false;
 
             // Start RGBA recording with separate ffmpeg process
-            // Use a reasonable default frame rate, the recorder will detect the actual rate
-            float initialFrameRate = VideoConfig.VideoMode?.FrameRate ?? 30.0f;
-            bool started = rgbaRecorderManager.StartRecording(filename, width, height, initialFrameRate, this);
+            // Use measured frame rate if available, otherwise fall back to configured rate
+            float recordingFrameRate = frameRateMeasured ? measuredFrameRate : (VideoConfig.VideoMode?.FrameRate ?? 30.0f);
+            
+            // Debug logging to track frame rate on different platforms
+            string platform = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ? "Windows" : "Mac";
+            string rateSource = frameRateMeasured ? "MEASURED" : "CONFIGURED";
+            Tools.Logger.VideoLog.LogCall(this, $"RECORDING START [{platform}]: Using {rateSource} frame rate: {recordingFrameRate:F1}fps for recording");
+            Tools.Logger.VideoLog.LogCall(this, $"RECORDING START [{platform}]: VideoConfig details - Width: {VideoConfig.VideoMode?.Width}, Height: {VideoConfig.VideoMode?.Height}, ConfiguredRate: {VideoConfig.VideoMode?.FrameRate}fps, MeasuredRate: {measuredFrameRate:F1}fps");
+            
+            bool started = rgbaRecorderManager.StartRecording(filename, width, height, recordingFrameRate, this);
             if (!started)
             {
                 Tools.Logger.VideoLog.LogCall(this, $"Failed to start RGBA recording to {filename}");
@@ -513,13 +525,15 @@ namespace FfmpegMediaPlatform
             {
                 if (process != null && !process.HasExited)
                 {
-                    // Check if we're recording WMV or MP4 (needs graceful shutdown)
+                    // Check if we're recording video files (needs graceful shutdown)
                     bool isRecordingWMV = Recording && !string.IsNullOrEmpty(recordingFilename) && recordingFilename.EndsWith(".wmv");
                     bool isRecordingMP4 = Recording && !string.IsNullOrEmpty(recordingFilename) && recordingFilename.EndsWith(".mp4");
+                    bool isRecordingMKV = Recording && !string.IsNullOrEmpty(recordingFilename) && recordingFilename.EndsWith(".mkv");
                     
-                    if (isRecordingWMV || isRecordingMP4)
+                    if (isRecordingWMV || isRecordingMP4 || isRecordingMKV)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Graceful shutdown for {(isRecordingWMV ? "WMV" : "MP4")} recording (sending SIGINT)");
+                        string format = isRecordingWMV ? "WMV" : (isRecordingMP4 ? "MP4" : "MKV");
+                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Graceful shutdown for {format} recording (sending SIGINT)");
                         try
                         {
                             // Send SIGINT for graceful shutdown (allows FFmpeg to finalize the file)
@@ -620,7 +634,7 @@ namespace FfmpegMediaPlatform
 
         protected void Run()
         {
-            Tools.Logger.VideoLog.LogCall(this, "Reading thread started");
+            Tools.Logger.VideoLog.LogCall(this, "Camera reading thread started");
             bool loggedInit = false;
             int consecutiveErrors = 0;
             const int maxConsecutiveErrors = 5;
@@ -637,7 +651,7 @@ namespace FfmpegMediaPlatform
                     
                     if (!loggedInit)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "Reading thread initialized, starting to read frames");
+                        Tools.Logger.VideoLog.LogCall(this, "Camera reading thread initialized, running at native camera frame rate");
                         loggedInit = true;
                         consecutiveErrors = 0; // Reset error counter on successful init
                     }
@@ -645,7 +659,7 @@ namespace FfmpegMediaPlatform
                     // Check if process is still running
                     if (process == null || process.HasExited)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "FFmpeg process has exited, stopping reading thread");
+                        Tools.Logger.VideoLog.LogCall(this, "FFmpeg process has exited, stopping camera reading thread");
                         Connected = false;
                         break;
                     }
@@ -684,10 +698,12 @@ namespace FfmpegMediaPlatform
                         // Log only every 1800 frames to reduce spam (every 30 seconds at 60fps)
                         if (FrameProcessNumber % 1800 == 0)
                         {
-                            Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Complete frame read: {totalBytesRead} bytes, processing frame {FrameProcessNumber}");
+                            Tools.Logger.VideoLog.LogCall(this, $"CAMERA LOOP: Complete frame read: {totalBytesRead} bytes, frame {FrameProcessNumber}");
                         }
-                        ProcessImage();
-                        NotifyReceivedFrame();
+                        
+                        // CAMERA-DRIVEN PROCESSING: Handle frame at camera's native rate
+                        ProcessCameraFrame();
+                        
                         consecutiveErrors = 0; // Reset error counter on successful frame
                         Connected = true; // Ensure we're marked as connected when receiving data
                     }
@@ -714,11 +730,11 @@ namespace FfmpegMediaPlatform
                 {
                     consecutiveErrors++;
                     Tools.Logger.VideoLog.LogException(this, ex);
-                    Tools.Logger.VideoLog.LogCall(this, $"Error in reading thread (error #{consecutiveErrors})");
+                    Tools.Logger.VideoLog.LogCall(this, $"Error in camera reading thread (error #{consecutiveErrors})");
                     
                     if (consecutiveErrors >= maxConsecutiveErrors)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "Too many consecutive errors, stopping reading thread");
+                        Tools.Logger.VideoLog.LogCall(this, "Too many consecutive errors, stopping camera reading thread");
                         Connected = false;
                         break;
                     }
@@ -727,10 +743,96 @@ namespace FfmpegMediaPlatform
                 }
             }
             
-            Tools.Logger.VideoLog.LogCall(this, "Reading thread finished");
+            Tools.Logger.VideoLog.LogCall(this, "Camera reading thread finished");
         }
 
-        protected override void ProcessImage()
+        /// <summary>
+        /// CAMERA LOOP: Process frame at camera's native rate - independent from game loop
+        /// This method runs in the camera reading thread and handles recording directly
+        /// </summary>
+        protected virtual void ProcessCameraFrame()
+        {
+            FrameProcessNumber++;
+            
+            // Track actual frame timing to detect frame rate discrepancies
+            DateTime currentFrameTime = DateTime.UtcNow;
+            
+            if (FrameProcessNumber % 60 == 0) // Check every 60 frames (about 2 seconds)
+            {
+                double actualInterval = lastFrameTime != DateTime.MinValue ? (currentFrameTime - lastFrameTime).TotalMilliseconds / 60.0 : 0;
+                double actualFps = actualInterval > 0 ? 1000.0 / actualInterval : 0;
+                double configuredFps = VideoConfig.VideoMode?.FrameRate ?? 30.0f;
+                
+                string platform = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ? "Windows" : "Mac";
+                Tools.Logger.VideoLog.LogCall(this, $"CAMERA TIMING [{platform}]: Frame {FrameProcessNumber} - Configured: {configuredFps:F1}fps, Actual: {actualFps:F2}fps, Interval: {actualInterval:F2}ms");
+                
+                // Update measured frame rate with higher precision after initial stabilization
+                if (FrameProcessNumber >= 180 && actualFps > 0) // Wait longer for more accurate measurement (6 seconds)
+                {
+                    // Use rolling average for more stable measurement
+                    if (!frameRateMeasured)
+                    {
+                        measuredFrameRate = (float)actualFps;
+                        frameRateMeasured = true;
+                        Tools.Logger.VideoLog.LogCall(this, $"CAMERA MEASUREMENT [{platform}]: Initial measured frame rate: {measuredFrameRate:F3}fps (after {FrameProcessNumber} frames)");
+                    }
+                    else
+                    {
+                        // Use exponential smoothing for ongoing measurement refinement
+                        float alpha = 0.1f; // Smoothing factor
+                        measuredFrameRate = alpha * (float)actualFps + (1 - alpha) * measuredFrameRate;
+                        
+                        // Log every 300 frames (10 seconds) to show ongoing refinement
+                        if (FrameProcessNumber % 300 == 0)
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"CAMERA MEASUREMENT [{platform}]: Refined measured frame rate: {measuredFrameRate:F3}fps (frame {FrameProcessNumber})");
+                        }
+                    }
+                }
+                
+                lastFrameTime = currentFrameTime;
+            }
+
+            // STEP 1: Send frame to recording FIRST (camera-native timing)
+            // This is the key fix - recording gets frames directly from camera loop
+            if (Recording && rgbaRecorderManager.IsRecording)
+            {
+                // Create a copy of the frame data for recording
+                byte[] frameData = new byte[buffer.Length];
+                Array.Copy(buffer, frameData, buffer.Length);
+                
+                // Write frame to recording synchronously in camera loop to maintain timing
+                // This ensures the recording timing is driven by the camera, not the game
+                try
+                {
+                    rgbaRecorderManager.WriteFrame(frameData, (int)FrameProcessNumber);
+                    
+                    // Log every 300 frames during recording with timing info
+                    if (FrameProcessNumber % 300 == 0)
+                    {
+                        string platform = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ? "Windows" : "Mac";
+                        Tools.Logger.VideoLog.LogCall(this, $"CAMERA RECORDING [{platform}]: Frame {FrameProcessNumber} written to recording - check timing above");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Tools.Logger.VideoLog.LogException(this, ex);
+                    Tools.Logger.VideoLog.LogCall(this, $"CAMERA LOOP: Error writing frame {FrameProcessNumber} to recording");
+                }
+            }
+            
+            // STEP 2: Prepare frame for game engine display
+            // This puts the frame in the buffer for the game loop to pick up when it needs it
+            PrepareFrameForDisplay();
+            
+            // Notify the game engine that a new frame is available (but don't force processing timing)
+            NotifyReceivedFrame();
+        }
+
+        /// <summary>
+        /// Prepare frame data for game engine display (runs in camera loop)
+        /// </summary>
+        private void PrepareFrameForDisplay()
         {
             var currentRawTextures = rawTextures;
             if (currentRawTextures != null)
@@ -738,85 +840,19 @@ namespace FfmpegMediaPlatform
                 RawTexture frame;
                 if (currentRawTextures.GetWritable(out frame))
                 {
-                    FrameProcessNumber++;
-                    
-                    // Log only every 600 frames to reduce spam (every 10 seconds at 60fps)
-                    if (FrameProcessNumber % 600 == 0)
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Processing frame {FrameProcessNumber}, buffer size: {buffer.Length} bytes");
-                    }
-                    
-                    // Legacy frame timing collection - DISABLED for RGBA recording
-                    // The RGBA recorder now handles ALL frame timing collection internally
-                    // This ensures complete coverage from recording start to stop button
-                    if (recordNextFrameTime && !VideoConfig.FilePath.Contains("hls"))
-                    {
-                        // For non-RGBA recording sources, maintain legacy behavior
-                        if (!Recording || !rgbaRecorderManager.IsRecording)
-                        {
-                            if (frameTimes == null)
-                            {
-                                frameTimes = new List<FrameTime>();
-                            }
-                            
-                            DateTime frameTime = DateTime.Now;
-                            
-                            // Start recording timer on first actual frame to eliminate FFmpeg initialization delay
-                            if (recordingStartTime == DateTime.MinValue)
-                            {
-                                recordingStartTime = frameTime;
-                                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Recording timer started on first frame: {recordingStartTime:HH:mm:ss.fff}");
-                            }
-                            
-                            frameTimes.Add(new FrameTime
-                            {
-                                Frame = (int)FrameProcessNumber,
-                                Time = frameTime,
-                                Seconds = (float)(frameTime - recordingStartTime).TotalSeconds
-                            });
-                            
-                            frameCount++;
-                            
-                            // Log frame timing only every 120 frames during recording
-                            if (frameCount % 120 == 0)
-                            {
-                                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Recorded frame {FrameProcessNumber} at {frameTime:HH:mm:ss.fff}, offset: {(frameTime - recordingStartTime).TotalSeconds:F3}s");
-                            }
-                        }
-                        else
-                        {
-                            // RGBA recording active - frame timing handled by RgbaRecorderManager
-                            // Log every 120 frames to confirm RGBA timing collection
-                            if (FrameProcessNumber % 120 == 0)
-                            {
-                                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Frame {FrameProcessNumber} - RGBA recorder handling timing collection");
-                            }
-                        }
-                        
-                        recordNextFrameTime = false;
-                    }
-                    else if (recordNextFrameTime)
-                    {
-                        // Reset the flag for HLS composite sources
-                        recordNextFrameTime = false;
-                    }
-                    
-                    // Copy buffer to texture
-                    // For video file playback, calculate SampleTime based on frame rate and current position
+                    // Calculate SampleTime for game engine
                     if (this is FfmpegVideoFileFrameSource videoFileSource && VideoConfig?.VideoMode?.FrameRate > 0)
                     {
                         // Use frame-based calculation for accurate timeline positioning
                         double frameBasedTime = FrameProcessNumber / VideoConfig.VideoMode.FrameRate;
-                        double actualMediaTime = videoFileSource.MediaTime.TotalSeconds;
-                        
-                        // Use the frame-based time for timeline markers
                         SampleTime = (long)(frameBasedTime * 10000000); // Convert seconds to ticks
                         
-                        // Log every 120 frames to see what's happening
-                        if (FrameProcessNumber % 120 == 0)
+                        // Log every 600 frames for video files
+                        if (FrameProcessNumber % 600 == 0)
                         {
+                            double actualMediaTime = videoFileSource.MediaTime.TotalSeconds;
                             double videoLength = videoFileSource.Length.TotalSeconds;
-                            Tools.Logger.VideoLog.LogCall(this, $"SampleTime Debug: Frame {FrameProcessNumber}, FrameTime={frameBasedTime:F2}s, MediaTime={actualMediaTime:F2}s, VideoLength={videoLength:F2}s, SampleTime={SampleTime} (using FrameTime)");
+                            Tools.Logger.VideoLog.LogCall(this, $"CAMERA LOOP: Video SampleTime - Frame {FrameProcessNumber}, FrameTime={frameBasedTime:F2}s, MediaTime={actualMediaTime:F2}s, VideoLength={videoLength:F2}s");
                         }
                     }
                     
@@ -832,29 +868,67 @@ namespace FfmpegMediaPlatform
                         handle.Free();
                     }
                     
+                    // Make frame available for game engine display
                     currentRawTextures.WriteOne(frame);
                     
-                    // Write RGBA frame to recording if active
-                    if (Recording && rgbaRecorderManager.IsRecording)
+                    // Log every 600 frames to track display frame preparation
+                    if (FrameProcessNumber % 600 == 0)
                     {
-                        // Write the RGBA frame data to the recorder
-                        // The RGBA recorder handles ALL frame timing collection internally
-                        // This ensures XML timing covers the complete recording session
-                        byte[] frameData = new byte[buffer.Length];
-                        Array.Copy(buffer, frameData, buffer.Length);
-                        
-                        // RGBA recorder collects timing for ALL frames from start to stop
-                        rgbaRecorderManager.WriteFrame(frameData, (int)FrameProcessNumber);
-                    }
-                    
-                    // Enhanced logging for video file sources to track frame writing
-                    bool isVideoFile = this.GetType().Name.Contains("VideoFile");
-                    if (isVideoFile && FrameProcessNumber % 10 == 0)
-                    {
-                        // Tools.Logger.VideoLog.LogCall(this, $"VIDEO WRITE: Wrote frame {FrameProcessNumber} to rawTextures buffer, SampleTime: {SampleTime}");
+                        Tools.Logger.VideoLog.LogCall(this, $"CAMERA LOOP: Frame {FrameProcessNumber} prepared for game engine display");
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// GAME LOOP: Process frame for display only - called by game engine when it needs frames
+        /// This is now decoupled from camera timing and recording
+        /// </summary>
+        protected override void ProcessImage()
+        {
+            // Legacy frame timing collection - only for non-RGBA recording sources
+            if (recordNextFrameTime && !VideoConfig.FilePath.Contains("hls"))
+            {
+                // For non-RGBA recording sources, maintain legacy behavior
+                if (!Recording || !rgbaRecorderManager.IsRecording)
+                {
+                    if (frameTimes == null)
+                    {
+                        frameTimes = new List<FrameTime>();
+                    }
+                    
+                    DateTime frameTime = UnifiedFrameTimingManager.GetHighPrecisionTimestamp();
+                    
+                    // Start recording timer on first actual frame to eliminate FFmpeg initialization delay
+                    if (recordingStartTime == DateTime.MinValue)
+                    {
+                        recordingStartTime = frameTime;
+                        Tools.Logger.VideoLog.LogCall(this, $"GAME LOOP: Recording timer started on first frame: {recordingStartTime:HH:mm:ss.fff}");
+                    }
+                    
+                    // Use unified frame timing logic for consistency across platforms
+                    var frameTimeEntry = UnifiedFrameTimingManager.CreateFrameTime(
+                        (int)FrameProcessNumber, frameTime, recordingStartTime);
+                    frameTimes.Add(frameTimeEntry);
+                    
+                    frameCount++;
+                    
+                    // Log frame timing only every 120 frames during recording
+                    if (frameCount % 120 == 0)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"GAME LOOP: Legacy recorded frame {FrameProcessNumber} at {frameTime:HH:mm:ss.fff}, offset: {(frameTime - recordingStartTime).TotalSeconds:F3}s");
+                    }
+                }
+                
+                recordNextFrameTime = false;
+            }
+            else if (recordNextFrameTime)
+            {
+                // Reset the flag for HLS composite sources
+                recordNextFrameTime = false;
+            }
+            
+            // Fire the game engine frame event (this is what the game engine waits for)
             base.ProcessImage();
         }
     }

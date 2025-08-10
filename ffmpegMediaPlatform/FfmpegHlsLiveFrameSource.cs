@@ -211,6 +211,7 @@ namespace FfmpegMediaPlatform
             
             // Fix: Let camera provide frames at its natural rate, don't force frame rate conversion
             float targetFrameRate = VideoConfig.VideoMode?.FrameRate ?? 30.0f;
+            int gop = Math.Max(1, (int)Math.Round(targetFrameRate * 0.1f)); // 0.1s GOP
             
             // No frame rate filtering needed - recording now handles 60fps correctly
             string ffmpegArgs = $"{inputArgs} " +
@@ -222,8 +223,7 @@ namespace FfmpegMediaPlatform
                                $"-an " +
                                $"-filter_complex \"[0:v]split=2[out1][out2];[out1]format=rgba[outpipe];[out2]format=yuv420p[outfile]\" " +
                                $"-map \"[outpipe]\" -f rawvideo pipe:1 " +  // RGBA output for live display
-                               $"-map \"[outfile]\" {encodingArgs} " +  // HLS output
-                               $"-g {targetFrameRate} -keyint_min {targetFrameRate} " +
+                               $"-map \"[outfile]\" {encodingArgs} -g {gop} -keyint_min {gop} -force_key_frames \"expr:gte(t,n_forced*0.1)\" " +  // HLS output with tighter GOP
                                $"-hls_time 0.5 -hls_list_size 3 -hls_flags delete_segments+independent_segments " +  // Ultra-low latency: 0.5s segments, only 3 segments
                                $"-hls_segment_type mpegts " +  // Use MPEG-TS for better streaming
                                $"-start_number 0 " +  // Start numbering from 0

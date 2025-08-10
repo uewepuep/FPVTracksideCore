@@ -15,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Tools;
 using UI.Nodes;
+using FfmpegMediaPlatform;
 
 namespace UI.Video
 {
@@ -132,13 +133,12 @@ namespace UI.Video
                     var maxEndDuration = TimeSpan.Zero;
                     foreach (var frameSource in frameSources)
                     {
-                        // If this frame source has frame timing data, use XML timing
+                        // If this frame source has frame timing data, use unified duration calculation
                         if (frameSource is ICaptureFrameSource captureSource && captureSource.FrameTimes != null && captureSource.FrameTimes.Length > 0)
                         {
-                            var sourceFrameTimes = captureSource.FrameTimes;
-                            var firstFrame = sourceFrameTimes.First();
-                            var lastFrame = sourceFrameTimes.Last();
-                            var xmlDuration = lastFrame.Time - firstFrame.Time;
+                            // Use unified duration calculation for consistency across platforms
+                            var xmlDuration = UnifiedFrameTimingManager.CalculateVideoDuration(
+                                captureSource.FrameTimes, frameSource.Length);
                             maxEndDuration = TimeSpan.FromSeconds(Math.Max(maxEndDuration.TotalSeconds, xmlDuration.TotalSeconds));
                         }
                         else
@@ -324,13 +324,15 @@ namespace UI.Video
                             // If this frame source has frame timing data, use XML timing
                             if (frameSource is ICaptureFrameSource captureSource && captureSource.FrameTimes != null && captureSource.FrameTimes.Length > 0)
                             {
-                                var sourceFrameTimes = captureSource.FrameTimes;
-                                var firstFrame = sourceFrameTimes.First();
-                                var lastFrame = sourceFrameTimes.Last();
-                                var xmlDuration = lastFrame.Time - firstFrame.Time;
+                                // Use unified duration calculation for consistency across platforms
+                                var xmlDuration = UnifiedFrameTimingManager.CalculateVideoDuration(
+                                    captureSource.FrameTimes, frameSource.Length);
                                 
-                                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Timeline: Using XML frame timing duration {xmlDuration.TotalSeconds:F1}s for {frameSource.GetType().Name}");
-                                maxEndDuration = TimeSpan.FromSeconds(Math.Max(maxEndDuration.TotalSeconds, xmlDuration.TotalSeconds));
+                                // For playback timeline, prefer the shorter of XML and container-based Length
+                                // to avoid progress bar extending beyond actual playable content
+                                var playbackDuration = TimeSpan.FromSeconds(Math.Min(xmlDuration.TotalSeconds, frameSource.Length.TotalSeconds));
+                                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Timeline: XML={xmlDuration.TotalSeconds:F3}s, Length={frameSource.Length.TotalSeconds:F3}s, Using(min)={playbackDuration.TotalSeconds:F3}s for {frameSource.GetType().Name}");
+                                maxEndDuration = TimeSpan.FromSeconds(Math.Max(maxEndDuration.TotalSeconds, playbackDuration.TotalSeconds));
                             }
                             else
                             {
@@ -464,14 +466,24 @@ namespace UI.Video
 
                 if (primary != null)
                 {
-                    if (keyMapper.ReplayPlus5Seconds.Match(inputEvent))
+                    if (keyMapper.ReplayPlus2Seconds.Match(inputEvent))
                     {
-                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(5));
+                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(2));
                     }
 
-                    if (keyMapper.ReplayMinus5Seconds.Match(inputEvent))
+                    if (keyMapper.ReplayMinus2Seconds.Match(inputEvent))
                     {
-                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(-5));
+                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(-2));
+                    }
+
+                    if (keyMapper.ReplayPlus10Seconds.Match(inputEvent))
+                    {
+                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(10));
+                    }
+
+                    if (keyMapper.ReplayMinus10Seconds.Match(inputEvent))
+                    {
+                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(-10));
                     }
                 }
                 

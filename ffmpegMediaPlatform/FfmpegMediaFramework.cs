@@ -191,14 +191,31 @@ namespace FfmpegMediaPlatform
             // Check if this is a video file playback (has FilePath) or camera capture
             if (!string.IsNullOrEmpty(vc.FilePath))
             {
-                // Create video file playback frame source
-                return new FfmpegVideoFileFrameSource(this, vc);
+                // On macOS, use external FFmpeg process for video file replay to avoid library compatibility issues
+                if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"PLAYBACK PATH: External ffmpeg process for Mac video file replay → {System.IO.Path.GetFileName(vc.FilePath)}");
+                    return new FfmpegVideoFileFrameSource(this, vc);
+                }
+                else
+                {
+                    // On other platforms, prefer in-process libav for replay; fallback to external binary if init fails
+                    try
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"PLAYBACK PATH: In-process ffmpeg lib for video file replay → {System.IO.Path.GetFileName(vc.FilePath)}");
+                        return new FfmpegLibVideoFileFrameSource(vc);
+                    }
+                    catch (Exception ex)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"PLAYBACK PATH FALLBACK: External ffmpeg process due to lib error: {ex.Message}");
+                        return new FfmpegVideoFileFrameSource(this, vc);
+                    }
+                }
             }
             else
             {
-                // Create camera capture frame source with HLS streaming capability
-                // This provides persistent live streaming with independent recording
-                Tools.Logger.VideoLog.LogCall(this, $"Creating HLS composite frame source for camera: {vc.DeviceName}");
+                // Live camera capture via ffmpeg process with HLS composite
+                Tools.Logger.VideoLog.LogCall(this, $"PLAYBACK PATH: Live capture via ffmpeg (HLS composite) → {vc.DeviceName}");
                 return new FfmpegHlsCompositeFrameSource(this, vc);
             }
         }

@@ -140,6 +140,26 @@ namespace UI.Nodes
                 
                 Tools.Logger.VideoLog.LogCall(this, $"Race ended - HasReplay: {hasReplay}, Finalising: {finalising}, Enabling replay button: {shouldEnable}");
                 replayButton.Enabled = shouldEnable;
+                
+                // If we don't have a replay yet but recording isn't finalizing, 
+                // wait a short time and check again (handles race condition with file generation)
+                if (!hasReplay && !finalising)
+                {
+                    System.Threading.Tasks.Task.Delay(500).ContinueWith(_ => 
+                    {
+                        // Check again after delay
+                        bool delayedHasReplay = VideoManager.HasReplay(race);
+                        Tools.Logger.VideoLog.LogCall(this, $"Delayed replay check - HasReplay: {delayedHasReplay}");
+                        if (delayedHasReplay)
+                        {
+                            // Update UI on main thread
+                            if (race.Ended && !VideoManager.Finalising)
+                            {
+                                replayButton.Enabled = true;
+                            }
+                        }
+                    });
+                }
             }
             else
             {

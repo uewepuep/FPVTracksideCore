@@ -27,11 +27,11 @@ jobs:
         echo "🔍 Analyzing Pull Request..."
         
         # Get PR information
-        PR_NUMBER="${{ github.event.number }}"
-        PR_TITLE="${{ github.event.pull_request.title }}"
-        PR_BODY="${{ github.event.pull_request.body }}"
-        BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
-        HEAD_BRANCH="${{ github.event.pull_request.head.ref }}"
+        PR_NUMBER="${{ github.event.number || 'unknown' }}"
+        PR_TITLE="${{ github.event.pull_request.title || 'No title' }}"
+        PR_BODY="${{ github.event.pull_request.body || '' }}"
+        BASE_BRANCH="${{ github.event.pull_request.base.ref || 'unknown' }}"
+        HEAD_BRANCH="${{ github.event.pull_request.head.ref || 'unknown' }}"
         
         echo "PR #$PR_NUMBER: $PR_TITLE"
         echo "From: $HEAD_BRANCH → To: $BASE_BRANCH"
@@ -53,7 +53,7 @@ jobs:
         fi
         
         # Check for breaking changes
-        if [[ "$PR_TITLE" =~ BREAKING CHANGE ]] || [[ "$PR_BODY" =~ BREAKING CHANGE ]]; then
+        if [[ "$PR_TITLE" =~ "BREAKING CHANGE" ]] || [[ "$PR_BODY" =~ "BREAKING CHANGE" ]]; then
           echo "⚠️ Breaking changes detected. Please ensure this is intentional."
         fi
         

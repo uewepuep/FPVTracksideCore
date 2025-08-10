@@ -84,6 +84,7 @@ namespace FfmpegMediaPlatform
                 mediaTime = value;
                 if (mediaTime >= length)
                 {
+                    Tools.Logger.VideoLog.LogCall(this, $"VIDEO END DETECTED (setter): mediaTime={mediaTime.TotalSeconds:F1}s >= length={length.TotalSeconds:F1}s, setting isAtEnd=true");
                     isAtEnd = true;
                     if (repeat)
                     {
@@ -159,7 +160,6 @@ namespace FfmpegMediaPlatform
                 throw new FileNotFoundException($"Video file not found: {filePath}");
             }
             bool isWMV = filePath.EndsWith(".wmv", StringComparison.OrdinalIgnoreCase);
-            bool isMac = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX);
             
             // Get just the filename for logging
             string fileName = Path.GetFileName(filePath);
@@ -168,7 +168,6 @@ namespace FfmpegMediaPlatform
             Tools.Logger.VideoLog.LogCall(this, $"File exists: {File.Exists(filePath)}");
             Tools.Logger.VideoLog.LogCall(this, $"File size: {new FileInfo(filePath).Length} bytes");
             Tools.Logger.VideoLog.LogCall(this, $"Is WMV: {isWMV}");
-            Tools.Logger.VideoLog.LogCall(this, $"Is Mac: {isMac}");
 
             // Build FFmpeg command for video file playback with interactive seeking support
             // Use proper settings for smooth video file playback
@@ -197,11 +196,11 @@ namespace FfmpegMediaPlatform
                                $"-pix_fmt rgba " +
                                $"-f rawvideo pipe:1";
 
-            // Add special handling for WMV files on Mac if needed
-            if (isWMV && isMac)
+            // Add special handling for WMV files if needed
+            if (isWMV)
             {
-                Tools.Logger.VideoLog.LogCall(this, "WMV file detected on Mac - using standard FFmpeg WMV support");
-                // FFmpeg handles WMV files well on Mac, no special parameters needed
+                Tools.Logger.VideoLog.LogCall(this, "WMV file detected - using standard FFmpeg WMV support");
+                // FFmpeg handles WMV files well across platforms, no special parameters needed
             }
 
             Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Video File Playback ({fileName}): {ffmpegArgs}");
@@ -211,6 +210,7 @@ namespace FfmpegMediaPlatform
         public override bool Start()
         {
             Tools.Logger.VideoLog.LogCall(this, $"FfmpegVideoFileFrameSource.Start() called, current state: {State}");
+            Tools.Logger.VideoLog.LogCall(this, "PLAYBACK ENGINE: ffmpeg BINARY (external process)");
             
             // This is normal playback, not a seek operation
             isSeekOperation = false;
@@ -253,6 +253,18 @@ namespace FfmpegMediaPlatform
                 if (process != null)
                 {
                     process.ErrorDataReceived += VideoFileErrorDataReceived;
+                    try
+                    {
+                        process.EnableRaisingEvents = true;
+                        process.Exited += (s, e) =>
+                        {
+                            // Clamp media time to exact length when process ends
+                            Tools.Logger.VideoLog.LogCall(this, $"VIDEO FILE: Process exited - clamping mediaTime to length {length.TotalSeconds:F3}s");
+                            mediaTime = length;
+                            isAtEnd = true;
+                        };
+                    }
+                    catch { }
                     
                     // Set a timeout to check if initialization happened
                     Task.Delay(10000).ContinueWith(_ => 
@@ -397,6 +409,7 @@ namespace FfmpegMediaPlatform
                 // Check if we've reached the end of the video
                 if (length > TimeSpan.Zero && mediaTime >= length)
                 {
+                    Tools.Logger.VideoLog.LogCall(this, $"VIDEO END DETECTED: mediaTime={mediaTime.TotalSeconds:F1}s >= length={length.TotalSeconds:F1}s, setting isAtEnd=true");
                     isAtEnd = true;
                     if (repeat)
                     {
@@ -480,8 +493,14 @@ namespace FfmpegMediaPlatform
                         }
                         else
                         {
-                            Tools.Logger.VideoLog.LogCall(this, "FFprobe not found at any expected location");
-                            return false;
+                            Tools.Logger.VideoLog.LogCall(this, "FFprobe not found at any expected location - will use XML data if available");
+                            // Check if we already have valid data from XML file
+                            if (length > TimeSpan.Zero)
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"Using XML-derived duration: {length.TotalSeconds:F3}s (no ffprobe)");
+                                return true; // We have valid XML data, no need for defaults
+                            }
+                            return false; // Fall back to defaults only if no XML data
                         }
                     }
                 }
@@ -594,8 +613,17 @@ namespace FfmpegMediaPlatform
                 Tools.Logger.VideoLog.LogException(this, ex);
             }
 
-            // Fallback: use default values if we can't get file info
-            Tools.Logger.VideoLog.LogCall(this, "Using default video file properties");
+            // Fallback: use default values if we can't get file info and have no XML data
+            if (length > TimeSpan.Zero)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"Keeping XML-derived duration: {length.TotalSeconds:F3}s (no ffprobe available)");
+            }
+            else
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Using default video file properties - no ffprobe and no XML data");
+                length = TimeSpan.FromMinutes(5); // Default 5 minutes only if no XML data
+            }
+            
             if (VideoConfig.VideoMode == null)
             {
                 VideoConfig.VideoMode = new Mode
@@ -607,7 +635,6 @@ namespace FfmpegMediaPlatform
                 };
             }
             
-            length = TimeSpan.FromMinutes(5); // Default 5 minutes
             frameRate = VideoConfig.VideoMode.FrameRate;
             
             return false;
@@ -640,14 +667,17 @@ namespace FfmpegMediaPlatform
                     Tools.Logger.VideoLog.LogCall(this, $"Test duration value: '{testMatch.Groups[1].Value}'");
                 }
                 
+                // We'll compute parsedLength locally to avoid overriding an already-determined XML-based length
+                TimeSpan parsedLength = TimeSpan.Zero;
+
                 if (durationMatch.Success)
                 {
                     string durationStr = durationMatch.Groups[1].Value;
                     Tools.Logger.VideoLog.LogCall(this, $"Duration string found: '{durationStr}'");
                     if (double.TryParse(durationStr, out double durationSeconds))
                     {
-                        length = TimeSpan.FromSeconds(durationSeconds);
-                        Tools.Logger.VideoLog.LogCall(this, $"Video duration parsed successfully: {length}");
+                        parsedLength = TimeSpan.FromSeconds(durationSeconds);
+                        Tools.Logger.VideoLog.LogCall(this, $"Video duration parsed successfully (ffprobe): {parsedLength}");
                     }
                     else
                     {
@@ -661,8 +691,8 @@ namespace FfmpegMediaPlatform
                     Tools.Logger.VideoLog.LogCall(this, $"Duration string found via test pattern: '{durationStr}'");
                     if (double.TryParse(durationStr, out double durationSeconds))
                     {
-                        length = TimeSpan.FromSeconds(durationSeconds);
-                        Tools.Logger.VideoLog.LogCall(this, $"Video duration parsed successfully via test pattern: {length}");
+                        parsedLength = TimeSpan.FromSeconds(durationSeconds);
+                        Tools.Logger.VideoLog.LogCall(this, $"Video duration parsed successfully via test pattern (ffprobe): {parsedLength}");
                     }
                     else
                     {
@@ -686,8 +716,8 @@ namespace FfmpegMediaPlatform
                         Tools.Logger.VideoLog.LogCall(this, $"Alternative duration string found: '{durationStr}'");
                         if (double.TryParse(durationStr, out double durationSeconds))
                         {
-                            length = TimeSpan.FromSeconds(durationSeconds);
-                            Tools.Logger.VideoLog.LogCall(this, $"Video duration parsed from alternative pattern: {length}");
+                            parsedLength = TimeSpan.FromSeconds(durationSeconds);
+                            Tools.Logger.VideoLog.LogCall(this, $"Video duration parsed from alternative pattern (ffprobe): {parsedLength}");
                         }
                         else
                         {
@@ -705,6 +735,21 @@ namespace FfmpegMediaPlatform
                         {
                             Tools.Logger.VideoLog.LogCall(this, $"Debug duration entry: {match.Value}");
                         }
+                    }
+                }
+                
+                // Apply parsedLength conservatively: if we already have a non-zero length (e.g., from XML timing),
+                // do not extend it. Only set if length is zero or parsedLength is shorter.
+                if (parsedLength > TimeSpan.Zero)
+                {
+                    if (length == TimeSpan.Zero || parsedLength < length)
+                    {
+                        length = parsedLength;
+                        Tools.Logger.VideoLog.LogCall(this, $"FINAL LENGTH SET (from ffprobe, conservative): {length}");
+                    }
+                    else
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"Keeping existing length {length} (XML-derived) over longer ffprobe {parsedLength}");
                     }
                 }
                 
@@ -1183,6 +1228,17 @@ namespace FfmpegMediaPlatform
                     {
                         // Tools.Logger.VideoLog.LogCall(this, $"SEEK: Adding VideoFileErrorDataReceived event handler");
                         process.ErrorDataReceived += VideoFileErrorDataReceived;
+                        try
+                        {
+                            process.EnableRaisingEvents = true;
+                            process.Exited += (s, e) =>
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"SEEK: Process exited - clamping mediaTime to length {length.TotalSeconds:F3}s");
+                                mediaTime = length;
+                                isAtEnd = true;
+                            };
+                        }
+                        catch { }
                         
                         // For seek operations, force initialization after a short delay since FFmpeg 
                         // might not produce the exact patterns the base class expects
@@ -1365,6 +1421,10 @@ namespace FfmpegMediaPlatform
                 {
                     basePath = basePath.Replace(".ts", "");
                 }
+                else if (basePath.EndsWith(".mkv"))
+                {
+                    basePath = basePath.Replace(".mkv", "");
+                }
                 
                 string recordInfoPath = basePath + ".recordinfo.xml";
                 
@@ -1389,11 +1449,43 @@ namespace FfmpegMediaPlatform
                     startTime = firstFrame.Time;
                     originalVideoStartTime = firstFrame.Time; // Preserve the original video start time for seeking
                     
-                    // Calculate length directly from XML frame timing data
-                    // Use the actual time difference between first and last frames
-                    length = lastFrame.Time - firstFrame.Time;
+                    // Get ffprobe duration first to use as fallback
+                    TimeSpan ffprobeDuration = DetermineActualDuration(videoFilePath);
                     
-                    Tools.Logger.VideoLog.LogCall(this, $"LENGTH DEBUG: Using XML frame timing duration: {length.TotalSeconds:F1}s (last frame: {lastFrame.Time:HH:mm:ss.fff} - first frame: {firstFrame.Time:HH:mm:ss.fff})");
+                    // Use unified duration calculation logic with ffprobe as fallback
+                    var xmlDuration = UnifiedFrameTimingManager.CalculateVideoDuration(recordingInfo.FrameTimes, ffprobeDuration);
+                    
+                    // Duration selection: prefer the shorter of XML-derived duration and container duration
+                    // This avoids progress bar overhang when one source slightly overestimates length
+                    if (ffprobeDuration > TimeSpan.Zero && xmlDuration > TimeSpan.Zero)
+                    {
+                        double xmlS = xmlDuration.TotalSeconds;
+                        double ffS = ffprobeDuration.TotalSeconds;
+                        double diff = Math.Abs(xmlS - ffS);
+                        Tools.Logger.VideoLog.LogCall(this, $"Duration comparison: XML={xmlS:F3}s, ffprobe={ffS:F3}s, |diff|={diff:F3}s");
+                        var chosen = TimeSpan.FromSeconds(Math.Min(xmlS, ffS));
+                        length = chosen;
+                        Tools.Logger.VideoLog.LogCall(this, $"FINAL LENGTH SET (min of XML/ffprobe): {length.TotalSeconds:F3}s");
+                    }
+                    else if (xmlDuration > TimeSpan.Zero)
+                    {
+                        length = xmlDuration;
+                        Tools.Logger.VideoLog.LogCall(this, $"FINAL LENGTH SET: {length.TotalSeconds:F3}s (XML only)");
+                    }
+                    else if (ffprobeDuration > TimeSpan.Zero)
+                    {
+                        length = ffprobeDuration;
+                        Tools.Logger.VideoLog.LogCall(this, $"FINAL LENGTH SET: {length.TotalSeconds:F3}s (ffprobe only)");
+                    }
+                    
+                    // Validate frame timing consistency to detect platform-specific issues
+                    bool isConsistent = UnifiedFrameTimingManager.ValidateFrameTimingConsistency(
+                        recordingInfo.FrameTimes, VideoConfig.VideoMode?.FrameRate ?? 30.0f);
+                    
+                    if (!isConsistent)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "WARNING: Frame timing data appears inconsistent - this may cause playback issues");
+                    }
                 }
                 else
                 {
@@ -1425,12 +1517,54 @@ namespace FfmpegMediaPlatform
             {
                 Tools.Logger.VideoLog.LogCall(this, $"Determining actual MP4 duration for: {videoFilePath}");
                 
+                // Check if ffprobe is available first
+                string ffprobePath;
+                if (ffmpegMediaFramework.ExecName.Contains(Path.DirectorySeparatorChar.ToString()))
+                {
+                    // If ffmpeg path contains directory separator, construct ffprobe path in same directory
+                    string ffmpegDir = Path.GetDirectoryName(ffmpegMediaFramework.ExecName);
+                    string ffmpegFile = Path.GetFileName(ffmpegMediaFramework.ExecName);
+                    string ffprobeFile = ffmpegFile.Replace("ffmpeg", "ffprobe");
+                    ffprobePath = Path.Combine(ffmpegDir, ffprobeFile);
+                }
+                else
+                {
+                    // Simple replacement for cases where ffmpeg is just "ffmpeg" or "ffmpeg.exe"
+                    ffprobePath = ffmpegMediaFramework.ExecName.Replace("ffmpeg", "ffprobe");
+                }
+                
+                // Check if ffprobe exists, try alternatives if not
+                if (!File.Exists(ffprobePath))
+                {
+                    string altPath1 = Path.Combine(Path.GetDirectoryName(ffmpegMediaFramework.ExecName), "ffprobe");
+                    string altPath2 = Path.Combine(Path.GetDirectoryName(ffmpegMediaFramework.ExecName), "ffprobe.exe");
+                    
+                    if (File.Exists(altPath1))
+                    {
+                        ffprobePath = altPath1;
+                    }
+                    else if (File.Exists(altPath2))
+                    {
+                        ffprobePath = altPath2;
+                    }
+                    else
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "FFprobe not found - cannot determine MP4 duration");
+                        return TimeSpan.Zero; // Return zero if ffprobe not available
+                    }
+                }
+                
                 // Use ffprobe to get video information
                 string ffprobeArgs = $"-v quiet -print_format json -show_format -show_streams \"{videoFilePath}\"";
-                var processStartInfo = ffmpegMediaFramework.GetProcessStartInfo($"ffprobe {ffprobeArgs}");
-                processStartInfo.RedirectStandardOutput = true;
-                processStartInfo.UseShellExecute = false;
-                processStartInfo.CreateNoWindow = true;
+                var processStartInfo = new ProcessStartInfo()
+                {
+                    Arguments = ffprobeArgs,
+                    FileName = ffprobePath,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                };
 
                 using (var process = new Process())
                 {

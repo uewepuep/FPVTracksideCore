@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ffprobe:*)",
+      "Bash(mkdir:*)",
+      "Bash(./build-windows.sh:*)",
+      "Bash(gcc:*)",
+      "Bash(pacman:*)",
+      "Bash(where cl)",
+      "Bash(chmod:*)",
+      "Bash(choco install:*)",
+      "Bash(winget install:*)",
+      "Bash(powershell:*)",
+      "Bash(where msys2)",
+      "Bash(where gcc)",
+      "Bash(export PATH=\"/c/tools/msys64/mingw64/bin:/c/tools/msys64/usr/bin:$PATH\")",
+      "Bash(dotnet build:*)",
+      "Bash(.FPVTracksideCore.exe)",
+      "Bash(FPVTracksideCore.exe)",
+      "Bash(taskkill:*)",
+      "Bash(.ffmpeg.exe -version)",
+      "Bash(ffmpeg.exe:*)"
+    ],
+    "deny": []
+  }
+}

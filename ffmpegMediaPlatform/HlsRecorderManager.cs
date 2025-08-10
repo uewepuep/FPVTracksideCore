@@ -448,6 +448,10 @@ namespace FfmpegMediaPlatform
                 {
                     basePath = basePath.Replace(".mp4", "");
                 }
+                else if (basePath.EndsWith(".mkv"))
+                {
+                    basePath = basePath.Replace(".mkv", "");
+                }
                 
                 FileInfo recordInfoFile = new FileInfo(basePath + ".recordinfo.xml");
                 

@@ -112,8 +112,8 @@ namespace FfmpegMediaPlatform
             {
                 string recordingPath = Path.GetFullPath(recordingFilename);
                 
+                // Use hardware-accelerated H.264 encoding for recording - let camera use its natural framerate
                 ffmpegArgs = $"-f avfoundation " +
-                                $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                                 $"-pixel_format uyvy422 " +
                                 $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
                                 $"-i \"{name}\" " +
@@ -122,18 +122,18 @@ namespace FfmpegMediaPlatform
                                 $"-strict experimental " +
                                 $"-threads 1 " +
                                 $"-fps_mode passthrough " +
+                                $"-copyts " +
                                 $"-an " +
                                 $"-filter_complex \"split=2[out1][out2];[out1]format=rgba[outpipe];[out2]format=yuv420p[outfile]\" " +
                                 $"-map \"[outpipe]\" -f rawvideo pipe:1 " +
-                                $"-map \"[outfile]\" -c:v libx264 -b:v 5M -f mp4 -avoid_negative_ts make_zero \"{recordingPath}\"";
+                                $"-map \"[outfile]\" -c:v h264_videotoolbox -preset ultrafast -tune zerolatency -b:v 5M -f matroska -avoid_negative_ts make_zero \"{recordingPath}\"";
                 
                 Tools.Logger.VideoLog.LogCall(this, $"FFMPEG macOS Recording Mode: {ffmpegArgs}");
             }
             else
             {
-                // Live mode: Standard capture without recording
+                // Live mode: Standard capture without recording - let camera use its natural framerate
                 ffmpegArgs = $"-f avfoundation " +
-                                $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                                 $"-pixel_format uyvy422 " +
                                 $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
                                 $"-i \"{name}\" " +
