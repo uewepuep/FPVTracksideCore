@@ -41,14 +41,14 @@
   </ItemGroup>
   <!-- Copy FFmpeg native libraries -->
   <ItemGroup>
-    <!-- Copy ARM64 libraries for any Mac build -->
-    <None Include="..\ffmpegMediaPlatform\ffmpeg-builds\build-arm64\lib\*.dylib" Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+    <!-- Copy ARM64 libraries for ARM64 Mac builds -->
+    <None Include="..\ffmpegMediaPlatform\ffmpeg-builds\build-arm64\lib\*.dylib" Condition="'$(RuntimeIdentifier)' == 'osx-arm64'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>ffmpeg-libs\arm64\%(Filename)%(Extension)</Link>
     </None>
     
-    <!-- Copy Intel libraries for any Mac build -->
-    <None Include="..\ffmpegMediaPlatform\ffmpeg-builds\build-intel\lib\*.dylib" Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+    <!-- Copy Intel libraries for Intel Mac builds -->
+    <None Include="..\ffmpegMediaPlatform\ffmpeg-builds\build-intel\lib\*.dylib" Condition="'$(RuntimeIdentifier)' == 'osx-x64'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>ffmpeg-libs\intel\%(Filename)%(Extension)</Link>
     </None>
