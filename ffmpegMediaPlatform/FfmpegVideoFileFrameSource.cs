@@ -493,8 +493,14 @@ namespace FfmpegMediaPlatform
                         }
                         else
                         {
-                            Tools.Logger.VideoLog.LogCall(this, "FFprobe not found at any expected location");
-                            return false;
+                            Tools.Logger.VideoLog.LogCall(this, "FFprobe not found at any expected location - will use XML data if available");
+                            // Check if we already have valid data from XML file
+                            if (length > TimeSpan.Zero)
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"Using XML-derived duration: {length.TotalSeconds:F3}s (no ffprobe)");
+                                return true; // We have valid XML data, no need for defaults
+                            }
+                            return false; // Fall back to defaults only if no XML data
                         }
                     }
                 }
@@ -607,8 +613,17 @@ namespace FfmpegMediaPlatform
                 Tools.Logger.VideoLog.LogException(this, ex);
             }
 
-            // Fallback: use default values if we can't get file info
-            Tools.Logger.VideoLog.LogCall(this, "Using default video file properties");
+            // Fallback: use default values if we can't get file info and have no XML data
+            if (length > TimeSpan.Zero)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"Keeping XML-derived duration: {length.TotalSeconds:F3}s (no ffprobe available)");
+            }
+            else
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Using default video file properties - no ffprobe and no XML data");
+                length = TimeSpan.FromMinutes(5); // Default 5 minutes only if no XML data
+            }
+            
             if (VideoConfig.VideoMode == null)
             {
                 VideoConfig.VideoMode = new Mode
@@ -620,7 +635,6 @@ namespace FfmpegMediaPlatform
                 };
             }
             
-            length = TimeSpan.FromMinutes(5); // Default 5 minutes
             frameRate = VideoConfig.VideoMode.FrameRate;
             
             return false;
@@ -1503,12 +1517,54 @@ namespace FfmpegMediaPlatform
             {
                 Tools.Logger.VideoLog.LogCall(this, $"Determining actual MP4 duration for: {videoFilePath}");
                 
+                // Check if ffprobe is available first
+                string ffprobePath;
+                if (ffmpegMediaFramework.ExecName.Contains(Path.DirectorySeparatorChar.ToString()))
+                {
+                    // If ffmpeg path contains directory separator, construct ffprobe path in same directory
+                    string ffmpegDir = Path.GetDirectoryName(ffmpegMediaFramework.ExecName);
+                    string ffmpegFile = Path.GetFileName(ffmpegMediaFramework.ExecName);
+                    string ffprobeFile = ffmpegFile.Replace("ffmpeg", "ffprobe");
+                    ffprobePath = Path.Combine(ffmpegDir, ffprobeFile);
+                }
+                else
+                {
+                    // Simple replacement for cases where ffmpeg is just "ffmpeg" or "ffmpeg.exe"
+                    ffprobePath = ffmpegMediaFramework.ExecName.Replace("ffmpeg", "ffprobe");
+                }
+                
+                // Check if ffprobe exists, try alternatives if not
+                if (!File.Exists(ffprobePath))
+                {
+                    string altPath1 = Path.Combine(Path.GetDirectoryName(ffmpegMediaFramework.ExecName), "ffprobe");
+                    string altPath2 = Path.Combine(Path.GetDirectoryName(ffmpegMediaFramework.ExecName), "ffprobe.exe");
+                    
+                    if (File.Exists(altPath1))
+                    {
+                        ffprobePath = altPath1;
+                    }
+                    else if (File.Exists(altPath2))
+                    {
+                        ffprobePath = altPath2;
+                    }
+                    else
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "FFprobe not found - cannot determine MP4 duration");
+                        return TimeSpan.Zero; // Return zero if ffprobe not available
+                    }
+                }
+                
                 // Use ffprobe to get video information
                 string ffprobeArgs = $"-v quiet -print_format json -show_format -show_streams \"{videoFilePath}\"";
-                var processStartInfo = ffmpegMediaFramework.GetProcessStartInfo($"ffprobe {ffprobeArgs}");
-                processStartInfo.RedirectStandardOutput = true;
-                processStartInfo.UseShellExecute = false;
-                processStartInfo.CreateNoWindow = true;
+                var processStartInfo = new ProcessStartInfo()
+                {
+                    Arguments = ffprobeArgs,
+                    FileName = ffprobePath,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                };
 
                 using (var process = new Process())
                 {
