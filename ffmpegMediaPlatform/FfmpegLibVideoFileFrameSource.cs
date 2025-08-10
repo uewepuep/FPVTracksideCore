@@ -29,6 +29,63 @@ namespace FfmpegMediaPlatform
 
     public unsafe class FfmpegLibVideoFileFrameSource : TextureFrameSource, IPlaybackFrameSource
     {
+        // Static constructor to ensure FFmpeg.AutoGen bindings are initialized
+        static FfmpegLibVideoFileFrameSource()
+        {
+            try
+            {
+                Console.WriteLine("FfmpegLibVideoFileFrameSource static constructor: Starting FFmpeg initialization");
+                
+                // Force initialization of FFmpeg.AutoGen bindings BEFORE any other FFmpeg calls
+                FfmpegNativeLoader.EnsureRegistered();
+                
+                // Wait a moment for DLL loading to complete
+                System.Threading.Thread.Sleep(100);
+                
+                // Test if bindings are working by calling multiple simple functions
+                Console.WriteLine($"FFmpeg.AutoGen binding tests:");
+                Console.WriteLine($"  av_log_set_level: {(ffmpeg.av_log_set_level != null ? "OK" : "NULL")}");
+                Console.WriteLine($"  av_version_info: {(ffmpeg.av_version_info != null ? "OK" : "NULL")}");
+                Console.WriteLine($"  avformat_version: {(ffmpeg.avformat_version != null ? "OK" : "NULL")}");
+                
+                if (ffmpeg.av_log_set_level == null)
+                {
+                    throw new InvalidOperationException("FFmpeg.AutoGen bindings failed to initialize - av_log_set_level is null");
+                }
+                
+                // Try calling multiple simple functions to verify they work
+                try
+                {
+                    // Test 1: avformat_version - returns a uint
+                    var avformat_ver = ffmpeg.avformat_version();
+                    Console.WriteLine($"FFmpeg avformat version: {avformat_ver}");
+                    
+                    // Test 2: avcodec_version - alternative version function
+                    var avcodec_ver = ffmpeg.avcodec_version();
+                    Console.WriteLine($"FFmpeg avcodec version: {avcodec_ver}");
+                    
+                    // Test 3: Try a simple log level function
+                    ffmpeg.av_log_set_level(ffmpeg.AV_LOG_ERROR);
+                    Console.WriteLine("FFmpeg log level set successfully");
+                }
+                catch (Exception testEx)
+                {
+                    Console.WriteLine($"FFmpeg function call test failed: {testEx.Message}");
+                    Console.WriteLine($"FFmpeg function call test failed - details: {testEx}");
+                    // Don't throw here - let the constructor handle it gracefully
+                    Console.WriteLine("Warning: FFmpeg native library functions not working, will use fallback");
+                }
+                
+                Console.WriteLine("FFmpeg.AutoGen bindings initialized successfully");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"FFmpeg.AutoGen initialization failed: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                // Don't throw here - let the instance constructor handle it
+            }
+        }
+
         private AVFormatContext* fmt;
         private AVCodecContext* codecCtx;
         private AVFrame* frame;
@@ -64,13 +121,26 @@ namespace FfmpegMediaPlatform
             startTime = DateTime.Now; // default when no XML timing
             frameRate = 30.0;
             length = TimeSpan.Zero;
+            
+            // Check if native libraries are available before proceeding
             try
             {
+                FfmpegNativeLoader.EnsureRegistered();
+                
+                // Test basic library functionality
+                if (ffmpeg.av_log_set_level == null)
+                {
+                    throw new NotSupportedException("FFmpeg native libraries not properly loaded");
+                }
+                
+                // Only try to initialize metadata if libraries are working
                 InitializeMetadataEarly();
             }
             catch (Exception ex)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"Early metadata init failed: {ex.Message}");
+                Tools.Logger.VideoLog.LogCall(this, $"Native library initialization failed: {ex.Message}");
+                // Re-throw to trigger fallback to external FFmpeg
+                throw new NotSupportedException($"FFmpeg native libraries not available: {ex.Message}", ex);
             }
         }
 
@@ -141,7 +211,16 @@ namespace FfmpegMediaPlatform
                 if (!Path.IsPathRooted(path)) path = Path.GetFullPath(path);
                 if (!File.Exists(path)) return TimeSpan.Zero;
 
+                // Ensure libraries are loaded before attempting to use them
                 FfmpegNativeLoader.EnsureRegistered();
+                
+                // Verify basic library functionality
+                if (ffmpeg.avformat_open_input == null || ffmpeg.avformat_find_stream_info == null)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "ProbeFileDuration: FFmpeg native libraries not properly loaded");
+                    return TimeSpan.Zero;
+                }
+
                 AVFormatContext* localFmt = null;
                 AVFormatContext** pfmt = &localFmt;
                 if (ffmpeg.avformat_open_input(pfmt, path, null, null) < 0) return TimeSpan.Zero;
@@ -212,7 +291,47 @@ namespace FfmpegMediaPlatform
             Tools.Logger.VideoLog.LogCall(this, "PLAYBACK ENGINE: ffmpeg LIB (in-process libav)");
             // Ensure native dylibs are resolved (Homebrew path on macOS)
             FfmpegNativeLoader.EnsureRegistered();
-            ffmpeg.av_log_set_level(ffmpeg.AV_LOG_QUIET);
+            
+            // Debug: Check which FFmpeg functions are available
+            Console.WriteLine($"FFmpeg function availability check:");
+            Console.WriteLine($"  av_log_set_level: {(ffmpeg.av_log_set_level != null ? "OK" : "NULL")}");
+            Console.WriteLine($"  avformat_open_input: {(ffmpeg.avformat_open_input != null ? "OK" : "NULL")}");
+            Console.WriteLine($"  avformat_find_stream_info: {(ffmpeg.avformat_find_stream_info != null ? "OK" : "NULL")}");
+            Console.WriteLine($"  avcodec_find_decoder: {(ffmpeg.avcodec_find_decoder != null ? "OK" : "NULL")}");
+            Console.WriteLine($"  avcodec_alloc_context3: {(ffmpeg.avcodec_alloc_context3 != null ? "OK" : "NULL")}");
+            Console.WriteLine($"  avcodec_parameters_to_context: {(ffmpeg.avcodec_parameters_to_context != null ? "OK" : "NULL")}");
+            Console.WriteLine($"  avcodec_open2: {(ffmpeg.avcodec_open2 != null ? "OK" : "NULL")}");
+            
+            // Check if critical functions are available
+            if (ffmpeg.avformat_open_input == null || ffmpeg.avformat_find_stream_info == null || 
+                ffmpeg.avcodec_find_decoder == null || ffmpeg.avcodec_alloc_context3 == null)
+            {
+                throw new NotSupportedException("Critical FFmpeg functions not available - native libraries may be incompatible");
+            }
+            
+            // Test if FFmpeg functions actually work (not just exist)
+            try
+            {
+                // Test a simple function call to see if bindings work
+                var testVersion = ffmpeg.avformat_version();
+                Console.WriteLine($"FFmpeg avformat_version test: {testVersion} (SUCCESS)");
+            }
+            catch (Exception funcTest)
+            {
+                Console.WriteLine($"FFmpeg function call test failed: {funcTest.Message}");
+                throw new NotSupportedException($"FFmpeg native library functions not working: {funcTest.Message}", funcTest);
+            }
+            
+            // Try to set log level, but don't fail if it doesn't work
+            try
+            {
+                ffmpeg.av_log_set_level(ffmpeg.AV_LOG_QUIET);
+            }
+            catch (Exception logEx)
+            {
+                Console.WriteLine($"Warning: Could not set FFmpeg log level: {logEx.Message}");
+                // Continue without setting log level - this is not critical
+            }
             string path = VideoConfig.FilePath;
             if (!Path.IsPathRooted(path)) path = Path.GetFullPath(path);
             if (!File.Exists(path)) throw new FileNotFoundException(path);

@@ -21,6 +21,26 @@
     <ProjectReference Include="..\Tools\Tools.csproj" />
   </ItemGroup>
 
+  <!-- Windows FFmpeg libraries are loaded dynamically by FFmpeg.AutoGen -->
+
+  <!-- Copy Windows FFmpeg DLLs to output -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0-windows'">
+    <!-- Copy FFmpeg libraries and dependencies from build directory -->
+    <Content Include="ffmpeg-builds\build-windows\bin\*.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>%(Filename)%(Extension)</Link>
+    </Content>
+  </ItemGroup>
+
+  <!-- Copy Windows FFmpeg headers to output -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0-windows'">
+    <None Include="ffmpeg-builds\build-windows\include\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>ffmpeg-headers\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
   <ItemGroup>
     <None Update="ffmpeg.exe" Condition="'$(TargetFramework)' == 'net6.0-windows'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

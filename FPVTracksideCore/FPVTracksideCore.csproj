@@ -65,4 +65,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+
+  <!-- Copy Windows FFmpeg native libraries for replay video playback -->
 </Project>
+

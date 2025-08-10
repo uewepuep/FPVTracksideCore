@@ -16,3 +16,6 @@ ffmpegMediaPlatform/ffmpeg.exe
 ffmpegMediaPlatform/ffmpeg
 Webb/httpfiles/Channels.json
 /UI/~$Translations.xlsx
+FPVTracksideCore/ffmpeg-libs/windows/include/
+ffmpegMediaPlatform/ffmpeg-libs/windows/include/
+ffmpegMediaPlatform/ffmpeg-builds/build-windows/include/
