@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using FFmpeg.AutoGen;
 
@@ -12,9 +13,25 @@ namespace FfmpegMediaPlatform
         private static readonly Dictionary<string, IntPtr> handleCache = new();
         private static readonly string[] rootCandidates = new[]
         {
+            GetBundledLibraryPath(),                   // bundled libraries first
             "/opt/homebrew/Cellar/ffmpeg/7.1.1_3/lib", // user-provided versioned path
             "/opt/homebrew/opt/ffmpeg/lib"             // stable symlink
         };
+
+        private static string GetBundledLibraryPath()
+        {
+            var assemblyLocation = typeof(FfmpegNativeLoader).Assembly.Location;
+            var appDirectory = Path.GetDirectoryName(assemblyLocation);
+            
+            if (RuntimeInformation.OSArchitecture == Architecture.Arm64)
+            {
+                return Path.Combine(appDirectory, "ffmpeg-libs", "arm64");
+            }
+            else
+            {
+                return Path.Combine(appDirectory, "ffmpeg-libs", "intel");
+            }
+        }
 
         public static void EnsureRegistered()
         {
@@ -25,96 +42,28 @@ namespace FfmpegMediaPlatform
                 return;
             }
 
-            // Hint AutoGen's internal resolver as well
-            foreach (var root in rootCandidates)
+            // Set the bundled library path for FFmpeg.AutoGen first (for non-Mac platforms)
+            var bundledPath = GetBundledLibraryPath();
+            
+            if (Directory.Exists(bundledPath))
             {
-                if (Directory.Exists(root))
-                {
-                    ffmpeg.RootPath = root;
-                    break;
-                }
+                ffmpeg.RootPath = bundledPath;
             }
-
-            NativeLibrary.SetDllImportResolver(typeof(ffmpeg).Assembly, (name, assembly, path) =>
+            else
             {
-                try
+                // Fallback to system paths
+                foreach (var root in rootCandidates.Skip(1)) // Skip the bundled path
                 {
-                    // Ensure dependencies are preloaded so dyld can resolve chains
-                    PreloadDependencies();
-
-                    if (name.Contains("avutil", StringComparison.OrdinalIgnoreCase))
-                        return LoadAny("libavutil", new[] { "59", "58", "57" });
-                    if (name.Contains("avcodec", StringComparison.OrdinalIgnoreCase))
-                        return LoadAny("libavcodec", new[] { "61", "60", "59" });
-                    if (name.Contains("avformat", StringComparison.OrdinalIgnoreCase))
-                        return LoadAny("libavformat", new[] { "61", "60", "59" });
-                    if (name.Contains("swscale", StringComparison.OrdinalIgnoreCase))
-                        return LoadAny("libswscale", new[] { "8", "7" });
-                    if (name.Contains("swresample", StringComparison.OrdinalIgnoreCase))
-                        return LoadAny("libswresample", new[] { "5", "4" });
-                    if (name.Contains("avfilter", StringComparison.OrdinalIgnoreCase))
-                        return LoadAny("libavfilter", new[] { "10", "9", "8" });
-                    if (name.Contains("postproc", StringComparison.OrdinalIgnoreCase))
-                        return LoadAny("libpostproc", new[] { "58", "57" });
-                }
-                catch (Exception)
-                {
-                    // Fallthrough to default resolver
-                }
-                return IntPtr.Zero;
-            });
-
-            registered = true;
-        }
-
-        private static void PreloadDependencies()
-        {
-            if (handleCache.Count > 0) return;
-            // Load in order of lower-level to higher-level to satisfy dependencies
-            TryLoadIntoCache("libavutil", new[] { "59", "58", "57" });
-            TryLoadIntoCache("libswresample", new[] { "5", "4" });
-            TryLoadIntoCache("libswscale", new[] { "8", "7" });
-            TryLoadIntoCache("libavcodec", new[] { "61", "60", "59" });
-            TryLoadIntoCache("libavformat", new[] { "61", "60", "59" });
-            TryLoadIntoCache("libavfilter", new[] { "10", "9", "8" });
-            TryLoadIntoCache("libpostproc", new[] { "58", "57" });
-        }
-
-        private static void TryLoadIntoCache(string baseName, string[] versions)
-        {
-            if (handleCache.ContainsKey(baseName)) return;
-            IntPtr h = LoadAny(baseName, versions);
-            if (h != IntPtr.Zero)
-            {
-                handleCache[baseName] = h;
-            }
-        }
-
-        private static IntPtr LoadAny(string baseName, string[] versions)
-        {
-            // Prefer versioned dylibs present on disk
-            foreach (string root in rootCandidates)
-            {
-                foreach (string v in versions)
-                {
-                    string candidate = Path.Combine(root, $"{baseName}.{v}.dylib");
-                    if (File.Exists(candidate))
+                    if (Directory.Exists(root))
                     {
-                        try
-                        {
-                            return NativeLibrary.Load(candidate);
-                        }
-                        catch
-                        {
-                            // try next
-                        }
+                        ffmpeg.RootPath = root;
+                        break;
                     }
                 }
             }
 
-            // As a last resort, try unversioned name in default paths
-            try { return NativeLibrary.Load(baseName); } catch { }
-            return IntPtr.Zero;
+            registered = true;
         }
+
     }
 } 

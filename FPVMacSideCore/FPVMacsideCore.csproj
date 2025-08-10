@@ -8,6 +8,7 @@
     <ImplicitUsings>true</ImplicitUsings>
     <Version>2.1.0.1</Version>
     <Platforms>AnyCPU;x64</Platforms>
+    <RuntimeIdentifiers>osx-arm64;osx-x64</RuntimeIdentifiers>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="ffmpeg\ffmpeg-arm">
@@ -37,6 +38,20 @@
     <ProjectReference Include="..\UI\UI.csproj" />
     <ProjectReference Include="..\ffmpegMediaPlatform\FfmpegMediaPlatform.csproj" />
     <ProjectReference Include="..\DB\DB.csproj" />
+  </ItemGroup>
+  <!-- Copy FFmpeg native libraries -->
+  <ItemGroup>
+    <!-- Copy ARM64 libraries for any Mac build -->
+    <None Include="..\ffmpegMediaPlatform\ffmpeg-builds\build-arm64\lib\*.dylib" Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>ffmpeg-libs\arm64\%(Filename)%(Extension)</Link>
+    </None>
+    
+    <!-- Copy Intel libraries for any Mac build -->
+    <None Include="..\ffmpegMediaPlatform\ffmpeg-builds\build-intel\lib\*.dylib" Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>ffmpeg-libs\intel\%(Filename)%(Extension)</Link>
+    </None>
   </ItemGroup>
   <Target Name="RestoreDotnetTools" BeforeTargets="Restore">
     <Message Text="Restoring dotnet tools" Importance="High" />
