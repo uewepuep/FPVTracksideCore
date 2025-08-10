@@ -191,11 +191,20 @@ namespace FfmpegMediaPlatform
             // Check if this is a video file playback (has FilePath) or camera capture
             if (!string.IsNullOrEmpty(vc.FilePath))
             {
-                // On macOS, use external FFmpeg process for video file replay to avoid library compatibility issues
+                // On macOS, try to use native dylibs for video file replay first, fallback to external process if needed
                 if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"PLAYBACK PATH: External ffmpeg process for Mac video file replay → {System.IO.Path.GetFileName(vc.FilePath)}");
-                    return new FfmpegVideoFileFrameSource(this, vc);
+                    try
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"PLAYBACK PATH: Native ffmpeg lib for Mac video file replay → {System.IO.Path.GetFileName(vc.FilePath)}");
+                        return new FfmpegLibVideoFileFrameSource(vc);
+                    }
+                    catch (Exception ex)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"Native library failed, falling back to external ffmpeg process: {ex.Message}");
+                        Tools.Logger.VideoLog.LogCall(this, $"PLAYBACK PATH: External ffmpeg process for Mac video file replay → {System.IO.Path.GetFileName(vc.FilePath)}");
+                        return new FfmpegVideoFileFrameSource(this, vc);
+                    }
                 }
                 else
                 {
