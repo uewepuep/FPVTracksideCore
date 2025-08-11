@@ -764,8 +764,29 @@ namespace FfmpegMediaPlatform
 
         public override bool Stop()
         {
+            Tools.Logger.VideoLog.LogCall(this, "FfmpegLibVideoFileFrameSource.Stop() - BEGIN");
+            
             run = false;
-            readerThread?.Join(1000);
+            isPlaying = false;
+            
+            // Stop the reader thread and wait for it to complete
+            if (readerThread != null && readerThread.IsAlive)
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Waiting for reader thread to stop...");
+                if (!readerThread.Join(2000)) // Wait up to 2 seconds
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "WARNING: Reader thread did not stop within 2 seconds");
+                }
+                else
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "Reader thread stopped successfully");
+                }
+            }
+            
+            // Additional wait to ensure frame processing stops
+            System.Threading.Thread.Sleep(100);
+            
+            Tools.Logger.VideoLog.LogCall(this, "FfmpegLibVideoFileFrameSource.Stop() - SUCCESS");
             return base.Stop();
         }
 
