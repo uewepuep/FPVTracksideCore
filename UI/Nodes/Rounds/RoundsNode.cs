@@ -8,6 +8,7 @@ using RaceLib;
 using RaceLib.Format;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,12 +20,12 @@ namespace UI.Nodes.Rounds
     {
         public IEnumerable<Race> Races { get { return EventManager.RaceManager.Races; } }
 
-        public IEnumerable<EventRoundNode> RoundNodes { get { return Children.OfType<EventRoundNode>(); } }
-        public IEnumerable<EventXNode> EventXNodes { get { return Children.OfType<EventXNode>(); } }
-        public IEnumerable<EventPointsNode> EventSumNodes { get { return Children.OfType<EventPointsNode>(); } }
-        public IEnumerable<EventLapsTimesNode> EventTimesNodes { get { return Children.OfType<EventLapsTimesNode>(); } }
-        public IEnumerable<EventLapCountsNode> EventLapCountsNodes { get { return Children.OfType<EventLapCountsNode>(); } }
-        public IEnumerable<EventPackCountNode> EventPackCountNodes { get { return Children.OfType<EventPackCountNode>(); } }
+        public IEnumerable<EventRoundNode> RoundNodes { get { return container.Children.OfType<EventRoundNode>(); } }
+        public IEnumerable<EventXNode> EventXNodes { get { return container.Children.OfType<EventXNode>(); } }
+        public IEnumerable<EventPointsNode> EventSumNodes { get { return container.Children.OfType<EventPointsNode>(); } }
+        public IEnumerable<EventLapsTimesNode> EventTimesNodes { get { return container.Children.OfType<EventLapsTimesNode>(); } }
+        public IEnumerable<EventLapCountsNode> EventLapCountsNodes { get { return container.Children.OfType<EventLapCountsNode>(); } }
+        public IEnumerable<EventPackCountNode> EventPackCountNodes { get { return container.Children.OfType<EventPackCountNode>(); } }
 
         public EventManager EventManager { get; private set; }
         public RoundManager RoundManager { get { return EventManager.RoundManager; } }
@@ -40,11 +41,29 @@ namespace UI.Nodes.Rounds
 
         public int RacesPerColumn { get; private set; }
 
+        public TabButtonsNode StageButtons { get; private set; }
+
+        private Node container;
+
         public RoundsNode(EventManager eventManager)
         {
             roundControl = new RoundControl();
             roundControl.RelativeBounds = new RectangleF(0, 0.96f, 1, 0.03f);
             AddChild(roundControl);
+
+            StageButtons = new TabButtonsNode(Theme.Current.Tabs.Background, Theme.Current.Tabs.Foreground, Theme.Current.Hover.XNA, Theme.Current.Tabs.Text.XNA);
+            StageButtons.RelativeBounds = new RectangleF(0, 0, 1, 0.03f);
+
+            container = new Node();
+            container.RelativeBounds = new RectangleF(0, StageButtons.RelativeBounds.Bottom, 1, 1 - StageButtons.RelativeBounds.Bottom);
+            
+            AddChild(container);
+            AddChild(StageButtons);
+
+            StageButtons.AddTab("Practice");
+            StageButtons.AddTab("Qualifying");
+            StageButtons.AddTab("Race");
+            StageButtons.AddTab("Finals");
 
             roundControl.Next += RoundControl_Next;
             roundControl.Prev += RoundControl_Prev;
@@ -226,7 +245,7 @@ namespace UI.Nodes.Rounds
                     ern.RemoveRound += RoundManager.RemoveRound;
                     ern.FillRound += FillRound;
                     HookUp(ern);
-                    AddChild(ern);
+                    container.AddChild(ern);
                 }
                 ern.SetRaces(roundRaces);
 
@@ -238,7 +257,7 @@ namespace UI.Nodes.Rounds
                         esn = new EventPointsNode(EventManager, round);
                         esn.RemoveRound += ToggleSumPoints;
                         HookUp(esn);
-                        AddChild(esn);
+                        container.AddChild(esn);
                     }
                     else
                     {
@@ -255,7 +274,7 @@ namespace UI.Nodes.Rounds
                         esn = new EventLapsTimesNode(EventManager, round);
                         esn.RemoveRound += ToggleTimePoints;
                         HookUp(esn);
-                        AddChild(esn);
+                        container.AddChild(esn);
                     }
                     else
                     {
@@ -272,7 +291,7 @@ namespace UI.Nodes.Rounds
                         esn = new EventPackCountNode(EventManager, round);
                         esn.RemoveRound += TogglePackCount;
                         HookUp(esn);
-                        AddChild(esn);
+                        container.AddChild(esn);
                     }
                     else
                     {
@@ -289,7 +308,7 @@ namespace UI.Nodes.Rounds
                         esn = new EventLapCountsNode(EventManager, round);
                         esn.RemoveRound += ToggleLapCount;
                         HookUp(esn);
-                        AddChild(esn);
+                        container.AddChild(esn);
                     }
                     else
                     {
