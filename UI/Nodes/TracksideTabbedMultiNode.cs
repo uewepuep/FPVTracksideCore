@@ -390,14 +390,33 @@ namespace UI.Nodes
                 sceneManagerNode.ChannelsGridNode.ReloadPilotProfileImages();
             }
 
-            // If we're leaving the replay tab, restart live video feeds
+            // If we're leaving the replay tab, stop video playback and clean up BEFORE switching tabs
+            // This ensures FFmpeg frame sources are completely stopped before FrameNodeThumb disposal
             if (Showing == ReplayNode && node != ReplayNode)
             {
+                Tools.Logger.VideoLog.LogCall(this, "Stopping replay video playback before tab switch to prevent crashes");
+                
+                // Stop all video playback first
+                StopReplayPlayback();
+                
+                // Wait for playback to fully stop - longer wait to ensure thread termination
+                Tools.Logger.VideoLog.LogCall(this, "Waiting for video playback to fully stop...");
+                System.Threading.Thread.Sleep(300);
+                Tools.Logger.VideoLog.LogCall(this, "Video playback stop wait completed");
+                
+                // Now clean up resources
+                ReplayNode.CleanUp();
                 RestartLiveVideoFeeds();
             }
 
             base.Show(node);
-            ReplayNode.CleanUp();
+            
+            // Always ensure replay is cleaned up after tab switches (defensive)
+            if (node != ReplayNode)
+            {
+                ReplayNode.CleanUp();
+            }
+            
             GC.Collect();
         }
 
@@ -435,6 +454,53 @@ namespace UI.Nodes
             {
                 Tools.Logger.VideoLog.LogException(this, ex);
                 Tools.Logger.VideoLog.LogCall(this, "Error stopping live video feeds for replay");
+            }
+        }
+
+        private void StopReplayPlayback()
+        {
+            try
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Stopping replay video playback");
+                
+                if (ReplayNode?.PlaybackVideoManager != null)
+                {
+                    // Get all playback frame sources and stop them
+                    var playbackSources = ReplayNode.PlaybackVideoManager.FrameSources
+                        .OfType<IPlaybackFrameSource>()
+                        .ToArray();
+
+                    foreach (var frameSource in playbackSources)
+                    {
+                        try
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"Stopping playback source: {frameSource.GetType().Name}");
+                            
+                            // Stop the underlying frame source immediately - this stops the reader thread
+                            if (frameSource is FrameSource fs)
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"Calling Stop() on frame source: {fs.GetType().Name}, current state: {fs.State}");
+                                fs.Stop();
+                                Tools.Logger.VideoLog.LogCall(this, $"Stop() completed on frame source: {fs.GetType().Name}");
+                            }
+                            
+                            // Also call pause for good measure
+                            frameSource.Pause();
+                        }
+                        catch (Exception ex)
+                        {
+                            Tools.Logger.VideoLog.LogException(this, ex);
+                            Tools.Logger.VideoLog.LogCall(this, $"Error stopping playback source: {frameSource.GetType().Name}");
+                        }
+                    }
+
+                    Tools.Logger.VideoLog.LogCall(this, $"Stopped {playbackSources.Length} replay playback sources");
+                }
+            }
+            catch (Exception ex)
+            {
+                Tools.Logger.VideoLog.LogException(this, ex);
+                Tools.Logger.VideoLog.LogCall(this, "Error stopping replay playback");
             }
         }
 
