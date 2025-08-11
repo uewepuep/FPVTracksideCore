@@ -195,12 +195,15 @@ namespace UI.Video
                 // Check if we can access the state by casting to FrameSource
                 if (frameSource is FrameSource fs && fs.State == FrameSource.States.Paused)
                 {
+                    // Resume from paused state - don't seek, just continue
+                    Tools.Logger.VideoLog.LogCall(this, $"ReplayNode.Play: Resuming from paused state");
                     frameSource.Play();
                 }
                 else
                 {
                     // If not paused or can't check state, restart from current position
                     DateTime currentTime = SeekNode.CurrentTime;
+                    Tools.Logger.VideoLog.LogCall(this, $"ReplayNode.Play: Not paused, seeking to {currentTime:HH:mm:ss.fff} and playing");
                     frameSource.SetPosition(currentTime);
                     frameSource.Play();
                 }
@@ -499,35 +502,46 @@ namespace UI.Video
 
                 if (primary != null)
                 {
-                    DateTime currentTime = primary.CurrentTime;
-
-                    // Check if we recently performed a seek operation
-                    bool recentSeek = lastSeekTime.HasValue && (DateTime.Now - lastSeekTimeSet).TotalMilliseconds < 3000; // 3 second grace period
-                    
-                    if (recentSeek)
+                    // Check if video is paused - don't update progress bar if paused
+                    bool isPaused = false;
+                    if (primary is FrameSource fs && fs.State == FrameSource.States.Paused)
                     {
-                        // During seek grace period, use the seek time if the primary time hasn't caught up yet
-                        if (Math.Abs((lastSeekTime.Value - currentTime).TotalSeconds) > 2.0) // If primary time is still far from seek target
-                        {
-                            Tools.Logger.VideoLog.LogCall(this, $"Update: Using seek time {lastSeekTime.Value:HH:mm:ss.fff} instead of primary time {currentTime:HH:mm:ss.fff}");
-                            currentTime = lastSeekTime.Value;
-                        }
-                        else
-                        {
-                            // Primary has caught up, clear the seek tracking
-                            Tools.Logger.VideoLog.LogCall(this, $"Update: Primary time caught up, clearing seek tracking");
-                            lastSeekTime = null;
-                        }
+                        isPaused = true;
                     }
-
-                    if (Math.Abs((SeekNode.CurrentTime - currentTime).TotalMilliseconds) > 10)
+                    
+                    // Only update progress bar when not paused
+                    if (!isPaused)
                     {
-                        SeekNode.CurrentTime = currentTime;
-                        SeekNode.RequestLayout();
+                        DateTime currentTime = primary.CurrentTime;
 
-                        ChannelsGridNode.SetPlaybackTime(currentTime);
-                        ChannelsGridNode.SetReorderType(ApplicationProfileSettings.Instance.PilotOrderMidRace == ApplicationProfileSettings.OrderTypes.Channel ? ChannelsGridNode.ReOrderTypes.ChannelOrder : ChannelsGridNode.ReOrderTypes.PositionOrder);
-                        ChannelsGridNode.Reorder();
+                        // Check if we recently performed a seek operation
+                        bool recentSeek = lastSeekTime.HasValue && (DateTime.Now - lastSeekTimeSet).TotalMilliseconds < 3000; // 3 second grace period
+                        
+                        if (recentSeek)
+                        {
+                            // During seek grace period, use the seek time if the primary time hasn't caught up yet
+                            if (Math.Abs((lastSeekTime.Value - currentTime).TotalSeconds) > 2.0) // If primary time is still far from seek target
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"Update: Using seek time {lastSeekTime.Value:HH:mm:ss.fff} instead of primary time {currentTime:HH:mm:ss.fff}");
+                                currentTime = lastSeekTime.Value;
+                            }
+                            else
+                            {
+                                // Primary has caught up, clear the seek tracking
+                                Tools.Logger.VideoLog.LogCall(this, $"Update: Primary time caught up, clearing seek tracking");
+                                lastSeekTime = null;
+                            }
+                        }
+
+                        if (Math.Abs((SeekNode.CurrentTime - currentTime).TotalMilliseconds) > 10)
+                        {
+                            SeekNode.CurrentTime = currentTime;
+                            SeekNode.RequestLayout();
+
+                            ChannelsGridNode.SetPlaybackTime(currentTime);
+                            ChannelsGridNode.SetReorderType(ApplicationProfileSettings.Instance.PilotOrderMidRace == ApplicationProfileSettings.OrderTypes.Channel ? ChannelsGridNode.ReOrderTypes.ChannelOrder : ChannelsGridNode.ReOrderTypes.PositionOrder);
+                            ChannelsGridNode.Reorder();
+                        }
                     }
                 }
             }

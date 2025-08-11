@@ -108,8 +108,7 @@ namespace FfmpegMediaPlatform
         private DateTime wallClockStartUtc;
         private PlaybackSpeed playbackSpeed = PlaybackSpeed.Normal;
         private bool isPlaying = false;
-        private DateTime playbackStartTime;
-        private TimeSpan playbackStartOffset;
+        private TimeSpan pausedAtMediaTime = TimeSpan.Zero; // Store exact position when paused
         private readonly object seekLock = new object();
         private bool seekRequested = false;
         private TimeSpan seekTarget = TimeSpan.Zero;
@@ -146,7 +145,19 @@ namespace FfmpegMediaPlatform
 
         public FrameTime[] FrameTimes => frameTimesData;
         public DateTime StartTime => startTime;
-        public DateTime CurrentTime => startTime + mediaTime;
+        public DateTime CurrentTime 
+        { 
+            get 
+            {
+                var result = startTime + mediaTime;
+                // Log occasionally to track timing
+                if (DateTime.Now.Millisecond % 500 < 50) // Log about every 500ms
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"CURRENTTIME: startTime={startTime:HH:mm:ss.fff}, mediaTime={mediaTime.TotalSeconds:F2}s, result={result:HH:mm:ss.fff} (State={State})");
+                }
+                return result;
+            }
+        }
         public double FrameRate => frameRate;
         public PlaybackSpeed PlaybackSpeed
         {
@@ -156,8 +167,8 @@ namespace FfmpegMediaPlatform
                 if (playbackSpeed != value)
                 {
                     playbackSpeed = value;
-                    // Re-anchor pacing so new rate applies smoothly
-                    wallClockStartUtc = DateTime.UtcNow - ScaleBySpeed(mediaTime);
+                    // Playback speed is now controlled by frame pacing in ReadLoop
+                    Tools.Logger.VideoLog.LogCall(this, $"PlaybackSpeed changed to {value}");
                 }
             }
         }
@@ -403,6 +414,7 @@ namespace FfmpegMediaPlatform
             readerThread.Start();
 
             mediaTime = TimeSpan.Zero;
+            Tools.Logger.VideoLog.LogCall(this, $"INIT: mediaTime reset to {mediaTime.TotalSeconds:F2}s");
             wallClockStartUtc = DateTime.UtcNow;
             isAtEnd = false;
             
@@ -621,27 +633,12 @@ namespace FfmpegMediaPlatform
                             }
                         }
                         
-                        // Update timing (mediaTime from PTS) - keep PTS timing that was working
-                        long localPts = frame->best_effort_timestamp;
-                        if (localPts == ffmpeg.AV_NOPTS_VALUE) localPts = frame->pts;
-                        if (localPts != ffmpeg.AV_NOPTS_VALUE)
-                        {
-                            double sec = (localPts - startPts) * tb;
-                            mediaTime = TimeSpan.FromSeconds(Math.Max(0, sec));
-                        }
-
                         // Use natural frame timing from MKV file - no artificial pacing
                         // The frame timing (frameTime) already contains the correct intervals from the video
 
                         // Use frame rate pacing to maintain proper playback speed
                         // Calculate expected frame interval based on video frame rate
                         double expectedFrameIntervalMs = 1000.0 / Math.Max(1.0, frameRate);
-                        
-                        // Debug frame timing
-                        if (loopCount < 10 || loopCount % 60 == 0)
-                        {
-                            Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Processing frame - frameTime={frameTime.TotalSeconds:F2}s, mediaTime={mediaTime.TotalSeconds:F2}s, expectedInterval={expectedFrameIntervalMs:F1}ms");
-                        }
                         
                         // Check if seek is pending
                         bool seekStillPending = false;
@@ -650,18 +647,51 @@ namespace FfmpegMediaPlatform
                             seekStillPending = seekRequested;
                         }
                         
-                        if (run && !seekStillPending)
+                        if (run && !seekStillPending && isPlaying)
                         {
+                            // Update timing (mediaTime from PTS) - only when playing to keep progress bar stopped when paused
+                            long localPts = frame->best_effort_timestamp;
+                            if (localPts == ffmpeg.AV_NOPTS_VALUE) localPts = frame->pts;
+                            if (localPts != ffmpeg.AV_NOPTS_VALUE)
+                            {
+                                double sec = (localPts - startPts) * tb;
+                                var newMediaTime = TimeSpan.FromSeconds(Math.Max(0, sec));
+                                if (Math.Abs((newMediaTime - mediaTime).TotalMilliseconds) > 10)
+                                {
+                                    Tools.Logger.VideoLog.LogCall(this, $"READLOOP: mediaTime updated from {mediaTime.TotalSeconds:F2}s to {newMediaTime.TotalSeconds:F2}s (isPlaying={isPlaying})");
+                                }
+                                mediaTime = newMediaTime;
+                            }
+                            
+                            // Debug frame timing
+                            if (loopCount < 10 || loopCount % 60 == 0)
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Processing frame - frameTime={frameTime.TotalSeconds:F2}s, mediaTime={mediaTime.TotalSeconds:F2}s, expectedInterval={expectedFrameIntervalMs:F1}ms");
+                            }
+                            
                             if (loopCount % 30 == 0) // Log every 30 frames (about 1 second at 30fps)
                             {
                                 Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Processing frame at {frameTime.TotalSeconds:F2}s");
                             }
                             ProcessCurrentFrame(frame, frameTime);
                             
-                            // Frame rate pacing - sleep for expected frame duration
+                            // Frame rate pacing with playback speed control
                             if (expectedFrameIntervalMs > 5.0) // Only sleep if reasonable interval
                             {
-                                Thread.Sleep((int)expectedFrameIntervalMs);
+                                // Apply playback speed scaling to sleep duration
+                                double speedFactor = GetSpeedFactor();
+                                int sleepMs = (int)(expectedFrameIntervalMs * speedFactor);
+                                
+                                // Only sleep if we're playing (pause by not sleeping)
+                                if (isPlaying && sleepMs > 0)
+                                {
+                                    Thread.Sleep(sleepMs);
+                                }
+                                else if (!isPlaying)
+                                {
+                                    // When paused, sleep longer to avoid CPU spinning
+                                    Thread.Sleep(50);
+                                }
                             }
                             
                             // Continue processing additional frames if available, but check for seeks
@@ -680,6 +710,17 @@ namespace FfmpegMediaPlatform
                                 Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Skipping frame due to pending seek");
                             }
                             break; // Stop processing more frames if seek is pending
+                        }
+                        else if (!isPlaying)
+                        {
+                            // When paused, skip frame processing but continue loop to handle seeks
+                            if (loopCount % 300 == 0)
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Skipping frame due to paused state");
+                            }
+                            // Small sleep to avoid CPU spinning when paused
+                            Thread.Sleep(50);
+                            break; // Skip remaining frames in this packet
                         }
                     }
                     
@@ -813,14 +854,37 @@ namespace FfmpegMediaPlatform
 
         public void Play()
         {
+            Tools.Logger.VideoLog.LogCall(this, $"Play() called - mediaTime: {mediaTime.TotalSeconds:F2}s, pausedAtMediaTime: {pausedAtMediaTime.TotalSeconds:F2}s");
+            
+            // If resuming from pause, restore the exact paused position
+            if (State == States.Paused && pausedAtMediaTime != TimeSpan.Zero)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"Resuming from pause - restoring mediaTime from {mediaTime.TotalSeconds:F2}s to {pausedAtMediaTime.TotalSeconds:F2}s");
+                mediaTime = pausedAtMediaTime;
+                // Seek to the exact paused position in the video stream
+                lock (seekLock)
+                {
+                    seekTarget = pausedAtMediaTime;
+                    seekRequested = true;
+                }
+            }
+            
             isPlaying = true;
-            // PTS timing drives playback - no wall-clock anchoring needed
+            // Set the proper state in the base class
+            base.Start();
+            Tools.Logger.VideoLog.LogCall(this, $"Play() completed - mediaTime: {mediaTime.TotalSeconds:F2}s, isPlaying: {isPlaying}");
         }
 
         public override bool Pause()
         {
+            Tools.Logger.VideoLog.LogCall(this, $"Pause() called - mediaTime: {mediaTime.TotalSeconds:F2}s");
             isPlaying = false;
-            return base.Pause();
+            // Store the exact position where we paused
+            pausedAtMediaTime = mediaTime;
+            // Call base class Pause() which sets the state properly
+            bool result = base.Pause();
+            Tools.Logger.VideoLog.LogCall(this, $"Pause() completed - stored pausedAtMediaTime: {pausedAtMediaTime.TotalSeconds:F2}s, isPlaying: {isPlaying}");
+            return result;
         }
 
         public void SetPosition(TimeSpan seekTime)
@@ -833,10 +897,11 @@ namespace FfmpegMediaPlatform
                 seekTarget = seekTime;
                 seekRequested = true;
             }
+            Tools.Logger.VideoLog.LogCall(this, $"SETPOSITION: mediaTime changed from {mediaTime.TotalSeconds:F2}s to {seekTime.TotalSeconds:F2}s (State={State})");
             mediaTime = seekTime;
             
-            // Auto-play after seeking - PTS timing will drive from here
-            if (seekTime > TimeSpan.Zero)
+            // Auto-play after seeking - but don't override pause state
+            if (seekTime > TimeSpan.Zero && State != States.Paused)
             {
                 isPlaying = true;
             }
@@ -872,65 +937,12 @@ namespace FfmpegMediaPlatform
 
         public void Mute(bool mute = true) { }
 
-        private void UpdatePlaybackTime()
-        {
-            if (isPlaying && playbackStartTime != default)
-            {
-                var elapsed = DateTime.Now - playbackStartTime;
-                
-                // If we have XML frame timing data, use it to determine proper playback speed
-                if (frameTimesData != null && frameTimesData.Length > 1)
-                {
-                    // Calculate the ratio of XML timeline to video timeline for proper speed scaling
-                    var xmlDuration = frameTimesData[^1].Time - frameTimesData[0].Time;
-                    var videoDuration = Length;
-                    
-                    if (videoDuration > TimeSpan.Zero && xmlDuration > TimeSpan.Zero)
-                    {
-                        // Scale elapsed time by the ratio of XML duration to video duration
-                        double speedRatio = xmlDuration.TotalSeconds / videoDuration.TotalSeconds;
-                        var scaledElapsed = TimeSpan.FromSeconds(elapsed.TotalSeconds * speedRatio);
-                        var scaledMediaTime = playbackStartOffset + scaledElapsed;
-                        
-                        // Clamp to video length
-                        if (Length > TimeSpan.Zero && scaledMediaTime > Length)
-                        {
-                            scaledMediaTime = Length;
-                            isPlaying = false; // Stop at end
-                            isAtEnd = true;
-                        }
-                        else if (scaledMediaTime < TimeSpan.Zero)
-                        {
-                            scaledMediaTime = TimeSpan.Zero;
-                        }
-                        
-                        mediaTime = scaledMediaTime;
-                        return;
-                    }
-                }
-                
-                // Fall back to normal real-time playback if no XML timing
-                var newMediaTime = playbackStartOffset + elapsed;
-                
-                // Clamp to video length
-                if (Length > TimeSpan.Zero && newMediaTime > Length)
-                {
-                    newMediaTime = Length;
-                    isPlaying = false; // Stop at end
-                    isAtEnd = true;
-                }
-                else if (newMediaTime < TimeSpan.Zero)
-                {
-                    newMediaTime = TimeSpan.Zero;
-                }
-                
-                mediaTime = newMediaTime;
-            }
-        }
+        // Removed UpdatePlaybackTime() - PTS timing from ReadLoop handles mediaTime naturally
 
         public override bool UpdateTexture(Microsoft.Xna.Framework.Graphics.GraphicsDevice graphicsDevice, int drawFrameId, ref Microsoft.Xna.Framework.Graphics.Texture2D texture)
         {
-            // PTS timing drives playback naturally - no manual time updates needed
+            // Let PTS timing from ReadLoop drive mediaTime naturally
+            // No need to override with wall-clock timing
             
             // Call base implementation to get the frame
             bool result = base.UpdateTexture(graphicsDevice, drawFrameId, ref texture);
@@ -953,11 +965,20 @@ namespace FfmpegMediaPlatform
         private TimeSpan ScaleBySpeed(TimeSpan media)
         {
             // Map playback speed to wall-clock pacing factor
-            // Normal: 1x, Slow: 0.25x (4x slower), FastAsPossible: no pacing (treat as 1x here)
-            double factor = 1.0;
-            if (playbackSpeed == PlaybackSpeed.Slow) factor = 4.0; // slow motion: display same media interval over 4x wall time
+            // Normal: 1x, Slow: 0.2x (5x slower = 20% speed), FastAsPossible: no pacing (treat as 1x here)
+            double factor = GetSpeedFactor();
             // For FastAsPossible, we still compute anchor but pacing sleep is skipped
             return TimeSpan.FromTicks((long)(media.Ticks * factor));
+        }
+        
+        private double GetSpeedFactor()
+        {
+            return playbackSpeed switch
+            {
+                PlaybackSpeed.Slow => 5.0, // 20% speed (5x slower)
+                PlaybackSpeed.FastAsPossible => 1.0, // treat as normal for timing calculations
+                _ => 1.0 // Normal speed
+            };
         }
     }
 } 
