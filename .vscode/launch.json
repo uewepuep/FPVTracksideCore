@@ -1,0 +1,39 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": ".NET Debug (x64 - Forces Native FFmpeg)",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/FPVTracksideCore/bin/Debug/net60-windows/win-x64/FPVTracksideCore.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}/FPVTracksideCore",
+            "stopAtEntry": false,
+            "console": "internalConsole",
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development"
+            },
+            "requireExactSource": false,
+            "preLaunchTask": "build-x64"
+        },
+        {
+            "name": ".NET Debug (Default - May use External FFmpeg)",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/FPVTracksideCore/FPVTracksideCore.csproj",
+            "args": [],
+            "cwd": "${workspaceFolder}/FPVTracksideCore",
+            "stopAtEntry": false,
+            "console": "internalConsole",
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development"
+            },
+            "requireExactSource": false
+        },
+        {
+            "name": ".NET Attach",
+            "type": "coreclr",
+            "request": "attach"
+        }
+    ]
+}

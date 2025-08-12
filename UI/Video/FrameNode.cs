@@ -68,25 +68,25 @@ namespace UI.Video
                 {
                     CompositorLayer.PreProcess(this, true);
                     // Log only every 120 frames to reduce spam
-                    if (processNumber % 120 == 0)
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, $"PreProcess called for frame {processNumber}");
-                    }
+                    // if (processNumber % 120 == 0)
+                    // {
+                    //     Tools.Logger.VideoLog.LogCall(this, $"PreProcess called for frame {processNumber}");
+                    // }
                 }
                 RequestRedraw();
                 // Log only every 120 frames to reduce spam
-                if (processNumber % 120 == 0)
-                {
-                    Tools.Logger.VideoLog.LogCall(this, $"RequestRedraw called for frame {processNumber}");
-                }
+                // if (processNumber % 120 == 0)
+                // {
+                //     Tools.Logger.VideoLog.LogCall(this, $"RequestRedraw called for frame {processNumber}");
+                // }
             }
             else
             {
                 // Log only every 120 frames to reduce spam
-                if (processNumber % 120 == 0)
-                {
-                    Tools.Logger.VideoLog.LogCall(this, $"FrameNode not visible - skipping frame {processNumber}");
-                }
+                // if (processNumber % 120 == 0)
+                // {
+                //     Tools.Logger.VideoLog.LogCall(this, $"FrameNode not visible - skipping frame {processNumber}");
+                // }
             }
         }
 
