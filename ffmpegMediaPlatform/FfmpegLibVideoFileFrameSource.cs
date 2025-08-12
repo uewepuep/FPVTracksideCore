@@ -104,6 +104,10 @@ namespace FfmpegMediaPlatform
         private DateTime startTime;
         private TimeSpan mediaTime;
         private bool isAtEnd;
+        
+        // Real-time playback timing
+        private DateTime playbackStartTime;
+        private TimeSpan playbackStartMediaTime;
         private FrameTime[] frameTimesData = Array.Empty<FrameTime>();
         private DateTime wallClockStartUtc;
         private PlaybackSpeed playbackSpeed = PlaybackSpeed.Normal;
@@ -649,10 +653,6 @@ namespace FfmpegMediaPlatform
                         
                         // Use natural frame timing from MKV file - no artificial pacing
                         // The frame timing (frameTime) already contains the correct intervals from the video
-
-                        // Use frame rate pacing to maintain proper playback speed
-                        // Calculate expected frame interval based on video frame rate
-                        double expectedFrameIntervalMs = 1000.0 / Math.Max(1.0, frameRate);
                         
                         // Check if seek is pending
                         bool seekStillPending = false;
@@ -689,22 +689,52 @@ namespace FfmpegMediaPlatform
                             // }
                             ProcessCurrentFrame(frame, frameTime);
                             
-                            // Frame rate pacing with playback speed control
-                            if (expectedFrameIntervalMs > 5.0) // Only sleep if reasonable interval
+                            // Real-time playback timing based on PTS
+                            if (!isPlaying)
                             {
-                                // Apply playback speed scaling to sleep duration
+                                // When paused, sleep longer to avoid CPU spinning
+                                Thread.Sleep(50);
+                            }
+                            else
+                            {
                                 double speedFactor = GetSpeedFactor();
-                                int sleepMs = (int)(expectedFrameIntervalMs * speedFactor);
+                                double targetFrameInterval = (1000.0 / frameRate) / speedFactor; // Frame interval in milliseconds
                                 
-                                // Only sleep if we're playing (pause by not sleeping)
-                                if (isPlaying && sleepMs > 0)
+                                // Initialize or reset timing baseline periodically to prevent drift
+                                if (playbackStartTime == DateTime.MinValue)
                                 {
-                                    Thread.Sleep(sleepMs);
+                                    playbackStartTime = DateTime.UtcNow;
+                                    playbackStartMediaTime = mediaTime;
                                 }
-                                else if (!isPlaying)
+                                else
                                 {
-                                    // When paused, sleep longer to avoid CPU spinning
-                                    Thread.Sleep(50);
+                                    // Reset timing baseline every 5 seconds to prevent accumulating drift
+                                    var timeSinceLastReset = DateTime.UtcNow - playbackStartTime;
+                                    if (timeSinceLastReset.TotalSeconds > 5.0)
+                                    {
+                                        playbackStartTime = DateTime.UtcNow;
+                                        playbackStartMediaTime = mediaTime;
+                                        Tools.Logger.VideoLog.LogCall(this, $"Timing baseline reset to prevent drift - mediaTime: {mediaTime.TotalSeconds:F3}s");
+                                    }
+                                }
+                                
+                                // Calculate how much time should have elapsed based on video timing
+                                var videoElapsed = mediaTime - playbackStartMediaTime;
+                                var targetElapsed = TimeSpan.FromMilliseconds(videoElapsed.TotalMilliseconds / speedFactor);
+                                
+                                // Calculate how much time has actually elapsed
+                                var actualElapsed = DateTime.UtcNow - playbackStartTime;
+                                
+                                // Sleep if we're ahead of schedule
+                                var timeDiff = targetElapsed - actualElapsed;
+                                if (timeDiff.TotalMilliseconds > 1)
+                                {
+                                    Thread.Sleep((int)Math.Min(timeDiff.TotalMilliseconds, 50));
+                                }
+                                else
+                                {
+                                    // Use frame-rate based minimal sleep for smooth playback
+                                    Thread.Sleep((int)Math.Max(1, targetFrameInterval * 0.1));
                                 }
                             }
                             
@@ -870,6 +900,12 @@ namespace FfmpegMediaPlatform
         {
             Tools.Logger.VideoLog.LogCall(this, $"Play() called - mediaTime: {mediaTime.TotalSeconds:F2}s, pausedAtMediaTime: {pausedAtMediaTime.TotalSeconds:F2}s");
             
+            // Reset playback timing when starting/resuming playback
+            // This ensures accurate real-time timing regardless of seeks or pauses
+            playbackStartTime = DateTime.MinValue;
+            playbackStartMediaTime = TimeSpan.Zero;
+            Tools.Logger.VideoLog.LogCall(this, $"Play() reset timing variables for real-time playback");
+            
             // If resuming from pause, restore the exact paused position
             if (State == States.Paused && pausedAtMediaTime != TimeSpan.Zero)
             {
@@ -911,6 +947,11 @@ namespace FfmpegMediaPlatform
                 Tools.Logger.VideoLog.LogCall(this, $"SetPosition: Invalid seek time {seekTime.TotalSeconds:F2}s, clamping to 0");
                 seekTime = TimeSpan.Zero;
             }
+            
+            // Reset playback timing when seeking to ensure accurate real-time playback from new position
+            playbackStartTime = DateTime.MinValue;
+            playbackStartMediaTime = TimeSpan.Zero;
+            Tools.Logger.VideoLog.LogCall(this, $"SetPosition: Reset timing variables for real-time playback after seek to {seekTime.TotalSeconds:F2}s");
             
             // Set the seek request for ReadLoop to handle
             lock (seekLock)
@@ -992,16 +1033,17 @@ namespace FfmpegMediaPlatform
             // Normal: 1x, Slow: 0.2x (5x slower = 20% speed), FastAsPossible: no pacing (treat as 1x here)
             double factor = GetSpeedFactor();
             // For FastAsPossible, we still compute anchor but pacing sleep is skipped
-            return TimeSpan.FromTicks((long)(media.Ticks * factor));
+            return TimeSpan.FromTicks((long)(media.Ticks / factor));
         }
         
         private double GetSpeedFactor()
         {
+            // Speed factor used as divisor: higher value = slower playback
             return playbackSpeed switch
             {
-                PlaybackSpeed.Slow => 5.0, // 20% speed (5x slower)
-                PlaybackSpeed.FastAsPossible => 1.0, // treat as normal for timing calculations
-                _ => 1.0 // Normal speed
+                PlaybackSpeed.Slow => 5.0, // Divide by 5 = 20% speed (5x slower)
+                PlaybackSpeed.FastAsPossible => 1.0, // Divide by 1 = normal timing calculations
+                _ => 1.0 // Normal speed: Divide by 1 = 100% speed
             };
         }
     }
