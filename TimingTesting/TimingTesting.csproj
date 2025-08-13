@@ -6,11 +6,8 @@
     <UseWindowsForms>true</UseWindowsForms>
     <StartupObject />
     <Platforms>x64;AnyCPU</Platforms>
-<<<<<<< HEAD
     <Version>2.1.0.1</Version>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-=======
-    <Version>2.0.69.2</Version>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
