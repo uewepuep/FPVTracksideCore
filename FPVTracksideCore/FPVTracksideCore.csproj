@@ -66,12 +66,6 @@
     </Content>
   </ItemGroup>
 
-  <!-- Copy Windows FFmpeg native libraries for replay video playback -->
-  <ItemGroup>
-    <Content Include="ffmpeg-libs\windows\*.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>ffmpeg-libs\windows\%(Filename)%(Extension)</Link>
-    </Content>
-  </ItemGroup>
+  <!-- Windows FFmpeg native libraries are copied through ffmpegMediaPlatform project reference -->
 </Project>
 
