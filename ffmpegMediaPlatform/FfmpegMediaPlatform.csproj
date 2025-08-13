@@ -54,8 +54,8 @@
 
   <!-- Native FFmpeg libraries for Windows -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net6.0-windows' OR '$(TargetFramework)' == 'net60-windows'">
-    <!-- Default copy for Windows when no RuntimeIdentifier is specified -->
-    <None Include="ffmpeg-libs\windows\*.dll" Condition="$([MSBuild]::IsOsPlatform('Windows'))">
+    <!-- Always copy Windows libraries when building for Windows target framework -->
+    <None Include="ffmpeg-libs\windows\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>ffmpeg-libs\windows\%(Filename)%(Extension)</Link>
     </None>
