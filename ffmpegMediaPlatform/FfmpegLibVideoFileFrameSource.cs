@@ -104,6 +104,7 @@ namespace FfmpegMediaPlatform
         private DateTime startTime;
         private TimeSpan mediaTime;
         private bool isAtEnd;
+        private float slowSpeedFactor = 0.1f; // Default slow speed
         
         // Real-time playback timing
         private DateTime playbackStartTime;
@@ -182,6 +183,11 @@ namespace FfmpegMediaPlatform
         public TimeSpan Length => length;
         public bool Repeat { get; set; }
         public bool IsAtEnd => isAtEnd;
+        public float SlowSpeedFactor 
+        { 
+            get => slowSpeedFactor; 
+            set => slowSpeedFactor = Math.Max(0.1f, Math.Min(1.0f, value)); 
+        }
 
         public override int FrameWidth => VideoConfig.VideoMode?.Width > 0 ? VideoConfig.VideoMode.Width : 640;
         public override int FrameHeight => VideoConfig.VideoMode?.Height > 0 ? VideoConfig.VideoMode.Height : 480;
@@ -1047,7 +1053,7 @@ namespace FfmpegMediaPlatform
             // Speed factor used as sleep multiplier: higher value = slower playback
             return playbackSpeed switch
             {
-                PlaybackSpeed.Slow => 10.0, // 10x slower = 10% speed (0.1x)
+                PlaybackSpeed.Slow => 1.0 / slowSpeedFactor, // Use custom slow speed (e.g., 1/0.1 = 10x slower for 0.1 speed)
                 PlaybackSpeed.FastAsPossible => 1.0, // Normal timing calculations
                 _ => 1.0 // Normal speed: 100% speed
             };

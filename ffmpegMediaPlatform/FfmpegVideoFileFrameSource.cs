@@ -19,6 +19,7 @@ namespace FfmpegMediaPlatform
         private TimeSpan length;
         private double frameRate;
         private PlaybackSpeed playbackSpeed;
+        private float slowSpeedFactor = 0.1f; // Default slow speed
         private bool repeat;
         private bool bounceRepeat;
         private bool reversed;
@@ -75,6 +76,11 @@ namespace FfmpegMediaPlatform
             set => reversed = value; 
         }
         public bool IsAtEnd => isAtEnd;
+        public float SlowSpeedFactor 
+        { 
+            get => slowSpeedFactor; 
+            set => slowSpeedFactor = Math.Max(0.1f, Math.Min(1.0f, value)); 
+        }
 
         public TimeSpan MediaTime
         {

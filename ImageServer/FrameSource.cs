@@ -145,6 +145,7 @@ namespace ImageServer
         DateTime CurrentTime { get; }
         double FrameRate { get; }
         PlaybackSpeed PlaybackSpeed { get; set; }
+        float SlowSpeedFactor { get; set; } // Custom slow speed from 0.1 to 1.0
         TimeSpan MediaTime { get; }
         TimeSpan Length { get; }
         bool Repeat { get; set; }
