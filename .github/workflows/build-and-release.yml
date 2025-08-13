@@ -165,8 +165,7 @@ jobs:
         echo "📁 MacOS Directory (first 10 files):"
         ls -la "FPVTrackside.app/Contents/MacOS/" | head -10
     
-    - name: Create macOS DMG (Release Branches)
-      if: needs.detect-version.outputs.is-release-branch == 'true'
+    - name: Create macOS DMG
       run: |
         # Install create-dmg tool for professional DMG creation
         brew install create-dmg
@@ -198,15 +197,6 @@ jobs:
         
         # Verify DMG was created
         ls -la *.dmg
-
-    - name: Create macOS ZIP (Feature Branches)
-      if: needs.detect-version.outputs.is-release-branch == 'false'
-      run: |
-        # Create ZIP file for feature branches
-        ditto -c -k --keepParent "FPVTrackside.app" "FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}-${{ github.ref_name }}.zip"
-        
-        # Verify ZIP was created
-        ls -la *.zip
     
 
     
@@ -216,7 +206,6 @@ jobs:
         name: fpvtrackside-macos-${{ needs.detect-version.outputs.macos-version }}-${{ github.ref_name }}
         path: |
           FPVTrackside-macOS-*.dmg
-          FPVTrackside-macOS-*.zip
         retention-days: 90
 
   build-windows:
@@ -311,7 +300,6 @@ jobs:
         echo "WiX Toolset installed successfully"
 
     - name: Create Simple MSI Installer
-      if: needs.detect-version.outputs.is-release-branch == 'true'
       run: |
         # Create a simple WiX installer with manually generated components to avoid ID conflicts
         echo "Creating simple MSI installer..."
@@ -520,24 +508,7 @@ jobs:
           exit 1
         }
 
-    - name: Create Windows ZIP (Feature Branches)
-      if: needs.detect-version.outputs.is-release-branch == 'false'
-      run: |
-        # Create ZIP file for feature branches
-        $zipName = "FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}-${{ github.ref_name }}.zip"
-        
-        # Use PowerShell's Compress-Archive to create ZIP
-        Compress-Archive -Path "build\windows-x64\*" -DestinationPath $zipName -Force
-        
-        # Verify ZIP was created
-        if (Test-Path $zipName) {
-          Write-Host "ZIP file created successfully: $zipName"
-          $zipInfo = Get-ChildItem $zipName | Select-Object Name, Length
-          Write-Host "File: $($zipInfo.Name), Size: $([math]::Round($zipInfo.Length / 1MB, 2)) MB"
-        } else {
-          Write-Error "ZIP file was not created"
-          exit 1
-        }
+
     
     - name: Upload Windows Artifact
       uses: actions/upload-artifact@v4
@@ -545,7 +516,6 @@ jobs:
         name: fpv-trackside-core-windows-${{ needs.detect-version.outputs.windows-version }}-${{ github.ref_name }}
         path: |
           FPV-Trackside-Core-Windows-*.msi
-          FPV-Trackside-Core-Windows-*.zip
         retention-days: 90
 
   create-release:
@@ -584,13 +554,8 @@ jobs:
         echo "## 🚀 FPVTrackside Release ${{ needs.detect-version.outputs.release-tag }}" > release_notes.md
         echo "" >> release_notes.md
         echo "### 📦 Downloads" >> release_notes.md
-        if [[ "${{ needs.detect-version.outputs.is-release-branch }}" == "true" ]]; then
-          echo "- **macOS (Apple Silicon)**: FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg" >> release_notes.md
-          echo "- **Windows (x64)**: FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.msi" >> release_notes.md
-        else
-          echo "- **macOS (Apple Silicon)**: FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}-${{ github.ref_name }}.zip" >> release_notes.md
-          echo "- **Windows (x64)**: FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}-${{ github.ref_name }}.zip" >> release_notes.md
-        fi
+        echo "- **macOS (Apple Silicon)**: FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg" >> release_notes.md
+        echo "- **Windows (x64)**: FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.msi" >> release_notes.md
         echo "" >> release_notes.md
         echo "### 📱 Platform Versions" >> release_notes.md
         echo "- **macOS Version**: ${{ needs.detect-version.outputs.macos-version }}" >> release_notes.md
@@ -649,8 +614,6 @@ jobs:
         prerelease: false
         files: |
           FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg
-          FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}-${{ github.ref_name }}.zip
           FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.msi
-          FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}-${{ github.ref_name }}.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
