@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -70,6 +71,7 @@ namespace RaceLib
         [Category("Advanced")]
         public string GameTypeName { get; set; }
 
+        public Stage Stage { get; set; }
 
         public Round()
         {
