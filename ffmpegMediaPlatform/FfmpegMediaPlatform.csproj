@@ -23,32 +23,10 @@
 
   <!-- Native FFmpeg libraries for macOS -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
-    <!-- ARM64 libraries -->
-    <None Include="ffmpeg-builds\build-arm64\lib\*.dylib" Condition="'$(RuntimeIdentifier)' == 'osx-arm64'">
+    <!-- Always copy macOS libraries for all macOS builds (ARM64 compatible) -->
+    <None Include="ffmpeg-libs\macos\*.dylib">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>ffmpeg-libs\arm64\%(Filename)%(Extension)</Link>
-    </None>
-    
-    <!-- Intel libraries -->
-    <None Include="ffmpeg-builds\build-intel\lib\*.dylib" Condition="'$(RuntimeIdentifier)' == 'osx-x64'">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>ffmpeg-libs\intel\%(Filename)%(Extension)</Link>
-    </None>
-    
-    <!-- Universal libraries (copy both architectures) -->
-    <None Include="ffmpeg-builds\build-arm64\lib\*.dylib" Condition="'$(RuntimeIdentifier)' == 'osx'">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>ffmpeg-libs\arm64\%(Filename)%(Extension)</Link>
-    </None>
-    <None Include="ffmpeg-builds\build-intel\lib\*.dylib" Condition="'$(RuntimeIdentifier)' == 'osx'">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>ffmpeg-libs\intel\%(Filename)%(Extension)</Link>
-    </None>
-    
-    <!-- Default copy for macOS when no RuntimeIdentifier is specified -->
-    <None Include="ffmpeg-builds\build-arm64\lib\*.dylib" Condition="$([MSBuild]::IsOsPlatform('OSX')) and '$(RuntimeIdentifier)' == ''">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>ffmpeg-libs\arm64\%(Filename)%(Extension)</Link>
+      <Link>ffmpeg-libs\macos\%(Filename)%(Extension)</Link>
     </None>
   </ItemGroup>
 

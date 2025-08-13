@@ -44,18 +44,16 @@ namespace FfmpegMediaPlatform
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                if (RuntimeInformation.OSArchitecture == Architecture.Arm64)
+                // Use unified macOS directory (ARM64 compatible libraries)
+                var path = Path.Combine(appDirectory, "ffmpeg-libs", "macos");
+                Console.WriteLine($"FfmpegNativeLoader.GetBundledLibraryPath: macOS path: {path} (Architecture: {RuntimeInformation.OSArchitecture})");
+                Console.WriteLine($"FfmpegNativeLoader.GetBundledLibraryPath: Directory exists: {Directory.Exists(path)}");
+                if (Directory.Exists(path))
                 {
-                    var path = Path.Combine(appDirectory, "ffmpeg-libs", "arm64");
-                    Console.WriteLine($"FfmpegNativeLoader.GetBundledLibraryPath: macOS ARM64 path: {path}");
-                    return path;
+                    var files = Directory.GetFiles(path, "*.dylib");
+                    Console.WriteLine($"FfmpegNativeLoader.GetBundledLibraryPath: Found {files.Length} dylib files");
                 }
-                else
-                {
-                    var path = Path.Combine(appDirectory, "ffmpeg-libs", "intel");
-                    Console.WriteLine($"FfmpegNativeLoader.GetBundledLibraryPath: macOS Intel path: {path}");
-                    return path;
-                }
+                return path;
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -73,6 +71,8 @@ namespace FfmpegMediaPlatform
             if (registered) return;
 
             Console.WriteLine("FfmpegNativeLoader.EnsureRegistered: Starting registration...");
+            Console.WriteLine($"FfmpegNativeLoader.EnsureRegistered: Platform = {RuntimeInformation.OSDescription}");
+            Console.WriteLine($"FfmpegNativeLoader.EnsureRegistered: Architecture = {RuntimeInformation.OSArchitecture}");
 
             // IMPORTANT: Set the bundled library path for FFmpeg.AutoGen BEFORE any FFmpeg functions are called
             var bundledPath = GetBundledLibraryPath();
@@ -80,9 +80,18 @@ namespace FfmpegMediaPlatform
 
             if (bundledPath != null && Directory.Exists(bundledPath))
             {
-                Console.WriteLine($"FfmpegNativeLoader.EnsureRegistered: Setting ffmpeg.RootPath to: {bundledPath}");
+                Console.WriteLine($"FfmpegNativeLoader.EnsureRegistered: Directory exists - Setting ffmpeg.RootPath to: {bundledPath}");
                 Console.WriteLine($"Current process architecture: {RuntimeInformation.ProcessArchitecture}");
                 Console.WriteLine($"Current OS architecture: {RuntimeInformation.OSArchitecture}");
+                
+                // List files in the directory for debugging
+                var files = Directory.GetFiles(bundledPath, "*.dylib");
+                Console.WriteLine($"Found {files.Length} dylib files in directory:");
+                foreach (var file in files.Take(5)) // Show first 5 files
+                {
+                    Console.WriteLine($"  - {Path.GetFileName(file)}");
+                }
+                
                 ffmpeg.RootPath = bundledPath;
                 Console.WriteLine($"FFmpeg native libraries loaded from: {bundledPath}");
 
@@ -135,46 +144,54 @@ namespace FfmpegMediaPlatform
                 var currentPath = Environment.GetEnvironmentVariable("PATH") ?? "";
                 if (!currentPath.Contains(bundledPath))
                 {
-                    Environment.SetEnvironmentVariable("PATH", bundledPath + ";" + currentPath);
+                    string pathSeparator = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ";" : ":";
+                    Environment.SetEnvironmentVariable("PATH", bundledPath + pathSeparator + currentPath);
                     Console.WriteLine($"Added to PATH: {bundledPath}");
                 }
 
-                // Pre-load FFmpeg libraries in dependency order to avoid issues
-                try
+                // Pre-load FFmpeg libraries in dependency order to avoid issues (Windows only)
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    Console.WriteLine("Pre-loading FFmpeg libraries in dependency order...");
-
-                    // Load libraries in dependency order
-                    var libPaths = new[]
+                    try
                     {
-                        Path.Combine(bundledPath, "avutil-59.dll"),
-                        Path.Combine(bundledPath, "swresample-5.dll"),
-                        Path.Combine(bundledPath, "swscale-8.dll"),
-                        Path.Combine(bundledPath, "avcodec-61.dll"),
-                        Path.Combine(bundledPath, "avformat-61.dll"),
-                        Path.Combine(bundledPath, "avfilter-10.dll"),
-                        Path.Combine(bundledPath, "avdevice-61.dll")
-                    };
+                        Console.WriteLine("Pre-loading FFmpeg libraries in dependency order (Windows)...");
 
-                    foreach (var libPath in libPaths)
-                    {
-                        if (File.Exists(libPath))
+                        // Load libraries in dependency order
+                        var libPaths = new[]
                         {
-                            try
+                            Path.Combine(bundledPath, "avutil-59.dll"),
+                            Path.Combine(bundledPath, "swresample-5.dll"),
+                            Path.Combine(bundledPath, "swscale-8.dll"),
+                            Path.Combine(bundledPath, "avcodec-61.dll"),
+                            Path.Combine(bundledPath, "avformat-61.dll"),
+                            Path.Combine(bundledPath, "avfilter-10.dll"),
+                            Path.Combine(bundledPath, "avdevice-61.dll")
+                        };
+
+                        foreach (var libPath in libPaths)
+                        {
+                            if (File.Exists(libPath))
                             {
-                                var handle = LoadLibrary(libPath);
-                                Console.WriteLine($"Pre-loaded: {Path.GetFileName(libPath)} -> Handle: {handle}");
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine($"Failed to pre-load {Path.GetFileName(libPath)}: {ex.Message}");
+                                try
+                                {
+                                    var handle = LoadLibrary(libPath);
+                                    Console.WriteLine($"Pre-loaded: {Path.GetFileName(libPath)} -> Handle: {handle}");
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"Failed to pre-load {Path.GetFileName(libPath)}: {ex.Message}");
+                                }
                             }
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Pre-loading libraries failed: {ex.Message}");
+                    }
                 }
-                catch (Exception ex)
+                else
                 {
-                    Console.WriteLine($"Pre-loading libraries failed: {ex.Message}");
+                    Console.WriteLine("Skipping library pre-loading on macOS (not needed with FFmpeg.AutoGen)");
                 }
 
                 // Force FFmpeg.AutoGen to initialize with the new path
@@ -204,14 +221,24 @@ namespace FfmpegMediaPlatform
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
+                Console.WriteLine($"FfmpegNativeLoader.EnsureRegistered: Bundled path not found or doesn't exist");
+                Console.WriteLine($"FfmpegNativeLoader.EnsureRegistered: bundledPath = {bundledPath}");
+                Console.WriteLine($"FfmpegNativeLoader.EnsureRegistered: Directory.Exists = {(bundledPath != null ? Directory.Exists(bundledPath) : "bundledPath is null")}");
+                
                 // Fallback to system paths for Mac
+                Console.WriteLine("FfmpegNativeLoader.EnsureRegistered: Trying system paths...");
                 foreach (var root in rootCandidates.Skip(1)) // Skip the bundled path
                 {
+                    Console.WriteLine($"FfmpegNativeLoader.EnsureRegistered: Checking system path: {root}");
                     if (Directory.Exists(root))
                     {
                         ffmpeg.RootPath = root;
                         Console.WriteLine($"FFmpeg native libraries loaded from system path: {root}");
                         break;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"FfmpegNativeLoader.EnsureRegistered: System path does not exist: {root}");
                     }
                 }
             }
