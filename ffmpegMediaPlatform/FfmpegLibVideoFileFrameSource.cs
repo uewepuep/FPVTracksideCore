@@ -34,54 +34,18 @@ namespace FfmpegMediaPlatform
         {
             try
             {
-                Console.WriteLine("FfmpegLibVideoFileFrameSource static constructor: Starting FFmpeg initialization");
-                
-                // Force initialization of FFmpeg.AutoGen bindings BEFORE any other FFmpeg calls
-                FfmpegNativeLoader.EnsureRegistered();
-                
-                // Wait a moment for DLL loading to complete
-                System.Threading.Thread.Sleep(100);
-                
-                // Test if bindings are working by calling multiple simple functions
-                Console.WriteLine($"FFmpeg.AutoGen binding tests:");
-                Console.WriteLine($"  av_log_set_level: {(ffmpeg.av_log_set_level != null ? "OK" : "NULL")}");
-                Console.WriteLine($"  av_version_info: {(ffmpeg.av_version_info != null ? "OK" : "NULL")}");
-                Console.WriteLine($"  avformat_version: {(ffmpeg.avformat_version != null ? "OK" : "NULL")}");
-                
-                if (ffmpeg.av_log_set_level == null)
+                // Use global initializer if available, otherwise fallback to direct registration
+                if (!FfmpegGlobalInitializer.IsInitialized)
                 {
-                    throw new InvalidOperationException("FFmpeg.AutoGen bindings failed to initialize - av_log_set_level is null");
+                    FfmpegGlobalInitializer.Initialize();
                 }
                 
-                // Try calling multiple simple functions to verify they work
-                try
-                {
-                    // Test 1: avformat_version - returns a uint
-                    var avformat_ver = ffmpeg.avformat_version();
-                    Console.WriteLine($"FFmpeg avformat version: {avformat_ver}");
-                    
-                    // Test 2: avcodec_version - alternative version function
-                    var avcodec_ver = ffmpeg.avcodec_version();
-                    Console.WriteLine($"FFmpeg avcodec version: {avcodec_ver}");
-                    
-                    // Test 3: Try a simple log level function
-                    ffmpeg.av_log_set_level(ffmpeg.AV_LOG_ERROR);
-                    Console.WriteLine("FFmpeg log level set successfully");
-                }
-                catch (Exception testEx)
-                {
-                    Console.WriteLine($"FFmpeg function call test failed: {testEx.Message}");
-                    Console.WriteLine($"FFmpeg function call test failed - details: {testEx}");
-                    // Don't throw here - let the constructor handle it gracefully
-                    Console.WriteLine("Warning: FFmpeg native library functions not working, will use fallback");
-                }
-                
-                Console.WriteLine("FFmpeg.AutoGen bindings initialized successfully");
+                // Set log level to reduce noise (only if not already set)
+                ffmpeg.av_log_set_level(ffmpeg.AV_LOG_ERROR);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"FFmpeg.AutoGen initialization failed: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 // Don't throw here - let the instance constructor handle it
             }
         }

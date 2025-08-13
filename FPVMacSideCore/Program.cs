@@ -19,6 +19,9 @@ namespace FPVMacsideCore
             try
 #endif
             {
+                // Pre-load FFmpeg bindings in background to avoid delays when entering replay mode
+                FfmpegMediaPlatform.FfmpegGlobalInitializer.InitializeAsync();
+                
                 using (var game = new FPVMacsideCoreGame())
                 {
                    game.Run();
