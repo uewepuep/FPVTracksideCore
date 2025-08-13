@@ -41,16 +41,10 @@
   </ItemGroup>
   <!-- Copy FFmpeg native libraries -->
   <ItemGroup>
-    <!-- Copy ARM64 libraries for ARM64 Mac builds -->
-    <None Include="..\ffmpegMediaPlatform\ffmpeg-builds\build-arm64\lib\*.dylib" Condition="'$(RuntimeIdentifier)' == 'osx-arm64'">
+    <!-- Copy macOS libraries for all Mac builds (ARM64 compatible) -->
+    <None Include="..\ffmpegMediaPlatform\ffmpeg-libs\macos\*.dylib">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>ffmpeg-libs\arm64\%(Filename)%(Extension)</Link>
-    </None>
-    
-    <!-- Copy Intel libraries for Intel Mac builds -->
-    <None Include="..\ffmpegMediaPlatform\ffmpeg-builds\build-intel\lib\*.dylib" Condition="'$(RuntimeIdentifier)' == 'osx-x64'">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>ffmpeg-libs\intel\%(Filename)%(Extension)</Link>
+      <Link>ffmpeg-libs\macos\%(Filename)%(Extension)</Link>
     </None>
   </ItemGroup>
   <Target Name="RestoreDotnetTools" BeforeTargets="Restore">

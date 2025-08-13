@@ -104,7 +104,7 @@ namespace FfmpegMediaPlatform
             }
             else
             {
-                // Live mode: Standard capture without recording
+                // Live mode: Use dual stream approach like recording mode but only output RGBA pipe
                 ffmpegArgs = $"-f dshow " +
                                 $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                                 $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
@@ -115,11 +115,12 @@ namespace FfmpegMediaPlatform
                                 $"-strict experimental " +
                                 $"-threads 1 " +
                                 $"-fps_mode passthrough " +
+                                $"-copyts " +
                                 $"-an " +
-                                $"-pix_fmt rgba " +
-                                $"-f rawvideo -";
+                                $"-filter_complex \"split=2[out1][out2];[out1]format=rgba[outpipe];[out2]null[outnull]\" " +
+                                $"-map \"[outpipe]\" -f rawvideo pipe:1";
                 
-                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Windows Live Mode: {ffmpegArgs}");
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Windows Live Mode (dual stream): {ffmpegArgs}");
             }
             return ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
         }
