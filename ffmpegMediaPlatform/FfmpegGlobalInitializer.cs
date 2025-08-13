@@ -69,5 +69,34 @@ namespace FfmpegMediaPlatform
         /// Check if FFmpeg bindings are already initialized
         /// </summary>
         public static bool IsInitialized => _initialized;
+        
+        /// <summary>
+        /// Cleanup FFmpeg bindings and native libraries on application exit
+        /// </summary>
+        public static void Cleanup()
+        {
+            lock (_lock)
+            {
+                if (_initialized)
+                {
+                    try
+                    {
+                        Console.WriteLine("FfmpegGlobalInitializer: Cleaning up FFmpeg bindings...");
+                        
+                        // Force garbage collection to release any native resources
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
+                        GC.Collect();
+                        
+                        _initialized = false;
+                        Console.WriteLine("FfmpegGlobalInitializer: FFmpeg bindings cleanup completed");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"FfmpegGlobalInitializer: Error during cleanup: {ex.Message}");
+                    }
+                }
+            }
+        }
     }
 }
