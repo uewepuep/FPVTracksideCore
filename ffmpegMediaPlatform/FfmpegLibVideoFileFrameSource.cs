@@ -171,8 +171,10 @@ namespace FfmpegMediaPlatform
                 if (playbackSpeed != value)
                 {
                     playbackSpeed = value;
+                    // Reset timing baseline when speed changes to prevent catch-up effects
+                    playbackStartTime = DateTime.MinValue;
                     // Playback speed is now controlled by frame pacing in ReadLoop
-                    Tools.Logger.VideoLog.LogCall(this, $"PlaybackSpeed changed to {value}");
+                    Tools.Logger.VideoLog.LogCall(this, $"PlaybackSpeed changed to {value} - timing baseline reset");
                 }
             }
         }
@@ -545,9 +547,11 @@ namespace FfmpegMediaPlatform
                         // End of file - seek back to start and continue if playing
                         if (isPlaying && !seekRequested)
                         {
-                            Tools.Logger.VideoLog.LogCall(this, "ReadLoop: Looping back to start");
+                            Tools.Logger.VideoLog.LogCall(this, "ReadLoop: Looping back to start - resetting timing baseline");
                             ffmpeg.av_seek_frame(fmt, videoStreamIndex, st->start_time, ffmpeg.AVSEEK_FLAG_BACKWARD);
                             ffmpeg.avcodec_flush_buffers(codecCtx);
+                            // Reset timing baseline to prevent speed issues after looping
+                            playbackStartTime = DateTime.MinValue;
                             isAtEnd = false;
                             continue;
                         }
@@ -698,7 +702,7 @@ namespace FfmpegMediaPlatform
                             else
                             {
                                 double speedFactor = GetSpeedFactor();
-                                double targetFrameInterval = (1000.0 / frameRate) / speedFactor; // Frame interval in milliseconds
+                                double targetFrameInterval = (1000.0 / frameRate) * speedFactor; // Frame interval in milliseconds - multiply for slower playback
                                 
                                 // Initialize or reset timing baseline periodically to prevent drift
                                 if (playbackStartTime == DateTime.MinValue)
@@ -720,7 +724,7 @@ namespace FfmpegMediaPlatform
                                 
                                 // Calculate how much time should have elapsed based on video timing
                                 var videoElapsed = mediaTime - playbackStartMediaTime;
-                                var targetElapsed = TimeSpan.FromMilliseconds(videoElapsed.TotalMilliseconds / speedFactor);
+                                var targetElapsed = TimeSpan.FromMilliseconds(videoElapsed.TotalMilliseconds * speedFactor);
                                 
                                 // Calculate how much time has actually elapsed
                                 var actualElapsed = DateTime.UtcNow - playbackStartTime;
@@ -729,7 +733,9 @@ namespace FfmpegMediaPlatform
                                 var timeDiff = targetElapsed - actualElapsed;
                                 if (timeDiff.TotalMilliseconds > 1)
                                 {
-                                    Thread.Sleep((int)Math.Min(timeDiff.TotalMilliseconds, 50));
+                                    // For slow motion, allow longer sleeps (up to 1000ms for very slow playback)
+                                    int maxSleep = playbackSpeed == PlaybackSpeed.Slow ? 1000 : 50;
+                                    Thread.Sleep((int)Math.Min(timeDiff.TotalMilliseconds, maxSleep));
                                 }
                                 else
                                 {
@@ -1030,20 +1036,20 @@ namespace FfmpegMediaPlatform
         private TimeSpan ScaleBySpeed(TimeSpan media)
         {
             // Map playback speed to wall-clock pacing factor
-            // Normal: 1x, Slow: 0.2x (5x slower = 20% speed), FastAsPossible: no pacing (treat as 1x here)
+            // Normal: 1x, Slow: 10x slower = 10% speed, FastAsPossible: no pacing (treat as 1x here)
             double factor = GetSpeedFactor();
             // For FastAsPossible, we still compute anchor but pacing sleep is skipped
-            return TimeSpan.FromTicks((long)(media.Ticks / factor));
+            return TimeSpan.FromTicks((long)(media.Ticks * factor));
         }
         
         private double GetSpeedFactor()
         {
-            // Speed factor used as divisor: higher value = slower playback
+            // Speed factor used as sleep multiplier: higher value = slower playback
             return playbackSpeed switch
             {
-                PlaybackSpeed.Slow => 5.0, // Divide by 5 = 20% speed (5x slower)
-                PlaybackSpeed.FastAsPossible => 1.0, // Divide by 1 = normal timing calculations
-                _ => 1.0 // Normal speed: Divide by 1 = 100% speed
+                PlaybackSpeed.Slow => 10.0, // 10x slower = 10% speed (0.1x)
+                PlaybackSpeed.FastAsPossible => 1.0, // Normal timing calculations
+                _ => 1.0 // Normal speed: 100% speed
             };
         }
     }

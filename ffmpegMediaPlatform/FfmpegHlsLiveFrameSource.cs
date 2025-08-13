@@ -16,9 +16,21 @@ namespace FfmpegMediaPlatform
     /// 1. Raw RGBA output for live processing (pipe:1)
     /// 2. HLS stream for HTTP access and recording
     /// The live stream never stops, recording processes consume the HLS stream independently.
+    /// 
+    /// TO DISABLE HLS: Set FfmpegHlsLiveFrameSource.HlsEnabled = false;
+    /// This will disable HLS streaming while keeping RGBA live processing active.
     /// </summary>
     public class FfmpegHlsLiveFrameSource : FfmpegFrameSource
     {
+        /// <summary>
+        /// Configuration flag to disable HLS functionality.
+        /// Set to false to disable HLS streaming while keeping RGBA live processing.
+        /// Default: true (HLS enabled)
+        /// 
+        /// Usage: FfmpegHlsLiveFrameSource.HlsEnabled = false;
+        /// </summary>
+        public static bool HlsEnabled { get; set; } = true;
+        
         private HttpListener httpServer;
         private Thread httpServerThread;
         private string hlsOutputPath;
@@ -26,8 +38,8 @@ namespace FfmpegMediaPlatform
         private bool httpServerRunning;
         private readonly object httpServerLock = new object();
 
-        public string HlsStreamUrl => $"http://localhost:{httpPort}/hls/stream.m3u8";
-        public bool IsHttpServerRunning => httpServerRunning;
+        public string HlsStreamUrl => HlsEnabled ? $"http://localhost:{httpPort}/hls/stream.m3u8" : "HLS Disabled";
+        public bool IsHttpServerRunning => HlsEnabled && httpServerRunning;
 
         public FfmpegHlsLiveFrameSource(FfmpegMediaFramework ffmpegMediaFramework, VideoConfig videoConfig, int httpPort = 8787)
             : base(ffmpegMediaFramework, videoConfig)
@@ -38,34 +50,41 @@ namespace FfmpegMediaPlatform
             string binaryDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             this.hlsOutputPath = Path.Combine(binaryDir, "trackside_hls");
             
-            // Ensure HLS output directory exists with proper permissions
-            try
+            // Only create HLS directory if HLS is enabled
+            if (HlsEnabled)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"Binary directory: {binaryDir}");
-                Tools.Logger.VideoLog.LogCall(this, $"Current working directory: {Directory.GetCurrentDirectory()}");
-                Tools.Logger.VideoLog.LogCall(this, $"Target HLS path: {hlsOutputPath}");
-                
-                if (Directory.Exists(hlsOutputPath))
+                // Ensure HLS output directory exists with proper permissions
+                try
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "Removing existing HLS directory");
-                    Directory.Delete(hlsOutputPath, true);
+                    Tools.Logger.VideoLog.LogCall(this, $"Binary directory: {binaryDir}");
+                    Tools.Logger.VideoLog.LogCall(this, $"Current working directory: {Directory.GetCurrentDirectory()}");
+                    Tools.Logger.VideoLog.LogCall(this, $"Target HLS path: {hlsOutputPath}");
+                    
+                    if (Directory.Exists(hlsOutputPath))
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "Removing existing HLS directory");
+                        Directory.Delete(hlsOutputPath, true);
+                    }
+                    Directory.CreateDirectory(hlsOutputPath);
+                    Tools.Logger.VideoLog.LogCall(this, $"Created HLS directory: {hlsOutputPath}");
+                    
+                    // Test directory writability
+                    string testFile = Path.Combine(hlsOutputPath, "test_write.tmp");
+                    File.WriteAllText(testFile, "test");
+                    File.Delete(testFile);
+                    Tools.Logger.VideoLog.LogCall(this, "HLS directory write test passed");
+                    
+                    Tools.Logger.VideoLog.LogCall(this, $"HLS Live Frame Source initialized - HTTP port: {httpPort}, HLS path: {hlsOutputPath}");
                 }
-                Directory.CreateDirectory(hlsOutputPath);
-                Tools.Logger.VideoLog.LogCall(this, $"Created HLS directory: {hlsOutputPath}");
-                
-                // Test directory writability
-                string testFile = Path.Combine(hlsOutputPath, "test_write.tmp");
-                File.WriteAllText(testFile, "test");
-                File.Delete(testFile);
-                Tools.Logger.VideoLog.LogCall(this, "HLS directory write test passed");
-                
-                Tools.Logger.VideoLog.LogCall(this, $"HLS Live Frame Source initialized - HTTP port: {httpPort}, HLS path: {hlsOutputPath}");
+                catch (Exception ex)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"Failed to create writable HLS directory: {ex.Message}");
+                    throw new InvalidOperationException($"Cannot create writable HLS directory at {hlsOutputPath}", ex);
+                }
             }
-            catch (Exception ex)
+            else
             {
-                Tools.Logger.VideoLog.LogException(this, ex);
-                Tools.Logger.VideoLog.LogCall(this, $"Failed to create writable HLS directory: {ex.Message}");
-                throw new InvalidOperationException($"Cannot create writable HLS directory at {hlsOutputPath}", ex);
+                Tools.Logger.VideoLog.LogCall(this, "HLS Live Frame Source initialized with HLS DISABLED - HTTP port: {httpPort}");
             }
         }
 
@@ -192,48 +211,76 @@ namespace FfmpegMediaPlatform
         protected override ProcessStartInfo GetProcessStartInfo()
         {
             string inputArgs = GetPlatformSpecificInputArgs();
-            string hlsPath = Path.Combine(hlsOutputPath, "stream.m3u8");
             
-            // Log paths for debugging
-            Tools.Logger.VideoLog.LogCall(this, $"HLS output directory: {hlsOutputPath}");
-            Tools.Logger.VideoLog.LogCall(this, $"HLS playlist path: {hlsPath}");
-            
-            // Dual output FFmpeg command:
-            // 1. Raw RGBA to pipe:1 for live processing  
-            // 2. HLS stream for HTTP access and recording
-            
-            // Log individual components for debugging
-            Tools.Logger.VideoLog.LogCall(this, $"Input args: {inputArgs}");
-            Tools.Logger.VideoLog.LogCall(this, $"Video mode: {VideoConfig.VideoMode?.Width}x{VideoConfig.VideoMode?.Height}@{VideoConfig.VideoMode?.FrameRate}fps");
-            
-            // Get hardware-accelerated encoding settings
-            string encodingArgs = GetHardwareEncodingArgs();
-            
-            // Fix: Let camera provide frames at its natural rate, don't force frame rate conversion
-            float targetFrameRate = VideoConfig.VideoMode?.FrameRate ?? 30.0f;
-            int gop = Math.Max(1, (int)Math.Round(targetFrameRate * 0.1f)); // 0.1s GOP
-            
-            // No frame rate filtering needed - recording now handles 60fps correctly
-            string ffmpegArgs = $"{inputArgs} " +
-                               $"-fflags nobuffer " +
-                               $"-flags low_delay " +
-                               $"-strict experimental " +
-                               $"-threads 1 " +
-                               $"-fps_mode passthrough " +  // Use camera's natural frame rate
-                               $"-an " +
-                               $"-filter_complex \"[0:v]split=2[out1][out2];[out1]format=rgba[outpipe];[out2]format=yuv420p[outfile]\" " +
-                               $"-map \"[outpipe]\" -f rawvideo pipe:1 " +  // RGBA output for live display
-                               $"-map \"[outfile]\" {encodingArgs} -g {gop} -keyint_min {gop} -force_key_frames \"expr:gte(t,n_forced*0.1)\" " +  // HLS output with tighter GOP
-                               $"-hls_time 0.5 -hls_list_size 3 -hls_flags delete_segments+independent_segments " +  // Ultra-low latency: 0.5s segments, only 3 segments
-                               $"-hls_segment_type mpegts " +  // Use MPEG-TS for better streaming
-                               $"-start_number 0 " +  // Start numbering from 0
-                               $"-f hls \"{hlsPath}\"";
-            
-            Tools.Logger.VideoLog.LogCall(this, $"LIVE STREAM DEBUG: Using passthrough mode, no frame filtering");
+            if (HlsEnabled)
+            {
+                // HLS ENABLED: Dual output FFmpeg command
+                string hlsPath = Path.Combine(hlsOutputPath, "stream.m3u8");
+                
+                // Log paths for debugging
+                Tools.Logger.VideoLog.LogCall(this, $"HLS output directory: {hlsOutputPath}");
+                Tools.Logger.VideoLog.LogCall(this, $"HLS playlist path: {hlsPath}");
+                
+                // Dual output FFmpeg command:
+                // 1. Raw RGBA to pipe:1 for live processing  
+                // 2. HLS stream for HTTP access and recording
+                
+                // Log individual components for debugging
+                Tools.Logger.VideoLog.LogCall(this, $"Input args: {inputArgs}");
+                Tools.Logger.VideoLog.LogCall(this, $"Video mode: {VideoConfig.VideoMode?.Width}x{VideoConfig.VideoMode?.Height}@{VideoConfig.VideoMode?.FrameRate}fps");
+                
+                // Get hardware-accelerated encoding settings
+                string encodingArgs = GetHardwareEncodingArgs();
+                
+                // Fix: Let camera provide frames at its natural rate, don't force frame rate conversion
+                float targetFrameRate = VideoConfig.VideoMode?.FrameRate ?? 30.0f;
+                int gop = Math.Max(1, (int)Math.Round(targetFrameRate * 0.1f)); // 0.1s GOP
+                
+                // No frame rate filtering needed - recording now handles 60fps correctly
+                string ffmpegArgs = $"{inputArgs} " +
+                                   $"-fflags nobuffer " +
+                                   $"-flags low_delay " +
+                                   $"-strict experimental " +
+                                   $"-threads 1 " +
+                                   $"-fps_mode passthrough " +  // Use camera's natural frame rate
+                                   $"-an " +
+                                   $"-filter_complex \"[0:v]split=2[out1][out2];[out1]format=rgba[outpipe];[out2]format=yuv420p[outfile]\" " +
+                                   $"-map \"[outpipe]\" -f rawvideo pipe:1 " +  // RGBA output for live display
+                                   $"-map \"[outfile]\" {encodingArgs} -g {gop} -keyint_min {gop} -force_key_frames \"expr:gte(t,n_forced*0.1)\" " +  // HLS output with tighter GOP
+                                   $"-hls_time 0.5 -hls_list_size 3 -hls_flags delete_segments+independent_segments " +  // Ultra-low latency: 0.5s segments, only 3 segments
+                                   $"-hls_segment_type mpegts " +  // Use MPEG-TS for better streaming
+                                   $"-start_number 0 " +  // Start numbering from 0
+                                   $"-f hls \"{hlsPath}\"";
+                
+                Tools.Logger.VideoLog.LogCall(this, $"LIVE STREAM DEBUG: Using passthrough mode, no frame filtering");
 
-            Tools.Logger.VideoLog.LogCall(this, $"Hardware Accelerated HLS FFmpeg Command:");
-            Tools.Logger.VideoLog.LogCall(this, ffmpegArgs);
-            return ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
+                Tools.Logger.VideoLog.LogCall(this, $"Hardware Accelerated HLS FFmpeg Command:");
+                Tools.Logger.VideoLog.LogCall(this, ffmpegArgs);
+                return ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
+            }
+            else
+            {
+                // HLS DISABLED: Single output - RGBA only for live processing
+                Tools.Logger.VideoLog.LogCall(this, $"HLS is DISABLED - using single RGBA output only");
+                Tools.Logger.VideoLog.LogCall(this, $"Input args: {inputArgs}");
+                Tools.Logger.VideoLog.LogCall(this, $"Video mode: {VideoConfig.VideoMode?.Width}x{VideoConfig.VideoMode?.Height}@{VideoConfig.VideoMode?.FrameRate}fps");
+                
+                // Single output FFmpeg command - RGBA only
+                string ffmpegArgs = $"{inputArgs} " +
+                                   $"-fflags nobuffer " +
+                                   $"-flags low_delay " +
+                                   $"-strict experimental " +
+                                   $"-threads 1 " +
+                                   $"-fps_mode passthrough " +  // Use camera's natural frame rate
+                                   $"-an " +
+                                   $"-f rawvideo " +
+                                   $"-pix_fmt rgba " +
+                                   $"pipe:1";  // RGBA output for live display only
+                
+                Tools.Logger.VideoLog.LogCall(this, $"RGBA-Only FFmpeg Command (HLS Disabled):");
+                Tools.Logger.VideoLog.LogCall(this, ffmpegArgs);
+                return ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
+            }
         }
 
         private string GetPlatformSpecificInputArgs()
@@ -383,8 +430,28 @@ namespace FfmpegMediaPlatform
 
         public override bool Start()
         {
-            Tools.Logger.VideoLog.LogCall(this, "Starting HLS Live Frame Source");
+            Tools.Logger.VideoLog.LogCall(this, HlsEnabled ? "Starting HLS Live Frame Source" : "Starting RGBA-Only Live Frame Source (HLS Disabled)");
             
+            if (!HlsEnabled)
+            {
+                Tools.Logger.VideoLog.LogCall(this, "HLS is disabled, skipping HLS directory check and HTTP server.");
+                // Start the FFmpeg process with single RGBA output only
+                Tools.Logger.VideoLog.LogCall(this, "Attempting to start FFmpeg process with single RGBA output");
+                bool rgbaResult = base.Start();
+                
+                if (rgbaResult)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "RGBA-Only Live Stream started successfully (HLS Disabled)");
+                }
+                else
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "FAILED to start RGBA-Only Live Stream - FFmpeg process did not start");
+                }
+                
+                return rgbaResult;
+            }
+            
+            // HLS ENABLED: Continue with normal HLS startup
             // Ensure HLS directory still exists before starting FFmpeg
             if (!Directory.Exists(hlsOutputPath))
             {
@@ -501,6 +568,12 @@ namespace FfmpegMediaPlatform
                     return true;
                 }
 
+                if (!HlsEnabled)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "HLS is disabled, skipping HTTP server start.");
+                    return true;
+                }
+
                 try
                 {
                     httpServer = new HttpListener();
@@ -533,6 +606,12 @@ namespace FfmpegMediaPlatform
             {
                 if (!httpServerRunning)
                     return;
+
+                if (!HlsEnabled)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "HLS is disabled, skipping HTTP server stop.");
+                    return;
+                }
 
                 try
                 {
@@ -587,42 +666,53 @@ namespace FfmpegMediaPlatform
                 string requestPath = context.Request.Url.AbsolutePath;
                 Tools.Logger.VideoLog.LogCall(this, $"HTTP request: {requestPath}");
                 
-                if (requestPath.StartsWith("/hls/"))
+                if (HlsEnabled)
                 {
-                    string fileName = Path.GetFileName(requestPath);
-                    string filePath = Path.Combine(hlsOutputPath, fileName);
-                    
-                    if (File.Exists(filePath))
+                    if (requestPath.StartsWith("/hls/"))
                     {
-                        // Set appropriate content type
-                        if (fileName.EndsWith(".m3u8"))
-                        {
-                            context.Response.ContentType = "application/vnd.apple.mpegurl";
-                            context.Response.Headers.Add("Cache-Control", "no-cache");
-                        }
-                        else if (fileName.EndsWith(".ts"))
-                        {
-                            context.Response.ContentType = "video/mp2t";
-                            context.Response.Headers.Add("Cache-Control", "max-age=10");
-                        }
+                        string fileName = Path.GetFileName(requestPath);
+                        string filePath = Path.Combine(hlsOutputPath, fileName);
                         
-                        // Enable CORS for browser access
-                        context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
-                        
-                        byte[] fileData = File.ReadAllBytes(filePath);
-                        context.Response.ContentLength64 = fileData.Length;
-                        context.Response.OutputStream.Write(fileData, 0, fileData.Length);
-                        context.Response.StatusCode = 200;
+                        if (File.Exists(filePath))
+                        {
+                            // Set appropriate content type
+                            if (fileName.EndsWith(".m3u8"))
+                            {
+                                context.Response.ContentType = "application/vnd.apple.mpegurl";
+                                context.Response.Headers.Add("Cache-Control", "no-cache");
+                            }
+                            else if (fileName.EndsWith(".ts"))
+                            {
+                                context.Response.ContentType = "video/mp2t";
+                                context.Response.Headers.Add("Cache-Control", "max-age=10");
+                            }
+                            
+                            // Enable CORS for browser access
+                            context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+                            
+                            byte[] fileData = File.ReadAllBytes(filePath);
+                            context.Response.ContentLength64 = fileData.Length;
+                            context.Response.OutputStream.Write(fileData, 0, fileData.Length);
+                            context.Response.StatusCode = 200;
+                        }
+                        else
+                        {
+                            context.Response.StatusCode = 404;
+                            Tools.Logger.VideoLog.LogCall(this, $"HLS file not found: {filePath}");
+                        }
                     }
                     else
                     {
                         context.Response.StatusCode = 404;
-                        Tools.Logger.VideoLog.LogCall(this, $"HLS file not found: {filePath}");
                     }
                 }
                 else
                 {
                     context.Response.StatusCode = 404;
+                    context.Response.ContentType = "text/plain";
+                    context.Response.ContentLength64 = 0;
+                    context.Response.OutputStream.Close();
+                    return;
                 }
                 
                 context.Response.Close();
@@ -644,16 +734,19 @@ namespace FfmpegMediaPlatform
             StopHttpServer();
             
             // Clean up HLS files
-            try
+            if (HlsEnabled)
             {
-                if (Directory.Exists(hlsOutputPath))
+                try
                 {
-                    Directory.Delete(hlsOutputPath, true);
+                    if (Directory.Exists(hlsOutputPath))
+                    {
+                        Directory.Delete(hlsOutputPath, true);
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                Tools.Logger.VideoLog.LogException(this, ex);
+                catch (Exception ex)
+                {
+                    Tools.Logger.VideoLog.LogException(this, ex);
+                }
             }
             
             base.Dispose();
