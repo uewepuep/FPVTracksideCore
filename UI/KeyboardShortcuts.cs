@@ -175,9 +175,9 @@ namespace Composition.Input
         public ShortcutKey ReplayMinus2Seconds { get; set; }
         
         [Category("Replay")]
-        public ShortcutKey ReplayPlus10Seconds { get; set; }
+        public ShortcutKey ReplaySpeedUp { get; set; }
         [Category("Replay")]
-        public ShortcutKey ReplayMinus10Seconds { get; set; }
+        public ShortcutKey ReplaySpeedDown { get; set; }
 
 
         [Category("Sound")]
@@ -281,8 +281,8 @@ namespace Composition.Input
             ReplayPlus2Seconds = new ShortcutKey(Keys.Right);
             ReplayMinus2Seconds = new ShortcutKey(Keys.Left);
             
-            ReplayPlus10Seconds = new ShortcutKey(Keys.Up);
-            ReplayMinus10Seconds = new ShortcutKey(Keys.Down);
+            ReplaySpeedUp = new ShortcutKey(Keys.Up);
+            ReplaySpeedDown = new ShortcutKey(Keys.Down);
 
             AddLapChannelGroup1 = new ShortcutKey(Keys.D1, false, true);
             AddLapChannelGroup2 = new ShortcutKey(Keys.D2, false, true);

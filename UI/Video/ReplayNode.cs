@@ -99,6 +99,7 @@ namespace UI.Video
             SeekNode.PlayButton.OnClick += (m) => { Play(); };
             SeekNode.StopButton.OnClick += (m) => { Stop(); };
             SeekNode.SlowCheck.Checkbox.ValueChanged += Checkbox_ValueChanged;
+            SeekNode.SlowSpeedChanged += OnSlowSpeedChanged;
             SeekNode.ShowAll.OnClick += ShowAll_OnClick;
 
             AddChild(SeekNode);
@@ -162,6 +163,23 @@ namespace UI.Video
             foreach (IPlaybackFrameSource frameSource in GetFileFrameSources())
             {
                 frameSource.PlaybackSpeed = slowMotion ? PlaybackSpeed.Slow : PlaybackSpeed.Normal;
+                if (slowMotion)
+                {
+                    // Set the custom slow speed from the SeekNode input
+                    frameSource.SlowSpeedFactor = SeekNode.SlowSpeed;
+                }
+            }
+        }
+
+        private void OnSlowSpeedChanged(float newSpeed)
+        {
+            // Update the slow speed factor for all frame sources if slow motion is currently enabled
+            if (SeekNode.SlowCheck.Checkbox.Value)
+            {
+                foreach (IPlaybackFrameSource frameSource in GetFileFrameSources())
+                {
+                    frameSource.SlowSpeedFactor = newSpeed;
+                }
             }
         }
 
@@ -479,14 +497,16 @@ namespace UI.Video
                         Seek(primary.CurrentTime + TimeSpan.FromSeconds(-2));
                     }
 
-                    if (keyMapper.ReplayPlus10Seconds.Match(inputEvent))
+                    if (keyMapper.ReplaySpeedUp.Match(inputEvent))
                     {
-                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(10));
+                        // Increase slow motion speed by 0.1
+                        SeekNode.AdjustSpeedPublic(0.1f);
                     }
 
-                    if (keyMapper.ReplayMinus10Seconds.Match(inputEvent))
+                    if (keyMapper.ReplaySpeedDown.Match(inputEvent))
                     {
-                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(-10));
+                        // Decrease slow motion speed by 0.1
+                        SeekNode.AdjustSpeedPublic(-0.1f);
                     }
                 }
                 

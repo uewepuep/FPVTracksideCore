@@ -18,6 +18,7 @@ namespace UI.Video
     public class SeekNode : Node
     {
         public event Action<DateTime> Seek;
+        public event Action<float> SlowSpeedChanged;
 
         private ProgressBarNode progressBar;
         private Node progressBarLineContainer;
@@ -36,9 +37,14 @@ namespace UI.Video
 
         public ImageButtonNode PlayButton { get; private set; }
         public TextCheckBoxNode SlowCheck { get; private set; }
+        public TextEditNode SlowSpeedInput { get; private set; }
+        public TextButtonNode SpeedUpButton { get; private set; }
+        public TextButtonNode SpeedDownButton { get; private set; }
         public ImageButtonNode StopButton { get; private set; }
 
         public TextButtonNode ShowAll { get; private set; }
+
+        public float SlowSpeed { get; private set; } = 0.1f; // Default to 0.1 (10% speed)
 
         private Node buttonsNode;
 
@@ -68,13 +74,37 @@ namespace UI.Video
             buttonsNode.AddChild(StopButton);
 
             float slowWidth = 0.05f;
+            float speedInputWidth = 0.03f;
+            float arrowButtonWidth = 0.015f; // Width for each arrow button
             float showAllWidth = 0.05f;
+            float totalRightWidth = showAllWidth + slowWidth + speedInputWidth + (arrowButtonWidth * 2);
 
             SlowCheck = new TextCheckBoxNode("Slow", color, false);
-            SlowCheck.RelativeBounds = new RectangleF(1 - (showAllWidth + slowWidth), 0, slowWidth, 1);
+            SlowCheck.RelativeBounds = new RectangleF(1 - totalRightWidth, 0, slowWidth, 1);
             SlowCheck.SetRatio(0.6f, 0.05f);
             SlowCheck.Scale(1, 0.8f);
             container.AddChild(SlowCheck);
+
+            SlowSpeedInput = new TextEditNode("0.1", color);
+            SlowSpeedInput.RelativeBounds = new RectangleF(1 - (showAllWidth + speedInputWidth + (arrowButtonWidth * 2)), 0, speedInputWidth, 1);
+            SlowSpeedInput.Scale(1, 0.8f);
+            SlowSpeedInput.TextChanged += OnSlowSpeedChanged;
+            SlowSpeedInput.CanEdit = true; // Ensure it can be edited
+            container.AddChild(SlowSpeedInput);
+
+            // Speed up button (↑)
+            SpeedUpButton = new TextButtonNode("▲", Color.Transparent, Theme.Current.Hover.XNA, color);
+            SpeedUpButton.RelativeBounds = new RectangleF(1 - (showAllWidth + arrowButtonWidth * 2), 0, arrowButtonWidth, 0.5f);
+            SpeedUpButton.Scale(1, 0.8f);
+            SpeedUpButton.OnClick += (m) => { AdjustSpeedPublic(0.1f); };
+            container.AddChild(SpeedUpButton);
+
+            // Speed down button (↓)
+            SpeedDownButton = new TextButtonNode("▼", Color.Transparent, Theme.Current.Hover.XNA, color);
+            SpeedDownButton.RelativeBounds = new RectangleF(1 - (showAllWidth + arrowButtonWidth), 0.5f, arrowButtonWidth, 0.5f);
+            SpeedDownButton.Scale(1, 0.8f);
+            SpeedDownButton.OnClick += (m) => { AdjustSpeedPublic(-0.1f); };
+            container.AddChild(SpeedDownButton);
 
             ShowAll = new TextButtonNode("Show All", Color.Transparent, Theme.Current.Hover.XNA, color);
             ShowAll.RelativeBounds = new RectangleF(1 - showAllWidth, 0, showAllWidth, 1);
@@ -83,7 +113,7 @@ namespace UI.Video
             container.AddChild(ShowAll);
 
             progressBar = new ProgressBarNode(color);
-            progressBar.RelativeBounds = new RectangleF(buttonsNode.RelativeBounds.Right, 0, 1 - (buttonsNode.RelativeBounds.Right + showAllWidth + slowWidth), 1);
+            progressBar.RelativeBounds = new RectangleF(buttonsNode.RelativeBounds.Right, 0, 1 - (buttonsNode.RelativeBounds.Right + totalRightWidth), 1);
             container.AddChild(progressBar);
 
             progressBarLineContainer = new Node();
@@ -323,5 +353,42 @@ namespace UI.Video
                 return detectionTime;
             }
         }
+
+        private void OnSlowSpeedChanged(string speedText)
+        {
+            if (float.TryParse(speedText, out float speed))
+            {
+                // Clamp the speed between 0.1 and 1.0
+                speed = Math.Max(0.1f, Math.Min(1.0f, speed));
+                SlowSpeed = speed;
+                
+                // Update the text field to show the clamped value
+                if (Math.Abs(speed - float.Parse(speedText)) > 0.001f)
+                {
+                    SlowSpeedInput.Text = speed.ToString("F1");
+                }
+                
+                // Notify listeners of the speed change
+                SlowSpeedChanged?.Invoke(speed);
+            }
+            else
+            {
+                // Invalid input, reset to current value
+                SlowSpeedInput.Text = SlowSpeed.ToString("F1");
+            }
+        }
+
+        public void AdjustSpeedPublic(float delta)
+        {
+            float newSpeed = SlowSpeed + delta;
+            newSpeed = Math.Max(0.1f, Math.Min(1.0f, newSpeed)); // Clamp between 0.1 and 1.0
+            
+            SlowSpeed = newSpeed;
+            SlowSpeedInput.Text = newSpeed.ToString("F1");
+            
+            // Notify listeners of the speed change
+            SlowSpeedChanged?.Invoke(newSpeed);
+        }
+
     }
 }

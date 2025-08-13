@@ -53,7 +53,7 @@
   </ItemGroup>
 
   <!-- Native FFmpeg libraries for Windows -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0-windows'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0-windows' OR '$(TargetFramework)' == 'net60-windows'">
     <!-- Default copy for Windows when no RuntimeIdentifier is specified -->
     <None Include="ffmpeg-libs\windows\*.dll" Condition="$([MSBuild]::IsOsPlatform('Windows'))">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

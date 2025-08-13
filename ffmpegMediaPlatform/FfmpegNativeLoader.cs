@@ -9,6 +9,9 @@ namespace FfmpegMediaPlatform
 {
     internal static class FfmpegNativeLoader
     {
+        [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern IntPtr LoadLibrary(string lpFileName);
+
         private static bool registered;
         private static readonly Dictionary<string, IntPtr> handleCache = new();
         private static readonly string[] rootCandidates = new[]
@@ -21,11 +24,24 @@ namespace FfmpegMediaPlatform
         private static string GetBundledLibraryPath()
         {
             var assemblyLocation = typeof(FfmpegNativeLoader).Assembly.Location;
-            var appDirectory = Path.GetDirectoryName(assemblyLocation);
-            
+            string appDirectory;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // On Windows, use the main application's base directory instead of assembly location
+                // This ensures we look where the FFmpeg libraries are actually copied (next to the main executable)
+                appDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                Console.WriteLine($"FfmpegNativeLoader.GetBundledLibraryPath: Windows - Using app base directory: {appDirectory}");
+            }
+            else
+            {
+                // On Mac/Linux, keep original behavior using assembly location
+                appDirectory = Path.GetDirectoryName(assemblyLocation);
+                Console.WriteLine($"FfmpegNativeLoader.GetBundledLibraryPath: Mac/Linux - Using assembly directory: {appDirectory}");
+            }
+
             Console.WriteLine($"FfmpegNativeLoader.GetBundledLibraryPath: Assembly location: {assemblyLocation}");
-            Console.WriteLine($"FfmpegNativeLoader.GetBundledLibraryPath: App directory: {appDirectory}");
-            
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 if (RuntimeInformation.OSArchitecture == Architecture.Arm64)
@@ -47,7 +63,7 @@ namespace FfmpegMediaPlatform
                 Console.WriteLine($"FfmpegNativeLoader.GetBundledLibraryPath: Windows path: {path}");
                 return path;
             }
-            
+
             Console.WriteLine("FfmpegNativeLoader.GetBundledLibraryPath: No platform-specific path found");
             return null;
         }
@@ -55,13 +71,13 @@ namespace FfmpegMediaPlatform
         public static void EnsureRegistered()
         {
             if (registered) return;
-            
+
             Console.WriteLine("FfmpegNativeLoader.EnsureRegistered: Starting registration...");
-            
+
             // IMPORTANT: Set the bundled library path for FFmpeg.AutoGen BEFORE any FFmpeg functions are called
             var bundledPath = GetBundledLibraryPath();
             Console.WriteLine($"FfmpegNativeLoader.EnsureRegistered: Bundled path: {bundledPath}");
-            
+
             if (bundledPath != null && Directory.Exists(bundledPath))
             {
                 Console.WriteLine($"FfmpegNativeLoader.EnsureRegistered: Setting ffmpeg.RootPath to: {bundledPath}");
@@ -69,11 +85,11 @@ namespace FfmpegMediaPlatform
                 Console.WriteLine($"Current OS architecture: {RuntimeInformation.OSArchitecture}");
                 ffmpeg.RootPath = bundledPath;
                 Console.WriteLine($"FFmpeg native libraries loaded from: {bundledPath}");
-                
+
                 // Check if essential libraries exist (platform-specific)
                 string[] requiredLibs;
                 string[] dependencyLibs = new string[0]; // Initialize empty for non-Windows
-                
+
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     requiredLibs = new[] { "avcodec-61.dll", "avformat-61.dll", "avutil-59.dll", "swscale-8.dll", "swresample-5.dll" };
@@ -87,7 +103,7 @@ namespace FfmpegMediaPlatform
                 {
                     requiredLibs = new[] { "libavcodec.so", "libavformat.so", "libavutil.so", "libswscale.so", "libswresample.so" };
                 }
-                
+
                 bool allLibsExist = true;
                 foreach (var lib in requiredLibs)
                 {
@@ -96,7 +112,7 @@ namespace FfmpegMediaPlatform
                     Console.WriteLine($"  {lib}: {(exists ? "EXISTS" : "MISSING")}");
                     if (!exists) allLibsExist = false;
                 }
-                
+
                 // Check dependency libraries (Windows only)
                 foreach (var lib in dependencyLibs)
                 {
@@ -105,12 +121,16 @@ namespace FfmpegMediaPlatform
                     Console.WriteLine($"  {lib} (dependency): {(exists ? "EXISTS" : "MISSING")}");
                     if (!exists) allLibsExist = false;
                 }
-                
+
                 if (!allLibsExist)
                 {
                     throw new FileNotFoundException("Required FFmpeg library dependencies are missing. Please ensure all FFmpeg libraries and dependencies are present.");
                 }
-                
+
+                // Set FFmpeg.AutoGen root path explicitly
+                ffmpeg.RootPath = bundledPath;
+                Console.WriteLine($"Set ffmpeg.RootPath to: {ffmpeg.RootPath}");
+
                 // Add bundled path to PATH environment variable for dependency resolution
                 var currentPath = Environment.GetEnvironmentVariable("PATH") ?? "";
                 if (!currentPath.Contains(bundledPath))
@@ -118,17 +138,67 @@ namespace FfmpegMediaPlatform
                     Environment.SetEnvironmentVariable("PATH", bundledPath + ";" + currentPath);
                     Console.WriteLine($"Added to PATH: {bundledPath}");
                 }
-                
-                // Force FFmpeg.AutoGen to initialize with the new path
+
+                // Pre-load FFmpeg libraries in dependency order to avoid issues
                 try
                 {
-                    // Call a simple FFmpeg function to trigger initialization
-                    var version = ffmpeg.av_version_info();
-                    Console.WriteLine($"FFmpeg version: {version}");
+                    Console.WriteLine("Pre-loading FFmpeg libraries in dependency order...");
+
+                    // Load libraries in dependency order
+                    var libPaths = new[]
+                    {
+                        Path.Combine(bundledPath, "avutil-59.dll"),
+                        Path.Combine(bundledPath, "swresample-5.dll"),
+                        Path.Combine(bundledPath, "swscale-8.dll"),
+                        Path.Combine(bundledPath, "avcodec-61.dll"),
+                        Path.Combine(bundledPath, "avformat-61.dll"),
+                        Path.Combine(bundledPath, "avfilter-10.dll"),
+                        Path.Combine(bundledPath, "avdevice-61.dll")
+                    };
+
+                    foreach (var libPath in libPaths)
+                    {
+                        if (File.Exists(libPath))
+                        {
+                            try
+                            {
+                                var handle = LoadLibrary(libPath);
+                                Console.WriteLine($"Pre-loaded: {Path.GetFileName(libPath)} -> Handle: {handle}");
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Failed to pre-load {Path.GetFileName(libPath)}: {ex.Message}");
+                            }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"FFmpeg initialization test failed: {ex.Message}");
+                    Console.WriteLine($"Pre-loading libraries failed: {ex.Message}");
+                }
+
+                // Force FFmpeg.AutoGen to initialize with the new path
+                try
+                {
+                    Console.WriteLine("Testing FFmpeg.AutoGen initialization...");
+                    Console.WriteLine($"ffmpeg.RootPath is set to: {ffmpeg.RootPath}");
+
+                    ffmpeg.av_log_set_level(ffmpeg.AV_LOG_INFO);
+
+                    // Call a simple FFmpeg function to trigger initialization
+                    var version = ffmpeg.av_version_info();
+                    Console.WriteLine($"FFmpeg version: {version}");
+
+                    // Test a few more functions to verify bindings
+                    var codecVersion = ffmpeg.avcodec_version();
+                    var formatVersion = ffmpeg.avformat_version();
+                    Console.WriteLine($"Codec version: {codecVersion}");
+                    Console.WriteLine($"Format version: {formatVersion}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"FFmpeg initialization test failed: {ex.GetType().Name}: {ex.Message}");
+                    Console.WriteLine($"Stack trace: {ex.StackTrace}");
                     throw new NotSupportedException($"FFmpeg initialization failed. The libraries may be incompatible or dependencies are missing: {ex.Message}", ex);
                 }
             }

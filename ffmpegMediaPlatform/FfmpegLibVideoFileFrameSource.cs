@@ -34,54 +34,18 @@ namespace FfmpegMediaPlatform
         {
             try
             {
-                Console.WriteLine("FfmpegLibVideoFileFrameSource static constructor: Starting FFmpeg initialization");
-                
-                // Force initialization of FFmpeg.AutoGen bindings BEFORE any other FFmpeg calls
-                FfmpegNativeLoader.EnsureRegistered();
-                
-                // Wait a moment for DLL loading to complete
-                System.Threading.Thread.Sleep(100);
-                
-                // Test if bindings are working by calling multiple simple functions
-                Console.WriteLine($"FFmpeg.AutoGen binding tests:");
-                Console.WriteLine($"  av_log_set_level: {(ffmpeg.av_log_set_level != null ? "OK" : "NULL")}");
-                Console.WriteLine($"  av_version_info: {(ffmpeg.av_version_info != null ? "OK" : "NULL")}");
-                Console.WriteLine($"  avformat_version: {(ffmpeg.avformat_version != null ? "OK" : "NULL")}");
-                
-                if (ffmpeg.av_log_set_level == null)
+                // Use global initializer if available, otherwise fallback to direct registration
+                if (!FfmpegGlobalInitializer.IsInitialized)
                 {
-                    throw new InvalidOperationException("FFmpeg.AutoGen bindings failed to initialize - av_log_set_level is null");
+                    FfmpegGlobalInitializer.Initialize();
                 }
                 
-                // Try calling multiple simple functions to verify they work
-                try
-                {
-                    // Test 1: avformat_version - returns a uint
-                    var avformat_ver = ffmpeg.avformat_version();
-                    Console.WriteLine($"FFmpeg avformat version: {avformat_ver}");
-                    
-                    // Test 2: avcodec_version - alternative version function
-                    var avcodec_ver = ffmpeg.avcodec_version();
-                    Console.WriteLine($"FFmpeg avcodec version: {avcodec_ver}");
-                    
-                    // Test 3: Try a simple log level function
-                    ffmpeg.av_log_set_level(ffmpeg.AV_LOG_ERROR);
-                    Console.WriteLine("FFmpeg log level set successfully");
-                }
-                catch (Exception testEx)
-                {
-                    Console.WriteLine($"FFmpeg function call test failed: {testEx.Message}");
-                    Console.WriteLine($"FFmpeg function call test failed - details: {testEx}");
-                    // Don't throw here - let the constructor handle it gracefully
-                    Console.WriteLine("Warning: FFmpeg native library functions not working, will use fallback");
-                }
-                
-                Console.WriteLine("FFmpeg.AutoGen bindings initialized successfully");
+                // Set log level to reduce noise (only if not already set)
+                ffmpeg.av_log_set_level(ffmpeg.AV_LOG_ERROR);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"FFmpeg.AutoGen initialization failed: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 // Don't throw here - let the instance constructor handle it
             }
         }
@@ -104,6 +68,11 @@ namespace FfmpegMediaPlatform
         private DateTime startTime;
         private TimeSpan mediaTime;
         private bool isAtEnd;
+        private float slowSpeedFactor = 0.1f; // Default slow speed
+        
+        // Real-time playback timing
+        private DateTime playbackStartTime;
+        private TimeSpan playbackStartMediaTime;
         private FrameTime[] frameTimesData = Array.Empty<FrameTime>();
         private DateTime wallClockStartUtc;
         private PlaybackSpeed playbackSpeed = PlaybackSpeed.Normal;
@@ -151,10 +120,10 @@ namespace FfmpegMediaPlatform
             {
                 var result = startTime + mediaTime;
                 // Log occasionally to track timing
-                if (DateTime.Now.Millisecond % 500 < 50) // Log about every 500ms
-                {
-                    Tools.Logger.VideoLog.LogCall(this, $"CURRENTTIME: startTime={startTime:HH:mm:ss.fff}, mediaTime={mediaTime.TotalSeconds:F2}s, result={result:HH:mm:ss.fff} (State={State})");
-                }
+                // if (DateTime.Now.Millisecond % 500 < 50) // Log about every 500ms
+                // {
+                //     Tools.Logger.VideoLog.LogCall(this, $"CURRENTTIME: startTime={startTime:HH:mm:ss.fff}, mediaTime={mediaTime.TotalSeconds:F2}s, result={result:HH:mm:ss.fff} (State={State})");
+                // }
                 return result;
             }
         }
@@ -167,8 +136,10 @@ namespace FfmpegMediaPlatform
                 if (playbackSpeed != value)
                 {
                     playbackSpeed = value;
+                    // Reset timing baseline when speed changes to prevent catch-up effects
+                    playbackStartTime = DateTime.MinValue;
                     // Playback speed is now controlled by frame pacing in ReadLoop
-                    Tools.Logger.VideoLog.LogCall(this, $"PlaybackSpeed changed to {value}");
+                    Tools.Logger.VideoLog.LogCall(this, $"PlaybackSpeed changed to {value} - timing baseline reset");
                 }
             }
         }
@@ -176,6 +147,11 @@ namespace FfmpegMediaPlatform
         public TimeSpan Length => length;
         public bool Repeat { get; set; }
         public bool IsAtEnd => isAtEnd;
+        public float SlowSpeedFactor 
+        { 
+            get => slowSpeedFactor; 
+            set => slowSpeedFactor = Math.Max(0.1f, Math.Min(1.0f, value)); 
+        }
 
         public override int FrameWidth => VideoConfig.VideoMode?.Width > 0 ? VideoConfig.VideoMode.Width : 640;
         public override int FrameHeight => VideoConfig.VideoMode?.Height > 0 ? VideoConfig.VideoMode.Height : 480;
@@ -435,7 +411,7 @@ namespace FfmpegMediaPlatform
 
         private void ReadLoop()
         {
-            Tools.Logger.VideoLog.LogCall(this, "ReadLoop: Starting ReadLoop thread");
+            // Tools.Logger.VideoLog.LogCall(this, "ReadLoop: Starting ReadLoop thread");
             
             // Wait for proper initialization
             int maxWaitAttempts = 50; // Wait up to 500ms
@@ -447,11 +423,11 @@ namespace FfmpegMediaPlatform
             
             if (!run || rawTextures == null || rgbaPtr == IntPtr.Zero)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Failed to initialize - exiting (run={run}, rawTextures={rawTextures != null}, rgbaPtr={rgbaPtr != IntPtr.Zero})");
+                // Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Failed to initialize - exiting (run={run}, rawTextures={rawTextures != null}, rgbaPtr={rgbaPtr != IntPtr.Zero})");
                 return;
             }
             
-            Tools.Logger.VideoLog.LogCall(this, "ReadLoop: Initialization complete, starting main loop");
+            // Tools.Logger.VideoLog.LogCall(this, "ReadLoop: Initialization complete, starting main loop");
             
             var st = fmt->streams[videoStreamIndex];
             long startPts = st->start_time;
@@ -464,7 +440,7 @@ namespace FfmpegMediaPlatform
                 // Use a small offset to get past any initial silence/empty frames
                 var videoStartOffset = TimeSpan.FromSeconds(1.0); 
                 SetPosition(videoStartOffset);
-                Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Starting playback from offset {videoStartOffset.TotalSeconds:F2}s to find actual frames");
+                // Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Starting playback from offset {videoStartOffset.TotalSeconds:F2}s to find actual frames");
             }
             
             // Main processing loop - handle seeking dynamically
@@ -476,10 +452,10 @@ namespace FfmpegMediaPlatform
                     // Let PTS timing drive playback naturally - no wall-clock updates needed
                     // mediaTime is updated directly from frame PTS in the decode loop
                     
-                    if (loopCount < 10 || loopCount % 300 == 0) // Log first 10 iterations, then every 300
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Main loop iteration {loopCount}, mediaTime={mediaTime.TotalSeconds:F2}s, isPlaying={isPlaying}");
-                    }
+                    // if (loopCount < 10 || loopCount % 300 == 0) // Log first 10 iterations, then every 300
+                    // {
+                    //     Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Main loop iteration {loopCount}, mediaTime={mediaTime.TotalSeconds:F2}s, isPlaying={isPlaying}");
+                    // }
                     loopCount++;
                     // Check if seek was requested
                     TimeSpan seekTime = TimeSpan.Zero;
@@ -496,40 +472,56 @@ namespace FfmpegMediaPlatform
                     
                     if (shouldSeek)
                     {
-                        // Perform the actual seek in FFmpeg
+                        // Use the same seeking mechanism on all platforms (Mac approach that works)
                         double tbase = st->time_base.num / (double)st->time_base.den;
-                        long target = (long)(seekTime.TotalSeconds / tbase) + st->start_time;
-                        ffmpeg.av_seek_frame(fmt, videoStreamIndex, target, ffmpeg.AVSEEK_FLAG_BACKWARD);
+                        long target = (long)(seekTime.TotalSeconds / tbase);
+                        if (st->start_time != ffmpeg.AV_NOPTS_VALUE)
+                        {
+                            target += st->start_time;
+                        }
+                        
+                        int seekResult = ffmpeg.av_seek_frame(fmt, videoStreamIndex, target, ffmpeg.AVSEEK_FLAG_BACKWARD);
+                        // if (seekResult < 0)
+                        // {
+                        //     Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Seek failed with result {seekResult}");
+                        // }
+                        
+                        // Flush decoder buffers to ensure we start clean
                         ffmpeg.avcodec_flush_buffers(codecCtx);
                         
-                        Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Seeked to {seekTime.TotalSeconds:F2}s");
+                        // Update media time to reflect the seek position
+                        mediaTime = seekTime;
+                        
+                        // Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Seek completed to {seekTime.TotalSeconds:F2}s");
                     }
                     
                     // Read and process frames from current position
-                    if (loopCount < 10 || loopCount % 300 == 0) // Log before read attempt
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: About to call av_read_frame, loop {loopCount}");
-                    }
+                    // if (loopCount < 10 || loopCount % 300 == 0) // Log before read attempt
+                    // {
+                    //     // Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: About to call av_read_frame, loop {loopCount}");
+                    // }
                     
                     int readResult = ffmpeg.av_read_frame(fmt, pkt);
-                    if (loopCount < 10 || loopCount % 300 == 0) // Log read result
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: av_read_frame returned {readResult}");
-                    }
+                    // if (loopCount < 10 || loopCount % 300 == 0) // Log read result
+                    // {
+                    //     Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: av_read_frame returned {readResult}");
+                    // }
                     
                     if (readResult < 0)
                     {
-                        if (loopCount % 300 == 0)
-                        {
-                            Tools.Logger.VideoLog.LogCall(this, "ReadLoop: End of file reached");
-                        }
+                        // if (loopCount % 300 == 0)
+                        // {
+                        //     Tools.Logger.VideoLog.LogCall(this, "ReadLoop: End of file reached");
+                        // }
                         
                         // End of file - seek back to start and continue if playing
                         if (isPlaying && !seekRequested)
                         {
-                            Tools.Logger.VideoLog.LogCall(this, "ReadLoop: Looping back to start");
+                            Tools.Logger.VideoLog.LogCall(this, "ReadLoop: Looping back to start - resetting timing baseline");
                             ffmpeg.av_seek_frame(fmt, videoStreamIndex, st->start_time, ffmpeg.AVSEEK_FLAG_BACKWARD);
                             ffmpeg.avcodec_flush_buffers(codecCtx);
+                            // Reset timing baseline to prevent speed issues after looping
+                            playbackStartTime = DateTime.MinValue;
                             isAtEnd = false;
                             continue;
                         }
@@ -538,18 +530,18 @@ namespace FfmpegMediaPlatform
                         continue;
                     }
                     
-                    if (loopCount < 10 || loopCount % 300 == 0) // Log after successful read
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Successfully read frame, stream_index={pkt->stream_index}, videoStreamIndex={videoStreamIndex}");
-                    }
+                    // if (loopCount < 10 || loopCount % 300 == 0) // Log after successful read
+                    // {
+                    //     Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Successfully read frame, stream_index={pkt->stream_index}, videoStreamIndex={videoStreamIndex}");
+                    // }
                     
                     if (pkt->stream_index != videoStreamIndex)
                     {
                         ffmpeg.av_packet_unref(pkt);
-                        if (loopCount % 300 == 0)
-                        {
-                            Tools.Logger.VideoLog.LogCall(this, "ReadLoop: Skipping non-video packet");
-                        }
+                        // if (loopCount % 300 == 0)
+                        // {
+                        //     Tools.Logger.VideoLog.LogCall(this, "ReadLoop: Skipping non-video packet");
+                        // }
                         continue;
                     }
 
@@ -557,17 +549,17 @@ namespace FfmpegMediaPlatform
                     int sendResult = ffmpeg.avcodec_send_packet(codecCtx, pkt);
                     ffmpeg.av_packet_unref(pkt); // Always unref packet after sending
                     
-                    if (loopCount < 10 || loopCount % 300 == 0) // Debug decode process
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: avcodec_send_packet returned {sendResult}");
-                    }
+                    // if (loopCount < 10 || loopCount % 300 == 0) // Debug decode process
+                    // {
+                    //     Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: avcodec_send_packet returned {sendResult}");
+                    // }
                     
                     if (sendResult < 0 && sendResult != ffmpeg.AVERROR(ffmpeg.EAGAIN))
                     {
-                        if (loopCount < 10 || loopCount % 300 == 0)
-                        {
-                            Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: avcodec_send_packet failed with result {sendResult}");
-                        }
+                        // if (loopCount < 10 || loopCount % 300 == 0)
+                        // {
+                        //     Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: avcodec_send_packet failed with result {sendResult}");
+                        // }
                         continue; // Skip this packet and try the next one
                     }
                     
@@ -577,10 +569,10 @@ namespace FfmpegMediaPlatform
                     while ((receiveResult = ffmpeg.avcodec_receive_frame(codecCtx, frame)) == 0)
                     {
                         frameCount++;
-                        if (loopCount < 10 || loopCount % 300 == 0)
-                        {
-                            Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: avcodec_receive_frame succeeded, frame #{frameCount}");
-                        }
+                        // if (loopCount < 10 || loopCount % 300 == 0)
+                        // {
+                        //     Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: avcodec_receive_frame succeeded, frame #{frameCount}");
+                        // }
                         
                         // Calculate timestamp for this frame using XML frame timing if available
                         TimeSpan frameTime = TimeSpan.Zero;
@@ -601,19 +593,19 @@ namespace FfmpegMediaPlatform
                                 if (frameIndex < frameTimesData.Length)
                                 {
                                     frameTime = frameTimesData[frameIndex].Time - startTime;
-                                    if (loopCount < 10 || loopCount % 60 == 0)
-                                    {
-                                        Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Using XML timing - frameIndex={frameIndex}, xmlTime={frameTimesData[frameIndex].Time:HH:mm:ss.fff}, frameTime={frameTime.TotalSeconds:F2}s");
-                                    }
+                                    // if (loopCount < 10 || loopCount % 60 == 0)
+                                    // {
+                                    //     Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Using XML timing - frameIndex={frameIndex}, xmlTime={frameTimesData[frameIndex].Time:HH:mm:ss.fff}, frameTime={frameTime.TotalSeconds:F2}s");
+                                    // }
                                 }
                                 else
                                 {
                                     // Fall back to video timing if beyond XML data
                                     frameTime = TimeSpan.FromSeconds(Math.Max(0, videoSec));
-                                    if (loopCount < 10 || loopCount % 60 == 0)
-                                    {
-                                        Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Using video timing (beyond XML) - frameTime={frameTime.TotalSeconds:F2}s");
-                                    }
+                                    // if (loopCount < 10 || loopCount % 60 == 0)
+                                    // {
+                                    //     Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Using video timing (beyond XML) - frameTime={frameTime.TotalSeconds:F2}s");
+                                    // }
                                 }
                             }
                         }
@@ -626,19 +618,15 @@ namespace FfmpegMediaPlatform
                             {
                                 double sec = (pts - startPts) * tb;
                                 frameTime = TimeSpan.FromSeconds(Math.Max(0, sec));
-                                if (loopCount < 10 || loopCount % 60 == 0)
-                                {
-                                    Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Using video timing (no XML) - frameTime={frameTime.TotalSeconds:F2}s");
-                                }
+                                // if (loopCount < 10 || loopCount % 60 == 0)
+                                // {
+                                //     Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Using video timing (no XML) - frameTime={frameTime.TotalSeconds:F2}s");
+                                // }
                             }
                         }
                         
                         // Use natural frame timing from MKV file - no artificial pacing
                         // The frame timing (frameTime) already contains the correct intervals from the video
-
-                        // Use frame rate pacing to maintain proper playback speed
-                        // Calculate expected frame interval based on video frame rate
-                        double expectedFrameIntervalMs = 1000.0 / Math.Max(1.0, frameRate);
                         
                         // Check if seek is pending
                         bool seekStillPending = false;
@@ -656,41 +644,73 @@ namespace FfmpegMediaPlatform
                             {
                                 double sec = (localPts - startPts) * tb;
                                 var newMediaTime = TimeSpan.FromSeconds(Math.Max(0, sec));
-                                if (Math.Abs((newMediaTime - mediaTime).TotalMilliseconds) > 10)
-                                {
-                                    Tools.Logger.VideoLog.LogCall(this, $"READLOOP: mediaTime updated from {mediaTime.TotalSeconds:F2}s to {newMediaTime.TotalSeconds:F2}s (isPlaying={isPlaying})");
-                                }
+                                // if (Math.Abs((newMediaTime - mediaTime).TotalMilliseconds) > 10)
+                                // {
+                                //     Tools.Logger.VideoLog.LogCall(this, $"READLOOP: mediaTime updated from {mediaTime.TotalSeconds:F2}s to {newMediaTime.TotalSeconds:F2}s (isPlaying={isPlaying})");
+                                // }
                                 mediaTime = newMediaTime;
                             }
                             
                             // Debug frame timing
-                            if (loopCount < 10 || loopCount % 60 == 0)
-                            {
-                                Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Processing frame - frameTime={frameTime.TotalSeconds:F2}s, mediaTime={mediaTime.TotalSeconds:F2}s, expectedInterval={expectedFrameIntervalMs:F1}ms");
-                            }
+                            // if (loopCount < 10 || loopCount % 60 == 0)
+                            // {
+                            //     Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Processing frame - frameTime={frameTime.TotalSeconds:F2}s, mediaTime={mediaTime.TotalSeconds:F2}s, expectedInterval={expectedFrameIntervalMs:F1}ms");
+                            // }
                             
-                            if (loopCount % 30 == 0) // Log every 30 frames (about 1 second at 30fps)
-                            {
-                                Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Processing frame at {frameTime.TotalSeconds:F2}s");
-                            }
+                            // if (loopCount % 30 == 0) // Log every 30 frames (about 1 second at 30fps)
+                            // {
+                            //     Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Processing frame at {frameTime.TotalSeconds:F2}s");
+                            // }
                             ProcessCurrentFrame(frame, frameTime);
                             
-                            // Frame rate pacing with playback speed control
-                            if (expectedFrameIntervalMs > 5.0) // Only sleep if reasonable interval
+                            // Real-time playback timing based on PTS
+                            if (!isPlaying)
                             {
-                                // Apply playback speed scaling to sleep duration
+                                // When paused, sleep longer to avoid CPU spinning
+                                Thread.Sleep(50);
+                            }
+                            else
+                            {
                                 double speedFactor = GetSpeedFactor();
-                                int sleepMs = (int)(expectedFrameIntervalMs * speedFactor);
+                                double targetFrameInterval = (1000.0 / frameRate) * speedFactor; // Frame interval in milliseconds - multiply for slower playback
                                 
-                                // Only sleep if we're playing (pause by not sleeping)
-                                if (isPlaying && sleepMs > 0)
+                                // Initialize or reset timing baseline periodically to prevent drift
+                                if (playbackStartTime == DateTime.MinValue)
                                 {
-                                    Thread.Sleep(sleepMs);
+                                    playbackStartTime = DateTime.UtcNow;
+                                    playbackStartMediaTime = mediaTime;
                                 }
-                                else if (!isPlaying)
+                                else
                                 {
-                                    // When paused, sleep longer to avoid CPU spinning
-                                    Thread.Sleep(50);
+                                    // Reset timing baseline every 5 seconds to prevent accumulating drift
+                                    var timeSinceLastReset = DateTime.UtcNow - playbackStartTime;
+                                    if (timeSinceLastReset.TotalSeconds > 5.0)
+                                    {
+                                        playbackStartTime = DateTime.UtcNow;
+                                        playbackStartMediaTime = mediaTime;
+                                        Tools.Logger.VideoLog.LogCall(this, $"Timing baseline reset to prevent drift - mediaTime: {mediaTime.TotalSeconds:F3}s");
+                                    }
+                                }
+                                
+                                // Calculate how much time should have elapsed based on video timing
+                                var videoElapsed = mediaTime - playbackStartMediaTime;
+                                var targetElapsed = TimeSpan.FromMilliseconds(videoElapsed.TotalMilliseconds * speedFactor);
+                                
+                                // Calculate how much time has actually elapsed
+                                var actualElapsed = DateTime.UtcNow - playbackStartTime;
+                                
+                                // Sleep if we're ahead of schedule
+                                var timeDiff = targetElapsed - actualElapsed;
+                                if (timeDiff.TotalMilliseconds > 1)
+                                {
+                                    // For slow motion, allow longer sleeps (up to 1000ms for very slow playback)
+                                    int maxSleep = playbackSpeed == PlaybackSpeed.Slow ? 1000 : 50;
+                                    Thread.Sleep((int)Math.Min(timeDiff.TotalMilliseconds, maxSleep));
+                                }
+                                else
+                                {
+                                    // Use frame-rate based minimal sleep for smooth playback
+                                    Thread.Sleep((int)Math.Max(1, targetFrameInterval * 0.1));
                                 }
                             }
                             
@@ -705,19 +725,19 @@ namespace FfmpegMediaPlatform
                         }
                         else if (seekStillPending)
                         {
-                            if (loopCount % 60 == 0)
-                            {
-                                Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Skipping frame due to pending seek");
-                            }
+                            // if (loopCount % 60 == 0)
+                            // {
+                            //     Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Skipping frame due to pending seek");
+                            // }
                             break; // Stop processing more frames if seek is pending
                         }
                         else if (!isPlaying)
                         {
                             // When paused, skip frame processing but continue loop to handle seeks
-                            if (loopCount % 300 == 0)
-                            {
-                                Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Skipping frame due to paused state");
-                            }
+                            // if (loopCount % 300 == 0)
+                            // {
+                            //     Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Skipping frame due to paused state");
+                            // }
                             // Small sleep to avoid CPU spinning when paused
                             Thread.Sleep(50);
                             break; // Skip remaining frames in this packet
@@ -725,21 +745,21 @@ namespace FfmpegMediaPlatform
                     }
                     
                     // Only log receive failures if it's not EAGAIN (which is expected)
-                    if (loopCount < 10 || loopCount % 300 == 0)
-                    {
-                        if (frameCount == 0 && receiveResult != ffmpeg.AVERROR(ffmpeg.EAGAIN))
-                        {
-                            Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: avcodec_receive_frame failed with result {receiveResult}, no frames decoded");
-                        }
-                        else if (frameCount > 0)
-                        {
-                            Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Finished processing {frameCount} frame(s), last receive_frame result: {receiveResult}");
-                        }
-                        else if (receiveResult == ffmpeg.AVERROR(ffmpeg.EAGAIN))
-                        {
-                            Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Decoder needs more input packets (EAGAIN), continuing...");
-                        }
-                    }
+                    // if (loopCount < 10 || loopCount % 300 == 0)
+                    // {
+                    //     if (frameCount == 0 && receiveResult != ffmpeg.AVERROR(ffmpeg.EAGAIN))
+                    //     {
+                    //         Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: avcodec_receive_frame failed with result {receiveResult}, no frames decoded");
+                    //     }
+                    //     else if (frameCount > 0)
+                    //     {
+                    //         Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Finished processing {frameCount} frame(s), last receive_frame result: {receiveResult}");
+                    //     }
+                    //     else if (receiveResult == ffmpeg.AVERROR(ffmpeg.EAGAIN))
+                    //     {
+                    //         Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Decoder needs more input packets (EAGAIN), continuing...");
+                    //     }
+                    // }
                     
                     // Small sleep to prevent CPU spinning
                     Thread.Sleep(1);
@@ -856,6 +876,12 @@ namespace FfmpegMediaPlatform
         {
             Tools.Logger.VideoLog.LogCall(this, $"Play() called - mediaTime: {mediaTime.TotalSeconds:F2}s, pausedAtMediaTime: {pausedAtMediaTime.TotalSeconds:F2}s");
             
+            // Reset playback timing when starting/resuming playback
+            // This ensures accurate real-time timing regardless of seeks or pauses
+            playbackStartTime = DateTime.MinValue;
+            playbackStartMediaTime = TimeSpan.Zero;
+            Tools.Logger.VideoLog.LogCall(this, $"Play() reset timing variables for real-time playback");
+            
             // If resuming from pause, restore the exact paused position
             if (State == States.Paused && pausedAtMediaTime != TimeSpan.Zero)
             {
@@ -891,14 +917,29 @@ namespace FfmpegMediaPlatform
         {
             if (fmt == null) return;
             
+            // Validate seek time - don't allow negative seeks
+            if (seekTime < TimeSpan.Zero)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"SetPosition: Invalid seek time {seekTime.TotalSeconds:F2}s, clamping to 0");
+                seekTime = TimeSpan.Zero;
+            }
+            
+            // Reset playback timing when seeking to ensure accurate real-time playback from new position
+            playbackStartTime = DateTime.MinValue;
+            playbackStartMediaTime = TimeSpan.Zero;
+            Tools.Logger.VideoLog.LogCall(this, $"SetPosition: Reset timing variables for real-time playback after seek to {seekTime.TotalSeconds:F2}s");
+            
             // Set the seek request for ReadLoop to handle
             lock (seekLock)
             {
                 seekTarget = seekTime;
                 seekRequested = true;
             }
-            Tools.Logger.VideoLog.LogCall(this, $"SETPOSITION: mediaTime changed from {mediaTime.TotalSeconds:F2}s to {seekTime.TotalSeconds:F2}s (State={State})");
-            mediaTime = seekTime;
+            Tools.Logger.VideoLog.LogCall(this, $"SETPOSITION: Requesting seek from {mediaTime.TotalSeconds:F2}s to {seekTime.TotalSeconds:F2}s (State={State})");
+            
+            // Don't update mediaTime immediately - let the seek operation update it
+            // This prevents timing conflicts between UI and actual seek position
+            // mediaTime = seekTime; // REMOVED - will be set by seek operation
             
             // Auto-play after seeking - but don't override pause state
             if (seekTime > TimeSpan.Zero && State != States.Paused)
@@ -948,10 +989,10 @@ namespace FfmpegMediaPlatform
             bool result = base.UpdateTexture(graphicsDevice, drawFrameId, ref texture);
             
             // Log occasionally for debugging
-            if (drawFrameId % 120 == 0)
-            {
-                Tools.Logger.VideoLog.LogCall(this, $"VIDEO UI: Reading frame from rawTextures buffer for draw frame {drawFrameId}, mediaTime={mediaTime.TotalSeconds:F2}s, isPlaying={isPlaying}");
-            }
+            // if (drawFrameId % 120 == 0)
+            // {
+            //     Tools.Logger.VideoLog.LogCall(this, $"VIDEO UI: Reading frame from rawTextures buffer for draw frame {drawFrameId}, mediaTime={mediaTime.TotalSeconds:F2}s, isPlaying={isPlaying}");
+            // }
             
             return result;
         }
@@ -965,7 +1006,7 @@ namespace FfmpegMediaPlatform
         private TimeSpan ScaleBySpeed(TimeSpan media)
         {
             // Map playback speed to wall-clock pacing factor
-            // Normal: 1x, Slow: 0.2x (5x slower = 20% speed), FastAsPossible: no pacing (treat as 1x here)
+            // Normal: 1x, Slow: 10x slower = 10% speed, FastAsPossible: no pacing (treat as 1x here)
             double factor = GetSpeedFactor();
             // For FastAsPossible, we still compute anchor but pacing sleep is skipped
             return TimeSpan.FromTicks((long)(media.Ticks * factor));
@@ -973,11 +1014,12 @@ namespace FfmpegMediaPlatform
         
         private double GetSpeedFactor()
         {
+            // Speed factor used as sleep multiplier: higher value = slower playback
             return playbackSpeed switch
             {
-                PlaybackSpeed.Slow => 5.0, // 20% speed (5x slower)
-                PlaybackSpeed.FastAsPossible => 1.0, // treat as normal for timing calculations
-                _ => 1.0 // Normal speed
+                PlaybackSpeed.Slow => 1.0 / slowSpeedFactor, // Use custom slow speed (e.g., 1/0.1 = 10x slower for 0.1 speed)
+                PlaybackSpeed.FastAsPossible => 1.0, // Normal timing calculations
+                _ => 1.0 // Normal speed: 100% speed
             };
         }
     }

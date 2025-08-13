@@ -19,6 +19,7 @@ namespace FfmpegMediaPlatform
         private TimeSpan length;
         private double frameRate;
         private PlaybackSpeed playbackSpeed;
+        private float slowSpeedFactor = 0.1f; // Default slow speed
         private bool repeat;
         private bool bounceRepeat;
         private bool reversed;
@@ -75,6 +76,11 @@ namespace FfmpegMediaPlatform
             set => reversed = value; 
         }
         public bool IsAtEnd => isAtEnd;
+        public float SlowSpeedFactor 
+        { 
+            get => slowSpeedFactor; 
+            set => slowSpeedFactor = Math.Max(0.1f, Math.Min(1.0f, value)); 
+        }
 
         public TimeSpan MediaTime
         {
@@ -176,23 +182,13 @@ namespace FfmpegMediaPlatform
             string videoFilter = "vflip"; // Base filter to flip video vertically
             string reFlag = "-re"; // Default: use -re for proper timing
             
-            // Add playback speed control if slow motion is enabled
-            if (playbackSpeed == PlaybackSpeed.Slow)
-            {
-                // Use setpts filter to slow down video to 25% speed
-                // setpts=4*PTS makes video 4x slower (25% speed)
-                videoFilter += ",setpts=4*PTS";
-                reFlag = ""; // Remove -re flag for slow motion to allow setpts to work properly
-                Tools.Logger.VideoLog.LogCall(this, "Slow motion enabled - video will play at 25% speed using setpts filter (no -re)");
-            }
-            
             string ffmpegArgs = $"{(string.IsNullOrEmpty(reFlag) ? "" : reFlag + " ")}" +  // Read input at native frame rate (only for normal speed)
                                $"-i \"{filePath}\" " +
                                $"-fflags +genpts " +  // Generate presentation timestamps
                                $"-avoid_negative_ts make_zero " +  // Handle negative timestamps
                                $"-threads 1 " +
                                $"-an " +  // No audio
-                               $"-vf \"{videoFilter}\" " +  // Apply video filters (vflip and optionally setpts for slow motion)
+                               $"-vf \"{videoFilter}\" " +  // Apply video filters (vflip)
                                $"-pix_fmt rgba " +
                                $"-f rawvideo pipe:1";
 
@@ -1182,16 +1178,6 @@ namespace FfmpegMediaPlatform
                 string videoFilter = "vflip"; // Base filter to flip video vertically
                 string reFlag = "-re"; // Default: use -re for proper timing
                 
-                // Add playback speed control if slow motion is enabled
-                if (playbackSpeed == PlaybackSpeed.Slow)
-                {
-                    // Use setpts filter to slow down video to 25% speed
-                    // setpts=4*PTS makes video 4x slower (25% speed)
-                    videoFilter += ",setpts=4*PTS";
-                    reFlag = ""; // Remove -re flag for slow motion to allow setpts to work properly
-                    // Tools.Logger.VideoLog.LogCall(this, "SEEK: Slow motion enabled - video will play at 25% speed using setpts filter (no -re)");
-                }
-                
                 string ffmpegArgs = $"-ss {seekTime.TotalSeconds:F3} " +  // Seek to specific time (BEFORE input for fast seek)
                                    $"{(string.IsNullOrEmpty(reFlag) ? "" : reFlag + " ")}" +  // Read input at native frame rate (only for normal speed)
                                    $"-i \"{filePath}\" " +  // Input file
@@ -1199,7 +1185,7 @@ namespace FfmpegMediaPlatform
                                    $"-avoid_negative_ts make_zero " +  // Handle negative timestamps (output option)
                                    $"-threads 1 " +  // Single thread (output option)
                                    $"-an " +  // No audio (output option)
-                                   $"-vf \"{videoFilter}\" " +  // Apply video filters (vflip and optionally setpts for slow motion)
+                                   $"-vf \"{videoFilter}\" " +  // Apply video filters (vflip)
                                    $"-pix_fmt rgba " +  // RGBA pixel format (output option)
                                    $"-f rawvideo pipe:1";  // Raw video output to stdout (output option)
 

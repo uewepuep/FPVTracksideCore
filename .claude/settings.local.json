@@ -19,7 +19,11 @@
       "Bash(FPVTracksideCore.exe)",
       "Bash(taskkill:*)",
       "Bash(.ffmpeg.exe -version)",
-      "Bash(ffmpeg.exe:*)"
+      "Bash(ffmpeg.exe:*)",
+      "Bash(dir \"C:\\git\\FPVTracksideCore\\FPVTracksideCore\\bin\\Debug\\net60-windows\\win-x64\\ffmpeg-libs\")",
+      "Bash(dir:*)",
+      "Bash(unzip:*)",
+      "Bash(cp:*)"
     ],
     "deny": []
   }
