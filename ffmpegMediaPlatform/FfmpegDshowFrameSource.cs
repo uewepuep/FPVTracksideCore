@@ -268,19 +268,25 @@ namespace FfmpegMediaPlatform
                     Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode acceleration skipped for uncompressed format: {VideoConfig.VideoMode?.Format}");
                 }
                 
+                // PERFORMANCE: Enhanced low-delay flags for 4K video to reduce 1-second startup delay
                 ffmpegArgs = $"-f dshow " +
                                 $"{hwaccelArgs}" +
                                 $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                                 $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
                                 $"{inputFormatArgs}" +
-                                $"-rtbufsize 10M " +
+                                $"-rtbufsize 2M " +
                                 $"-i video=\"{name}\" " +
-                                $"-fflags nobuffer " +
+                                $"-fflags nobuffer+fastseek+flush_packets " +
                                 $"-flags low_delay " +
+                                $"-avioflags direct " +
+                                $"-flush_packets 1 " +
+                                $"-max_delay 0 " +
                                 $"-strict experimental " +
                                 $"-threads 1 " +
                                 $"-fps_mode passthrough " +
                                 $"-copyts " +
+                                $"-probesize 32 " +
+                                $"-analyzeduration 0 " +
                                 $"-an " +
                                 $"-filter_complex \"split=2[out1][out2];[out1]format=rgba[outpipe];[out2]null[outnull]\" " +
                                 $"-map \"[outpipe]\" -f rawvideo pipe:1";
