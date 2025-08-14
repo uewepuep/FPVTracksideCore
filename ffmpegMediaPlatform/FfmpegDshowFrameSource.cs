@@ -27,32 +27,78 @@ namespace FfmpegMediaPlatform
                 string ffmpegListCommand = "-list_options true -f dshow -i video=\"" + VideoConfig.DeviceName + "\"";
                 Tools.Logger.VideoLog.LogCall(this, $"FFMPEG COMMAND (list camera modes): ffmpeg {ffmpegListCommand}");
                 
+                // Get all FFmpeg output lines for debugging
+                IEnumerable<string> allLines = ffmpegMediaFramework.GetFfmpegText(ffmpegListCommand, null);
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG DEBUG: All output lines count: {allLines.Count()}");
+                foreach (string line in allLines)
+                {
+                    if (line.Contains("vcodec=") || line.Contains("pixel_format="))
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG DEBUG: Found format line: {line}");
+                    }
+                }
+                
                 IEnumerable<string> modes = ffmpegMediaFramework.GetFfmpegText(ffmpegListCommand, l => l.Contains("pixel_format") || l.Contains("vcodec="));
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG DEBUG: Filtered modes count: {modes.Count()}");
 
                 int index = 0;
-                //[dshow @ 000001ccc05aa180]   pixel_format=nv12  min s=1280x720 fps=30 max s=1280x720 fps=30
+                var parsedModes = new List<(string format, int width, int height, float fps, int priority)>();
+                
+                // Parse all modes and assign priorities
                 foreach (string format in modes)
                 {
                     Tools.Logger.VideoLog.LogCall(this, $"FFMPEG OUTPUT: {format}");
                     
-                    string pixelFormat = ffmpegMediaFramework.GetValue(format, "pixel_format");
-                    if (string.IsNullOrEmpty(pixelFormat))
+                    // Try vcodec first (preferred formats like h264, mjpeg)
+                    string videoFormat = ffmpegMediaFramework.GetValue(format, "vcodec");
+                    int priority = 1; // Default priority for vcodec formats
+                    
+                    // If no vcodec, try pixel_format (lower priority)
+                    if (string.IsNullOrEmpty(videoFormat))
                     {
-                        pixelFormat = ffmpegMediaFramework.GetValue(format, "vcodec");
+                        videoFormat = ffmpegMediaFramework.GetValue(format, "pixel_format");
+                        priority = 2; // Lower priority for pixel_format
                     }
+                    
+                    // Set higher priority for preferred codecs
+                    if (videoFormat == "h264")
+                    {
+                        priority = 0; // Highest priority for h264
+                    }
+                    else if (videoFormat == "mjpeg")
+                    {
+                        priority = 0; // Highest priority for mjpeg
+                    }
+                    else if (videoFormat == "uyvy422")
+                    {
+                        priority = 1; // Good priority for uyvy422
+                    }
+                    
                     string size = ffmpegMediaFramework.GetValue(format, "min s");
                     string fps = ffmpegMediaFramework.GetValue(format, "fps");
 
                     string[] sizes = size.Split("x");
                     if (int.TryParse(sizes[0], out int x) && int.TryParse(sizes[1], out int y) && float.TryParse(fps, out float ffps))
                     {
-                        // Prefer uyvy422 if available (like Mac), otherwise use what camera supports
-                        string formatToUse = pixelFormat == "uyvy422" ? "uyvy422" : pixelFormat;
-                        var mode = new Mode { Format = formatToUse, Width = x, Height = y, FrameRate = ffps, FrameWork = FrameWork.ffmpeg, Index = index };
-                        supportedModes.Add(mode);
-                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG ✓ PARSED MODE: {x}x{y}@{ffps}fps ({formatToUse}) (Index {index})");
-                        index++;
+                        parsedModes.Add((videoFormat, x, y, ffps, priority));
+                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG ✓ PARSED MODE: {x}x{y}@{ffps}fps ({videoFormat}) (Priority {priority})");
                     }
+                }
+                
+                // Sort by priority (0=highest), then by resolution, then by framerate
+                var sortedModes = parsedModes
+                    .OrderBy(m => m.priority)
+                    .ThenByDescending(m => m.width * m.height)
+                    .ThenByDescending(m => m.fps)
+                    .ToList();
+                
+                // Add sorted modes to supportedModes list
+                foreach (var mode in sortedModes)
+                {
+                    var videoMode = new Mode { Format = mode.format, Width = mode.width, Height = mode.height, FrameRate = mode.fps, FrameWork = FrameWork.ffmpeg, Index = index };
+                    supportedModes.Add(videoMode);
+                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG ✓ ADDED MODE: {mode.width}x{mode.height}@{mode.fps}fps ({mode.format}) (Index {index}, Priority {mode.priority})");
+                    index++;
                 }
                 
                 Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Camera capability detection complete: {supportedModes.Count} supported modes found");
@@ -81,7 +127,24 @@ namespace FfmpegMediaPlatform
         protected override ProcessStartInfo GetProcessStartInfo()
         {
             string name = VideoConfig.ffmpegId;
+            string format = VideoConfig.VideoMode.Format;
             string ffmpegArgs;
+            
+            // Build format-specific input arguments
+            string inputFormatArgs = "";
+            if (!string.IsNullOrEmpty(format))
+            {
+                // For vcodec formats like h264, mjpeg, use vcodec parameter
+                if (format == "h264" || format == "mjpeg")
+                {
+                    inputFormatArgs = $"-vcodec {format} ";
+                }
+                // For pixel formats like yuyv422, use pixel_format parameter  
+                else if (format != "uyvy422") // uyvy422 is the default, don't specify explicitly
+                {
+                    inputFormatArgs = $"-pixel_format {format} ";
+                }
+            }
             
             if (Recording && !string.IsNullOrEmpty(recordingFilename))
             {
@@ -92,6 +155,7 @@ namespace FfmpegMediaPlatform
                                 $"-rtbufsize 2048M " +
                                 $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                                 $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
+                                $"{inputFormatArgs}" +
                                 $"-i video=\"{name}\" " +
                                 $"-fflags nobuffer " +
                                 $"-flags low_delay " +
@@ -104,7 +168,7 @@ namespace FfmpegMediaPlatform
                                 $"-map \"[outpipe]\" -f rawvideo pipe:1 " +
                                 $"-map \"[outfile]\" -c:v h264_nvenc -preset llhp -tune zerolatency -b:v 5M -f matroska -avoid_negative_ts make_zero \"{recordingPath}\"";
                 
-                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Windows Recording Mode: {ffmpegArgs}");
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Windows Recording Mode ({format}): {ffmpegArgs}");
             }
             else
             {
@@ -112,6 +176,7 @@ namespace FfmpegMediaPlatform
                 ffmpegArgs = $"-f dshow " +
                                 $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                                 $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
+                                $"{inputFormatArgs}" +
                                 $"-rtbufsize 10M " +
                                 $"-i video=\"{name}\" " +
                                 $"-fflags nobuffer " +
@@ -124,7 +189,7 @@ namespace FfmpegMediaPlatform
                                 $"-filter_complex \"split=2[out1][out2];[out1]format=rgba[outpipe];[out2]null[outnull]\" " +
                                 $"-map \"[outpipe]\" -f rawvideo pipe:1";
                 
-                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Windows Live Mode (dual stream): {ffmpegArgs}");
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Windows Live Mode ({format}): {ffmpegArgs}");
             }
             return ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
         }

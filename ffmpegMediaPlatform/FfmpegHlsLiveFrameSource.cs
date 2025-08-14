@@ -179,23 +179,62 @@ namespace FfmpegMediaPlatform
             try
             {
                 string ffmpegListCommand = "-list_options true -f dshow -i video=\"" + VideoConfig.DeviceName + "\"";
-                IEnumerable<string> modes = ffmpegMediaFramework.GetFfmpegText(ffmpegListCommand, l => l.Contains("pixel_format"));
+                IEnumerable<string> modes = ffmpegMediaFramework.GetFfmpegText(ffmpegListCommand, l => l.Contains("pixel_format") || l.Contains("vcodec="));
 
                 int index = 0;
+                var parsedModes = new List<(string format, int width, int height, float fps, int priority)>();
+                
+                // Parse all modes and assign priorities
                 foreach (string format in modes)
                 {
-                    string pixelFormat = ffmpegMediaFramework.GetValue(format, "pixel_format");
+                    // Try vcodec first (preferred formats like h264, mjpeg)
+                    string videoFormat = ffmpegMediaFramework.GetValue(format, "vcodec");
+                    int priority = 1; // Default priority for vcodec formats
+                    
+                    // If no vcodec, try pixel_format (lower priority)
+                    if (string.IsNullOrEmpty(videoFormat))
+                    {
+                        videoFormat = ffmpegMediaFramework.GetValue(format, "pixel_format");
+                        priority = 2; // Lower priority for pixel_format
+                    }
+                    
+                    // Set higher priority for preferred codecs
+                    if (videoFormat == "h264")
+                    {
+                        priority = 0; // Highest priority for h264
+                    }
+                    else if (videoFormat == "mjpeg")
+                    {
+                        priority = 0; // Highest priority for mjpeg
+                    }
+                    else if (videoFormat == "uyvy422")
+                    {
+                        priority = 1; // Good priority for uyvy422
+                    }
+                    
                     string size = ffmpegMediaFramework.GetValue(format, "min s");
                     string fps = ffmpegMediaFramework.GetValue(format, "fps");
 
                     string[] sizes = size.Split("x");
                     if (int.TryParse(sizes[0], out int x) && int.TryParse(sizes[1], out int y) && float.TryParse(fps, out float ffps))
                     {
-                        string formatToUse = pixelFormat == "uyvy422" ? "uyvy422" : pixelFormat;
-                        var mode = new Mode { Format = formatToUse, Width = x, Height = y, FrameRate = ffps, FrameWork = FrameWork.ffmpeg, Index = index };
-                        supportedModes.Add(mode);
-                        index++;
+                        parsedModes.Add((videoFormat, x, y, ffps, priority));
                     }
+                }
+                
+                // Sort by priority (0=highest), then by resolution, then by framerate
+                var sortedModes = parsedModes
+                    .OrderBy(m => m.priority)
+                    .ThenByDescending(m => m.width * m.height)
+                    .ThenByDescending(m => m.fps)
+                    .ToList();
+                
+                // Add sorted modes to supportedModes list
+                foreach (var mode in sortedModes)
+                {
+                    var videoMode = new Mode { Format = mode.format, Width = mode.width, Height = mode.height, FrameRate = mode.fps, FrameWork = FrameWork.ffmpeg, Index = index };
+                    supportedModes.Add(videoMode);
+                    index++;
                 }
                 
                 Tools.Logger.VideoLog.LogCall(this, $"Windows camera capability detection complete: {supportedModes.Count} supported modes found");

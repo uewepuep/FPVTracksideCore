@@ -637,7 +637,7 @@ namespace UI.Video
                         // Get ALL the modes form the device
                         vse.VideoManager.GetModes(Object, true, AcceptModes);
                     }
-                    else if (rebootRequired || !modes.Any())
+                    else if (rebootRequired || !modes.Any() || true) // TEMP: Force refresh for new format parsing
                     {
                         // Get the normal modes form the device
                         vse.VideoManager.GetModes(Object, false, AcceptModes);
