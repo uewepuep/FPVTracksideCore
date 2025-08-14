@@ -102,11 +102,11 @@ namespace UI.Video
 
             if (texture == null)
             {
-                // Log only every 120 frames to reduce spam
-                if (ProcessNumber % 120 == 0)
-                {
-                    Tools.Logger.VideoLog.LogCall(this, $"Draw: texture is null, drawing blank pattern. Bounds={Bounds}");
-                }
+                // Disabled: Log only every 120 frames to reduce spam
+                // if (ProcessNumber % 120 == 0)
+                // {
+                //     Tools.Logger.VideoLog.LogCall(this, $"Draw: texture is null, drawing blank pattern. Bounds={Bounds}");
+                // }
                 Texture2D tempTexture = id.TextureCache.GetTextureFromColor(Blank);
                 id.Draw(tempTexture, new Rectangle(0, 0, tempTexture.Width, tempTexture.Height), Bounds, Tint, alpha);
             }
