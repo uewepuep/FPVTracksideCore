@@ -212,13 +212,85 @@ namespace FfmpegMediaPlatform
                         priority = 1; // Good priority for uyvy422
                     }
                     
-                    string size = ffmpegMediaFramework.GetValue(format, "min s");
-                    string fps = ffmpegMediaFramework.GetValue(format, "fps");
-
-                    string[] sizes = size.Split("x");
-                    if (int.TryParse(sizes[0], out int x) && int.TryParse(sizes[1], out int y) && float.TryParse(fps, out float ffps))
+                    string minSize = ffmpegMediaFramework.GetValue(format, "min s");
+                    string maxSize = ffmpegMediaFramework.GetValue(format, "max s");
+                    
+                    // Parse fps values - support both old single fps and new min/max fps formats
+                    float minFps = 0, maxFps = 0;
+                    var fpsMatches = System.Text.RegularExpressions.Regex.Matches(format, @"fps=([\d.]+)");
+                    
+                    if (fpsMatches.Count >= 2)
                     {
-                        parsedModes.Add((videoFormat, x, y, ffps, priority));
+                        // New format with min and max fps (e.g., "min s=1920x1080 fps=25 max s=1920x1080 fps=60.0002")
+                        float.TryParse(fpsMatches[0].Groups[1].Value, out minFps);
+                        float.TryParse(fpsMatches[1].Groups[1].Value, out maxFps);
+                    }
+                    else if (fpsMatches.Count == 1)
+                    {
+                        // Old format or single fps value - try both new regex and old method for compatibility
+                        if (float.TryParse(fpsMatches[0].Groups[1].Value, out minFps))
+                        {
+                            maxFps = minFps; // Single fps value, min and max are the same
+                        }
+                        else
+                        {
+                            // Fallback to original parsing method for backward compatibility
+                            string fps = ffmpegMediaFramework.GetValue(format, "fps");
+                            if (float.TryParse(fps, out minFps))
+                            {
+                                maxFps = minFps;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Fallback to original parsing method for backward compatibility
+                        string fps = ffmpegMediaFramework.GetValue(format, "fps");
+                        if (float.TryParse(fps, out minFps))
+                        {
+                            maxFps = minFps;
+                        }
+                    }
+
+                    string[] minSizes = minSize.Split("x");
+                    string[] maxSizes = maxSize.Split("x");
+                    
+                    if (int.TryParse(minSizes[0], out int minX) && int.TryParse(minSizes[1], out int minY) &&
+                        int.TryParse(maxSizes[0], out int maxX) && int.TryParse(maxSizes[1], out int maxY) &&
+                        minFps > 0)
+                    {
+                        // Use the resolution from min s (which should match max s for most cases)
+                        int width = minX;
+                        int height = minY;
+                        
+                        // Generate frame rates between min and max fps
+                        var supportedFrameRates = new List<float>();
+                        
+                        // Always add the min and max fps
+                        supportedFrameRates.Add(minFps);
+                        if (maxFps > minFps)
+                        {
+                            supportedFrameRates.Add(maxFps);
+                        }
+                        
+                        // Add common frame rates within the range
+                        var commonRates = new float[] { 24, 25, 29.97f, 30, 50, 59.94f, 60 };
+                        foreach (var rate in commonRates)
+                        {
+                            if (rate > minFps && rate < maxFps)
+                            {
+                                supportedFrameRates.Add(rate);
+                            }
+                        }
+                        
+                        // Remove duplicates and sort
+                        supportedFrameRates = supportedFrameRates.Distinct().OrderBy(f => f).ToList();
+                        
+                        // Add all supported frame rates as separate modes
+                        foreach (var fps in supportedFrameRates)
+                        {
+                            parsedModes.Add((videoFormat, width, height, fps, priority));
+                        }
                     }
                 }
                 
@@ -316,7 +388,7 @@ namespace FfmpegMediaPlatform
                                    $"-pix_fmt rgba " +
                                    $"pipe:1";  // RGBA output for live display only
                 
-                Tools.Logger.VideoLog.LogCall(this, $"RGBA-Only FFmpeg Command (HLS Disabled):");
+                Tools.Logger.VideoLog.LogCall(this, $"RGBA-Only FFmpeg Command (HLS Disabled) HW Accel: {VideoConfig.HardwareDecodeAcceleration}:");
                 Tools.Logger.VideoLog.LogCall(this, ffmpegArgs);
                 return ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
             }
@@ -329,7 +401,21 @@ namespace FfmpegMediaPlatform
             if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
             {
                 Tools.Logger.VideoLog.LogCall(this, $"CAMERA DEBUG: Requesting {VideoConfig.VideoMode.FrameRate}fps from camera '{name}'");
+                
+                // Add hardware decode acceleration for macOS (only for compressed formats)
+                string hwaccelArgs = "";
+                if (VideoConfig.HardwareDecodeAcceleration && VideoConfig.IsCompressedVideoFormat)
+                {
+                    hwaccelArgs = "-hwaccel videotoolbox ";
+                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode acceleration enabled for {VideoConfig.VideoMode?.Format} - trying VideoToolbox");
+                }
+                else if (VideoConfig.HardwareDecodeAcceleration && !VideoConfig.IsCompressedVideoFormat)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode acceleration skipped for uncompressed format: {VideoConfig.VideoMode?.Format}");
+                }
+                
                 return $"-f avfoundation " +
+                       $"{hwaccelArgs}" +
                        $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                        $"-pixel_format uyvy422 " +
                        $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
@@ -337,9 +423,40 @@ namespace FfmpegMediaPlatform
             }
             else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
             {
+                // Add hardware decode acceleration for Windows (only for compressed formats)
+                string hwaccelArgs = "";
+                if (VideoConfig.HardwareDecodeAcceleration && VideoConfig.IsCompressedVideoFormat)
+                {
+                    hwaccelArgs = "-hwaccel cuda ";
+                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode acceleration enabled for {VideoConfig.VideoMode?.Format} - trying NVDEC/CUDA");
+                }
+                else if (VideoConfig.HardwareDecodeAcceleration && !VideoConfig.IsCompressedVideoFormat)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode acceleration skipped for uncompressed format: {VideoConfig.VideoMode?.Format}");
+                }
+                
+                // Build format-specific input arguments
+                string formatArgs = "";
+                string format = VideoConfig.VideoMode?.Format;
+                if (!string.IsNullOrEmpty(format))
+                {
+                    // For vcodec formats like h264, mjpeg, use vcodec parameter
+                    if (format == "h264" || format == "mjpeg")
+                    {
+                        formatArgs = $"-vcodec {format} ";
+                    }
+                    // For pixel formats like yuyv422, use pixel_format parameter  
+                    else if (format != "uyvy422") // uyvy422 is the default, don't specify explicitly
+                    {
+                        formatArgs = $"-pixel_format {format} ";
+                    }
+                }
+                
                 return $"-f dshow " +
+                       $"{hwaccelArgs}" +
                        $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                        $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
+                       $"{formatArgs}" +
                        $"-rtbufsize 10M " +
                        $"-i video=\"{name}\"";
             }

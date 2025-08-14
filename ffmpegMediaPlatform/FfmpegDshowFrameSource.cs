@@ -255,8 +255,21 @@ namespace FfmpegMediaPlatform
             }
             else
             {
-                // Live mode: Use dual stream approach like recording mode but only output RGBA pipe
+                // Live mode: Use hardware decode acceleration when available (only for compressed formats)
+                string hwaccelArgs = "";
+                if (VideoConfig.HardwareDecodeAcceleration && VideoConfig.IsCompressedVideoFormat)
+                {
+                    // Try NVDEC first (NVIDIA), then DXVA2/D3D11VA (Intel/AMD), fallback to software
+                    hwaccelArgs = "-hwaccel cuda ";
+                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode acceleration enabled for {VideoConfig.VideoMode?.Format} - trying NVDEC/CUDA");
+                }
+                else if (VideoConfig.HardwareDecodeAcceleration && !VideoConfig.IsCompressedVideoFormat)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode acceleration skipped for uncompressed format: {VideoConfig.VideoMode?.Format}");
+                }
+                
                 ffmpegArgs = $"-f dshow " +
+                                $"{hwaccelArgs}" +
                                 $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                                 $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
                                 $"{inputFormatArgs}" +
@@ -272,7 +285,7 @@ namespace FfmpegMediaPlatform
                                 $"-filter_complex \"split=2[out1][out2];[out1]format=rgba[outpipe];[out2]null[outnull]\" " +
                                 $"-map \"[outpipe]\" -f rawvideo pipe:1";
                 
-                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Windows Live Mode ({format}): {ffmpegArgs}");
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Windows Live Mode ({format}) HW Accel: {VideoConfig.HardwareDecodeAcceleration}: {ffmpegArgs}");
             }
             return ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
         }
