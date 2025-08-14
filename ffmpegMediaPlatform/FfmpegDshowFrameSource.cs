@@ -27,7 +27,7 @@ namespace FfmpegMediaPlatform
                 string ffmpegListCommand = "-list_options true -f dshow -i video=\"" + VideoConfig.DeviceName + "\"";
                 Tools.Logger.VideoLog.LogCall(this, $"FFMPEG COMMAND (list camera modes): ffmpeg {ffmpegListCommand}");
                 
-                IEnumerable<string> modes = ffmpegMediaFramework.GetFfmpegText(ffmpegListCommand, l => l.Contains("pixel_format"));
+                IEnumerable<string> modes = ffmpegMediaFramework.GetFfmpegText(ffmpegListCommand, l => l.Contains("pixel_format") || l.Contains("vcodec="));
 
                 int index = 0;
                 //[dshow @ 000001ccc05aa180]   pixel_format=nv12  min s=1280x720 fps=30 max s=1280x720 fps=30
@@ -36,6 +36,10 @@ namespace FfmpegMediaPlatform
                     Tools.Logger.VideoLog.LogCall(this, $"FFMPEG OUTPUT: {format}");
                     
                     string pixelFormat = ffmpegMediaFramework.GetValue(format, "pixel_format");
+                    if (string.IsNullOrEmpty(pixelFormat))
+                    {
+                        pixelFormat = ffmpegMediaFramework.GetValue(format, "vcodec");
+                    }
                     string size = ffmpegMediaFramework.GetValue(format, "min s");
                     string fps = ffmpegMediaFramework.GetValue(format, "fps");
 
