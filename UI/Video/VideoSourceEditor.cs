@@ -244,6 +244,15 @@ namespace UI.Video
                 return new SplitsPropertyNode(obj, pi, ButtonBackground, TextColor, ButtonHover);
             }
 
+            // Only show Hardware Decode Acceleration for compressed video formats
+            if (pi.Name == "HardwareDecodeAcceleration")
+            {
+                if (!obj.IsCompressedVideoFormat)
+                {
+                    return null; // Don't show for uncompressed formats
+                }
+            }
+
             PropertyNode<VideoConfig> propertyNode = base.CreatePropertyNode(obj, pi);
             CheckVisible(propertyNode, obj);
 
@@ -545,6 +554,16 @@ namespace UI.Video
             return objectProperties.Children.OfType<T>().FirstOrDefault();
         }
 
+        public void RefreshPropertyEditor()
+        {
+            if (Selected != null)
+            {
+                // Force rebuild of property editor by re-setting the selected object
+                var currentSelected = Selected;
+                DoSetSelected(currentSelected);
+            }
+        }
+
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
         {
             bool physicalVisible = false;
@@ -710,6 +729,19 @@ namespace UI.Video
             }
 
             
+
+            protected override void SetValue(object value)
+            {
+                bool wasCompressed = Object.IsCompressedVideoFormat;
+                base.SetValue(value);
+                bool isCompressed = Object.IsCompressedVideoFormat;
+                
+                // If compressed format status changed, refresh the property editor to show/hide hardware acceleration option
+                if (wasCompressed != isCompressed)
+                {
+                    vse.RefreshPropertyEditor();
+                }
+            }
 
             public override string ValueToString(object value)
             {

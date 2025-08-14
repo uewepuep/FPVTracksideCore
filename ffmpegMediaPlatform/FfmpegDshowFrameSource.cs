@@ -81,11 +81,18 @@ namespace FfmpegMediaPlatform
                     float minFps = 0, maxFps = 0;
                     var fpsMatches = System.Text.RegularExpressions.Regex.Matches(format, @"fps=([\d.]+)");
                     
+                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG DEBUG: Found {fpsMatches.Count} fps matches in: {format}");
+                    for (int i = 0; i < fpsMatches.Count; i++)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG DEBUG: Match {i}: {fpsMatches[i].Groups[1].Value}");
+                    }
+                    
                     if (fpsMatches.Count >= 2)
                     {
                         // New format with min and max fps (e.g., "min s=1920x1080 fps=25 max s=1920x1080 fps=60.0002")
                         float.TryParse(fpsMatches[0].Groups[1].Value, out minFps);
                         float.TryParse(fpsMatches[1].Groups[1].Value, out maxFps);
+                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG DEBUG: Parsed minFps={minFps}, maxFps={maxFps}");
                     }
                     else if (fpsMatches.Count == 1)
                     {
@@ -130,9 +137,11 @@ namespace FfmpegMediaPlatform
                         
                         // Always add the min and max fps
                         supportedFrameRates.Add(minFps);
+                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG DEBUG: Added minFps: {minFps}");
                         if (maxFps > minFps)
                         {
                             supportedFrameRates.Add(maxFps);
+                            Tools.Logger.VideoLog.LogCall(this, $"FFMPEG DEBUG: Added maxFps: {maxFps}");
                         }
                         
                         // Add common frame rates within the range
@@ -142,11 +151,13 @@ namespace FfmpegMediaPlatform
                             if (rate > minFps && rate < maxFps)
                             {
                                 supportedFrameRates.Add(rate);
+                                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG DEBUG: Added common rate: {rate}");
                             }
                         }
                         
                         // Remove duplicates and sort
                         supportedFrameRates = supportedFrameRates.Distinct().OrderBy(f => f).ToList();
+                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG DEBUG: Final supported frame rates: [{string.Join(", ", supportedFrameRates)}]");
                         
                         // Add all supported frame rates as separate modes
                         foreach (var fps in supportedFrameRates)

@@ -352,25 +352,29 @@ namespace FfmpegMediaPlatform
         /// </summary>
         private string GetHardwareEncodingArgs()
         {
+            // Check if hardware decode acceleration is enabled in video config
+            bool useHardwareDecoding = VideoConfig.HardwareDecodeAcceleration;
+            
             try
             {
                 if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
                 {
                     // macOS - Use VideoToolbox hardware acceleration
-                    Tools.Logger.VideoLog.LogCall(this, "Using macOS VideoToolbox hardware encoding");
-                    return "-c:v h264_videotoolbox -q:v 50 -realtime 1 " +
+                    string decodingArgs = useHardwareDecoding ? GetMacOSHardwareDecodingArgs() : "";
+                    Tools.Logger.VideoLog.LogCall(this, $"Using macOS VideoToolbox hardware encoding (hardware decode: {useHardwareDecoding})");
+                    return $"{decodingArgs}-c:v h264_videotoolbox -q:v 50 -realtime 1 " +
                            "-b:v 8M -maxrate 12M -bufsize 2M " +
                            "-pix_fmt yuv420p -profile:v high -level 4.0";
                 }
                 else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
                 {
                     // Windows - Try NVENC first, fallback to Intel QSV, then software
-                    return GetWindowsHardwareEncodingArgs();
+                    return GetWindowsHardwareEncodingArgs(useHardwareDecoding);
                 }
                 else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux))
                 {
                     // Linux - Try NVENC, VAAPI, then software
-                    return GetLinuxHardwareEncodingArgs();
+                    return GetLinuxHardwareEncodingArgs(useHardwareDecoding);
                 }
             }
             catch (Exception ex)
@@ -380,8 +384,9 @@ namespace FfmpegMediaPlatform
             }
 
             // Fallback to software encoding
-            Tools.Logger.VideoLog.LogCall(this, "Using software encoding (libx264)");
-            return "-c:v libx264 -preset medium -tune zerolatency -crf 18 " +
+            Tools.Logger.VideoLog.LogCall(this, $"Using software encoding (libx264) (hardware decode: {useHardwareDecoding})");
+            string softwareDecodingArgs = useHardwareDecoding ? GetSoftwareHardwareDecodingArgs() : "";
+            return $"{softwareDecodingArgs}-c:v libx264 -preset medium -tune zerolatency -crf 18 " +
                    "-b:v 8M -maxrate 12M -bufsize 2M " +
                    "-pix_fmt yuv420p -profile:v high -level 4.0";
         }
@@ -389,16 +394,15 @@ namespace FfmpegMediaPlatform
         /// <summary>
         /// Get Windows hardware encoding arguments with fallbacks
         /// </summary>
-        private string GetWindowsHardwareEncodingArgs()
+        private string GetWindowsHardwareEncodingArgs(bool useHardwareDecoding)
         {
-            // Try to detect available encoders (this is a simplified approach)
-            // In a full implementation, you might query FFmpeg for available encoders
-
+            string decodingArgs = useHardwareDecoding ? GetWindowsHardwareDecodingArgs() : "";
+            
             // Try NVIDIA NVENC first (most common for gaming/streaming)
             if (IsEncoderAvailable("h264_nvenc"))
             {
-                Tools.Logger.VideoLog.LogCall(this, "Using NVIDIA NVENC hardware encoding");
-                return "-c:v h264_nvenc -preset p3 -tune ll -rc vbr " +
+                Tools.Logger.VideoLog.LogCall(this, $"Using NVIDIA NVENC hardware encoding (hardware decode: {useHardwareDecoding})");
+                return $"{decodingArgs}-c:v h264_nvenc -preset p3 -tune ll -rc vbr " +
                        "-cq 18 -b:v 8M -maxrate 12M -bufsize 2M " +
                        "-pix_fmt yuv420p -profile:v high -level 4.0";   
             }
@@ -406,15 +410,15 @@ namespace FfmpegMediaPlatform
             // Try Intel Quick Sync Video
             if (IsEncoderAvailable("h264_qsv"))
             {
-                Tools.Logger.VideoLog.LogCall(this, "Using Intel Quick Sync Video hardware encoding");
-                return "-c:v h264_qsv -preset veryfast -global_quality 18 " +
+                Tools.Logger.VideoLog.LogCall(this, $"Using Intel Quick Sync Video hardware encoding (hardware decode: {useHardwareDecoding})");
+                return $"{decodingArgs}-c:v h264_qsv -preset veryfast -global_quality 18 " +
                        "-b:v 8M -maxrate 12M -bufsize 2M " +
                        "-pix_fmt yuv420p -profile:v high -level 4.0";
             }
             
             // Fallback to software
-            Tools.Logger.VideoLog.LogCall(this, "No hardware encoders detected on Windows, using software");
-            return "-c:v libx264 -preset medium -tune zerolatency -crf 18 " +
+            Tools.Logger.VideoLog.LogCall(this, $"No hardware encoders detected on Windows, using software (hardware decode: {useHardwareDecoding})");
+            return $"{decodingArgs}-c:v libx264 -preset medium -tune zerolatency -crf 18 " +
                    "-b:v 8M -maxrate 12M -bufsize 2M " +
                    "-pix_fmt yuv420p -profile:v high -level 4.0";
         }
@@ -422,13 +426,15 @@ namespace FfmpegMediaPlatform
         /// <summary>
         /// Get Linux hardware encoding arguments with fallbacks
         /// </summary>
-        private string GetLinuxHardwareEncodingArgs()
+        private string GetLinuxHardwareEncodingArgs(bool useHardwareDecoding)
         {
+            string decodingArgs = useHardwareDecoding ? GetLinuxHardwareDecodingArgs() : "";
+            
             // Try NVIDIA NVENC first
             if (IsEncoderAvailable("h264_nvenc"))
             {
-                Tools.Logger.VideoLog.LogCall(this, "Using NVIDIA NVENC hardware encoding on Linux");
-                return "-c:v h264_nvenc -preset p1 -tune ll -rc vbr " +
+                Tools.Logger.VideoLog.LogCall(this, $"Using NVIDIA NVENC hardware encoding on Linux (hardware decode: {useHardwareDecoding})");
+                return $"{decodingArgs}-c:v h264_nvenc -preset p1 -tune ll -rc vbr " +
                        "-cq 18 -b:v 8M -maxrate 12M -bufsize 2M " +
                        "-pix_fmt yuv420p -profile:v high -level 4.0";
             }
@@ -436,17 +442,84 @@ namespace FfmpegMediaPlatform
             // Try VAAPI (Intel/AMD integrated graphics)
             if (IsEncoderAvailable("h264_vaapi"))
             {
-                Tools.Logger.VideoLog.LogCall(this, "Using VAAPI hardware encoding on Linux");
-                return "-c:v h264_vaapi -qp 18 " +
+                Tools.Logger.VideoLog.LogCall(this, $"Using VAAPI hardware encoding on Linux (hardware decode: {useHardwareDecoding})");
+                return $"{decodingArgs}-c:v h264_vaapi -qp 18 " +
                        "-b:v 8M -maxrate 12M -bufsize 2M " +
                        "-pix_fmt yuv420p -profile:v high -level 4.0";
             }
             
             // Fallback to software
-            Tools.Logger.VideoLog.LogCall(this, "No hardware encoders detected on Linux, using software");
-            return "-c:v libx264 -preset medium -tune zerolatency -crf 18 " +
+            Tools.Logger.VideoLog.LogCall(this, $"No hardware encoders detected on Linux, using software (hardware decode: {useHardwareDecoding})");
+            return $"{decodingArgs}-c:v libx264 -preset medium -tune zerolatency -crf 18 " +
                    "-b:v 8M -maxrate 12M -bufsize 2M " +
                    "-pix_fmt yuv420p -profile:v high -level 4.0";
+        }
+
+        /// <summary>
+        /// Get macOS hardware decoding arguments
+        /// </summary>
+        private string GetMacOSHardwareDecodingArgs()
+        {
+            // macOS VideoToolbox hardware decoding for compressed video
+            Tools.Logger.VideoLog.LogCall(this, "Adding macOS VideoToolbox hardware decode acceleration");
+            return "-hwaccel videotoolbox -hwaccel_output_format videotoolbox_vld ";
+        }
+
+        /// <summary>
+        /// Get Windows hardware decoding arguments
+        /// </summary>
+        private string GetWindowsHardwareDecodingArgs()
+        {
+            // Windows - Try NVDEC first, then DXVA2, then D3D11VA
+            if (IsDecoderAvailable("h264_cuvid"))
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Adding Windows NVDEC hardware decode acceleration");
+                return "-hwaccel cuda -hwaccel_output_format cuda ";
+            }
+            else if (IsDecoderAvailable("dxva2"))
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Adding Windows DXVA2 hardware decode acceleration");
+                return "-hwaccel dxva2 ";
+            }
+            else if (IsDecoderAvailable("d3d11va"))
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Adding Windows D3D11VA hardware decode acceleration");
+                return "-hwaccel d3d11va ";
+            }
+            
+            Tools.Logger.VideoLog.LogCall(this, "No Windows hardware decoders available, using software decode");
+            return "";
+        }
+
+        /// <summary>
+        /// Get Linux hardware decoding arguments
+        /// </summary>
+        private string GetLinuxHardwareDecodingArgs()
+        {
+            // Linux - Try NVDEC first, then VAAPI
+            if (IsDecoderAvailable("h264_cuvid"))
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Adding Linux NVDEC hardware decode acceleration");
+                return "-hwaccel cuda -hwaccel_output_format cuda ";
+            }
+            else if (IsDecoderAvailable("vaapi"))
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Adding Linux VAAPI hardware decode acceleration");
+                return "-hwaccel vaapi -hwaccel_output_format vaapi ";
+            }
+            
+            Tools.Logger.VideoLog.LogCall(this, "No Linux hardware decoders available, using software decode");
+            return "";
+        }
+
+        /// <summary>
+        /// Get software-based hardware decoding arguments (generic cross-platform)
+        /// </summary>
+        private string GetSoftwareHardwareDecodingArgs()
+        {
+            // Generic hardware acceleration attempt - let FFmpeg auto-detect
+            Tools.Logger.VideoLog.LogCall(this, "Attempting auto hardware decode acceleration");
+            return "-hwaccel auto ";
         }
 
         /// <summary>
@@ -459,6 +532,24 @@ namespace FfmpegMediaPlatform
             {
                 // This is a simplified check - in production you might want to actually test the encoder
                 // For now, we'll assume common encoders are available and let FFmpeg handle the fallback
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Check if a specific decoder is available (simplified check)
+        /// In production, this could query FFmpeg directly for available decoders
+        /// </summary>
+        private bool IsDecoderAvailable(string decoderName)
+        {
+            try
+            {
+                // This is a simplified check - in production you might want to actually test the decoder
+                // For now, we'll assume common decoders are available and let FFmpeg handle the fallback
                 return true;
             }
             catch
