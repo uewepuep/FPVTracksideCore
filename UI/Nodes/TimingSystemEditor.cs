@@ -82,8 +82,8 @@ namespace UI.Nodes
                         }
                     }
 
-                    // Create and show menu on main thread after scanning is complete
-                    CompositorLayer.LayerStack.Schedule(() =>
+                    // Schedule UI work to run after background scanning completes
+                    ll.WorkQueue.Enqueue("Creating menu", () =>
                     {
                         if (scanResults.Count > 0)
                         {

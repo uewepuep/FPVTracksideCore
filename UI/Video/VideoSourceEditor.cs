@@ -208,7 +208,6 @@ namespace UI.Video
             if (pi.Name == "AudioDevice")
             {
                 return null;
-                return new AudioDevicePropertyNode(VideoManager, obj, pi, ButtonBackground, TextColor, ButtonHover);
             }
 
             if (pi.Name == "Channels")
