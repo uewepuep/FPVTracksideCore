@@ -72,39 +72,53 @@ namespace UI.Nodes
                     int lapRFPort = (new LapRFSettingsEthernet()).Port;
                     int rhPort = (new RotorHazardSettings()).Port;
 
-
-                    MouseMenu mouseMenu = new MouseMenu(ScanButton);
+                    // Collect scan results first
+                    List<Tuple<IPAddress, int>> scanResults = new List<Tuple<IPAddress, int>>();
                     foreach(SubnetScanner.OpenPortsStruct openPort in ss.AliveWithOpenPorts(lapRFPort, rhPort))
                     {
                         foreach (int port in openPort.Ports)
                         {
-                            IPAddress copy = openPort.Address;
-
-                            if (port == lapRFPort)
-                            {
-                                mouseMenu.AddItem("Add LapRF 8way - " + copy, () => 
-                                {
-                                    var laprf = new LapRFSettingsEthernet();
-                                    laprf.HostName = copy.ToString();
-                                    AddNew(laprf);
-                                });
-                            }
-
-                            if (port == rhPort)
-                            {
-                                mouseMenu.AddItem("Add RotorHazard - " + copy, () => 
-                                {
-                                    var rotorhazard = new RotorHazardSettings();
-                                    rotorhazard.HostName = copy.ToString();
-                                    AddNew(rotorhazard);
-                                });
-                            }
+                            scanResults.Add(Tuple.Create(openPort.Address, port));
                         }
                     }
 
-                    mouseMenu.TopToBottom = false;
-                    mouseMenu.Show(ScanButton);
+                    // Create and show menu on main thread after scanning is complete
+                    CompositorLayer.LayerStack.Schedule(() =>
+                    {
+                        if (scanResults.Count > 0)
+                        {
+                            MouseMenu mouseMenu = new MouseMenu(ScanButton);
+                            
+                            foreach (var result in scanResults)
+                            {
+                                IPAddress address = result.Item1;
+                                int port = result.Item2;
 
+                                if (port == lapRFPort)
+                                {
+                                    mouseMenu.AddItem("Add LapRF 8way - " + address, () => 
+                                    {
+                                        var laprf = new LapRFSettingsEthernet();
+                                        laprf.HostName = address.ToString();
+                                        AddNew(laprf);
+                                    });
+                                }
+
+                                if (port == rhPort)
+                                {
+                                    mouseMenu.AddItem("Add RotorHazard - " + address, () => 
+                                    {
+                                        var rotorhazard = new RotorHazardSettings();
+                                        rotorhazard.HostName = address.ToString();
+                                        AddNew(rotorhazard);
+                                    });
+                                }
+                            }
+
+                            mouseMenu.TopToBottom = false;
+                            mouseMenu.Show(ScanButton);
+                        }
+                    });
                 });
             }
         }
