@@ -179,23 +179,134 @@ namespace FfmpegMediaPlatform
             try
             {
                 string ffmpegListCommand = "-list_options true -f dshow -i video=\"" + VideoConfig.DeviceName + "\"";
-                IEnumerable<string> modes = ffmpegMediaFramework.GetFfmpegText(ffmpegListCommand, l => l.Contains("pixel_format"));
+                IEnumerable<string> modes = ffmpegMediaFramework.GetFfmpegText(ffmpegListCommand, l => l.Contains("pixel_format") || l.Contains("vcodec="));
 
                 int index = 0;
+                var parsedModes = new List<(string format, int width, int height, float fps, int priority)>();
+                
+                // Parse all modes and assign priorities
                 foreach (string format in modes)
                 {
-                    string pixelFormat = ffmpegMediaFramework.GetValue(format, "pixel_format");
-                    string size = ffmpegMediaFramework.GetValue(format, "min s");
-                    string fps = ffmpegMediaFramework.GetValue(format, "fps");
-
-                    string[] sizes = size.Split("x");
-                    if (int.TryParse(sizes[0], out int x) && int.TryParse(sizes[1], out int y) && float.TryParse(fps, out float ffps))
+                    // Try vcodec first (preferred formats like h264, mjpeg)
+                    string videoFormat = ffmpegMediaFramework.GetValue(format, "vcodec");
+                    int priority = 1; // Default priority for vcodec formats
+                    
+                    // If no vcodec, try pixel_format (lower priority)
+                    if (string.IsNullOrEmpty(videoFormat))
                     {
-                        string formatToUse = pixelFormat == "uyvy422" ? "uyvy422" : pixelFormat;
-                        var mode = new Mode { Format = formatToUse, Width = x, Height = y, FrameRate = ffps, FrameWork = FrameWork.ffmpeg, Index = index };
-                        supportedModes.Add(mode);
-                        index++;
+                        videoFormat = ffmpegMediaFramework.GetValue(format, "pixel_format");
+                        priority = 2; // Lower priority for pixel_format
                     }
+                    
+                    // Set higher priority for preferred codecs
+                    if (videoFormat == "h264")
+                    {
+                        priority = 0; // Highest priority for h264
+                    }
+                    else if (videoFormat == "mjpeg")
+                    {
+                        priority = 0; // Highest priority for mjpeg
+                    }
+                    else if (videoFormat == "uyvy422")
+                    {
+                        priority = 1; // Good priority for uyvy422
+                    }
+                    
+                    string minSize = ffmpegMediaFramework.GetValue(format, "min s");
+                    string maxSize = ffmpegMediaFramework.GetValue(format, "max s");
+                    
+                    // Parse fps values - support both old single fps and new min/max fps formats
+                    float minFps = 0, maxFps = 0;
+                    var fpsMatches = System.Text.RegularExpressions.Regex.Matches(format, @"fps=([\d.]+)");
+                    
+                    if (fpsMatches.Count >= 2)
+                    {
+                        // New format with min and max fps (e.g., "min s=1920x1080 fps=25 max s=1920x1080 fps=60.0002")
+                        float.TryParse(fpsMatches[0].Groups[1].Value, out minFps);
+                        float.TryParse(fpsMatches[1].Groups[1].Value, out maxFps);
+                    }
+                    else if (fpsMatches.Count == 1)
+                    {
+                        // Old format or single fps value - try both new regex and old method for compatibility
+                        if (float.TryParse(fpsMatches[0].Groups[1].Value, out minFps))
+                        {
+                            maxFps = minFps; // Single fps value, min and max are the same
+                        }
+                        else
+                        {
+                            // Fallback to original parsing method for backward compatibility
+                            string fps = ffmpegMediaFramework.GetValue(format, "fps");
+                            if (float.TryParse(fps, out minFps))
+                            {
+                                maxFps = minFps;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Fallback to original parsing method for backward compatibility
+                        string fps = ffmpegMediaFramework.GetValue(format, "fps");
+                        if (float.TryParse(fps, out minFps))
+                        {
+                            maxFps = minFps;
+                        }
+                    }
+
+                    string[] minSizes = minSize.Split("x");
+                    string[] maxSizes = maxSize.Split("x");
+                    
+                    if (int.TryParse(minSizes[0], out int minX) && int.TryParse(minSizes[1], out int minY) &&
+                        int.TryParse(maxSizes[0], out int maxX) && int.TryParse(maxSizes[1], out int maxY) &&
+                        minFps > 0)
+                    {
+                        // Use the resolution from min s (which should match max s for most cases)
+                        int width = minX;
+                        int height = minY;
+                        
+                        // Generate frame rates between min and max fps
+                        var supportedFrameRates = new List<float>();
+                        
+                        // Always add the min and max fps
+                        supportedFrameRates.Add(minFps);
+                        if (maxFps > minFps)
+                        {
+                            supportedFrameRates.Add(maxFps);
+                        }
+                        
+                        // Add common frame rates within the range
+                        var commonRates = new float[] { 24, 25, 29.97f, 30, 50, 59.94f, 60 };
+                        foreach (var rate in commonRates)
+                        {
+                            if (rate > minFps && rate < maxFps)
+                            {
+                                supportedFrameRates.Add(rate);
+                            }
+                        }
+                        
+                        // Remove duplicates and sort
+                        supportedFrameRates = supportedFrameRates.Distinct().OrderBy(f => f).ToList();
+                        
+                        // Add all supported frame rates as separate modes
+                        foreach (var fps in supportedFrameRates)
+                        {
+                            parsedModes.Add((videoFormat, width, height, fps, priority));
+                        }
+                    }
+                }
+                
+                // Sort by priority (0=highest), then by resolution, then by framerate
+                var sortedModes = parsedModes
+                    .OrderBy(m => m.priority)
+                    .ThenByDescending(m => m.width * m.height)
+                    .ThenByDescending(m => m.fps)
+                    .ToList();
+                
+                // Add sorted modes to supportedModes list
+                foreach (var mode in sortedModes)
+                {
+                    var videoMode = new Mode { Format = mode.format, Width = mode.width, Height = mode.height, FrameRate = mode.fps, FrameWork = FrameWork.ffmpeg, Index = index };
+                    supportedModes.Add(videoMode);
+                    index++;
                 }
                 
                 Tools.Logger.VideoLog.LogCall(this, $"Windows camera capability detection complete: {supportedModes.Count} supported modes found");
@@ -277,7 +388,7 @@ namespace FfmpegMediaPlatform
                                    $"-pix_fmt rgba " +
                                    $"pipe:1";  // RGBA output for live display only
                 
-                Tools.Logger.VideoLog.LogCall(this, $"RGBA-Only FFmpeg Command (HLS Disabled):");
+                Tools.Logger.VideoLog.LogCall(this, $"RGBA-Only FFmpeg Command (HLS Disabled) HW Accel: {VideoConfig.HardwareDecodeAcceleration}:");
                 Tools.Logger.VideoLog.LogCall(this, ffmpegArgs);
                 return ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
             }
@@ -290,7 +401,21 @@ namespace FfmpegMediaPlatform
             if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
             {
                 Tools.Logger.VideoLog.LogCall(this, $"CAMERA DEBUG: Requesting {VideoConfig.VideoMode.FrameRate}fps from camera '{name}'");
+                
+                // Add hardware decode acceleration for macOS (only for compressed formats)
+                string hwaccelArgs = "";
+                if (VideoConfig.HardwareDecodeAcceleration && VideoConfig.IsCompressedVideoFormat)
+                {
+                    hwaccelArgs = "-hwaccel videotoolbox ";
+                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode acceleration enabled for {VideoConfig.VideoMode?.Format} - trying VideoToolbox");
+                }
+                else if (VideoConfig.HardwareDecodeAcceleration && !VideoConfig.IsCompressedVideoFormat)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode acceleration skipped for uncompressed format: {VideoConfig.VideoMode?.Format}");
+                }
+                
                 return $"-f avfoundation " +
+                       $"{hwaccelArgs}" +
                        $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                        $"-pixel_format uyvy422 " +
                        $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
@@ -298,9 +423,40 @@ namespace FfmpegMediaPlatform
             }
             else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
             {
+                // Add hardware decode acceleration for Windows (only for compressed formats)
+                string hwaccelArgs = "";
+                if (VideoConfig.HardwareDecodeAcceleration && VideoConfig.IsCompressedVideoFormat)
+                {
+                    hwaccelArgs = "-hwaccel cuda ";
+                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode acceleration enabled for {VideoConfig.VideoMode?.Format} - trying NVDEC/CUDA");
+                }
+                else if (VideoConfig.HardwareDecodeAcceleration && !VideoConfig.IsCompressedVideoFormat)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode acceleration skipped for uncompressed format: {VideoConfig.VideoMode?.Format}");
+                }
+                
+                // Build format-specific input arguments
+                string formatArgs = "";
+                string format = VideoConfig.VideoMode?.Format;
+                if (!string.IsNullOrEmpty(format))
+                {
+                    // For vcodec formats like h264, mjpeg, use vcodec parameter
+                    if (format == "h264" || format == "mjpeg")
+                    {
+                        formatArgs = $"-vcodec {format} ";
+                    }
+                    // For pixel formats like yuyv422, use pixel_format parameter  
+                    else if (format != "uyvy422") // uyvy422 is the default, don't specify explicitly
+                    {
+                        formatArgs = $"-pixel_format {format} ";
+                    }
+                }
+                
                 return $"-f dshow " +
+                       $"{hwaccelArgs}" +
                        $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                        $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
+                       $"{formatArgs}" +
                        $"-rtbufsize 10M " +
                        $"-i video=\"{name}\"";
             }
@@ -313,25 +469,29 @@ namespace FfmpegMediaPlatform
         /// </summary>
         private string GetHardwareEncodingArgs()
         {
+            // Check if hardware decode acceleration is enabled in video config
+            bool useHardwareDecoding = VideoConfig.HardwareDecodeAcceleration;
+            
             try
             {
                 if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
                 {
                     // macOS - Use VideoToolbox hardware acceleration
-                    Tools.Logger.VideoLog.LogCall(this, "Using macOS VideoToolbox hardware encoding");
-                    return "-c:v h264_videotoolbox -q:v 50 -realtime 1 " +
+                    string decodingArgs = useHardwareDecoding ? GetMacOSHardwareDecodingArgs() : "";
+                    Tools.Logger.VideoLog.LogCall(this, $"Using macOS VideoToolbox hardware encoding (hardware decode: {useHardwareDecoding})");
+                    return $"{decodingArgs}-c:v h264_videotoolbox -q:v 50 -realtime 1 " +
                            "-b:v 8M -maxrate 12M -bufsize 2M " +
                            "-pix_fmt yuv420p -profile:v high -level 4.0";
                 }
                 else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
                 {
                     // Windows - Try NVENC first, fallback to Intel QSV, then software
-                    return GetWindowsHardwareEncodingArgs();
+                    return GetWindowsHardwareEncodingArgs(useHardwareDecoding);
                 }
                 else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux))
                 {
                     // Linux - Try NVENC, VAAPI, then software
-                    return GetLinuxHardwareEncodingArgs();
+                    return GetLinuxHardwareEncodingArgs(useHardwareDecoding);
                 }
             }
             catch (Exception ex)
@@ -341,8 +501,9 @@ namespace FfmpegMediaPlatform
             }
 
             // Fallback to software encoding
-            Tools.Logger.VideoLog.LogCall(this, "Using software encoding (libx264)");
-            return "-c:v libx264 -preset medium -tune zerolatency -crf 18 " +
+            Tools.Logger.VideoLog.LogCall(this, $"Using software encoding (libx264) (hardware decode: {useHardwareDecoding})");
+            string softwareDecodingArgs = useHardwareDecoding ? GetSoftwareHardwareDecodingArgs() : "";
+            return $"{softwareDecodingArgs}-c:v libx264 -preset medium -tune zerolatency -crf 18 " +
                    "-b:v 8M -maxrate 12M -bufsize 2M " +
                    "-pix_fmt yuv420p -profile:v high -level 4.0";
         }
@@ -350,16 +511,15 @@ namespace FfmpegMediaPlatform
         /// <summary>
         /// Get Windows hardware encoding arguments with fallbacks
         /// </summary>
-        private string GetWindowsHardwareEncodingArgs()
+        private string GetWindowsHardwareEncodingArgs(bool useHardwareDecoding)
         {
-            // Try to detect available encoders (this is a simplified approach)
-            // In a full implementation, you might query FFmpeg for available encoders
-
+            string decodingArgs = useHardwareDecoding ? GetWindowsHardwareDecodingArgs() : "";
+            
             // Try NVIDIA NVENC first (most common for gaming/streaming)
             if (IsEncoderAvailable("h264_nvenc"))
             {
-                Tools.Logger.VideoLog.LogCall(this, "Using NVIDIA NVENC hardware encoding");
-                return "-c:v h264_nvenc -preset p3 -tune ll -rc vbr " +
+                Tools.Logger.VideoLog.LogCall(this, $"Using NVIDIA NVENC hardware encoding (hardware decode: {useHardwareDecoding})");
+                return $"{decodingArgs}-c:v h264_nvenc -preset p3 -tune ll -rc vbr " +
                        "-cq 18 -b:v 8M -maxrate 12M -bufsize 2M " +
                        "-pix_fmt yuv420p -profile:v high -level 4.0";   
             }
@@ -367,15 +527,15 @@ namespace FfmpegMediaPlatform
             // Try Intel Quick Sync Video
             if (IsEncoderAvailable("h264_qsv"))
             {
-                Tools.Logger.VideoLog.LogCall(this, "Using Intel Quick Sync Video hardware encoding");
-                return "-c:v h264_qsv -preset veryfast -global_quality 18 " +
+                Tools.Logger.VideoLog.LogCall(this, $"Using Intel Quick Sync Video hardware encoding (hardware decode: {useHardwareDecoding})");
+                return $"{decodingArgs}-c:v h264_qsv -preset veryfast -global_quality 18 " +
                        "-b:v 8M -maxrate 12M -bufsize 2M " +
                        "-pix_fmt yuv420p -profile:v high -level 4.0";
             }
             
             // Fallback to software
-            Tools.Logger.VideoLog.LogCall(this, "No hardware encoders detected on Windows, using software");
-            return "-c:v libx264 -preset medium -tune zerolatency -crf 18 " +
+            Tools.Logger.VideoLog.LogCall(this, $"No hardware encoders detected on Windows, using software (hardware decode: {useHardwareDecoding})");
+            return $"{decodingArgs}-c:v libx264 -preset medium -tune zerolatency -crf 18 " +
                    "-b:v 8M -maxrate 12M -bufsize 2M " +
                    "-pix_fmt yuv420p -profile:v high -level 4.0";
         }
@@ -383,13 +543,15 @@ namespace FfmpegMediaPlatform
         /// <summary>
         /// Get Linux hardware encoding arguments with fallbacks
         /// </summary>
-        private string GetLinuxHardwareEncodingArgs()
+        private string GetLinuxHardwareEncodingArgs(bool useHardwareDecoding)
         {
+            string decodingArgs = useHardwareDecoding ? GetLinuxHardwareDecodingArgs() : "";
+            
             // Try NVIDIA NVENC first
             if (IsEncoderAvailable("h264_nvenc"))
             {
-                Tools.Logger.VideoLog.LogCall(this, "Using NVIDIA NVENC hardware encoding on Linux");
-                return "-c:v h264_nvenc -preset p1 -tune ll -rc vbr " +
+                Tools.Logger.VideoLog.LogCall(this, $"Using NVIDIA NVENC hardware encoding on Linux (hardware decode: {useHardwareDecoding})");
+                return $"{decodingArgs}-c:v h264_nvenc -preset p1 -tune ll -rc vbr " +
                        "-cq 18 -b:v 8M -maxrate 12M -bufsize 2M " +
                        "-pix_fmt yuv420p -profile:v high -level 4.0";
             }
@@ -397,17 +559,84 @@ namespace FfmpegMediaPlatform
             // Try VAAPI (Intel/AMD integrated graphics)
             if (IsEncoderAvailable("h264_vaapi"))
             {
-                Tools.Logger.VideoLog.LogCall(this, "Using VAAPI hardware encoding on Linux");
-                return "-c:v h264_vaapi -qp 18 " +
+                Tools.Logger.VideoLog.LogCall(this, $"Using VAAPI hardware encoding on Linux (hardware decode: {useHardwareDecoding})");
+                return $"{decodingArgs}-c:v h264_vaapi -qp 18 " +
                        "-b:v 8M -maxrate 12M -bufsize 2M " +
                        "-pix_fmt yuv420p -profile:v high -level 4.0";
             }
             
             // Fallback to software
-            Tools.Logger.VideoLog.LogCall(this, "No hardware encoders detected on Linux, using software");
-            return "-c:v libx264 -preset medium -tune zerolatency -crf 18 " +
+            Tools.Logger.VideoLog.LogCall(this, $"No hardware encoders detected on Linux, using software (hardware decode: {useHardwareDecoding})");
+            return $"{decodingArgs}-c:v libx264 -preset medium -tune zerolatency -crf 18 " +
                    "-b:v 8M -maxrate 12M -bufsize 2M " +
                    "-pix_fmt yuv420p -profile:v high -level 4.0";
+        }
+
+        /// <summary>
+        /// Get macOS hardware decoding arguments
+        /// </summary>
+        private string GetMacOSHardwareDecodingArgs()
+        {
+            // macOS VideoToolbox hardware decoding for compressed video
+            Tools.Logger.VideoLog.LogCall(this, "Adding macOS VideoToolbox hardware decode acceleration");
+            return "-hwaccel videotoolbox -hwaccel_output_format videotoolbox_vld ";
+        }
+
+        /// <summary>
+        /// Get Windows hardware decoding arguments
+        /// </summary>
+        private string GetWindowsHardwareDecodingArgs()
+        {
+            // Windows - Try NVDEC first, then DXVA2, then D3D11VA
+            if (IsDecoderAvailable("h264_cuvid"))
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Adding Windows NVDEC hardware decode acceleration");
+                return "-hwaccel cuda -hwaccel_output_format cuda ";
+            }
+            else if (IsDecoderAvailable("dxva2"))
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Adding Windows DXVA2 hardware decode acceleration");
+                return "-hwaccel dxva2 ";
+            }
+            else if (IsDecoderAvailable("d3d11va"))
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Adding Windows D3D11VA hardware decode acceleration");
+                return "-hwaccel d3d11va ";
+            }
+            
+            Tools.Logger.VideoLog.LogCall(this, "No Windows hardware decoders available, using software decode");
+            return "";
+        }
+
+        /// <summary>
+        /// Get Linux hardware decoding arguments
+        /// </summary>
+        private string GetLinuxHardwareDecodingArgs()
+        {
+            // Linux - Try NVDEC first, then VAAPI
+            if (IsDecoderAvailable("h264_cuvid"))
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Adding Linux NVDEC hardware decode acceleration");
+                return "-hwaccel cuda -hwaccel_output_format cuda ";
+            }
+            else if (IsDecoderAvailable("vaapi"))
+            {
+                Tools.Logger.VideoLog.LogCall(this, "Adding Linux VAAPI hardware decode acceleration");
+                return "-hwaccel vaapi -hwaccel_output_format vaapi ";
+            }
+            
+            Tools.Logger.VideoLog.LogCall(this, "No Linux hardware decoders available, using software decode");
+            return "";
+        }
+
+        /// <summary>
+        /// Get software-based hardware decoding arguments (generic cross-platform)
+        /// </summary>
+        private string GetSoftwareHardwareDecodingArgs()
+        {
+            // Generic hardware acceleration attempt - let FFmpeg auto-detect
+            Tools.Logger.VideoLog.LogCall(this, "Attempting auto hardware decode acceleration");
+            return "-hwaccel auto ";
         }
 
         /// <summary>
@@ -420,6 +649,24 @@ namespace FfmpegMediaPlatform
             {
                 // This is a simplified check - in production you might want to actually test the encoder
                 // For now, we'll assume common encoders are available and let FFmpeg handle the fallback
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Check if a specific decoder is available (simplified check)
+        /// In production, this could query FFmpeg directly for available decoders
+        /// </summary>
+        private bool IsDecoderAvailable(string decoderName)
+        {
+            try
+            {
+                // This is a simplified check - in production you might want to actually test the decoder
+                // For now, we'll assume common decoders are available and let FFmpeg handle the fallback
                 return true;
             }
             catch

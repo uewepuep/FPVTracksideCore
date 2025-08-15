@@ -155,6 +155,34 @@ namespace ImageServer
         [Category("Video Recording")]
         public string AudioDevice { get; set; }
 
+        private bool hardwareDecodeAcceleration;
+        
+        [Category("Video Recording")]
+        [DisplayName("Hardware Decode Acceleration")]
+        public bool HardwareDecodeAcceleration 
+        { 
+            get => IsCompressedVideoFormat ? hardwareDecodeAcceleration : false;
+            set => hardwareDecodeAcceleration = IsCompressedVideoFormat ? value : false;
+        }
+
+        [Browsable(false)]
+        public bool ShouldShowHardwareDecodeAcceleration => IsCompressedVideoFormat;
+
+        [Browsable(false)]
+        public bool IsCompressedVideoFormat
+        {
+            get
+            {
+                if (VideoMode?.Format == null)
+                    return false;
+
+                // Compressed formats that benefit from hardware decode acceleration
+                var compressedFormats = new[] { "h264", "h265", "hevc", "mjpeg" };
+                return compressedFormats.Contains(VideoMode.Format.ToLower());
+            }
+        }
+
+
         [System.ComponentModel.Browsable(false)]
         [JsonIgnore]
         [XmlIgnore]
@@ -193,6 +221,7 @@ namespace ImageServer
             FrameTimes = new FrameTime[0];
             DeviceLatency = 0;
             AudioDevice = "None";
+            HardwareDecodeAcceleration = false;
         }
 
         public override string ToString()

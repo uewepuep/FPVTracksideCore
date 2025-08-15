@@ -208,7 +208,6 @@ namespace UI.Video
             if (pi.Name == "AudioDevice")
             {
                 return null;
-                return new AudioDevicePropertyNode(VideoManager, obj, pi, ButtonBackground, TextColor, ButtonHover);
             }
 
             if (pi.Name == "Channels")
@@ -243,6 +242,15 @@ namespace UI.Video
             if (pi.Name == "Splits")
             {
                 return new SplitsPropertyNode(obj, pi, ButtonBackground, TextColor, ButtonHover);
+            }
+
+            // Only show Hardware Decode Acceleration for compressed video formats
+            if (pi.Name == "HardwareDecodeAcceleration")
+            {
+                if (!obj.IsCompressedVideoFormat)
+                {
+                    return null; // Don't show for uncompressed formats
+                }
             }
 
             PropertyNode<VideoConfig> propertyNode = base.CreatePropertyNode(obj, pi);
@@ -546,6 +554,16 @@ namespace UI.Video
             return objectProperties.Children.OfType<T>().FirstOrDefault();
         }
 
+        public void RefreshPropertyEditor()
+        {
+            if (Selected != null)
+            {
+                // Force rebuild of property editor by re-setting the selected object
+                var currentSelected = Selected;
+                DoSetSelected(currentSelected);
+            }
+        }
+
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
         {
             bool physicalVisible = false;
@@ -638,7 +656,7 @@ namespace UI.Video
                         // Get ALL the modes form the device
                         vse.VideoManager.GetModes(Object, true, AcceptModes);
                     }
-                    else if (rebootRequired || !modes.Any())
+                    else if (rebootRequired || !modes.Any() || true) // TEMP: Force refresh for new format parsing
                     {
                         // Get the normal modes form the device
                         vse.VideoManager.GetModes(Object, false, AcceptModes);
@@ -657,15 +675,29 @@ namespace UI.Video
 
             private void SetOptions(Mode[] ms)
             {
+                // Group by format first, then sort within each group by resolution and framerate
                 IEnumerable<Mode> ordered = ms.OrderByDescending(m => m.FrameWork)
-                                                     .ThenByDescending(m => m.Width)
-                                                     .ThenByDescending(m => m.Height)
-                                                     .ThenByDescending(m => m.FrameRate)
-                                                     .ThenByDescending(m => m.Format);
+                                                     .ThenBy(m => GetFormatPriority(m.Format))  // Group by format priority
+                                                     .ThenByDescending(m => m.Width * m.Height) // Then by resolution
+                                                     .ThenByDescending(m => m.FrameRate)        // Then by framerate
+                                                     .ThenBy(m => m.Format);                    // Finally by format name for consistency
 
                 if (ms.Any())
                 {
                     Options = ordered.OfType<object>().ToList();
+                }
+            }
+
+            private int GetFormatPriority(string format)
+            {
+                // Lower numbers = higher priority (shown first)
+                switch (format?.ToLower())
+                {
+                    case "h264": return 0;      // Highest priority
+                    case "mjpeg": return 1;     // High priority  
+                    case "uyvy422": return 2;   // Medium priority
+                    case "yuyv422": return 3;   // Lower priority
+                    default: return 9;          // Lowest priority for unknown formats
                 }
             }
 
@@ -681,11 +713,12 @@ namespace UI.Video
                 bool allItems = Keyboard.GetState().IsKeyDown(Keys.LeftControl);
                 if (!allItems)
                 {
-                    // Seriously, under 15 fps is dumb
-                    modes = modes.Where(m => m.FrameRate >= 15);
+                    // Filter out very low framerates, but be more permissive for different formats
+                    // Keep modes that are >= 5fps or have different formats (mjpeg, h264, etc.)
+                    modes = modes.Where(m => m.FrameRate >= 5 || m.Format == "mjpeg" || m.Format == "h264");
                 }
 
-                var grouped = modes.GroupBy(m => new Tuple<FrameWork, int, int, float, string>(m.FrameWork, m.Width, m.Height, m.FrameRate, allItems? m.Format : "")).OrderByDescending(t => t.Key.Item1);
+                var grouped = modes.GroupBy(m => new Tuple<FrameWork, int, int, float, string>(m.FrameWork, m.Width, m.Height, m.FrameRate, m.Format)).OrderByDescending(t => t.Key.Item1);
 
                 foreach (var group in grouped)
                 {
@@ -711,6 +744,19 @@ namespace UI.Video
             }
 
             
+
+            protected override void SetValue(object value)
+            {
+                bool wasCompressed = Object.IsCompressedVideoFormat;
+                base.SetValue(value);
+                bool isCompressed = Object.IsCompressedVideoFormat;
+                
+                // If compressed format status changed, refresh the property editor to show/hide hardware acceleration option
+                if (wasCompressed != isCompressed)
+                {
+                    vse.RefreshPropertyEditor();
+                }
+            }
 
             public override string ValueToString(object value)
             {

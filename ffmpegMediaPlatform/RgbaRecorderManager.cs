@@ -33,6 +33,12 @@ namespace FfmpegMediaPlatform
         private float detectedFrameRate;
         private bool frameRateDetected;
         private double targetFrameInterval; // Target interval between frames in milliseconds
+        
+        // PERFORMANCE: Async frame writing to prevent blocking
+        private readonly System.Collections.Concurrent.ConcurrentQueue<byte[]> frameQueue;
+        private readonly System.Threading.SemaphoreSlim frameQueueSemaphore;
+        private Task frameWritingTask;
+        private readonly CancellationTokenSource frameWritingCancellation;
 
         public bool IsRecording => isRecording;
         public string CurrentOutputPath => currentOutputPath;
@@ -45,6 +51,11 @@ namespace FfmpegMediaPlatform
         {
             this.ffmpegMediaFramework = ffmpegMediaFramework ?? throw new ArgumentNullException(nameof(ffmpegMediaFramework));
             this.frameTimes = new List<FrameTime>();
+            
+            // PERFORMANCE: Initialize async frame writing components
+            this.frameQueue = new System.Collections.Concurrent.ConcurrentQueue<byte[]>();
+            this.frameQueueSemaphore = new System.Threading.SemaphoreSlim(0);
+            this.frameWritingCancellation = new CancellationTokenSource();
         }
 
         /// <summary>
@@ -112,6 +123,9 @@ namespace FfmpegMediaPlatform
                         recordingProcess.BeginErrorReadLine();
                         isRecording = true;
                         
+                        // PERFORMANCE: Start async frame writing task
+                        frameWritingTask = Task.Run(async () => await FrameWritingLoop(frameWritingCancellation.Token));
+                        
                         Tools.Logger.VideoLog.LogCall(this, $"RGBA recording started successfully - PID: {recordingProcess.Id}, Output: {outputPath}");
                         RecordingStarted?.Invoke(outputPath);
                         
@@ -163,11 +177,9 @@ namespace FfmpegMediaPlatform
                         lastFrameWriteTime = currentTime;
                     }
                     
-                    // Write RGBA frame data to ffmpeg stdin with timing control
-                    // The -use_wallclock_as_timestamps flag will use the real-time arrival of frames
-                    // for PTS calculation, ensuring proper timing in the output video
-                    recordingProcess.StandardInput.BaseStream.Write(rgbaData, 0, rgbaData.Length);
-                    recordingProcess.StandardInput.BaseStream.Flush();
+                    // PERFORMANCE: Queue frame for async writing to prevent blocking camera loop
+                    frameQueue.Enqueue(rgbaData);
+                    frameQueueSemaphore.Release(); // Signal frame writer task
 
                     // Collect frame timing for XML file
                     recordingFrameCounter++; // Increment our internal frame counter (starts from 1)
@@ -189,110 +201,150 @@ namespace FfmpegMediaPlatform
         }
 
         /// <summary>
-        /// Stop the current recording
+        /// Stop the current recording (synchronous version for compatibility)
         /// </summary>
         /// <param name="timeoutMs">Timeout in milliseconds to wait for graceful shutdown</param>
         /// <returns>True if stopped successfully</returns>
         public bool StopRecording(int timeoutMs = 10000)
         {
+            return StopRecordingAsync(timeoutMs).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Stop the current recording (async version for better performance)
+        /// </summary>
+        /// <param name="timeoutMs">Timeout in milliseconds to wait for graceful shutdown</param>
+        /// <returns>True if stopped successfully</returns>
+        private async Task<bool> StopRecordingAsync(int timeoutMs = 10000)
+        {
+            // Check if recording is in progress outside the lock
+            bool wasRecording;
+            Process processToStop;
+            Task taskToWait;
+            
             lock (recordingLock)
             {
+                wasRecording = isRecording;
+                processToStop = recordingProcess;
+                taskToWait = frameWritingTask;
+                
                 if (!isRecording || recordingProcess == null)
                 {
                     Tools.Logger.VideoLog.LogCall(this, "No recording in progress to stop");
                     return true;
                 }
+                
+                // Cancel frame writing and mark as not recording
+                frameWritingCancellation.Cancel();
+                isRecording = false;
+            }
 
-                try
+            try
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"Stopping RGBA recording - PID: {processToStop.Id}");
+
+                // PERFORMANCE: Stop async frame writing first (outside lock)
+                if (taskToWait != null)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"Stopping RGBA recording - PID: {recordingProcess.Id}");
-
-                    bool success = false;
-                    string outputPath = currentOutputPath;
-
-                    if (!recordingProcess.HasExited)
+                    try
                     {
-                        // Close stdin to signal end of input to FFmpeg
-                        try
-                        {
-                            recordingProcess.StandardInput.BaseStream.Close();
-                            recordingProcess.StandardInput.Close();
-                        }
-                        catch (Exception ex)
-                        {
-                            Tools.Logger.VideoLog.LogCall(this, $"Could not close stdin to FFmpeg: {ex.Message}");
-                        }
+                        await taskToWait.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs / 2));
+                    }
+                    catch (TimeoutException)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "Frame writing task did not complete in time");
+                    }
+                }
 
-                        // Wait for graceful exit
-                        if (recordingProcess.WaitForExit(timeoutMs))
-                        {
-                            success = recordingProcess.ExitCode == 0;
-                            Tools.Logger.VideoLog.LogCall(this, $"RGBA recording stopped gracefully - Exit code: {recordingProcess.ExitCode}");
-                        }
-                        else
-                        {
-                            Tools.Logger.VideoLog.LogCall(this, "RGBA recording did not stop gracefully, force killing");
-                            recordingProcess.Kill();
-                            recordingProcess.WaitForExit(5000);
-                            success = false;
-                        }
+                bool success = false;
+                string outputPath = currentOutputPath;
+
+                if (!processToStop.HasExited)
+                {
+                    // Close stdin to signal end of input to FFmpeg
+                    try
+                    {
+                        processToStop.StandardInput.BaseStream.Close();
+                        processToStop.StandardInput.Close();
+                    }
+                    catch (Exception ex)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"Could not close stdin to FFmpeg: {ex.Message}");
+                    }
+
+                    // Wait for graceful exit
+                    if (processToStop.WaitForExit(timeoutMs))
+                    {
+                        success = processToStop.ExitCode == 0;
+                        Tools.Logger.VideoLog.LogCall(this, $"RGBA recording stopped gracefully - Exit code: {processToStop.ExitCode}");
                     }
                     else
                     {
-                        success = recordingProcess.ExitCode == 0;
-                        Tools.Logger.VideoLog.LogCall(this, $"RGBA recording process already exited - Exit code: {recordingProcess.ExitCode}");
-                    }
-
-                    // Verify output file was created and has content
-                    if (success && File.Exists(outputPath))
-                    {
-                        var fileInfo = new FileInfo(outputPath);
-                        if (fileInfo.Length > 0)
-                        {
-                            Tools.Logger.VideoLog.LogCall(this, $"RGBA recording completed successfully - File size: {fileInfo.Length} bytes");
-                        }
-                        else
-                        {
-                            Tools.Logger.VideoLog.LogCall(this, "RGBA recording file is empty, marking as failed");
-                            success = false;
-                        }
-                    }
-                    else if (success)
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, "RGBA recording file does not exist, marking as failed");
+                        Tools.Logger.VideoLog.LogCall(this, "RGBA recording did not stop gracefully, force killing");
+                        processToStop.Kill();
+                        processToStop.WaitForExit(5000);
                         success = false;
                     }
+                }
+                else
+                {
+                    success = processToStop.ExitCode == 0;
+                    Tools.Logger.VideoLog.LogCall(this, $"RGBA recording process already exited - Exit code: {processToStop.ExitCode}");
+                }
 
-                    isRecording = false;
-                    
-                    // Generate XML metadata file from the camera loop timing data
-                    // This ensures the XML metadata is generated with camera-native timing
-                    if (success)
+                // Verify output file was created and has content
+                if (success && File.Exists(outputPath))
+                {
+                    var fileInfo = new FileInfo(outputPath);
+                    if (fileInfo.Length > 0)
                     {
-                        GenerateRecordInfoFile(outputPath);
-                        
-                        // Add a small delay to ensure file system has time to register the new file
-                        // This prevents race conditions where the UI checks for recordings before
-                        // the .recordinfo.xml file is fully written to disk
-                        Task.Delay(100).Wait();
+                        Tools.Logger.VideoLog.LogCall(this, $"RGBA recording completed successfully - File size: {fileInfo.Length} bytes");
                     }
-                    
-                    RecordingStopped?.Invoke(outputPath, success);
-                    
-                    return success;
+                    else
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "RGBA recording file is empty, marking as failed");
+                        success = false;
+                    }
                 }
-                catch (Exception ex)
+                else if (success)
                 {
-                    Tools.Logger.VideoLog.LogException(this, ex);
-                    Tools.Logger.VideoLog.LogCall(this, $"Exception while stopping RGBA recording: {ex.Message}");
+                    Tools.Logger.VideoLog.LogCall(this, "RGBA recording file does not exist, marking as failed");
+                    success = false;
+                }
+                
+                // Generate XML metadata file from the camera loop timing data
+                // This ensures the XML metadata is generated with camera-native timing
+                if (success)
+                {
+                    GenerateRecordInfoFile(outputPath);
+                    
+                    // Add a small delay to ensure file system has time to register the new file
+                    // This prevents race conditions where the UI checks for recordings before
+                    // the .recordinfo.xml file is fully written to disk
+                    Task.Delay(100).Wait();
+                }
+                
+                RecordingStopped?.Invoke(outputPath, success);
+                
+                return success;
+            }
+            catch (Exception ex)
+            {
+                Tools.Logger.VideoLog.LogException(this, ex);
+                Tools.Logger.VideoLog.LogCall(this, $"Exception while stopping RGBA recording: {ex.Message}");
+                
+                // Update state in lock
+                lock (recordingLock)
+                {
                     isRecording = false;
-                    RecordingStopped?.Invoke(currentOutputPath, false);
-                    return false;
                 }
-                finally
-                {
-                    CleanupRecordingProcess();
-                }
+                
+                RecordingStopped?.Invoke(currentOutputPath, false);
+                return false;
+            }
+            finally
+            {
+                CleanupRecordingProcess();
             }
         }
 
@@ -383,6 +435,41 @@ namespace FfmpegMediaPlatform
         }
 
         /// <summary>
+        /// PERFORMANCE: Async frame writing loop to prevent blocking the camera thread
+        /// </summary>
+        private async Task FrameWritingLoop(CancellationToken cancellationToken)
+        {
+            try
+            {
+                while (!cancellationToken.IsCancellationRequested && isRecording)
+                {
+                    // Wait for a frame to be available
+                    await frameQueueSemaphore.WaitAsync(cancellationToken);
+                    
+                    if (frameQueue.TryDequeue(out byte[] frameData))
+                    {
+                        if (recordingProcess != null && !recordingProcess.HasExited)
+                        {
+                            // Write frame to FFmpeg stdin asynchronously
+                            await recordingProcess.StandardInput.BaseStream.WriteAsync(frameData, 0, frameData.Length, cancellationToken);
+                            await recordingProcess.StandardInput.BaseStream.FlushAsync(cancellationToken);
+                        }
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when stopping recording
+                Tools.Logger.VideoLog.LogCall(this, "Frame writing loop cancelled");
+            }
+            catch (Exception ex)
+            {
+                Tools.Logger.VideoLog.LogException(this, ex);
+                Tools.Logger.VideoLog.LogCall(this, $"Error in async frame writing loop: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Generate .recordinfo.xml file for the recorded video using collected frame timing data
         /// </summary>
         /// <param name="videoFilePath">Path to the recorded video file</param>
@@ -450,6 +537,10 @@ namespace FfmpegMediaPlatform
             }
             
             CleanupRecordingProcess();
+            
+            // PERFORMANCE: Dispose async components
+            frameWritingCancellation?.Dispose();
+            frameQueueSemaphore?.Dispose();
         }
     }
 }

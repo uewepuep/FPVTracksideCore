@@ -133,16 +133,22 @@ namespace FfmpegMediaPlatform
             else
             {
                 // Live mode: Use dual stream approach like recording mode but only output RGBA pipe
+                // PERFORMANCE: Enhanced low-delay flags for 4K video to reduce 1-second startup delay
                 ffmpegArgs = $"-f avfoundation " +
                                 $"-pixel_format uyvy422 " +
                                 $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
                                 $"-i \"{name}\" " +
-                                $"-fflags nobuffer " +
+                                $"-fflags nobuffer+fastseek+flush_packets " +
                                 $"-flags low_delay " +
+                                $"-avioflags direct " +
+                                $"-flush_packets 1 " +
+                                $"-max_delay 0 " +
                                 $"-strict experimental " +
                                 $"-threads 1 " +
                                 $"-fps_mode passthrough " +
                                 $"-copyts " +
+                                $"-probesize 32 " +
+                                $"-analyzeduration 0 " +
                                 $"-an " +
                                 $"-filter_complex \"split=2[out1][out2];[out1]format=rgba[outpipe];[out2]null[outnull]\" " +
                                 $"-map \"[outpipe]\" -f rawvideo pipe:1";
