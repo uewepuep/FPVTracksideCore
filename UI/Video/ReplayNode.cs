@@ -489,12 +489,24 @@ namespace UI.Video
                 {
                     if (keyMapper.ReplayPlus2Seconds.Match(inputEvent))
                     {
-                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(2));
+                        double increment = 2.0;
+                        // If slow motion is enabled, adjust the increment by the slow motion factor
+                        if (SeekNode.SlowCheck.Checkbox.Value)
+                        {
+                            increment *= SeekNode.SlowSpeed;
+                        }
+                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(increment));
                     }
 
                     if (keyMapper.ReplayMinus2Seconds.Match(inputEvent))
                     {
-                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(-2));
+                        double increment = -2.0;
+                        // If slow motion is enabled, adjust the increment by the slow motion factor
+                        if (SeekNode.SlowCheck.Checkbox.Value)
+                        {
+                            increment *= SeekNode.SlowSpeed;
+                        }
+                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(increment));
                     }
 
                     if (keyMapper.ReplaySpeedUp.Match(inputEvent))
