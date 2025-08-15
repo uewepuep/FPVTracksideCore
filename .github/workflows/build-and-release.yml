@@ -30,6 +30,7 @@ jobs:
       windows-version: ${{ steps.get-version.outputs.windows-version }}
       release-tag: ${{ steps.get-version.outputs.release-tag }}
       is-release-branch: ${{ steps.get-version.outputs.is-release-branch }}
+      safe-branch-name: ${{ steps.get-version.outputs.safe-branch-name }}
     steps:
     - uses: actions/checkout@v4
     
@@ -67,10 +68,15 @@ jobs:
         fi
         echo "release-tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
         
+        # Sanitize branch name for artifact names (replace invalid characters)
+        SAFE_BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9._-]/_/g')
+        echo "safe-branch-name=$SAFE_BRANCH_NAME" >> $GITHUB_OUTPUT
+        
         echo "🍎 macOS Version: $MACOS_VERSION"
         echo "🪟 Windows Version: $WINDOWS_VERSION"
         echo "🏷️ Release Tag: $RELEASE_TAG"
         echo "📦 Is Release Branch: $IS_RELEASE_BRANCH"
+        echo "🌿 Safe Branch Name: $SAFE_BRANCH_NAME"
 
   build-macos:
     runs-on: macos-latest
@@ -203,7 +209,7 @@ jobs:
     - name: Upload macOS Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: fpvtrackside-macos-${{ needs.detect-version.outputs.macos-version }}-${{ github.ref_name }}
+        name: fpvtrackside-macos-${{ needs.detect-version.outputs.macos-version }}-${{ needs.detect-version.outputs.safe-branch-name }}
         path: |
           FPVTrackside-macOS-*.dmg
         retention-days: 90
@@ -479,7 +485,7 @@ jobs:
         if ("${{ needs.detect-version.outputs.is-release-branch }}" -eq "true") {
           $msiName = "FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.msi"
         } else {
-          $msiName = "FPV-Trackside-Core-Windows-${{ github.ref_name }}-v${{ needs.detect-version.outputs.windows-version }}.msi"
+          $msiName = "FPV-Trackside-Core-Windows-${{ needs.detect-version.outputs.safe-branch-name }}-v${{ needs.detect-version.outputs.windows-version }}.msi"
         }
         
         # Compile WiX file
@@ -513,7 +519,7 @@ jobs:
     - name: Upload Windows Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: fpv-trackside-core-windows-${{ needs.detect-version.outputs.windows-version }}-${{ github.ref_name }}
+        name: fpv-trackside-core-windows-${{ needs.detect-version.outputs.windows-version }}-${{ needs.detect-version.outputs.safe-branch-name }}
         path: |
           FPV-Trackside-Core-Windows-*.msi
         retention-days: 90
@@ -536,12 +542,12 @@ jobs:
     - name: Download macOS Artifact
       uses: actions/download-artifact@v4
       with:
-        name: fpvtrackside-macos-${{ needs.detect-version.outputs.macos-version }}-${{ github.ref_name }}
+        name: fpvtrackside-macos-${{ needs.detect-version.outputs.macos-version }}-${{ needs.detect-version.outputs.safe-branch-name }}
     
     - name: Download Windows Artifact
       uses: actions/download-artifact@v4
       with:
-        name: fpv-trackside-core-windows-${{ needs.detect-version.outputs.windows-version }}-${{ github.ref_name }}
+        name: fpv-trackside-core-windows-${{ needs.detect-version.outputs.windows-version }}-${{ needs.detect-version.outputs.safe-branch-name }}
     
     - name: Generate Release Notes
       id: release-notes
@@ -550,21 +556,15 @@ jobs:
         echo "All tags available:"
         git tag --sort=-version:refname || echo "No tags found"
         
-        # Get the previous tag (not the current one being released)
-        LAST_TAG=$(git tag --sort=-version:refname | head -n2 | tail -n1 2>/dev/null || echo "")
+        # Get the most recent existing tag (since the new tag hasn't been created yet)
+        LAST_TAG=$(git tag --sort=-version:refname | head -n1 2>/dev/null || echo "")
         
         echo "Last tag found: '$LAST_TAG'"
         
         if [ -n "$LAST_TAG" ]; then
           # Get commits since the last tag
-          CURRENT_TAG="${{ needs.detect-version.outputs.release-tag }}"
-          if [ "$CURRENT_TAG" != "$LAST_TAG" ]; then
-            COMMITS=$(git log ${LAST_TAG}..${CURRENT_TAG} --oneline --no-merges)
-            echo "Comparing $LAST_TAG to $CURRENT_TAG"
-          else
-            COMMITS=$(git log ${LAST_TAG}..HEAD --oneline --no-merges)
-            echo "Comparing against last tag: $LAST_TAG"
-          fi
+          COMMITS=$(git log ${LAST_TAG}..HEAD --oneline --no-merges)
+          echo "Comparing against last tag: $LAST_TAG"
           echo "Number of commits found: $(echo "$COMMITS" | wc -l)"
         else
           # If no previous tags, show last 10 commits for initial release
