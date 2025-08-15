@@ -85,7 +85,7 @@ namespace UI.Video
             SlowCheck.Scale(1, 0.8f);
             container.AddChild(SlowCheck);
 
-            SlowSpeedInput = new TextEditNode("0.1", color);
+            SlowSpeedInput = new TextEditNode("0.10", color);
             SlowSpeedInput.RelativeBounds = new RectangleF(1 - (showAllWidth + speedInputWidth + (arrowButtonWidth * 2)), 0, speedInputWidth, 1);
             SlowSpeedInput.Scale(1, 0.8f);
             SlowSpeedInput.TextChanged += OnSlowSpeedChanged;
@@ -358,14 +358,14 @@ namespace UI.Video
         {
             if (float.TryParse(speedText, out float speed))
             {
-                // Clamp the speed between 0.1 and 1.0
-                speed = Math.Max(0.1f, Math.Min(1.0f, speed));
+                // Clamp the speed between 0.05 and 1.0
+                speed = Math.Max(0.05f, Math.Min(1.0f, speed));
                 SlowSpeed = speed;
                 
                 // Update the text field to show the clamped value
                 if (Math.Abs(speed - float.Parse(speedText)) > 0.001f)
                 {
-                    SlowSpeedInput.Text = speed.ToString("F1");
+                    SlowSpeedInput.Text = speed.ToString("F2");
                 }
                 
                 // Notify listeners of the speed change
@@ -374,17 +374,46 @@ namespace UI.Video
             else
             {
                 // Invalid input, reset to current value
-                SlowSpeedInput.Text = SlowSpeed.ToString("F1");
+                SlowSpeedInput.Text = SlowSpeed.ToString("F2");
             }
         }
 
         public void AdjustSpeedPublic(float delta)
         {
-            float newSpeed = SlowSpeed + delta;
-            newSpeed = Math.Max(0.1f, Math.Min(1.0f, newSpeed)); // Clamp between 0.1 and 1.0
+            float newSpeed;
+            
+            if (delta > 0) // Increasing speed
+            {
+                if (SlowSpeed < 0.1f)
+                {
+                    // From 0.05 to 0.1
+                    newSpeed = 0.1f;
+                }
+                else
+                {
+                    // Normal increment of 0.1
+                    newSpeed = SlowSpeed + 0.1f;
+                }
+            }
+            else // Decreasing speed
+            {
+                if (SlowSpeed <= 0.1f)
+                {
+                    // From 0.1 to 0.05
+                    newSpeed = 0.05f;
+                }
+                else
+                {
+                    // Normal decrement of 0.1
+                    newSpeed = SlowSpeed - 0.1f;
+                }
+            }
+            
+            // Clamp between 0.05 and 1.0
+            newSpeed = Math.Max(0.05f, Math.Min(1.0f, newSpeed));
             
             SlowSpeed = newSpeed;
-            SlowSpeedInput.Text = newSpeed.ToString("F1");
+            SlowSpeedInput.Text = newSpeed.ToString("F2");
             
             // Notify listeners of the speed change
             SlowSpeedChanged?.Invoke(newSpeed);
