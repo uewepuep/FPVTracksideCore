@@ -30,6 +30,7 @@ jobs:
       windows-version: ${{ steps.get-version.outputs.windows-version }}
       release-tag: ${{ steps.get-version.outputs.release-tag }}
       is-release-branch: ${{ steps.get-version.outputs.is-release-branch }}
+      safe-branch-name: ${{ steps.get-version.outputs.safe-branch-name }}
     steps:
     - uses: actions/checkout@v4
     
@@ -67,10 +68,15 @@ jobs:
         fi
         echo "release-tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
         
+        # Sanitize branch name for artifact names (replace invalid characters)
+        SAFE_BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9._-]/_/g')
+        echo "safe-branch-name=$SAFE_BRANCH_NAME" >> $GITHUB_OUTPUT
+        
         echo "🍎 macOS Version: $MACOS_VERSION"
         echo "🪟 Windows Version: $WINDOWS_VERSION"
         echo "🏷️ Release Tag: $RELEASE_TAG"
         echo "📦 Is Release Branch: $IS_RELEASE_BRANCH"
+        echo "🌿 Safe Branch Name: $SAFE_BRANCH_NAME"
 
   build-macos:
     runs-on: macos-latest
