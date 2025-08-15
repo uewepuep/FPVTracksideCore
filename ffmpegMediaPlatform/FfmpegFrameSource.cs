@@ -72,6 +72,22 @@ namespace FfmpegMediaPlatform
         private float measuredFrameRate = 0f;
         private bool frameRateMeasured = false;
         
+        // REAL-TIME: Smart frame dropping for immediate responsiveness
+        // This solves the "1-second delay when moving hand in front of camera" problem by:
+        // 1. Dropping first 15 frames on startup to reach real-time quickly 
+        // 2. Dynamically dropping frames when display processing falls behind
+        // 3. NEVER dropping recording frames - only display frames are dropped
+        private const int STARTUP_FRAMES_TO_DROP = 15; // Skip first 15 frames to get to real-time quickly
+        private const double MAX_DISPLAY_LATENCY_MS = 500; // Drop frames if more than 500ms behind
+        private readonly Queue<DateTime> displayFrameTimestamps = new Queue<DateTime>();
+        private int framesDroppedForRealtime = 0;
+        
+        // Frame recording queue for async processing
+        private readonly System.Collections.Concurrent.ConcurrentQueue<(byte[] frameData, int frameNumber)> recordingQueue = new System.Collections.Concurrent.ConcurrentQueue<(byte[], int)>();
+        private readonly System.Threading.SemaphoreSlim recordingSemaphore = new System.Threading.SemaphoreSlim(0);
+        private Task recordingWorkerTask;
+        private CancellationTokenSource recordingCancellationSource;
+        
         // RGBA recording using separate ffmpeg process
         protected RgbaRecorderManager rgbaRecorderManager;
 
@@ -253,6 +269,19 @@ namespace FfmpegMediaPlatform
         public override void Dispose()
         {
             Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Disposing frame source for '{VideoConfig.DeviceName}'");
+            
+            // Stop recording worker task
+            try
+            {
+                recordingCancellationSource?.Cancel();
+                recordingWorkerTask?.Wait(TimeSpan.FromSeconds(5));
+                recordingCancellationSource?.Dispose();
+                recordingSemaphore?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"Error stopping recording worker task: {ex.Message}");
+            }
             
             // Stop and dispose RGBA recorder
             rgbaRecorderManager?.Dispose();
@@ -484,6 +513,9 @@ namespace FfmpegMediaPlatform
             {
                 run = true;
                 Connected = true;
+                
+                // Start recording worker task for async frame processing
+                StartRecordingWorkerTask();
 
                 thread = new Thread(Run);
                 thread.Name = "ffmpeg - " + VideoConfig.DeviceName;
@@ -885,13 +917,178 @@ namespace FfmpegMediaPlatform
         }
 
         /// <summary>
-        /// CAMERA LOOP: Process frame at camera's native rate - independent from game loop
-        /// This method runs in the camera reading thread and handles recording directly
+        /// Start the recording worker task for async frame processing
         /// </summary>
-        protected virtual void ProcessCameraFrame()
+        private void StartRecordingWorkerTask()
         {
-            FrameProcessNumber++;
+            recordingCancellationSource = new CancellationTokenSource();
+            recordingWorkerTask = Task.Run(async () =>
+            {
+                var cancellationToken = recordingCancellationSource.Token;
+                
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    try
+                    {
+                        // Wait for frames to be queued
+                        await recordingSemaphore.WaitAsync(cancellationToken);
+                        
+                        // Process all queued frames
+                        while (recordingQueue.TryDequeue(out var frameInfo))
+                        {
+                            try
+                            {
+                                rgbaRecorderManager?.WriteFrame(frameInfo.frameData, frameInfo.frameNumber);
+                                
+                                // Log every 300 frames during recording
+                                if (frameInfo.frameNumber % 300 == 0)
+                                {
+                                    string platform = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ? "Windows" : "Mac";
+                                    Tools.Logger.VideoLog.LogCall(this, $"ASYNC RECORDING [{platform}]: Frame {frameInfo.frameNumber} written to recording");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Tools.Logger.VideoLog.LogException(this, ex);
+                                Tools.Logger.VideoLog.LogCall(this, $"ASYNC RECORDING: Error writing frame {frameInfo.frameNumber}");
+                            }
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break; // Expected when cancellation is requested
+                    }
+                    catch (Exception ex)
+                    {
+                        Tools.Logger.VideoLog.LogException(this, ex);
+                    }
+                }
+                
+                Tools.Logger.VideoLog.LogCall(this, "Recording worker task completed");
+            }, recordingCancellationSource.Token);
+        }
+
+        /// <summary>
+        /// RECORDING: Queue frame for async recording (never dropped)
+        /// </summary>
+        private void QueueFrameForRecording()
+        {
+            // PERFORMANCE: Use parallel buffer copy for 4K frames to reduce blocking
+            byte[] frameData = new byte[buffer.Length];
             
+            // For large 4K frames (>2MB), use parallel copying to improve performance
+            if (buffer.Length > 2 * 1024 * 1024) // 2MB threshold for 4K
+            {
+                // Use unsafe parallel copy for maximum performance on large buffers
+                unsafe
+                {
+                    fixed (byte* src = buffer)
+                    fixed (byte* dst = frameData)
+                    {
+                        // Store pointers in local variables to avoid capture issues
+                        IntPtr srcPtr = new IntPtr(src);
+                        IntPtr dstPtr = new IntPtr(dst);
+                        int totalLength = buffer.Length;
+                        
+                        System.Threading.Tasks.Parallel.For(0, Environment.ProcessorCount, i =>
+                        {
+                            int chunkSize = totalLength / Environment.ProcessorCount;
+                            int start = i * chunkSize;
+                            int length = (i == Environment.ProcessorCount - 1) ? 
+                                totalLength - start : chunkSize;
+                            
+                            if (length > 0)
+                            {
+                                Buffer.MemoryCopy((void*)(srcPtr + start), (void*)(dstPtr + start), length, length);
+                            }
+                        });
+                    }
+                }
+            }
+            else
+            {
+                // For smaller frames, use regular Buffer.BlockCopy (faster than Array.Copy)
+                Buffer.BlockCopy(buffer, 0, frameData, 0, buffer.Length);
+            }
+            
+            // Queue the frame for async processing
+            recordingQueue.Enqueue((frameData, (int)FrameProcessNumber));
+            recordingSemaphore.Release(); // Signal worker task
+        }
+
+        /// <summary>
+        /// REAL-TIME: Check if we should drop this frame for real-time responsiveness
+        /// </summary>
+        private bool ShouldDropFrameForRealTime()
+        {
+            // STARTUP FRAME DROPPING: Skip initial frames to get to real-time quickly
+            if (FrameProcessNumber <= STARTUP_FRAMES_TO_DROP)
+            {
+                framesDroppedForRealtime++;
+                Tools.Logger.VideoLog.LogCall(this, $"REAL-TIME: Dropping startup frame {FrameProcessNumber}/{STARTUP_FRAMES_TO_DROP} to reach real-time faster");
+                return true;
+            }
+            
+            // DYNAMIC FRAME DROPPING: Check if we're falling behind real-time
+            DateTime now = DateTime.UtcNow;
+            displayFrameTimestamps.Enqueue(now);
+            
+            // Keep only last 5 frame timestamps for latency calculation
+            while (displayFrameTimestamps.Count > 5)
+                displayFrameTimestamps.Dequeue();
+            
+            // If we have enough samples, check if we're lagging behind
+            if (displayFrameTimestamps.Count >= 5)
+            {
+                var oldestFrameTime = displayFrameTimestamps.Peek();
+                var currentLatency = (now - oldestFrameTime).TotalMilliseconds;
+                
+                // If display latency exceeds threshold, drop this frame to catch up
+                if (currentLatency > MAX_DISPLAY_LATENCY_MS)
+                {
+                    framesDroppedForRealtime++;
+                    
+                    // Log every 30 dropped frames to avoid spam
+                    if (framesDroppedForRealtime % 30 == 0)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"REAL-TIME: Display latency {currentLatency:F0}ms > {MAX_DISPLAY_LATENCY_MS}ms, dropping frame {FrameProcessNumber} (total dropped: {framesDroppedForRealtime})");
+                    }
+                    
+                    return true;
+                }
+            }
+            
+            return false; // Don't drop this frame
+        }
+
+        /// <summary>
+        /// Update frame timing statistics (for dropped frames)
+        /// </summary>
+        private void UpdateFrameTimingStats()
+        {
+            DateTime currentFrameTime = DateTime.UtcNow;
+            
+            // Only update timing stats, don't do full processing
+            if (FrameProcessNumber % 60 == 0) // Check every 60 frames
+            {
+                if (lastFrameTime != DateTime.MinValue)
+                {
+                    double actualInterval = (currentFrameTime - lastFrameTime).TotalMilliseconds / 60.0;
+                    double actualFps = actualInterval > 0 ? 1000.0 / actualInterval : 0;
+                    double configuredFps = VideoConfig.VideoMode?.FrameRate ?? 30.0f;
+                    
+                    string platform = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ? "Windows" : "Mac";
+                    Tools.Logger.VideoLog.LogCall(this, $"FRAME TIMING [{platform}]: Frame {FrameProcessNumber} - Configured: {configuredFps:F1}fps, Actual: {actualFps:F2}fps (some frames dropped for real-time)");
+                }
+                lastFrameTime = currentFrameTime;
+            }
+        }
+
+        /// <summary>
+        /// DISPLAY: Process frame for display (after frame dropping check)
+        /// </summary>
+        private void ProcessDisplayFrame()
+        {
             // Track actual frame timing to detect frame rate discrepancies
             DateTime currentFrameTime = DateTime.UtcNow;
             
@@ -902,7 +1099,7 @@ namespace FfmpegMediaPlatform
                 double configuredFps = VideoConfig.VideoMode?.FrameRate ?? 30.0f;
                 
                 string platform = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ? "Windows" : "Mac";
-                Tools.Logger.VideoLog.LogCall(this, $"CAMERA TIMING [{platform}]: Frame {FrameProcessNumber} - Configured: {configuredFps:F1}fps, Actual: {actualFps:F2}fps, Interval: {actualInterval:F2}ms");
+                Tools.Logger.VideoLog.LogCall(this, $"CAMERA TIMING [{platform}]: Frame {FrameProcessNumber} - Configured: {configuredFps:F1}fps, Actual: {actualFps:F2}fps, Real-time optimized");
                 
                 // Update measured frame rate with higher precision after initial stabilization
                 if (FrameProcessNumber >= 180 && actualFps > 0) // Wait longer for more accurate measurement (6 seconds)
@@ -930,75 +1127,46 @@ namespace FfmpegMediaPlatform
                 
                 lastFrameTime = currentFrameTime;
             }
-
-            // STEP 1: Send frame to recording FIRST (camera-native timing)
-            // This is the key fix - recording gets frames directly from camera loop
-            if (Recording && rgbaRecorderManager.IsRecording)
-            {
-                // PERFORMANCE: Use parallel buffer copy for 4K frames to reduce blocking
-                byte[] frameData = new byte[buffer.Length];
-                
-                // For large 4K frames (>2MB), use parallel copying to improve performance
-                if (buffer.Length > 2 * 1024 * 1024) // 2MB threshold for 4K
-                {
-                    // Use unsafe parallel copy for maximum performance on large buffers
-                    unsafe
-                    {
-                        fixed (byte* src = buffer)
-                        fixed (byte* dst = frameData)
-                        {
-                            // Store pointers in local variables to avoid capture issues
-                            IntPtr srcPtr = new IntPtr(src);
-                            IntPtr dstPtr = new IntPtr(dst);
-                            int totalLength = buffer.Length;
-                            
-                            System.Threading.Tasks.Parallel.For(0, Environment.ProcessorCount, i =>
-                            {
-                                int chunkSize = totalLength / Environment.ProcessorCount;
-                                int start = i * chunkSize;
-                                int length = (i == Environment.ProcessorCount - 1) ? 
-                                    totalLength - start : chunkSize;
-                                
-                                if (length > 0)
-                                {
-                                    Buffer.MemoryCopy((void*)(srcPtr + start), (void*)(dstPtr + start), length, length);
-                                }
-                            });
-                        }
-                    }
-                }
-                else
-                {
-                    // For smaller frames, use regular Buffer.BlockCopy (faster than Array.Copy)
-                    Buffer.BlockCopy(buffer, 0, frameData, 0, buffer.Length);
-                }
-                
-                // Write frame to recording synchronously in camera loop to maintain timing
-                // This ensures the recording timing is driven by the camera, not the game
-                try
-                {
-                    rgbaRecorderManager.WriteFrame(frameData, (int)FrameProcessNumber);
-                    
-                    // Log every 300 frames during recording with timing info
-                    if (FrameProcessNumber % 300 == 0)
-                    {
-                        string platform = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ? "Windows" : "Mac";
-                        Tools.Logger.VideoLog.LogCall(this, $"CAMERA RECORDING [{platform}]: Frame {FrameProcessNumber} written to recording - check timing above");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Tools.Logger.VideoLog.LogException(this, ex);
-                    Tools.Logger.VideoLog.LogCall(this, $"CAMERA LOOP: Error writing frame {FrameProcessNumber} to recording");
-                }
-            }
             
-            // STEP 2: Prepare frame for game engine display
-            // This puts the frame in the buffer for the game loop to pick up when it needs it
+            // Prepare frame for game engine display
             PrepareFrameForDisplay();
             
-            // Notify the game engine that a new frame is available (but don't force processing timing)
+            // Notify the game engine that a new frame is available
             NotifyReceivedFrame();
+        }
+
+        /// <summary>
+        /// CAMERA LOOP: Process frame at camera's native rate - independent from game loop
+        /// This method runs in the camera reading thread and handles recording directly
+        /// </summary>
+        protected virtual void ProcessCameraFrame()
+        {
+            FrameProcessNumber++;
+            
+            // REAL-TIME OPTIMIZATION: Recording runs async, display processes immediately for minimum latency
+            // Recording gets every frame for accurate capture, regardless of display frame dropping
+            bool isRecording = Recording && rgbaRecorderManager.IsRecording;
+            
+            // DISPLAY OPTIMIZATION: Check if we should drop this frame for real-time display
+            bool shouldDropForDisplay = ShouldDropFrameForRealTime();
+            
+            if (isRecording)
+            {
+                // QUEUED RECORDING: Queue frame for async processing without blocking
+                // This ensures the camera loop moves forward as quickly as possible
+                QueueFrameForRecording();
+            }
+            
+            if (!shouldDropForDisplay)
+            {
+                // REAL-TIME DISPLAY: Process display immediately for minimum latency
+                ProcessDisplayFrame();
+            }
+            else
+            {
+                // DROP FRAME: Skip display processing but update frame timing statistics
+                UpdateFrameTimingStats();
+            }
         }
 
         /// <summary>
