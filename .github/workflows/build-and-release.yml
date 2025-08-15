@@ -528,6 +528,10 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        fetch-tags: true
+    
+    - name: Fetch all tags
+      run: git fetch --tags --force
     
     - name: Download macOS Artifact
       uses: actions/download-artifact@v4
@@ -542,13 +546,26 @@ jobs:
     - name: Generate Release Notes
       id: release-notes
       run: |
-        # Get the most recent existing tag (the last release)
-        LAST_TAG=$(git tag --sort=-version:refname | head -n1 2>/dev/null || echo "")
+        # Debug: Show all available tags
+        echo "All tags available:"
+        git tag --sort=-version:refname || echo "No tags found"
+        
+        # Get the previous tag (not the current one being released)
+        LAST_TAG=$(git tag --sort=-version:refname | head -n2 | tail -n1 2>/dev/null || echo "")
+        
+        echo "Last tag found: '$LAST_TAG'"
         
         if [ -n "$LAST_TAG" ]; then
           # Get commits since the last tag
-          COMMITS=$(git log ${LAST_TAG}..HEAD --oneline --no-merges)
-          echo "Comparing against last tag: $LAST_TAG"
+          CURRENT_TAG="${{ needs.detect-version.outputs.release-tag }}"
+          if [ "$CURRENT_TAG" != "$LAST_TAG" ]; then
+            COMMITS=$(git log ${LAST_TAG}..${CURRENT_TAG} --oneline --no-merges)
+            echo "Comparing $LAST_TAG to $CURRENT_TAG"
+          else
+            COMMITS=$(git log ${LAST_TAG}..HEAD --oneline --no-merges)
+            echo "Comparing against last tag: $LAST_TAG"
+          fi
+          echo "Number of commits found: $(echo "$COMMITS" | wc -l)"
         else
           # If no previous tags, show last 10 commits for initial release
           COMMITS=$(git log --oneline --no-merges -10)
