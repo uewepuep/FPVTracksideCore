@@ -542,12 +542,22 @@ jobs:
     - name: Generate Release Notes
       id: release-notes
       run: |
-        # Get the latest commit messages since last tag
-        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-        if [ -n "$LAST_TAG" ]; then
-          COMMITS=$(git log ${LAST_TAG}..HEAD --oneline --no-merges)
+        # Get the previous tag (not the current one being created)
+        PREVIOUS_TAG=$(git tag --sort=-version:refname | head -n2 | tail -n1 2>/dev/null || echo "")
+        
+        # If we can't find a previous tag, use git describe
+        if [ -z "$PREVIOUS_TAG" ]; then
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+        fi
+        
+        if [ -n "$PREVIOUS_TAG" ]; then
+          # Get commits since the previous tag
+          COMMITS=$(git log ${PREVIOUS_TAG}..HEAD --oneline --no-merges)
+          echo "Comparing against previous tag: $PREVIOUS_TAG"
         else
+          # If no previous tags, show last 10 commits for initial release
           COMMITS=$(git log --oneline --no-merges -10)
+          echo "No previous tags found, showing recent commits"
         fi
         
         # Generate release notes
