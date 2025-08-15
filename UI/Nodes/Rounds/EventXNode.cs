@@ -279,7 +279,7 @@ namespace UI.Nodes.Rounds
 
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
-                newRound.SheetFormatFilename = sheet.FileInfo.Name;
+                newRound.Stage = Round.Stage;
                 db.Update(newRound);
             }
 

@@ -110,6 +110,8 @@ namespace RaceLib
 
         public Round GetStartRound(Round endRound)
         {
+            Stage endStage = endRound.Stage;
+
             if (endRound.RoundType != Round.RoundTypes.Round)
             {
                 Round current = endRound;
@@ -118,7 +120,7 @@ namespace RaceLib
                 while (current != null)
                 {
                     current = EventManager.RoundManager.PreviousRound(current);
-                    if (current == null || current.RoundType != endRound.RoundType || current.PointSummary != null)
+                    if (current == null || current.RoundType != endRound.RoundType || current.Stage != endStage)
                     {
                         return best;
                     }
@@ -130,7 +132,7 @@ namespace RaceLib
             }
             else
             {
-                Round lastSumPointsRound = EventManager.Event.Rounds.Where(r => r.PointSummary != null && r.RoundNumber < endRound.RoundNumber).OrderBy(r => r.RoundNumber).LastOrDefault();
+                Round lastSumPointsRound = EventManager.Event.Rounds.Where(r => r.Stage != endStage && r.RoundNumber < endRound.RoundNumber).OrderBy(r => r.RoundNumber).LastOrDefault();
 
                 int start = 1;
                 if (lastSumPointsRound != null)
@@ -868,18 +870,18 @@ namespace RaceLib
 
         private bool RollOver(Round round)
         {
-            if (round != null && round.PointSummary != null)
+            if (round != null && round.Stage != null && round.Stage.PointSummary != null)
             {
-                return round.PointSummary.RoundPositionRollover;
+                return round.Stage.PointSummary.RoundPositionRollover;
             }
             return false;
         }
 
         private bool DropWorst(Round round)
         {
-            if (round != null && round.PointSummary != null)
+            if (round != null && round.Stage != null && round.Stage.PointSummary != null)
             {
-                return round.PointSummary.DropWorstRound;
+                return round.Stage.PointSummary.DropWorstRound;
             }
             return false;
         }

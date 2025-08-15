@@ -249,73 +249,79 @@ namespace UI.Nodes.Rounds
                 }
                 ern.SetRaces(roundRaces);
 
-                if (round.PointSummary != null)
+                Stage stage = round.Stage;
+                if (stage != null)
                 {
-                    EventPointsNode esn = EventSumNodes.FirstOrDefault(d => d.Round == round);
-                    if (esn == null && ern != null)
+
+                    if (stage.PointSummary != null)
                     {
-                        esn = new EventPointsNode(EventManager, round);
-                        esn.RemoveRound += ToggleSumPoints;
-                        HookUp(esn);
-                        container.AddChild(esn);
+                        EventPointsNode esn = EventSumNodes.FirstOrDefault(d => d.Round == round);
+                        if (esn == null && ern != null)
+                        {
+                            esn = new EventPointsNode(EventManager, round);
+                            esn.RemoveRound += ToggleSumPoints;
+                            HookUp(esn);
+                            container.AddChild(esn);
+                        }
+                        else
+                        {
+                            esn.Refresh();
+                            RequestLayout();
+                        }
                     }
-                    else
+
+                    if (stage.TimeSummary != null)
                     {
-                        esn.Refresh();
-                        RequestLayout();
+                        EventLapsTimesNode esn = EventTimesNodes.FirstOrDefault(d => d.Round == round);
+                        if (esn == null && ern != null)
+                        {
+                            esn = new EventLapsTimesNode(EventManager, round);
+                            esn.RemoveRound += ToggleTimePoints;
+                            HookUp(esn);
+                            container.AddChild(esn);
+                        }
+                        else
+                        {
+                            esn.Refresh();
+                            RequestLayout();
+                        }
+                    }
+
+                    if (stage.PackCountAfterRound)
+                    {
+                        EventPackCountNode esn = EventPackCountNodes.FirstOrDefault(d => d.Round == round);
+                        if (esn == null && ern != null)
+                        {
+                            esn = new EventPackCountNode(EventManager, round);
+                            esn.RemoveRound += TogglePackCount;
+                            HookUp(esn);
+                            container.AddChild(esn);
+                        }
+                        else
+                        {
+                            esn.Refresh();
+                            RequestLayout();
+                        }
+                    }
+
+                    if (stage.LapCountAfterRound)
+                    {
+                        EventLapCountsNode esn = EventLapCountsNodes.FirstOrDefault(d => d.Round == round);
+                        if (esn == null && ern != null)
+                        {
+                            esn = new EventLapCountsNode(EventManager, round);
+                            esn.RemoveRound += ToggleLapCount;
+                            HookUp(esn);
+                            container.AddChild(esn);
+                        }
+                        else
+                        {
+                            esn.Refresh();
+                            RequestLayout();
+                        }
                     }
                 }
 
-                if (round.TimeSummary != null)
-                {
-                    EventLapsTimesNode esn = EventTimesNodes.FirstOrDefault(d => d.Round == round);
-                    if (esn == null && ern != null)
-                    {
-                        esn = new EventLapsTimesNode(EventManager, round);
-                        esn.RemoveRound += ToggleTimePoints;
-                        HookUp(esn);
-                        container.AddChild(esn);
-                    }
-                    else
-                    {
-                        esn.Refresh();
-                        RequestLayout();
-                    }
-                }
-
-                if (round.PackCountAfterRound)
-                {
-                    EventPackCountNode esn = EventPackCountNodes.FirstOrDefault(d => d.Round == round);
-                    if (esn == null && ern != null)
-                    {
-                        esn = new EventPackCountNode(EventManager, round);
-                        esn.RemoveRound += TogglePackCount;
-                        HookUp(esn);
-                        container.AddChild(esn);
-                    }
-                    else
-                    {
-                        esn.Refresh();
-                        RequestLayout();
-                    }
-                }
-
-                if (round.LapCountAfterRound)
-                {
-                    EventLapCountsNode esn = EventLapCountsNodes.FirstOrDefault(d => d.Round == round);
-                    if (esn == null && ern != null)
-                    {
-                        esn = new EventLapCountsNode(EventManager, round);
-                        esn.RemoveRound += ToggleLapCount;
-                        HookUp(esn);
-                        container.AddChild(esn);
-                    }
-                    else
-                    {
-                        esn.Refresh();
-                        RequestLayout();
-                    }
-                }
             }
 
             foreach (var ern in RoundNodes.ToArray())
@@ -329,7 +335,7 @@ namespace UI.Nodes.Rounds
             foreach (var esn in EventSumNodes.ToArray())
             {
                 Round round = RoundManager.GetCreateRound(esn.Round.RoundNumber, esn.Round.EventType);
-                if (round.PointSummary == null)
+                if (round.Stage == null || round.Stage.PointSummary == null)
                 {
                     esn.Dispose();
                 }
@@ -338,7 +344,7 @@ namespace UI.Nodes.Rounds
             foreach (var esn in EventTimesNodes.ToArray())
             {
                 Round round = RoundManager.GetCreateRound(esn.Round.RoundNumber, esn.Round.EventType);
-                if (round.TimeSummary == null)
+                if (round.Stage == null || round.Stage.TimeSummary == null)
                 {
                     esn.Dispose();
                 }
@@ -347,7 +353,7 @@ namespace UI.Nodes.Rounds
             foreach (var esn in EventLapCountsNodes.ToArray())
             {
                 Round round = RoundManager.GetCreateRound(esn.Round.RoundNumber, esn.Round.EventType);
-                if (!round.LapCountAfterRound)
+                if (round.Stage == null || !round.Stage.LapCountAfterRound)
                 {
                     esn.Dispose();
                 }
@@ -356,7 +362,7 @@ namespace UI.Nodes.Rounds
             foreach (var esn in EventPackCountNodes.ToArray())
             {
                 Round round = RoundManager.GetCreateRound(esn.Round.RoundNumber, esn.Round.EventType);
-                if (!round.PackCountAfterRound)
+                if (round.Stage == null || !round.Stage.PackCountAfterRound)
                 {
                     esn.Dispose();
                 }
@@ -387,10 +393,7 @@ namespace UI.Nodes.Rounds
             EventManager.ToggleSumPoints(callingRound);
             Refresh();
 
-            if (callingRound.PointSummary != null)
-            {
-                Scroller.ScrollToEnd(scrollTime);
-            }
+            Scroller.ScrollToEnd(scrollTime);
         }
         private void ToggleTimePoints(Round callingRound)
         {
@@ -402,10 +405,7 @@ namespace UI.Nodes.Rounds
             EventManager.ToggleTimePoints(callingRound, type);
             Refresh();
 
-            if (callingRound.TimeSummary != null)
-            {
-                Scroller.ScrollToEnd(scrollTime);
-            }
+            Scroller.ScrollToEnd(scrollTime);
         }
 
         public void TogglePackCount(Round callingRound)
@@ -419,10 +419,7 @@ namespace UI.Nodes.Rounds
             EventManager.ToggleLapCount(callingRound);
             Refresh();
 
-            if (callingRound.LapCountAfterRound)
-            {
-                Scroller.ScrollToEnd(scrollTime);
-            }
+            Scroller.ScrollToEnd(scrollTime);
         }
 
         private void GenerateDoubleElim(Round callingRound)

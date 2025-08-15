@@ -32,41 +32,13 @@ namespace RaceLib
 
         [Category("Editable Details")]
         public bool Valid { get; set; }
-
-        [System.ComponentModel.Browsable(false)]
-        public PointSummary PointSummary { get; set; }
-
-        [System.ComponentModel.Browsable(false)]
-        public TimeSummary TimeSummary { get; set; }
-
-        [System.ComponentModel.Browsable(false)]
-        public bool PackCountAfterRound { get; set; }
-
+        
         [Category("Editable Details")]
-        public bool LapCountAfterRound { get; set; }
+        public DateTime ScheduledStart { get; set; }
+
 
         [Category("Advanced")]
         public int Order { get; set; }
-
-        [Category("Advanced")]
-        public string SheetFormatFilename { get; set; }
-        public DateTime ScheduledStart { get; set; }
-
-        [Category("Advanced")]
-        public bool HasSheetFormat
-        {
-            get
-            {
-                return !string.IsNullOrEmpty(SheetFormatFilename);
-            }
-            set
-            {
-                if (value == false)
-                {
-                    SheetFormatFilename = null; 
-                }
-            }
-        }
 
         [Category("Advanced")]
         public string GameTypeName { get; set; }
@@ -80,10 +52,7 @@ namespace RaceLib
             EventType = EventTypes.Race;
             RoundNumber = 1;
             RoundType = RoundTypes.Round;
-            LapCountAfterRound = false;
             Name = "";
-            PointSummary = null;
-            TimeSummary = null;
         }
 
         public override string ToString()

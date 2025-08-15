@@ -63,9 +63,9 @@ namespace RaceLib.Format
                 return false;
 
             Round next = RoundManager.NextRound(round);
-            if (next != null)
+            if (next != null && next.Stage != null)
             {
-                if (next.HasSheetFormat)
+                if (next.Stage.HasSheetFormat)
                     return false;
 
                 if (RaceManager.GetRaces(next).Any())
@@ -89,9 +89,9 @@ namespace RaceLib.Format
 
         public void Load()
         {
-            foreach (Round r in RoundManager.Rounds)
+            foreach (Round r in RoundManager.Rounds.Where(r => r.Stage != null))
             {
-                if (r.HasSheetFormat)
+                if (r.Stage.HasSheetFormat)
                 {
                     LoadSheet(r, null, false);
                 }
@@ -164,12 +164,13 @@ namespace RaceLib.Format
         }
 
 
-        public void LoadSheet(Round startRound, Pilot[] assignedPilots, bool generate)
+        public void LoadSheet(Round roundInStage, Pilot[] assignedPilots, bool generate)
         {
-            if (startRound.HasSheetFormat)
+            Stage stage = roundInStage.Stage;
+            if (stage.HasSheetFormat)
             {
-                SheetFile sheetFile = GetSheetFile(startRound.SheetFormatFilename);
-                RoundSheetFormat sheetFormat = new RoundSheetFormat(startRound, this, sheetFile.FileInfo);
+                SheetFile sheetFile = GetSheetFile(stage.SheetFormatFilename);
+                RoundSheetFormat sheetFormat = new RoundSheetFormat(roundInStage, this, sheetFile.FileInfo);
                 sheetFormat.CreatePilotMap(assignedPilots);
 
                 foreach (Round round in sheetFormat.Rounds)
@@ -185,7 +186,6 @@ namespace RaceLib.Format
                         sheetFormat.SyncRace(race);
                     }
                 }
-
 
                 if (generate)
                 {

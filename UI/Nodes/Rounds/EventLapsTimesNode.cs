@@ -1,19 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Composition;
+﻿using Composition;
 using Composition.Input;
 using Composition.Layers;
 using Composition.Nodes;
 using RaceLib;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using Tools;
 
 namespace UI.Nodes.Rounds
 {
     public class EventLapsTimesNode : EventPilotListNode<EventPilotTimeNode>
     {
+        public Stage Stage
+        {
+            get
+            {
+                return Round.Stage;
+            }
+        }
+
         public EventLapsTimesNode(EventManager ev, Round round)
             : base(ev, round)
         {
@@ -28,12 +36,18 @@ namespace UI.Nodes.Rounds
 
         public override void UpdateNodes()
         {
-            if (Round.TimeSummary == null)
+            Stage stage = Round.Stage;
+            if (stage == null)
+            {
+                return;
+            }
+
+            if (stage.TimeSummary == null)
                 return;
 
             Round startRound = Round;
 
-            bool includeAllRounds = Round.TimeSummary.IncludeAllRounds;
+            bool includeAllRounds = stage.TimeSummary.IncludeAllRounds;
 
             while (startRound != null)
             {
@@ -43,7 +57,7 @@ namespace UI.Nodes.Rounds
                     break;
                 }
 
-                if (prevRound.TimeSummary != null && !includeAllRounds)
+                if (prevRound.Stage != stage && !includeAllRounds)
                 {
                     break;
                 }
@@ -98,11 +112,11 @@ namespace UI.Nodes.Rounds
             }
 
             int lapsToCount = EventManager.Event.PBLaps;
-            if (Round.TimeSummary != null)
+            if (stage.TimeSummary != null)
             {
                 string heading = "";
 
-                if (Round.TimeSummary.TimeSummaryType == TimeSummary.TimeSummaryTypes.PB)
+                if (stage.TimeSummary.TimeSummaryType == TimeSummary.TimeSummaryTypes.PB)
                 {
                     lapsToCount = EventManager.Event.PBLaps;
                 }
@@ -114,7 +128,7 @@ namespace UI.Nodes.Rounds
                 heading = lapsToCount + " Lap" + (lapsToCount > 1 ? "s" : "");
                 SetHeading(heading);
 
-                if (Round.TimeSummary.TimeSummaryType == TimeSummary.TimeSummaryTypes.RaceTime)
+                if (stage.TimeSummary.TimeSummaryType == TimeSummary.TimeSummaryTypes.RaceTime)
                 {
                     SetHeading("Race Time");
                 }
@@ -125,7 +139,7 @@ namespace UI.Nodes.Rounds
                 IEnumerable<Lap> laps;
                 IEnumerable<Race> pilotInRaces = races.Where(r => r.HasPilot(pilotNode.Pilot));
 
-                if (Round.TimeSummary.TimeSummaryType == TimeSummary.TimeSummaryTypes.RaceTime)
+                if (stage.TimeSummary.TimeSummaryType == TimeSummary.TimeSummaryTypes.RaceTime)
                 {
                     laps = LapRecordManager.GetBestRaceTime(pilotInRaces, pilotNode.Pilot, lapsToCount);
                 }
@@ -151,7 +165,10 @@ namespace UI.Nodes.Rounds
 
         public override void EditSettings()
         {
-            ObjectEditorNode<TimeSummary> editor = new ObjectEditorNode<TimeSummary>(Round.TimeSummary);
+            if (Stage == null)
+                return;
+
+            ObjectEditorNode<TimeSummary> editor = new ObjectEditorNode<TimeSummary>(Stage.TimeSummary);
             editor.Scale(0.6f);
             GetLayer<PopupLayer>().Popup(editor);
             editor.OnOK += (a) =>
