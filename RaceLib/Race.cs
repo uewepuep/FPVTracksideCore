@@ -736,6 +736,17 @@ namespace RaceLib
             return position;
         }
 
+        public Detection GetFinishingTime(Pilot pilot)
+        {
+            int lastValidSector = int.MaxValue;
+            if (Type == EventTypes.Race)
+            {
+                lastValidSector = Detection.RaceSectorCalculator(TargetLaps, 0);
+            }
+            var detection = Detections.LastOrDefault(d => d.Valid && d.RaceSector <= lastValidSector && d.Pilot == pilot);
+            return detection;
+        }
+
         public bool GetPosition(Pilot pilot, out int position, out Pilot behindWho, out TimeSpan behind)
         {
             position = PilotChannels.Count;
