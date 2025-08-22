@@ -559,73 +559,7 @@ namespace RaceLib
             }
         }
 
-        public Stage GetCreateStage(IDatabase db, Round round)
-        {
-            if (round.Stage == null)
-            {
-                round.Stage = new Stage();
-                db.Insert(round.Stage);
-                db.Update(round);
-            }
 
-            return round.Stage;
-        }
-
-
-        public void ToggleSumPoints(Round round)
-        {
-            using (IDatabase db = DatabaseFactory.Open(EventId))
-            {
-                Stage stage = GetCreateStage(db, round);
-                if (stage.PointSummary == null)
-                {
-                    stage.PointSummary = new PointSummary(ResultManager.PointsSettings);
-                }
-                else
-                {
-                    stage.PointSummary = null;
-                }
-                db.Update(stage);
-            }
-        }
-
-        public void ToggleTimePoints(Round round, TimeSummary.TimeSummaryTypes type)
-        {
-            using (IDatabase db = DatabaseFactory.Open(EventId))
-            {
-                Stage stage = GetCreateStage(db, round);
-                if (stage.TimeSummary == null)
-                {
-                    stage.TimeSummary = new TimeSummary() { TimeSummaryType = type };
-                }
-                else
-                {
-                    stage.TimeSummary = null;
-                }
-                db.Update(stage);
-            }
-        }
-
-        public void ToggleLapCount(Round round)
-        {
-            using (IDatabase db = DatabaseFactory.Open(EventId))
-            {
-                Stage stage = GetCreateStage(db, round);
-                stage.LapCountAfterRound = !stage.LapCountAfterRound;
-                db.Update(stage);
-            }
-        }
-
-        public void TogglePackCount(Round round)
-        {
-            using (IDatabase db = DatabaseFactory.Open(EventId))
-            {
-                Stage stage = GetCreateStage(db, round);
-                stage.PackCountAfterRound = !stage.PackCountAfterRound;
-
-                db.Update(stage);
-            }
-        }
 
         public bool CanExport(ExportColumn.ColumnTypes type)
         {

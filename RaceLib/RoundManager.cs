@@ -17,8 +17,9 @@ namespace RaceLib
         public ResultManager ResultManager { get { return EventManager.ResultManager; } }
         public SheetFormatManager SheetFormatManager { get; set; }
 
-        public event System.Action OnRoundAdded;
-        public event System.Action OnRoundRemoved;
+        public event Action OnRoundAdded;
+        public event Action OnRoundRemoved;
+        public event Action OnStageChanged;
 
         public Round[] Rounds
         {
@@ -486,6 +487,91 @@ namespace RaceLib
                     GetCreateRound(1, Event.EventType);
                     db.Update(rounds);
                 }
+            }
+        }
+
+        public Stage GetCreateStage(IDatabase db, Round round)
+        {
+            if (round.Stage == null)
+            {
+                round.Stage = new Stage();
+                db.Insert(round.Stage);
+                db.Update(round);
+
+                OnStageChanged?.Invoke();
+            }
+
+            return round.Stage;
+        }
+
+        public void SetStage(Round round, Stage stage)
+        {
+            if (round.Stage == stage)
+                return;
+
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                round.Stage = stage;
+                db.Update(round);
+
+                OnStageChanged?.Invoke();
+
+            }
+        }
+
+
+        public void ToggleSumPoints(Round round)
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                Stage stage = GetCreateStage(db, round);
+                if (stage.PointSummary == null)
+                {
+                    stage.PointSummary = new PointSummary(ResultManager.PointsSettings);
+                }
+                else
+                {
+                    stage.PointSummary = null;
+                }
+                db.Update(stage);
+            }
+        }
+
+        public void ToggleTimePoints(Round round, TimeSummary.TimeSummaryTypes type)
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                Stage stage = GetCreateStage(db, round);
+                if (stage.TimeSummary == null)
+                {
+                    stage.TimeSummary = new TimeSummary() { TimeSummaryType = type };
+                }
+                else
+                {
+                    stage.TimeSummary = null;
+                }
+                db.Update(stage);
+            }
+        }
+
+        public void ToggleLapCount(Round round)
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                Stage stage = GetCreateStage(db, round);
+                stage.LapCountAfterRound = !stage.LapCountAfterRound;
+                db.Update(stage);
+            }
+        }
+
+        public void TogglePackCount(Round round)
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                Stage stage = GetCreateStage(db, round);
+                stage.PackCountAfterRound = !stage.PackCountAfterRound;
+
+                db.Update(stage);
             }
         }
     }

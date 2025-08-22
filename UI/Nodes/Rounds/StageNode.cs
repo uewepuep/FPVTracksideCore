@@ -1,4 +1,5 @@
-﻿using Composition.Nodes;
+﻿using Composition.Input;
+using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
 using System;
@@ -16,12 +17,14 @@ namespace UI.Nodes.Rounds
 
         private List<Node> toWrap;
 
-        private ScrollerNode scroller;
-
         public Stage Stage { get; private set; }
 
-        public StageNode(Stage stage, ScrollerNode scrollerNode)
+        public EventManager EventManager { get; private set; }
+
+        public StageNode(EventManager eventManager, Stage stage)
         {
+            EventManager = eventManager;
+
             Stage = stage;
             toWrap = new List<Node>();
 
@@ -71,6 +74,20 @@ namespace UI.Nodes.Rounds
             {
                 Dispose();
             }
+        }
+
+        public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
+        {
+            EventRoundNode eventRoundNode = node as EventRoundNode;
+            if (eventRoundNode != null)
+            {
+                Round round = eventRoundNode.Round;
+                if (round != null)
+                {
+                    EventManager.RoundManager.SetStage(round, Stage);
+                }
+            }
+            return base.OnDrop(finalInputEvent, node);
         }
     }
 }

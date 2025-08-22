@@ -61,6 +61,7 @@ namespace UI.Nodes.Rounds
 
             RoundManager.OnRoundAdded += Em_OnRoundAdded;
             RoundManager.OnRoundRemoved += Refresh;
+            RoundManager.OnStageChanged += Refresh;
             eventManager.RaceManager.OnPilotAdded += RaceManager_OnPilotAdded;
             eventManager.RaceManager.OnPilotRemoved += OnPilotRemoved;
             eventManager.RaceManager.OnRaceEnd += RaceManager_OnRaceEnd; ;
@@ -239,7 +240,7 @@ namespace UI.Nodes.Rounds
 
                     if (stageNode == null)
                     {
-                        stageNode = new StageNode(stage, Scroller);
+                        stageNode = new StageNode(EventManager, stage);
                         AddChild(stageNode);
                     }
                     stageNode.AddWrapNode(ern);
@@ -423,7 +424,7 @@ namespace UI.Nodes.Rounds
 
         private void ToggleSumPoints(Round callingRound)
         {
-            EventManager.ToggleSumPoints(callingRound);
+            EventManager.RoundManager.ToggleSumPoints(callingRound);
             Refresh();
 
             Scroller.ScrollToEnd(scrollTime);
@@ -435,7 +436,7 @@ namespace UI.Nodes.Rounds
 
         private void ToggleTimePoints(Round callingRound, TimeSummary.TimeSummaryTypes type)
         {
-            EventManager.ToggleTimePoints(callingRound, type);
+            EventManager.RoundManager.ToggleTimePoints(callingRound, type);
             Refresh();
 
             Scroller.ScrollToEnd(scrollTime);
@@ -443,13 +444,13 @@ namespace UI.Nodes.Rounds
 
         public void TogglePackCount(Round callingRound)
         {
-            EventManager.TogglePackCount(callingRound);
+            EventManager.RoundManager.TogglePackCount(callingRound);
             Refresh();
         }
 
         private void ToggleLapCount(Round callingRound)
         {
-            EventManager.ToggleLapCount(callingRound);
+            EventManager.RoundManager.ToggleLapCount(callingRound);
             Refresh();
 
             Scroller.ScrollToEnd(scrollTime);
