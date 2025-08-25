@@ -14,6 +14,7 @@ namespace UI.Nodes.Rounds
     public class StageNode : Node
     {
         private BorderNode borderNode;
+        private ColorNode colorNode;
 
         private List<Node> toWrap;
 
@@ -28,8 +29,23 @@ namespace UI.Nodes.Rounds
             Stage = stage;
             toWrap = new List<Node>();
 
-            borderNode = new BorderNode(Color.Yellow);
+
+            borderNode = new BorderNode(Stage.Color);
+            borderNode.Width = 5;
             AddChild(borderNode);
+
+            colorNode = new ColorNode(Stage.Color);
+            AddChild(colorNode);
+
+            CloseNode closeNode = new CloseNode();
+            closeNode.OnClick += CloseNode_OnClick;
+            colorNode.AddChild(closeNode);
+        }
+
+        private void CloseNode_OnClick(MouseInputEvent mie)
+        {
+            EventManager.RoundManager.DeleteStage(Stage);
+            Dispose();
         }
 
         public void SetNodes(IEnumerable<Node> nodes)
@@ -43,16 +59,23 @@ namespace UI.Nodes.Rounds
 
         public override void Layout(RectangleF parentBounds)
         {
+            base.Layout(parentBounds);
+
             lock (toWrap)
             {
                 int right = toWrap.Select(e => e.Bounds.Right).Max();
                 int left = toWrap.Select(e => e.Bounds.X).Min();
 
-                SetBounds(new RectangleF(left, parentBounds.Y, right - left, parentBounds.Height));
-                Scale(1, 0.99f);
-            }
+                int padding = 10;
+                left -= padding;
+                right += padding;
 
-            base.Layout(parentBounds);
+                int rightWidth = 20;
+
+                RectangleF bounds = new RectangleF(left, parentBounds.Y, (right - left)  + rightWidth, parentBounds.Height);
+                SetBounds(bounds);
+                colorNode.Layout(new RectangleF(bounds.Right - rightWidth, bounds.Y, rightWidth, bounds.Height));
+            }
         }
 
         public void AddWrapNode(Node node)

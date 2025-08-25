@@ -490,14 +490,25 @@ namespace RaceLib
             }
         }
 
-        public Stage GetCreateStage(IDatabase db, Round round)
+        public Stage GetCreateStage(IDatabase db, Round round, bool autoAssign = true)
         {
             if (round.Stage == null)
             {
                 round.Stage = new Stage();
                 db.Insert(round.Stage);
-                db.Update(round);
 
+                if (autoAssign)
+                {
+                    foreach (Round r in AutoFindStageRounds(round, round.Stage, round.EventType))
+                    {
+                        r.Stage = round.Stage;
+                        db.Update(r);
+                    }
+                }
+                else
+                {
+                    db.Update(round);
+                }
                 OnStageChanged?.Invoke();
             }
 
@@ -513,12 +524,56 @@ namespace RaceLib
             {
                 round.Stage = stage;
                 db.Update(round);
-
-                OnStageChanged?.Invoke();
-
             }
+
+            OnStageChanged?.Invoke();
         }
 
+        public void DeleteStage(Stage stage)
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                Round[] rounds = GetStageRounds(stage).ToArray();
+                foreach (Round r in rounds)
+                {
+                    r.Stage = null;
+                    db.Update(r);
+                }
+
+                db.Delete(stage);
+            }
+
+
+            OnStageChanged?.Invoke();
+        }
+
+        public IEnumerable<Round> GetStageRounds(Stage stage)
+        {
+            return Rounds.Where(r => r.Stage == stage).OrderBy(r => r.Order);
+        }
+
+        public IEnumerable<Round> AutoFindStageRounds(Round lastRound, Stage stage, EventTypes eventType)
+        {
+            if (lastRound == null)
+                yield break;
+
+            if (lastRound == null)
+                yield break;
+
+            if (lastRound.Stage != null && lastRound.Stage != stage)
+                yield break;
+
+            if (lastRound.EventType != eventType)
+                yield break;
+
+            Round previousRound = PreviousRound(lastRound);
+            foreach (Round round in AutoFindStageRounds(previousRound, stage, eventType))
+            {
+                yield return round;
+            }
+
+            yield return lastRound;
+        }
 
         public void ToggleSumPoints(Round round)
         {

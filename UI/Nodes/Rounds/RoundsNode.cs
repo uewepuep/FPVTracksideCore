@@ -236,14 +236,16 @@ namespace UI.Nodes.Rounds
                 Stage stage = round.Stage;
                 if (stage != null)
                 {
-                    StageNode stageNode = StageNodes.FirstOrDefault(s => s.Stage == stage);
+                    Round lastOrDefault = EventManager.RoundManager.GetStageRounds(stage).LastOrDefault();
+                    if (lastOrDefault != round)
+                        continue;
 
+                    StageNode stageNode = StageNodes.FirstOrDefault(s => s.Stage == stage);
                     if (stageNode == null)
                     {
                         stageNode = new StageNode(EventManager, stage);
                         AddChild(stageNode);
                     }
-                    stageNode.AddWrapNode(ern);
 
                     if (stage.PointSummary != null)
                     {
@@ -254,8 +256,6 @@ namespace UI.Nodes.Rounds
                             esn.RemoveRound += ToggleSumPoints;
                             HookUp(esn);
                             AddChild(esn);
-
-                            stageNode.AddWrapNode(esn);
                         }
                         else
                         {
@@ -273,8 +273,6 @@ namespace UI.Nodes.Rounds
                             esn.RemoveRound += ToggleTimePoints;
                             HookUp(esn);
                             AddChild(esn);
-
-                            stageNode.AddWrapNode(esn);
                         }
                         else
                         {
@@ -292,8 +290,6 @@ namespace UI.Nodes.Rounds
                             esn.RemoveRound += TogglePackCount;
                             HookUp(esn);
                             AddChild(esn);
-
-                            stageNode.AddWrapNode(esn);
                         }
                         else
                         {
@@ -311,8 +307,6 @@ namespace UI.Nodes.Rounds
                             esn.RemoveRound += ToggleLapCount;
                             HookUp(esn);
                             AddChild(esn);
-
-                            stageNode.AddWrapNode(esn);
                         }
                         else
                         {
@@ -322,6 +316,15 @@ namespace UI.Nodes.Rounds
                     }
                 }
             }
+
+            foreach (var stageNode in StageNodes)
+            {
+                Round[] stageRounds = EventManager.RoundManager.GetStageRounds(stageNode.Stage).ToArray();
+
+                IEnumerable<EventRoundNode> stageRoundNodes = RoundNodes.Where(rh => stageRounds.Contains(rh.Round));
+                stageNode.SetNodes(stageRoundNodes);
+            }
+
 
             foreach (var ern in RoundNodes.ToArray())
             {
