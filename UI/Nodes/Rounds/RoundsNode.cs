@@ -256,6 +256,7 @@ namespace UI.Nodes.Rounds
                             esn.RemoveRound += ToggleSumPoints;
                             HookUp(esn);
                             AddChild(esn);
+                            stageNode.AddWrapNode(esn);
                         }
                         else
                         {
@@ -273,6 +274,7 @@ namespace UI.Nodes.Rounds
                             esn.RemoveRound += ToggleTimePoints;
                             HookUp(esn);
                             AddChild(esn);
+                            stageNode.AddWrapNode(esn);
                         }
                         else
                         {
@@ -290,6 +292,7 @@ namespace UI.Nodes.Rounds
                             esn.RemoveRound += TogglePackCount;
                             HookUp(esn);
                             AddChild(esn);
+                            stageNode.AddWrapNode(esn);
                         }
                         else
                         {
@@ -307,6 +310,7 @@ namespace UI.Nodes.Rounds
                             esn.RemoveRound += ToggleLapCount;
                             HookUp(esn);
                             AddChild(esn);
+                            stageNode.AddWrapNode(esn);
                         }
                         else
                         {
@@ -322,7 +326,7 @@ namespace UI.Nodes.Rounds
                 Round[] stageRounds = EventManager.RoundManager.GetStageRounds(stageNode.Stage).ToArray();
 
                 IEnumerable<EventRoundNode> stageRoundNodes = RoundNodes.Where(rh => stageRounds.Contains(rh.Round));
-                stageNode.SetNodes(stageRoundNodes);
+                stageNode.AddWrapNodes(stageRoundNodes);
             }
 
 
@@ -549,8 +553,8 @@ namespace UI.Nodes.Rounds
 
             int paddingX = 50;
 
-            float height = (int)(BoundsF.Height * 0.94f);
-            float y = (int)(BoundsF.Height * 0.02f) + BoundsF.Y;
+            float height = (int)(BoundsF.Height * 0.95f);
+            float y = (int)(BoundsF.Height * 0.01f) + BoundsF.Y;
             float x = paddingX + BoundsF.X;
 
             foreach (EventXNode ern in EventXNodes)

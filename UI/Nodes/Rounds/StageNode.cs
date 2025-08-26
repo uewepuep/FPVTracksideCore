@@ -66,7 +66,7 @@ namespace UI.Nodes.Rounds
                 int right = toWrap.Select(e => e.Bounds.Right).Max();
                 int left = toWrap.Select(e => e.Bounds.X).Min();
 
-                int padding = 10;
+                int padding = borderNode.Width;
                 left -= padding;
                 right += padding;
 
@@ -83,6 +83,14 @@ namespace UI.Nodes.Rounds
             lock (toWrap)
             {
                 toWrap.Add(node);
+            }
+        }
+
+        public void AddWrapNodes(IEnumerable<Node> nodes)
+        {
+            lock (toWrap)
+            {
+                toWrap.AddRange(nodes);
             }
         }
 
