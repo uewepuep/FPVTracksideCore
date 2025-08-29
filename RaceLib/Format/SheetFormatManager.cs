@@ -89,8 +89,15 @@ namespace RaceLib.Format
 
         public void Load()
         {
-            foreach (Round r in RoundManager.Rounds.Where(r => r.Stage != null))
+            List<Stage> alreadyLoaded = new List<Stage>();
+
+            foreach (Round r in RoundManager.RoundsWhere(r => r.Stage != null).OrderBy(r => r.Order))
             {
+                if (alreadyLoaded.Contains(r.Stage))
+                    continue;
+
+                alreadyLoaded.Add(r.Stage);
+
                 if (r.Stage.HasSheetFormat)
                 {
                     LoadSheet(r, null, false);

@@ -81,6 +81,14 @@ namespace RaceLib
             }
         }
 
+        public IEnumerable<Round> RoundsWhere(Func<Round, bool> predicate)
+        {
+            lock (Event.Rounds)
+            {
+                return Event.Rounds.Where(r => predicate(r));
+            }
+        }
+
         public void SetRoundType(EventTypes type, Round round)
         {
             round.EventType = type;
@@ -158,12 +166,18 @@ namespace RaceLib
                 return Enumerable.Empty<Round>();
             }
 
-            return Event.Rounds.Where(r => r.Order <= end.Order && r.Order >= start.Order && r.RoundType == end.RoundType).OrderBy(r => r.Order);
+            lock (Event.Rounds)
+            {
+                return Event.Rounds.Where(r => r.Order <= end.Order && r.Order >= start.Order && r.RoundType == end.RoundType).OrderBy(r => r.Order);
+            }
         }
 
         public Round PreviousRound(Round current)
         {
-            return Event.Rounds.OrderByDescending(r => r.Order).FirstOrDefault(r => r.Order < current.Order);
+            lock (Event.Rounds)
+            {
+                return Event.Rounds.OrderByDescending(r => r.Order).FirstOrDefault(r => r.Order < current.Order);
+            }
         }
 
         public IEnumerable<Race> GenerateRound(RoundPlan roundPlan)
@@ -494,14 +508,15 @@ namespace RaceLib
         {
             if (round.Stage == null)
             {
-                round.Stage = new Stage();
-                db.Insert(round.Stage);
+                Stage stage = new Stage();
+                round.Stage = stage;
 
                 if (autoAssign)
                 {
-                    foreach (Round r in AutoFindStageRounds(round, round.Stage, round.EventType))
+                    IEnumerable<Round> rounds = AutoFindStageRounds(round, stage, round.EventType);
+                    foreach (Round r in rounds)
                     {
-                        r.Stage = round.Stage;
+                        r.Stage = stage;
                         db.Update(r);
                     }
                 }
@@ -509,6 +524,10 @@ namespace RaceLib
                 {
                     db.Update(round);
                 }
+
+                stage.AutoName(this);
+
+                db.Insert(stage);
                 OnStageChanged?.Invoke();
             }
 
@@ -519,14 +538,28 @@ namespace RaceLib
         {
             if (round.Stage == stage)
                 return;
-
+            
+            Stage oldStage = round.Stage;
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
                 round.Stage = stage;
                 db.Update(round);
+
+                if (stage != null)
+                {
+                    stage.AutoName(this);
+                    db.Update(stage);
+                }
             }
 
-            OnStageChanged?.Invoke();
+            if (oldStage == null || GetStageRounds(oldStage).Any())
+            {
+                OnStageChanged?.Invoke();
+            }
+            else
+            {
+                DeleteStage(oldStage);
+            }
         }
 
         public void DeleteStage(Stage stage)
@@ -543,13 +576,28 @@ namespace RaceLib
                 db.Delete(stage);
             }
 
-
             OnStageChanged?.Invoke();
         }
 
         public IEnumerable<Round> GetStageRounds(Stage stage)
         {
-            return Rounds.Where(r => r.Stage == stage).OrderBy(r => r.Order);
+            lock (Event.Rounds)
+            {
+                return Event.Rounds.Where(r => r.Stage == stage).OrderBy(r => r.Order);
+            }
+        }
+
+        public Round GetLastStageRound(Stage stage)
+        {
+            return GetStageRounds(stage).LastOrDefault();
+        }
+
+        public bool IsLastStageRound(Round round)
+        {
+            if (round.Stage == null) 
+                return true;
+
+            return round == GetLastStageRound(round.Stage);
         }
 
         public IEnumerable<Round> AutoFindStageRounds(Round lastRound, Stage stage, EventTypes eventType)

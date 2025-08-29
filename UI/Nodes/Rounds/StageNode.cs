@@ -21,10 +21,23 @@ namespace UI.Nodes.Rounds
         public Stage Stage { get; private set; }
 
         public EventManager EventManager { get; private set; }
+        public RoundsNode RoundsNode { get; private set; }
 
-        public StageNode(EventManager eventManager, Stage stage)
+        public EventRoundNode[] EventRoundNodes
+        {
+            get
+            {
+                lock (toWrap)
+                {
+                    return toWrap.OfType<EventRoundNode>().ToArray();
+                }
+            }
+        }
+
+        public StageNode(RoundsNode roundsNode, EventManager eventManager, Stage stage)
         {
             EventManager = eventManager;
+            RoundsNode = roundsNode;
 
             Stage = stage;
             toWrap = new List<Node>();
@@ -116,9 +129,19 @@ namespace UI.Nodes.Rounds
                 if (round != null)
                 {
                     EventManager.RoundManager.SetStage(round, Stage);
+                    RoundsNode.OrderByDrop(eventRoundNode, finalInputEvent.Position.X);
+                    return true;
                 }
             }
             return base.OnDrop(finalInputEvent, node);
+        }
+
+        public void RemoveWrapped(Node node)
+        {
+            lock (toWrap)
+            {
+                toWrap.Remove(node);
+            }
         }
     }
 }

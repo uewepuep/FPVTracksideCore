@@ -14,14 +14,6 @@ namespace UI.Nodes.Rounds
 {
     public class EventLapsTimesNode : EventPilotListNode<EventPilotTimeNode>
     {
-        public Stage Stage
-        {
-            get
-            {
-                return Round.Stage;
-            }
-        }
-
         public EventLapsTimesNode(EventManager ev, Round round)
             : base(ev, round)
         {
@@ -45,33 +37,8 @@ namespace UI.Nodes.Rounds
             if (stage.TimeSummary == null)
                 return;
 
-            Round startRound = Round;
 
-            bool includeAllRounds = stage.TimeSummary.IncludeAllRounds;
-
-            while (startRound != null)
-            {
-                Round prevRound = EventManager.RoundManager.PreviousRound(startRound);
-                if (prevRound == null)
-                {
-                    break;
-                }
-
-                if (prevRound.Stage != stage && !includeAllRounds)
-                {
-                    break;
-                }
-
-                startRound = prevRound;
-
-            }
-
-            if (startRound == null)
-            {
-                return;
-            }
-
-            IEnumerable<Race> races = EventManager.RaceManager.GetRaces(startRound, Round);
+            Race[] races = EventManager.ResultManager.GetStageRaces(stage);
             IEnumerable<Pilot> pilots = races.SelectMany(r => r.Pilots).Distinct();
 
             SetSubHeadingRounds(races);

@@ -23,6 +23,14 @@ namespace UI.Nodes.Rounds
 
         public int Columns { get; private set; }
 
+        public Stage Stage
+        {
+            get
+            {
+                return Round.Stage;
+            }
+        }
+
         public EventPilotListNode(EventManager ev, Round round)
             : base(ev, round)
         {
@@ -39,6 +47,16 @@ namespace UI.Nodes.Rounds
             UpdateButtons();
         }
 
+        public override void Dispose()
+        {
+            EventManager.OnPilotRefresh -= Refresh;
+            EventManager.OnEventChange -= Refresh;
+            EventManager.RaceManager.OnRaceEnd -= OnRaceEnd;
+            EventManager.RaceManager.OnLapDisqualified -= OnLapDisqualified;
+
+            base.Dispose();
+        }
+
         private void OnLapDisqualified(Lap lap)
         {
             // Don't refresh mid-race.
@@ -51,16 +69,6 @@ namespace UI.Nodes.Rounds
         protected void OnRaceEnd(Race race)
         {
             Refresh();
-        }
-
-        public override void Dispose()
-        {
-            EventManager.OnPilotRefresh -= Refresh;
-            EventManager.OnEventChange -= Refresh;
-            EventManager.RaceManager.OnRaceEnd -= OnRaceEnd;
-            EventManager.RaceManager.OnLapDisqualified -= OnLapDisqualified;
-
-            base.Dispose();
         }
 
         public void SetSubHeadingRounds(IEnumerable<Race> races)

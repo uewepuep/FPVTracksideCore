@@ -57,7 +57,24 @@ namespace RaceLib
             PointSummary = null;
             TimeSummary = null;
             Color = Color.Yellow;
-            Name = "Stage 1";
+            Name = "";
+        }
+
+        public void AutoName(RoundManager roundManager)
+        {
+            IEnumerable<Round> rounds = roundManager.GetStageRounds(this);
+            if (rounds.Any())
+            {
+                Name = string.Join(", ", rounds.Select(r => r.ToStringShort()));   
+            }
+        }
+
+        public override string ToString()
+        {
+            if (Name != null)
+                return Name;
+
+            return base.ToString();
         }
 
     }
