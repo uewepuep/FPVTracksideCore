@@ -56,7 +56,7 @@ namespace RaceLib
             LapCountAfterRound = false;
             PointSummary = null;
             TimeSummary = null;
-            Color = Color.Yellow;
+            Color = Color.Transparent;
             Name = "";
         }
 

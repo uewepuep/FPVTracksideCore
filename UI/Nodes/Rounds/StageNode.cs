@@ -14,8 +14,6 @@ namespace UI.Nodes.Rounds
     public class StageNode : Node
     {
         private BorderNode borderNode;
-        private ColorNode colorNode;
-
         private List<Node> toWrap;
 
         public Stage Stage { get; private set; }
@@ -34,31 +32,26 @@ namespace UI.Nodes.Rounds
             }
         }
 
+        public Color Color { get; private set; }
+
+
         public StageNode(RoundsNode roundsNode, EventManager eventManager, Stage stage)
         {
+            Stage = stage;
             EventManager = eventManager;
             RoundsNode = roundsNode;
+            Color = Theme.Current.Rounds.Heading.XNA;
 
-            Stage = stage;
+            if (stage != null && stage.Color != Color.Transparent)
+            {
+                Color = stage.Color;
+            }
+
             toWrap = new List<Node>();
 
-
-            borderNode = new BorderNode(Stage.Color);
-            borderNode.Width = 5;
+            borderNode = new BorderNode(Color);
+            borderNode.Width = 2;
             AddChild(borderNode);
-
-            colorNode = new ColorNode(Stage.Color);
-            AddChild(colorNode);
-
-            CloseNode closeNode = new CloseNode();
-            closeNode.OnClick += CloseNode_OnClick;
-            colorNode.AddChild(closeNode);
-        }
-
-        private void CloseNode_OnClick(MouseInputEvent mie)
-        {
-            EventManager.RoundManager.DeleteStage(Stage);
-            Dispose();
         }
 
         public void SetNodes(IEnumerable<Node> nodes)
@@ -72,8 +65,6 @@ namespace UI.Nodes.Rounds
 
         public override void Layout(RectangleF parentBounds)
         {
-            base.Layout(parentBounds);
-
             lock (toWrap)
             {
                 int right = toWrap.Select(e => e.Bounds.Right).Max();
@@ -83,11 +74,9 @@ namespace UI.Nodes.Rounds
                 left -= padding;
                 right += padding;
 
-                int rightWidth = 20;
-
-                RectangleF bounds = new RectangleF(left, parentBounds.Y, (right - left)  + rightWidth, parentBounds.Height);
-                SetBounds(bounds, parentBounds);
-                colorNode.Layout(new RectangleF(bounds.Right - rightWidth, bounds.Y, rightWidth, bounds.Height));
+                RectangleF bounds = new RectangleF(left, parentBounds.Y, (right - left), parentBounds.Height);
+                SetBounds(bounds, BoundsF);
+                borderNode.Layout(bounds);
             }
         }
 
@@ -152,6 +141,7 @@ namespace UI.Nodes.Rounds
                 bounds.Width / parentBounds.Width,
                 bounds.Height / parentBounds.Height
                 );
+            BoundsF = bounds;
         }
     }
 }

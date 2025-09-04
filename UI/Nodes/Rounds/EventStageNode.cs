@@ -1,4 +1,5 @@
 ﻿using Composition;
+using Microsoft.Xna.Framework;
 using RaceLib;
 using System;
 using System.Collections.Generic;
@@ -29,13 +30,21 @@ namespace UI.Nodes.Rounds
 
             var roundNodes = roundsNode.RoundNodes.Where(rn => rn.Round.Stage == Stage);
             StageNode.AddWrapNodes(roundNodes);
+
+            headingbg.Color = StageNode.Color;
+            headingbg.SetFilename(null);
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+            StageNode.Dispose();
         }
 
         public override void Layout(RectangleF parentBounds)
         {
-            StageNode.Layout(parentBounds);
-
             base.Layout(parentBounds);
+            StageNode.Layout(BoundsF);
         }
 
         public override void Draw(Drawer id, float parentAlpha)
