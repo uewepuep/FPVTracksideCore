@@ -14,7 +14,7 @@ using Tools;
 
 namespace UI.Nodes.Rounds
 {
-    public abstract class EventPilotListNode<T> : EventXNode where T : EventPilotNode
+    public abstract class EventPilotListNode<T> : EventStageNode where T : EventPilotNode
     {
         public IEnumerable<T> PilotNodes { get { return contentContainer.Children.OfType<T>(); } }
         public IEnumerable<TextNode> BracketNodes { get { return contentContainer.Children.OfType<TextNode>(); } }
@@ -23,16 +23,8 @@ namespace UI.Nodes.Rounds
 
         public int Columns { get; private set; }
 
-        public Stage Stage
-        {
-            get
-            {
-                return Round.Stage;
-            }
-        }
-
-        public EventPilotListNode(EventManager ev, Round round)
-            : base(ev, round)
+        public EventPilotListNode(RoundsNode roundsNode, EventManager ev, Round round)
+            : base(roundsNode, ev, round)
         {
 
             EventManager.OnPilotRefresh += Refresh;

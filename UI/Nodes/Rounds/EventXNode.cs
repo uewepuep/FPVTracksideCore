@@ -57,6 +57,18 @@ namespace UI.Nodes.Rounds
         protected bool canAddFinal;
         protected bool canAddRace;
 
+        public virtual int Order
+        {
+            get
+            {
+                if (Round == null)
+                    return 0;
+
+                return Round.Order;
+            }
+        }
+
+
         public EventXNode(EventManager ev, Round round)
         {
             Scroller.Enabled = false;

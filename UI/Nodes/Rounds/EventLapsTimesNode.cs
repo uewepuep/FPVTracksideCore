@@ -14,8 +14,8 @@ namespace UI.Nodes.Rounds
 {
     public class EventLapsTimesNode : EventPilotListNode<EventPilotTimeNode>
     {
-        public EventLapsTimesNode(EventManager ev, Round round)
-            : base(ev, round)
+        public EventLapsTimesNode(RoundsNode roundsNode, EventManager ev, Round round)
+            : base(roundsNode, ev, round)
         {
         }
 
@@ -158,6 +158,14 @@ namespace UI.Nodes.Rounds
                 }
             }
             return output.ToArray();
+        }
+
+        public override bool HasResult()
+        {
+            if (Stage == null)
+                return false;
+
+            return Stage.TimeSummary != null;
         }
     }
 

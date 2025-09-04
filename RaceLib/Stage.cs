@@ -77,5 +77,12 @@ namespace RaceLib
             return base.ToString();
         }
 
+        public bool HasResult
+        {
+            get
+            {
+                return PointSummary != null || TimeSummary != null || PackCountAfterRound || LapCountAfterRound;
+            }
+        }
     }
 }

@@ -22,15 +22,15 @@ namespace UI.Nodes.Rounds
 
         public IEnumerable<EventRoundNode> RoundNodes { get { return Children.OfType<EventRoundNode>(); } }
         public IEnumerable<EventXNode> EventXNodes { get { return Children.OfType<EventXNode>(); } }
-        public IEnumerable<EventPointsNode> EventSumNodes { get { return Children.OfType<EventPointsNode>(); } }
+        public IEnumerable<EventPointsNode> EventPointsNodes { get { return Children.OfType<EventPointsNode>(); } }
         public IEnumerable<EventLapsTimesNode> EventTimesNodes { get { return Children.OfType<EventLapsTimesNode>(); } }
         public IEnumerable<EventLapCountsNode> EventLapCountsNodes { get { return Children.OfType<EventLapCountsNode>(); } }
         public IEnumerable<EventPackCountNode> EventPackCountNodes { get { return Children.OfType<EventPackCountNode>(); } }
-        public IEnumerable<StageNode> StageNodes { get { return Children.OfType<StageNode>(); } }
+        public IEnumerable<EventStageNode> EventStageNodes { get { return Children.OfType<EventStageNode>(); } }
 
         public EventManager EventManager { get; private set; }
         public RoundManager RoundManager { get { return EventManager.RoundManager; } }
-        public ExternalData.ISync Syncer { get; private set; }
+        public ISync Syncer { get; private set; }
 
         private bool needsRefresh;
 
@@ -102,7 +102,7 @@ namespace UI.Nodes.Rounds
             base.Dispose();
         }
 
-        public void SetSyncer(ExternalData.ISync syncer)
+        public void SetSyncer(ISync syncer)
         {
             Syncer = syncer;
             if (syncer != null)
@@ -243,23 +243,15 @@ namespace UI.Nodes.Rounds
                     if (lastOrDefault != round)
                         continue;
 
-                    StageNode stageNode = StageNodes.FirstOrDefault(s => s.Stage == stage);
-                    if (stageNode == null)
-                    {
-                        stageNode = new StageNode(this, EventManager, stage);
-                        AddChild(stageNode);
-                    }
-
                     if (stage.PointSummary != null)
                     {
-                        EventPointsNode esn = EventSumNodes.FirstOrDefault(d => d.Round == round);
+                        EventPointsNode esn = EventPointsNodes.FirstOrDefault(d => d.Round == round);
                         if (esn == null && ern != null)
                         {
-                            esn = new EventPointsNode(EventManager, round);
+                            esn = new EventPointsNode(this, EventManager, round);
                             esn.RemoveRound += ToggleSumPoints;
                             HookUp(esn);
                             AddChild(esn);
-                            stageNode.AddWrapNode(esn);
                         }
                         else
                         {
@@ -273,11 +265,10 @@ namespace UI.Nodes.Rounds
                         EventLapsTimesNode esn = EventTimesNodes.FirstOrDefault(d => d.Round == round);
                         if (esn == null && ern != null)
                         {
-                            esn = new EventLapsTimesNode(EventManager, round);
+                            esn = new EventLapsTimesNode(this, EventManager, round);
                             esn.RemoveRound += ToggleTimePoints;
                             HookUp(esn);
                             AddChild(esn);
-                            stageNode.AddWrapNode(esn);
                         }
                         else
                         {
@@ -291,11 +282,10 @@ namespace UI.Nodes.Rounds
                         EventPackCountNode esn = EventPackCountNodes.FirstOrDefault(d => d.Round == round);
                         if (esn == null && ern != null)
                         {
-                            esn = new EventPackCountNode(EventManager, round);
+                            esn = new EventPackCountNode(this, EventManager, round);
                             esn.RemoveRound += TogglePackCount;
                             HookUp(esn);
                             AddChild(esn);
-                            stageNode.AddWrapNode(esn);
                         }
                         else
                         {
@@ -309,11 +299,10 @@ namespace UI.Nodes.Rounds
                         EventLapCountsNode esn = EventLapCountsNodes.FirstOrDefault(d => d.Round == round);
                         if (esn == null && ern != null)
                         {
-                            esn = new EventLapCountsNode(EventManager, round);
+                            esn = new EventLapCountsNode(this, EventManager, round);
                             esn.RemoveRound += ToggleLapCount;
                             HookUp(esn);
                             AddChild(esn);
-                            stageNode.AddWrapNode(esn);
                         }
                         else
                         {
@@ -321,17 +310,9 @@ namespace UI.Nodes.Rounds
                             RequestLayout();
                         }
                     }
+
                 }
             }
-
-            foreach (var stageNode in StageNodes)
-            {
-                Round[] stageRounds = EventManager.RoundManager.GetStageRounds(stageNode.Stage).ToArray();
-
-                IEnumerable<EventRoundNode> stageRoundNodes = RoundNodes.Where(rh => stageRounds.Contains(rh.Round));
-                stageNode.AddWrapNodes(stageRoundNodes);
-            }
-
 
             foreach (var ern in RoundNodes.ToArray())
             {
@@ -341,85 +322,17 @@ namespace UI.Nodes.Rounds
                 }
             }
 
-            foreach (var esn in EventSumNodes.ToArray())
+            foreach (EventStageNode eventStageNode in EventStageNodes.ToArray())
             {
-                Round round = RoundManager.GetCreateRound(esn.Round.RoundNumber, esn.Round.EventType);
-                if (round.Stage == null || round.Stage.PointSummary == null || !RoundManager.IsLastStageRound(round))
+                if (!eventStageNode.HasResult())
                 {
-                    esn.Dispose();
-                    continue;
+                    eventStageNode.Dispose();
                 }
-            }
-
-            foreach (var esn in EventTimesNodes.ToArray())
-            {
-                Round round = RoundManager.GetCreateRound(esn.Round.RoundNumber, esn.Round.EventType);
-                if (round.Stage == null || round.Stage.TimeSummary == null || !RoundManager.IsLastStageRound(round))
-                {
-                    esn.Dispose();
-                }
-            }
-
-            foreach (var esn in EventLapCountsNodes.ToArray())
-            {
-                Round round = RoundManager.GetCreateRound(esn.Round.RoundNumber, esn.Round.EventType);
-                if (round.Stage == null || !round.Stage.LapCountAfterRound || !RoundManager.IsLastStageRound(round))
-                {
-                    esn.Dispose();
-                }
-            }
-
-            foreach (var esn in EventPackCountNodes.ToArray())
-            {
-                Round round = RoundManager.GetCreateRound(esn.Round.RoundNumber, esn.Round.EventType);
-                if (round.Stage == null || !round.Stage.PackCountAfterRound || !RoundManager.IsLastStageRound(round))
-                {
-                    esn.Dispose();
-                }
-            }
-            
-            foreach (StageNode stageNode in StageNodes)
-            {
-                EventRoundNode[] eventRoundNodes = stageNode.EventRoundNodes;
-                foreach (EventRoundNode eventRoundNode in eventRoundNodes)
-                {
-                    if (eventRoundNode.Round.Stage != stageNode.Stage)
-                    {
-                        stageNode.RemoveWrapped(eventRoundNode);
-                    }
-                }
-
-                stageNode.CleanUp();
             }
 
             SetOrder<EventXNode, long>((a) =>
             {
-                if (a is EventRoundNode)
-                {
-                    return ((EventRoundNode)a).Round.Order;
-                }
-
-                if (a is EventLapsTimesNode)
-                {
-                    return ((EventLapsTimesNode)a).Round.Order + 1;
-                }
-
-                if (a is EventPointsNode)
-                {
-                    return ((EventPointsNode)a).Round.Order + 2;
-                }
-
-                if (a is EventLapCountsNode)
-                {
-                    return ((EventLapCountsNode)a).Round.Order + 3;
-                }
-
-                if (a is EventPackCountNode)
-                {
-                    return ((EventPackCountNode)a).Round.Order + 4;
-                }
-
-                return 0;
+                return a.Order;
             });
         }
 

@@ -14,8 +14,8 @@ namespace UI.Nodes.Rounds
 {
     public class EventPackCountNode : EventPilotListNode<PilotPackCountNode>
     {
-        public EventPackCountNode(EventManager ev, Round round)
-            : base(ev, round)
+        public EventPackCountNode(RoundsNode roundsNode, EventManager ev, Round round)
+            : base(roundsNode, ev, round)
         {
             SetHeading("Pack Count");
             Refresh();
@@ -157,6 +157,14 @@ namespace UI.Nodes.Rounds
 
                 ppn.Position = position;
             }
+        }
+
+        public override bool HasResult()
+        {
+            if (Stage == null)
+                return false;
+
+            return Stage.PackCountAfterRound;
         }
     }
 

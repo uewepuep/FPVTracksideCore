@@ -86,7 +86,7 @@ namespace UI.Nodes.Rounds
                 int rightWidth = 20;
 
                 RectangleF bounds = new RectangleF(left, parentBounds.Y, (right - left)  + rightWidth, parentBounds.Height);
-                SetBounds(bounds);
+                SetBounds(bounds, parentBounds);
                 colorNode.Layout(new RectangleF(bounds.Right - rightWidth, bounds.Y, rightWidth, bounds.Height));
             }
         }
@@ -142,6 +142,16 @@ namespace UI.Nodes.Rounds
             {
                 toWrap.Remove(node);
             }
+        }
+
+        public void SetBounds(RectangleF bounds, RectangleF parentBounds)
+        {
+            RelativeBounds = new RectangleF(
+                (bounds.X - parentBounds.X) / parentBounds.Width,
+                (bounds.Y - parentBounds.Y) / parentBounds.Height,
+                bounds.Width / parentBounds.Width,
+                bounds.Height / parentBounds.Height
+                );
         }
     }
 }

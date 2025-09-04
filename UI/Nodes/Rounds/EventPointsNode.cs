@@ -15,8 +15,8 @@ namespace UI.Nodes.Rounds
 {
     public class EventPointsNode : EventPilotListNode<PilotPointsNode>
     {
-        public EventPointsNode(EventManager ev, Round round)
-            : base(ev, round)
+        public EventPointsNode(RoundsNode roundsNode, EventManager ev, Round round)
+            : base(roundsNode, ev, round)
         {
             SetHeading("Points");
             Refresh();
@@ -220,6 +220,14 @@ namespace UI.Nodes.Rounds
                 EventManager.ResultManager.Recalculate(Round);
                 Refresh();
             };
+        }
+
+        public override bool HasResult()
+        {
+            if (Stage == null)
+                return false;
+
+            return Stage.PointSummary != null;
         }
     }
 
