@@ -509,6 +509,7 @@ namespace RaceLib
             if (round.Stage == null)
             {
                 Stage stage = new Stage();
+                stage.ID = Guid.NewGuid();
                 round.Stage = stage;
 
                 if (autoAssign)
@@ -524,7 +525,6 @@ namespace RaceLib
                 {
                     db.Update(round);
                 }
-
                 stage.AutoName(this);
 
                 db.Insert(stage);
@@ -566,16 +566,20 @@ namespace RaceLib
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
-                Round[] rounds = GetStageRounds(stage).ToArray();
-                foreach (Round r in rounds)
-                {
-                    r.Stage = null;
-                    db.Update(r);
-                }
+                DeleteStage(db, stage);
+            }
+        }
 
-                db.Delete(stage);
+        public void DeleteStage(IDatabase db, Stage stage)
+        {
+            Round[] rounds = GetStageRounds(stage).ToArray();
+            foreach (Round r in rounds)
+            {
+                r.Stage = null;
+                db.Update(r);
             }
 
+            db.Delete(stage);
             OnStageChanged?.Invoke();
         }
 
@@ -632,10 +636,9 @@ namespace RaceLib
                 {
                     stage.PointSummary = new PointSummary(ResultManager.PointsSettings);
                 }
-                else
-                {
-                    stage.PointSummary = null;
-                }
+
+                DeleteStage(stage);
+
                 db.Update(stage);
             }
         }

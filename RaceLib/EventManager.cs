@@ -276,6 +276,7 @@ namespace RaceLib
                     System.Diagnostics.Debug.Assert(Event != null);
 
                     UpdateRoundOrder(db);
+                    CleanUpStages();
                 }
 
                 if (Event.Channels == null || !Event.Channels.Any())
@@ -340,6 +341,17 @@ namespace RaceLib
 
                     db.Update(rounds);
                 }
+            }
+        }
+
+        public void CleanUpStages()
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventId))
+            {
+                Guid[] stageIds = RoundManager.Rounds.Where(r => r.Stage != null).Select(r => r.Stage.ID).ToArray();
+
+                Stage[] toDelete = db.All<Stage>().Where(s => !stageIds.Contains(s.ID)).ToArray();
+                db.Delete(toDelete);
             }
         }
 
