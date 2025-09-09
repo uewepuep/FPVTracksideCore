@@ -100,6 +100,14 @@ namespace Composition
             SpriteBatch?.Draw(texture, dest, src, Color.FromNonPremultiplied(new Vector4(tint.ToVector3(), alpha)));
         }
 
+        public void Draw(Texture2D texture, Rectangle src, Rectangle dest, Color tint, float rotation, Vector2 origin)
+        {
+            dest.X += Offset.X;
+            dest.Y += Offset.Y;
+
+            SpriteBatch?.Draw(texture, dest, src, tint, rotation, origin, SpriteEffects.None, 0);
+        }
+
         public void Draw(Texture2D texture, Rectangle src, RectangleF dest, Color tint, float alpha)
         {
             dest.X += Offset.X;

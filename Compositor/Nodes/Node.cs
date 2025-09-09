@@ -391,8 +391,7 @@ namespace Composition.Nodes
 
         protected virtual void LayoutChildren(RectangleF bounds)
         {
-            Node[] t = children;
-            foreach (Node n in t)
+            foreach (Node n in children)
             {
                 n.Layout(bounds);
             }
@@ -404,10 +403,9 @@ namespace Composition.Nodes
             DrawChildren(id, parentAlpha);
         }
 
-        public void DrawChildren(Drawer id, float parentAlpha)
+        public virtual void DrawChildren(Drawer id, float parentAlpha)
         {
-            Node[] t = children;
-            foreach (Node n in t)
+            foreach (Node n in children)
             {
                 if (n.Drawable)
                 {

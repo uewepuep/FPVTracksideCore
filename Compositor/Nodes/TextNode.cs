@@ -54,7 +54,7 @@ namespace Composition.Nodes
 
         protected ITextRenderer textRenderer;
 
-        private int height;
+        protected int height;
         public RectangleAlignment Alignment { get; set; }
 
         public bool CanScale { get; set; }

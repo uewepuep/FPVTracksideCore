@@ -1,4 +1,5 @@
 ﻿using Composition;
+using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
 using System;
@@ -27,6 +28,7 @@ namespace UI.Nodes.Rounds
         {
             StageNode = new StageNode(roundsNode, ev, round.Stage);
             StageNode.AddWrapNode(this);
+            AddChild(StageNode);
 
             var roundNodes = roundsNode.RoundNodes.Where(rn => rn.Round.Stage == Stage);
             StageNode.AddWrapNodes(roundNodes);
@@ -35,22 +37,40 @@ namespace UI.Nodes.Rounds
             headingbg.SetFilename(null);
         }
 
-        public override void Dispose()
+        protected override void LayoutChildren(RectangleF bounds)
         {
-            base.Dispose();
-            StageNode.Dispose();
+            foreach (Node n in Children)
+            {
+                if (n == StageNode)
+                    continue;
+                n.Layout(bounds);
+            }
         }
 
         public override void Layout(RectangleF parentBounds)
         {
             base.Layout(parentBounds);
-            StageNode.Layout(BoundsF);
+            StageNode.Layout(parentBounds);
         }
 
         public override void Draw(Drawer id, float parentAlpha)
         {
             base.Draw(id, parentAlpha);
-            StageNode?.Draw(id, parentAlpha);   
+            StageNode.Draw(id, parentAlpha);
+        }
+
+        public override void DrawChildren(Drawer id, float parentAlpha)
+        {
+            foreach (Node n in Children)
+            {
+                if (n == StageNode)
+                    continue;
+
+                if (n.Drawable)
+                {
+                    n.Draw(id, parentAlpha * Alpha);
+                }
+            }
         }
 
         public abstract bool HasResult();

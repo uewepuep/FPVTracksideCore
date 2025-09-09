@@ -35,6 +35,7 @@ namespace Composition.Text
 
         void Draw(Drawer id, Rectangle target, RectangleAlignment alignment, Scale scale, Color tint, float alpha);
         void Draw(Drawer id, RectangleF target, RectangleAlignment alignment, Scale scale, Color tint, float alpha);
+        void Draw(Drawer id, Rectangle target, RectangleAlignment alignment, Scale scale, Color tint, Vector2 origin, float rotation);
         Texture2D TextToTexture(GraphicsDevice graphicsDevice, Color textColor, string font, float point, string text);
 
         void SavePNG(string filename);
