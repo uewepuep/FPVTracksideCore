@@ -19,6 +19,36 @@ namespace Composition.Nodes
             rotation = MathHelper.ToRadians(-90);
         }
 
+        public override void UpdateGeometry()
+        {
+            ITextRenderer textRenderer = this.textRenderer;
+            if (textRenderer == null)
+                return;
+
+            if (needsUpdate == UpdateTypes.Geometry || needsUpdate == UpdateTypes.Size)
+            {
+                needsUpdate = UpdateTypes.Texture;
+
+                int newHeight = height;
+
+                if (height == 0 || !IsAnimatingSize())
+                {
+                    newHeight = Bounds.Width;
+                }
+
+                if (textRenderer == null)
+                    return;
+
+                int width = -1;
+
+                if (textRenderer == null)
+                    return;
+
+                textRenderer.CreateGeometry(width, newHeight, DrawingText, Style);
+                height = newHeight;
+            }
+        }
+
         public override void Draw(Drawer id, float parentAlpha)
         {
             DebugTimer.DebugStartTime(this);
@@ -80,6 +110,7 @@ namespace Composition.Nodes
                 {
                     scale = Composition.Text.Scale.Disallowed;
                 }
+                scale = Composition.Text.Scale.Disallowed;
 
                 // Don't draw if geometry is wrong.
                 if (needsUpdate != UpdateTypes.Geometry)

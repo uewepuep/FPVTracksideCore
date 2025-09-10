@@ -194,7 +194,7 @@ namespace Composition.Nodes
             }
         }
 
-        public void UpdateGeometry()
+        public virtual void UpdateGeometry()
         {
             ITextRenderer textRenderer = this.textRenderer;
             if (textRenderer == null)

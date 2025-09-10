@@ -34,6 +34,7 @@ namespace UI.Nodes.Rounds
 
         public Color Color { get; private set; }
 
+        public TitleNode Title { get; private set; }
 
         public StageNode(RoundsNode roundsNode, EventManager eventManager, Stage stage)
         {
@@ -52,6 +53,9 @@ namespace UI.Nodes.Rounds
             borderNode = new BorderNode(Color);
             borderNode.Width = 2;
             AddChild(borderNode);
+
+            Title = new TitleNode(Stage.Name, Color);   
+            AddChild(Title);
         }
 
         public void SetNodes(IEnumerable<Node> nodes)
@@ -67,14 +71,20 @@ namespace UI.Nodes.Rounds
         {
             lock (toWrap)
             {
+                int padding = borderNode.Width;
+                int titleWidth = 20;
                 int right = toWrap.Select(e => e.Bounds.Right).Max();
                 int left = toWrap.Select(e => e.Bounds.X).Min();
 
-                int padding = borderNode.Width;
+                RectangleF titleBounds = parentBounds;
+                titleBounds.X = left - titleWidth;
+                titleBounds.Width = titleWidth;
+                Title.Layout(titleBounds);
+
                 left -= padding;
                 right += padding;
 
-                RectangleF bounds = new RectangleF(left, parentBounds.Y, (right - left), parentBounds.Height);
+                RectangleF bounds = new RectangleF(left - titleWidth, parentBounds.Y, (right - left) + titleWidth, parentBounds.Height);
                 SetBounds(bounds, BoundsF);
                 borderNode.Layout(bounds);
             }
@@ -142,6 +152,22 @@ namespace UI.Nodes.Rounds
                 bounds.Height / parentBounds.Height
                 );
             BoundsF = bounds;
+        }
+    }
+
+    public class TitleNode : Node
+    {
+        public TextNode TextNode { get; private set; }
+
+        public ColorNode ColorNode { get; private set; }
+
+        public TitleNode(string text, Color color) 
+        {
+            ColorNode = new ColorNode(color);
+            AddChild(ColorNode);
+
+            TextNode = new TextVerticalNode(text, Theme.Current.Rounds.Text.XNA);
+            AddChild(TextNode);
         }
     }
 }

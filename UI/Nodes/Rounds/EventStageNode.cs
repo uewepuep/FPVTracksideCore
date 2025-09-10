@@ -1,4 +1,5 @@
 ﻿using Composition;
+using Composition.Input;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
@@ -50,7 +51,12 @@ namespace UI.Nodes.Rounds
         public override void Layout(RectangleF parentBounds)
         {
             base.Layout(parentBounds);
-            StageNode.Layout(parentBounds);
+
+            RectangleF adjustedBounds = parentBounds;
+            adjustedBounds.Y = BoundsF.Y;
+            adjustedBounds.Height = BoundsF.Height;
+
+            StageNode.Layout(adjustedBounds);
         }
 
         public override void Draw(Drawer id, float parentAlpha)

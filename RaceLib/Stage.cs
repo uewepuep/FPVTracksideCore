@@ -65,7 +65,7 @@ namespace RaceLib
             IEnumerable<Round> rounds = roundManager.GetStageRounds(this);
             if (rounds.Any())
             {
-                Name = string.Join(", ", rounds.Select(r => r.ToStringShort()));   
+                Name = "Stage " + string.Join(", ", rounds.Select(r => r.ToStringShort()));   
             }
         }
 

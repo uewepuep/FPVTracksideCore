@@ -527,6 +527,15 @@ namespace UI.Nodes.Rounds
 
         public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
         {
+            IEnumerable<StageNode> stageNodes = EventStageNodes.Select(e => e.StageNode).Distinct();
+            foreach (StageNode stageNode in stageNodes)
+            {
+                if (stageNode.OnDrop(finalInputEvent, node))
+                {
+                    return true;
+                }
+            }
+
             EventRoundNode dropped = node as EventRoundNode;
             if (dropped != null)
             {
