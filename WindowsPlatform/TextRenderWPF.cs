@@ -286,16 +286,15 @@ namespace WindowsPlatform
                     return;
 
                 Microsoft.Xna.Framework.Rectangle sourceBounds = new Microsoft.Xna.Framework.Rectangle(0, 0, texture.Width, texture.Height);
+                Microsoft.Xna.Framework.Rectangle sourceRotatedBounds = new Microsoft.Xna.Framework.Rectangle(0, 0, texture.Height, texture.Width);
+
 
                 scaleFactor = 1;
 
-                bool scaleImage = target.Width < texture.Width || scale == Scale.Force;
-                if (scale != Scale.Disallowed)
-                {
-                    scaleFactor = Maths.ScaleFactor(target, sourceBounds, FitType.FitBoth);
-                }
+                Microsoft.Xna.Framework.Rectangle boundsRotated = Maths.FitBoxMaintainAspectRatio(target, sourceRotatedBounds, scaleFactor, alignment);
 
-                Microsoft.Xna.Framework.Rectangle bounds = Maths.FitBoxMaintainAspectRatio(target, sourceBounds, scaleFactor, alignment);
+                Microsoft.Xna.Framework.Rectangle bounds = new Microsoft.Xna.Framework.Rectangle(boundsRotated.X, boundsRotated.Y, boundsRotated.Height, boundsRotated.Width);
+
                 offsetX = target.X - bounds.X;
                 offsetY = target.Y - bounds.Y;
                 id.Draw(texture, sourceBounds, bounds, tint, rotation, origin);

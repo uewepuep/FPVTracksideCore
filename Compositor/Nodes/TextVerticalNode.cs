@@ -110,7 +110,6 @@ namespace Composition.Nodes
                 {
                     scale = Composition.Text.Scale.Disallowed;
                 }
-                scale = Composition.Text.Scale.Disallowed;
 
                 // Don't draw if geometry is wrong.
                 if (needsUpdate != UpdateTypes.Geometry)
