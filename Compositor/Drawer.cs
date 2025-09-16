@@ -84,7 +84,12 @@ namespace Composition
 
         public void QuickDraw(Rectangle dest)
         {
-            Draw(TextureCache.GetTextureFromColor(Color.Green), dest, Color.White, 0.5f);
+            QuickDraw(dest, Color.Green);
+        }
+
+        public void QuickDraw(Rectangle dest, Color color)
+        {
+            Draw(TextureCache.GetTextureFromColor(color), dest, Color.White, 0.5f);
         }
 
         public void Draw(Texture2D texture, Rectangle dest, Color tint, float alpha)
@@ -141,6 +146,19 @@ namespace Composition
             scale.Y *= 1.0f / texture.Height;
 
             SpriteBatch.Draw(texture, point, null, Color.White, angle, origin, scale, SpriteEffects.None, 0);
+        }
+
+        public void DrawRect(Rectangle rectangle, Color color, float thickness = 1f)
+        {
+            Vector2 tl = new Vector2(rectangle.X, rectangle.Y);
+            Vector2 tr = new Vector2(rectangle.Right, rectangle.Y);
+            Vector2 bl = new Vector2(rectangle.X, rectangle.Bottom);
+            Vector2 br = new Vector2(rectangle.Right, rectangle.Bottom);
+
+            DrawLine(tl, tr, color, thickness);
+            DrawLine(tr, br, color, thickness);
+            DrawLine(br, bl, color, thickness);
+            DrawLine(bl, tl, color, thickness);
         }
 
         public void PushClipRectangle(Rectangle clip)

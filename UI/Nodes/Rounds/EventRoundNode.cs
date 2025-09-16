@@ -1,18 +1,19 @@
-﻿using Composition.Nodes;
+﻿using Composition;
+using Composition.Input;
+using Composition.Layers;
+using Composition.Nodes;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using RaceLib;
+using RaceLib.Game;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Xna.Framework;
-using Composition;
-using Composition.Input;
 using Tools;
-using Composition.Layers;
-using Microsoft.Xna.Framework.Input;
-using System.ComponentModel;
-using RaceLib.Game;
+using UI.Video;
 
 namespace UI.Nodes.Rounds
 {
@@ -516,6 +517,15 @@ namespace UI.Nodes.Rounds
                     yield return pilot;
                 }
             }
+        }
+
+        public override Rectangle? CanDrop(MouseInputEvent finalInputEvent, Node node)
+        {
+            EventRaceNode draggedRaceNode = node as EventRaceNode;
+            if (draggedRaceNode != null)
+                return Bounds;
+
+            return base.CanDrop(finalInputEvent, node);
         }
 
         public override bool OnDrop(MouseInputEvent mouseInputEvent, Node node)

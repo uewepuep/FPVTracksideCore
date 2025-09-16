@@ -607,11 +607,21 @@ namespace UI.Nodes.Rounds
             return base.OnMouseInput(mouseInputEvent);
         }
 
-        public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
+        public override Rectangle? CanDrop(MouseInputEvent finalInputEvent, Node node)
         {
             PilotRaceInfoNode prin = node as PilotRaceInfoNode;
             IPilot ipilotnode = node as IPilot;
 
+            if (ipilotnode != null || prin != null)
+                return Bounds;
+
+            return base.CanDrop(finalInputEvent, node);
+        }
+
+        public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
+        {
+            PilotRaceInfoNode prin = node as PilotRaceInfoNode;
+            IPilot ipilotnode = node as IPilot;
             if (ipilotnode == null)
                 return false;
 

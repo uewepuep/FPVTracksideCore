@@ -468,6 +468,22 @@ namespace Composition.Nodes
             return false;
         }
 
+        public virtual Rectangle? CanDrop(MouseInputEvent mouseInputEvent, Node node)
+        {
+            foreach (Node child in VisibleChildren.Reverse().ToArray())
+            {
+                if (child.Contains(mouseInputEvent.Position))
+                {
+                    Rectangle? o = child.CanDrop(mouseInputEvent, node);
+                    if (o != null)
+                    {
+                        return o;
+                    }
+                }
+            }
+            return null;
+        }
+
         public virtual bool OnDrop(MouseInputEvent finalInputEvent, Node node)
         {
             foreach (Node child in VisibleChildren.Reverse().ToArray())

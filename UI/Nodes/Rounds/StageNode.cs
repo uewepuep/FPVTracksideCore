@@ -119,6 +119,15 @@ namespace UI.Nodes.Rounds
             }
         }
 
+        public override Rectangle? CanDrop(MouseInputEvent finalInputEvent, Node node)
+        {
+            EventRoundNode eventRoundNode = node as EventRoundNode;
+            if (eventRoundNode != null)
+                return Bounds;
+
+            return base.CanDrop(finalInputEvent, node);
+        }
+
         public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
         {
             EventRoundNode eventRoundNode = node as EventRoundNode;

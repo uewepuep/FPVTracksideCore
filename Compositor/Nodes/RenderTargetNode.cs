@@ -461,6 +461,23 @@ namespace Composition.Nodes
             return output;
         }
 
+
+        public override Rectangle? CanDrop(MouseInputEvent mouseInputEvent, Node node)
+        {
+            MouseInputEvent translated = Translate(mouseInputEvent);
+
+            Rectangle? output = base.CanDrop(translated, node);
+
+            if (output != null)
+            {
+                Rectangle rectangle = output.Value;
+                rectangle.X += Bounds.X;
+                rectangle.Y += Bounds.Y;
+                return rectangle;
+            }
+            return null;
+        }
+
         public override bool OnDrop(MouseInputEvent mouseInputEvent, Node node)
         {
             MouseInputEvent translated = Translate(mouseInputEvent);

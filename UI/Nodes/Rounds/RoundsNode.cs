@@ -525,6 +525,15 @@ namespace UI.Nodes.Rounds
             return base.OnMouseInput(mouseInputEvent);
         }
 
+        public override Rectangle? CanDrop(MouseInputEvent finalInputEvent, Node node)
+        {
+            EventRoundNode dropped = node as EventRoundNode;
+            if (dropped != null)
+                return Bounds;
+
+            return base.CanDrop(finalInputEvent, node);
+        }
+
         public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
         {
             IEnumerable<StageNode> stageNodes = EventStageNodes.Select(e => e.StageNode).Distinct();

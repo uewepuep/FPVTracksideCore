@@ -963,6 +963,19 @@ namespace UI.Nodes
             return base.ToString();
         }
 
+        public override Rectangle? CanDrop(MouseInputEvent finalInputEvent, Node node)
+        {
+            ChannelPilotNameNode otherPilotNameNode = node as ChannelPilotNameNode;
+            if (otherPilotNameNode != null)
+                return Bounds;
+            
+            IPilot pilotNode = node as IPilot;
+            if (pilotNode != null)
+                return Bounds;
+
+            return base.CanDrop(finalInputEvent, node);
+        }
+
         public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
         {
             if (EventManager.RaceManager.CanRunRace)
