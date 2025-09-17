@@ -4,6 +4,7 @@ using Composition.Layers;
 using Composition.Nodes;
 using ExternalData;
 using Microsoft.Xna.Framework;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.Engineering;
 using RaceLib;
 using RaceLib.Format;
 using System;
@@ -528,10 +529,35 @@ namespace UI.Nodes.Rounds
         public override Rectangle? CanDrop(MouseInputEvent finalInputEvent, Node node)
         {
             EventRoundNode dropped = node as EventRoundNode;
-            if (dropped != null)
-                return Bounds;
+            if (dropped == null)
+                return base.CanDrop(finalInputEvent, node);
 
-            return base.CanDrop(finalInputEvent, node);
+
+            Node found = FindDragTarget(finalInputEvent.Position.X);
+            Point location;
+            if (found == null)
+            {
+                found = RoundNodes.OrderBy(r => r.Bounds.X).LastOrDefault();
+                if (found != null)
+                {
+                    location = found.Bounds.Location;
+                    location.Y += found.Bounds.Height + 10;
+                }
+                else
+                {
+                    location = Bounds.Location;
+                }
+            }
+            else
+            {
+                location = found.Bounds.Location;
+            }
+
+            Rectangle output = new Rectangle(location, dropped.Bounds.Size);
+            output.Width = 2;
+            output.X -= 5;
+
+            return output;
         }
 
         public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
@@ -559,37 +585,48 @@ namespace UI.Nodes.Rounds
             return base.OnDrop(finalInputEvent, node);
         }
 
+        public Node FindDragTarget(float positionX)
+        {
+            foreach (EventRoundNode ern in RoundNodes.OrderBy(rn => rn.Bounds.X))
+            {
+                if (ern.Bounds.Center.X > positionX)
+                {
+                    return ern;
+                }
+            }
+            return null;
+        }
+
         public void OrderByDrop(EventRoundNode dropped, float positionX)
         {
-            int order = 100;
-            EventRoundNode prev;
-            bool done = false;
-            foreach (EventRoundNode ern in RoundNodes.OrderBy(rn => rn.Bounds.X))
+            Node found = FindDragTarget(positionX);
+
+            const int inc = 100;
+            int order = inc;
+            foreach (EventRoundNode ern in RoundNodes.OrderBy(rn => rn.Round.Order))
             {
                 if (ern == dropped)
                     continue;
 
-                if (ern.Bounds.Center.X > positionX && !done)
+                if (ern == found)
                 {
-                    done = true;
                     dropped.Round.Order = order;
-                    order += 100;
+                    order += inc;
                 }
 
                 ern.Round.Order = order;
-                order += 100;
-
-                prev = ern;
+                order += inc;
             }
 
-            if (!done)
+            if (found == null)
             {
                 dropped.Round.Order = order;
             }
 
+            Round[] rounds = RoundNodes.Select(r => r.Round).ToArray();
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
-                db.Update(RoundNodes.Select(r => r.Round));
+                db.Update(rounds);
             }
 
             Refresh();

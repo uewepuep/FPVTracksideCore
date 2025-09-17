@@ -519,13 +519,41 @@ namespace UI.Nodes.Rounds
             }
         }
 
-        public override Rectangle? CanDrop(MouseInputEvent finalInputEvent, Node node)
+        public override Rectangle? CanDrop(MouseInputEvent mouseInputEvent, Node node)
         {
             EventRaceNode draggedRaceNode = node as EventRaceNode;
             if (draggedRaceNode != null)
-                return Bounds;
+            {
+                MouseInputEvent translated = Translate(mouseInputEvent);
 
-            return base.CanDrop(finalInputEvent, node);
+                Node n = FindDragTarget(translated);
+                Point location;
+                if (n == null)
+                {
+                    n = RaceNodes.OrderBy(r => r.Race.RaceNumber).LastOrDefault();
+                    if (n != null)
+                    {
+                        location = n.Bounds.Location;
+                        location.Y += n.Bounds.Height + 10;
+                    }
+                    else
+                    {
+                        location = contentContainer.Bounds.Location;
+                    }
+                }
+                else
+                {
+                    location = n.Bounds.Location;
+                }
+
+                Rectangle output = new Rectangle(location, draggedRaceNode.Bounds.Size);
+                output.Height = 2;
+                output.Y -= 5;
+
+                return TranslateBack(output);
+            }
+
+            return base.CanDrop(mouseInputEvent, node);
         }
 
         public override bool OnDrop(MouseInputEvent mouseInputEvent, Node node)
@@ -550,32 +578,25 @@ namespace UI.Nodes.Rounds
                     {
                         draggedRace.Round = Round;
 
-                        bool found = false;
+                        Node found = FindDragTarget(translated);
+
                         int number = 1;
-
-                        foreach (EventRaceNode racenode in RaceNodes.Except(new EventRaceNode[] { draggedRaceNode }).OrderBy(r => r.Race.RaceNumber))
+                        foreach (EventRaceNode racenode in RaceNodes.OrderBy(r => r.Race.RaceNumber))
                         {
+                            if (racenode == draggedRaceNode)
+                                continue;
 
-                            if (racenode.Bounds.Bottom > translated.Position.Y
-                             && racenode.Bounds.Right > translated.Position.X
-                             && racenode.Bounds.Left < translated.Position.X
-                             && !found)
+                            if (racenode == found)
                             {
-                                found = true;
                                 draggedRace.RaceNumber = number;
                                 number++;
+                            }
 
-                                racenode.Race.RaceNumber = number;
-                                number++;
-                            }
-                            else
-                            {
-                                racenode.Race.RaceNumber = number;
-                                number++;
-                            }
+                            racenode.Race.RaceNumber = number;
+                            number++;
                         }
 
-                        if (!found)
+                        if (found == null)
                         {
                             draggedRace.RaceNumber = number;
                         }
@@ -592,6 +613,21 @@ namespace UI.Nodes.Rounds
             }
 
             return base.OnDrop(mouseInputEvent, node);
+        }
+
+        public EventRaceNode FindDragTarget(MouseInputEvent translated)
+        {
+            foreach (EventRaceNode racenode in RaceNodes.OrderBy(r => r.Race.RaceNumber))
+            {
+                if (racenode.Bounds.Bottom > translated.Position.Y
+                             && racenode.Bounds.Right > translated.Position.X
+                             && racenode.Bounds.Left < translated.Position.X)
+                {
+                    return racenode;
+                }
+            }
+
+            return null;
         }
     }
 }

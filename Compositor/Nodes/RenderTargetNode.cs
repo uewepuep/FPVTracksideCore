@@ -461,6 +461,10 @@ namespace Composition.Nodes
             return output;
         }
 
+        public Rectangle TranslateBack(Rectangle rect)
+        {
+            return new Rectangle(rect.X + Bounds.X, rect.Y + Bounds.Y, rect.Width, rect.Height);
+        }
 
         public override Rectangle? CanDrop(MouseInputEvent mouseInputEvent, Node node)
         {

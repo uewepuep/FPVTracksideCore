@@ -91,7 +91,6 @@ namespace Composition.Layers
 
         public override bool OnMouseInput(MouseInputEvent inputEvent)
         {
-            bool result = false;
             if (DragStart != null && DragNode != null)
             {
                 DragDistance = inputEvent.ScreenPosition - DragStart.ScreenPosition;
@@ -111,7 +110,6 @@ namespace Composition.Layers
                         if (OverDragThreshold)
                         {
                             FinishDrag(inputEvent);
-                            result = true;
                         }
                         else
                         {
@@ -120,13 +118,10 @@ namespace Composition.Layers
                     }
                 }
 
-                if (inputEvent.ButtonState != ButtonStates.None && OverDragThreshold)
-                {
-                    result = true;
-                }
+                return true;
             }
 
-            return result;
+            return false;
         }
 
         public Rectangle? CanDrop(MouseInputEvent inputEvent)
