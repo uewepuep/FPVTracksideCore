@@ -636,8 +636,10 @@ namespace RaceLib
                 {
                     stage.PointSummary = new PointSummary(ResultManager.PointsSettings);
                 }
-
-                DeleteStage(stage);
+                else
+                {
+                    DeleteStage(stage);
+                }
 
                 db.Update(stage);
             }

@@ -43,19 +43,19 @@ namespace UI.Nodes.Rounds
             RoundsNode = roundsNode;
             Color = Theme.Current.Rounds.Heading.XNA;
 
-            if (stage != null && stage.Color != Color.Transparent)
-            {
-                Color = stage.Color;
-            }
-
             toWrap = new List<Node>();
 
             borderNode = new BorderNode(Color);
             borderNode.Width = 2;
             AddChild(borderNode);
 
-            Title = new TitleNode(Stage.Name, Color);   
-            AddChild(Title);
+            if (stage != null && stage.Color != Color.Transparent)
+            {
+                Color = stage.Color;
+
+                Title = new TitleNode(stage.Name, Color);
+                AddChild(Title);
+            }
         }
 
         public void SetNodes(IEnumerable<Node> nodes)
@@ -76,10 +76,13 @@ namespace UI.Nodes.Rounds
                 int right = toWrap.Select(e => e.Bounds.Right).Max();
                 int left = toWrap.Select(e => e.Bounds.X).Min();
 
-                RectangleF titleBounds = parentBounds;
-                titleBounds.X = left - titleWidth;
-                titleBounds.Width = titleWidth;
-                Title.Layout(titleBounds);
+                if (Title != null)
+                {
+                    RectangleF titleBounds = parentBounds;
+                    titleBounds.X = left - titleWidth;
+                    titleBounds.Width = titleWidth;
+                    Title.Layout(titleBounds);
+                }
 
                 left -= padding;
                 right += padding;

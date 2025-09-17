@@ -71,7 +71,6 @@ namespace UI.Nodes.Rounds
             TextNode instructions = new TextNode(instructionText, Theme.Current.Rounds.Text.XNA);
             instructions.Alignment = RectangleAlignment.Center;
             instructionNode.AddChild(instructions);
-
             AddChild(instructionNode);
 
             EventManager.OnEventChange += Refresh;

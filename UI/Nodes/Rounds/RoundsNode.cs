@@ -4,15 +4,11 @@ using Composition.Layers;
 using Composition.Nodes;
 using ExternalData;
 using Microsoft.Xna.Framework;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.Engineering;
 using RaceLib;
 using RaceLib.Format;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Tools;
 
 namespace UI.Nodes.Rounds
@@ -325,7 +321,9 @@ namespace UI.Nodes.Rounds
 
             foreach (EventStageNode eventStageNode in EventStageNodes.ToArray())
             {
-                if (!eventStageNode.HasResult())
+                Round lastOrDefault = EventManager.RoundManager.GetLastStageRound(eventStageNode.Stage);
+
+                if (!eventStageNode.HasResult() || eventStageNode.Round != lastOrDefault)
                 {
                     eventStageNode.Dispose();
                 }
@@ -567,6 +565,7 @@ namespace UI.Nodes.Rounds
             {
                 if (stageNode.OnDrop(finalInputEvent, node))
                 {
+                    Refresh();
                     return true;
                 }
             }
