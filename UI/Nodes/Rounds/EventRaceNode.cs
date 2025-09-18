@@ -118,6 +118,15 @@ namespace UI.Nodes.Rounds
                 }
                 heading.Scale(0.98f, 1);
 
+                if (Race.Started)
+                {
+                    TextNode time = new TextNode(Race.Start.ToShortTimeString(), Theme.Current.Rounds.Text.XNA);
+                    time.RelativeBounds = new RectangleF(0.55f, 0.30f, 0.4f, 0.4f);
+                    time.Alignment = RectangleAlignment.CenterRight;
+                    time.Alpha = 0.5f;
+                    heading.AddChild(time);
+                }
+
                 NeedsInit = false;
             }
         }
