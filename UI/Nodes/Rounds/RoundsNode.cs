@@ -24,6 +24,7 @@ namespace UI.Nodes.Rounds
         public IEnumerable<EventLapCountsNode> EventLapCountsNodes { get { return Children.OfType<EventLapCountsNode>(); } }
         public IEnumerable<EventPackCountNode> EventPackCountNodes { get { return Children.OfType<EventPackCountNode>(); } }
         public IEnumerable<EventResultNode> EventResultNodes { get { return Children.OfType<EventResultNode>(); } }
+        public IEnumerable<StageNode> StageNodes { get { return EventResultNodes.Select(e => e.StageNode).Distinct(); } }
 
         public EventManager EventManager { get; private set; }
         public RoundManager RoundManager { get { return EventManager.RoundManager; } }
@@ -524,18 +525,26 @@ namespace UI.Nodes.Rounds
             return base.OnMouseInput(mouseInputEvent);
         }
 
-        public override Rectangle? CanDrop(MouseInputEvent finalInputEvent, Node node)
+        public override Rectangle? CanDrop(MouseInputEvent mouseInputEvent, Node node)
         {
             EventRoundNode dropped = node as EventRoundNode;
             if (dropped == null)
-                return base.CanDrop(finalInputEvent, node);
+                return base.CanDrop(mouseInputEvent, node);
 
-
-            Node found = FindDragTarget(finalInputEvent.Position.X);
+            Node found = FindDragTarget(mouseInputEvent.Position.X);
             Point location;
             if (found == null)
             {
-                found = Children.OrderBy(r => r.Bounds.X).LastOrDefault();
+                StageNode stageNode = StageNodes.FirstOrDefault(s => s.Contains(mouseInputEvent.Position));
+                if (stageNode == null)
+                {
+                    found = Children.OrderBy(r => r.Bounds.X).LastOrDefault();
+                }
+                else
+                {
+                    found = RoundNodes.OrderBy(r => r.Bounds.X).LastOrDefault();
+                }
+
                 if (found != null)
                 {
                     location = found.Bounds.Location;
@@ -560,8 +569,7 @@ namespace UI.Nodes.Rounds
 
         public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
         {
-            IEnumerable<StageNode> stageNodes = EventResultNodes.Select(e => e.StageNode).Distinct();
-            foreach (StageNode stageNode in stageNodes)
+            foreach (StageNode stageNode in StageNodes)
             {
                 if (!stageNode.Contains(finalInputEvent.Position))
                     continue;
