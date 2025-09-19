@@ -232,83 +232,6 @@ namespace UI.Nodes.Rounds
                     AddChild(ern);
                 }
                 ern.SetRaces(roundRaces);
-
-                Stage stage = round.Stage;
-                if (stage != null)
-                {
-                    Round lastOrDefault = EventManager.RoundManager.GetLastStageRound(stage);
-                    if (lastOrDefault != round)
-                        continue;
-
-                    if (stage.PointSummary != null)
-                    {
-                        EventPointsNode esn = EventPointsNodes.FirstOrDefault(d => d.Round == round);
-                        if (esn == null && ern != null)
-                        {
-                            esn = new EventPointsNode(this, EventManager, round);
-                            esn.RemoveRound += ToggleSumPoints;
-                            HookUp(esn);
-                            AddChild(esn);
-                        }
-                        else
-                        {
-                            esn.Refresh();
-                            RequestLayout();
-                        }
-                    }
-
-                    if (stage.TimeSummary != null)
-                    {
-                        EventLapsTimesNode esn = EventTimesNodes.FirstOrDefault(d => d.Round == round);
-                        if (esn == null && ern != null)
-                        {
-                            esn = new EventLapsTimesNode(this, EventManager, round);
-                            esn.RemoveRound += ToggleTimePoints;
-                            HookUp(esn);
-                            AddChild(esn);
-                        }
-                        else
-                        {
-                            esn.Refresh();
-                            RequestLayout();
-                        }
-                    }
-
-                    if (stage.PackCountAfterRound)
-                    {
-                        EventPackCountNode esn = EventPackCountNodes.FirstOrDefault(d => d.Round == round);
-                        if (esn == null && ern != null)
-                        {
-                            esn = new EventPackCountNode(this, EventManager, round);
-                            esn.RemoveRound += TogglePackCount;
-                            HookUp(esn);
-                            AddChild(esn);
-                        }
-                        else
-                        {
-                            esn.Refresh();
-                            RequestLayout();
-                        }
-                    }
-
-                    if (stage.LapCountAfterRound)
-                    {
-                        EventLapCountsNode esn = EventLapCountsNodes.FirstOrDefault(d => d.Round == round);
-                        if (esn == null && ern != null)
-                        {
-                            esn = new EventLapCountsNode(this, EventManager, round);
-                            esn.RemoveRound += ToggleLapCount;
-                            HookUp(esn);
-                            AddChild(esn);
-                        }
-                        else
-                        {
-                            esn.Refresh();
-                            RequestLayout();
-                        }
-                    }
-
-                }
             }
 
             foreach (var ern in RoundNodes.ToArray())
@@ -316,6 +239,79 @@ namespace UI.Nodes.Rounds
                 if (!rounds.Contains(ern.Round))
                 {
                     ern.Dispose();
+                }
+            }
+
+            Stage[] stages = rounds.Select(r => r.Stage).Where(s => s != null).Distinct().ToArray();
+            foreach (Stage stage in stages) 
+            {
+                Round round = EventManager.RoundManager.GetLastStageRound(stage);
+                if (stage.PointSummary != null)
+                {
+                    EventPointsNode esn = EventPointsNodes.FirstOrDefault(d => d.Round == round);
+                    if (esn == null)
+                    {
+                        esn = new EventPointsNode(this, EventManager, round);
+                        esn.RemoveRound += ToggleSumPoints;
+                        HookUp(esn);
+                        AddChild(esn);
+                    }
+                    else
+                    {
+                        esn.Refresh();
+                        RequestLayout();
+                    }
+                }
+
+                if (stage.TimeSummary != null)
+                {
+                    EventLapsTimesNode esn = EventTimesNodes.FirstOrDefault(d => d.Round == round);
+                    if (esn == null)
+                    {
+                        esn = new EventLapsTimesNode(this, EventManager, round);
+                        esn.RemoveRound += ToggleTimePoints;
+                        HookUp(esn);
+                        AddChild(esn);
+                    }
+                    else
+                    {
+                        esn.Refresh();
+                        RequestLayout();
+                    }
+                }
+
+                if (stage.PackCountAfterRound)
+                {
+                    EventPackCountNode esn = EventPackCountNodes.FirstOrDefault(d => d.Round == round);
+                    if (esn == null)
+                    {
+                        esn = new EventPackCountNode(this, EventManager, round);
+                        esn.RemoveRound += TogglePackCount;
+                        HookUp(esn);
+                        AddChild(esn);
+                    }
+                    else
+                    {
+                        esn.Refresh();
+                        RequestLayout();
+                    }
+                }
+
+                if (stage.LapCountAfterRound)
+                {
+                    EventLapCountsNode esn = EventLapCountsNodes.FirstOrDefault(d => d.Round == round);
+                    if (esn == null)
+                    {
+                        esn = new EventLapCountsNode(this, EventManager, round);
+                        esn.RemoveRound += ToggleLapCount;
+                        HookUp(esn);
+                        AddChild(esn);
+                    }
+                    else
+                    {
+                        esn.Refresh();
+                        RequestLayout();
+                    }
                 }
             }
 
@@ -521,6 +517,10 @@ namespace UI.Nodes.Rounds
         {
             Scroller.OnMouseInput(mouseInputEvent);
 
+            foreach (EventStageNode eventStageNode in EventStageNodes)
+            {
+                eventStageNode.StageNode.OnMouseInput(mouseInputEvent); 
+            }
             return base.OnMouseInput(mouseInputEvent);
         }
 

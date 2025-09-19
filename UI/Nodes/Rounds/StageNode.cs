@@ -1,4 +1,5 @@
 ﻿using Composition.Input;
+using Composition.Layers;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
@@ -49,9 +50,10 @@ namespace UI.Nodes.Rounds
             borderNode.Width = 2;
             AddChild(borderNode);
 
-            if (stage != null && stage.Color != Color.Transparent)
+            if (stage != null)
             {
-                Color = stage.Color;
+                if (stage.Color != Color.Transparent)
+                    Color = stage.Color;
 
                 Title = new TitleNode(stage.Name, Color);
                 AddChild(Title);
@@ -164,6 +166,37 @@ namespace UI.Nodes.Rounds
                 bounds.Height / parentBounds.Height
                 );
             BoundsF = bounds;
+        }
+
+
+        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
+        {
+            if (mouseInputEvent.Button == MouseButtons.Right && mouseInputEvent.ButtonState == ButtonStates.Released && Title.Contains(mouseInputEvent.Position))
+            {
+                MouseMenu mm = new MouseMenu(this);
+
+                mm.AddItem("Edit Stage", EditStage);
+
+                mm.Show(mouseInputEvent);
+            }
+            return base.OnMouseInput(mouseInputEvent);
+        }
+
+
+        private void EditStage()
+        {
+            ObjectEditorNode<Stage> editor = new ObjectEditorNode<Stage>(Stage);
+            GetLayer<PopupLayer>().Popup(editor);
+            editor.OnOK += (r) =>
+            {
+                if (editor.Selected != null)
+                {
+                    using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                    {
+                        db.Upsert(editor.Selected);
+                    }
+                }
+            };
         }
     }
 
