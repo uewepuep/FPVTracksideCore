@@ -156,11 +156,16 @@ namespace Composition.Nodes
                         break;
 
                     default:
-                        Text += inputEvent.Character;
+
+                        string text = Text.Substring(0, cursorIndex);
+                        text += inputEvent.Character;
+                        text += Text.Substring(cursorIndex);
+                        Text = text;
+
+                        cursorIndex++;
                         break;
                 }
 
-                cursorIndex = Text.Length;
 
                 RequestRedraw();
                 TextChanged?.Invoke(Text);
