@@ -12,7 +12,7 @@ using Tools;
 
 namespace UI.Nodes.Rounds
 {
-    public abstract class EventStageNode : EventXNode
+    public abstract class EventResultNode : EventXNode
     {
         public StageNode StageNode { get; set; }
 
@@ -24,7 +24,7 @@ namespace UI.Nodes.Rounds
             }
         }
 
-        public EventStageNode(RoundsNode roundsNode, EventManager ev, Round round) 
+        public EventResultNode(RoundsNode roundsNode, EventManager ev, Round round) 
             : base(ev, round)
         {
             StageNode = new StageNode(roundsNode, ev, round.Stage);

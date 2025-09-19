@@ -23,7 +23,7 @@ namespace UI.Nodes.Rounds
         public IEnumerable<EventLapsTimesNode> EventTimesNodes { get { return Children.OfType<EventLapsTimesNode>(); } }
         public IEnumerable<EventLapCountsNode> EventLapCountsNodes { get { return Children.OfType<EventLapCountsNode>(); } }
         public IEnumerable<EventPackCountNode> EventPackCountNodes { get { return Children.OfType<EventPackCountNode>(); } }
-        public IEnumerable<EventStageNode> EventStageNodes { get { return Children.OfType<EventStageNode>(); } }
+        public IEnumerable<EventResultNode> EventResultNodes { get { return Children.OfType<EventResultNode>(); } }
 
         public EventManager EventManager { get; private set; }
         public RoundManager RoundManager { get { return EventManager.RoundManager; } }
@@ -315,13 +315,13 @@ namespace UI.Nodes.Rounds
                 }
             }
 
-            foreach (EventStageNode eventStageNode in EventStageNodes.ToArray())
+            foreach (EventResultNode eventResultNode in EventResultNodes.ToArray())
             {
-                Round lastOrDefault = EventManager.RoundManager.GetLastStageRound(eventStageNode.Stage);
+                Round lastOrDefault = EventManager.RoundManager.GetLastStageRound(eventResultNode.Stage);
 
-                if (!eventStageNode.HasResult() || eventStageNode.Round != lastOrDefault)
+                if (!eventResultNode.HasResult() || eventResultNode.Round != lastOrDefault)
                 {
-                    eventStageNode.Dispose();
+                    eventResultNode.Dispose();
                 }
             }
 
@@ -517,9 +517,9 @@ namespace UI.Nodes.Rounds
         {
             Scroller.OnMouseInput(mouseInputEvent);
 
-            foreach (EventStageNode eventStageNode in EventStageNodes)
+            foreach (EventResultNode eventResult in EventResultNodes)
             {
-                eventStageNode.StageNode.OnMouseInput(mouseInputEvent); 
+                eventResult.StageNode.OnMouseInput(mouseInputEvent); 
             }
             return base.OnMouseInput(mouseInputEvent);
         }
@@ -535,11 +535,11 @@ namespace UI.Nodes.Rounds
             Point location;
             if (found == null)
             {
-                found = RoundNodes.OrderBy(r => r.Bounds.X).LastOrDefault();
+                found = Children.OrderBy(r => r.Bounds.X).LastOrDefault();
                 if (found != null)
                 {
                     location = found.Bounds.Location;
-                    location.Y += found.Bounds.Height + 10;
+                    location.X += found.Bounds.Width + 10;
                 }
                 else
                 {
@@ -560,9 +560,12 @@ namespace UI.Nodes.Rounds
 
         public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
         {
-            IEnumerable<StageNode> stageNodes = EventStageNodes.Select(e => e.StageNode).Distinct();
+            IEnumerable<StageNode> stageNodes = EventResultNodes.Select(e => e.StageNode).Distinct();
             foreach (StageNode stageNode in stageNodes)
             {
+                if (!stageNode.Contains(finalInputEvent.Position))
+                    continue;
+
                 if (stageNode.OnDrop(finalInputEvent, node))
                 {
                     Refresh();
@@ -586,7 +589,7 @@ namespace UI.Nodes.Rounds
 
         public Node FindDragTarget(float positionX)
         {
-            foreach (EventRoundNode ern in RoundNodes.OrderBy(rn => rn.Bounds.X))
+            foreach (Node ern in Children)
             {
                 if (ern.Bounds.Center.X > positionX)
                 {
@@ -602,19 +605,23 @@ namespace UI.Nodes.Rounds
 
             const int inc = 100;
             int order = inc;
-            foreach (EventRoundNode ern in RoundNodes.OrderBy(rn => rn.Round.Order))
+            foreach (Node node in Children)
             {
-                if (ern == dropped)
+                if (node == dropped)
                     continue;
 
-                if (ern == found)
+                if (node == found)
                 {
                     dropped.Round.Order = order;
                     order += inc;
                 }
 
-                ern.Round.Order = order;
-                order += inc;
+                EventRoundNode ern = node as EventRoundNode;
+                if (ern != null)
+                {
+                    ern.Round.Order = order;
+                    order += inc;
+                }
             }
 
             if (found == null)

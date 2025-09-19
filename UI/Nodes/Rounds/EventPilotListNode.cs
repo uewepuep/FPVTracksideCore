@@ -14,7 +14,7 @@ using Tools;
 
 namespace UI.Nodes.Rounds
 {
-    public abstract class EventPilotListNode<T> : EventStageNode where T : EventPilotNode
+    public abstract class EventPilotListNode<T> : EventResultNode where T : EventPilotNode
     {
         public IEnumerable<T> PilotNodes { get { return contentContainer.Children.OfType<T>(); } }
         public IEnumerable<TextNode> BracketNodes { get { return contentContainer.Children.OfType<TextNode>(); } }
