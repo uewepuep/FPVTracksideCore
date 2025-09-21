@@ -569,6 +569,8 @@ namespace UI.Nodes.Rounds
 
         public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
         {
+            bool hasStage = false;
+
             foreach (StageNode stageNode in StageNodes)
             {
                 if (!stageNode.Contains(finalInputEvent.Position))
@@ -577,7 +579,7 @@ namespace UI.Nodes.Rounds
                 if (stageNode.OnDrop(finalInputEvent, node))
                 {
                     Refresh();
-                    return true;
+                    hasStage = true;
                 }
             }
 
@@ -585,13 +587,19 @@ namespace UI.Nodes.Rounds
             if (dropped != null)
             {
                 OrderByDrop(dropped, finalInputEvent.Position.X);
-                RoundManager.SetStage(dropped.Round, null);
 
                 using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
                 {
                     db.Update(dropped.Round);
                 }
             }
+
+            if (!hasStage && dropped.Round.Stage != null)
+            {
+                RoundManager.SetStage(dropped.Round, null);
+                Refresh();
+            }
+
             return base.OnDrop(finalInputEvent, node);
         }
 

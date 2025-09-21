@@ -14,7 +14,7 @@ namespace UI.Nodes.Rounds
 {
     public abstract class EventResultNode : EventXNode
     {
-        public StageNode StageNode { get; set; }
+        public StageNode StageNode { get; private set; }
 
         public Stage Stage
         {
@@ -24,15 +24,16 @@ namespace UI.Nodes.Rounds
             }
         }
 
+        public RoundsNode RoundsNode { get; private set; }
+
         public EventResultNode(RoundsNode roundsNode, EventManager ev, Round round) 
             : base(ev, round)
         {
+            RoundsNode = roundsNode;
+
             StageNode = new StageNode(roundsNode, ev, round.Stage);
             StageNode.AddWrapNode(this);
             AddChild(StageNode);
-
-            var roundNodes = roundsNode.RoundNodes.Where(rn => rn.Round.Stage == Stage);
-            StageNode.AddWrapNodes(roundNodes);
 
             headingbg.Color = StageNode.Color;
             headingbg.SetFilename(null);
@@ -46,6 +47,15 @@ namespace UI.Nodes.Rounds
                     continue;
                 n.Layout(bounds);
             }
+        }
+
+        public virtual void Refresh()
+        {
+            List<Node> roundNodes = RoundsNode.RoundNodes.Where(rn => rn.Round.Stage == Stage).OfType<Node>().ToList();
+            roundNodes.Add(this);
+            StageNode.SetNodes(roundNodes);
+
+            StageNode.Refresh();
         }
 
         public override void Layout(RectangleF parentBounds)

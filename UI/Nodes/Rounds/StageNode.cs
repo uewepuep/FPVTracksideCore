@@ -195,8 +195,14 @@ namespace UI.Nodes.Rounds
                     {
                         db.Upsert(editor.Selected);
                     }
+                    RoundsNode.Refresh();
                 }
             };
+        }
+
+        public void Refresh()
+        {
+            Title.TextNode.Text = Stage.Name;
         }
     }
 

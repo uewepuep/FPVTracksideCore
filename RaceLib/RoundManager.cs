@@ -547,7 +547,6 @@ namespace RaceLib
 
                 if (stage != null)
                 {
-                    stage.AutoName(this);
                     db.Update(stage);
                 }
             }
