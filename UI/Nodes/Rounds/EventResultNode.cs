@@ -37,6 +37,8 @@ namespace UI.Nodes.Rounds
 
             headingbg.Color = StageNode.Color;
             headingbg.SetFilename(null);
+
+            UpdateRoundNodes();
         }
 
         protected override void LayoutChildren(RectangleF bounds)
@@ -49,7 +51,7 @@ namespace UI.Nodes.Rounds
             }
         }
 
-        public virtual void Refresh()
+        protected void UpdateRoundNodes()
         {
             List<Node> roundNodes = RoundsNode.RoundNodes.Where(rn => rn.Round.Stage == Stage).OfType<Node>().ToList();
             roundNodes.Add(this);
@@ -57,6 +59,7 @@ namespace UI.Nodes.Rounds
 
             StageNode.Refresh();
         }
+
 
         public override void Layout(RectangleF parentBounds)
         {

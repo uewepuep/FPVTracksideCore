@@ -126,7 +126,7 @@ namespace UI.Nodes.Rounds
 
         private bool needsRefresh;
 
-        public override void Refresh()
+        public virtual void Refresh()
         {
             needsRefresh = true;
             RequestLayout();
@@ -137,7 +137,7 @@ namespace UI.Nodes.Rounds
             if (needsRefresh)
             {
                 FormatData();
-                base.Refresh();
+                UpdateRoundNodes();
             }
 
             base.Layout(parentBounds);

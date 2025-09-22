@@ -50,6 +50,7 @@ namespace RaceLib
         public string GameTypeName { get; set; }
 
         public Color Color { get; set; }
+        public bool Valid { get; set; }
 
         public Stage()
         {
@@ -58,6 +59,7 @@ namespace RaceLib
             TimeSummary = null;
             Color = Color.Transparent;
             Name = "";
+            Valid = true;
         }
 
         public void AutoName(RoundManager roundManager)

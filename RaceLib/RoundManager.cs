@@ -508,28 +508,35 @@ namespace RaceLib
         {
             if (round.Stage == null)
             {
-                Stage stage = new Stage();
-                stage.ID = Guid.NewGuid();
-                round.Stage = stage;
-
-                if (autoAssign)
-                {
-                    IEnumerable<Round> rounds = AutoFindStageRounds(round, stage, round.EventType);
-                    foreach (Round r in rounds)
-                    {
-                        r.Stage = stage;
-                        db.Update(r);
-                    }
-                }
-                else
-                {
-                    db.Update(round);
-                }
-                stage.AutoName(this);
-
-                db.Insert(stage);
-                OnStageChanged?.Invoke();
+                CreateStage(db, round, autoAssign);
             }
+
+            return round.Stage;
+        }
+
+        public Stage CreateStage(IDatabase db, Round round, bool autoAssign = true)
+        {
+            Stage stage = new Stage();
+            stage.ID = Guid.NewGuid();
+            round.Stage = stage;
+
+            if (autoAssign)
+            {
+                IEnumerable<Round> rounds = AutoFindStageRounds(round, stage, round.EventType);
+                foreach (Round r in rounds)
+                {
+                    r.Stage = stage;
+                    db.Update(r);
+                }
+            }
+            else
+            {
+                db.Update(round);
+            }
+            stage.AutoName(this);
+
+            db.Insert(stage);
+            OnStageChanged?.Invoke();
 
             return round.Stage;
         }
@@ -578,7 +585,8 @@ namespace RaceLib
                 db.Update(r);
             }
 
-            db.Delete(stage);
+            stage.Valid = false;
+            db.Update(stage);
             OnStageChanged?.Invoke();
         }
 
@@ -630,17 +638,16 @@ namespace RaceLib
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
-                Stage stage = GetCreateStage(db, round);
-                if (stage.PointSummary == null)
+                if (round.Stage == null)
                 {
-                    stage.PointSummary = new PointSummary(ResultManager.PointsSettings);
+                    round.Stage = CreateStage(db, round);
+                    round.Stage.PointSummary = new PointSummary(ResultManager.PointsSettings);
+                    db.Update(round.Stage);
                 }
                 else
                 {
-                    DeleteStage(stage);
+                    DeleteStage(db, round.Stage);
                 }
-
-                db.Update(stage);
             }
         }
 
@@ -648,16 +655,16 @@ namespace RaceLib
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
-                Stage stage = GetCreateStage(db, round);
-                if (stage.TimeSummary == null)
+                if (round.Stage == null)
                 {
-                    stage.TimeSummary = new TimeSummary() { TimeSummaryType = type };
+                    round.Stage = CreateStage(db, round);
+                    round.Stage.TimeSummary = new TimeSummary() { TimeSummaryType = type };
+                    db.Update(round.Stage);
                 }
                 else
                 {
-                    stage.TimeSummary = null;
+                    DeleteStage(db, round.Stage);   
                 }
-                db.Update(stage);
             }
         }
 
@@ -665,9 +672,17 @@ namespace RaceLib
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
-                Stage stage = GetCreateStage(db, round);
-                stage.LapCountAfterRound = !stage.LapCountAfterRound;
-                db.Update(stage);
+                if (round.Stage == null)
+                {
+                    round.Stage = CreateStage(db, round);
+                    round.Stage.LapCountAfterRound = !round.Stage.LapCountAfterRound;
+
+                    db.Update(round.Stage);
+                }
+                else
+                {
+                    DeleteStage(db, round.Stage);
+                }
             }
         }
 
@@ -675,10 +690,17 @@ namespace RaceLib
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
-                Stage stage = GetCreateStage(db, round);
-                stage.PackCountAfterRound = !stage.PackCountAfterRound;
+                if (round.Stage == null)
+                {
+                    round.Stage = CreateStage(db, round);
+                    round.Stage.PackCountAfterRound = !round.Stage.PackCountAfterRound;
 
-                db.Update(stage);
+                    db.Update(round.Stage);
+                }
+                else
+                {
+                    DeleteStage(db, round.Stage);
+                }
             }
         }
     }

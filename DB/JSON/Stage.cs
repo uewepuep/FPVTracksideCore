@@ -21,11 +21,15 @@ namespace DB.JSON
 
         public string SheetFormatFilename { get; set; }
 
+        public bool Valid { get; set; }
+
         public Stage() { }
 
         public Stage(RaceLib.Stage obj)
             : base(obj)
         {
+            Valid = obj.Valid;
+
             if (obj.PointSummary != null)
             {
                 PointSummary = new PointSummary();
