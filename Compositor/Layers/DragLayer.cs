@@ -118,7 +118,7 @@ namespace Composition.Layers
                     }
                 }
 
-                return true;
+                return OverDragThreshold;
             }
 
             return false;

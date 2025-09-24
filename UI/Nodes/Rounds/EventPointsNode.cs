@@ -18,9 +18,14 @@ namespace UI.Nodes.Rounds
         public EventPointsNode(RoundsNode roundsNode, EventManager ev, Round round)
             : base(roundsNode, ev, round)
         {
-            SetHeading("Points");
             Refresh();
             EventManager.ResultManager.RaceResultsChanged += PointsManager_RaceResultsChanged;
+        }
+
+        public override void Refresh()
+        {
+            SetHeading("Points");
+            base.Refresh();
         }
 
         protected override void UpdateButtons()

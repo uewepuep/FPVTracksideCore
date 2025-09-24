@@ -39,6 +39,8 @@ namespace UI.Nodes.Rounds
             headingbg.SetFilename(null);
 
             UpdateRoundNodes();
+
+            canSum = canAddTimes = canAddLapCount = false;
         }
 
         protected override void LayoutChildren(RectangleF bounds)
@@ -58,6 +60,17 @@ namespace UI.Nodes.Rounds
             StageNode.SetNodes(roundNodes);
 
             StageNode.Refresh();
+        }
+
+        public override void SetHeading(string text)
+        {
+            string stage = "";
+            if (Round.Stage != null)
+            {
+                stage = Round.Stage.ToString() + " - ";
+            }
+
+            base.SetHeading(stage + text);
         }
 
 

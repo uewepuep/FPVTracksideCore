@@ -184,6 +184,11 @@ namespace RaceLib
         {
             Round newRound = GetCreateRound(RaceManager.GetMaxRoundNumber(roundPlan.CallingRound.EventType) + 1, roundPlan.CallingRound.EventType);
 
+            if (roundPlan.KeepStage)
+            {
+                newRound.Stage = roundPlan.Stage;
+            }
+
             RoundFormat roundFormat = null;
 
             switch (roundPlan.PilotSeeding)
@@ -209,7 +214,7 @@ namespace RaceLib
 
             ChaseTheAce roundFormat = new ChaseTheAce(EventManager);
 
-            RoundPlan roundPlan = new RoundPlan(EventManager, callingRound);
+            RoundPlan roundPlan = new RoundPlan(EventManager, callingRound, null);
             return Generate(roundFormat, newRound, roundPlan);
         }
 
@@ -219,7 +224,7 @@ namespace RaceLib
 
             DoubleElimination roundFormat = new DoubleElimination(EventManager);
 
-            RoundPlan roundPlan = new RoundPlan(EventManager, callingRound);
+            RoundPlan roundPlan = new RoundPlan(EventManager, callingRound, null);
             return Generate(roundFormat, newRound, roundPlan);
         }
 
@@ -229,7 +234,7 @@ namespace RaceLib
 
             RoundFormat roundFormat = new SeededFormat(EventManager);
 
-            RoundPlan roundPlan = new RoundPlan(EventManager, callingRound);
+            RoundPlan roundPlan = new RoundPlan(EventManager, callingRound, null);
             roundPlan.Pilots = pilots.ToArray();
             roundPlan.NumberOfRaces = (int)Math.Ceiling((float)roundPlan.Pilots.Length / EventManager.GetMaxPilotsPerRace());
 
@@ -242,7 +247,7 @@ namespace RaceLib
 
             RoundFormat roundFormat = new TopFormat(EventManager);
 
-            RoundPlan roundPlan = new RoundPlan(EventManager, callingRound);
+            RoundPlan roundPlan = new RoundPlan(EventManager, callingRound, null);
             roundPlan.Pilots = pilots.ToArray();
             roundPlan.NumberOfRaces = (int)Math.Ceiling((float)roundPlan.Pilots.Length / EventManager.GetMaxPilotsPerRace());
 
@@ -370,11 +375,12 @@ namespace RaceLib
             return !RaceManager.GetRaces(round).Any();
         }
 
-        public Round CreateEmptyRound(EventTypes eventType)
+        public Round CreateEmptyRound(EventTypes eventType, Stage stage = null)
         {
             int maxRoundNumber = RaceManager.GetMaxRoundNumber(eventType);
 
             Round newRound = GetCreateRound(maxRoundNumber + 1, eventType);
+            newRound.Stage = stage;
             OnRoundAdded?.Invoke();
 
             return newRound;
@@ -453,6 +459,7 @@ namespace RaceLib
 
             Round newRound = GetCreateRound(maxRound + 1, round.EventType);
             newRound.RoundType = round.RoundType;
+            newRound.Stage = round.Stage;
 
             List<Race> newRaces = new List<Race>();
             foreach (Race race in races)
@@ -477,7 +484,7 @@ namespace RaceLib
             Round newRound = GetCreateRound(callingRound.RoundNumber + 1, EventManager.Event.EventType);
 
             RoundFormat roundFormat = new FinalFormat(EventManager);
-            RoundPlan plan = new RoundPlan(EventManager, callingRound);
+            RoundPlan plan = new RoundPlan(EventManager, callingRound, null);
             plan.NumberOfRaces = (int)Math.Ceiling(plan.Pilots.Count() / (float)EventManager.Channels.GetChannelGroups().Count());
 
             Generate(roundFormat, newRound, plan);
@@ -634,7 +641,7 @@ namespace RaceLib
             yield return lastRound;
         }
 
-        public void ToggleSumPoints(Round round)
+        public bool ToggleSumPoints(Round round)
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
@@ -643,15 +650,17 @@ namespace RaceLib
                     round.Stage = CreateStage(db, round);
                     round.Stage.PointSummary = new PointSummary(ResultManager.PointsSettings);
                     db.Update(round.Stage);
+                    return true;
                 }
                 else
                 {
                     DeleteStage(db, round.Stage);
+                    return false;
                 }
             }
         }
 
-        public void ToggleTimePoints(Round round, TimeSummary.TimeSummaryTypes type)
+        public bool ToggleTimePoints(Round round, TimeSummary.TimeSummaryTypes type)
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
@@ -660,15 +669,17 @@ namespace RaceLib
                     round.Stage = CreateStage(db, round);
                     round.Stage.TimeSummary = new TimeSummary() { TimeSummaryType = type };
                     db.Update(round.Stage);
+                    return true;
                 }
                 else
                 {
-                    DeleteStage(db, round.Stage);   
+                    DeleteStage(db, round.Stage);
+                    return false;
                 }
             }
         }
 
-        public void ToggleLapCount(Round round)
+        public bool ToggleLapCount(Round round)
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
@@ -678,15 +689,17 @@ namespace RaceLib
                     round.Stage.LapCountAfterRound = !round.Stage.LapCountAfterRound;
 
                     db.Update(round.Stage);
+                    return true;
                 }
                 else
                 {
                     DeleteStage(db, round.Stage);
+                    return false;
                 }
             }
         }
 
-        public void TogglePackCount(Round round)
+        public bool TogglePackCount(Round round)
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
@@ -696,10 +709,12 @@ namespace RaceLib
                     round.Stage.PackCountAfterRound = !round.Stage.PackCountAfterRound;
 
                     db.Update(round.Stage);
+                    return true;
                 }
                 else
                 {
                     DeleteStage(db, round.Stage);
+                    return false;
                 }
             }
         }

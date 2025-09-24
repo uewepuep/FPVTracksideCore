@@ -11,8 +11,6 @@ namespace DB.JSON
     public class Stage : DatabaseObjectT<RaceLib.Stage>
     {
         public string Name { get; set; }
-        public int Order { get; set; }
-
         public PointSummary PointSummary { get; set; }
 
         public TimeSummary TimeSummary { get; set; }

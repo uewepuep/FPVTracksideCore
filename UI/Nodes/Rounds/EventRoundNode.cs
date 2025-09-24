@@ -506,6 +506,11 @@ namespace UI.Nodes.Rounds
 
             RemoveRoundButton.Visible = canRemove;
         }
+        
+        public override bool IsRoundInStage()
+        {
+            return Round.Stage != null;
+        }
 
         public override IEnumerable<Pilot> GetOrderedPilots()
         {

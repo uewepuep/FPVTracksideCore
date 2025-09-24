@@ -19,13 +19,6 @@ namespace UI.Nodes.Rounds
         {
         }
 
-        protected override void UpdateButtons()
-        {
-            canSum = true;
-            canAddLapCount = true;
-            base.UpdateButtons();
-        }
-
         public override void UpdateNodes()
         {
             Stage stage = Round.Stage;

@@ -12,9 +12,6 @@ namespace RaceLib
     {
         public string Name { get; set; }
 
-        public int Order { get; set; }
-
-
         [System.ComponentModel.Browsable(false)]
         public PointSummary PointSummary { get; set; }
 

@@ -17,20 +17,19 @@ namespace UI.Nodes.Rounds
         public EventPackCountNode(RoundsNode roundsNode, EventManager ev, Round round)
             : base(roundsNode, ev, round)
         {
-            SetHeading("Pack Count");
             Refresh();
+        }
+
+        public override void Refresh()
+        {
+            SetHeading("Pack Count");
+            base.Refresh();
         }
 
         protected override void UpdateButtons()
         {
             canAddTimes = true;
             base.UpdateButtons();
-        }
-
-
-        private void PointsManager_RaceResultsChanged(Race obj)
-        {
-            Refresh();
         }
 
         protected override void Recalculate()

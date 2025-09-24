@@ -622,7 +622,12 @@ namespace UI.Nodes.Rounds
             IPilot ipilotnode = node as IPilot;
 
             if (ipilotnode != null || prin != null)
-                return Bounds;
+            {
+                if (!EventRaceNode.Race.Ended)
+                {
+                   return Bounds;
+                }
+            }
 
             return base.CanDrop(finalInputEvent, node);
         }

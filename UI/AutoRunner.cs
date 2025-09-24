@@ -244,16 +244,18 @@ namespace UI
 
             RoundPlan roundPlan;
 
+            Stage stage = round.Stage;
+
             switch (Config.AutoCreateRoundsType)
             {
                 case AutoRunnerConfig.AutoCreateRoundsTypes.KeepChannels:
-                    roundPlan = new RoundPlan(EventManager, round);
+                    roundPlan = new RoundPlan(EventManager, round, stage);
                     roundPlan.ChannelChange = RoundPlan.ChannelChangeEnum.KeepFromPreviousRound;
                     EventManager.RoundManager.GenerateRound(roundPlan);
                     break;
 
                 case AutoRunnerConfig.AutoCreateRoundsTypes.RandomChannels:
-                    roundPlan = new RoundPlan(EventManager, round);
+                    roundPlan = new RoundPlan(EventManager, round, stage);
                     roundPlan.ChannelChange = RoundPlan.ChannelChangeEnum.Change;
                     EventManager.RoundManager.GenerateRound(roundPlan);
                     break;

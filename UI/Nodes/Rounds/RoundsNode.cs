@@ -332,9 +332,9 @@ namespace UI.Nodes.Rounds
             });
         }
 
-        private void AddEmptyRound(Round callingRound)
+        private void AddEmptyRound(Round callingRound, Stage stage)
         {
-            RoundManager.CreateEmptyRound(callingRound.EventType);
+            RoundManager.CreateEmptyRound(callingRound.EventType, stage);
             Refresh();
         }
 
@@ -353,11 +353,15 @@ namespace UI.Nodes.Rounds
 
         private void ToggleSumPoints(Round callingRound)
         {
-            EventManager.RoundManager.ToggleSumPoints(callingRound);
+            if (EventManager.RoundManager.ToggleSumPoints(callingRound))
+            {
+                EditStageName(callingRound);
+            }
             Refresh();
 
             Scroller.ScrollToEnd(scrollTime);
         }
+
         private void ToggleTimePoints(Round callingRound)
         {
             ToggleTimePoints(callingRound, TimeSummary.TimeSummaryTypes.PB);
@@ -365,7 +369,10 @@ namespace UI.Nodes.Rounds
 
         private void ToggleTimePoints(Round callingRound, TimeSummary.TimeSummaryTypes type)
         {
-            EventManager.RoundManager.ToggleTimePoints(callingRound, type);
+            if (EventManager.RoundManager.ToggleTimePoints(callingRound, type))
+            {
+                EditStageName(callingRound);
+            }
             Refresh();
 
             Scroller.ScrollToEnd(scrollTime);
@@ -373,13 +380,19 @@ namespace UI.Nodes.Rounds
 
         public void TogglePackCount(Round callingRound)
         {
-            EventManager.RoundManager.TogglePackCount(callingRound);
+            if (EventManager.RoundManager.TogglePackCount(callingRound))
+            {
+                EditStageName(callingRound);
+            }
             Refresh();
         }
 
         private void ToggleLapCount(Round callingRound)
         {
-            EventManager.RoundManager.ToggleLapCount(callingRound);
+            if (EventManager.RoundManager.ToggleLapCount(callingRound))
+            {
+                EditStageName(callingRound);
+            }
             Refresh();
 
             Scroller.ScrollToEnd(scrollTime);
@@ -391,15 +404,11 @@ namespace UI.Nodes.Rounds
             Refresh();
         }
 
-        private void GenerateChaseTheAce(Round callingRound)
+        private void GenerateCustomRound(Round callingRound, Stage stage)
         {
-            RoundManager.GenerateChaseTheAce(callingRound);
-            Refresh();
-        }
+            RoundPlan roundPlan = new RoundPlan(EventManager, callingRound, stage);
 
-        private void GenerateCustomRound(Round callingRound)
-        {
-            CustomRoundEditor editor = new CustomRoundEditor(EventManager, callingRound);
+            CustomRoundEditor editor = new CustomRoundEditor(EventManager, roundPlan);
             GetLayer<PopupLayer>().Popup(editor);
 
             editor.OnOK += (e) =>
@@ -410,17 +419,17 @@ namespace UI.Nodes.Rounds
 
         private void GenerateRoundKeepChannels(Round callingRound)
         {
-            GenerateRound(callingRound, RoundPlan.ChannelChangeEnum.KeepFromPreviousRound);
+            GenerateRound(callingRound, callingRound.Stage, RoundPlan.ChannelChangeEnum.KeepFromPreviousRound);
         }
 
         private void GenerateChangeChannels(Round callingRound)
         {
-            GenerateRound(callingRound, RoundPlan.ChannelChangeEnum.Change);
+            GenerateRound(callingRound, callingRound.Stage, RoundPlan.ChannelChangeEnum.Change);
         }
 
-        private void GenerateRound(Round callingRound, RoundPlan.ChannelChangeEnum changeChannel)
+        private void GenerateRound(Round callingRound, Stage stage, RoundPlan.ChannelChangeEnum changeChannel)
         {
-            RoundPlan roundPlan = new RoundPlan(EventManager, callingRound);
+            RoundPlan roundPlan = new RoundPlan(EventManager, callingRound, stage);
             roundPlan.ChannelChange = changeChannel;
 
             RoundManager.GenerateRound(roundPlan);
@@ -431,6 +440,29 @@ namespace UI.Nodes.Rounds
         {
             RoundManager.GenerateFinal(callingRound);
             Refresh();
+        }
+
+        public void EditStageName(Round round)
+        {
+            if (round.Stage != null)
+            {
+                PopupLayer popupLayer = GetLayer<PopupLayer>();
+                if (popupLayer != null)
+                {
+                    TextPopupNode textPopupNode = new TextPopupNode("Stage Name", "Eg. Qualifying, Finals", round.Stage.Name);
+                    textPopupNode.OnOK += (string name) =>
+                    {
+                        using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                        {
+                            round.Stage.Name = name;
+                            db.Update(round.Stage);
+                        }
+
+                        Refresh();
+                    };
+                    popupLayer.Popup(textPopupNode);
+                }
+            }
         }
 
         private void MatchChannels(IEnumerable<Race> races)
@@ -457,7 +489,7 @@ namespace UI.Nodes.Rounds
             if (!RoundManager.DoesRoundHaveAllPilots(round))
             {
                 AutoFormat format = new AutoFormat(EventManager);
-                RoundManager.Generate(format, round, new RoundPlan(EventManager, null));
+                RoundManager.Generate(format, round, new RoundPlan(EventManager, null, null));
             }
         }
 
@@ -522,6 +554,7 @@ namespace UI.Nodes.Rounds
             {
                 eventResult.StageNode.OnMouseInput(mouseInputEvent); 
             }
+
             return base.OnMouseInput(mouseInputEvent);
         }
 
@@ -592,12 +625,12 @@ namespace UI.Nodes.Rounds
                 {
                     db.Update(dropped.Round);
                 }
-            }
 
-            if (!hasStage && dropped.Round.Stage != null)
-            {
-                RoundManager.SetStage(dropped.Round, null);
-                Refresh();
+                if (!hasStage && dropped.Round.Stage != null)
+                {
+                    RoundManager.SetStage(dropped.Round, null);
+                    Refresh();
+                }
             }
 
             return base.OnDrop(finalInputEvent, node);
