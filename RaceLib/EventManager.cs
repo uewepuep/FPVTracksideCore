@@ -276,6 +276,7 @@ namespace RaceLib
                     System.Diagnostics.Debug.Assert(Event != null);
 
                     UpdateRoundOrder(db);
+                    CleanUpStages();
                 }
 
                 if (Event.Channels == null || !Event.Channels.Any())
@@ -325,18 +326,32 @@ namespace RaceLib
 
         public void UpdateRoundOrder(IDatabase db)
         {
-            if (Event.Rounds != null && Event.Rounds.Any(r => r.Order < 0))
+            lock (Event.Rounds)
             {
-                Round[] rounds = Event.Rounds.OrderBy(r => r.Order).ThenBy(r => r.Creation).ThenBy(r => r.RoundNumber).ToArray();
-
-                int order = 100;
-                foreach (Round r in rounds)
+                if (Event.Rounds != null && Event.Rounds.Any(r => r.Order < 0))
                 {
-                    r.Order = order;
-                    order += 100;
-                }
+                    Round[] rounds = Event.Rounds.OrderBy(r => r.Order).ThenBy(r => r.Creation).ThenBy(r => r.RoundNumber).ToArray();
 
-                db.Update(rounds);
+                    int order = 100;
+                    foreach (Round r in rounds)
+                    {
+                        r.Order = order;
+                        order += 100;
+                    }
+
+                    db.Update(rounds);
+                }
+            }
+        }
+
+        public void CleanUpStages()
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventId))
+            {
+                Guid[] stageIds = RoundManager.Rounds.Where(r => r.Stage != null).Select(r => r.Stage.ID).ToArray();
+
+                Stage[] toDelete = db.All<Stage>().Where(s => !stageIds.Contains(s.ID)).ToArray();
+                db.Delete(toDelete);
             }
         }
 
@@ -396,11 +411,14 @@ namespace RaceLib
 
         private void RoundRepair()
         {
-            IEnumerable<Round> allRounds = Event.Rounds.Union(RaceManager.Races.Select(r => r.Round)).Distinct();
-
-            if (allRounds.Count() > Event.Rounds.Count)
+            lock (Event.Rounds)
             {
-                Event.Rounds = allRounds.OrderBy(r => r.Order).ToList();
+                IEnumerable<Round> allRounds = Event.Rounds.Union(RaceManager.Races.Select(r => r.Round)).Distinct();
+
+                if (allRounds.Count() > Event.Rounds.Count)
+                {
+                    Event.Rounds = allRounds.OrderBy(r => r.Order).ToList();
+                }
             }
         }
 
@@ -559,63 +577,7 @@ namespace RaceLib
             }
         }
 
-        public void ToggleSumPoints(Round round)
-        {
-            if (round.PointSummary == null)
-            {
-                round.PointSummary = new PointSummary(ResultManager.PointsSettings);
-            }
-            else
-            {
-                round.PointSummary = null;
-            }
 
-            using (IDatabase db = DatabaseFactory.Open(EventId))
-            {
-                db.Update(Event);
-                db.Update(round);
-            }
-        }
-
-        public void ToggleTimePoints(Round round, TimeSummary.TimeSummaryTypes type)
-        {
-            if (round.TimeSummary == null)
-            {
-                round.TimeSummary = new TimeSummary() { TimeSummaryType = type };
-            }
-            else
-            {
-                round.TimeSummary = null;
-            }
-
-            using (IDatabase db = DatabaseFactory.Open(EventId))
-            {
-                db.Update(Event);
-                db.Update(round);
-            }
-        }
-
-        public void ToggleLapCount(Round round)
-        {
-            round.LapCountAfterRound = !round.LapCountAfterRound;
-
-            using (IDatabase db = DatabaseFactory.Open(EventId))
-            {
-                db.Update(Event);
-                db.Update(round);
-            }
-        }
-
-        public void TogglePackCount(Round round)
-        {
-            round.PackCountAfterRound = !round.PackCountAfterRound;
-
-            using (IDatabase db = DatabaseFactory.Open(EventId))
-            {
-                db.Update(Event);
-                db.Update(round);
-            }
-        }
 
         public bool CanExport(ExportColumn.ColumnTypes type)
         {

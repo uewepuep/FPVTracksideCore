@@ -136,9 +136,9 @@ namespace Composition.Input
 
         private void PollInputs()
         {
-            try
+            while (CreateMouseEvents || CreateKeyboardEvents)
             {
-                while (CreateMouseEvents || CreateKeyboardEvents)
+                try
                 {
                     autoResetEvent.WaitOne(1000);
 
@@ -155,11 +155,11 @@ namespace Composition.Input
 
                     ProcessInputs();
                 }
-            }
-            catch (Exception ex) 
-            {
-                Tools.Logger.CrashLogger.Log(ex);
-                throw ex;
+                catch (Exception ex)
+                {
+                    Tools.Logger.CrashLogger.Log(ex);
+                    throw ex;
+                }
             }
         }
 

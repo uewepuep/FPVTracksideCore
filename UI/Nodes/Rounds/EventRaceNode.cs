@@ -118,6 +118,15 @@ namespace UI.Nodes.Rounds
                 }
                 heading.Scale(0.98f, 1);
 
+                if (Race.Started)
+                {
+                    TextNode time = new TextNode(Race.Start.ToShortTimeString(), Theme.Current.Rounds.Text.XNA);
+                    time.RelativeBounds = new RectangleF(0.55f, 0.30f, 0.4f, 0.4f);
+                    time.Alignment = RectangleAlignment.CenterRight;
+                    time.Alpha = 0.5f;
+                    heading.AddChild(time);
+                }
+
                 NeedsInit = false;
             }
         }
@@ -607,11 +616,26 @@ namespace UI.Nodes.Rounds
             return base.OnMouseInput(mouseInputEvent);
         }
 
-        public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
+        public override Rectangle? CanDrop(MouseInputEvent finalInputEvent, Node node)
         {
             PilotRaceInfoNode prin = node as PilotRaceInfoNode;
             IPilot ipilotnode = node as IPilot;
 
+            if (ipilotnode != null || prin != null)
+            {
+                if (!EventRaceNode.Race.Ended)
+                {
+                   return Bounds;
+                }
+            }
+
+            return base.CanDrop(finalInputEvent, node);
+        }
+
+        public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
+        {
+            PilotRaceInfoNode prin = node as PilotRaceInfoNode;
+            IPilot ipilotnode = node as IPilot;
             if (ipilotnode == null)
                 return false;
 

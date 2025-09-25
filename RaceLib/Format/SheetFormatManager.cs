@@ -63,9 +63,9 @@ namespace RaceLib.Format
                 return false;
 
             Round next = RoundManager.NextRound(round);
-            if (next != null)
+            if (next != null && next.Stage != null)
             {
-                if (next.HasSheetFormat)
+                if (next.Stage.HasSheetFormat)
                     return false;
 
                 if (RaceManager.GetRaces(next).Any())
@@ -89,9 +89,16 @@ namespace RaceLib.Format
 
         public void Load()
         {
-            foreach (Round r in RoundManager.Rounds)
+            List<Stage> alreadyLoaded = new List<Stage>();
+
+            foreach (Round r in RoundManager.RoundsWhere(r => r.Stage != null).OrderBy(r => r.Order))
             {
-                if (r.HasSheetFormat)
+                if (alreadyLoaded.Contains(r.Stage))
+                    continue;
+
+                alreadyLoaded.Add(r.Stage);
+
+                if (r.Stage.HasSheetFormat)
                 {
                     LoadSheet(r, null, false);
                 }
@@ -164,12 +171,13 @@ namespace RaceLib.Format
         }
 
 
-        public void LoadSheet(Round startRound, Pilot[] assignedPilots, bool generate)
+        public void LoadSheet(Round roundInStage, Pilot[] assignedPilots, bool generate)
         {
-            if (startRound.HasSheetFormat)
+            Stage stage = roundInStage.Stage;
+            if (stage.HasSheetFormat)
             {
-                SheetFile sheetFile = GetSheetFile(startRound.SheetFormatFilename);
-                RoundSheetFormat sheetFormat = new RoundSheetFormat(startRound, this, sheetFile.FileInfo);
+                SheetFile sheetFile = GetSheetFile(stage.SheetFormatFilename);
+                RoundSheetFormat sheetFormat = new RoundSheetFormat(roundInStage, this, sheetFile.FileInfo);
                 sheetFormat.CreatePilotMap(assignedPilots);
 
                 foreach (Round round in sheetFormat.Rounds)
@@ -185,7 +193,6 @@ namespace RaceLib.Format
                         sheetFormat.SyncRace(race);
                     }
                 }
-
 
                 if (generate)
                 {

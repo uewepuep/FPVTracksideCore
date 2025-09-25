@@ -18,6 +18,7 @@ namespace Composition.Layers
         private GraphicsDevice device;
 
         public Node DragNode { get; private set; }
+        public Rectangle? CanDropBounds { get; private set; }
         public Point DragNodeOffset { get; private set; }
 
         public MouseInputEvent DragStart { get; private set; }
@@ -28,11 +29,16 @@ namespace Composition.Layers
         public bool IsDragging { get { return DragNode != null; } }
         public bool needsRender;
 
+        public Color CanDropColor { get; private set; }
+
+
         public DragLayer(GraphicsDevice device)
         {
             this.device = device;
             renderTargetLock = new object();
             drawer = new Drawer(device);
+
+            CanDropColor = new Color(Color.White, 0.5f);
         }
 
         public override void Dispose()
@@ -64,21 +70,27 @@ namespace Composition.Layers
 
         protected override void OnDraw()
         {
-
             base.OnDraw();
             if (renderTarget != null && DragNode != null && OverDragThreshold)
             {
                 drawer.Begin();
+
+                Rectangle? canDropBounds = CanDropBounds;
+                if (canDropBounds != null)
+                {
+                    drawer.DrawRect(canDropBounds.Value, CanDropColor);
+                }
+
                 Rectangle destination = renderTarget.Bounds;
                 destination.Location = DragDistance + DragNodeOffset;
                 drawer.Draw(renderTarget, renderTarget.Bounds, destination, Color.White, 0.8f);
+                
                 drawer.End();
             }
         }
 
         public override bool OnMouseInput(MouseInputEvent inputEvent)
         {
-            bool result = false;
             if (DragStart != null && DragNode != null)
             {
                 DragDistance = inputEvent.ScreenPosition - DragStart.ScreenPosition;
@@ -89,27 +101,43 @@ namespace Composition.Layers
                     needsRender = true;
                 }
 
-                if (inputEvent.Button == DragStart.Button && inputEvent.ButtonState == ButtonStates.Released)
+                CanDropBounds = CanDrop(inputEvent);
+
+                if (inputEvent.Button == DragStart.Button)
                 {
-                    if (OverDragThreshold)
+                    if (inputEvent.ButtonState == ButtonStates.Released)
                     {
-                        FinishDrag(inputEvent);
-                        result = true;
-                    }
-                    else
-                    {
-                        ClearDrag();
+                        if (OverDragThreshold)
+                        {
+                            FinishDrag(inputEvent);
+                        }
+                        else
+                        {
+                            ClearDrag();
+                        }
                     }
                 }
 
-                if (inputEvent.ButtonState != ButtonStates.None && OverDragThreshold)
-                {
-                    result = true;
-                }
-
+                return OverDragThreshold;
             }
 
-            return result;
+            return false;
+        }
+
+        public Rectangle? CanDrop(MouseInputEvent inputEvent)
+        {
+            IEnumerable<CompositorLayer> compositiorLayers = LayerStack.GetLayers<CompositorLayer>();
+
+            foreach (CompositorLayer cl in compositiorLayers)
+            {
+                Rectangle? n = cl.CanDrop(inputEvent, DragNode);
+                if (n != null)
+                {
+                    return n;
+                }
+            }
+
+            return null;
         }
 
         public void FinishDrag(MouseInputEvent inputEvent)
@@ -118,7 +146,7 @@ namespace Composition.Layers
 
             foreach (CompositorLayer cl in compositiorLayers)
             {
-                if (cl.DragEndEvent(inputEvent, DragNode))
+                if (cl.OnDrop(inputEvent, DragNode))
                 {
                     break;
                 }

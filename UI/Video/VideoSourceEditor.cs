@@ -16,6 +16,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Tools;
 using UI.Nodes;
+using UI.Nodes.Rounds;
 
 namespace UI.Video
 {
@@ -1071,6 +1072,15 @@ namespace UI.Video
             }
 
             return base.OnMouseInput(mouseInputEvent);
+        }
+
+        public override Rectangle? CanDrop(MouseInputEvent finalInputEvent, Node node)
+        {
+            ChannelVideoMapNode other = node as ChannelVideoMapNode;
+            if (other != null)
+                return Bounds;
+
+            return base.CanDrop(finalInputEvent, node);
         }
 
         public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)

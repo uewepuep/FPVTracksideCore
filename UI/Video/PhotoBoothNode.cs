@@ -268,6 +268,15 @@ namespace UI.Video
             pilotNameNode = null;
         }
 
+        public override Rectangle? CanDrop(MouseInputEvent finalInputEvent, Node node)
+        {
+            IPilot pl = node as IPilot;
+            if (pl != null)
+                return Bounds;
+
+            return base.CanDrop(finalInputEvent, node);
+        }
+
         public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
         {
             IPilot pl = node as IPilot;

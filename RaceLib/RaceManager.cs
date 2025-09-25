@@ -370,10 +370,10 @@ namespace RaceLib
 
         public int GetMaxRoundNumber(EventTypes type)
         {
+            Round[] ofType = EventManager.RoundManager.RoundsWhere(r => r.EventType == type).ToArray();
+
             lock (races)
             {
-                IEnumerable<Round> ofType = EventManager.Event.Rounds.Where(r => r.EventType == type);
-
                 if (!ofType.Any())
                 {
                     return 0;
@@ -1580,13 +1580,14 @@ namespace RaceLib
             }
         }
 
-        public IEnumerable<Race> GetRaces(Round round)
+        public Race[] GetRaces(params Round[] rounds)
         {
             lock (races)
             {
-                return races.Where(r => r.Round == round && r.Valid).ToArray();
+                return races.Where(r => rounds.Contains(r.Round) && r.Valid).OrderBy(r => r.Round.Order).ThenBy(r => r.RaceOrder).ToArray();
             }
         }
+
         public Race[] GetRaces(Pilot p)
         {
             lock (races)
@@ -1603,7 +1604,7 @@ namespace RaceLib
             }
         }
 
-        public Race[] GetRaces(Round start, Round end) // Inclusive
+        public Race[] GetRaceBetween(Round start, Round end) // Inclusive
         {
             return EventManager.RaceManager.GetRaces(r => r.Valid 
                                                   && r.Round != null 
@@ -1612,6 +1613,7 @@ namespace RaceLib
                                                   && r.Round.EventType == end.EventType
                                                   && r.Round.RoundType == end.RoundType);
         }
+
 
         public IEnumerable<Race> GetRacesCopyIncludingInvalid()
         {
@@ -1710,7 +1712,7 @@ namespace RaceLib
                 Logger.RaceLog.LogCall(this);
                 using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
                 {
-                    var types = from round in EventManager.Event.Rounds.OrderBy(r => r.Order)
+                    var types = from round in EventManager.RoundManager.Rounds.OrderBy(r => r.Order)
                                 group round by round.EventType into newGroup
                                 select newGroup;
                     
@@ -1742,7 +1744,7 @@ namespace RaceLib
         public string[][] GetRaceResultsText(Units units)
         {
             List<string[]> output = new List<string[]>();
-            foreach (Round round in EventManager.Event.Rounds)
+            foreach (Round round in EventManager.RoundManager.Rounds)
             {
                 foreach (Race race in GetRaces(round).OrderBy(r => r.RaceNumber))
                 {

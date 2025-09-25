@@ -201,13 +201,23 @@ namespace Composition.Layers
             return base.OnTextInput(inputEvent);
         }
 
-        public bool DragEndEvent(MouseInputEvent finalInputEvent, Node node)
+        public bool OnDrop(MouseInputEvent finalInputEvent, Node node)
         {
             if (Root.OnDrop(finalInputEvent, node))
             {
                 return true;
             }
             return false;
+        }
+
+        public Rectangle? CanDrop(MouseInputEvent finalInputEvent, Node node)
+        {
+            Rectangle? o = Root.CanDrop(finalInputEvent, node);
+            if (o != null)
+            {
+                return o;
+            }
+            return null;
         }
 
         public void Register(Node node)

@@ -610,13 +610,11 @@ namespace UI.Nodes
         public EventManager EventManager { get; private set; }
         public Round CallingRound { get; private set; }
 
-        public CustomRoundEditor(EventManager ev, Round callingRound)
+        public CustomRoundEditor(EventManager ev, RoundPlan roundPlan)
         {
-            CallingRound = callingRound;
             EventManager = ev;
-
-            RoundPlan customRoundDescriptor = new RoundPlan(ev, callingRound);
-            SetObject(customRoundDescriptor);
+           
+            SetObject(roundPlan);
 
             Scale(0.8f);
 

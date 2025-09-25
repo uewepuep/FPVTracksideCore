@@ -170,6 +170,10 @@ namespace Composition.Text
             }
         }
 
+        public void Draw(Drawer id, Rectangle target, RectangleAlignment alignment, Scale scale, Color tint, Vector2 origin, float rotation)
+        {
+        }
+
         public int HitCharacterIndex(Point point)
         {
             lock (sourceBounds)

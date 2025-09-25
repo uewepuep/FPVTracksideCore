@@ -14,7 +14,7 @@ using Tools;
 
 namespace UI.Nodes.Rounds
 {
-    public abstract class EventPilotListNode<T> : EventXNode where T : EventPilotNode
+    public abstract class EventPilotListNode<T> : EventResultNode where T : EventPilotNode
     {
         public IEnumerable<T> PilotNodes { get { return contentContainer.Children.OfType<T>(); } }
         public IEnumerable<TextNode> BracketNodes { get { return contentContainer.Children.OfType<TextNode>(); } }
@@ -23,8 +23,8 @@ namespace UI.Nodes.Rounds
 
         public int Columns { get; private set; }
 
-        public EventPilotListNode(EventManager ev, Round round)
-            : base(ev, round)
+        public EventPilotListNode(RoundsNode roundsNode, EventManager ev, Round round)
+            : base(roundsNode, ev, round)
         {
 
             EventManager.OnPilotRefresh += Refresh;
@@ -39,6 +39,16 @@ namespace UI.Nodes.Rounds
             UpdateButtons();
         }
 
+        public override void Dispose()
+        {
+            EventManager.OnPilotRefresh -= Refresh;
+            EventManager.OnEventChange -= Refresh;
+            EventManager.RaceManager.OnRaceEnd -= OnRaceEnd;
+            EventManager.RaceManager.OnLapDisqualified -= OnLapDisqualified;
+
+            base.Dispose();
+        }
+
         private void OnLapDisqualified(Lap lap)
         {
             // Don't refresh mid-race.
@@ -51,16 +61,6 @@ namespace UI.Nodes.Rounds
         protected void OnRaceEnd(Race race)
         {
             Refresh();
-        }
-
-        public override void Dispose()
-        {
-            EventManager.OnPilotRefresh -= Refresh;
-            EventManager.OnEventChange -= Refresh;
-            EventManager.RaceManager.OnRaceEnd -= OnRaceEnd;
-            EventManager.RaceManager.OnLapDisqualified -= OnLapDisqualified;
-
-            base.Dispose();
         }
 
         public void SetSubHeadingRounds(IEnumerable<Race> races)
@@ -126,7 +126,7 @@ namespace UI.Nodes.Rounds
 
         private bool needsRefresh;
 
-        public void Refresh()
+        public virtual void Refresh()
         {
             needsRefresh = true;
             RequestLayout();
@@ -137,6 +137,7 @@ namespace UI.Nodes.Rounds
             if (needsRefresh)
             {
                 FormatData();
+                UpdateRoundNodes();
             }
 
             base.Layout(parentBounds);

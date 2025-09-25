@@ -83,14 +83,6 @@ namespace RaceLib
 
                 return Round.RoundNumber;
             }
-            set
-            {
-                Round newRound = Event.Rounds.FirstOrDefault(r => r.RoundNumber == value);
-                if (newRound != null)
-                {
-                    Round = newRound;
-                }
-            }
         }
 
         [Category("Editable Details")]

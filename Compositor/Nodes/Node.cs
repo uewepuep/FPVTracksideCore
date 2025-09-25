@@ -391,8 +391,7 @@ namespace Composition.Nodes
 
         protected virtual void LayoutChildren(RectangleF bounds)
         {
-            Node[] t = children;
-            foreach (Node n in t)
+            foreach (Node n in children)
             {
                 n.Layout(bounds);
             }
@@ -404,10 +403,9 @@ namespace Composition.Nodes
             DrawChildren(id, parentAlpha);
         }
 
-        public void DrawChildren(Drawer id, float parentAlpha)
+        public virtual void DrawChildren(Drawer id, float parentAlpha)
         {
-            Node[] t = children;
-            foreach (Node n in t)
+            foreach (Node n in children)
             {
                 if (n.Drawable)
                 {
@@ -468,6 +466,22 @@ namespace Composition.Nodes
         public virtual bool OnTextInput(TextInputEventArgs inputEvent)
         {
             return false;
+        }
+
+        public virtual Rectangle? CanDrop(MouseInputEvent mouseInputEvent, Node node)
+        {
+            foreach (Node child in VisibleChildren.Reverse().ToArray())
+            {
+                if (child.Contains(mouseInputEvent.Position))
+                {
+                    Rectangle? o = child.CanDrop(mouseInputEvent, node);
+                    if (o != null)
+                    {
+                        return o;
+                    }
+                }
+            }
+            return null;
         }
 
         public virtual bool OnDrop(MouseInputEvent finalInputEvent, Node node)
