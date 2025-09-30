@@ -182,7 +182,7 @@ namespace RaceLib
 
             newEvent.Name = newEvent.Name + " (" +  Start.ToString(dateFormat) + ")";
 
-            newEvent.PilotChannels = this.PilotChannels.ToList();
+            newEvent.PilotChannels = this.PilotChannels.Select(pc => pc.Clone()).ToList();
             newEvent.Channels = this.Channels.ToArray();
 
             newEvent.MinLapTime = this.MinLapTime;

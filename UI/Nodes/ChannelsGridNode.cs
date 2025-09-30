@@ -288,14 +288,17 @@ namespace UI.Nodes
                     }
                 }
 
-                downPilotsList.UpdateDown(ChannelNodes);
 
                 foreach (CamGridNode camNode in CamNodes)
                 {
                     camNode.SetAnimatedVisibility(camNode.VideoBounds.ShowInGrid && extrasVisible);
                 }
-
-                downPilotsList.SetAnimatedVisibility(crashed >= 1);
+                
+                if (ApplicationProfileSettings.Instance.ShowDownPilotLapTimes)
+                {
+                    downPilotsList.UpdateDown(ChannelNodes);
+                    downPilotsList.SetAnimatedVisibility(crashed >= 1);
+                }
 
                 CheckGridStatsVisiblilty();
             }

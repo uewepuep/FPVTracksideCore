@@ -183,7 +183,7 @@ namespace UI.Nodes.Rounds
         }
 
 
-        private void EditStage()
+        public void EditStage()
         {
             ObjectEditorNode<Stage> editor = new ObjectEditorNode<Stage>(Stage);
             GetLayer<PopupLayer>().Popup(editor);

@@ -299,6 +299,8 @@ namespace UI.Nodes.Rounds
                 MouseMenu mouseMenu = new MouseMenu(this);
                 mouseMenu.AddItem("Copy Pilots", CopyToClipboard);
 
+                mouseMenu.AddItem("Edit Stage", StageNode.EditStage);
+
                 foreach (EventPilotNode pilotResultNode in PilotNodes)
                 {
                     if (pilotResultNode.Contains(translated.Position))
@@ -306,8 +308,6 @@ namespace UI.Nodes.Rounds
                         pilotResultNode.AddMenu(translated, mouseMenu);
                     }
                 }
-
-
                 mouseMenu.Show(mouseInputEvent.Position);
                 return true;
             }

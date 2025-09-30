@@ -718,5 +718,10 @@ namespace RaceLib
                 }
             }
         }
+
+        public IEnumerable<Stage> GetStages()
+        {
+            return Rounds.Select(x => x.Stage).Where(s => s.Valid).Distinct();
+        }
     }
 }
