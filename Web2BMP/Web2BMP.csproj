@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net60-windows</TargetFramework>
+		<TargetFramework>net9.0-windows</TargetFramework>
 		<ApplicationIcon />
 		<Platforms>x64</Platforms>
 		<StartupObject />
 		<Version>2.0.70.1</Version>
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
-		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		
 		<Self-Contained>false</Self-Contained>
 	</PropertyGroup>
 	<ItemGroup>

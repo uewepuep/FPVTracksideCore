@@ -2,13 +2,13 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net60-windows</TargetFramework>
+    <TargetFramework>net9.0-windows</TargetFramework>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
     <Platforms>x64;AnyCPU</Platforms>
     <StartupObject />
 	  <usewpf>true</usewpf>
 	  <Version>2.0.70.1</Version>
-	  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+	  
 	  <PublishReadyToRun>false</PublishReadyToRun>
 	  <TieredCompilation>false</TieredCompilation>
 	  <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>
@@ -36,7 +36,7 @@
 
 
   <ItemGroup>
-	  <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.1.303" />
+	  <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.4" />
 	  <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
   </ItemGroup>
 
