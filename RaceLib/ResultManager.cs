@@ -814,6 +814,9 @@ namespace RaceLib
                             case ExportColumn.ColumnTypes.Lap6Time:
                                 line.Add(GetLapTime(6, laps));
                                 break;
+                            case ExportColumn.ColumnTypes.Points:
+                                line.Add(r.Points.ToString()); 
+                                break;
 
                         }
                     }

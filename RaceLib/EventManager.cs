@@ -290,6 +290,17 @@ namespace RaceLib
 
             });
 
+            workQueue.Enqueue(workSet, "Checking Pilot Names", () =>
+            {
+                foreach (Pilot pilot in Event.Pilots)
+                {
+                    if (pilot != null)
+                    {
+                        pilot.Name = Tools.Ext.SafePilotName(pilot.Name);
+                    }
+                }
+            });
+
             workQueue.Enqueue(workSet, "Loading Game Types", () =>
             {
                 GameManager.LoadGameTypes(Profile);
