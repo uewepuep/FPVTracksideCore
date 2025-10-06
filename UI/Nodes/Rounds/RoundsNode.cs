@@ -24,7 +24,8 @@ namespace UI.Nodes.Rounds
         public IEnumerable<EventLapCountsNode> EventLapCountsNodes { get { return Children.OfType<EventLapCountsNode>(); } }
         public IEnumerable<EventPackCountNode> EventPackCountNodes { get { return Children.OfType<EventPackCountNode>(); } }
         public IEnumerable<EventResultNode> EventResultNodes { get { return Children.OfType<EventResultNode>(); } }
-        public IEnumerable<StageNode> StageNodes { get { return EventResultNodes.Select(e => e.StageNode).Distinct(); } }
+        public IEnumerable<StageNode> ResultStageNodes { get { return EventResultNodes.Select(e => e.StageNode).Distinct(); } }
+        public IEnumerable<StageNode> FormatStageNodes { get { return Children.OfType<StageNode>().Distinct(); } }
 
         public EventManager EventManager { get; private set; }
         public RoundManager RoundManager { get { return EventManager.RoundManager; } }
@@ -243,7 +244,7 @@ namespace UI.Nodes.Rounds
                 }
             }
 
-            Stage[] stages = rounds.Select(r => r.Stage).Where(s => s != null).Distinct().ToArray();
+            Stage[] stages = rounds.Select(r => r.Stage).Where(s => s != null && s.Valid).Distinct().ToArray();
             foreach (Stage stage in stages) 
             {
                 Round round = EventManager.RoundManager.GetLastStageRound(stage);
@@ -263,8 +264,7 @@ namespace UI.Nodes.Rounds
                         RequestLayout();
                     }
                 }
-
-                if (stage.TimeSummary != null)
+                else if (stage.TimeSummary != null)
                 {
                     EventLapsTimesNode esn = EventTimesNodes.FirstOrDefault(d => d.Round == round);
                     if (esn == null)
@@ -280,8 +280,7 @@ namespace UI.Nodes.Rounds
                         RequestLayout();
                     }
                 }
-
-                if (stage.PackCountAfterRound)
+                else if (stage.PackCountAfterRound)
                 {
                     EventPackCountNode esn = EventPackCountNodes.FirstOrDefault(d => d.Round == round);
                     if (esn == null)
@@ -297,8 +296,7 @@ namespace UI.Nodes.Rounds
                         RequestLayout();
                     }
                 }
-
-                if (stage.LapCountAfterRound)
+                else if (stage.LapCountAfterRound)
                 {
                     EventLapCountsNode esn = EventLapCountsNodes.FirstOrDefault(d => d.Round == round);
                     if (esn == null)
@@ -314,6 +312,12 @@ namespace UI.Nodes.Rounds
                         RequestLayout();
                     }
                 }
+                else
+                {
+                    StageNode stageNode = new StageNode(this, EventManager, stage);
+                    stageNode.SetNodes(RoundNodes.Where(rn => rn.Round.Stage == stage));
+                    AddChild(stageNode);
+                }
             }
 
             foreach (EventResultNode eventResultNode in EventResultNodes.ToArray())
@@ -325,6 +329,16 @@ namespace UI.Nodes.Rounds
                     eventResultNode.Dispose();
                 }
             }
+
+            foreach (StageNode stageNode1 in FormatStageNodes.ToArray())
+            {
+                if (!stageNode1.Stage.Valid || !stageNode1.HasWrapNodes())
+                {
+                    stageNode1.Dispose();
+                }
+            }
+
+            RoundManager.CleanUpOrphanStages();
 
             SetOrder<EventXNode, long>((a) =>
             {
@@ -568,7 +582,7 @@ namespace UI.Nodes.Rounds
             Point location;
             if (found == null)
             {
-                StageNode stageNode = StageNodes.FirstOrDefault(s => s.Contains(mouseInputEvent.Position));
+                StageNode stageNode = ResultStageNodes.FirstOrDefault(s => s.Contains(mouseInputEvent.Position));
                 if (stageNode == null)
                 {
                     found = Children.OrderBy(r => r.Bounds.X).LastOrDefault();
@@ -604,7 +618,7 @@ namespace UI.Nodes.Rounds
         {
             bool hasStage = false;
 
-            foreach (StageNode stageNode in StageNodes)
+            foreach (StageNode stageNode in ResultStageNodes)
             {
                 if (!stageNode.Contains(finalInputEvent.Position))
                     continue;

@@ -136,10 +136,9 @@ namespace UI.Nodes.Rounds
             }
             else
             {
-                var sf = EventManager.RoundManager.SheetFormatManager.GetRoundSheetFormat(Round);
-                if (sf != null)
+                if (Round.Stage != null && Round.Stage.HasSheetFormat)
                 {
-                    SetSubHeading(sf.Name);
+                    SetSubHeading(Round.Stage.Name);
                 }
                 else
                 {
@@ -275,6 +274,12 @@ namespace UI.Nodes.Rounds
             }
 
             mm.AddItem("Edit Round", EditRound);
+
+
+            if (Round.Stage != null)
+            {
+                mm.AddItem("Edit Stage", EditStage);
+            }
 
             if (!EventManager.Event.RulesLocked)
             {
@@ -454,6 +459,24 @@ namespace UI.Nodes.Rounds
                         db.Upsert(editor.Selected);
                     }
                     Refresh(true);
+                }
+            };
+        }
+
+
+        public void EditStage()
+        {
+            ObjectEditorNode<Stage> editor = new ObjectEditorNode<Stage>(Round.Stage);
+            GetLayer<PopupLayer>().Popup(editor);
+            editor.OnOK += (r) =>
+            {
+                if (editor.Selected != null)
+                {
+                    using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                    {
+                        db.Upsert(editor.Selected);
+                    }
+                    RoundsNode.Refresh();
                 }
             };
         }

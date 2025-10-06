@@ -21,6 +21,8 @@ namespace DB.JSON
 
         public bool Valid { get; set; }
 
+        public int Order { get; set; }
+
         public Stage() { }
 
         public Stage(RaceLib.Stage obj)

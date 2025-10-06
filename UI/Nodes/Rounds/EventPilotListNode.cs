@@ -91,6 +91,8 @@ namespace UI.Nodes.Rounds
         public void MakeMenu(MouseMenu mm)
         {
             mm.AddItem("Edit Settings", EditSettings);
+            if (StageNode != null)     
+                mm.AddItem("Edit Stage", StageNode.EditStage);
             mm.AddItem("Copy to Clipboard", CopyToClipboard);
 
             FileTools.ExportMenu(mm, "Export", PlatformTools, "Save", MakeTable(), GetLayer<PopupLayer>());

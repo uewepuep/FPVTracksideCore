@@ -379,7 +379,7 @@ namespace Composition.Input
         {
             if (OnMouseInputEvent != null)
             {
-                TouchCollection touchCollection = TouchPanel.GetState();
+                TouchCollection touchCollection = SafeGetTouchState();
 
                 if (!touchCollection.Any())
                 {
@@ -400,6 +400,18 @@ namespace Composition.Input
                 }
 
                 firstTouch = false;
+            }
+        }
+
+        private TouchCollection SafeGetTouchState()
+        {
+            try
+            {
+                return TouchPanel.GetState();
+            }
+            catch
+            {
+                return new TouchCollection(new TouchLocation[0]);
             }
         }
 

@@ -49,6 +49,8 @@ namespace RaceLib
         public Color Color { get; set; }
         public bool Valid { get; set; }
 
+        public int Order { get; set; }
+
         public Stage()
         {
             LapCountAfterRound = false;

@@ -77,12 +77,7 @@ namespace UI.Nodes.Rounds
         public override void Layout(RectangleF parentBounds)
         {
             base.Layout(parentBounds);
-
-            RectangleF adjustedBounds = parentBounds;
-            adjustedBounds.Y = BoundsF.Y;
-            adjustedBounds.Height = BoundsF.Height;
-
-            StageNode.Layout(adjustedBounds);
+            StageNode.Layout(parentBounds);
         }
 
         public override void Draw(Drawer id, float parentAlpha)

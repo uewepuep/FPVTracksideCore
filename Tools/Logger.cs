@@ -386,7 +386,7 @@ namespace Tools
 
         public override string ToString()
         {
-            string output = DateTime.ToString("yyyy/MM/dd HH:mm:ss.FFF") + " " + LogName + " (" + Type.ToString() + ")";
+            string output = DateTime.ToString("yyyy/MM/dd HH:mm:ss.FFF") + " (" + Version + ") " + LogName.ToUpper() + " (" + Type.ToString() + ") ";
             if (Caller != null)
             {
                 output += " - " + Caller;

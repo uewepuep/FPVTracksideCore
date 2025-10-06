@@ -316,7 +316,7 @@ namespace RaceLib
             }
         }
 
-        public Round GetCreateRound(int roundNumber, EventTypes eventType)
+        public Round GetCreateRound(int roundNumber, EventTypes eventType, Stage stage = null)
         {
             if (roundNumber == 0)
                 roundNumber = 1;
@@ -329,6 +329,7 @@ namespace RaceLib
                     round = new Round();
                     round.RoundNumber = roundNumber;
                     round.EventType = eventType;
+                    round.Stage = stage;
                     
                     if (eventType == EventTypes.Game)
                     {
@@ -511,6 +512,14 @@ namespace RaceLib
             }
         }
 
+        public Stage GetCreateStage(Round round, bool autoAssign = true)
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                return GetCreateStage(db, round, autoAssign);   
+            }
+        }
+
         public Stage GetCreateStage(IDatabase db, Round round, bool autoAssign = true)
         {
             if (round.Stage == null)
@@ -518,7 +527,16 @@ namespace RaceLib
                 CreateStage(db, round, autoAssign);
             }
 
-            return round.Stage;
+            if (round.Stage != null)
+            {
+                if (round.Stage.Order != round.Order)
+                {
+                    round.Stage.Order = round.Order;
+                    db.Update(round.Stage);
+                }
+                return round.Stage;
+            }
+            return null;
         }
 
         public Stage CreateStage(IDatabase db, Round round, bool autoAssign = true)
@@ -601,9 +619,25 @@ namespace RaceLib
         {
             lock (Event.Rounds)
             {
-                return Event.Rounds.Where(r => r.Stage == stage).OrderBy(r => r.Order);
+                return Event.Rounds.Where(r => r.Stage == stage && r != null).OrderBy(r => r.Order);
             }
         }
+
+        public void CleanUpOrphanStages()
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                Stage[] validStages = GetStages().ToArray();
+
+                Stage[] orphans = db.All<Stage>().Except(validStages).ToArray();
+
+                foreach (Stage r in orphans)
+                {
+                    DeleteStage(db, r);
+                }
+            }
+        }
+
 
         public Round GetLastStageRound(Stage stage)
         {

@@ -68,11 +68,22 @@ namespace UI.Nodes.Rounds
                 toWrap.AddRange(nodes);
             }
         }
+        
 
         public override void Layout(RectangleF parentBounds)
         {
+
             lock (toWrap)
             {
+                Node last = toWrap.LastOrDefault();
+                if (last == null)
+                    return;
+
+                RectangleF adjustedBounds = parentBounds;
+
+                adjustedBounds.Y = last.BoundsF.Y;
+                adjustedBounds.Height = last.BoundsF.Height;
+
                 int padding = borderNode.Width;
                 int titleWidth = 20;
                 int right = toWrap.Select(e => e.Bounds.Right).Max();
@@ -80,7 +91,7 @@ namespace UI.Nodes.Rounds
 
                 if (Title != null)
                 {
-                    RectangleF titleBounds = parentBounds;
+                    RectangleF titleBounds = adjustedBounds;
                     titleBounds.X = left - titleWidth;
                     titleBounds.Width = titleWidth;
                     Title.Layout(titleBounds);
@@ -89,7 +100,7 @@ namespace UI.Nodes.Rounds
                 left -= padding;
                 right += padding;
 
-                RectangleF bounds = new RectangleF(left - titleWidth, parentBounds.Y, (right - left) + titleWidth, parentBounds.Height);
+                RectangleF bounds = new RectangleF(left - titleWidth, adjustedBounds.Y, (right - left) + titleWidth, adjustedBounds.Height);
                 SetBounds(bounds, BoundsF);
                 borderNode.Layout(bounds);
             }
@@ -203,6 +214,15 @@ namespace UI.Nodes.Rounds
         public void Refresh()
         {
             Title.TextNode.Text = Stage.Name;
+        }
+
+        public bool HasWrapNodes()
+        {
+            lock(toWrap)
+            {
+                toWrap.RemoveAll(r => r.Disposed);
+                return toWrap.Any();
+            }
         }
     }
 

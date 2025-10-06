@@ -301,13 +301,19 @@ namespace UI.Nodes.Rounds
                 newRound = Round;
             }
 
+            Stage stage = null;
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
-                newRound.Stage = Round.Stage;
+                stage = EventManager.RoundManager.GetCreateStage(db, newRound, false);
+                stage.Name = sheet.Name;
+                stage.SheetFormatFilename = sheet.FileInfo.Name;
+
+                newRound.Stage = stage;
                 db.Update(newRound);
+                db.Update(stage);
             }
 
-            EventManager.RoundManager.SheetFormatManager.LoadSheet(newRound, GetOrderedPilots().ToArray(), true);
+            EventManager.RoundManager.SheetFormatManager.LoadSheet(stage, GetOrderedPilots().ToArray(), true);
         }
 
         protected void AddRace()
