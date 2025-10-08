@@ -514,9 +514,9 @@ namespace UI.Nodes
 
         private PilotProfileOptions pilotProfileOptions;
 
-        public void SetProfileVisible(PilotProfileOptions options)
+        public void SetProfileVisible(PilotProfileOptions options, bool force = false)
         {
-            if (ApplicationProfileSettings.Instance.AlwaysSmallPilotProfile && options == PilotProfileOptions.Large)
+            if (!force && ApplicationProfileSettings.Instance.AlwaysSmallPilotProfile && options == PilotProfileOptions.Large)
             {
                 options = PilotProfileOptions.Small;
             }
@@ -792,10 +792,10 @@ namespace UI.Nodes
                     switch (pilotProfileOptions)
                     {
                         case PilotProfileOptions.Large:
-                            SetProfileVisible(PilotProfileOptions.Small);
+                            SetProfileVisible(PilotProfileOptions.Small, true);
                             break;
                         case PilotProfileOptions.Small:
-                            SetProfileVisible(PilotProfileOptions.Large);
+                            SetProfileVisible(PilotProfileOptions.Large, true);
                             break;
                     }
                 }
