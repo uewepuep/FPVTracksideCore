@@ -488,7 +488,7 @@ namespace UI.Nodes
             }
 
             // Set this again incase changing the pilot has changed things.
-            SetProfileVisible(pilotProfileOptions);
+            SetProfileVisible(PilotProfileOptions.Large);
 
             if (EventManager.RaceManager.RaceType == EventTypes.Game)
             {
@@ -516,12 +516,12 @@ namespace UI.Nodes
 
         public void SetProfileVisible(PilotProfileOptions options)
         {
-            pilotProfileOptions = options;
-
             if (ApplicationProfileSettings.Instance.AlwaysSmallPilotProfile && options == PilotProfileOptions.Large)
             {
                 options = PilotProfileOptions.Small;
             }
+
+            pilotProfileOptions = options;
 
             // Don't do the small option if we're not a video node.
             if (this is not ChannelVideoNode)
@@ -533,7 +533,6 @@ namespace UI.Nodes
             {
                 options = PilotProfileOptions.None;
             }
-
 
             switch (options)
             {
@@ -712,12 +711,6 @@ namespace UI.Nodes
                 return true;
             }
 
-            if (mouseInputEvent.ButtonState == ButtonStates.Released && mouseInputEvent.Button == MouseButtons.Left)
-            {
-                OnShowAll?.Invoke();
-                return true;
-            }
-
             if (mouseInputEvent.ButtonState == ButtonStates.Released)
             {
                 OnClick?.Invoke(mouseInputEvent);
@@ -794,9 +787,17 @@ namespace UI.Nodes
 
             if (mouseInputEvent.ButtonState == ButtonStates.Pressed && mouseInputEvent.Button == MouseButtons.Left)
             {
-                if (pilotProfileOptions == PilotProfileOptions.Large && PilotProfile.Contains(mouseInputEvent.Position))
+                if (PilotProfile.Contains(mouseInputEvent.Position) && PilotProfile.Visible)
                 {
-                    PilotProfile.ToggleAnimatedVisibility();
+                    switch (pilotProfileOptions)
+                    {
+                        case PilotProfileOptions.Large:
+                            SetProfileVisible(PilotProfileOptions.Small);
+                            break;
+                        case PilotProfileOptions.Small:
+                            SetProfileVisible(PilotProfileOptions.Large);
+                            break;
+                    }
                 }
 
                 return true;

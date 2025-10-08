@@ -268,6 +268,8 @@ namespace UI.Nodes
                 bool anyFullscreen = input.OfType<ChannelNodeBase>().Any(c => c.CrashedOutType == CrashState.FullScreen);
                 if (anyFullscreen)
                 {
+                    gridStatsNode.SetAnimatedVisibility(false);
+                    downPilotsList.SetAnimatedVisibility(false);
                     return;
                 }
 
@@ -296,8 +298,9 @@ namespace UI.Nodes
                 
                 if (ApplicationProfileSettings.Instance.ShowDownPilotLapTimes)
                 {
+                    int visibleNodes = VisibleChildCount();
                     downPilotsList.UpdateDown(ChannelNodes);
-                    downPilotsList.SetAnimatedVisibility(crashed >= 1);
+                    downPilotsList.SetAnimatedVisibility(crashed >= 1 && visibleNodes > 1);
                 }
 
                 CheckGridStatsVisiblilty();
@@ -679,6 +682,7 @@ namespace UI.Nodes
             {
                 OnFullScreen?.Invoke(fullScreen);
             }
+            reOrderRequest = DateTime.Now;
         }
 
         public void FullScreen(CamGridNode fullScreen)
