@@ -370,6 +370,11 @@ namespace UI
             }
 
             eventManager.RaceManager.OnHitPackLimit += RaceManager_OnHitPackLimit;
+
+            if (eventManager.RaceManager.TimingSystemManager.HasDummyTiming)
+            {
+                Popuper.PopupMessage("Warning / Reminder: Dummy timer is active");
+            }
         }
 
         private void RaceManager_OnHitPackLimit(Pilot pilot, int packCount)
