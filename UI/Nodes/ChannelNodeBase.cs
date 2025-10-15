@@ -691,6 +691,15 @@ namespace UI.Nodes
                 return true;
             }
 
+            if (mouseInputEvent.ButtonState == ButtonStates.Released && 
+                CompositorLayer.InputEventFactory.AreAltKeysDown() && 
+                CompositorLayer.InputEventFactory.AreControlKeysDown() &&
+                mouseInputEvent.Button == MouseButtons.Left)
+            {
+                OnFullscreen?.Invoke();
+                return true;
+            }
+
             if (mouseInputEvent.ButtonState == ButtonStates.Released && CompositorLayer.InputEventFactory.AreAltKeysDown() && mouseInputEvent.Button == MouseButtons.Left)
             {
                 DateTime time = DateTime.Now;
