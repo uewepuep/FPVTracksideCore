@@ -376,9 +376,15 @@ namespace UI.Nodes.Rounds
                     mm.AddBlank();
                     mm.AddItem("Generate Dummy Race Results", () =>
                     {
-                        EventManager.RaceManager.GenerateResults(EventManager.RaceManager.TimingSystemManager.PrimeSystems.OfType<Timing.DummyTimingSystem>().FirstOrDefault(), Race);
+                        EventManager.RaceManager.GenerateResults(EventManager.RaceManager.TimingSystemManager.PrimeSystems.OfType<Timing.DummyTimingSystem>().FirstOrDefault(), Race, true);
                         Refresh();
                     });
+
+                    //mm.AddItem("Generate Dummy Race Results and Open", () =>
+                    //{
+                    //    EventManager.RaceManager.GenerateResults(EventManager.RaceManager.TimingSystemManager.PrimeSystems.OfType<Timing.DummyTimingSystem>().FirstOrDefault(), Race, false);
+                    //    Refresh();
+                    //});
                 }
 
                 mm.Show(mouseInputEvent);

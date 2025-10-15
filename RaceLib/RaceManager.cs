@@ -1926,7 +1926,7 @@ namespace RaceLib
             }
         }
 
-        public void GenerateResults(DummyTimingSystem dummyTimingSystem, Race race)
+        public void GenerateResults(DummyTimingSystem dummyTimingSystem, Race race, bool finish)
         {
             if (race.Ended)
                 return;
@@ -1957,7 +1957,14 @@ namespace RaceLib
                 }
             }
 
-            EndRace();
+            if (finish)
+            {
+                EndRace();
+            }
+            else
+            {
+                SetRace(race);
+            }
         }
 
         public IEnumerable<Lap> SplitLap(Lap original, int splits)

@@ -422,7 +422,7 @@ namespace UI.Nodes.Rounds
             var timing = EventManager.RaceManager.TimingSystemManager.PrimeSystems.OfType<Timing.DummyTimingSystem>().FirstOrDefault();
             foreach (Race race in EventManager.RaceManager.GetRaces(Round))
             {
-                EventManager.RaceManager.GenerateResults(timing, race);
+                EventManager.RaceManager.GenerateResults(timing, race, true);
             }
             Refresh();
         }
