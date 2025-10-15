@@ -129,6 +129,14 @@ namespace UI.Nodes
 
         }
     }
+    public class TimeZonePropertyNode<T> : ListPropertyNode<T>
+    {
+        public TimeZonePropertyNode(T obj, PropertyInfo pi, Color background, Color textColor, Color hover)
+            : base(obj, pi, background, textColor, hover)
+        {
+            SetOptions(RaceLib.TimeZone.GetIanaTimeZones().Order());
+        }
+    }
 
     public class SoundEditor : ObjectEditorNode<Sound.Sound>
     {

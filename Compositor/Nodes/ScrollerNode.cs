@@ -209,7 +209,7 @@ namespace Composition.Nodes
                 return true;
             }
 
-            return false;
+            return Dragging;
         }
 
         public void ScrollTo(float point, TimeSpan time)
