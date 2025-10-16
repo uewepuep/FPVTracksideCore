@@ -179,6 +179,47 @@ namespace Tools
             return newTexture;
         }
 
+        public static void Mask(this Texture2D texture, GraphicsDevice graphicsDevice, Texture2D mask)
+        {
+            using (Texture2D resized = ResizeTexture(texture.GraphicsDevice, mask, texture.Width, texture.Height))
+            {
+                Color[] textureData = new Color[texture.Width * texture.Height];
+                Color[] maskData = new Color[texture.Width * texture.Height];
+
+                texture.GetData(textureData);
+                resized.GetData(maskData);
+
+                for (int i = 0; i < textureData.Length && i < maskData.Length; i++)
+                {
+                    textureData[i].A = maskData[i].A;
+                }
+
+                texture.SetData(textureData);
+            }
+        }
+
+        public static Texture2D MaskClone(GraphicsDevice graphicsDevice, Texture2D texture, Texture2D mask)
+        {
+            Texture2D newTexture = new Texture2D(texture.GraphicsDevice, texture.Width, texture.Height);
+
+            using (Texture2D resized = ResizeTexture(texture.GraphicsDevice, mask, texture.Width, texture.Height))
+            {
+                Color[] textureData = new Color[texture.Width * texture.Height];
+                Color[] maskData = new Color[texture.Width * texture.Height];
+
+                texture.GetData(textureData);
+                resized.GetData(maskData);
+
+                for (int i = 0; i < textureData.Length && i < maskData.Length; i++)
+                {
+                    textureData[i].A = maskData[i].A;
+                }
+
+                newTexture.SetData(textureData);
+            }
+
+            return newTexture;
+        }
 
         public static void SaveAs(this Texture2D texture, string filename, bool mirrored = false, bool flipped = false)
         {
@@ -201,21 +242,21 @@ namespace Tools
             if (mirrored)
                 src = src.Mirror(texture.Width);
 
-            cloned = ResizeTexture(texture, src, dest);
-
-            using (FileStream fs = new FileStream(filename, FileMode.CreateNew))
+            using (cloned = Clone(texture))
             {
-                if (filename.EndsWith(".png"))
+                using (FileStream fs = new FileStream(filename, FileMode.CreateNew))
                 {
-                    cloned.SaveAsPng(fs, cloned.Width, cloned.Height);
-                }
+                    if (filename.EndsWith(".png"))
+                    {
+                        cloned.SaveAsPng(fs, cloned.Width, cloned.Height);
+                    }
 
-                if (filename.EndsWith(".jpg"))
-                {
-                    cloned.SaveAsJpeg(fs, cloned.Width, cloned.Height);
+                    if (filename.EndsWith(".jpg"))
+                    {
+                        cloned.SaveAsJpeg(fs, cloned.Width, cloned.Height);
+                    }
                 }
             }
-            cloned.Dispose();
         }
 
         public static Texture2D GetEmbeddedTexture(GraphicsDevice graphics, System.Reflection.Assembly assembly, string name)
@@ -243,14 +284,14 @@ namespace Tools
         }
         
         
-        public static Texture2D ResizeTexture(Texture2D sourceImage, int width, int height)
+        public static Texture2D ResizeTexture(GraphicsDevice graphicsDevice, Texture2D sourceImage, int width, int height)
         {
-            return ResizeTexture(sourceImage, new Rectangle(0, 0, sourceImage.Width, sourceImage.Height), new Rectangle(0, 0, width, height));
+            return ResizeTexture(graphicsDevice, sourceImage, new Rectangle(0, 0, sourceImage.Width, sourceImage.Height), new Rectangle(0, 0, width, height));
         }
 
-        public static Texture2D ResizeTexture(Texture2D sourceImage, Rectangle sourceRectangle, Rectangle destinationRectangle)
+        public static Texture2D ResizeTexture(GraphicsDevice graphicsDevice, Texture2D sourceImage, Rectangle sourceRectangle, Rectangle destinationRectangle)
         {
-            RenderTarget2D renderTarget = new RenderTarget2D(sourceImage.GraphicsDevice, destinationRectangle.Width, destinationRectangle.Height, false, SurfaceFormat.Color, DepthFormat.None);
+            RenderTarget2D renderTarget = new RenderTarget2D(graphicsDevice, destinationRectangle.Width, destinationRectangle.Height, false, SurfaceFormat.Color, DepthFormat.None);
 
             try
             {
@@ -273,7 +314,7 @@ namespace Tools
         public static Texture2D LoadTextureResize(GraphicsDevice graphicsDevice, string sourceImagePath, int width, int height, bool preMulti)
         {
             Texture2D sourceImage = LoadTexture(graphicsDevice, sourceImagePath, preMulti);
-            return ResizeTexture(sourceImage, width, height);
+            return ResizeTexture(graphicsDevice, sourceImage, width, height);
         }
 
         public static void ChromaKey(Texture2D texture, ref Color[] data, ref Texture2D replacementTexture, ChromaKeyColor chromaKeyColor, byte limit)

@@ -58,10 +58,10 @@ namespace Composition.Nodes
             SourceBounds = new Rectangle();
         }
 
-        public ImageNode(Texture2D texture)
+        public ImageNode(Texture2D texture, bool sharedTexture)
             : this()
         {
-            sharedTexture = true;
+            sharedTexture = sharedTexture;
             Texture = texture;
             if (Texture != null)
             {
@@ -161,7 +161,7 @@ namespace Composition.Nodes
             RelativeSourceBounds = new RectangleF(0, 0, 1, 1);
         }
 
-        public void LoadImage(Drawer id)
+        public virtual void LoadImage(Drawer id)
         {
             try
             {

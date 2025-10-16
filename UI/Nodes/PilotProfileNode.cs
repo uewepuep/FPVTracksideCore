@@ -3,6 +3,7 @@ using Composition.Input;
 using Composition.Nodes;
 using ImageServer;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using RaceLib;
 using System;
 using System.Collections.Generic;
@@ -124,7 +125,6 @@ namespace UI.Nodes
                 FileInfo fileInfo = new FileInfo(repaired);
                 if (fileInfo.Exists)
                 {
-
                     string[] videoFileTypes = new[] { ".mp4", ".wmv", ".mkv" };
                     string[] imageFileTypes = new[] { ".png", ".jpg", ".jpeg" };
 
@@ -142,6 +142,8 @@ namespace UI.Nodes
                             source = new CachedTextureFrameSource(CompositorLayer.GraphicsDevice, VideoFrameWorks.GetFramework(FrameWork.MediaFoundation), filename);
                         }
 
+                        source.Mask = LoadMask();
+                        
                         source.BounceRepeat = ApplicationProfileSettings.Instance.PilotProfileBoomerangRepeat;
 
                         videoPlayer = new FileFrameNode(source);
@@ -154,7 +156,8 @@ namespace UI.Nodes
                     }
                     else if (imageFileTypes.Contains(fileInfo.Extension))
                     {
-                        PilotPhoto = new ImageNode(fileInfo.FullName);
+                        Texture2D profile = LoadProfileImage(fileInfo.FullName, LoadMask());
+                        PilotPhoto = new ImageNode(profile, false);
                         insideOutBorderRelativeNode.AddChild(PilotPhoto, 0);
                     }
 
@@ -191,6 +194,31 @@ namespace UI.Nodes
                 Logger.VideoLog.LogException(this, ex);
             }
             return false;
+        }
+
+        private Texture2D LoadMask()
+        {
+            string filename = Theme.Current.PilotProfileMask.TextureFilename;
+            if (string.IsNullOrEmpty(filename))
+                return null;
+
+            return CompositorLayer.TextureCache.GetTextureFromFilename(filename, Color.White, false, false);
+        }
+
+        private Texture2D LoadProfileImage(string filename, Texture2D mask)
+        {
+            if (string.IsNullOrEmpty(filename))
+                return null;
+
+            Texture2D profile = CompositorLayer.TextureCache.GetTextureFromFilename(filename, Color.Transparent, false, false);
+            if (profile == null)
+                return null;
+
+            //profile = TextureHelper.MaskClone(profile, mask);
+
+            //TextureHelper.PreMultiplyAlpha(profile);
+
+            return profile;
         }
 
         private string PickAThing(Pilot pilot)

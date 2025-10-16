@@ -169,7 +169,7 @@ namespace UI.Nodes
             colorNode.RelativeBounds = new RectangleF(0, 0, 1, 0.175f);
             AddChild(colorNode);
 
-            ImageNode logoNode = new ImageNode(logo);
+            ImageNode logoNode = new ImageNode(logo, true);
             logoNode.RelativeBounds = new RectangleF(0, 0, 1, 0.99f);
             logoNode.Alignment = RectangleAlignment.TopCenter;
             colorNode.AddChild(logoNode);

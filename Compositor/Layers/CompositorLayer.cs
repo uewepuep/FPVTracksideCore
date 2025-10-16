@@ -56,6 +56,8 @@ namespace Composition.Layers
                 return LayerStack.PlatformTools;
             }
         }
+        public TextureCache TextureCache { get { if (drawer == null) return null; return drawer.TextureCache; } }
+
 
         public CompositorLayer(GraphicsDevice device)
         {

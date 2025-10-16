@@ -36,7 +36,7 @@ namespace UI.Nodes
             colorNode.RelativeBounds = new RectangleF(0, 0, 1, 0.21f);
             background.AddChild(colorNode);
 
-            ImageNode logoNode = new ImageNode(logo);
+            ImageNode logoNode = new ImageNode(logo, true);
             logoNode.Alignment = RectangleAlignment.TopCenter;
             colorNode.AddChild(logoNode);
 

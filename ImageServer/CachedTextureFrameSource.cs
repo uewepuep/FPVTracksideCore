@@ -82,6 +82,7 @@ namespace ImageServer
 
         private IPlaybackFrameSource playbackFrameSource { get { return frameSource as IPlaybackFrameSource; } }
 
+        public Texture2D Mask { get; set; }
 
         public CachedTextureFrameSource(GraphicsDevice graphicsDevice, VideoFrameWork videoFrameWork, string filename)
             :base(new VideoConfig())
@@ -131,6 +132,10 @@ namespace ImageServer
                 FrameTextureSample texture = CreateSample(graphicsDevice, frameWidth, frameHeight, frameFormat);
 
                 Texture2D texture2D = texture as Texture2D;
+                //if (Mask != null)
+                //{
+                //    texture2D.Mask(Mask);
+                //}
 
                 if (frameSource.UpdateTexture(graphicsDevice, count, ref texture2D))
                 {
