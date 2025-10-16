@@ -293,6 +293,8 @@ namespace UI.Video
 
                     SeekNode.SetRace(race, minStart, maxEnd);
 
+                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
+
                     RequestLayout();
                 });
 
