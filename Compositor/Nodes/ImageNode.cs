@@ -36,7 +36,7 @@ namespace Composition.Nodes
         public RectangleF RelativeSourceBounds { get; set; }
         public Rectangle SourceBounds { get; set; }
 
-        public string FileName { get; private set; }
+        public string FileName { get; protected set; }
         public Color Tint { get; set; }
 
         protected bool sharedTexture;
@@ -168,7 +168,7 @@ namespace Composition.Nodes
                 texture = id.TextureCache.GetTextureFromFilename(FileName, ReloadFromFile);
                 if (SourceBounds.Width == 0 || SourceBounds.Height == 0)
                 {
-                    SourceBounds = new Rectangle(0, 0, Texture.Width, Texture.Height);
+                    SourceBounds = new Rectangle(0, 0, texture.Width, texture.Height);
                 }
                 sharedTexture = true;
                 UpdateAspectRatioFromTexture();

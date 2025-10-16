@@ -200,15 +200,18 @@ namespace Tools
 
         public static Texture2D MaskClone(GraphicsDevice graphicsDevice, Texture2D texture, Texture2D mask)
         {
-            Texture2D newTexture = new Texture2D(texture.GraphicsDevice, texture.Width, texture.Height);
+            Texture2D newTexture = new Texture2D(texture.GraphicsDevice, mask.Width, mask.Height);
 
-            using (Texture2D resized = ResizeTexture(texture.GraphicsDevice, mask, texture.Width, texture.Height))
+            using (Texture2D resized = ResizeTexture(texture.GraphicsDevice, texture, mask.Width, mask.Height))
             {
-                Color[] textureData = new Color[texture.Width * texture.Height];
-                Color[] maskData = new Color[texture.Width * texture.Height];
 
-                texture.GetData(textureData);
-                resized.GetData(maskData);
+                int size = resized.Width * resized.Height;
+
+                Color[] textureData = new Color[size];
+                Color[] maskData = new Color[size];
+
+                resized.GetData(textureData);
+                mask.GetData(maskData);
 
                 for (int i = 0; i < textureData.Length && i < maskData.Length; i++)
                 {
