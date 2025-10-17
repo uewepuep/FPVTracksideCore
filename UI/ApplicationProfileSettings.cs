@@ -265,6 +265,14 @@ namespace UI
         [NeedsRestart]
         public int PilotProfileHoldLengthSeconds { get; set; }
 
+        [Category("Pilot Profile")]
+        [NeedsRestart]
+        public bool PilotProfileMask { get; set; }
+
+        [Category("Pilot Profile")]
+        [NeedsRestart]
+        public float PilotProfileMaskAlpha { get; set; }
+
         [Browsable(false)]
         public string Language { get; set; }
 
@@ -350,6 +358,8 @@ namespace UI
             ShowPositionDeltaTime = 6;
             Language = "English";
             ShowDownPilotLapTimes = true;
+            PilotProfileMask = true;
+            PilotProfileMaskAlpha = 0.6f;
         }
 
         protected const string filename = "ProfileSettings.xml";

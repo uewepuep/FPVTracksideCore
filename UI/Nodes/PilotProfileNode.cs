@@ -129,7 +129,8 @@ namespace UI.Nodes
                     string[] imageFileTypes = new[] { ".png", ".jpg", ".jpeg" };
 
                     string maskFilename = "";
-                    if (Theme.Current != null && Theme.Current.PilotProfileMask != null)
+                    float maskSecondDrawAlpha = ApplicationProfileSettings.Instance.PilotProfileMaskAlpha;
+                    if (ApplicationProfileSettings.Instance.PilotProfileMask && Theme.Current != null && Theme.Current.PilotProfileMask != null)
                     {
                         maskFilename = Theme.Current.PilotProfileMask.TextureFilename;
                     }
@@ -150,7 +151,14 @@ namespace UI.Nodes
 
                         source.BounceRepeat = ApplicationProfileSettings.Instance.PilotProfileBoomerangRepeat;
 
-                        videoPlayer = new FileFrameNode(source);
+                        if (string.IsNullOrEmpty(maskFilename))
+                        {
+                            videoPlayer = new FileFrameNode(source);
+                        }
+                        else
+                        {
+                            videoPlayer = new FileFrameMaskedNode(source, maskFilename, maskSecondDrawAlpha);
+                        }
 
                         videoPlayer.Repeat = true;
                         videoPlayer.Play();
@@ -160,7 +168,15 @@ namespace UI.Nodes
                     }
                     else if (imageFileTypes.Contains(fileInfo.Extension))
                     {
-                        PilotPhoto = new ImageMaskedNode(fileInfo.FullName, maskFilename);
+                        if (string.IsNullOrEmpty(maskFilename))
+                        {
+                            PilotPhoto = new ImageNode(fileInfo.FullName);
+                        }
+                        else
+                        {
+                            PilotPhoto = new ImageMaskedNode(fileInfo.FullName, maskFilename, maskSecondDrawAlpha);
+                        }
+
                         insideOutBorderRelativeNode.AddChild(PilotPhoto, 0);
                     }
 

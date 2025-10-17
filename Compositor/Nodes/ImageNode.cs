@@ -110,7 +110,7 @@ namespace Composition.Nodes
             return bounds;
         }
 
-        public void UpdateAspectRatioFromTexture()
+        public virtual void UpdateAspectRatioFromTexture()
         {
             if (Texture != null)
             {

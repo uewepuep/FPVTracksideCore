@@ -1,5 +1,9 @@
-﻿using Microsoft.Xna.Framework;
+﻿using Composition;
+using Composition.Nodes;
+using ImageServer;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Graphics.PackedVector;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,23 +12,20 @@ using System.Text;
 using System.Threading.Tasks;
 using Tools;
 
-namespace Composition.Nodes
+namespace UI.Video
 {
-    public class ImageMaskedNode : ImageNode
+    public class FileFrameMaskedNode : FileFrameNode
     {
         public string MaskFilename { get; private set; }
         public Texture2D MaskTexture { get; private set; }
         public Rectangle MaskSourceBounds { get; private set; }
-
         public float SecondDrawAlpha { get; private set; }
 
-        public ImageMaskedNode(string imageFilename, string maskFilename, float secondDrawAlpha)
-            : base(imageFilename)
+        public FileFrameMaskedNode(FrameSource s, string maskFilename, float secondDrawAlpha) : base(s)
         {
-            SecondDrawAlpha = secondDrawAlpha;
             MaskFilename = maskFilename;
+            SecondDrawAlpha = secondDrawAlpha;
         }
-
 
         public override void LoadImage(Drawer id)
         {
@@ -34,7 +35,7 @@ namespace Composition.Nodes
                 return;
 
             MaskTexture = id.TextureCache.GetTextureFromFilename(MaskFilename, Color.White, false, false);
-            MaskSourceBounds = new Rectangle(0,0, MaskTexture.Width, MaskTexture.Height);
+            MaskSourceBounds = new Rectangle(0, 0, MaskTexture.Width, MaskTexture.Height);
         }
 
         public override void Draw(Drawer id, float parentAlpha)
