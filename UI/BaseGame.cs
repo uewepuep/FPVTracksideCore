@@ -387,7 +387,7 @@ namespace UI
             {
                 Theme.Initialise(GraphicsDevice, PlatformTools.WorkingDirectory, "FPVTrackside");
 
-                if (backgroundLayer != null)
+                if (backgroundLayer != null && Theme.Current != null)
                 {
                     backgroundLayer.SetBackground(Theme.Current.Background);
                 }
