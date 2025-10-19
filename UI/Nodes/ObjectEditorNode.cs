@@ -76,6 +76,7 @@ namespace UI.Nodes
         public PilotEditor(EventManager eventManager, IEnumerable<Pilot> toEdit)
             : base(toEdit, false, true, false)
         {
+            AllowUnicode = true;
             this.eventManager = eventManager;
             pilotChannels = new List<PilotChannel>();
 
