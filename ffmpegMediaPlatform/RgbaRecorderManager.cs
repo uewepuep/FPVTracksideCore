@@ -154,6 +154,7 @@ namespace FfmpegMediaPlatform
                 {
                     Tools.Logger.VideoLog.LogException(this, ex);
                     Tools.Logger.VideoLog.LogCall(this, $"Exception while starting RGBA recording: {ex.Message}");
+                    CleanupRecordingProcess(); // Ensure ffmpeg process is cleaned up if exception occurs after process.Start()
                     return false;
                 }
             }

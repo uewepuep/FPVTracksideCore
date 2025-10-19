@@ -6,7 +6,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <StartupObject />
     <Platforms>x64;AnyCPU</Platforms>
-    <Version>2.1.0.3</Version>
+    <Version>2.1.0.5</Version>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 
