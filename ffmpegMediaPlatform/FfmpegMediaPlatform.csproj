@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <TargetFrameworks>net6.0;net6.0-windows</TargetFrameworks>
+    <TargetFrameworks>net9.0;net9.0-windows</TargetFrameworks>
     <Configurations>Debug;Release</Configurations>
     <Platforms>x64;AnyCPU</Platforms>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.303">
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="FFmpeg.AutoGen" Version="7.1.1" />
@@ -40,10 +40,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="ffmpeg.exe" Condition="'$(TargetFramework)' == 'net6.0-windows'">
+    <None Update="ffmpeg.exe" Condition="'$(TargetFramework)' == 'net9.0-windows'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="ffmpeg" Condition="'$(TargetFramework)' == 'net6.0'">
+    <None Update="ffmpeg" Condition="'$(TargetFramework)' == 'net9.0'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

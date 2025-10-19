@@ -129,6 +129,8 @@ namespace UI
         [Category("Layout")]
         public bool AlwaysSmallPilotProfile { get; set; }
 
+        [Category("Layout")]
+        public bool ShowDownPilotLapTimes { get; set; }
 
         [Category("Dynamic pilot ordering")]
         public OrderTypes PilotOrderPreRace { get; set; }
@@ -347,6 +349,7 @@ namespace UI
             UseDirectX9 = false;
             ShowPositionDeltaTime = 6;
             Language = "English";
+            ShowDownPilotLapTimes = true;
         }
 
         protected const string filename = "ProfileSettings.xml";

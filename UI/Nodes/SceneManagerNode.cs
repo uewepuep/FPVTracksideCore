@@ -1,4 +1,5 @@
 ﻿using Composition;
+using Composition.Input;
 using Composition.Nodes;
 using ImageServer;
 using Microsoft.Xna.Framework;
@@ -8,10 +9,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Tools;
-using Composition.Input;
-using UI.Video;
 using System.Xml.Linq;
+using Tools;
+using UI.Nodes.Rounds;
+using UI.Video;
 
 namespace UI.Nodes
 {
@@ -199,6 +200,16 @@ namespace UI.Nodes
             eventManager.ResultManager.RaceResultsChanged -= ResultManager_RaceResultsChanged;
 
         }
+
+        public override Rectangle? CanDrop(MouseInputEvent finalInputEvent, Node node)
+        {
+            IPilot pilotNode = node as IPilot;
+            if (pilotNode != null)
+                return Bounds;
+
+            return base.CanDrop(finalInputEvent, node);
+        }
+
 
         public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
         {

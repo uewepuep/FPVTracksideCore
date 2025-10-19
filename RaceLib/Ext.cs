@@ -284,13 +284,19 @@ namespace RaceLib
 
             output += string.Join(", ", numbers.ToArray());
 
-            if (lastRound.PointSummary != null)
+            PointSummary pointSummary = null;
+            if (lastRound.Stage != null)
+            {
+                pointSummary = lastRound.Stage.PointSummary;
+            }
+
+            if (pointSummary != null)
             {
                 List<string> strings = new List<string>();
 
-                if (lastRound.PointSummary.DropWorstRound)
+                if (pointSummary.DropWorstRound)
                     strings.Add("Drops worst round");
-                if (lastRound.PointSummary.RoundPositionRollover && lastRound.RoundType == Round.RoundTypes.Final)
+                if (pointSummary.RoundPositionRollover && lastRound.RoundType == Round.RoundTypes.Final)
                 {
                     strings.Add("Rolls over");
                 }

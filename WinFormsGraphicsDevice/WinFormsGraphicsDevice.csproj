@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net60-windows</TargetFramework>
+    <TargetFramework>net9.0-windows</TargetFramework>
     <ApplicationIcon />
     <Platforms>x64;AnyCPU</Platforms>
     <StartupObject />
@@ -12,6 +12,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-	  <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.1.303" />
+	  <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.4" />
   </ItemGroup>
 </Project>

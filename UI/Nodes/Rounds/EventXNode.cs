@@ -27,13 +27,13 @@ namespace UI.Nodes.Rounds
         protected ColorNode headingbg;
 
         public delegate void RoundDelegate(Round round);
+        public delegate void RoundStageDelegate(Round round, Stage stage);
         public delegate void RoundTimeDelegate(Round round, TimeSummary.TimeSummaryTypes type);
 
         public event RoundDelegate AddRound;
         public event RoundDelegate ChangeChannels;
         public event RoundDelegate Finals;
         public event RoundDelegate Clone;
-        public event RoundDelegate AddEmptyRound;
         public event RoundDelegate DoubleElim;
 
         public event RoundDelegate RemoveRound;
@@ -42,7 +42,8 @@ namespace UI.Nodes.Rounds
         public event RoundTimeDelegate Times;
         public event RoundDelegate LapCounts;
 
-        public event RoundDelegate CustomRound;
+        public event RoundStageDelegate AddEmptyRound;
+        public event RoundStageDelegate CustomRound;
 
         public event Action NeedsFormatLayout;
 
@@ -56,6 +57,17 @@ namespace UI.Nodes.Rounds
         protected bool canClone;
         protected bool canAddFinal;
         protected bool canAddRace;
+
+        public virtual int Order
+        {
+            get
+            {
+                if (Round == null)
+                    return 0;
+
+                return Round.Order;
+            }
+        }
 
         public EventXNode(EventManager ev, Round round)
         {
@@ -101,7 +113,12 @@ namespace UI.Nodes.Rounds
             UpdateButtons();
         }
 
-        public void SetHeading(string text)
+        public virtual bool IsRoundInStage()
+        {
+            return false;
+        }
+
+        public virtual void SetHeading(string text)
         {
             heading.Text = text;
         }
@@ -169,24 +186,25 @@ namespace UI.Nodes.Rounds
                 rootMenu.AddItem("Add Next Sheet Round", AddSheetFormatRound);
             }
 
-
             // Add round
             {
                 MouseMenu addRound = rootMenu.AddSubmenu("Add Round");
                 AddButtonRoundMenu(addRound);
             }
 
-            if (GetOrderedPilots().Any())
+            if (!IsRoundInStage())
             {
-                MouseMenu format = rootMenu.AddSubmenu("Add Format");
-                AddFormatMenu(format);
+                if (GetOrderedPilots().Any())
+                {
+                    MouseMenu format = rootMenu.AddSubmenu("Add Format");
+                    AddFormatMenu(format);
+                }
+                else
+                {
+                    MouseMenu format = rootMenu.AddSubmenu("Set Format");
+                    AddFormatMenu(format);
+                }
             }
-            else
-            {
-                MouseMenu format = rootMenu.AddSubmenu("Set Format");
-                AddFormatMenu(format);
-            }
-
 
             if (EventManager.ExternalRaceProviders != null)
             {
@@ -200,23 +218,23 @@ namespace UI.Nodes.Rounds
                 }
             }
 
-            if (canSum || canAddTimes || canAddLapCount)
+            if ((canSum || canAddTimes || canAddLapCount) && !IsRoundInStage())
             {
-                MouseMenu results = rootMenu.AddSubmenu("Show Results");
+                MouseMenu results = rootMenu.AddSubmenu("Add Results Stage");
                 if (canSum)
-                    results.AddItem("Show Points", () => { SumPoints?.Invoke(Round); });
+                    results.AddItem("Points Stage", () => { SumPoints?.Invoke(Round); });
 
                 if (canAddTimes)
                 {
-                    results.AddItem("Show PB Records", () => { Times?.Invoke(Round, TimeSummary.TimeSummaryTypes.PB); });
-                    results.AddItem("Show Event Lap Records", () => { Times?.Invoke(Round, TimeSummary.TimeSummaryTypes.EventLap); });
-                    results.AddItem("Show Race Time Records", () => { Times?.Invoke(Round, TimeSummary.TimeSummaryTypes.RaceTime); });
+                    results.AddItem("PB Records Stage", () => { Times?.Invoke(Round, TimeSummary.TimeSummaryTypes.PB); });
+                    results.AddItem("Event Lap Records Stage", () => { Times?.Invoke(Round, TimeSummary.TimeSummaryTypes.EventLap); });
+                    results.AddItem("Race Time Records Stage", () => { Times?.Invoke(Round, TimeSummary.TimeSummaryTypes.RaceTime); });
                 }
 
                 if (canAddLapCount)
-                    results.AddItem("Show Lap Count", () => { LapCounts?.Invoke(Round); });
+                    results.AddItem("Lap Count Stage", () => { LapCounts?.Invoke(Round); });
                 
-                results.AddItem("Show Pack Count", () => { PackCount?.Invoke(Round); });
+                results.AddItem("Pack Count Stage", () => { PackCount?.Invoke(Round); });
             }
         }
 
@@ -239,7 +257,13 @@ namespace UI.Nodes.Rounds
 
         protected virtual void AddButtonRoundMenu(MouseMenu addRound)
         {
-            addRound.AddItem("Empty", () => { AddEmptyRound?.Invoke(Round); });
+            Stage stage = null;
+            if (IsRoundInStage())
+            {
+                stage = Round.Stage;
+            }
+
+            addRound.AddItem("Empty", () => { AddEmptyRound?.Invoke(Round, stage); });
             if (canClone)
             {
                 addRound.AddItem("Clone", () => { Clone?.Invoke(Round); });
@@ -250,7 +274,7 @@ namespace UI.Nodes.Rounds
 
             if (canAddFinal)
                 addRound.AddItem("Final", () => { Finals?.Invoke(Round); });
-            addRound.AddItem("Custom Round", () => { CustomRound?.Invoke(Round); });
+            addRound.AddItem("Custom Round", () => { CustomRound?.Invoke(Round, stage); });
         }
 
         private void AddSheetFormatRound()
@@ -277,13 +301,19 @@ namespace UI.Nodes.Rounds
                 newRound = Round;
             }
 
+            Stage stage = null;
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
-                newRound.SheetFormatFilename = sheet.FileInfo.Name;
+                stage = EventManager.RoundManager.GetCreateStage(db, newRound, false);
+                stage.Name = sheet.Name;
+                stage.SheetFormatFilename = sheet.FileInfo.Name;
+
+                newRound.Stage = stage;
                 db.Update(newRound);
+                db.Update(stage);
             }
 
-            EventManager.RoundManager.SheetFormatManager.LoadSheet(newRound, GetOrderedPilots().ToArray(), true);
+            EventManager.RoundManager.SheetFormatManager.LoadSheet(stage, GetOrderedPilots().ToArray(), true);
         }
 
         protected void AddRace()

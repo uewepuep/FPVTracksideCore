@@ -14,12 +14,17 @@ namespace UI.Nodes.Rounds
 {
     public class EventLapCountsNode : EventPilotListNode<PilotLapCountsNode>
     {
-        public EventLapCountsNode(EventManager ev, Round round)
-            : base(ev, round)
+        public EventLapCountsNode(RoundsNode roundsNode, EventManager ev, Round round)
+            : base(roundsNode, ev, round)
         {
-            SetHeading("Lap Count");
             Refresh();
             EventManager.ResultManager.RaceResultsChanged += PointsManager_RaceResultsChanged;
+        }
+
+        public override void Refresh()
+        {
+            SetHeading("Lap Count");
+            base.Refresh();
         }
 
         protected override void UpdateButtons()
@@ -169,6 +174,14 @@ namespace UI.Nodes.Rounds
 
                 ppn.Position = position;
             }
+        }
+
+        public override bool HasResult()
+        {
+            if (Stage == null)
+                return false;
+
+            return Stage.LapCountAfterRound;
         }
     }
 

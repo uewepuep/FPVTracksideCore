@@ -34,7 +34,7 @@ namespace Composition.Nodes
             }
         }
 
-        public TabbedMultiNode(TimeSpan animation, TabButtonsNode tabContainer)
+        public TabbedMultiNode(TimeSpan animation, TabButtonsNode tabButtons)
         {
             mapBack = new Dictionary<Node, TextButtonNode>();
 
@@ -42,8 +42,7 @@ namespace Composition.Nodes
             multiNode.OnShowChange += MultiNode_OnShowChange;
             multiNode.Direction = MultiNode.Directions.Horizontal;
 
-            TabButtonsNode = tabContainer;
-
+            TabButtonsNode = tabButtons;
             AddChild(multiNode);
         }
 
@@ -125,6 +124,7 @@ namespace Composition.Nodes
         public ToolTexture ButtonBackground { get; private set; }
         public Color HoverCover { get; private set; }
         private Color textColor;
+
 
         public TabButtonsNode(ToolTexture tabBackground, ToolTexture tabButtonBackground, Color hover, Color text) 
         {

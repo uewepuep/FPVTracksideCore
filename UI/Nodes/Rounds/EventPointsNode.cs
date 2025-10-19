@@ -15,12 +15,17 @@ namespace UI.Nodes.Rounds
 {
     public class EventPointsNode : EventPilotListNode<PilotPointsNode>
     {
-        public EventPointsNode(EventManager ev, Round round)
-            : base(ev, round)
+        public EventPointsNode(RoundsNode roundsNode, EventManager ev, Round round)
+            : base(roundsNode, ev, round)
         {
-            SetHeading("Points");
             Refresh();
             EventManager.ResultManager.RaceResultsChanged += PointsManager_RaceResultsChanged;
+        }
+
+        public override void Refresh()
+        {
+            SetHeading("Points");
+            base.Refresh();
         }
 
         protected override void UpdateButtons()
@@ -108,9 +113,9 @@ namespace UI.Nodes.Rounds
             Round[] rounds = races.Select(r => r.Round).Distinct().ToArray();
 
             bool roundPositionRollover = rounds.Any(r => r.RoundType == Round.RoundTypes.Final);
-            if (Round.PointSummary != null)
+            if (Round.Stage != null && Round.Stage.PointSummary != null)
             {
-                roundPositionRollover &= Round.PointSummary.RoundPositionRollover;
+                roundPositionRollover &= Round.Stage.PointSummary.RoundPositionRollover;
             }
 
             if (EventManager.ResultManager.GetRollOverRound(rounds.FirstOrDefault()) == null)
@@ -133,7 +138,13 @@ namespace UI.Nodes.Rounds
                     {
                         List<Result> results = EventManager.ResultManager.GetResults(pilotRaces, p, roundPositionRollover).ToList();
 
-                        int totalPoints = EventManager.ResultManager.GetPointsTotal(results, Round.PointSummary.DropWorstRound);
+                        bool dropWorstRound = false;
+                        if (Round.Stage != null && Round.Stage.PointSummary != null)
+                        {
+                            dropWorstRound = Round.Stage.PointSummary.DropWorstRound;
+                        }
+
+                        int totalPoints = EventManager.ResultManager.GetPointsTotal(results, dropWorstRound);
 
                         Brackets bracket = pilotRaces.First().Bracket;
                         sn.UpdateScoreText(rounds, bracket, results.ToArray(), totalPoints, roundPositionRollover);
@@ -194,7 +205,18 @@ namespace UI.Nodes.Rounds
 
         public override void EditSettings()
         {
-            ObjectEditorNode<PointSummary> editor = new ObjectEditorNode<PointSummary>(Round.PointSummary);
+            PointSummary pointSummary = null;
+            if (Round.Stage != null)
+            {
+                pointSummary = Round.Stage.PointSummary;
+            }
+
+            if (pointSummary == null)
+            {
+                return;
+            }
+
+            ObjectEditorNode<PointSummary> editor = new ObjectEditorNode<PointSummary>(pointSummary);
             editor.Scale(0.6f);
             GetLayer<PopupLayer>().Popup(editor);
             editor.OnOK += (a) =>
@@ -203,6 +225,14 @@ namespace UI.Nodes.Rounds
                 EventManager.ResultManager.Recalculate(Round);
                 Refresh();
             };
+        }
+
+        public override bool HasResult()
+        {
+            if (Stage == null)
+                return false;
+
+            return Stage.PointSummary != null;
         }
     }
 

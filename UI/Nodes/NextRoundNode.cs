@@ -80,14 +80,14 @@ namespace UI.Nodes
 
         private void Change_OnClick(Composition.Input.MouseInputEvent mie)
         {
-            RoundPlan roundPlan = new RoundPlan(eventManager, Round);
+            RoundPlan roundPlan = new RoundPlan(eventManager, Round, Round.Stage);
             roundPlan.ChannelChange = RoundPlan.ChannelChangeEnum.Change;
             eventManager.RoundManager.GenerateRound(roundPlan);
         }
 
         private void Keep_OnClick(Composition.Input.MouseInputEvent mie)
         {
-            RoundPlan roundPlan = new RoundPlan(eventManager, Round);
+            RoundPlan roundPlan = new RoundPlan(eventManager, Round, Round.Stage);
             roundPlan.ChannelChange = RoundPlan.ChannelChangeEnum.KeepFromPreviousRound;
             eventManager.RoundManager.GenerateRound(roundPlan);
         }

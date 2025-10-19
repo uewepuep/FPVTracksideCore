@@ -144,12 +144,21 @@ namespace Tools
 
         public static string ToCSV(this string[][] table)
         {
-            return string.Join("\r\n", table.Select(line => string.Join(",", line)));
+            return string.Join("\r\n", table.Select(line => string.Join(",", line.Select(i => SafePilotName(i)))));
         }
 
         public static string ToTSV(this string[][] table)
         {
-            return string.Join("\r\n", table.Select(line => string.Join("\t", line)));
+            return string.Join("\r\n", table.Select(line => string.Join("\t", line.Select(i => SafePilotName(i)))));
+        }
+
+        public static string SafePilotName(string name)
+        {
+            if (name == null)
+                return null;
+
+            Regex rgx = new Regex("[\t\r\n,]", RegexOptions.Compiled);
+            return rgx.Replace(name, "");
         }
 
         public static string ToString(this double? d, string f)

@@ -10,20 +10,10 @@ namespace DB
 {
     public class DatabaseFactory : RaceLib.IDatabaseFactory
     {
-        public enum DatabaseTypes
-        {
-            Lite,
-            JSON
-        }
-
-        public DatabaseTypes DatabaseType { get; set; }
-
         private DirectoryInfo EventDirectory { get; set; }
 
-        public DatabaseFactory(DirectoryInfo LiteDBDirectory, DirectoryInfo eventDirectory, DatabaseTypes databaseType = DatabaseTypes.JSON)
+        public DatabaseFactory(DirectoryInfo LiteDBDirectory, DirectoryInfo eventDirectory)
         {
-            this.DatabaseType = databaseType;
-            Lite.LiteDatabase.Init(LiteDBDirectory);
 
             if (!eventDirectory.Exists)
             {
@@ -35,17 +25,7 @@ namespace DB
 
         public RaceLib.IDatabase Open(Guid eventId)
         {
-            RaceLib.IDatabase db = null;
-
-            if (DatabaseType == DatabaseTypes.JSON)
-            {
-                db = new CollectionDatabase(new JSON.JSONDatabaseConverted(EventDirectory));
-            }
-            else
-            {
-                db = new CollectionDatabase(new Lite.LiteDatabase());
-            }
-
+            RaceLib.IDatabase db = new CollectionDatabase(new JSON.JSONDatabaseConverted(EventDirectory));
             db.Init(eventId);
             return db;
         }

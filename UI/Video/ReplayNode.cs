@@ -405,6 +405,8 @@ namespace UI.Video
                     var frameTimes = GetFrameTimesFromFrameSources();
                     SeekNode.SetRace(race, minStart, maxEnd, frameTimes);
 
+                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
+
                     RequestLayout();
                 });
 

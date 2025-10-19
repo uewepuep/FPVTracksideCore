@@ -268,6 +268,8 @@ namespace UI.Nodes
                 bool anyFullscreen = input.OfType<ChannelNodeBase>().Any(c => c.CrashedOutType == CrashState.FullScreen);
                 if (anyFullscreen)
                 {
+                    gridStatsNode.SetAnimatedVisibility(false);
+                    downPilotsList.SetAnimatedVisibility(false);
                     return;
                 }
 
@@ -288,14 +290,18 @@ namespace UI.Nodes
                     }
                 }
 
-                downPilotsList.UpdateDown(ChannelNodes);
 
                 foreach (CamGridNode camNode in CamNodes)
                 {
                     camNode.SetAnimatedVisibility(camNode.VideoBounds.ShowInGrid && extrasVisible);
                 }
-
-                downPilotsList.SetAnimatedVisibility(crashed >= 1);
+                
+                if (ApplicationProfileSettings.Instance.ShowDownPilotLapTimes)
+                {
+                    int visibleNodes = VisibleChildCount();
+                    downPilotsList.UpdateDown(ChannelNodes);
+                    downPilotsList.SetAnimatedVisibility(crashed >= 1 && visibleNodes > 1);
+                }
 
                 CheckGridStatsVisiblilty();
             }
@@ -676,6 +682,7 @@ namespace UI.Nodes
             {
                 OnFullScreen?.Invoke(fullScreen);
             }
+            reOrderRequest = DateTime.Now;
         }
 
         public void FullScreen(CamGridNode fullScreen)
@@ -848,6 +855,17 @@ namespace UI.Nodes
             {
                 Reorder(true);
             }
+        }
+
+        public override Rectangle? CanDrop(MouseInputEvent finalInputEvent, Node node)
+        {
+            IPilot pl = node as IPilot;
+            if (pl != null)
+            {
+                return Bounds;
+            }
+
+            return base.CanDrop(finalInputEvent, node);
         }
 
         public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)

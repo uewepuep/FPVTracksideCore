@@ -2,7 +2,7 @@
 
     <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net60</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ApplicationIcon />
     <Platforms>AnyCPU;x64</Platforms>
     <StartupObject />

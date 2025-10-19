@@ -89,6 +89,8 @@ namespace UI
 
         public TextureColor[] ChannelColors { get; set; }
 
+        public ToolTexture FPVTracksideLogo { get; set; }
+
         public Theme2()
         {
             InitDefaultTheme();
@@ -167,6 +169,7 @@ namespace UI
                 theme.Button = PanelForeground.ToToolTexture(rawTextureCache);
 
                 theme.ChannelColors = ChannelColors.Select(c => c.ToToolColor(rawTextureCache)).ToArray();
+                theme.FPVTracksideLogo = FPVTracksideLogo;
             }
 
             return theme;
@@ -221,6 +224,8 @@ namespace UI
 
             NoVideoBackground = new TextureRegion() { Filename = "theme.png", X = 304, Y = 687, W = 282, H = 238 };
             CrashedOut = new TextureRegion() { Filename = "theme.png", X = 615, Y = 688, W = 282, H = 237 };
+
+            FPVTracksideLogo = new ToolTexture(@"img\logo.png", 0, 0, 0, 0);
 
             ChannelColors = new TextureColor[]
             {
