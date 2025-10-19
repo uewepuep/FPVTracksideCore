@@ -7,7 +7,7 @@
     <Platforms>x64;AnyCPU</Platforms>
     <StartupObject />
 	  <usewpf>true</usewpf>
-	  <Version>2.0.70.4</Version>
+	  <Version>2.0.70.5</Version>
 	  
 	  <PublishReadyToRun>false</PublishReadyToRun>
 	  <TieredCompilation>false</TieredCompilation>
