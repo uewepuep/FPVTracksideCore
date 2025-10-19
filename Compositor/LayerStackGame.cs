@@ -29,6 +29,13 @@ namespace Composition
             GraphicsDeviceManager.PreferredBackBufferHeight = 1000;
             GraphicsDeviceManager.PreferredBackBufferWidth = 1842;
 
+            // Mac-specific graphics configuration
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            {
+                GraphicsDeviceManager.GraphicsProfile = GraphicsProfile.HiDef;
+                GraphicsDeviceManager.SynchronizeWithVerticalRetrace = false; // Disable VSync on Mac for better performance
+            }
+
             lastSize = new Size(0, 0);
 
             ClearColor = Color.CornflowerBlue;

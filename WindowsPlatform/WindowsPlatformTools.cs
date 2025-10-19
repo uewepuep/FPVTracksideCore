@@ -66,6 +66,11 @@ namespace WindowsPlatform
         {
             workingDirectory = new DirectoryInfo(Directory.GetCurrentDirectory());
             clipboard = new Clipboard();
+
+            VideoFrameWorks.Available = new VideoFrameWork[]
+            {
+                new FfmpegMediaPlatform.FfmpegMediaFramework()
+            };
         }
 
         public override ITextRenderer CreateTextRenderer()

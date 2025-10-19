@@ -102,8 +102,11 @@ namespace ImageServer
             {
                 if (processCount > texture.FrameProcessCount)
                 {
-                    System.Diagnostics.Debug.Assert(texture.Width == width);
-                    System.Diagnostics.Debug.Assert(texture.Height == height);
+                    if (texture.Width != width || texture.Height != height)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"Dimension mismatch: texture={texture.Width}x{texture.Height}, raw={width}x{height}");
+                        return false; // Skip this frame due to dimension mismatch
+                    }
 
                     lock (source)
                     {

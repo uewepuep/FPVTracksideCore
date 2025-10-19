@@ -93,7 +93,7 @@ namespace Timing.RotorHazard
                 {
                     return lastBeat.frequency.Length;
                 }
-                return 4;
+                return 8;
             }
         }
 

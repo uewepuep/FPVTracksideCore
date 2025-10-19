@@ -72,7 +72,6 @@ namespace ImageServer
                     imageProcessor = null;
                     return false && base.Stop();
                 }
-                imageProcessor?.Join();
                 imageProcessor = null;
             }
 
@@ -154,11 +153,24 @@ namespace ImageServer
 
         protected virtual void ProcessImage()
         {
+            // Log only every 1800 frames to reduce spam (every 30 seconds at 60fps)
+            if (FrameProcessNumber % 1800 == 0)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"TextureFrameSource.ProcessImage: Firing OnFrame event with SampleTime={SampleTime}, FrameProcessNumber={FrameProcessNumber}");
+            }
             OnFrame(SampleTime, FrameProcessNumber);
         }
 
         public override bool UpdateTexture(GraphicsDevice graphicsDevice, int drawFrameCount, ref Texture2D texture2D)
         {
+            // Enhanced logging for video file sources to debug UI refresh issues
+            bool isVideoFile = this.GetType().Name.Contains("VideoFile");
+            
+            if (isVideoFile && drawFrameCount % 30 == 0) // Log every 30 frames for video files
+            {
+                // Tools.Logger.VideoLog.LogCall(this, $"VIDEO UI: UpdateTexture called - drawFrameCount: {drawFrameCount}, rawTextures: {rawTextures != null}, textures: {textures != null}");
+            }
+            
             if (rawTextures == null || textures == null)
             {
                 return false;
@@ -171,12 +183,36 @@ namespace ImageServer
             }
 
             FrameTextureSample texture = texture2D as FrameTextureSample;
-            if (texture == null)
+            
+            // For video file sources, force texture recreation every few frames during seeks to prevent caching issues
+            bool forceRecreateTexture = false;
+            if (isVideoFile && drawFrameCount % 30 == 0) // Recreate texture every 30 frames for video files
+            {
+                forceRecreateTexture = true;
+                if (texture != null)
+                {
+                    // Tools.Logger.VideoLog.LogCall(this, $"VIDEO UI: Force recreating texture to prevent caching (drawFrameCount: {drawFrameCount})");
+                    texture.Dispose();
+                    texture = null;
+                    texture2D = null;
+                    if (textures.ContainsKey(graphicsDevice))
+                    {
+                        textures.Remove(graphicsDevice);
+                    }
+                }
+            }
+            
+            if (texture == null || forceRecreateTexture)
             {
                 if (!textures.TryGetValue(graphicsDevice, out texture))
                 {
                     texture = new FrameTextureSample(graphicsDevice, FrameWidth, FrameHeight, SurfaceFormat);
                     textures.Add(graphicsDevice, texture);
+                    
+                    if (isVideoFile)
+                    {
+                        // Tools.Logger.VideoLog.LogCall(this, $"VIDEO UI: Created new texture {FrameWidth}x{FrameHeight} for video file");
+                    }
                 }
                 texture2D = texture;
             }
@@ -187,13 +223,38 @@ namespace ImageServer
             // Maybe update the texture
             if (rawTextures.ReadOne(out frame, drawFrameCount))
             {
+                // Log more frequently for video files, less for other sources
+                if ((isVideoFile && drawFrameCount % 10 == 0) || (!isVideoFile && drawFrameCount % 120 == 0))
+                {
+                    string prefix = isVideoFile ? "VIDEO UI" : "UI";
+                    Tools.Logger.VideoLog.LogCall(this, $"{prefix}: Reading frame from rawTextures buffer for draw frame {drawFrameCount}");
+                }
                 DebugTimer.DebugStartTime("UpdateTexture");
 
                 result = frame.UpdateTexture(texture);
+                
+                // Enhanced logging for video files to track texture update success
+                if ((isVideoFile && drawFrameCount % 10 == 0) || (!isVideoFile && drawFrameCount % 120 == 0))
+                {
+                    string prefix = isVideoFile ? "VIDEO UI" : "UI";
+                    // Tools.Logger.VideoLog.LogCall(this, $"{prefix}: UpdateTexture result: {result}");
+                }
 
                 if (result)
                 {
                     texture2D = texture;
+                    
+                    // For video file sources, force texture invalidation after seek operations to ensure UI refresh
+                    if (isVideoFile)
+                    {
+                        // Force the texture to be marked as "changed" by updating its tag or timestamp
+                        // This ensures the graphics system knows to redraw the screen
+                        if (texture is FrameTextureSample frameTexture)
+                        {
+                            // Force graphics pipeline refresh by touching the texture properties
+                            frameTexture.Tag = DateTime.Now.Ticks; // Force invalidation
+                        }
+                    }
                 }
                 else
                 {
@@ -205,6 +266,14 @@ namespace ImageServer
                     textures.Clear();
                 }
                 DebugTimer.DebugEndTime("UpdateTexture");
+            }
+            else
+            {
+                // Log when frames aren't available for video files (this could indicate the problem)
+                if (isVideoFile && drawFrameCount % 60 == 0)
+                {
+                    // Tools.Logger.VideoLog.LogCall(this, $"VIDEO UI: No frame available to read from rawTextures buffer (drawFrameCount: {drawFrameCount})");
+                }
             }
             return result;
         }

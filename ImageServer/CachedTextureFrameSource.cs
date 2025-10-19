@@ -31,6 +31,8 @@ namespace ImageServer
         public double FrameRate { get { return frameRate; } }
 
         public PlaybackSpeed PlaybackSpeed { get; set; }
+        
+        public float SlowSpeedFactor { get; set; } = 0.1f; // Default slow speed
 
         public TimeSpan MediaTime
         {

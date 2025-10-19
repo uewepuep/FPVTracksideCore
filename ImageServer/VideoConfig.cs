@@ -155,6 +155,34 @@ namespace ImageServer
         [Category("Video Recording")]
         public string AudioDevice { get; set; }
 
+        private bool hardwareDecodeAcceleration;
+        
+        [Category("Video Recording")]
+        [DisplayName("Hardware Decode Acceleration")]
+        public bool HardwareDecodeAcceleration 
+        { 
+            get => IsCompressedVideoFormat ? hardwareDecodeAcceleration : false;
+            set => hardwareDecodeAcceleration = IsCompressedVideoFormat ? value : false;
+        }
+
+        [Browsable(false)]
+        public bool ShouldShowHardwareDecodeAcceleration => IsCompressedVideoFormat;
+
+        [Browsable(false)]
+        public bool IsCompressedVideoFormat
+        {
+            get
+            {
+                if (VideoMode?.Format == null)
+                    return false;
+
+                // Compressed formats that benefit from hardware decode acceleration
+                var compressedFormats = new[] { "h264", "h265", "hevc", "mjpeg" };
+                return compressedFormats.Contains(VideoMode.Format.ToLower());
+            }
+        }
+
+
         [System.ComponentModel.Browsable(false)]
         [JsonIgnore]
         [XmlIgnore]
@@ -193,6 +221,7 @@ namespace ImageServer
             FrameTimes = new FrameTime[0];
             DeviceLatency = 0;
             AudioDevice = "None";
+            HardwareDecodeAcceleration = false;
         }
 
         public override string ToString()
@@ -279,6 +308,10 @@ namespace ImageServer
             if (!string.IsNullOrEmpty(other.MediaFoundationPath) && other.MediaFoundationPath == MediaFoundationPath)
                 return true;
 
+            // Compare device names for camera/capture devices
+            if (!string.IsNullOrEmpty(other.DeviceName) && other.DeviceName == DeviceName)
+                return true;
+
             return false;
         }
 
@@ -287,6 +320,7 @@ namespace ImageServer
             int hash = 17;
             if (DirectShowPath != null) hash += DirectShowPath.GetHashCode();
             if (MediaFoundationPath != null) hash += MediaFoundationPath.GetHashCode();
+            if (DeviceName != null) hash += DeviceName.GetHashCode();
 
             return hash;
         }
@@ -383,6 +417,69 @@ namespace ImageServer
                 case Splits.FourByThree: HorizontalSplits = 4; VerticalSplits = 3; break;
                 case Splits.FourByFour: HorizontalSplits = 4; VerticalSplits = 4; break;
             }
+        }
+    }
+
+    public class RecodingInfo
+    {
+        public string FilePath { get; set; }
+        public float ChannelCoveragePercent { get; set; }
+        public FlipMirroreds FlipMirrored { get; set; }
+
+        public VideoBounds[] ChannelBounds { get; set; }
+
+        // Legacy conversions for single video frame times.
+        public DateTime FirstFrame
+        {
+            get
+            {
+                var possibleFirstFrames = FrameTimes.Where(r => r.Frame == 1);
+                if (possibleFirstFrames.Any())
+                {
+                    return possibleFirstFrames.First().Time;
+                }
+
+                return default(DateTime);
+            }
+            set
+            {
+                if (FrameTimes == null || !FrameTimes.Any())
+                {
+                    FrameTimes = new FrameTime[] { new FrameTime() { Frame = 1, Time = value, Seconds = 0.0 } };
+                }
+            }
+        }
+
+        public FrameTime[] FrameTimes { get; set; }
+
+        public float DeviceLatency { get; set; }
+
+        public RecodingInfo()
+        {
+            FrameTimes = new FrameTime[0];
+        }
+
+        public RecodingInfo(ICaptureFrameSource captureFrameSource)
+        {
+            FilePath = System.IO.Path.GetRelativePath(System.IO.Directory.GetCurrentDirectory(), captureFrameSource.Filename);
+            ChannelCoveragePercent = captureFrameSource.VideoConfig.ChannelCoveragePercent;
+            FrameTimes = captureFrameSource.FrameTimes.ToArray();
+            ChannelBounds = captureFrameSource.VideoConfig.VideoBounds;
+            FlipMirrored = captureFrameSource.VideoConfig.FlipMirrored;
+            DeviceLatency = captureFrameSource.VideoConfig.DeviceLatency;
+        }
+
+        public VideoConfig GetVideoConfig()
+        {
+            VideoConfig videoConfig = new VideoConfig();
+            videoConfig.FilePath = FilePath;
+            videoConfig.ChannelCoveragePercent = ChannelCoveragePercent;
+            videoConfig.FrameTimes = FrameTimes;
+            videoConfig.VideoBounds = ChannelBounds;
+            videoConfig.FlipMirrored = FlipMirrored;
+            videoConfig.Pauseable = true;  // Allow ffmpeg cameras to be paused when not visible
+            videoConfig.DeviceLatency = DeviceLatency;
+            return videoConfig;
         }
     }
 }

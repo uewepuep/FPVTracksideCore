@@ -4,7 +4,7 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <TargetFrameworks>net9.0;net9.0-windows</TargetFrameworks>
     <Configurations>Debug;Release</Configurations>
-    <Platforms>AnyCPU</Platforms>
+    <Platforms>x64;AnyCPU</Platforms>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -13,10 +13,30 @@
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="FFmpeg.AutoGen" Version="7.1.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ImageServer\ImageServer.csproj" />
+    <ProjectReference Include="..\Tools\Tools.csproj" />
+  </ItemGroup>
+
+  <!-- Native FFmpeg libraries for macOS -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
+    <!-- Always copy macOS libraries for all macOS builds (ARM64 compatible) -->
+    <None Include="ffmpeg-libs\macos\*.dylib">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>ffmpeg-libs\macos\%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
+  <!-- Native FFmpeg libraries for Windows -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0-windows' OR '$(TargetFramework)' == 'net60-windows'">
+    <!-- Always copy Windows libraries when building for Windows target framework -->
+    <None Include="ffmpeg-libs\windows\*.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>ffmpeg-libs\windows\%(Filename)%(Extension)</Link>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

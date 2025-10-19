@@ -107,6 +107,11 @@ namespace ImageServer
 
         public void OnFrame(long sampleTime, long processNumber)
         {
+            // Log only every 3600 frames to reduce spam (every 60 seconds at 60fps)
+            if (processNumber % 3600 == 0)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"OnFrame: processNumber={processNumber}, OnFrameEvent subscribers={(OnFrameEvent?.GetInvocationList()?.Length ?? 0)}");
+            }
             OnFrameEvent?.Invoke(sampleTime, processNumber);
         }
     }
@@ -140,6 +145,7 @@ namespace ImageServer
         DateTime CurrentTime { get; }
         double FrameRate { get; }
         PlaybackSpeed PlaybackSpeed { get; set; }
+        float SlowSpeedFactor { get; set; } // Custom slow speed from 0.1 to 1.0
         TimeSpan MediaTime { get; }
         TimeSpan Length { get; }
         bool Repeat { get; set; }
