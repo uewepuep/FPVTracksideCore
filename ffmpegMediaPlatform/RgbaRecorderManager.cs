@@ -36,9 +36,9 @@ namespace FfmpegMediaPlatform
         
         // PERFORMANCE: Async frame writing to prevent blocking
         private readonly System.Collections.Concurrent.ConcurrentQueue<byte[]> frameQueue;
-        private readonly System.Threading.SemaphoreSlim frameQueueSemaphore;
+        private System.Threading.SemaphoreSlim frameQueueSemaphore;
         private Task frameWritingTask;
-        private readonly CancellationTokenSource frameWritingCancellation;
+        private CancellationTokenSource frameWritingCancellation;
 
         public bool IsRecording => isRecording;
         public string CurrentOutputPath => currentOutputPath;
@@ -92,7 +92,7 @@ namespace FfmpegMediaPlatform
                     this.frameHeight = frameHeight;
                     this.frameRate = frameRate;
                     this.targetFrameInterval = 1000.0 / frameRate; // Calculate target frame interval
-                    
+
                     // Reset frame timing collection using unified timing logic
                     frameTimes.Clear();
                     recordingStartTime = UnifiedFrameTimingManager.InitializeRecordingStartTime();
@@ -100,6 +100,19 @@ namespace FfmpegMediaPlatform
                     lastFrameWriteTime = DateTime.MinValue;
                     detectedFrameRate = frameRate; // Start with configured rate
                     frameRateDetected = false;
+
+                    // BUGFIX: Dispose and recreate cancellation token and semaphore for each recording session
+                    // This fixes the issue where subsequent races produce black screen videos
+                    // because the cancellation token was already cancelled from the previous recording
+                    frameWritingCancellation?.Dispose();
+                    frameWritingCancellation = new CancellationTokenSource();
+
+                    // Clear any stale frames from previous recording
+                    while (frameQueue.TryDequeue(out _)) { }
+
+                    // Reset semaphore to clean state
+                    frameQueueSemaphore?.Dispose();
+                    frameQueueSemaphore = new System.Threading.SemaphoreSlim(0);
 
                     // Build FFmpeg command to accept RGBA frames from stdin
                     string ffmpegArgs = BuildRecordingCommand(outputPath, frameWidth, frameHeight, frameRate);
@@ -141,6 +154,7 @@ namespace FfmpegMediaPlatform
                 {
                     Tools.Logger.VideoLog.LogException(this, ex);
                     Tools.Logger.VideoLog.LogCall(this, $"Exception while starting RGBA recording: {ex.Message}");
+                    CleanupRecordingProcess(); // Ensure ffmpeg process is cleaned up if exception occurs after process.Start()
                     return false;
                 }
             }
