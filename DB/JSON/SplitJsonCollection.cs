@@ -85,7 +85,7 @@ namespace DB.JSON
 
         public bool Upsert(T obj)
         {
-            if (All().Any(r => r.ID == obj.ID))
+            if (GetObject(obj.ID) != null)
             {
                 return Update(obj);
             }

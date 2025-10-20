@@ -290,27 +290,15 @@ namespace UI.Nodes.Rounds
 
         private void SheetFormat(SheetFormatManager.SheetFile sheet)
         {
-            Round newRound;
-
-            if (EventManager.RaceManager.GetRaces(Round).Any())
-            {
-                newRound = EventManager.RoundManager.GetCreateRound(Round.RoundNumber + 1, Round.EventType);
-            }
-            else
-            {
-                newRound = Round;
-            }
-
             Stage stage = null;
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
-                stage = EventManager.RoundManager.GetCreateStage(db, newRound, false);
+                stage = new Stage();
+                stage.ID = Guid.NewGuid();
                 stage.Name = sheet.Name;
                 stage.SheetFormatFilename = sheet.FileInfo.Name;
 
-                newRound.Stage = stage;
-                db.Update(newRound);
-                db.Update(stage);
+                db.Insert(stage);
             }
 
             EventManager.RoundManager.SheetFormatManager.LoadSheet(stage, GetOrderedPilots().ToArray(), true);

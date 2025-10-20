@@ -34,6 +34,8 @@ namespace Composition
 
         public TextureCache TextureCache { get; private set; }
 
+        private bool textureCacheOwner;
+
         public BitmapFont BitmapFonts { get; private set; }
 
         public Point Offset { get; set; }
@@ -41,8 +43,14 @@ namespace Composition
         private bool hasBegun;
 
         public Drawer(GraphicsDevice device)
+            :this(device, new TextureCache(device, true))
         {
-            TextureCache = new TextureCache(device, true);
+            textureCacheOwner = true;
+        }
+
+        public Drawer(GraphicsDevice device, TextureCache textureCache)
+        {
+            TextureCache = textureCache;
             GraphicsDevice = device;
             SpriteBatch = new SpriteBatch(GraphicsDevice);
             clipRectangles = new Stack<Rectangle>();
@@ -72,7 +80,10 @@ namespace Composition
                 toClean.Dispose();
             }
 
-            TextureCache.Dispose();
+            if (textureCacheOwner)
+            {
+                TextureCache.Dispose();
+            }
 
             autoresetevent?.WaitOne(5000);
             autoresetevent?.Dispose();

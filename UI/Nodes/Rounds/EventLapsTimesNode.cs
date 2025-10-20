@@ -32,7 +32,7 @@ namespace UI.Nodes.Rounds
 
 
             Race[] races = EventManager.ResultManager.GetStageRaces(stage);
-            IEnumerable<Pilot> pilots = races.SelectMany(r => r.Pilots).Distinct();
+            IEnumerable<Pilot> pilots = races.SelectMany(r => r.Pilots).Where(p => p != null).Distinct();
 
             SetSubHeadingRounds(races);
 
