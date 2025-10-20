@@ -513,15 +513,27 @@ namespace FfmpegMediaPlatform
                         // {
                         //     Tools.Logger.VideoLog.LogCall(this, "ReadLoop: End of file reached");
                         // }
-                        
+
                         // End of file - seek back to start and continue if playing
                         if (isPlaying && !seekRequested)
                         {
-                            Tools.Logger.VideoLog.LogCall(this, "ReadLoop: Looping back to start - resetting timing baseline");
+                            Tools.Logger.VideoLog.LogCall(this, "ReadLoop: Looping back to start - flushing buffers");
+
+                            // Seek to start
                             ffmpeg.av_seek_frame(fmt, videoStreamIndex, st->start_time, ffmpeg.AVSEEK_FLAG_BACKWARD);
+
+                            // Flush codec buffers to clear any cached frames
                             ffmpeg.avcodec_flush_buffers(codecCtx);
+
+                            // Unref frame to release any references
+                            if (frame != null)
+                            {
+                                ffmpeg.av_frame_unref(frame);
+                            }
+
                             // Reset timing baseline to prevent speed issues after looping
                             playbackStartTime = DateTime.MinValue;
+                            mediaTime = TimeSpan.Zero;
                             isAtEnd = false;
                             continue;
                         }
