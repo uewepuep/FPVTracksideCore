@@ -159,15 +159,15 @@ namespace UI.Nodes
         public EventSelectorEditor(Texture2D logo, Profile profile)
             : this(new SimpleEvent[0], true, false)
         {
-
-            heading.RelativeBounds = new RectangleF(0, 0.18f, 1, 0.05f);
-            container.RelativeBounds = new RectangleF(0, heading.RelativeBounds.Bottom, 1, 1 - heading.RelativeBounds.Bottom);
-
             RelativeBounds = new RectangleF(0.2f, 0.01f, 0.6f, 0.98f);
+            mainDock.Top.SetFixedSize(230);
+
+            const float headingHeight = 0.2f;
+            heading.RelativeBounds = new RectangleF(0, 1 - headingHeight, 1, headingHeight);
 
             ColorNode colorNode = new ColorNode(Theme.Current.EventSelectorTop);
-            colorNode.RelativeBounds = new RectangleF(0, 0, 1, 0.175f);
-            AddChild(colorNode);
+            colorNode.RelativeBounds = new RectangleF(0, 0, 1, 1 - headingHeight);
+            mainDock.Top.AddChild(colorNode);
 
             ImageNode logoNode = new ImageNode(logo);
             logoNode.RelativeBounds = new RectangleF(0, 0, 1, 0.99f);

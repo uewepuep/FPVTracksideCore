@@ -53,6 +53,9 @@ namespace UI.Video
             locker = new object();
             Profile = profile;
 
+            centralDock.Top.SetFixedSize(400);
+            itemName.Remove();
+
             VideoManager = videoManager;
             VideoManager.OnStart += VideoManager_OnStart;
             EventManager = em;
@@ -213,7 +216,7 @@ namespace UI.Video
             if (preview == null)
             {
                 preview = new ColorNode(Theme.Current.Editor.Foreground.XNA);
-                right.AddChild(preview);
+                centralDock.Top.AddChild(preview);
             }
 
             if (physicalLayoutContainer == null)
@@ -223,7 +226,7 @@ namespace UI.Video
                 ColorNode background = new ColorNode(Theme.Current.Editor.Foreground.XNA);
                 physicalLayoutContainer.AddChild(background);
 
-                right.AddChild(physicalLayoutContainer);
+                centralDock.Top.AddChild(physicalLayoutContainer);
 
                 physicalLayout = new ColorNode(Theme.Current.Editor.Text.XNA);
                 physicalLayout.Scale(0.3f);
@@ -232,14 +235,6 @@ namespace UI.Video
 
 
             base.SetObjects(toEdit, addRemove, cancelButton);
-
-            preview.RelativeBounds = new RectangleF(objectProperties.RelativeBounds.X, objectProperties.RelativeBounds.Y, objectProperties.RelativeBounds.Width, 0.46f);
-
-            objectProperties.Translate(0, preview.RelativeBounds.Height);
-            objectProperties.AddSize(0, -preview.RelativeBounds.Height);
-
-            float top = 0.002f;
-
             physicalLayoutContainer.RelativeBounds = new RectangleF(1.1f, preview.RelativeBounds.Y, 0.3f, preview.RelativeBounds.Height);
         }
 
@@ -1130,7 +1125,6 @@ namespace UI.Video
         {
             heading.Text = "Camera Display Editor";
             Scale(0.5f, 0.5f);
-            SetButtonsHeight(0.1f);
         }
     }
 

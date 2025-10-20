@@ -35,15 +35,14 @@ namespace Composition.Nodes
         public event Action<BaseObjectEditorNode<T>> OnCancel;
         public event Action<BaseObjectEditorNode<T>> OnRefreshList;
 
-        protected Node container;
-        protected Node left;
-        protected Node right;
-
         protected TextButtonNode okButton;
         protected TextButtonNode cancelButton;
         protected TextButtonNode addButton;
         protected TextButtonNode removeButton;
         protected TextNode heading;
+
+        protected DockNode mainDock;
+        protected DockNode centralDock;
 
         protected Node buttonContainer;
 
@@ -89,10 +88,14 @@ namespace Composition.Nodes
 
         public bool AllowUnicode { get; set; }
 
+        public const int LeftWidth = 300;
+
         public BaseObjectEditorNode(Color buttonBackground, Color buttonHover, Color textColor, Color scrollColor, bool hasButtons = true)
         {
             changes = new List<Change>();
 
+            mainDock = new DockNode(40, 40, LeftWidth, null);
+            AddChild(mainDock);
 
             AllowUnicode = false;
             CanEdit = true;
@@ -118,41 +121,26 @@ namespace Composition.Nodes
                 TypeName = Type.Name.CamelCaseToHuman();
             }
 
-            heading = new TextNode(TypeName + " Editor", TextColor);
-            heading.RelativeBounds = new RectangleF(0, 0, 1, 0.05f);
-            root.AddChild(heading);
-
-            container = new Node();
-            container.RelativeBounds = new RectangleF(0, heading.RelativeBounds.Bottom, 1, 1 - heading.RelativeBounds.Bottom);
-            root.AddChild(container);
-
-            left = new Node();
-            container.AddChild(left);
-
-            right = new Node();
-            container.AddChild(right);
+            centralDock = new DockNode(40);
+            mainDock.Center.AddChild(centralDock);
+                
+            heading = new TextNode(TypeName, TextColor);
+            mainDock.Top.AddChild(heading);
 
             multiItemBox = new ListNode<ItemNode<T>>(scrollColor);
             multiItemBox.ItemHeight = 30;
-            left.AddChild(multiItemBox);
+            mainDock.Left.AddChild(multiItemBox);
 
             itemName = new TextNode("", TextColor);
-            itemName.RelativeBounds = new RectangleF(0, 0, 1, 0.07f);
             itemName.Alignment = RectangleAlignment.BottomLeft;
-            right.AddChild(itemName);
+            centralDock.Top.AddChild(itemName);
 
             objectProperties = new ListNode<PropertyNode<T>>(scrollColor);
             objectProperties.ItemHeight = 20;
             objectProperties.LayoutInvisibleItems = false;
-            right.AddChild(objectProperties);
+            centralDock.Center.AddChild(objectProperties);
 
-            SplitHorizontally(left, right, 0.3f);
-            container.RequestLayout();
-
-            buttonContainer = new Node();
-            right.AddChild(buttonContainer);
-
-            SetButtonsHeight(0.05f);
+            buttonContainer = mainDock.Bottom;
 
             okButton = new TextButtonNode("Ok", ButtonBackground, ButtonHover, TextColor);
             cancelButton = new TextButtonNode("Cancel", ButtonBackground, ButtonHover, TextColor);
@@ -160,6 +148,7 @@ namespace Composition.Nodes
             removeButton = new TextButtonNode("Remove", ButtonBackground, ButtonHover, TextColor);
 
             buttonContainer.AddChild(addButton, removeButton, cancelButton, okButton);
+            buttonContainer.Scale(0.99f, 0.9f);
             AlignHorizontally(0.05f, removeButton, addButton, null, cancelButton, okButton);
 
             okButton.ButtonNode.NodeName = "OkButton";
@@ -213,20 +202,6 @@ namespace Composition.Nodes
             itemName.Text = text;
         }
 
-        public void SetButtonsHeight(float height)
-        {
-            SetHeadingButtonsHeight(heading.RelativeBounds.Height, height);
-        }
-
-        public void SetHeadingButtonsHeight(float headingHeight, float buttonHeight)
-        {
-            heading.RelativeBounds = new RectangleF(0, 0, 1, headingHeight);
-            container.RelativeBounds = new RectangleF(0, heading.RelativeBounds.Bottom, 1, 1 - heading.RelativeBounds.Bottom);
-            buttonContainer.RelativeBounds = new RectangleF(0, 1 - buttonHeight, 1, buttonHeight);
-            objectProperties.RelativeBounds = new RectangleF(0, itemName.RelativeBounds.Bottom, 1, buttonContainer.RelativeBounds.Y - itemName.RelativeBounds.Bottom);
-            RequestLayout();
-        }
-
         public void SetObject(T toEdit, bool addRemove = false, bool cancelButton = true)
         {
             SetObjects(new T[] { toEdit }, addRemove, cancelButton);
@@ -239,21 +214,20 @@ namespace Composition.Nodes
             if (toEdit.Count() > 1 || addRemove)
             {
                 RefreshList();
-                SplitHorizontally(left, right, 0.3f);
-
+                mainDock.Left.Visible = true;
                 itemName.Visible = true;
+                centralDock.Top.Visible = true;
             }
             else
             {
-                left.Visible = false;
-                right.RelativeBounds = new RectangleF(0, 0, 1, 1);
-
+                mainDock.Left.Visible = false;
                 if (toEdit.Any())
                 {
                     SetSelected(toEdit.First());
                 }
 
                 itemName.Visible = false;
+                centralDock.Top.Visible = false;
             }
 
             if (Type.GetConstructor(Type.EmptyTypes) != null || Type.IsValueType || addRemove)
@@ -784,7 +758,7 @@ namespace Composition.Nodes
             adjustedMouse.Y = y;
 
             ItemNode<T> dropped = node as ItemNode<T>;
-            if (dropped != null && left.Contains(finalInputEvent.Position))
+            if (dropped != null && mainDock.Left.Contains(finalInputEvent.Position))
             {
                 int index = Objects.Count - 1;
                 foreach (ItemNode<T> other in multiItemBox.ChildrenOfType)

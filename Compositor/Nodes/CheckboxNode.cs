@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 
 namespace Composition.Nodes
 {
@@ -98,5 +99,16 @@ namespace Composition.Nodes
             return base.OnMouseInput(mouseInputEvent);
         }
 
+        public override void Layout(RectangleF parentBounds)
+        {
+            base.Layout(parentBounds);
+
+            if (BoundsF.Width > 20)
+            {
+                RectangleF copy = BoundsF;
+                copy.Height = copy.Width = 20;
+                BoundsF = copy;
+            }
+        }
     }
 }
