@@ -145,21 +145,45 @@ namespace Tools
 
         public static string ToCSV(this string[][] table)
         {
-            return string.Join("\r\n", table.Select(line => string.Join(",", line.Select(i => SafePilotName(i)))));
+            return string.Join("\r\n", table.Select(line => string.Join(",", line.Select(i => i.NoControlCharacters()))));
         }
 
         public static string ToTSV(this string[][] table)
         {
-            return string.Join("\r\n", table.Select(line => string.Join("\t", line.Select(i => SafePilotName(i)))));
+            return string.Join("\r\n", table.Select(line => string.Join("\t", line.Select(i => i.NoControlCharacters()))));
         }
 
-        public static string SafePilotName(string name)
+        public static string NoControlCharacters(this string text)
         {
-            if (name == null)
-                return null;
+            string clean = "";
+            foreach (char c in text)
+            {
+                if (c < 32)
+                    continue;
+                if (c >= 127 && c < 160)
+                    continue;
 
-            Regex rgx = new Regex("[\t\r\n,]", RegexOptions.Compiled);
-            return rgx.Replace(name, "");
+                clean += c;
+            }
+            return clean;
+        }
+
+        public static string AsciiOnly(this string text)
+        {
+            string clean = "";
+            foreach (char c in text)
+            {
+                if (c < 32)
+                    continue;
+                if (c >= 127 && c < 160)
+                    continue;
+
+                if (c >= 255)
+                    continue;
+
+                clean += c;
+            }
+            return clean;
         }
 
         public static string NoExtension(this FileInfo file)

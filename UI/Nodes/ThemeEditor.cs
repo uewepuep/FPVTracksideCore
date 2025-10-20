@@ -20,6 +20,8 @@ namespace UI.Nodes
         public ThemeEditor(Profile profile, IEnumerable<Theme> toEdit)
             : base(toEdit, false, true, false)
         {
+            AllowUnicode = true;
+
             this.Profile = profile;
             heading.Text = "Themes";
             okButton.Text = "Set Theme";

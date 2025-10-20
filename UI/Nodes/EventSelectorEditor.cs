@@ -26,6 +26,7 @@ namespace UI.Nodes
         protected EventEditor(IEnumerable<SimpleEvent> events, bool addRemove = true, bool cancelButtona = false)
             :base(events, addRemove, cancelButtona, false)
         {
+            AllowUnicode = true;
             Text = "Event Settings";
         }
 

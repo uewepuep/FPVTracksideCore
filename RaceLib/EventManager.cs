@@ -296,7 +296,7 @@ namespace RaceLib
                 {
                     if (pilot != null)
                     {
-                        pilot.Name = Tools.Ext.SafePilotName(pilot.Name);
+                        pilot.Name = Tools.Ext.NoControlCharacters(pilot.Name);
                     }
                 }
             });
