@@ -136,9 +136,9 @@ namespace Composition.Input
 
         private void PollInputs()
         {
-            try
+            while (CreateMouseEvents || CreateKeyboardEvents)
             {
-                while (CreateMouseEvents || CreateKeyboardEvents)
+                try
                 {
                     autoResetEvent.WaitOne(1000);
 
@@ -155,11 +155,11 @@ namespace Composition.Input
 
                     ProcessInputs();
                 }
-            }
-            catch (Exception ex) 
-            {
-                Tools.Logger.CrashLogger.Log(ex);
-                throw ex;
+                catch (Exception ex)
+                {
+                    Tools.Logger.CrashLogger.Log(ex);
+                    throw ex;
+                }
             }
         }
 
@@ -379,7 +379,7 @@ namespace Composition.Input
         {
             if (OnMouseInputEvent != null)
             {
-                TouchCollection touchCollection = TouchPanel.GetState();
+                TouchCollection touchCollection = SafeGetTouchState();
 
                 if (!touchCollection.Any())
                 {
@@ -400,6 +400,18 @@ namespace Composition.Input
                 }
 
                 firstTouch = false;
+            }
+        }
+
+        private TouchCollection SafeGetTouchState()
+        {
+            try
+            {
+                return TouchPanel.GetState();
+            }
+            catch
+            {
+                return new TouchCollection(new TouchLocation[0]);
             }
         }
 

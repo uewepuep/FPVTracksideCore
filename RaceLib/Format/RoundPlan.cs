@@ -44,7 +44,13 @@ namespace RaceLib.Format
         [Category("Pilots")]
         public Pilot[] Pilots { get; set; }
 
-        public RoundPlan(EventManager eventManager, Round previousRound)
+        [Category("Stage")]
+        public bool KeepStage { get; set; }
+
+        [Category("Stage")]
+        public Stage Stage { get; set; }
+
+        public RoundPlan(EventManager eventManager, Round previousRound, Stage stage)
         {
             AutoNumberOfRaces = true;
             CallingRound = previousRound;
@@ -62,6 +68,8 @@ namespace RaceLib.Format
             }
             ChannelChange = ChannelChangeEnum.KeepFromPreviousRound;
             PilotSeeding = PilotOrderingEnum.MinimisePreviouslyFlown;
+            Stage = stage;
+            KeepStage = true;
         }
     }
 }

@@ -30,7 +30,8 @@ namespace RaceLib
 
             FastestSpeed,
             AverageSpeed,
-            Distance
+            Distance,
+            Points
         }
 
         [Browsable(false)]
@@ -69,11 +70,12 @@ namespace RaceLib
             ColumnTypes[] defaultEnabled = new ColumnTypes[] 
             {
                 ColumnTypes.PilotName,
-                ColumnTypes. Position,
+                ColumnTypes.Position,
                 ColumnTypes.ConsecutiveLapsTime,
                 ColumnTypes.FastestLapTime,
                 ColumnTypes.RaceTime,
-                ColumnTypes.FastestSpeed
+                ColumnTypes.FastestSpeed,
+                ColumnTypes.Points
             };
 
             foreach (ColumnTypes type in Enum.GetValues(typeof(ColumnTypes)))

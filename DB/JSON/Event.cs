@@ -11,7 +11,6 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json;
 using RaceLib;
 using static Microsoft.IO.RecyclableMemoryStreamManager;
-using DB.Lite;
 
 namespace DB.JSON
 {
@@ -97,6 +96,7 @@ namespace DB.JSON
         public DateTime[] Flags { get; set; }
 
         public string GameTypeName { get; set; }
+        public string TimeZone { get; set; }
 
         public Event()
         {
@@ -177,7 +177,6 @@ namespace DB.JSON
         {
             SimpleEvent simpleEvent = new SimpleEvent(ID);
             ReflectionTools.Copy(this, simpleEvent);
-
 
             RaceLib.Club club = Club.Convert<RaceLib.Club>(database);
             if (club != null)

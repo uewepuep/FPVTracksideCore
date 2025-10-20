@@ -54,7 +54,7 @@ namespace Composition.Nodes
 
         protected ITextRenderer textRenderer;
 
-        private int height;
+        protected int height;
         public RectangleAlignment Alignment { get; set; }
 
         public bool CanScale { get; set; }
@@ -194,7 +194,7 @@ namespace Composition.Nodes
             }
         }
 
-        public void UpdateGeometry()
+        public virtual void UpdateGeometry()
         {
             ITextRenderer textRenderer = this.textRenderer;
             if (textRenderer == null)

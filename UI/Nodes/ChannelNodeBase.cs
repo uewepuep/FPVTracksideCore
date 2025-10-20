@@ -488,7 +488,7 @@ namespace UI.Nodes
             }
 
             // Set this again incase changing the pilot has changed things.
-            SetProfileVisible(pilotProfileOptions);
+            SetProfileVisible(PilotProfileOptions.Large);
 
             if (EventManager.RaceManager.RaceType == EventTypes.Game)
             {
@@ -514,14 +514,14 @@ namespace UI.Nodes
 
         private PilotProfileOptions pilotProfileOptions;
 
-        public void SetProfileVisible(PilotProfileOptions options)
+        public void SetProfileVisible(PilotProfileOptions options, bool force = false)
         {
-            pilotProfileOptions = options;
-
-            if (ApplicationProfileSettings.Instance.AlwaysSmallPilotProfile && options == PilotProfileOptions.Large)
+            if (!force && ApplicationProfileSettings.Instance.AlwaysSmallPilotProfile && options == PilotProfileOptions.Large)
             {
                 options = PilotProfileOptions.Small;
             }
+
+            pilotProfileOptions = options;
 
             // Don't do the small option if we're not a video node.
             if (this is not ChannelVideoNode)
@@ -533,7 +533,6 @@ namespace UI.Nodes
             {
                 options = PilotProfileOptions.None;
             }
-
 
             switch (options)
             {
@@ -692,6 +691,15 @@ namespace UI.Nodes
                 return true;
             }
 
+            if (mouseInputEvent.ButtonState == ButtonStates.Released && 
+                CompositorLayer.InputEventFactory.AreAltKeysDown() && 
+                CompositorLayer.InputEventFactory.AreControlKeysDown() &&
+                mouseInputEvent.Button == MouseButtons.Left)
+            {
+                OnFullscreen?.Invoke();
+                return true;
+            }
+
             if (mouseInputEvent.ButtonState == ButtonStates.Released && CompositorLayer.InputEventFactory.AreAltKeysDown() && mouseInputEvent.Button == MouseButtons.Left)
             {
                 DateTime time = DateTime.Now;
@@ -709,12 +717,6 @@ namespace UI.Nodes
                 {
                     EventManager.GameManager.AddGamePoint(Pilot, Channel, time);
                 }
-                return true;
-            }
-
-            if (mouseInputEvent.ButtonState == ButtonStates.Released && mouseInputEvent.Button == MouseButtons.Left)
-            {
-                OnShowAll?.Invoke();
                 return true;
             }
 
@@ -794,9 +796,17 @@ namespace UI.Nodes
 
             if (mouseInputEvent.ButtonState == ButtonStates.Pressed && mouseInputEvent.Button == MouseButtons.Left)
             {
-                if (pilotProfileOptions == PilotProfileOptions.Large && PilotProfile.Contains(mouseInputEvent.Position))
+                if (PilotProfile.Contains(mouseInputEvent.Position) && PilotProfile.Visible)
                 {
-                    PilotProfile.ToggleAnimatedVisibility();
+                    switch (pilotProfileOptions)
+                    {
+                        case PilotProfileOptions.Large:
+                            SetProfileVisible(PilotProfileOptions.Small, true);
+                            break;
+                        case PilotProfileOptions.Small:
+                            SetProfileVisible(PilotProfileOptions.Large, true);
+                            break;
+                    }
                 }
 
                 return true;
@@ -961,6 +971,19 @@ namespace UI.Nodes
             }
 
             return base.ToString();
+        }
+
+        public override Rectangle? CanDrop(MouseInputEvent finalInputEvent, Node node)
+        {
+            ChannelPilotNameNode otherPilotNameNode = node as ChannelPilotNameNode;
+            if (otherPilotNameNode != null)
+                return Bounds;
+            
+            IPilot pilotNode = node as IPilot;
+            if (pilotNode != null)
+                return Bounds;
+
+            return base.CanDrop(finalInputEvent, node);
         }
 
         public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)

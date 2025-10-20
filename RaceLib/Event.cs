@@ -123,6 +123,8 @@ namespace RaceLib
 
         public string GameTypeName { get; set; }
 
+        public string TimeZone { get; set; }
+
         public Event()
         {
             SyncWithFPVTrackside = false;
@@ -149,6 +151,7 @@ namespace RaceLib
             Start = DateTime.Today;
             VisibleOnline = true;
             Sectors = new Sector[0];
+            TimeZone = RaceLib.TimeZone.GetIanaTimeZoneLocal();
         }
 
         public Event Clone()
@@ -171,7 +174,8 @@ namespace RaceLib
 
             newEvent.Name = this.Name;
             newEvent.Start = DateTime.Today;
-
+            newEvent.End = DateTime.Today + TimeSpan.FromDays(1);
+            newEvent.TimeZone = TimeZone;
             try
             {
                 newEvent.Name = Regex.Replace(newEvent.Name, @"\([A-z0-9 ]*\)", "");
@@ -182,7 +186,7 @@ namespace RaceLib
 
             newEvent.Name = newEvent.Name + " (" +  Start.ToString(dateFormat) + ")";
 
-            newEvent.PilotChannels = this.PilotChannels.ToList();
+            newEvent.PilotChannels = this.PilotChannels.Select(pc => pc.Clone()).ToList();
             newEvent.Channels = this.Channels.ToArray();
 
             newEvent.MinLapTime = this.MinLapTime;
@@ -249,6 +253,8 @@ namespace RaceLib
         [ReadOnly(true)]
         public string ChannelsString { get; set; }
 
+        [Category("Event Info")]
+        public string TimeZone { get; set; }
 
         [Category("Event Info")]
         [DisplayName("MultiGP Global Qualifier")]
@@ -309,7 +315,7 @@ namespace RaceLib
         [Category("Cloud")]
         [DisplayName("Sync with MultiGP")]
         public bool SyncWithMultiGP { get; set; }
-        
+
         [System.ComponentModel.Browsable(false)]
         public int ExternalID { get; set; }
         

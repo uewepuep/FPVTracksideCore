@@ -71,9 +71,11 @@ namespace Timing.ImmersionRC
         {
             get
             {
-                float voltage = laprf.getBatteryVoltage();
-
-                yield return new StatusItem() { StatusOK = voltage > settings.VoltageAlarm, Value = voltage.ToString("0.0") + "v" };
+                if (laprf != null)
+                {
+                    float voltage = laprf.getBatteryVoltage();
+                    yield return new StatusItem() { StatusOK = voltage > settings.VoltageAlarm, Value = voltage.ToString("0.0") + "v" };
+                }
 
                 if (connectionCount > 10)
                     yield return new StatusItem() { StatusOK = true, Value = connectionCount.ToString("0") + " disc" };

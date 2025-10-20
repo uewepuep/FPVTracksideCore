@@ -14,23 +14,22 @@ namespace UI.Nodes.Rounds
 {
     public class EventPackCountNode : EventPilotListNode<PilotPackCountNode>
     {
-        public EventPackCountNode(EventManager ev, Round round)
-            : base(ev, round)
+        public EventPackCountNode(RoundsNode roundsNode, EventManager ev, Round round)
+            : base(roundsNode, ev, round)
+        {
+            Refresh();
+        }
+
+        public override void Refresh()
         {
             SetHeading("Pack Count");
-            Refresh();
+            base.Refresh();
         }
 
         protected override void UpdateButtons()
         {
             canAddTimes = true;
             base.UpdateButtons();
-        }
-
-
-        private void PointsManager_RaceResultsChanged(Race obj)
-        {
-            Refresh();
         }
 
         protected override void Recalculate()
@@ -157,6 +156,14 @@ namespace UI.Nodes.Rounds
 
                 ppn.Position = position;
             }
+        }
+
+        public override bool HasResult()
+        {
+            if (Stage == null)
+                return false;
+
+            return Stage.PackCountAfterRound;
         }
     }
 

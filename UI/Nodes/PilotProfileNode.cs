@@ -231,5 +231,16 @@ namespace UI.Nodes
                 videoPlayer.Seek(time);
             }
         }
+
+        public override bool Contains(Point point)
+        {
+            if (!Visible) 
+                return false;
+
+            if (PilotPhoto == null) 
+                return false;
+
+            return PilotPhoto.Contains(point);
+        }
     }
 }

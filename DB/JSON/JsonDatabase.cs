@@ -28,6 +28,7 @@ namespace DB.JSON
 
         public EventCollection Events { get; private set; }
         public JsonCollection<Round> Rounds { get; private set; }
+        public JsonCollection<Stage> Stages { get; private set; }
         public TrackCollection Tracks { get; private set; }
 
         public SplitJsonCollection<Race> Races { get; private set; }
@@ -65,6 +66,7 @@ namespace DB.JSON
             {
                 DirectoryInfo eventDirectory = new DirectoryInfo(Path.Combine(DataDirectory.FullName, eventId.ToString()));
                 Rounds = new JsonCollection<Round>(eventDirectory);
+                Stages = new JsonCollection<Stage>(eventDirectory);
                 Pilots = new JsonCollection<Pilot>(eventDirectory);
 
                 Races = new SplitJsonCollection<Race>(eventDirectory);
@@ -105,6 +107,9 @@ namespace DB.JSON
 
             if (typeof(T) == typeof(RaceLib.Round))
                 return new ConvertedCollection<RaceLib.Round, Round>(Rounds, this) as IDatabaseCollection<T>;
+
+            if (typeof(T) == typeof(RaceLib.Stage))
+                return new ConvertedCollection<RaceLib.Stage, Stage>(Stages, this) as IDatabaseCollection<T>;
 
             if (typeof(T) == typeof(RaceLib.Result))
                 return new ConvertedCollection<RaceLib.Result, Result>(Results, this) as IDatabaseCollection<T>;

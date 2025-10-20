@@ -1,6 +1,7 @@
 ﻿using Composition;
 using Composition.Input;
 using Composition.Nodes;
+using Microsoft.Xna.Framework;
 using RaceLib;
 using System;
 using System.Collections.Generic;
@@ -82,11 +83,18 @@ namespace UI.Nodes
             nextRoundNode.GenerateOptions(currentRound);
         }
 
+        public override Rectangle? CanDrop(MouseInputEvent finalInputEvent, Node node)
+        {
+            IPilot ipilotnode = node as IPilot;
+            if (ipilotnode != null)
+                return Bounds;
+
+            return base.CanDrop(finalInputEvent, node);
+        }
         public override bool OnDrop(MouseInputEvent finalInputEvent, Node node)
         {
             base.OnDrop(finalInputEvent, node);
-         
-            
+                     
             IPilot ipilotnode = node as IPilot;
             return ipilotnode != null;
         }

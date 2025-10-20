@@ -278,6 +278,30 @@ namespace WindowsPlatform
             }
         }
 
+        public void Draw(Drawer id, Microsoft.Xna.Framework.Rectangle target, RectangleAlignment alignment, Scale scale, Microsoft.Xna.Framework.Color tint, Microsoft.Xna.Framework.Vector2 origin, float rotation)
+        {
+            lock (locker)
+            {
+                if (texture == null)
+                    return;
+
+                Microsoft.Xna.Framework.Rectangle sourceBounds = new Microsoft.Xna.Framework.Rectangle(0, 0, texture.Width, texture.Height);
+                Microsoft.Xna.Framework.Rectangle sourceRotatedBounds = new Microsoft.Xna.Framework.Rectangle(0, 0, texture.Height, texture.Width);
+
+
+                scaleFactor = 1;
+
+                Microsoft.Xna.Framework.Rectangle boundsRotated = Maths.FitBoxMaintainAspectRatio(target, sourceRotatedBounds, scaleFactor, alignment);
+
+                Microsoft.Xna.Framework.Rectangle bounds = new Microsoft.Xna.Framework.Rectangle(boundsRotated.X, boundsRotated.Y, boundsRotated.Height, boundsRotated.Width);
+
+                offsetX = target.X - bounds.X;
+                offsetY = target.Y - bounds.Y;
+                id.Draw(texture, sourceBounds, bounds, tint, rotation, origin);
+            }
+        }
+
+
         public static BitmapFont QuickCreateBitmapFont(Drawer drawer, int width, int height, Style style)
         {
             Dictionary<char, Microsoft.Xna.Framework.Rectangle> bounds;

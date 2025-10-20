@@ -13,6 +13,7 @@ namespace WindowsPlatform
 {
     public partial class PropertyEditorForm<T> : Form
     {
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public List<T> Objects { get; set; }
 
         public Type Type { get { return typeof(T); } }

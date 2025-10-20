@@ -63,9 +63,9 @@ namespace RaceLib.Format
                 return false;
 
             Round next = RoundManager.NextRound(round);
-            if (next != null)
+            if (next != null && next.Stage != null)
             {
-                if (next.HasSheetFormat)
+                if (next.Stage.HasSheetFormat)
                     return false;
 
                 if (RaceManager.GetRaces(next).Any())
@@ -89,11 +89,18 @@ namespace RaceLib.Format
 
         public void Load()
         {
-            foreach (Round r in RoundManager.Rounds)
+            List<Stage> alreadyLoaded = new List<Stage>();
+
+            foreach (Round r in RoundManager.RoundsWhere(r => r.Stage != null).OrderBy(r => r.Order))
             {
-                if (r.HasSheetFormat)
+                if (alreadyLoaded.Contains(r.Stage))
+                    continue;
+
+                alreadyLoaded.Add(r.Stage);
+
+                if (r.Stage.HasSheetFormat)
                 {
-                    LoadSheet(r, null, false);
+                    LoadSheet(r.Stage, null, false);
                 }
             }
         }
@@ -164,12 +171,12 @@ namespace RaceLib.Format
         }
 
 
-        public void LoadSheet(Round startRound, Pilot[] assignedPilots, bool generate)
+        public void LoadSheet(Stage stage, Pilot[] assignedPilots, bool generate)
         {
-            if (startRound.HasSheetFormat)
+            if (stage != null && stage.HasSheetFormat)
             {
-                SheetFile sheetFile = GetSheetFile(startRound.SheetFormatFilename);
-                RoundSheetFormat sheetFormat = new RoundSheetFormat(startRound, this, sheetFile.FileInfo);
+                SheetFile sheetFile = GetSheetFile(stage.SheetFormatFilename);
+                RoundSheetFormat sheetFormat = new RoundSheetFormat(stage, this, sheetFile.FileInfo);
                 sheetFormat.CreatePilotMap(assignedPilots);
 
                 foreach (Round round in sheetFormat.Rounds)
@@ -185,7 +192,6 @@ namespace RaceLib.Format
                         sheetFormat.SyncRace(race);
                     }
                 }
-
 
                 if (generate)
                 {
@@ -238,7 +244,7 @@ namespace RaceLib.Format
         
         public SheetFormatManager SheetFormatManager { get; private set; }
 
-        public Round StartRound { get; private set; }
+        public Stage Stage { get; private set; }
         public List<Round> Rounds { get; private set; }
         public SheetFormat SheetFormat { get; private set; }
 
@@ -256,10 +262,17 @@ namespace RaceLib.Format
         {
             get
             {
-                if (StartRound == null)
+                Round first = null;
+
+                lock (Rounds)
+                {
+                    first = Rounds.FirstOrDefault();
+                }
+
+                if (first == null)
                     return 0;
 
-                return StartRound.RoundNumber - 1;
+                return first.RoundNumber - 1;
             }
         }
 
@@ -275,17 +288,23 @@ namespace RaceLib.Format
             }
         }
 
-        public RoundSheetFormat(Round startRound, SheetFormatManager sheetFormatManager, FileInfo file)
+        public RoundSheetFormat(Stage stage, SheetFormatManager sheetFormatManager, FileInfo file)
         {
             SheetFormatManager = sheetFormatManager;
-            StartRound = startRound;
+            Stage = stage;
             Rounds = new List<Round>();
             SheetFormat = new SheetFormat(file);
             pilotMap = new Dictionary<string, Pilot>();
         }
+
         public void Dispose()
         {
             SheetFormat.Dispose();
+        }
+
+        private Round GetFirstRound()
+        {
+            return SheetFormatManager.RoundManager.GetStageRounds(Stage).FirstOrDefault();
         }
 
         public bool HasRound(Round round)
@@ -397,16 +416,18 @@ namespace RaceLib.Format
 
             if (round > 0)
             {
-                if (round == 1 && StartRound.EventType != eventType)
+                Round first = GetFirstRound();
+
+                if (first != null && round == 1 && first.EventType != eventType)
                 {
                     using (IDatabase db = DatabaseFactory.Open(SheetFormatManager.EventManager.EventId))
                     {
-                        StartRound.EventType = eventType;
-                        db.Update(StartRound);
+                        first.EventType = eventType;
+                        db.Update(first);
                     }
                 }
 
-                return SheetFormatManager.RoundManager.GetCreateRound(round + Offset, eventType);
+                return SheetFormatManager.RoundManager.GetCreateRound(round + Offset, eventType, Stage);
             }
 
             return null;

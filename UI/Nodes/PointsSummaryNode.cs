@@ -42,7 +42,7 @@ namespace UI.Nodes
                 column++;
             }
 
-            bool rollOver = rounds.Where(r => r.PointSummary != null).Any(r => r.PointSummary.RoundPositionRollover);
+            bool rollOver = rounds.Where(r => r.Stage != null && r.Stage.PointSummary != null).Any(r => r.Stage.PointSummary.RoundPositionRollover);
 
             bool prevTotal = false;
             bool anyTotal = false;
@@ -70,7 +70,7 @@ namespace UI.Nodes
                 headingText.OnClick += (mie) => { columnToOrderBy = ca; Refresh(); };
                 container.AddChild(headingText);
 
-                if (r.PointSummary != null)
+                if (r.Stage != null && r.Stage.PointSummary != null)
                 {
                     column++;
                     int ca2 = column;
@@ -99,7 +99,7 @@ namespace UI.Nodes
 
         public override IEnumerable<Round> GetSummaryRounds()
         {
-            return eventManager.Event.Rounds.Where(r => r.EventType.HasPoints() && r.PointSummary != null).OrderBy(r => r.Order);
+            return eventManager.Event.Rounds.Where(r => r.EventType.HasPoints() && r.Stage != null && r.Stage.PointSummary != null).OrderBy(r => r.Order);
         }
 
         public override void SetOrder()
@@ -126,7 +126,7 @@ namespace UI.Nodes
 
             List<Node> nodes = new List<Node>();
 
-            bool rollOver = rounds.Where(r => r.PointSummary != null).Any(r => r.PointSummary.RoundPositionRollover);
+            bool rollOver = rounds.Where(r => r.Stage != null && r.Stage.PointSummary != null).Any(r => r.Stage.PointSummary.RoundPositionRollover);
 
             Brackets bracket = Brackets.None;
 
@@ -155,7 +155,7 @@ namespace UI.Nodes
                     bracket = r.Race.Bracket;
                 }
 
-                if (round.PointSummary != null)
+                if (round.Stage != null && round.Stage.PointSummary != null)
                 {
                     prevTotal = true;
                     int points = PointsManager.GetPointsTotal(round, pilot);

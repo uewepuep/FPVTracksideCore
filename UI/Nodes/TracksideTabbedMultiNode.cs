@@ -54,13 +54,11 @@ namespace UI.Nodes
         private TextButtonNode rssiButton;
         public TextButtonNode PhotoBoothButton { get; private set; }
 
-        private KeyboardShortcuts keyMapper;
 
-        public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, SoundManager soundManager, RoundsNode rounds, SceneManagerNode sceneManagerContent, TabButtonsNode tabContainer, KeyboardShortcuts keyMapper)
-            : base(TimeSpan.FromSeconds(0.6f), tabContainer)
+        public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, SoundManager soundManager, RoundsNode rounds, SceneManagerNode sceneManagerContent, TabButtonsNode tabButtons, KeyboardShortcuts keyMapper)
+            : base(TimeSpan.FromSeconds(0.6f), tabButtons)
         {
             this.eventManager = eventManager;
-            this.keyMapper = keyMapper;
             VideoManager = videoManager;
 
             this.rounds = rounds;
@@ -74,7 +72,6 @@ namespace UI.Nodes
             PhotoBooth = new PhotoBoothNode(videoManager, eventManager, soundManager);
 
             ReplayNode = new ReplayNode(eventManager, keyMapper);
-
 
             eventManager.RaceManager.OnRaceChanged += UpdateReplayButton;
             eventManager.RaceManager.OnRaceEnd += UpdateReplayButton;

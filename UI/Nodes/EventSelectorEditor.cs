@@ -310,6 +310,12 @@ namespace UI.Nodes
                     return null;
                 }
             }
+
+            if (pi.Name == "TimeZone")
+            {
+                return new TimeZonePropertyNode<SimpleEvent>(obj, pi, ButtonBackground, TextColor, ButtonHover);
+            }
+
             return base.CreatePropertyNode(obj, pi);
         }
 
