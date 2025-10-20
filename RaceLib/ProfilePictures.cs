@@ -24,6 +24,10 @@ namespace RaceLib
         {
             DirectoryInfo pilotProfileDirectory = new DirectoryInfo("pilots");
 
+            if (!pilotProfileDirectory.Exists) {
+                pilotProfileDirectory.Create();
+            }
+
             if (pilotProfileDirectory.Exists)
             {
                 foreach (FileInfo file in pilotProfileDirectory.GetFiles())
