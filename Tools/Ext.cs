@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -159,6 +160,16 @@ namespace Tools
 
             Regex rgx = new Regex("[\t\r\n,]", RegexOptions.Compiled);
             return rgx.Replace(name, "");
+        }
+
+        public static string NoExtension(this FileInfo file)
+        {
+            if (file.Name.EndsWith(file.Extension))
+            {
+                return file.Name.Substring(0, file.Name.Length - file.Extension.Length);
+            }
+
+            return file.Name;
         }
 
         public static string ToString(this double? d, string f)

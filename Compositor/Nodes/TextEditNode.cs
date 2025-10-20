@@ -158,7 +158,8 @@ namespace Composition.Nodes
                             break;
 
                         default:
-                            if (cursorIndex <= Text.Length)
+                            const int startOfVisibleChars = ' ';
+                            if (cursorIndex <= Text.Length && inputEvent.Character >= startOfVisibleChars)
                             {
                                 string text = Text.Substring(0, cursorIndex);
                                 text += inputEvent.Character;

@@ -87,10 +87,14 @@ namespace Composition.Nodes
             }
         }
 
+        public bool AllowUnicode { get; set; }
+
         public BaseObjectEditorNode(Color buttonBackground, Color buttonHover, Color textColor, Color scrollColor, bool hasButtons = true)
         {
             changes = new List<Change>();
 
+
+            AllowUnicode = false;
             CanEdit = true;
             CanReOrder = true;
 
@@ -557,7 +561,7 @@ namespace Composition.Nodes
                 }
                 else
                 {
-                    newNode = new TextPropertyNode<T>(obj, pi, ButtonBackground, TextColor);
+                    newNode = new TextPropertyNode<T>(obj, pi, ButtonBackground, TextColor, AllowUnicode);
                 }
             }
             else if (pi.PropertyType == typeof(int) || pi.PropertyType == typeof(double) || pi.PropertyType == typeof(float) || pi.PropertyType == typeof(byte))
@@ -1078,7 +1082,7 @@ namespace Composition.Nodes
         public TextEditNode TextValue { get; private set; }
         private ColorNode textBackgroundNode;
 
-        public TextPropertyNode(T obj, PropertyInfo pi, Color textBackground, Color textColor)
+        public TextPropertyNode(T obj, PropertyInfo pi, Color textBackground, Color textColor, bool allowUnicode)
             : base(obj, pi, textColor)
         {
             Node container = new Node();
@@ -1092,6 +1096,7 @@ namespace Composition.Nodes
             TextValue.Alignment = RectangleAlignment.BottomLeft;
             TextValue.OnTab += FocusNext;
             TextValue.OnReturn += FocusNext;
+            TextValue.AllowsUnicode = allowUnicode;
 
             container.AddChild(TextValue);
 
@@ -1187,7 +1192,7 @@ namespace Composition.Nodes
         public string FileExtension { get; set; }
 
         public FilenamePropertyNode(T obj, PropertyInfo pi, Color background, Color hover, Color textColor, string fileExtension) 
-            : base(obj, pi, background, textColor)
+            : base(obj, pi, background, textColor, false)
         {
             FileExtension = fileExtension;
 
@@ -1215,7 +1220,7 @@ namespace Composition.Nodes
     public class NumberPropertyNode<T> : TextPropertyNode<T>
     {
         public NumberPropertyNode(T obj, PropertyInfo pi, Color textBackground, Color textColor) 
-            : base(obj, pi, textBackground, textColor)
+            : base(obj, pi, textBackground, textColor, false)
         {
         }
 
@@ -1319,7 +1324,7 @@ namespace Composition.Nodes
     public class NumberArrayPropertyNode<T> : TextPropertyNode<T>
     {
         public NumberArrayPropertyNode(T obj, PropertyInfo pi, Color textBackground, Color textColor)
-            : base(obj, pi, textBackground, textColor)
+            : base(obj, pi, textBackground, textColor, false)
         {
         }
 
@@ -1364,7 +1369,7 @@ namespace Composition.Nodes
     public class TimeSpanPropertyNode<T> : TextPropertyNode<T>
     {
         public TimeSpanPropertyNode(T obj, PropertyInfo pi, Color textBackground, Color textColor)
-            : base(obj, pi, textBackground, textColor)
+            : base(obj, pi, textBackground, textColor, false)
         {
         }
 
@@ -1414,7 +1419,7 @@ namespace Composition.Nodes
         public bool ShowTime { get; private set; }
 
         public DateTimePropertyNode(T obj, PropertyInfo pi, Color textBackground, Color textColor)
-            : base(obj, pi, textBackground, textColor)
+            : base(obj, pi, textBackground, textColor, false)
         {
             bool dateOnly = pi.GetCustomAttribute<DateOnlyAttribute>() != null;
             SetShowTime(!dateOnly);
@@ -1491,7 +1496,7 @@ namespace Composition.Nodes
         public event Action<object> onChanged;
 
         public ListPropertyNode(T obj, PropertyInfo pi, Color textBackground, Color textColor, Color hover, System.Array options = null)
-        : base(obj, pi, textBackground, textColor)
+        : base(obj, pi, textBackground, textColor, false)
         {
             TextValue.CanEdit = false;
 
