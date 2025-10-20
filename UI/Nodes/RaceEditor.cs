@@ -15,6 +15,7 @@ namespace UI.Nodes
         public RaceEditor(EventManager eventManager, Race race, bool addRemove = true, bool cancelButton = false)
            : base(race, false, true, false)
         {
+            AllowUnicode = true;
             this.eventManager = eventManager;
             Text = "Race Editor";
             OnOK += aOnOK;

@@ -148,6 +148,8 @@ namespace UI.Nodes
         public SoundEditor(SoundManager soundManager)
             : base(soundManager.Sounds, false, true, false)
         {
+            AllowUnicode = true;
+
             TextButtonNode speakButton = new TextButtonNode("Play", ButtonBackground, ButtonHover, TextColor);
             speakButton.OnClick += (mie) =>
             {
@@ -483,6 +485,7 @@ namespace UI.Nodes
         public KeyboardShortcutsEditor(KeyboardShortcuts toEdit)
             : base(toEdit, false, true, false)
         {
+
         }
     }
 
