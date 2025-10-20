@@ -149,30 +149,35 @@ namespace Composition.Nodes
         {
             try
             {
-                if (AllowsUnicode)
+                switch (inputEvent.Character)
                 {
-                    switch (inputEvent.Character)
-                    {
-                        case '\b':
-                            // Do nothing.
-                            break;
+                    case '\b':
+                        // Do nothing.
+                        break;
 
-                        default:
-                            const int startOfVisibleChars = ' ';
-                            if (cursorIndex <= Text.Length && inputEvent.Character >= startOfVisibleChars)
+                    default:
+                        const int startOfVisibleChars = ' ';
+                        if (cursorIndex <= Text.Length && inputEvent.Character >= startOfVisibleChars)
+                        {
+                            string text = Text.Substring(0, cursorIndex);
+                            text += inputEvent.Character;
+                            text += Text.Substring(cursorIndex);
+
+                            if (AllowsUnicode)
                             {
-                                string text = Text.Substring(0, cursorIndex);
-                                text += inputEvent.Character;
-                                text += Text.Substring(cursorIndex);
-                                Text = text;
-
-                                cursorIndex++;
-
-                                RequestRedraw();
-                                TextChanged?.Invoke(Text);
+                                Text = text.NoControlCharacters();
                             }
-                            break;
-                    }
+                            else
+                            {
+                                Text = text.AsciiOnly();
+                            }
+
+                            cursorIndex++;
+
+                            RequestRedraw();
+                            TextChanged?.Invoke(Text);
+                        }
+                        break;
                 }
             }
             catch (Exception ex)
@@ -215,7 +220,15 @@ namespace Composition.Nodes
 
                     if (!string.IsNullOrEmpty(input))
                     {
-                        Text = before + input + after;
+                        string text = before + input + after;
+                        if (AllowsUnicode)
+                        {
+                            Text = text.NoControlCharacters();
+                        }
+                        else
+                        {
+                            Text = text.AsciiOnly();
+                        }
                         cursorIndex = Text.Length;
                     }
 

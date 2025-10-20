@@ -55,6 +55,9 @@ namespace UI.Video
             locker = new object();
             Profile = profile;
 
+            centralDock.Top.SetFixedSize(400);
+            itemName.Remove();
+
             VideoManager = videoManager;
             VideoManager.OnStart += VideoManager_OnStart;
             EventManager = em;
@@ -265,7 +268,7 @@ namespace UI.Video
             if (preview == null)
             {
                 preview = new ColorNode(Theme.Current.Editor.Foreground.XNA);
-                right.AddChild(preview);
+                centralDock.Top.AddChild(preview);
             }
 
             if (physicalLayoutContainer == null)
@@ -275,7 +278,7 @@ namespace UI.Video
                 ColorNode background = new ColorNode(Theme.Current.Editor.Foreground.XNA);
                 physicalLayoutContainer.AddChild(background);
 
-                right.AddChild(physicalLayoutContainer);
+                centralDock.Top.AddChild(physicalLayoutContainer);
 
                 physicalLayout = new ColorNode(Theme.Current.Editor.Text.XNA);
                 physicalLayout.Scale(0.3f);
@@ -1401,7 +1404,6 @@ namespace UI.Video
         {
             heading.Text = "Camera Display Editor";
             Scale(0.5f, 0.5f);
-            SetButtonsHeight(0.1f);
         }
     }
 

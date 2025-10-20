@@ -10,6 +10,7 @@
 		<Version>2.1.0.6</Version>
 		<usewpf>true</usewpf>
 		<EnableWindowsTargeting>true</EnableWindowsTargeting>
+		<usewpf>true</usewpf>	
 	</PropertyGroup>
 
 

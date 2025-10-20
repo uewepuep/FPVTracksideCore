@@ -20,6 +20,8 @@ namespace UI.Nodes
         public ThemeEditor(Profile profile, IEnumerable<Theme> toEdit)
             : base(toEdit, false, true, false)
         {
+            AllowUnicode = true;
+
             this.Profile = profile;
             heading.Text = "Themes";
             okButton.Text = "Set Theme";
@@ -60,14 +62,10 @@ namespace UI.Nodes
             Demo = new AspectNode();
             Demo.SetAspectRatio(16, 9);
             Demo.Alignment = RectangleAlignment.Center;
-            right.AddChild(Demo);
+            centralDock.Top.AddChild(Demo);
+            centralDock.Top.SetFixedSize(300);
 
             base.SetObjects(toEdit, addRemove, cancelButton);
-
-            Demo.RelativeBounds = new RectangleF(objectProperties.RelativeBounds.X, objectProperties.RelativeBounds.Y, objectProperties.RelativeBounds.Width, 0.3f);
-
-            objectProperties.Translate(0, Demo.RelativeBounds.Height);
-            objectProperties.AddSize(0, -Demo.RelativeBounds.Height);
         }
 
         protected override void DoSetSelected(Theme theme)
