@@ -302,28 +302,29 @@ namespace UI.Nodes
             {
                 openDirectory.AddItem("Open Event Data Directory", () =>
                 {
-                    PlatformTools.OpenFileManager(Path.Combine(Directory.GetCurrentDirectory(), "events", eventManager.EventId.ToString()));
+                    string eventPath = Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocation, eventManager.EventId.ToString());
+                    PlatformTools.OpenFileManager(eventPath);
                 });
             }
 
             openDirectory.AddItem("Open Events Directory", () =>
             {
-                PlatformTools.OpenFileManager(Path.Combine(Directory.GetCurrentDirectory(), "events"));
+                PlatformTools.OpenFileManager(ApplicationProfileSettings.Instance.EventStorageLocation);
             });
 
             openDirectory.AddItem("Open Pilot Profile Image Directory", () =>
             {
-                PlatformTools.OpenFileManager(Path.Combine(Directory.GetCurrentDirectory(), "pilots"));
+                PlatformTools.OpenFileManager(Path.Combine(PlatformTools.WorkingDirectory.FullName, "pilots"));
             });
 
             openDirectory.AddItem("Open Tracks Directory", () =>
             {
-                PlatformTools.OpenFileManager(Path.Combine(Directory.GetCurrentDirectory(), "Tracks"));
+                PlatformTools.OpenFileManager(Path.Combine(PlatformTools.WorkingDirectory.FullName, "Tracks"));
             });
 
             openDirectory.AddItem("Open FPVTrackside Directory", () =>
             {
-                PlatformTools.OpenFileManager(Directory.GetCurrentDirectory());
+                PlatformTools.OpenFileManager(PlatformTools.WorkingDirectory.FullName);
             });
 
             AddMenus(root);

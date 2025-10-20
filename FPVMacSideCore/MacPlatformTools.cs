@@ -389,7 +389,29 @@ namespace FPVMacsideCore
 
                 public override void OpenFileManager(string directory)
         {
-            System.Diagnostics.Process.Start("open", directory);
+            try
+            {
+                // Handle if a file path was passed instead of directory
+                FileInfo file = new FileInfo(directory);
+                if (file.Exists)
+                {
+                    directory = file.DirectoryName;
+                }
+
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "open",
+                    Arguments = $"\"{directory}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                Logger.UI.LogException(this, ex);
+                Console.WriteLine($"Failed to open directory: {directory}, Error: {ex.Message}");
+            }
         }
 
         private bool IsMainThread()
