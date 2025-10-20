@@ -42,7 +42,6 @@ namespace UI
                 if (s != null && s.Any())
                 {
                     generalSettings = s[0];
-                    Write(generalSettings);
                 }
                 else
                 {
