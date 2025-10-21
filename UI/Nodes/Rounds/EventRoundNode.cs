@@ -281,10 +281,17 @@ namespace UI.Nodes.Rounds
 
             if (Round.Stage != null)
             {
-                mm.AddItem("Delete Stage + Contents", () =>
+                mm.AddItem("Delete Stage and contents", () =>
                 {
-                    PopupLayer pl = CompositorLayer.LayerStack.GetLayer<PopupLayer>();
-                    pl.PopupConfirmation("Delete entire Stage? (except finished races)", () => { EventManager.RoundManager.DeleteStageAndContents(Round.Stage); });
+                    PopupLayer pl = GetLayer<PopupLayer>();
+                    pl.PopupConfirmation("Delete Stage and contents (except finished races)", () => 
+                    {
+                        LoadingLayer ll = GetLayer<LoadingLayer>();
+                        ll.WorkQueue.Enqueue("Deleting stage", () =>
+                        {
+                            EventManager.RoundManager.DeleteStageAndContents(Round.Stage);
+                        });
+                    });
                 });
             }
 

@@ -1,5 +1,6 @@
 ﻿using Composition;
 using Composition.Input;
+using Composition.Layers;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
@@ -290,18 +291,22 @@ namespace UI.Nodes.Rounds
 
         private void SheetFormat(SheetFormatManager.SheetFile sheet)
         {
-            Stage stage = null;
-            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            LoadingLayer ll = GetLayer<LoadingLayer>();
+            ll.WorkQueue.Enqueue("Loading format", () =>
             {
-                stage = new Stage();
-                stage.ID = Guid.NewGuid();
-                stage.Name = sheet.Name;
-                stage.SheetFormatFilename = sheet.FileInfo.Name;
+                Stage stage = null;
+                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                {
+                    stage = new Stage();
+                    stage.ID = Guid.NewGuid();
+                    stage.Name = sheet.Name;
+                    stage.SheetFormatFilename = sheet.FileInfo.Name;
 
-                db.Insert(stage);
-            }
+                    db.Insert(stage);
+                }
 
-            EventManager.RoundManager.SheetFormatManager.LoadSheet(stage, GetOrderedPilots().ToArray(), true);
+                EventManager.RoundManager.SheetFormatManager.LoadSheet(stage, GetOrderedPilots().ToArray(), true);
+            });
         }
 
         protected void AddRace()

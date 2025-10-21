@@ -25,6 +25,7 @@ namespace Composition.Nodes
         public virtual RectangleF RelativeBounds { get; set; }
 
         public CompositorLayer CompositorLayer { get; private set; }
+      
         public bool NeedsDraw { get; protected set; }
         public bool NeedsLayout { get; protected set; }
 
@@ -791,7 +792,11 @@ namespace Composition.Nodes
 
         public T GetLayer<T>() where T : Layer
         {
-            return CompositorLayer.LayerStack.GetLayer<T>();
+            if (CompositorLayer != null && CompositorLayer.LayerStack != null)
+            {
+                return CompositorLayer.LayerStack.GetLayer<T>();
+            }
+            return null;
         }
 
         public virtual IEnumerable<Node> GetRecursiveChildren()

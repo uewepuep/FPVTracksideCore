@@ -61,7 +61,7 @@ namespace UI.Nodes
 
         private void ScanButton_OnClick(MouseInputEvent mie)
         {
-            LoadingLayer ll = CompositorLayer.LayerStack.GetLayer<LoadingLayer>();
+            LoadingLayer ll = GetLayer<LoadingLayer>();
             if (ll != null)
             {
                 ll.WorkQueue.Enqueue("Scanning Network", () =>
