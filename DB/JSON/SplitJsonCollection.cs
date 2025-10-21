@@ -85,7 +85,7 @@ namespace DB.JSON
 
         public bool Upsert(T obj)
         {
-            if (GetObject(obj.ID) != null)
+            if (GetObject(obj.ID) != default(T))
             {
                 return Update(obj);
             }
@@ -97,14 +97,12 @@ namespace DB.JSON
 
         public bool Upsert(IEnumerable<T> objs)
         {
-            if (All().Any(r => objs.Select(s => s.ID).Contains(r.ID)))
+            bool success = true;
+            foreach (T obj in objs)
             {
-                return Update(objs);
+                success &= Upsert(obj);
             }
-            else
-            {
-                return Insert(objs);
-            }
+            return success;
         }
 
         public bool Delete(Guid id)
@@ -233,19 +231,17 @@ namespace DB.JSON
 
         public T GetObject(Guid id)
         {
-            if (id == Guid.Empty)
-                return null;
+            string filename = GetFilename(id);
+            T[] existing = Read(filename);
 
-            return All().FirstOrDefault(r => r.ID == id);
+            return existing.FirstOrDefault(r => r.ID == id);
         }
 
         public IEnumerable<T> GetObjects(IEnumerable<Guid> ids)
         {
-            T[] ts = All().Where(r => ids.Contains(r.ID)).ToArray();
-
             foreach (Guid id in ids)
             {
-                yield return ts.FirstOrDefault(t => t.ID == id);
+                yield return GetObject(id);
             }
         }
 

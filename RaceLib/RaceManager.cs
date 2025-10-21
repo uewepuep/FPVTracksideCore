@@ -972,7 +972,6 @@ namespace RaceLib
             {
                 db.Upsert(race.PilotChannelsSafe);
                 db.Upsert(race);
-                db.Upsert(EventManager.Event);
             }
 
             OnRaceCreated?.Invoke(race);
