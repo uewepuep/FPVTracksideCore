@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using Composition.Input;
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -165,13 +166,29 @@ namespace Composition.Nodes
 
 #if DEBUG
         private Color color;
+
+        private bool hover;
+
         public void SetColor(Color color) { this.color = color; }
 
         public override void Draw(Drawer id, float parentAlpha)
         {
-            id.QuickDraw(Bounds, color);
+            Rectangle singleLine = Bounds;
+            singleLine.Height = 1;
+
+            if (hover)
+            {
+                id.QuickDraw(singleLine, Color.Magenta);
+            }
+            id.QuickDraw(singleLine, color);
 
             base.Draw(id, parentAlpha);
+        }
+
+        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
+        {
+            hover = Contains(mouseInputEvent.Position);
+            return base.OnMouseInput(mouseInputEvent);
         }
 #endif
     }
