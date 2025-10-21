@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using RaceLib.Format;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -32,6 +33,7 @@ namespace RaceLib
         public event Race.OnRaceEvent OnRacePreStart;
         public event Race.OnRaceEvent OnRaceChanged;
         public event Race.OnRaceEvent OnRaceResumed;
+        public event Race.OnRaceEvent OnRacePilotsSet;
 
         public event Race.OnRaceEvent OnRaceReset;
         public event Race.OnRaceEvent OnRaceEnd;
@@ -2294,6 +2296,26 @@ namespace RaceLib
             {
                 Logger.RaceLog.LogException(this, ex);
             }
+        }
+
+        public void SetRacePilots(Race race, IEnumerable<Tuple<Pilot, Channel>> toSet, bool optimiseChannels)
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                race.ClearPilots(db);
+
+                foreach (var pc in toSet)
+                {
+                    race.SetPilot(db, pc.Item2, pc.Item1);
+                }
+
+                if (optimiseChannels)
+                {
+                    OptimiseChannels(db, race);
+                }
+            }
+
+            OnRacePilotsSet?.Invoke(race);
         }
     }
 }

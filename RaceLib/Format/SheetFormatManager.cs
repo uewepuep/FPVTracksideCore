@@ -175,8 +175,28 @@ namespace RaceLib.Format
         {
             if (stage != null && stage.HasSheetFormat)
             {
+                Round[] stageRounds = EventManager.RoundManager.GetStageRounds(stage).ToArray();
+
+                int offset = 0;
+                if (stageRounds.Any())
+                {
+                    offset = stageRounds.OrderBy(r => r.Order).FirstOrDefault().RoundNumber - 1;
+                }
+                else
+                {
+                    Round last = EventManager.RoundManager.GetLastRound(EventTypes.Race);
+                    if (last != null)
+                    {
+                        offset = last.RoundNumber;
+                    }
+                    else
+                    {
+                        offset = 1;
+                    }
+                }
+
                 SheetFile sheetFile = GetSheetFile(stage.SheetFormatFilename);
-                RoundSheetFormat sheetFormat = new RoundSheetFormat(stage, this, sheetFile.FileInfo);
+                RoundSheetFormat sheetFormat = new RoundSheetFormat(stage, this, sheetFile.FileInfo, offset);
                 sheetFormat.CreatePilotMap(assignedPilots);
 
                 foreach (Round round in sheetFormat.Rounds)
@@ -258,23 +278,7 @@ namespace RaceLib.Format
             }
         }
 
-        public int Offset
-        {
-            get
-            {
-                Round first = null;
-
-                lock (Rounds)
-                {
-                    first = Rounds.FirstOrDefault();
-                }
-
-                if (first == null)
-                    return 0;
-
-                return first.RoundNumber - 1;
-            }
-        }
+        public int Offset { get; private set; }
 
         public int ChannelCount
         {
@@ -288,8 +292,9 @@ namespace RaceLib.Format
             }
         }
 
-        public RoundSheetFormat(Stage stage, SheetFormatManager sheetFormatManager, FileInfo file)
+        public RoundSheetFormat(Stage stage, SheetFormatManager sheetFormatManager, FileInfo file, int offset)
         {
+            Offset = offset;
             SheetFormatManager = sheetFormatManager;
             Stage = stage;
             Rounds = new List<Round>();
@@ -480,38 +485,33 @@ namespace RaceLib.Format
                 return race;
             }
 
-            using (IDatabase db = DatabaseFactory.Open(SheetFormatManager.EventManager.EventId))
+            List<Tuple<Pilot, Channel>> toSet = new List<Tuple<Pilot, Channel>>();
+
+            foreach (var pc in srace.PilotChannels)
             {
-                race.ClearPilots(db);
-
-                foreach (var pc in srace.PilotChannels)
+                IEnumerable<Channel> channels = SheetFormatManager.EventManager.GetChannelGroup(pc.ChannelSlot);
+                Pilot pilot = GetPilot(pc.PilotSheetName);
+                if (pilot != null && channels.Any())
                 {
-                    IEnumerable<Channel> channels = SheetFormatManager.EventManager.GetChannelGroup(pc.ChannelSlot);
-                    Pilot pilot = GetPilot(pc.PilotSheetName);
-                    if (pilot != null && channels.Any())
+                    Channel currentChannel = SheetFormatManager.EventManager.GetChannel(pilot);
+                    if (currentChannel != null)
                     {
-                        Channel currentChannel = SheetFormatManager.EventManager.GetChannel(pilot);
-                        if (currentChannel != null)
+                        Channel channel = channels.FirstOrDefault(r => r.Band.GetBandType() == currentChannel.Band.GetBandType());
+                        if (channel == null)
                         {
-                            Channel channel = channels.FirstOrDefault(r => r.Band.GetBandType() == currentChannel.Band.GetBandType());
-                            if (channel == null)
-                            {
-                                channel = channels.FirstOrDefault();
-                            }
+                            channel = channels.FirstOrDefault();
+                        }
 
-                            if (channel != null)
-                            {
-                                race.SetPilot(db, channel, pilot);
-                            }
+                        if (channel != null)
+                        {
+                            toSet.Add(new Tuple<Pilot, Channel>(pilot, channel));
                         }
                     }
                 }
-
-                if (!SheetFormat.LockChannels)
-                {
-                    SheetFormatManager.EventManager.RaceManager.OptimiseChannels(db, race);
-                }
             }
+            
+            bool optimiseChannels = !SheetFormat.LockChannels;
+            SheetFormatManager.EventManager.RaceManager.SetRacePilots(race, toSet, optimiseChannels);
 
             return race;
         }

@@ -176,11 +176,11 @@ namespace Composition.Nodes
             Rectangle singleLine = Bounds;
             singleLine.Height = 1;
 
-            if (hover)
-            {
-                id.QuickDraw(singleLine, Color.Magenta);
-            }
-            id.QuickDraw(singleLine, color);
+            //if (hover)
+            //{
+            //    id.QuickDraw(singleLine, Color.Magenta);
+            //}
+            //id.QuickDraw(singleLine, color);
 
             base.Draw(id, parentAlpha);
         }

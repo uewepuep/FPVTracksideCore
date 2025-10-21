@@ -303,8 +303,14 @@ namespace UI.Nodes.Rounds
                     stage.SheetFormatFilename = sheet.FileInfo.Name;
 
                     db.Insert(stage);
-                }
 
+                    bool empty = !EventManager.RaceManager.GetRaces(Round).Any();
+                    if (empty)
+                    {
+                        Round.Stage = stage;
+                        db.Update(Round);
+                    }
+                }
                 EventManager.RoundManager.SheetFormatManager.LoadSheet(stage, GetOrderedPilots().ToArray(), true);
             });
         }

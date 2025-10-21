@@ -68,6 +68,7 @@ namespace UI.Nodes.Rounds
             EventManager.RaceManager.OnRaceChanged += UpdateRace;
             EventManager.RaceManager.OnRaceReset += UpdateRace;
             EventManager.RaceManager.OnLapsRecalculated += UpdateRace;
+            EventManager.RaceManager.OnRacePilotsSet += UpdateRace;
             EventManager.RaceManager.OnRaceRemoved += Refresh;
             EventManager.RaceManager.OnRaceCreated += Refresh;
             EventManager.ResultManager.RaceResultsChanged += Refresh;
@@ -88,6 +89,7 @@ namespace UI.Nodes.Rounds
             EventManager.RaceManager.OnRaceChanged -= UpdateRace;
             EventManager.RaceManager.OnRaceReset -= UpdateRace;
             EventManager.RaceManager.OnLapsRecalculated -= UpdateRace;
+            EventManager.RaceManager.OnRacePilotsSet -= UpdateRace;
             EventManager.RaceManager.OnRaceRemoved -= Refresh;
             EventManager.RaceManager.OnRaceCreated -= Refresh;
             EventManager.OnPilotRefresh -= Refresh;
