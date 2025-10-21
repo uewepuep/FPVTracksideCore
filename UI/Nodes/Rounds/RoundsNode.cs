@@ -213,8 +213,6 @@ namespace UI.Nodes.Rounds
 
         private void DoRefresh()
         {
-            needsRefresh = false;
-
             Round[] rounds = EventManager.RoundManager.Rounds.OrderBy(e => e.Order).ToArray();
             foreach (Round round in rounds)
             {
@@ -513,6 +511,7 @@ namespace UI.Nodes.Rounds
 
             if (needsRefresh)
             {
+                needsRefresh = false;
                 DoRefresh();
             }
             

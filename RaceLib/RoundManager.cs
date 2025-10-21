@@ -389,6 +389,14 @@ namespace RaceLib
 
         public void RemoveRound(Round round)
         {
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                RemoveRound(db, round);
+            }
+        }
+
+        public void RemoveRound(IDatabase db, Round round)
+        {
             Race[] toRemove = RaceManager.Races.Where(r => r.Round == round && !r.Ended).ToArray();
             foreach (Race remove in toRemove)
             {
@@ -398,12 +406,9 @@ namespace RaceLib
             lock (Event.Rounds)
             {
                 Event.Rounds.Remove(round);
-                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
-                {
-                    round.Valid = false;
-                    db.Update(round);
-                    db.Update(Event);
-                }
+                round.Valid = false;
+                db.Update(round);
+                db.Update(Event);
             }
 
             RaceManager.UpdateRaceRoundNumbers();
@@ -615,11 +620,53 @@ namespace RaceLib
             OnStageChanged?.Invoke();
         }
 
+        public void DeleteStageAndContents(Stage stage)
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                DeleteStageAndContents(db, stage);
+            }
+        }
+
+
+        public void DeleteStageAndContents(IDatabase db, Stage stage)
+        {
+            if (stage.Valid)
+            {
+                Round[] rounds = GetStageRounds(stage).ToArray();
+                foreach (Round r in rounds)
+                {
+                    Race[] races = RaceManager.GetRaces(r);
+                    IEnumerable<Race> finished = races.Where(g => g.Ended);
+                    IEnumerable<Race> notFinished = races.Where(g => !g.Ended);
+                    
+                    foreach (Race race in notFinished)
+                    {
+                        RaceManager.RemoveRace(race, false);
+                    }
+
+                    if (finished.Any())
+                    {
+                        r.Stage = null;
+                        db.Update(r);
+                    }
+                    else
+                    {
+                        RemoveRound(db, r);
+                    }
+                }
+
+                stage.Valid = false;
+                db.Update(stage);
+                OnStageChanged?.Invoke();
+            }
+        }
+
         public IEnumerable<Round> GetStageRounds(Stage stage)
         {
             lock (Event.Rounds)
             {
-                return Event.Rounds.Where(r => r.Stage == stage && r != null).OrderBy(r => r.Order);
+                return Event.Rounds.Where(r => r.Stage == stage && r != null).OrderBy(r => r.Order).ThenBy(r => r.RoundNumber);
             }
         }
 
@@ -629,7 +676,7 @@ namespace RaceLib
             {
                 Stage[] validStages = GetStages().ToArray();
 
-                Stage[] orphans = db.All<Stage>().Except(validStages).ToArray();
+                Stage[] orphans = db.All<Stage>().Where(s => s.Valid == true).Except(validStages).ToArray();
 
                 foreach (Stage r in orphans)
                 {

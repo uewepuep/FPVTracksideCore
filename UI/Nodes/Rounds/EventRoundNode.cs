@@ -181,8 +181,6 @@ namespace UI.Nodes.Rounds
                 {
                     rn.Dispose();
                 }
-
-                rn.NeedsInit = true;
             }
 
             int racesPerColumn = RoundsNode.RacesPerColumn;
@@ -279,6 +277,22 @@ namespace UI.Nodes.Rounds
             if (Round.Stage != null)
             {
                 mm.AddItem("Edit Stage", EditStage);
+            }
+
+            if (Round.Stage != null)
+            {
+                mm.AddItem("Delete Stage and contents", () =>
+                {
+                    PopupLayer pl = GetLayer<PopupLayer>();
+                    pl.PopupConfirmation("Delete Stage and contents (except finished races)", () => 
+                    {
+                        LoadingLayer ll = GetLayer<LoadingLayer>();
+                        ll.WorkQueue.Enqueue("Deleting stage", () =>
+                        {
+                            EventManager.RoundManager.DeleteStageAndContents(Round.Stage);
+                        });
+                    });
+                });
             }
 
             if (!EventManager.Event.RulesLocked)

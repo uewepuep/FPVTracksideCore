@@ -188,6 +188,13 @@ namespace Composition.Nodes
             {
                 alpha *= Tint.A / 255.0f;
             }
+
+            if (drawer == null)
+            {
+                drawer = new Drawer(id.GraphicsDevice, id.TextureCache);
+                drawer.CanMultiThread = false;
+            }
+
             lock (renderTargetLock)
             {
                 if (renderTarget != null)
@@ -284,8 +291,7 @@ namespace Composition.Nodes
                     {
                         if (drawer == null)
                         {
-                            drawer = new Drawer(CompositorLayer.GraphicsDevice);
-                            drawer.CanMultiThread = false;
+                            return;
                         }
 
                         Size maxSize = Size;

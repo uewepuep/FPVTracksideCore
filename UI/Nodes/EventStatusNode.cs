@@ -1,4 +1,5 @@
-﻿using Composition.Nodes;
+﻿using Composition;
+using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
 using System;
@@ -44,6 +45,8 @@ namespace UI.Nodes
         private EventManager eventManager;
 
         private Node resultsContainer;
+
+        private bool needsRefresh;
 
         public EventStatusNode(EventManager eventManager)
         {
@@ -93,6 +96,22 @@ namespace UI.Nodes
         }
 
         private void Refresh()
+        {
+            needsRefresh = true;
+        }
+
+        public override void Draw(Drawer id, float parentAlpha)
+        {
+            base.Draw(id, parentAlpha);
+
+            if (needsRefresh)
+            {
+                needsRefresh = false;
+                DoRefresh();
+            }
+        }
+
+        private void DoRefresh()
         {
             prevRaceNode.SetRace(eventManager.RaceManager.GetPrevRace());
             currentRaceNode.SetRace(eventManager.RaceManager.CurrentRace);
