@@ -264,6 +264,8 @@ namespace FfmpegMediaPlatform
             // Initialize recording fields
             frameTimes = new List<FrameTime>();
             IsVisible = true;
+
+            Direction = Directions.BottomUp;
         }
 
         public override void Dispose()

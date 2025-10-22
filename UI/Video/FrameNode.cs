@@ -134,22 +134,9 @@ namespace UI.Video
         {
             bool flipped = Source.Direction == FrameSource.Directions.TopDown;
 
-            // Special handling for ffmpeg cameras (Mac AVFoundation and Windows DirectShow) - they are upside down by default
-            bool isFfmpegCamera = Source.VideoConfig.FrameWork == FrameWork.ffmpeg;
-            
-            if (isFfmpegCamera)
-            {
-                // For ffmpeg cameras (Mac/Windows): "None" should show right-side up (so flip), "Flipped" should show upside down (so don't flip) 
-                if (!Source.VideoConfig.Flipped)
-                    flipped = !flipped;  // When UI shows "None", flip to make it right-side up
-                // When UI shows "Flipped", don't change flipped state (stays upside down)
-            }
-            else
-            {
-                // Original logic for non-ffmpeg cameras
-                if (Source.VideoConfig.Flipped)
-                    flipped = !flipped;
-            }
+            // Original logic for non-ffmpeg cameras
+            if (Source.VideoConfig.Flipped)
+                flipped = !flipped;
 
             if (flipped)
                 src = src.Flip(texture.Height);
