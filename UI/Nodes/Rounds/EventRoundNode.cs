@@ -181,6 +181,8 @@ namespace UI.Nodes.Rounds
                 {
                     rn.Dispose();
                 }
+
+                rn.NeedsInit = true;
             }
 
             int racesPerColumn = RoundsNode.RacesPerColumn;
