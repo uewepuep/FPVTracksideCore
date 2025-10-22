@@ -91,31 +91,17 @@ namespace UI.Video
                 VideoManager = null;
             }
 
+            itemName?.Dispose();
+            itemName = null;
+
             base.Dispose();
         }
 
         protected override void AddNew(VideoConfig videoConfig)
         {
-            // When adding a new camera, always detect and set optimal video mode
-            // This ensures we use supported resolutions/framerates instead of defaults
-            Tools.Logger.VideoLog.LogCall(this, $"Auto-detecting optimal mode for newly added camera: '{videoConfig.DeviceName}' (current: {videoConfig.VideoMode.Width}x{videoConfig.VideoMode.Height}@{videoConfig.VideoMode.FrameRate}fps)");
-            
-            var optimalMode = VideoManager.DetectOptimalMode(videoConfig);
-            if (optimalMode != null)
+            if (videoConfig.FrameWork == FrameWork.ffmpeg)
             {
-                videoConfig.VideoMode = optimalMode;
-                Tools.Logger.VideoLog.LogCall(this, $"✓ Set optimal mode for '{videoConfig.DeviceName}': {optimalMode.Width}x{optimalMode.Height}@{optimalMode.FrameRate}fps");
-            }
-            else
-            {
-                // Fallback to safe defaults (but still better than 25fps default)
-                videoConfig.VideoMode.Width = 640;
-                videoConfig.VideoMode.Height = 480;
-                videoConfig.VideoMode.FrameRate = 30;
-                videoConfig.VideoMode.Format = "";
-                videoConfig.VideoMode.FrameWork = videoConfig.FrameWork;
-                videoConfig.VideoMode.Index = 0; // Set a valid index
-                Tools.Logger.VideoLog.LogCall(this, $"⚠ Using fallback mode for '{videoConfig.DeviceName}': 640x480@30fps");
+                AutoDetect(videoConfig);
             }
             
             // Add to the VideoManager's collection first to ensure persistence
@@ -134,6 +120,31 @@ namespace UI.Video
                 wasEmpty = false;
             }
             RepairVideoPreview();
+        }
+
+        private void AutoDetect(VideoConfig videoConfig)
+        {
+            // When adding a new camera, always detect and set optimal video mode
+            // This ensures we use supported resolutions/framerates instead of defaults
+            Tools.Logger.VideoLog.LogCall(this, $"Auto-detecting optimal mode for newly added camera: '{videoConfig.DeviceName}' (current: {videoConfig.VideoMode.Width}x{videoConfig.VideoMode.Height}@{videoConfig.VideoMode.FrameRate}fps)");
+
+            Mode optimalMode = VideoManager.DetectOptimalMode(videoConfig);
+            if (optimalMode != null)
+            {
+                videoConfig.VideoMode = optimalMode;
+                Tools.Logger.VideoLog.LogCall(this, $"✓ Set optimal mode for '{videoConfig.DeviceName}': {optimalMode.Width}x{optimalMode.Height}@{optimalMode.FrameRate}fps");
+            }
+            else
+            {
+                // Fallback to safe defaults (but still better than 25fps default)
+                videoConfig.VideoMode.Width = 640;
+                videoConfig.VideoMode.Height = 480;
+                videoConfig.VideoMode.FrameRate = 30;
+                videoConfig.VideoMode.Format = "";
+                videoConfig.VideoMode.FrameWork = videoConfig.FrameWork;
+                videoConfig.VideoMode.Index = 0; // Set a valid index
+                Tools.Logger.VideoLog.LogCall(this, $"⚠ Using fallback mode for '{videoConfig.DeviceName}': 640x480@30fps");
+            }
         }
 
         protected override void AddOnClick(MouseInputEvent mie)
@@ -287,12 +298,6 @@ namespace UI.Video
 
 
             base.SetObjects(toEdit, addRemove, cancelButton);
-
-            // Set preview at the top of the right panel
-            preview.RelativeBounds = new RectangleF(0, 0, 1, 0.46f);
-
-            // Move objectProperties down to make room for preview
-            objectProperties.RelativeBounds = new RectangleF(0, preview.RelativeBounds.Bottom, 1, buttonContainer.RelativeBounds.Y - preview.RelativeBounds.Bottom);
 
             // Position physicalLayoutContainer to the right of the preview
             physicalLayoutContainer.RelativeBounds = new RectangleF(1.1f, preview.RelativeBounds.Y, 0.3f, preview.RelativeBounds.Height);

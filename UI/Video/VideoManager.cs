@@ -115,11 +115,6 @@ namespace UI.Video
             AutoPause = false;
         }
 
-        private VideoFrameWork GetFramework(FrameWork frameWork)
-        {
-            return VideoFrameWorks.Available.FirstOrDefault(f => f.FrameWork == frameWork);
-        }
-
         public void LoadCreateDevices(FrameSourcesDelegate frameSources)
         {
             LoadDevices();
@@ -311,76 +306,71 @@ namespace UI.Video
             
             try
             {
-                // Find the appropriate framework and query modes directly
-                foreach (VideoFrameWork frameWork in VideoFrameWorks.Available)
+                VideoFrameWork frameWork = VideoFrameWorks.GetFramework(config.FrameWork);
                 {
-                    if (config.FrameWork == frameWork.FrameWork)
+                    Logger.VideoLog.LogCall(this, $"Using framework {frameWork.FrameWork} to detect modes");
+
+                    // Create a temporary instance just to get the modes
+                    using (FrameSource tempSource = frameWork.CreateFrameSource(config))
                     {
-                        Logger.VideoLog.LogCall(this, $"Using framework {frameWork.FrameWork} to detect modes");
-                        
-                        // Create a temporary instance just to get the modes
-                        using (FrameSource tempSource = frameWork.CreateFrameSource(config))
+                        if (tempSource is IHasModes hasModes)
                         {
-                            if (tempSource is IHasModes hasModes)
+                            Logger.VideoLog.LogCall(this, "Querying available modes from camera...");
+                            var availableModes = hasModes.GetModes().ToList();
+
+                            Logger.VideoLog.LogCall(this, $"Camera returned {availableModes.Count} available modes");
+
+                            if (availableModes.Any())
                             {
-                                Logger.VideoLog.LogCall(this, "Querying available modes from camera...");
-                                var availableModes = hasModes.GetModes().ToList();
-                                
-                                Logger.VideoLog.LogCall(this, $"Camera returned {availableModes.Count} available modes");
-                                
-                                if (availableModes.Any())
+                                // 1st priority: 640x480 @ 30fps
+                                var preferred = availableModes.FirstOrDefault(m =>
+                                    m.Width == 640 && m.Height == 480 && m.FrameRate >= 30);
+                                if (preferred != null)
                                 {
-                                    // 1st priority: 640x480 @ 30fps
-                                    var preferred = availableModes.FirstOrDefault(m => 
-                                        m.Width == 640 && m.Height == 480 && m.FrameRate >= 30);
-                                    if (preferred != null)
-                                    {
-                                        Logger.VideoLog.LogCall(this, $"✓ SELECTED (1st priority - preferred): {preferred.Width}x{preferred.Height}@{preferred.FrameRate}fps");
-                                        return preferred;
-                                    }
-                                    else
-                                    {
-                                        Logger.VideoLog.LogCall(this, "✗ 640x480@30fps not available, trying next priority");
-                                    }
-                                    
-                                    // 2nd priority: lowest resolution above 30fps
-                                    var above30fps = availableModes
-                                        .Where(m => m.FrameRate >= 30)
-                                        .OrderBy(m => m.Width * m.Height)
-                                        .ThenBy(m => m.FrameRate)
-                                        .FirstOrDefault();
-                                    if (above30fps != null)
-                                    {
-                                        Logger.VideoLog.LogCall(this, $"✓ SELECTED (2nd priority - lowest above 30fps): {above30fps.Width}x{above30fps.Height}@{above30fps.FrameRate}fps");
-                                        return above30fps;
-                                    }
-                                    else
-                                    {
-                                        Logger.VideoLog.LogCall(this, "✗ No modes above 30fps available, trying best available");
-                                    }
-                                    
-                                    // 3rd priority: best available resolution (highest framerate, then lowest resolution)
-                                    var bestMode = availableModes
-                                        .OrderByDescending(m => m.FrameRate)
-                                        .ThenBy(m => m.Width * m.Height)
-                                        .FirstOrDefault();
-                                    if (bestMode != null)
-                                    {
-                                        Logger.VideoLog.LogCall(this, $"✓ SELECTED (3rd priority - best available): {bestMode.Width}x{bestMode.Height}@{bestMode.FrameRate}fps");
-                                        return bestMode;
-                                    }
+                                    Logger.VideoLog.LogCall(this, $"✓ SELECTED (1st priority - preferred): {preferred.Width}x{preferred.Height}@{preferred.FrameRate}fps");
+                                    return preferred;
                                 }
                                 else
                                 {
-                                    Logger.VideoLog.LogCall(this, "WARNING: No modes detected from camera");
+                                    Logger.VideoLog.LogCall(this, "✗ 640x480@30fps not available, trying next priority");
+                                }
+
+                                // 2nd priority: lowest resolution above 30fps
+                                var above30fps = availableModes
+                                    .Where(m => m.FrameRate >= 30)
+                                    .OrderBy(m => m.Width * m.Height)
+                                    .ThenBy(m => m.FrameRate)
+                                    .FirstOrDefault();
+                                if (above30fps != null)
+                                {
+                                    Logger.VideoLog.LogCall(this, $"✓ SELECTED (2nd priority - lowest above 30fps): {above30fps.Width}x{above30fps.Height}@{above30fps.FrameRate}fps");
+                                    return above30fps;
+                                }
+                                else
+                                {
+                                    Logger.VideoLog.LogCall(this, "✗ No modes above 30fps available, trying best available");
+                                }
+
+                                // 3rd priority: best available resolution (highest framerate, then lowest resolution)
+                                var bestMode = availableModes
+                                    .OrderByDescending(m => m.FrameRate)
+                                    .ThenBy(m => m.Width * m.Height)
+                                    .FirstOrDefault();
+                                if (bestMode != null)
+                                {
+                                    Logger.VideoLog.LogCall(this, $"✓ SELECTED (3rd priority - best available): {bestMode.Width}x{bestMode.Height}@{bestMode.FrameRate}fps");
+                                    return bestMode;
                                 }
                             }
                             else
                             {
-                                Logger.VideoLog.LogCall(this, "WARNING: Frame source does not support mode detection");
+                                Logger.VideoLog.LogCall(this, "WARNING: No modes detected from camera");
                             }
                         }
-                        break;
+                        else
+                        {
+                            Logger.VideoLog.LogCall(this, "WARNING: Frame source does not support mode detection");
+                        }
                     }
                 }
             }
@@ -610,36 +600,31 @@ namespace UI.Video
                         {
                             // Check if this is a WMV file
                             bool isWMV = videoConfig.FilePath.EndsWith(".wmv");
-                            
                             if (isWMV)
                             {
-                                // Use FFmpeg for WMV files on both Windows and Mac (FFmpeg handles WMV excellently on both platforms)
-                                bool isWindows = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
-                                string platform = isWindows ? "Windows" : "Mac";
-                                Tools.Logger.VideoLog.LogCall(this, $"Using FFmpeg for WMV playback on {platform} (original system used MediaFoundation on Windows, but FFmpeg handles WMV excellently on both platforms)");
-                                
-                                VideoFrameWork ffmpegFramework = VideoFrameWorks.GetFramework(FrameWork.ffmpeg);
-                                if (ffmpegFramework != null)
+                                VideoFrameWork videoFramework = VideoFrameWorks.GetFramework(FrameWork.ffmpeg, FrameWork.MediaFoundation, FrameWork.DirectShow);
+                                if (videoFramework != null)
                                 {
-                                    source = ffmpegFramework.CreateFrameSource(videoConfig);
+                                    Tools.Logger.VideoLog.LogCall(this, $"Using {videoFramework.GetName()} for WMV playback");
+                                    source = videoFramework.CreateFrameSource(videoConfig);
                                 }
                                 else
                                 {
-                                    throw new Exception("FFmpeg framework not available for WMV playback");
+                                    throw new Exception("No framework not available for WMV playback");
                                 }
                             }
                             else
                             {
                                 // Use FFmpeg framework for other video file playback (MP4, MPEG-TS, etc.)
-                                Tools.Logger.VideoLog.LogCall(this, "Using FFmpeg for video file playback");
-                                VideoFrameWork ffmpegFramework = VideoFrameWorks.GetFramework(FrameWork.ffmpeg);
-                                if (ffmpegFramework != null)
+                                VideoFrameWork videoFramework = VideoFrameWorks.GetFramework(FrameWork.ffmpeg, FrameWork.MediaFoundation, FrameWork.DirectShow);
+                                if (videoFramework != null)
                                 {
-                                    source = ffmpegFramework.CreateFrameSource(videoConfig);
+                                    Tools.Logger.VideoLog.LogCall(this, $"Using {videoFramework.GetName()} for (MP4, MPEG-TS, etc.) playback");
+                                    source = videoFramework.CreateFrameSource(videoConfig);
                                 }
                                 else
                                 {
-                                    throw new Exception("FFmpeg framework not available for video playback");
+                                    throw new Exception("No framework not available for video playback");
                                 }
                             }
                         }
@@ -862,7 +847,7 @@ namespace UI.Video
 
         public Mode PickMode(VideoConfig videoConfig, IEnumerable<Mode> modes)
         {
-            VideoFrameWork videoFrameWork = GetFramework(videoConfig.FrameWork);
+            VideoFrameWork videoFrameWork = VideoFrameWorks.GetFramework(videoConfig.FrameWork);
             if (videoFrameWork != null)
             {
                 return videoFrameWork.PickMode(modes);

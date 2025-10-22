@@ -18,16 +18,25 @@ namespace ImageServer
         FrameSource CreateFrameSource(string filename);
 
         Mode PickMode(IEnumerable<Mode> modes);
-
     }
 
     public static class VideoFrameWorks
     {
         public static VideoFrameWork[] Available = new VideoFrameWork[0];
 
-        public static VideoFrameWork GetFramework(FrameWork frameWork)
+        public static VideoFrameWork GetFramework(params FrameWork[] frameWorks)
         {
-            return Available.FirstOrDefault(f => f.FrameWork == frameWork);
+            List<FrameWork> frameworkList = frameWorks.ToList();
+
+            return Available.Where(f => frameworkList.Contains(f.FrameWork)).OrderBy(f => frameworkList.IndexOf(f.FrameWork)).FirstOrDefault();
+        }
+
+        public static string GetName(this VideoFrameWork videoFrameWork)
+        {
+            if (videoFrameWork == null)
+                return "";
+
+            return videoFrameWork.GetType().Name;
         }
     }
 }
