@@ -187,6 +187,7 @@ namespace Composition.Nodes
             if (newSelected != null && !newSelected.Equals(selected))
             {
                 DoSetSelected(newSelected);
+                newSelected = default(T);
             }
 
             base.Draw(id, parentAlpha);
@@ -393,6 +394,7 @@ namespace Composition.Nodes
             selectedHover.Remove();
             objectProperties.ClearDisposeChildren();
             itemName.Text = "";
+            selected = default(T);
         }
 
         protected virtual IEnumerable<PropertyInfo> GetPropertyInfos(T obj)
@@ -682,17 +684,22 @@ namespace Composition.Nodes
             {
                 GetLayer<PopupLayer>()?.PopupConfirmation("Remove '" + Selected.ToString()+ "'?", () =>
                 {
-                    Objects.Remove(Selected);
-                    RefreshList();
-                    if (Objects.Any())
-                    {
-                        SetSelected(Objects.FirstOrDefault());
-                    }
-                    else
-                    {
-                        ClearSelected();
-                    }
+                    DoRemove(Selected);
                 });
+            }
+        }
+
+        protected virtual void DoRemove(T selected)
+        {
+            Objects.Remove(selected);
+            RefreshList();
+            if (Objects.Any())
+            {
+                SetSelected(Objects.FirstOrDefault());
+            }
+            else
+            {
+                ClearSelected();
             }
         }
 

@@ -129,85 +129,7 @@ namespace UI.Video
             MaintainConnections = true;
 
             VideoConfigs.Clear();
-            VideoConfig[] savedConfigs = VideoConfig.Read(Profile);
-            
-            if (savedConfigs.Length == 0)
-            {
-                Logger.VideoLog.LogCall(this, "No saved video configuration found - leaving video config empty for user to manually add cameras");
-                // Don't auto-populate with available cameras - let the user add them manually
-                // Save the empty configuration so we don't keep showing available cameras on restart
-                VideoManager.WriteDeviceConfig(Profile, VideoConfigs); // VideoConfigs is empty at this point
-            }
-            else
-            {
-                Logger.VideoLog.LogCall(this, $"Found {savedConfigs.Length} saved video configuration(s) - validating and updating with current camera capabilities");
-                
-                // Get currently available cameras
-                var availableConfigs = GetAvailableVideoSources();
-                Logger.VideoLog.LogCall(this, $"Currently detected {availableConfigs.Count()} available camera(s)");
-                
-                bool configurationUpdated = false;
-                
-                // Update existing saved configurations with optimal modes
-                foreach (var savedConfig in savedConfigs)
-                {
-                    Logger.VideoLog.LogCall(this, $"Validating saved camera: '{savedConfig.DeviceName}' (Current: {savedConfig.VideoMode.Width}x{savedConfig.VideoMode.Height}@{savedConfig.VideoMode.FrameRate}fps)");
-                    
-                    // Find matching available camera
-                    var availableConfig = availableConfigs.FirstOrDefault(ac => ac.Equals(savedConfig));
-                    if (availableConfig != null)
-                    {
-                        Logger.VideoLog.LogCall(this, $"Camera '{savedConfig.DeviceName}' is still available - detecting optimal mode...");
-                        
-                        // Use the framework from available config (may be more current)
-                        savedConfig.FrameWork = availableConfig.FrameWork;
-                        
-                        var optimalMode = DetectOptimalMode(savedConfig);
-                        if (optimalMode != null)
-                        {
-                            bool modeChanged = savedConfig.VideoMode.Width != optimalMode.Width || 
-                                             savedConfig.VideoMode.Height != optimalMode.Height || 
-                                             savedConfig.VideoMode.FrameRate != optimalMode.FrameRate;
-                            
-                            if (modeChanged)
-                            {
-                                Logger.VideoLog.LogCall(this, $"Camera capability update: {savedConfig.DeviceName} from {savedConfig.VideoMode.Width}x{savedConfig.VideoMode.Height}@{savedConfig.VideoMode.FrameRate}fps to {optimalMode.Width}x{optimalMode.Height}@{optimalMode.FrameRate}fps");
-                                Logger.VideoLog.LogCall(this, $"RECORDING FIX: This should eliminate frame rate mismatch for {savedConfig.DeviceName}");
-                                savedConfig.VideoMode = optimalMode;
-                                configurationUpdated = true;
-                            }
-                            else
-                            {
-                                Logger.VideoLog.LogCall(this, $"Camera {savedConfig.DeviceName}: Configuration matches capabilities - no frame rate issues expected");
-                            }
-                        }
-                        else
-                        {
-                            Logger.VideoLog.LogCall(this, $"⚠ Could not detect optimal mode for '{savedConfig.DeviceName}' - keeping existing configuration");
-                        }
-                    }
-                    else
-                    {
-                        Logger.VideoLog.LogCall(this, $"⚠ Saved camera '{savedConfig.DeviceName}' is no longer available - keeping configuration anyway");
-                    }
-                }
-                
-                VideoConfigs.AddRange(savedConfigs);
-                
-                // Save updated configuration if any changes were made
-                if (configurationUpdated)
-                {
-                    Logger.VideoLog.LogCall(this, "Camera configurations were updated - saving to disk");
-                    VideoManager.WriteDeviceConfig(Profile, VideoConfigs);
-                }
-                
-                Logger.VideoLog.LogCall(this, "=== CONFIGURATION VALIDATION COMPLETE ===");
-                Logger.VideoLog.LogCall(this, "Final camera configurations:");
-                foreach (var config in VideoConfigs)
-                {
-                    Logger.VideoLog.LogCall(this, $"  📹 {config.DeviceName}: {config.VideoMode.Width}x{config.VideoMode.Height}@{config.VideoMode.FrameRate}fps ({config.FrameWork})");
-                }
-            }
+            VideoConfigs.AddRange(VideoConfig.Read(Profile));
 
             StartThread();
         }
@@ -299,90 +221,7 @@ namespace UI.Video
             }
             mutex.Set();
         }
-
-        public Mode DetectOptimalMode(VideoConfig config)
-        {
-            Logger.VideoLog.LogCall(this, $"DetectOptimalMode() called for camera: '{config.DeviceName}' (Framework: {config.FrameWork})");
-            
-            try
-            {
-                VideoFrameWork frameWork = VideoFrameWorks.GetFramework(config.FrameWork);
-                {
-                    Logger.VideoLog.LogCall(this, $"Using framework {frameWork.FrameWork} to detect modes");
-
-                    // Create a temporary instance just to get the modes
-                    using (FrameSource tempSource = frameWork.CreateFrameSource(config))
-                    {
-                        if (tempSource is IHasModes hasModes)
-                        {
-                            Logger.VideoLog.LogCall(this, "Querying available modes from camera...");
-                            var availableModes = hasModes.GetModes().ToList();
-
-                            Logger.VideoLog.LogCall(this, $"Camera returned {availableModes.Count} available modes");
-
-                            if (availableModes.Any())
-                            {
-                                // 1st priority: 640x480 @ 30fps
-                                var preferred = availableModes.FirstOrDefault(m =>
-                                    m.Width == 640 && m.Height == 480 && m.FrameRate >= 30);
-                                if (preferred != null)
-                                {
-                                    Logger.VideoLog.LogCall(this, $"✓ SELECTED (1st priority - preferred): {preferred.Width}x{preferred.Height}@{preferred.FrameRate}fps");
-                                    return preferred;
-                                }
-                                else
-                                {
-                                    Logger.VideoLog.LogCall(this, "✗ 640x480@30fps not available, trying next priority");
-                                }
-
-                                // 2nd priority: lowest resolution above 30fps
-                                var above30fps = availableModes
-                                    .Where(m => m.FrameRate >= 30)
-                                    .OrderBy(m => m.Width * m.Height)
-                                    .ThenBy(m => m.FrameRate)
-                                    .FirstOrDefault();
-                                if (above30fps != null)
-                                {
-                                    Logger.VideoLog.LogCall(this, $"✓ SELECTED (2nd priority - lowest above 30fps): {above30fps.Width}x{above30fps.Height}@{above30fps.FrameRate}fps");
-                                    return above30fps;
-                                }
-                                else
-                                {
-                                    Logger.VideoLog.LogCall(this, "✗ No modes above 30fps available, trying best available");
-                                }
-
-                                // 3rd priority: best available resolution (highest framerate, then lowest resolution)
-                                var bestMode = availableModes
-                                    .OrderByDescending(m => m.FrameRate)
-                                    .ThenBy(m => m.Width * m.Height)
-                                    .FirstOrDefault();
-                                if (bestMode != null)
-                                {
-                                    Logger.VideoLog.LogCall(this, $"✓ SELECTED (3rd priority - best available): {bestMode.Width}x{bestMode.Height}@{bestMode.FrameRate}fps");
-                                    return bestMode;
-                                }
-                            }
-                            else
-                            {
-                                Logger.VideoLog.LogCall(this, "WARNING: No modes detected from camera");
-                            }
-                        }
-                        else
-                        {
-                            Logger.VideoLog.LogCall(this, "WARNING: Frame source does not support mode detection");
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.VideoLog.LogException(this, ex);
-            }
-            
-            Logger.VideoLog.LogCall(this, "DetectOptimalMode() returning null - no optimal mode found");
-            return null;
-        }
-
+        
         public IEnumerable<VideoConfig> GetAvailableVideoSources()
         {
             List<VideoConfig> configs = new List<VideoConfig>();
@@ -683,29 +522,25 @@ namespace UI.Video
 
                 foreach (FrameSource source in toRemove)
                 {
-                    Logger.VideoLog.LogCall(this, $"Immediately stopping and disposing camera '{videoConfig.DeviceName}' to free resources for potential re-add");
-                    
-                    try
+                    if (source.VideoConfig.FrameWork == FrameWork.DirectShow || source.VideoConfig.FrameWork == FrameWork.MediaFoundation)
                     {
+                        DisposeOnWorkerThread(source);
+                    }
+                    else
+                    {
+                        Logger.VideoLog.LogCall(this, $"Immediately stopping and disposing camera '{videoConfig.DeviceName}' to free resources for potential re-add");
+
                         // Immediately stop the frame source to release camera
                         if (source.State != FrameSource.States.Stopped)
                         {
                             source.Stop();
                         }
-                        
+
                         // Immediately dispose to kill ffmpeg processes
                         // This ensures the camera is available for re-adding without delay
                         source.Dispose();
-                        
+
                         Logger.VideoLog.LogCall(this, $"Camera '{videoConfig.DeviceName}' immediately stopped and disposed");
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.VideoLog.LogException(this, ex);
-                        Logger.VideoLog.LogCall(this, $"Exception during immediate disposal of '{videoConfig.DeviceName}' - adding to worker thread queue as fallback");
-                        
-                        // If immediate disposal fails, fall back to worker thread disposal
-                        DisposeOnWorkerThread(source);
                     }
                     
                     frameSources.Remove(source);

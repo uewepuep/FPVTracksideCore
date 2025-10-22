@@ -169,7 +169,6 @@ namespace UI.Video
 
             if (pi.Name == "AudioDevice")
             {
-                return null;
                 return new AudioDevicePropertyNode(VideoManager, obj, pi, ButtonBackground, TextColor, ButtonHover);
             }
 
@@ -234,7 +233,6 @@ namespace UI.Video
                 physicalLayout.Scale(0.3f);
                 physicalLayoutContainer.AddChild(physicalLayout);
             }
-
 
             base.SetObjects(toEdit, addRemove, cancelButton);
             physicalLayoutContainer.RelativeBounds = new RectangleF(1.1f, preview.RelativeBounds.Y, 0.3f, preview.RelativeBounds.Height);
@@ -321,8 +319,14 @@ namespace UI.Video
             VideoConfig videoConfig = Selected;
             base.Remove(mie);
 
-            VideoManager.RemoveFrameSource(videoConfig);
         }
+
+        protected override void DoRemove(VideoConfig selected)
+        {
+            base.DoRemove(selected);
+            VideoManager.RemoveFrameSource(selected);
+        }
+
 
         protected override void ChildValueChanged(Change newChange)
         {
@@ -713,6 +717,9 @@ namespace UI.Video
                 cameraMenu.AddItem(sourceType.ToString() + " Camera", () =>
                 {
                     SetSourceType(channelVideoInfo, sourceType);
+
+                    RemoveDuplicateChannels();
+                    MakeTable();
                 });
             }
 
@@ -777,7 +784,7 @@ namespace UI.Video
 
                         ChannelVideoInfo cvi = ChannelVideoInfos[i];
                         Channel first = grouped.FirstOrDefault();
-                        AssignChannel(cvi, grouped.FirstOrDefault());
+                        AssignChannel(cvi, grouped.FirstOrDefault(), false);
 
                         foreach (Channel channel in grouped.Where(r => r != first))
                         {
@@ -786,6 +793,7 @@ namespace UI.Video
                         i++;
                     }
 
+                    RemoveDuplicateChannels();
                     MakeTable();
                 }
                 else
@@ -795,8 +803,11 @@ namespace UI.Video
                     int max = Math.Min(ChannelVideoInfos.Length, ordered.Length);
                     for (int i = 0; i < max; i++)
                     {
-                        AssignChannel(ChannelVideoInfos[i], ordered[i]);
+                        AssignChannel(ChannelVideoInfos[i], ordered[i], false);
                     }
+
+                    RemoveDuplicateChannels();
+                    MakeTable();
                 }
             }
         }
@@ -918,9 +929,6 @@ namespace UI.Video
                 VideoBoundsEditor editor = new VideoBoundsEditor(channelVideoInfo.VideoBounds);
                 GetLayer<PopupLayer>().Popup(editor);
             }
-
-            RemoveDuplicateChannels();
-            MakeTable();
         }
 
         private void RemoveChannel(Channel c)
@@ -937,7 +945,7 @@ namespace UI.Video
             }
         }
 
-        private void AssignChannel(ChannelVideoInfo channelVideoInfo, Channel c)
+        private void AssignChannel(ChannelVideoInfo channelVideoInfo, Channel c, bool remakeTable = true)
         {
             SetSourceType(channelVideoInfo, SourceTypes.FPVFeed);
 
@@ -946,7 +954,11 @@ namespace UI.Video
             channelVideoInfo.Channel = c;
             channelVideoInfo.VideoBounds.Channel = c.ToStringShort();
 
-            MakeTable();
+            if (remakeTable)
+            {
+                RemoveDuplicateChannels();
+                MakeTable();
+            }
         }
 
         private void RemoveDuplicateChannels()
