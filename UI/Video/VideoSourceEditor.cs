@@ -36,8 +36,6 @@ namespace UI.Video
         private Node physicalLayout;
 
         public Profile Profile { get; private set; }
-        
-        private bool wasEmpty = false;    
 
         public static VideoSourceEditor GetVideoSourceEditor(EventManager em, Profile profile)
         {
@@ -92,59 +90,8 @@ namespace UI.Video
             }
 
             itemName?.Dispose();
-            itemName = null;
 
             base.Dispose();
-        }
-
-        protected override void AddNew(VideoConfig videoConfig)
-        {
-            if (videoConfig.FrameWork == FrameWork.ffmpeg)
-            {
-                AutoDetect(videoConfig);
-            }
-            
-            // Add to the VideoManager's collection first to ensure persistence
-            if (VideoManager != null && !VideoManager.VideoConfigs.Contains(videoConfig))
-            {
-                Tools.Logger.VideoLog.LogCall(this, $"Adding camera to VideoManager.VideoConfigs: '{videoConfig.DeviceName}'");
-                VideoManager.VideoConfigs.Add(videoConfig);
-            }
-            
-            base.AddNew(videoConfig);
-            
-            if (wasEmpty)
-            {
-                // Force property editor rebuild since ClearSelected corrupted it
-                DoSetSelected(videoConfig);
-                wasEmpty = false;
-            }
-            RepairVideoPreview();
-        }
-
-        private void AutoDetect(VideoConfig videoConfig)
-        {
-            // When adding a new camera, always detect and set optimal video mode
-            // This ensures we use supported resolutions/framerates instead of defaults
-            Tools.Logger.VideoLog.LogCall(this, $"Auto-detecting optimal mode for newly added camera: '{videoConfig.DeviceName}' (current: {videoConfig.VideoMode.Width}x{videoConfig.VideoMode.Height}@{videoConfig.VideoMode.FrameRate}fps)");
-
-            Mode optimalMode = VideoManager.DetectOptimalMode(videoConfig);
-            if (optimalMode != null)
-            {
-                videoConfig.VideoMode = optimalMode;
-                Tools.Logger.VideoLog.LogCall(this, $"✓ Set optimal mode for '{videoConfig.DeviceName}': {optimalMode.Width}x{optimalMode.Height}@{optimalMode.FrameRate}fps");
-            }
-            else
-            {
-                // Fallback to safe defaults (but still better than 25fps default)
-                videoConfig.VideoMode.Width = 640;
-                videoConfig.VideoMode.Height = 480;
-                videoConfig.VideoMode.FrameRate = 30;
-                videoConfig.VideoMode.Format = "";
-                videoConfig.VideoMode.FrameWork = videoConfig.FrameWork;
-                videoConfig.VideoMode.Index = 0; // Set a valid index
-                Tools.Logger.VideoLog.LogCall(this, $"⚠ Using fallback mode for '{videoConfig.DeviceName}': 640x480@30fps");
-            }
         }
 
         protected override void AddOnClick(MouseInputEvent mie)
@@ -179,7 +126,7 @@ namespace UI.Video
 
         private void AddVideoFile()
         {
-            string filename = PlatformTools.OpenFileDialog("Open Video / Image", "Video or Image files|*.wmv;*.mp4;*.mkv;*.jpg");
+            string filename = PlatformTools.OpenFileDialog("Open WMV / JPG", "Video or Image files|*.wmv;*.jpg");
             if (!string.IsNullOrWhiteSpace(filename))
             {
                 VideoConfig vs = new VideoConfig();
@@ -223,6 +170,7 @@ namespace UI.Video
             if (pi.Name == "AudioDevice")
             {
                 return null;
+                return new AudioDevicePropertyNode(VideoManager, obj, pi, ButtonBackground, TextColor, ButtonHover);
             }
 
             if (pi.Name == "Channels")
@@ -259,15 +207,6 @@ namespace UI.Video
                 return new SplitsPropertyNode(obj, pi, ButtonBackground, TextColor, ButtonHover);
             }
 
-            // Only show Hardware Decode Acceleration for compressed video formats
-            if (pi.Name == "HardwareDecodeAcceleration")
-            {
-                if (!obj.IsCompressedVideoFormat)
-                {
-                    return null; // Don't show for uncompressed formats
-                }
-            }
-
             PropertyNode<VideoConfig> propertyNode = base.CreatePropertyNode(obj, pi);
             CheckVisible(propertyNode, obj);
 
@@ -298,8 +237,6 @@ namespace UI.Video
 
 
             base.SetObjects(toEdit, addRemove, cancelButton);
-
-            // Position physicalLayoutContainer to the right of the preview
             physicalLayoutContainer.RelativeBounds = new RectangleF(1.1f, preview.RelativeBounds.Y, 0.3f, preview.RelativeBounds.Height);
         }
 
@@ -325,51 +262,19 @@ namespace UI.Video
         {
             lock (locker)
             {
-                // Ensure complete cleanup before creating new mapper node
-                Tools.Logger.VideoLog.LogCall(this, $"InitMapperNode: Cleaning up for '{videoConfig?.DeviceName ?? "null"}'");
-                
-                // Dispose existing mapper node
-                if (mapperNode != null)
-                {
-                    mapperNode.OnChange -= MapperNode_OnChange;
-                    mapperNode.Dispose();
-                    mapperNode = null;
-                }
-                
-                // Clear preview children to prevent node disposal issues
-                if (preview != null)
-                {
-                    preview.ClearDisposeChildren();
-                }
+                mapperNode?.Dispose();
+                mapperNode = null;
 
                 if (videoConfig == null)
-                {
-                    Tools.Logger.VideoLog.LogCall(this, "InitMapperNode: videoConfig is null, cleanup complete");
                     return;
-                }
 
                 if (VideoManager != null)
                 {
-                    try
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, $"InitMapperNode: Creating new mapper for '{videoConfig.DeviceName}'");
-                        mapperNode = new ChannelVideoMapperNode(Profile, VideoManager, EventManager, videoConfig, Objects);
-                        mapperNode.OnChange += MapperNode_OnChange;
-                        preview.AddChild(mapperNode);
+                    mapperNode = new ChannelVideoMapperNode(Profile, VideoManager, EventManager, videoConfig, Objects);
+                    mapperNode.OnChange += MapperNode_OnChange;
+                    preview.AddChild(mapperNode);
 
-                        RequestLayout();
-                        Tools.Logger.VideoLog.LogCall(this, $"InitMapperNode: Successfully created mapper for '{videoConfig.DeviceName}'");
-                    }
-                    catch (Exception ex)
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, $"InitMapperNode: Error creating mapper for '{videoConfig.DeviceName}': {ex.Message}");
-                        mapperNode?.Dispose();
-                        mapperNode = null;
-                    }
-                }
-                else
-                {
-                    Tools.Logger.VideoLog.LogCall(this, "InitMapperNode: VideoManager is null");
+                    RequestLayout();
                 }
             }
         }
@@ -399,121 +304,24 @@ namespace UI.Video
         {
             if (VideoManager != null && Selected != null)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"RepairVideoPreview called for '{Selected.DeviceName}' - creating frame source and ensuring it starts");
-                
-                try
+                VideoManager.CreateFrameSource(new VideoConfig[] { Selected }, (fs) =>
                 {
-                    VideoManager.CreateFrameSource(new VideoConfig[] { Selected }, (fs) =>
+                    if (mapperNode != null)
                     {
-                        try
-                        {
-                            if (mapperNode != null)
-                            {
-                                Tools.Logger.VideoLog.LogCall(this, $"RepairVideoPreview: Calling MakeTable for '{Selected.DeviceName}'");
-                                mapperNode.MakeTable();
-                            }
-                            else
-                            {
-                                Tools.Logger.VideoLog.LogCall(this, $"RepairVideoPreview: mapperNode is null for '{Selected.DeviceName}'");
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Tools.Logger.VideoLog.LogCall(this, $"RepairVideoPreview: Error in MakeTable for '{Selected.DeviceName}': {ex.Message}");
-                        }
-                    });
+                        mapperNode.MakeTable();
+                    }
+                });
 
-                    InitMapperNode(Selected);
-                }
-                catch (Exception ex)
-                {
-                    Tools.Logger.VideoLog.LogCall(this, $"RepairVideoPreview: Error creating frame source for '{Selected.DeviceName}': {ex.Message}");
-                }
-                
-                // Give the frame source a moment to be created, then force another initialization
-                // This helps ensure the camera actually starts when re-added
-                System.Threading.Timer initTimer = null;
-                initTimer = new System.Threading.Timer((state) =>
-                {
-                    try
-                    {
-                        var videoConfig = state as VideoConfig;
-                        if (videoConfig != null)
-                        {
-                            var frameSource = VideoManager.GetFrameSource(videoConfig);
-                            if (frameSource != null && !frameSource.Connected)
-                            {
-                                Tools.Logger.VideoLog.LogCall(this, $"Follow-up initialization for '{videoConfig.DeviceName}' - camera not connected yet");
-                                VideoManager.Initialize(frameSource);
-                            }
-                            else if (frameSource != null)
-                            {
-                                Tools.Logger.VideoLog.LogCall(this, $"Camera '{videoConfig.DeviceName}' already connected - no follow-up needed");
-                            }
-                            else
-                            {
-                                Tools.Logger.VideoLog.LogCall(this, $"No frame source found for '{videoConfig.DeviceName}' during follow-up");
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Tools.Logger.VideoLog.LogException(this, ex);
-                    }
-                    finally
-                    {
-                        initTimer?.Dispose();
-                    }
-                }, Selected, TimeSpan.FromMilliseconds(500), System.Threading.Timeout.InfiniteTimeSpan);
+                InitMapperNode(Selected);
             }
         }
 
         protected override void Remove(MouseInputEvent mie)
         {
             VideoConfig videoConfig = Selected;
-            if (videoConfig != null)
-            {
-                GetLayer<PopupLayer>()?.PopupConfirmation("Remove camera '" + videoConfig.DeviceName + "'?", () =>
-                {
-                    Tools.Logger.VideoLog.LogCall(this, $"Removing camera '{videoConfig.DeviceName}' and rebuilding UI");
-                    
-                    // Remove from Objects list (replaces base.Remove call)
-                    Objects.Remove(videoConfig);
+            base.Remove(mie);
 
-                    // Remove from VideoManager's frame sources
-                    VideoManager.RemoveFrameSource(videoConfig);
-                    
-                    // Remove from VideoManager's VideoConfigs list
-                    VideoManager.VideoConfigs.Remove(videoConfig);
-                    
-                    // Persist the change to disk
-                    VideoManager.WriteCurrentDeviceConfig();
-                    
-                    Tools.Logger.VideoLog.LogCall(this, $"Camera '{videoConfig.DeviceName}' removed from VideoConfigs and changes persisted");
-                    
-                    // Refresh the UI list (same as base.Remove does)
-                    RefreshList();
-                    
-                    // Handle selection like base.Remove does
-                    if (Objects.Any())
-                    {
-                        SetSelected(Objects.FirstOrDefault());
-                    }
-                    else
-                    {
-                        // INVESTIGATION: Add debugging around ClearSelected to see what it does
-                        Tools.Logger.VideoLog.LogCall(this, "No cameras remaining - investigating ClearSelected behavior");
-                        Tools.Logger.VideoLog.LogCall(this, $"Before ClearSelected - objectProperties children: {objectProperties?.Children?.Count() ?? 0}");
-                        
-                        ClearSelected();
-                        
-                        Tools.Logger.VideoLog.LogCall(this, $"After ClearSelected - objectProperties children: {objectProperties?.Children?.Count() ?? 0}");
-                        Tools.Logger.VideoLog.LogCall(this, "No cameras remaining - clearing preview");
-                        preview.Visible = false;
-                        wasEmpty = true; // Track that we became empty
-                    }
-                });
-            }
+            VideoManager.RemoveFrameSource(videoConfig);
         }
 
         protected override void ChildValueChanged(Change newChange)
@@ -523,15 +331,9 @@ namespace UI.Video
                 CheckVisible(propertyNode, Selected);
             }
 
-            if (newChange.PropertyInfo.Name == "VideoMode" || newChange.PropertyInfo.Name == "Flipped" || newChange.PropertyInfo.Name == "RecordVideoForReplays" || newChange.PropertyInfo.Name == "DeviceName")
+            if (newChange.PropertyInfo.Name == "VideoMode" || newChange.PropertyInfo.Name == "Flipped" || newChange.PropertyInfo.Name == "RecordVideoForReplays")
             {
                 RepairVideoPreview();
-                
-                // If DeviceName changed, also refresh available video modes for the new camera
-                if (newChange.PropertyInfo.Name == "DeviceName")
-                {
-                    RefreshVideoModes();
-                }
             }
 
             if (newChange.PropertyInfo.Name == "Splits" && Selected != null)
@@ -542,35 +344,6 @@ namespace UI.Video
             InitMapperNode(Selected);
 
             base.ChildValueChanged(newChange);
-        }
-
-        private void RefreshVideoModes()
-        {
-            if (Selected != null)
-            {
-                // Find the ModePropertyNode in the property editor and refresh its modes
-                var modePropertyNode = FindPropertyNode<ModePropertyNode>("VideoMode");
-                if (modePropertyNode != null)
-                {
-                    modePropertyNode.RefreshModes();
-                }
-            }
-        }
-
-        private T FindPropertyNode<T>(string propertyName) where T : class
-        {
-            // Search through the property editor nodes to find the specific property node
-            return objectProperties.Children.OfType<T>().FirstOrDefault();
-        }
-
-        public void RefreshPropertyEditor()
-        {
-            if (Selected != null)
-            {
-                // Force rebuild of property editor by re-setting the selected object
-                var currentSelected = Selected;
-                DoSetSelected(currentSelected);
-            }
         }
 
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
@@ -601,7 +374,7 @@ namespace UI.Video
         {
             private VideoManager vm;
 
-            public AudioDevicePropertyNode(VideoManager vm, VideoConfig obj, PropertyInfo pi, Color textBackground, Color textColor, Color hover) 
+            public AudioDevicePropertyNode(VideoManager vm, VideoConfig obj, PropertyInfo pi, Color textBackground, Color textColor, Color hover)
                 : base(obj, pi, textBackground, textColor, hover, null)
             {
                 this.vm = vm;
@@ -638,7 +411,7 @@ namespace UI.Video
                 rebootRequired = false;
             }
 
-            public void AcceptModes(VideoManager.ModesResult result)
+            private void AcceptModes(VideoManager.ModesResult result)
             {
                 modes = TrimModes(result.Modes).ToArray();
                 if (result.RebootRequired)
@@ -665,7 +438,7 @@ namespace UI.Video
                         // Get ALL the modes form the device
                         vse.VideoManager.GetModes(Object, true, AcceptModes);
                     }
-                    else if (rebootRequired || !modes.Any() || true) // TEMP: Force refresh for new format parsing
+                    else if (rebootRequired || !modes.Any())
                     {
                         // Get the normal modes form the device
                         vse.VideoManager.GetModes(Object, false, AcceptModes);
@@ -684,12 +457,11 @@ namespace UI.Video
 
             private void SetOptions(Mode[] ms)
             {
-                // Group by format first, then sort within each group by resolution and framerate
                 IEnumerable<Mode> ordered = ms.OrderByDescending(m => m.FrameWork)
-                                                     .ThenBy(m => GetFormatPriority(m.Format))  // Group by format priority
-                                                     .ThenByDescending(m => m.Width * m.Height) // Then by resolution
-                                                     .ThenByDescending(m => m.FrameRate)        // Then by framerate
-                                                     .ThenBy(m => m.Format);                    // Finally by format name for consistency
+                                                     .ThenByDescending(m => m.Width)
+                                                     .ThenByDescending(m => m.Height)
+                                                     .ThenByDescending(m => m.FrameRate)
+                                                     .ThenByDescending(m => m.Format);
 
                 if (ms.Any())
                 {
@@ -697,37 +469,16 @@ namespace UI.Video
                 }
             }
 
-            private int GetFormatPriority(string format)
-            {
-                // Lower numbers = higher priority (shown first)
-                switch (format?.ToLower())
-                {
-                    case "h264": return 0;      // Highest priority
-                    case "mjpeg": return 1;     // High priority  
-                    case "uyvy422": return 2;   // Medium priority
-                    case "yuyv422": return 3;   // Lower priority
-                    default: return 9;          // Lowest priority for unknown formats
-                }
-            }
-
-            public void RefreshModes()
-            {
-                // Force refresh the video modes for the current camera
-                vse.VideoManager.GetModes(Object, false, AcceptModes);
-                Tools.Logger.VideoLog.LogCall(this, $"Refreshing video modes for camera: '{Object.DeviceName}'");
-            }
-
             private IEnumerable<Mode> TrimModes(IEnumerable<Mode> modes)
             {
                 bool allItems = Keyboard.GetState().IsKeyDown(Keys.LeftControl);
                 if (!allItems)
                 {
-                    // Filter out very low framerates, but be more permissive for different formats
-                    // Keep modes that are >= 5fps or have different formats (mjpeg, h264, etc.)
-                    modes = modes.Where(m => m.FrameRate >= 5 || m.Format == "mjpeg" || m.Format == "h264");
+                    // Seriously, under 15 fps is dumb
+                    modes = modes.Where(m => m.FrameRate >= 15);
                 }
 
-                var grouped = modes.GroupBy(m => new Tuple<FrameWork, int, int, float, string>(m.FrameWork, m.Width, m.Height, m.FrameRate, m.Format)).OrderByDescending(t => t.Key.Item1);
+                var grouped = modes.GroupBy(m => new Tuple<FrameWork, int, int, float, string>(m.FrameWork, m.Width, m.Height, m.FrameRate, allItems ? m.Format : "")).OrderByDescending(t => t.Key.Item1);
 
                 foreach (var group in grouped)
                 {
@@ -752,25 +503,13 @@ namespace UI.Video
                 }
             }
 
-            
 
-            protected override void SetValue(object value)
-            {
-                bool wasCompressed = Object.IsCompressedVideoFormat;
-                base.SetValue(value);
-                bool isCompressed = Object.IsCompressedVideoFormat;
-                
-                // If compressed format status changed, refresh the property editor to show/hide hardware acceleration option
-                if (wasCompressed != isCompressed)
-                {
-                    vse.RefreshPropertyEditor();
-                }
-            }
 
             public override string ValueToString(object value)
             {
                 Mode mode = value as Mode;
-                if (mode == null) return "";
+                if (mode == null)
+                    return "";
 
                 return mode.ToString();
             }
@@ -848,11 +587,7 @@ namespace UI.Video
 
         private void CreateChannelVideoInfos()
         {
-            var allChannelVideoInfos = videoManager.CreateChannelVideoInfos(others);
-            Tools.Logger.VideoLog.LogCall(this, $"VideoManager returned {allChannelVideoInfos?.Count() ?? 0} ChannelVideoInfos");
-            
-            ChannelVideoInfos = allChannelVideoInfos.Where(cc => cc.FrameSource.VideoConfig == videoConfig).ToArray();
-            Tools.Logger.VideoLog.LogCall(this, $"After filtering by VideoConfig ({videoConfig.DeviceName}), got {ChannelVideoInfos.Length} ChannelVideoInfos");
+            ChannelVideoInfos = videoManager.CreateChannelVideoInfos(others).Where(cc => cc.FrameSource.VideoConfig == videoConfig).ToArray();
 
             foreach (ChannelVideoInfo cvi in ChannelVideoInfos)
             {
@@ -881,8 +616,6 @@ namespace UI.Video
 
         public void MakeTable()
         {
-            Tools.Logger.VideoLog.LogCall(this, $"MakeTable called with {ChannelVideoInfos?.Length ?? 0} ChannelVideoInfos");
-            
             lock (table)
             {
                 if (table != null)
@@ -896,8 +629,6 @@ namespace UI.Video
 
                 int columns = (int)Math.Ceiling(Math.Sqrt(ChannelVideoInfos.Length));
                 int rows = (int)Math.Ceiling(ChannelVideoInfos.Length / (float)columns);
-                
-                Tools.Logger.VideoLog.LogCall(this, $"Table layout: {rows}x{columns} for {ChannelVideoInfos.Length} items");
                 table.SetSize(rows, columns);
 
                 Color transparentForeground = new Color(Theme.Current.Editor.Foreground.XNA, 0.5f);
@@ -908,8 +639,6 @@ namespace UI.Video
                     ChannelVideoInfo channelVideoInfo = ChannelVideoInfos[i];
                     Node cell = table.GetCell(i);
 
-                    Tools.Logger.VideoLog.LogCall(this, $"Creating video nodes: cell={cell != null}, frameSource={channelVideoInfo?.FrameSource?.GetType()?.Name ?? "null"} (Instance: {channelVideoInfo?.FrameSource?.GetHashCode()})");
-                    
                     if (cell != null && channelVideoInfo.FrameSource != null)
                     {
                         ChannelVideoMapNode cvmn = new ChannelVideoMapNode(channelVideoInfo);
@@ -981,12 +710,12 @@ namespace UI.Video
                 if (sourceType == SourceTypes.FPVFeed)
                     continue;
 
-                cameraMenu.AddItem(sourceType.ToString() +  " Camera", () =>
+                cameraMenu.AddItem(sourceType.ToString() + " Camera", () =>
                 {
                     SetSourceType(channelVideoInfo, sourceType);
                 });
             }
-            
+
             mouseMenu.AddBlank();
 
             MouseMenu splitMenu = mouseMenu.AddSubmenu("Split");
@@ -1041,7 +770,7 @@ namespace UI.Video
 
 
                     int i = 0;
-                    foreach(Channel[] grouped in channels.GetChannelGroups())
+                    foreach (Channel[] grouped in channels.GetChannelGroups())
                     {
                         if (i >= ChannelVideoInfos.Length)
                             break;
@@ -1287,26 +1016,16 @@ namespace UI.Video
         public ChannelVideoMapNode(ChannelVideoInfo channelVideoInfo)
         {
             ChannelVideoInfo = channelVideoInfo;
-            
-            Tools.Logger.VideoLog.LogCall(this, $"ChannelVideoMapNode constructor called with FrameSource: {channelVideoInfo?.FrameSource?.GetType()?.Name ?? "null"} (Instance: {channelVideoInfo?.FrameSource?.GetHashCode()})");
 
             SetData();
         }
 
         private void SetData()
         {
-            Tools.Logger.VideoLog.LogCall(this, $"SetData called for ChannelVideoMapNode");
             ClearDisposeChildren();
-
-            if (ChannelVideoInfo?.FrameSource == null)
-            {
-                Tools.Logger.VideoLog.LogCall(this, $"SetData: ChannelVideoInfo.FrameSource is null, skipping FrameNode creation");
-                return;
-            }
 
             VideoConfig videoConfig = ChannelVideoInfo.FrameSource.VideoConfig;
 
-            Tools.Logger.VideoLog.LogCall(this, $"VideoSourceEditor creating FrameNode with source: {ChannelVideoInfo.FrameSource.GetType().Name} (Instance: {ChannelVideoInfo.FrameSource.GetHashCode()})");
             FrameNode = new FrameNode(ChannelVideoInfo.FrameSource);
             FrameNode.RelativeSourceBounds = ChannelVideoInfo.ScaledRelativeSourceBounds;
             FrameNode.KeepAspectRatio = true;
