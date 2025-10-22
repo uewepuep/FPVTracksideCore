@@ -6,12 +6,27 @@
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>false</TieredCompilation>
     <ImplicitUsings>true</ImplicitUsings>
-    <Version>2.0.42.3</Version>
+    <Version>2.1.0.6</Version>
     <Platforms>AnyCPU;x64</Platforms>
+    <RuntimeIdentifiers>osx-arm64;osx-x64</RuntimeIdentifiers>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="ffmpeg\ffmpeg-arm">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ffmpeg\ffprobe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ffmpeg\ffmpeg-intel">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="bitmapfonts\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="AppIcon.icns">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>
@@ -24,8 +39,21 @@
     <ProjectReference Include="..\ffmpegMediaPlatform\FfmpegMediaPlatform.csproj" />
     <ProjectReference Include="..\DB\DB.csproj" />
   </ItemGroup>
+  <!-- Copy FFmpeg native libraries -->
+  <ItemGroup>
+    <!-- Copy macOS libraries for all Mac builds (ARM64 compatible) -->
+    <None Include="..\ffmpegMediaPlatform\ffmpeg-libs\macos\*.dylib">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>ffmpeg-libs\macos\%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
   <Target Name="RestoreDotnetTools" BeforeTargets="Restore">
     <Message Text="Restoring dotnet tools" Importance="High" />
     <Exec Command="dotnet tool restore" />
+  </Target>
+  <Target Name="FixMacIcon" AfterTargets="Build" Condition="'$(OS)' == 'Unix'">
+    <Message Text="Fixing Mac app icon configuration" Importance="High" />
+    <Exec Command="chmod +x $(ProjectDir)fix-icon.sh" />
+    <Exec Command="$(ProjectDir)fix-icon.sh &quot;$(OutputPath)FPV Trackside Core.app&quot; &quot;$(ProjectDir)AppIcon.icns&quot;" />
   </Target>
 </Project>

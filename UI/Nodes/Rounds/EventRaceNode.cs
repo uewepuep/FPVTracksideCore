@@ -277,7 +277,7 @@ namespace UI.Nodes.Rounds
                 mm.AddSubmenu("Set Race Bracket", SetBracket, Enum.GetValues(typeof(Brackets)).OfType<Brackets>().ToArray());
                 mm.AddItem("Open Race Folder", () =>
                 {
-                    PlatformTools.OpenFileManager(Directory.GetCurrentDirectory() + "\\events\\" + EventManager.EventId + "\\" + Race.ID + "\\");
+                    PlatformTools.OpenFileManager(Path.Combine(Directory.GetCurrentDirectory(), "events", EventManager.EventId.ToString(), Race.ID.ToString()));
                 });
                 if (pilot != null)
                 {

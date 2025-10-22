@@ -106,7 +106,10 @@ namespace UI
             showPilotList = true;
 
             EventManager = eventManager;
-            EventManager.SetChannelColors(Theme.Current.ChannelColors.XNA());
+            if (Theme.Current != null)
+            {
+                EventManager.SetChannelColors(Theme.Current.ChannelColors.XNA());
+            }
 
             RaceStringFormatter.Instance.Practice = Translator.Get("EventTypes.Practice", "Practice");
             RaceStringFormatter.Instance.TimeTrial = Translator.Get("EventTypes.TimeTrial", "Time Trial");
@@ -609,6 +612,7 @@ namespace UI
                 Race current = EventManager.RaceManager.CurrentRace;
                 EventManager.RaceManager.ClearRace();
 
+                videoManager.StopDevices();
                 videoManager.LoadCreateDevices((fs) =>
                 {
                     ChannelsGridNode.FillChannelNodes();

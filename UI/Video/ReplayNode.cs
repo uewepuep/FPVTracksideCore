@@ -15,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Tools;
 using UI.Nodes;
+using FfmpegMediaPlatform;
 
 namespace UI.Video
 {
@@ -34,6 +35,9 @@ namespace UI.Video
 
         private DateTime minStart;
         private DateTime maxEnd;
+        
+        private DateTime? lastSeekTime;
+        private DateTime lastSeekTimeSet;
 
         public bool Active
         {
@@ -95,6 +99,7 @@ namespace UI.Video
             SeekNode.PlayButton.OnClick += (m) => { Play(); };
             SeekNode.StopButton.OnClick += (m) => { Stop(); };
             SeekNode.SlowCheck.Checkbox.ValueChanged += Checkbox_ValueChanged;
+            SeekNode.SlowSpeedChanged += OnSlowSpeedChanged;
             SeekNode.ShowAll.OnClick += ShowAll_OnClick;
 
             AddChild(SeekNode);
@@ -119,7 +124,36 @@ namespace UI.Video
         {
             if (primary != null && race != null)
             {
-                SeekNode.SetRace(race, minStart, maxEnd);
+                // Recalculate timeline to ensure consistency
+                var frameSources = GetFileFrameSources();
+                if (frameSources.Any())
+                {
+                    minStart = frameSources.Select(r => r.StartTime).Min();
+                    
+                    // Calculate maxEnd using the same XML frame timing method as video duration
+                    var maxEndDuration = TimeSpan.Zero;
+                    foreach (var frameSource in frameSources)
+                    {
+                        // If this frame source has frame timing data, use unified duration calculation
+                        if (frameSource is ICaptureFrameSource captureSource && captureSource.FrameTimes != null && captureSource.FrameTimes.Length > 0)
+                        {
+                            // Use unified duration calculation for consistency across platforms
+                            var xmlDuration = UnifiedFrameTimingManager.CalculateVideoDuration(
+                                captureSource.FrameTimes, frameSource.Length);
+                            maxEndDuration = TimeSpan.FromSeconds(Math.Max(maxEndDuration.TotalSeconds, xmlDuration.TotalSeconds));
+                        }
+                        else
+                        {
+                            // Fallback to Length property
+                            maxEndDuration = TimeSpan.FromSeconds(Math.Max(maxEndDuration.TotalSeconds, frameSource.Length.TotalSeconds));
+                        }
+                    }
+                    maxEnd = minStart + maxEndDuration;
+                }
+                
+                // Get frame times for timeline positioning
+                var frameTimes = GetFrameTimesFromFrameSources();
+                SeekNode.SetRace(race, minStart, maxEnd, frameTimes);
                 ChannelsGridNode.SetPlaybackTime(race.Start);
             }
         }
@@ -129,6 +163,23 @@ namespace UI.Video
             foreach (IPlaybackFrameSource frameSource in GetFileFrameSources())
             {
                 frameSource.PlaybackSpeed = slowMotion ? PlaybackSpeed.Slow : PlaybackSpeed.Normal;
+                if (slowMotion)
+                {
+                    // Set the custom slow speed from the SeekNode input
+                    frameSource.SlowSpeedFactor = SeekNode.SlowSpeed;
+                }
+            }
+        }
+
+        private void OnSlowSpeedChanged(float newSpeed)
+        {
+            // Update the slow speed factor for all frame sources if slow motion is currently enabled
+            if (SeekNode.SlowCheck.Checkbox.Value)
+            {
+                foreach (IPlaybackFrameSource frameSource in GetFileFrameSources())
+                {
+                    frameSource.SlowSpeedFactor = newSpeed;
+                }
             }
         }
 
@@ -159,7 +210,21 @@ namespace UI.Video
         {
             foreach (IPlaybackFrameSource frameSource in GetFileFrameSources())
             {
-                frameSource.Play();
+                // Check if we can access the state by casting to FrameSource
+                if (frameSource is FrameSource fs && fs.State == FrameSource.States.Paused)
+                {
+                    // Resume from paused state - don't seek, just continue
+                    Tools.Logger.VideoLog.LogCall(this, $"ReplayNode.Play: Resuming from paused state");
+                    frameSource.Play();
+                }
+                else
+                {
+                    // If not paused or can't check state, restart from current position
+                    DateTime currentTime = SeekNode.CurrentTime;
+                    Tools.Logger.VideoLog.LogCall(this, $"ReplayNode.Play: Not paused, seeking to {currentTime:HH:mm:ss.fff} and playing");
+                    frameSource.SetPosition(currentTime);
+                    frameSource.Play();
+                }
             }
 
             SeekNode.PlayButton.Visible = false;
@@ -170,10 +235,28 @@ namespace UI.Video
 
         public void Seek(DateTime seekTime)
         {
+            Tools.Logger.VideoLog.LogCall(this, $"ReplayNode.Seek called with seekTime: {seekTime:HH:mm:ss.fff}");
+            
+            // Track the seek operation to prevent Update from overriding the position immediately
+            lastSeekTime = seekTime;
+            lastSeekTimeSet = DateTime.Now;
+            
             foreach (IPlaybackFrameSource frameSource in GetFileFrameSources())
             {
+                Tools.Logger.VideoLog.LogCall(this, $"ReplayNode.Seek calling SetPosition on frameSource: {frameSource.GetType().Name}");
                 frameSource.SetPosition(seekTime);
+                
+                // If the video is currently playing (stop button visible), continue playing after seek
+                if (SeekNode.StopButton.Visible)
+                {
+                    frameSource.Play();
+                }
             }
+            
+            // Update the seek node's current time to reflect the new position
+            SeekNode.CurrentTime = seekTime;
+            SeekNode.RequestLayout();
+            Tools.Logger.VideoLog.LogCall(this, $"ReplayNode.Seek updated SeekNode.CurrentTime to: {seekTime:HH:mm:ss.fff}");
         }
 
         public void PrevFrame()
@@ -253,7 +336,34 @@ namespace UI.Video
                     if (frameSources.Any())
                     {
                         minStart = frameSources.Select(r => r.StartTime).Min();
-                        maxEnd = frameSources.Select(r => r.StartTime + r.Length).Max();
+                        
+                        // Calculate maxEnd using the same XML frame timing method as video duration
+                        // This ensures progress bar timeline matches video duration calculation
+                        var maxEndDuration = TimeSpan.Zero;
+                        foreach (var frameSource in frameSources)
+                        {
+                            // If this frame source has frame timing data, use XML timing
+                            if (frameSource is ICaptureFrameSource captureSource && captureSource.FrameTimes != null && captureSource.FrameTimes.Length > 0)
+                            {
+                                // Use unified duration calculation for consistency across platforms
+                                var xmlDuration = UnifiedFrameTimingManager.CalculateVideoDuration(
+                                    captureSource.FrameTimes, frameSource.Length);
+                                
+                                // For playback timeline, prefer the shorter of XML and container-based Length
+                                // to avoid progress bar extending beyond actual playable content
+                                var playbackDuration = TimeSpan.FromSeconds(Math.Min(xmlDuration.TotalSeconds, frameSource.Length.TotalSeconds));
+                                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Timeline: XML={xmlDuration.TotalSeconds:F3}s, Length={frameSource.Length.TotalSeconds:F3}s, Using(min)={playbackDuration.TotalSeconds:F3}s for {frameSource.GetType().Name}");
+                                maxEndDuration = TimeSpan.FromSeconds(Math.Max(maxEndDuration.TotalSeconds, playbackDuration.TotalSeconds));
+                            }
+                            else
+                            {
+                                // Fallback to Length property
+                                maxEndDuration = TimeSpan.FromSeconds(Math.Max(maxEndDuration.TotalSeconds, frameSource.Length.TotalSeconds));
+                            }
+                        }
+                        
+                        maxEnd = minStart + maxEndDuration;
+                        Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Timeline: minStart={minStart:HH:mm:ss.fff}, maxEnd={maxEnd:HH:mm:ss.fff}, duration={maxEndDuration.TotalSeconds:F1}s");
                     }
                     else
                     {
@@ -291,7 +401,9 @@ namespace UI.Video
                     }
 
 
-                    SeekNode.SetRace(race, minStart, maxEnd);
+                    // Get frame times for timeline positioning
+                    var frameTimes = GetFrameTimesFromFrameSources();
+                    SeekNode.SetRace(race, minStart, maxEnd, frameTimes);
 
                     ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
 
@@ -377,14 +489,38 @@ namespace UI.Video
 
                 if (primary != null)
                 {
-                    if (keyMapper.ReplayPlus5Seconds.Match(inputEvent))
+                    if (keyMapper.ReplayPlus2Seconds.Match(inputEvent))
                     {
-                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(5));
+                        double increment = 2.0;
+                        // If slow motion is enabled, adjust the increment by the slow motion factor
+                        if (SeekNode.SlowCheck.Checkbox.Value)
+                        {
+                            increment *= SeekNode.SlowSpeed;
+                        }
+                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(increment));
                     }
 
-                    if (keyMapper.ReplayMinus5Seconds.Match(inputEvent))
+                    if (keyMapper.ReplayMinus2Seconds.Match(inputEvent))
                     {
-                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(-5));
+                        double increment = -2.0;
+                        // If slow motion is enabled, adjust the increment by the slow motion factor
+                        if (SeekNode.SlowCheck.Checkbox.Value)
+                        {
+                            increment *= SeekNode.SlowSpeed;
+                        }
+                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(increment));
+                    }
+
+                    if (keyMapper.ReplaySpeedUp.Match(inputEvent))
+                    {
+                        // Increase slow motion speed by 0.1
+                        SeekNode.AdjustSpeedPublic(0.1f);
+                    }
+
+                    if (keyMapper.ReplaySpeedDown.Match(inputEvent))
+                    {
+                        // Decrease slow motion speed by 0.1
+                        SeekNode.AdjustSpeedPublic(-0.1f);
                     }
                 }
                 
@@ -400,18 +536,82 @@ namespace UI.Video
 
                 if (primary != null)
                 {
-                    DateTime currentTime = primary.CurrentTime;
-
-                    if (Math.Abs((SeekNode.CurrentTime - currentTime).TotalMilliseconds) > 10)
+                    // Check if video is paused - don't update progress bar if paused
+                    bool isPaused = false;
+                    if (primary is FrameSource fs && fs.State == FrameSource.States.Paused)
                     {
-                        SeekNode.CurrentTime = currentTime;
-                        SeekNode.RequestLayout();
+                        isPaused = true;
+                    }
+                    
+                    // Only update progress bar when not paused
+                    if (!isPaused)
+                    {
+                        DateTime currentTime = primary.CurrentTime;
 
-                        ChannelsGridNode.SetPlaybackTime(currentTime);
-                        ChannelsGridNode.SetReorderType(ApplicationProfileSettings.Instance.PilotOrderMidRace == ApplicationProfileSettings.OrderTypes.Channel ? ChannelsGridNode.ReOrderTypes.ChannelOrder : ChannelsGridNode.ReOrderTypes.PositionOrder);
-                        ChannelsGridNode.Reorder();
+                        // Check if we recently performed a seek operation
+                        bool recentSeek = lastSeekTime.HasValue && (DateTime.Now - lastSeekTimeSet).TotalMilliseconds < 3000; // 3 second grace period
+                        
+                        if (recentSeek)
+                        {
+                            // During seek grace period, use the seek time if the primary time hasn't caught up yet
+                            if (Math.Abs((lastSeekTime.Value - currentTime).TotalSeconds) > 2.0) // If primary time is still far from seek target
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"Update: Using seek time {lastSeekTime.Value:HH:mm:ss.fff} instead of primary time {currentTime:HH:mm:ss.fff}");
+                                currentTime = lastSeekTime.Value;
+                            }
+                            else
+                            {
+                                // Primary has caught up, clear the seek tracking
+                                Tools.Logger.VideoLog.LogCall(this, $"Update: Primary time caught up, clearing seek tracking");
+                                lastSeekTime = null;
+                            }
+                        }
+
+                        if (Math.Abs((SeekNode.CurrentTime - currentTime).TotalMilliseconds) > 10)
+                        {
+                            SeekNode.CurrentTime = currentTime;
+                            SeekNode.RequestLayout();
+
+                            ChannelsGridNode.SetPlaybackTime(currentTime);
+                            ChannelsGridNode.SetReorderType(ApplicationProfileSettings.Instance.PilotOrderMidRace == ApplicationProfileSettings.OrderTypes.Channel ? ChannelsGridNode.ReOrderTypes.ChannelOrder : ChannelsGridNode.ReOrderTypes.PositionOrder);
+                            ChannelsGridNode.Reorder();
+                        }
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Get frame times from the frame sources for timeline positioning
+        /// </summary>
+        private FrameTime[] GetFrameTimesFromFrameSources()
+        {
+            try
+            {
+                
+                if (PlaybackVideoManager != null)
+                {
+                    var allFrameSources = PlaybackVideoManager.GetFrameSources();
+                    
+                    var frameSources = allFrameSources.OfType<ICaptureFrameSource>();
+                    
+                    foreach (var frameSource in frameSources)
+                    {
+                        var frameTimes = frameSource.FrameTimes;
+                        if (frameTimes != null && frameTimes.Length > 0)
+                        {
+                            return frameTimes;
+                        }
+                    }
+                }
+                
+                return new FrameTime[0];
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't crash the UI
+                Tools.Logger.VideoLog.LogException(this, ex);
+                return new FrameTime[0];
             }
         }
 

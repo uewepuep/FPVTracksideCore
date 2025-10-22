@@ -34,11 +34,16 @@ namespace ImageServer
                 return default(TimeSpan);
             }
 
-            FrameTime closest = frameTimes.OrderBy(r => Math.Abs(r.Time.Ticks - dateTime.Ticks)).First();
-
-            TimeSpan difference = dateTime - closest.Time;
-
-            return TimeSpan.FromSeconds(closest.Seconds) + difference + latency;
+            // Get the recording start time from the first frame
+            var firstFrame = frameTimes.OrderBy(f => f.Time).First();
+            
+            // Calculate the offset from recording start to the requested time
+            TimeSpan offsetFromRecordingStart = dateTime - firstFrame.Time;
+            
+            // Debug logging
+            
+            // Return the offset as the media time position
+            return offsetFromRecordingStart + latency;
         }
 
         public static DateTime GetRealTime(this IEnumerable<FrameTime> frameTimes, TimeSpan media, TimeSpan latency)

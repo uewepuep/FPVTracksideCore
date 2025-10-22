@@ -1,0 +1,641 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ '**' ]  # Run on all branches
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ '**' ]  # Run on all branches
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create a new release'
+        required: false
+        default: false
+        type: boolean
+      target_branch:
+        description: 'Target branch for release (default: current)'
+        required: false
+        default: ''
+        type: string
+
+env:
+  DOTNET_VERSION: '6.0.x'
+
+jobs:
+  detect-version:
+    runs-on: ubuntu-latest
+    outputs:
+      macos-version: ${{ steps.get-version.outputs.macos-version }}
+      windows-version: ${{ steps.get-version.outputs.windows-version }}
+      release-tag: ${{ steps.get-version.outputs.release-tag }}
+      is-release-branch: ${{ steps.get-version.outputs.is-release-branch }}
+      safe-branch-name: ${{ steps.get-version.outputs.safe-branch-name }}
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Extract version numbers
+      id: get-version
+      run: |
+        # Extract macOS version from FPVMacsideCore.csproj
+        MACOS_VERSION=$(grep -o '<Version>[^<]*</Version>' FPVMacSideCore/FPVMacsideCore.csproj | sed 's/<Version>\(.*\)<\/Version>/\1/')
+        echo "macos-version=$MACOS_VERSION" >> $GITHUB_OUTPUT
+        
+        # Extract Windows version from FPVTracksideCore.csproj
+        WINDOWS_VERSION=$(grep -o '<Version>[^<]*</Version>' FPVTracksideCore/FPVTracksideCore.csproj | sed 's/<Version>\(.*\)<\/Version>/\1/')
+        echo "windows-version=$WINDOWS_VERSION" >> $GITHUB_OUTPUT
+        
+        # Check if this is a release branch (master, main, or release/*)
+        if [[ "${{ github.ref_name }}" == "master" || "${{ github.ref_name }}" == "main" || "${{ github.ref_name }}" =~ ^release/ ]]; then
+          IS_RELEASE_BRANCH="true"
+        else
+          IS_RELEASE_BRANCH="false"
+        fi
+        echo "is-release-branch=$IS_RELEASE_BRANCH" >> $GITHUB_OUTPUT
+        
+        # Use the higher version for release tag, or current timestamp if triggered manually
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          RELEASE_TAG="v$(date +'%Y.%m.%d-%H%M%S')"
+        elif [[ "${{ github.ref_type }}" == "tag" ]]; then
+          RELEASE_TAG="${{ github.ref_name }}"
+        else
+          # Use semantic versioning - pick the higher version
+          if printf '%s\n%s\n' "$MACOS_VERSION" "$WINDOWS_VERSION" | sort -V | tail -n1 | grep -q "$WINDOWS_VERSION"; then
+            RELEASE_TAG="v$WINDOWS_VERSION"
+          else
+            RELEASE_TAG="v$MACOS_VERSION"
+          fi
+        fi
+        echo "release-tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+        
+        # Sanitize branch name for artifact names (replace invalid characters)
+        SAFE_BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9._-]/_/g')
+        echo "safe-branch-name=$SAFE_BRANCH_NAME" >> $GITHUB_OUTPUT
+        
+        echo "🍎 macOS Version: $MACOS_VERSION"
+        echo "🪟 Windows Version: $WINDOWS_VERSION"
+        echo "🏷️ Release Tag: $RELEASE_TAG"
+        echo "📦 Is Release Branch: $IS_RELEASE_BRANCH"
+        echo "🌿 Safe Branch Name: $SAFE_BRANCH_NAME"
+
+  build-macos:
+    runs-on: macos-latest
+    needs: detect-version
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore dependencies
+      run: dotnet restore "FPVMacside - Core.sln" --verbosity minimal
+    
+    - name: Build macOS Release
+      run: |
+        dotnet publish FPVMacSideCore/FPVMacsideCore.csproj \
+          --configuration Release \
+          --runtime osx-arm64 \
+          --self-contained true \
+          --output "./build/macos-arm64" \
+          -p:PublishSingleFile=false \
+          -p:PublishReadyToRun=false \
+          -p:TieredCompilation=false
+    
+    - name: Create macOS App Bundle
+      run: |
+        mkdir -p "FPVTrackside.app/Contents/MacOS"
+        mkdir -p "FPVTrackside.app/Contents/Resources"
+        
+        # Copy ALL files from the build directory to MacOS
+        cp -r "./build/macos-arm64/"* "FPVTrackside.app/Contents/MacOS/"
+        
+        # Copy app icon if it exists
+        if [ -f "./build/macos-arm64/AppIcon.icns" ]; then
+          cp "./build/macos-arm64/AppIcon.icns" "FPVTrackside.app/Contents/Resources/"
+        elif [ -f "FPVMacSideCore/AppIcon.icns" ]; then
+          cp "FPVMacSideCore/AppIcon.icns" "FPVTrackside.app/Contents/Resources/"
+        fi
+        
+        # Ensure the icon file exists and has correct permissions
+        if [ -f "FPVTrackside.app/Contents/Resources/AppIcon.icns" ]; then
+          chmod 644 "FPVTrackside.app/Contents/Resources/AppIcon.icns"
+          echo "✅ AppIcon.icns copied successfully"
+        else
+          echo "⚠️ Warning: Icon file not found, app will use default icon"
+        fi
+        
+        # Create Info.plist
+        cat > "FPVTrackside.app/Contents/Info.plist" << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>CFBundleDisplayName</key>
+            <string>FPVTrackside</string>
+            <key>CFBundleExecutable</key>
+            <string>FPVMacsideCore</string>
+            <key>CFBundleIconFile</key>
+            <string>AppIcon</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.fpvtrackside</string>
+            <key>CFBundleName</key>
+            <string>FPVTrackside</string>
+            <key>CFBundleShortVersionString</key>
+            <string>${{ needs.detect-version.outputs.macos-version }}</string>
+            <key>CFBundleVersion</key>
+            <string>${{ needs.detect-version.outputs.macos-version }}</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+            <key>LSMinimumSystemVersion</key>
+            <string>10.15</string>
+            <key>LSApplicationCategoryType</key>
+            <string>public.app-category.games</string>
+            <key>NSHighResolutionCapable</key>
+            <true/>
+            <key>LSUIElement</key>
+            <false/>
+        </dict>
+        </plist>
+        EOF
+        
+        # Make executable
+        chmod +x "FPVTrackside.app/Contents/MacOS/FPVMacsideCore"
+        
+        # Verify app bundle structure
+        echo "📁 App Bundle Structure:"
+        ls -la "FPVTrackside.app/Contents/"
+        echo "📁 Resources Directory:"
+        ls -la "FPVTrackside.app/Contents/Resources/" || echo "Resources directory is empty"
+        echo "📁 MacOS Directory (first 10 files):"
+        ls -la "FPVTrackside.app/Contents/MacOS/" | head -10
+    
+    - name: Create macOS DMG
+      run: |
+        # Install create-dmg tool for professional DMG creation
+        brew install create-dmg
+        
+        # Create a temporary directory for DMG contents
+        mkdir -p dmg-temp
+        cp -r "FPVTrackside.app" dmg-temp/
+        
+        # Create DMG with professional layout
+        create-dmg \
+          --volname "FPVTrackside v${{ needs.detect-version.outputs.macos-version }}" \
+          --volicon "FPVTrackside.app/Contents/Resources/AppIcon.icns" \
+          --window-pos 200 120 \
+          --window-size 800 450 \
+          --icon-size 100 \
+          --icon "FPVTrackside.app" 200 190 \
+          --hide-extension "FPVTrackside.app" \
+          --app-drop-link 600 190 \
+          --hdiutil-verbose \
+          "FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg" \
+          dmg-temp/ || {
+            # Fallback if create-dmg fails - use hdiutil directly
+            echo "create-dmg failed, using hdiutil fallback..."
+            hdiutil create -volname "FPVTrackside v${{ needs.detect-version.outputs.macos-version }}" \
+              -srcfolder dmg-temp \
+              -ov -format UDZO \
+              "FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg"
+          }
+        
+        # Verify DMG was created
+        ls -la *.dmg
+    
+
+    
+    - name: Upload macOS Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: fpvtrackside-macos-${{ needs.detect-version.outputs.macos-version }}-${{ needs.detect-version.outputs.safe-branch-name }}
+        path: |
+          FPVTrackside-macOS-*.dmg
+        retention-days: 90
+
+  build-windows:
+    runs-on: windows-latest
+    needs: detect-version
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    
+    - name: Restore dependencies
+      run: dotnet restore FPVTracksideCore/FPVTracksideCore.sln
+    
+    - name: Build Windows Release
+      run: |
+        dotnet publish FPVTracksideCore/FPVTracksideCore.csproj `
+          --configuration Release `
+          --runtime win-x64 `
+          --self-contained true `
+          --output "./build/windows-x64" `
+          -p:PublishSingleFile=false `
+          -p:PublishReadyToRun=false `
+          -p:TieredCompilation=false
+        
+        # List what was published for debugging
+        echo "Files published to build directory:"
+        Get-ChildItem "build\windows-x64" -Recurse | ForEach-Object {
+          $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\"), ""
+          echo "  $relativePath"
+        }
+        
+        # Copy additional project files that aren't already published
+        echo "Copying additional project files to build directory..."
+        
+        # Define directories that contain additional files not published by dotnet
+        $additionalDirs = @("data", "themes", "sounds", "img", "bitmapfonts", "formats", "httpfiles", "patreons", "pilots", "ffmpeg")
+        
+        foreach ($dir in $additionalDirs) {
+          if (Test-Path "FPVTracksideCore\$dir") {
+            $targetDir = "build\windows-x64\$dir"
+            
+            # Create target directory if it doesn't exist
+            if (!(Test-Path $targetDir)) {
+              New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+            }
+            
+            # Copy files, but skip if they already exist in the build directory
+            Get-ChildItem "FPVTracksideCore\$dir" -Recurse | Where-Object { !$_.PSIsContainer } | ForEach-Object {
+              $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\FPVTracksideCore\$dir\"), ""
+              $targetPath = "$targetDir\$relativePath"
+              $targetFileDir = Split-Path $targetPath -Parent
+              
+              # Create subdirectory if it doesn't exist
+              if (!(Test-Path $targetFileDir)) {
+                New-Item -ItemType Directory -Path $targetFileDir -Force | Out-Null
+              }
+              
+              # Only copy if the target file doesn't already exist
+              if (!(Test-Path $targetPath)) {
+                Copy-Item $_.FullName $targetPath -Force
+              } else {
+                echo "Skipped existing file: $relativePath"
+              }
+            }
+            echo "Processed $dir directory"
+          }
+        }
+        
+        echo "Copied additional project files to build directory"
+        
+        echo "Final build directory contents:"
+        Get-ChildItem "build\windows-x64" -Recurse | ForEach-Object {
+          $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\"), ""
+          echo "  $relativePath"
+        }
+    
+    - name: Install WiX Toolset
+      run: |
+        # Download and install WiX Toolset v3.11.2
+        $wixUrl = "https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311.exe"
+        $wixInstaller = "wix311.exe"
+        Invoke-WebRequest -Uri $wixUrl -OutFile $wixInstaller
+        Start-Process -FilePath $wixInstaller -ArgumentList "/quiet" -Wait
+        Remove-Item $wixInstaller
+        
+        # Add WiX to PATH
+        $env:PATH += ";C:\Program Files (x86)\WiX Toolset v3.11\bin"
+        echo "WiX Toolset installed successfully"
+
+    - name: Create Simple MSI Installer
+      run: |
+        # Create a simple WiX installer with manually generated components to avoid ID conflicts
+        echo "Creating simple MSI installer..."
+        
+        # Add WiX to PATH for this step
+        $env:PATH += ";C:\Program Files (x86)\WiX Toolset v3.11\bin"
+        
+        # Function to sanitize file names for WiX IDs
+        function Get-SafeId {
+            param($name, $prefix = "")
+            $safeId = $prefix + ($name -replace '[^a-zA-Z0-9_]', '_')
+            if ($safeId -match '^[0-9]') { $safeId = "F$safeId" }
+            return $safeId
+        }
+        
+        # Generate a comprehensive WiX file with individual components for each file
+        echo "Generating WiX installer file with individual components..."
+        
+        # Start the WiX file
+        echo '<?xml version="1.0" encoding="UTF-8"?>' > FPVTracksideCore.wxs
+        echo '<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">' >> FPVTracksideCore.wxs
+        echo '  <Product Id="*" Name="FPVTrackside" Language="1033" Version="${{ needs.detect-version.outputs.windows-version }}" Manufacturer="FPV Trackside" UpgradeCode="{12345678-1234-1234-1234-123456789012}">' >> FPVTracksideCore.wxs
+        echo '    <Package InstallerVersion="200" Compressed="yes" InstallScope="perUser" InstallPrivileges="limited" />' >> FPVTracksideCore.wxs
+        echo '    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />' >> FPVTracksideCore.wxs
+        echo '    <MediaTemplate EmbedCab="yes" />' >> FPVTracksideCore.wxs
+        echo '    <Feature Id="ProductFeature" Title="FPVTrackside" Level="1">' >> FPVTracksideCore.wxs
+        echo '      <ComponentRef Id="MainExecutable" />' >> FPVTracksideCore.wxs
+        
+        # Add component references for all other files
+        $componentCounter = 1
+        Get-ChildItem "build\windows-x64" -Recurse -File | Where-Object { $_.Name -ne "FPVTracksideCore.exe" } | ForEach-Object {
+          $componentId = "Component_$componentCounter"
+          echo "      <ComponentRef Id=`"$componentId`" />" >> FPVTracksideCore.wxs
+          $componentCounter++
+        }
+        
+        echo '      <ComponentRef Id="ApplicationShortcut" />' >> FPVTracksideCore.wxs
+        echo '      <ComponentRef Id="DataDirectoryPermissions" />' >> FPVTracksideCore.wxs
+        echo '    </Feature>' >> FPVTracksideCore.wxs
+        echo '    <UIRef Id="WixUI_Minimal" />' >> FPVTracksideCore.wxs
+        echo '    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />' >> FPVTracksideCore.wxs
+        echo '  </Product>' >> FPVTracksideCore.wxs
+        
+        # Directory structure with subdirectories
+        echo '  <Fragment>' >> FPVTracksideCore.wxs
+        echo '    <Directory Id="TARGETDIR" Name="SourceDir">' >> FPVTracksideCore.wxs
+        echo '      <Directory Id="LocalAppDataFolder">' >> FPVTracksideCore.wxs
+        echo '        <Directory Id="INSTALLFOLDER" Name="FPVTracksideCore">' >> FPVTracksideCore.wxs
+        
+        # Build directory tree structure
+        $directoryTree = @{}
+        
+        # Collect all unique directory paths
+        Get-ChildItem "build\windows-x64" -Recurse -Directory | ForEach-Object {
+          $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\"), ""
+          $directoryTree[$relativePath] = $true
+        }
+        
+        # Function to recursively create directory structure
+        function Create-DirectoryStructure {
+          param($parentPath, $indent)
+          
+          $childDirs = $directoryTree.Keys | Where-Object { 
+            $_ -like "$parentPath\*" -and ($_.Substring($parentPath.Length).TrimStart('\') -split '\\').Count -eq 1
+          } | Sort-Object
+          
+          foreach ($childPath in $childDirs) {
+            $dirName = Split-Path $childPath -Leaf
+            $dirId = "DIR_" + ($childPath -replace '\\', '_' -replace '[^a-zA-Z0-9_]', '_')
+            
+            echo "$indent<Directory Id=`"$dirId`" Name=`"$dirName`">" >> FPVTracksideCore.wxs
+            
+            # Recursively create subdirectories
+            Create-DirectoryStructure -parentPath $childPath -indent "$indent  "
+            
+            echo "$indent</Directory>" >> FPVTracksideCore.wxs
+          }
+        }
+        
+        # Create top-level directories under INSTALLFOLDER
+        $topLevelDirs = $directoryTree.Keys | Where-Object { ($_ -split '\\').Count -eq 1 } | Sort-Object
+        foreach ($topDir in $topLevelDirs) {
+          $dirId = "DIR_" + ($topDir -replace '\\', '_' -replace '[^a-zA-Z0-9_]', '_')
+          echo "          <Directory Id=`"$dirId`" Name=`"$topDir`">" >> FPVTracksideCore.wxs
+          
+          # Create subdirectories
+          Create-DirectoryStructure -parentPath $topDir -indent "            "
+          
+          echo "          </Directory>" >> FPVTracksideCore.wxs
+        }
+        
+        echo '        </Directory>' >> FPVTracksideCore.wxs
+        echo '      </Directory>' >> FPVTracksideCore.wxs
+        echo '      <Directory Id="ProgramMenuFolder">' >> FPVTracksideCore.wxs
+        echo '        <Directory Id="ApplicationProgramsFolder" Name="FPVTrackside" />' >> FPVTracksideCore.wxs
+        echo '      </Directory>' >> FPVTracksideCore.wxs
+        echo '      <Directory Id="DesktopFolder" Name="Desktop" />' >> FPVTracksideCore.wxs
+        echo '    </Directory>' >> FPVTracksideCore.wxs
+        echo '  </Fragment>' >> FPVTracksideCore.wxs
+        
+        # Main executable component
+        echo '  <Fragment>' >> FPVTracksideCore.wxs
+        echo '    <Component Id="MainExecutable" Directory="INSTALLFOLDER" Guid="{A1B2C3D4-E5F6-7890-ABCD-123456789ABC}">' >> FPVTracksideCore.wxs
+        echo '      <File Id="FPVTracksideCore.exe" Name="FPVTracksideCore.exe" Source="build\windows-x64\FPVTracksideCore.exe" KeyPath="yes" />' >> FPVTracksideCore.wxs
+        echo '    </Component>' >> FPVTracksideCore.wxs
+        echo '  </Fragment>' >> FPVTracksideCore.wxs
+        
+        # Create individual components for each file in proper directories
+        $fileCounter = 1
+        $componentCounter = 1
+        
+        echo "Generating file components..." | Write-Output
+        Get-ChildItem "build\windows-x64" -Recurse -File | Where-Object { $_.Name -ne "FPVTracksideCore.exe" } | ForEach-Object {
+          $relativePath = $_.FullName -replace [regex]::Escape((Get-Location).Path + "\build\windows-x64\"), ""
+          $fileName = $_.Name
+          $fileId = "File_$fileCounter"
+          $componentId = "Component_$componentCounter"
+          
+          # Determine target directory based on file path
+          $targetDirId = "INSTALLFOLDER"
+          $dirPath = ""
+          
+          if ($relativePath.Contains("\")) {
+            $dirPath = Split-Path $relativePath -Parent
+            $targetDirId = "DIR_" + ($dirPath -replace '\\', '_' -replace '[^a-zA-Z0-9_]', '_')
+            echo "File: $fileName -> Directory: $targetDirId (Path: $dirPath)" | Write-Output
+            
+            # Verify the target directory exists in our directory tree
+            if (-not $directoryTree.ContainsKey($dirPath)) {
+              echo "WARNING: Target directory $targetDirId not found for file $fileName, falling back to INSTALLFOLDER" | Write-Output
+              $targetDirId = "INSTALLFOLDER"
+            }
+          } else {
+            echo "File: $fileName -> Directory: $targetDirId (Root)" | Write-Output
+          }
+          
+          # Generate unique GUID for each component
+          $guid1 = [System.Guid]::NewGuid().ToString().ToUpper()
+          
+          echo "  <Fragment>" >> FPVTracksideCore.wxs
+          echo "    <Component Id=`"$componentId`" Directory=`"$targetDirId`" Guid=`"{$guid1}`">" >> FPVTracksideCore.wxs
+          echo "      <File Id=`"$fileId`" Name=`"$fileName`" Source=`"build\windows-x64\$relativePath`" KeyPath=`"yes`" />" >> FPVTracksideCore.wxs
+          echo "    </Component>" >> FPVTracksideCore.wxs
+          echo "  </Fragment>" >> FPVTracksideCore.wxs
+          
+          $fileCounter++
+          $componentCounter++
+        }
+        # Shortcuts component
+        echo '  <Fragment>' >> FPVTracksideCore.wxs
+        echo '    <Component Id="ApplicationShortcut" Directory="INSTALLFOLDER" Guid="{C3D4E5F6-A7B8-9012-CDEF-3456789ABCDE}">' >> FPVTracksideCore.wxs
+        echo '      <Shortcut Id="ApplicationStartMenuShortcut" Name="FPVTrackside" Description="FPVTrackside Application" Target="[INSTALLFOLDER]FPVTracksideCore.exe" WorkingDirectory="INSTALLFOLDER" Directory="ApplicationProgramsFolder" />' >> FPVTracksideCore.wxs
+        echo '      <Shortcut Id="ApplicationDesktopShortcut" Name="FPVTrackside" Description="FPVTrackside Application" Target="[INSTALLFOLDER]FPVTracksideCore.exe" WorkingDirectory="INSTALLFOLDER" Directory="DesktopFolder" />' >> FPVTracksideCore.wxs
+        echo '      <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall" />' >> FPVTracksideCore.wxs
+        echo '      <RegistryValue Root="HKCU" Key="Software\Microsoft\FPVTrackside" Name="installed" Type="integer" Value="1" KeyPath="yes" />' >> FPVTracksideCore.wxs
+        echo '    </Component>' >> FPVTracksideCore.wxs
+        echo '  </Fragment>' >> FPVTracksideCore.wxs
+        
+        # Data directory permissions component (simplified without explicit permissions)
+        echo '  <Fragment>' >> FPVTracksideCore.wxs
+        echo '    <Component Id="DataDirectoryPermissions" Directory="INSTALLFOLDER" Guid="{F7E8D9C0-B1A2-3456-789A-BCDEF0123456}">' >> FPVTracksideCore.wxs
+        echo '      <RegistryValue Root="HKCU" Key="Software\Microsoft\FPVTrackside" Name="DataDirectoryCreated" Type="integer" Value="1" KeyPath="yes" />' >> FPVTracksideCore.wxs
+        echo '    </Component>' >> FPVTracksideCore.wxs
+        echo '  </Fragment>' >> FPVTracksideCore.wxs
+        echo '</Wix>' >> FPVTracksideCore.wxs
+        
+        # Create simple license file
+        echo '{\rtf1\ansi\deff0 {\fonttbl {\f0 Times New Roman;}}' > license.rtf
+        echo '\f0\fs24' >> license.rtf
+        echo 'FPV Trackside Core License Agreement' >> license.rtf
+        echo '' >> license.rtf
+        echo 'This software is provided as-is without any warranty. Use at your own risk.' >> license.rtf
+        echo '' >> license.rtf
+        echo 'Copyright (c) 2024 FPV Trackside' >> license.rtf
+        
+        # Determine MSI name
+        if ("${{ needs.detect-version.outputs.is-release-branch }}" -eq "true") {
+          $msiName = "FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.msi"
+        } else {
+          $msiName = "FPV-Trackside-Core-Windows-${{ needs.detect-version.outputs.safe-branch-name }}-v${{ needs.detect-version.outputs.windows-version }}.msi"
+        }
+        
+        # Compile WiX file
+        echo "Compiling WiX file..."
+        candle.exe -nologo FPVTracksideCore.wxs -out FPVTracksideCore.wixobj
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "WiX compilation failed"
+          exit 1
+        }
+        
+        # Link to create MSI
+        echo "Linking MSI..."
+        light.exe -nologo -ext WixUIExtension -sw1070 -sw1071 -sw1076 -sice:ICE38 -sice:ICE64 FPVTracksideCore.wixobj -out $msiName
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "WiX linking failed"
+          exit 1
+        }
+        
+        # Verify MSI was created
+        if (Test-Path $msiName) {
+          Write-Host "MSI installer created successfully: $msiName"
+          $msiInfo = Get-ChildItem $msiName | Select-Object Name, Length
+          Write-Host "File: $($msiInfo.Name), Size: $([math]::Round($msiInfo.Length / 1MB, 2)) MB"
+        } else {
+          Write-Error "MSI installer was not created"
+          exit 1
+        }
+
+
+    
+    - name: Upload Windows Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: fpv-trackside-core-windows-${{ needs.detect-version.outputs.windows-version }}-${{ needs.detect-version.outputs.safe-branch-name }}
+        path: |
+          FPV-Trackside-Core-Windows-*.msi
+        retention-days: 90
+
+  create-release:
+    if: (github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))) || (github.event_name == 'workflow_dispatch' && inputs.create_release)
+    runs-on: ubuntu-latest
+    needs: [detect-version, build-macos, build-windows]
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        fetch-tags: true
+    
+    - name: Fetch all tags
+      run: git fetch --tags --force
+    
+    - name: Download macOS Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: fpvtrackside-macos-${{ needs.detect-version.outputs.macos-version }}-${{ needs.detect-version.outputs.safe-branch-name }}
+    
+    - name: Download Windows Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: fpv-trackside-core-windows-${{ needs.detect-version.outputs.windows-version }}-${{ needs.detect-version.outputs.safe-branch-name }}
+    
+    - name: Generate Release Notes
+      id: release-notes
+      run: |
+        # Debug: Show all available tags
+        echo "All tags available:"
+        git tag --sort=-version:refname || echo "No tags found"
+        
+        # Get the most recent existing tag (since the new tag hasn't been created yet)
+        LAST_TAG=$(git tag --sort=-version:refname | head -n1 2>/dev/null || echo "")
+        
+        echo "Last tag found: '$LAST_TAG'"
+        
+        if [ -n "$LAST_TAG" ]; then
+          # Get commits since the last tag
+          COMMITS=$(git log ${LAST_TAG}..HEAD --oneline --no-merges)
+          echo "Comparing against last tag: $LAST_TAG"
+          echo "Number of commits found: $(echo "$COMMITS" | wc -l)"
+        else
+          # If no previous tags, show last 10 commits for initial release
+          COMMITS=$(git log --oneline --no-merges -10)
+          echo "No previous tags found, showing recent commits"
+        fi
+        
+        # Generate release notes
+        echo "## 🚀 FPVTrackside Release ${{ needs.detect-version.outputs.release-tag }}" > release_notes.md
+        echo "" >> release_notes.md
+        echo "### 📦 Downloads" >> release_notes.md
+        echo "- **macOS (Apple Silicon)**: FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg" >> release_notes.md
+        echo "- **Windows (x64)**: FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.msi" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "### 📱 Platform Versions" >> release_notes.md
+        echo "- **macOS Version**: ${{ needs.detect-version.outputs.macos-version }}" >> release_notes.md
+        echo "- **Windows Version**: ${{ needs.detect-version.outputs.windows-version }}" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "### 🔄 Recent Changes" >> release_notes.md
+        
+        if [ -n "$COMMITS" ]; then
+          echo "$COMMITS" | while read line; do
+            echo "- $line" >> release_notes.md
+          done
+        else
+          echo "- Initial release or no recent changes" >> release_notes.md
+        fi
+        
+        echo "" >> release_notes.md
+        echo "### 💻 System Requirements" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "#### macOS" >> release_notes.md
+        echo "- macOS 10.15 (Catalina) or later" >> release_notes.md
+        echo "- Apple Silicon (M1/M2) or Intel processor" >> release_notes.md
+        echo "- Screen recording permissions may be required for screen capture features" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "#### Windows" >> release_notes.md
+        echo "- Windows 10 x64 or later" >> release_notes.md
+        echo "- .NET 6.0 runtime (included in self-contained build)" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "### 📋 Installation" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "#### macOS" >> release_notes.md
+        echo "1. Download the macOS DMG file" >> release_notes.md
+        echo "2. Double-click the DMG to mount it" >> release_notes.md
+        echo "3. Drag \"FPVTrackside.app\" to your Applications folder" >> release_notes.md
+        echo "4. Eject the DMG when finished" >> release_notes.md
+        echo "5. Right-click and select \"Open\" for first launch (Gatekeeper)" >> release_notes.md
+        echo "6. Grant screen recording permissions if using screen capture" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "#### Windows" >> release_notes.md
+        echo "1. Download the Windows MSI installer" >> release_notes.md
+        echo "2. Double-click the MSI file to run the installer" >> release_notes.md
+        echo "3. Follow the installation wizard" >> release_notes.md
+        echo "4. Launch FPVTrackside from the Start Menu or desktop shortcut" >> release_notes.md
+        echo "5. Windows Defender may require approval for first launch" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "---" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "**Note**: Both versions include all necessary dependencies and FFmpeg binaries." >> release_notes.md
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ needs.detect-version.outputs.release-tag }}
+        name: "FPVTrackside ${{ needs.detect-version.outputs.release-tag }}"
+        body_path: release_notes.md
+        draft: false
+        prerelease: false
+        files: |
+          FPVTrackside-macOS-v${{ needs.detect-version.outputs.macos-version }}.dmg
+          FPV-Trackside-Core-Windows-v${{ needs.detect-version.outputs.windows-version }}.msi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

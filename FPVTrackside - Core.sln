@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.2.32616.157
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Composition", "Compositor\Composition.csproj", "{257AF10C-24E9-4E5B-9195-1614A1ADD1A6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{312966DE-7E94-494C-A7E6-42ED28E073A8} = {312966DE-7E94-494C-A7E6-42ED28E073A8}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RaceLib", "RaceLib\RaceLib.csproj", "{BA25B903-4369-4FA5-805D-13D330FB7B9F}"
 EndProject

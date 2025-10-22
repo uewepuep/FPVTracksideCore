@@ -2,6 +2,7 @@
 using Composition.Input;
 using Composition.Layers;
 using Composition.Nodes;
+using FfmpegMediaPlatform;
 using ImageServer;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -134,6 +135,24 @@ namespace UI
         protected override void Initialize()
         {
             GeneralSettings.Initialise();
+
+            // Configure HLS based on GeneralSettings
+            Tools.Logger.UI.Log(this, $"GeneralSettings.HlsEnabled = {GeneralSettings.Instance.HlsEnabled}");
+            
+            if (!GeneralSettings.Instance.HlsEnabled)
+            {
+                // Disable HLS for performance
+                FfmpegMediaPlatform.HlsConfig.DisableHls();
+                Tools.Logger.UI.Log(this, "HLS disabled via GeneralSettings.xml configuration - Performance mode enabled");
+                Tools.Logger.UI.Log(this, "No HTTP server will be started, no HLS files will be generated");
+            }
+            else
+            {
+                // Enable HLS if configured
+                FfmpegMediaPlatform.HlsConfig.EnableHls();
+                Tools.Logger.UI.Log(this, "HLS enabled via GeneralSettings.xml configuration - Web streaming available");
+                Tools.Logger.UI.Log(this, $"HLS will be available at: http://localhost:{FfmpegMediaPlatform.HlsConfig.HttpPort}/hls/stream.m3u8");
+            }
 
             Profile = new Profile(GeneralSettings.Instance.Profile);
             ApplicationProfileSettings.Initialize(Profile);
@@ -368,7 +387,7 @@ namespace UI
             {
                 Theme.Initialise(GraphicsDevice, PlatformTools.WorkingDirectory, "FPVTrackside");
 
-                if (backgroundLayer != null)
+                if (backgroundLayer != null && Theme.Current != null)
                 {
                     backgroundLayer.SetBackground(Theme.Current.Background);
                 }

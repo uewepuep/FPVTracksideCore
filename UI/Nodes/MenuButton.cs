@@ -302,28 +302,28 @@ namespace UI.Nodes
             {
                 openDirectory.AddItem("Open Event Data Directory", () =>
                 {
-                    OpenCurrentDirectory("events\\" + eventManager.EventId + "\\");
+                    PlatformTools.OpenFileManager(Path.Combine(Directory.GetCurrentDirectory(), "events", eventManager.EventId.ToString()));
                 });
             }
 
             openDirectory.AddItem("Open Events Directory", () =>
             {
-                OpenCurrentDirectory("events\\");
+                PlatformTools.OpenFileManager(Path.Combine(Directory.GetCurrentDirectory(), "events"));
             });
 
             openDirectory.AddItem("Open Pilot Profile Image Directory", () =>
             {
-                OpenCurrentDirectory("pilots\\");
+                PlatformTools.OpenFileManager(Path.Combine(Directory.GetCurrentDirectory(), "pilots"));
             });
 
             openDirectory.AddItem("Open Tracks Directory", () =>
             {
-                OpenCurrentDirectory("Tracks\\");
+                PlatformTools.OpenFileManager(Path.Combine(Directory.GetCurrentDirectory(), "Tracks"));
             });
 
             openDirectory.AddItem("Open FPVTrackside Directory", () =>
             {
-                OpenCurrentDirectory();
+                PlatformTools.OpenFileManager(Directory.GetCurrentDirectory());
             });
 
             AddMenus(root);
@@ -388,6 +388,7 @@ namespace UI.Nodes
         public void ShowVideoSettings()
         {
             videoManager?.StopDevices();
+
 
             VideoSourceEditor editor = VideoSourceEditor.GetVideoSourceEditor(eventManager, Profile);
             GetLayer<PopupLayer>().Popup(editor);

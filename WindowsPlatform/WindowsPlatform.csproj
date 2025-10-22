@@ -8,7 +8,8 @@
 		<Platforms>x64</Platforms>
 		<StartupObject />
 		<Version>2.0.70.8</Version>
-		<usewpf>true</usewpf>	
+		<usewpf>true</usewpf>
+		<EnableWindowsTargeting>true</EnableWindowsTargeting>
 	</PropertyGroup>
 
 
@@ -21,6 +22,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Compositor\Composition.csproj" />
+	  <ProjectReference Include="..\ffmpegMediaPlatform\FfmpegMediaPlatform.csproj" />
 	  <ProjectReference Include="..\ImageServer\ImageServer.csproj" />
 	  <ProjectReference Include="..\RaceLib\RaceLib.csproj" />
 	  <ProjectReference Include="..\Tools\Tools.csproj" />

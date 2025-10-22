@@ -93,7 +93,7 @@ namespace Timing.RotorHazard
                 {
                     return lastBeat.frequency.Length;
                 }
-                return 4;
+                return 8;
             }
         }
 
@@ -522,7 +522,16 @@ namespace Timing.RotorHazard
                 }
             }
 
-            time = rotorhazardStart;
+            // Do NOT overwrite 'time' with 'rotorhazardStart' here.
+            // FPVTrackside's start time is authoritative for race records and YouTube timestamps.
+            //
+            // Bug fix: When a race is stopped and restarted, 'rotorhazardStart' contains the OLD
+            // start time (from before the stop), causing the restarted race to have an incorrect
+            // start time offset by the duration between stop and restart (typically ~30 seconds).
+            // This breaks Race.Start, lap times, holeshot detection, and YouTube chapter markers.
+            //
+            // 'rotorhazardStart' is set by OnStageReady callback (which fires asynchronously after
+            // this method returns) and is only used in OnLapData for lap time calculations.
 
             return detecting;
         }

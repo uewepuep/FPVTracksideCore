@@ -17,10 +17,15 @@ namespace UI
         [NeedsRestart]
         public string Profile { get; set; }
 
+        [Category("Video")]
+        [DisplayName("Enable HLS Streaming")]
+        [Description("Enable HTTP Live Streaming for web access. Disable for performance.")]
+        public bool HlsEnabled { get; set; }
 
         public GeneralSettings()
         {
             Profile = "Profile 1";
+            HlsEnabled = false; // Disable HLS by default for performance
         }
 
         protected const string filename = "GeneralSettings.xml";

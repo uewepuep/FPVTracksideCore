@@ -1,0 +1,199 @@
+name: Dependency Update Check
+
+on:
+  schedule:
+    # Run weekly on Mondays at 6 AM UTC
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      update_all:
+        description: 'Update all outdated packages'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  DOTNET_VERSION: '6.0.x'
+
+jobs:
+  check-dependencies:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Check macOS Project Dependencies
+      run: |
+        echo "📦 Checking macOS project dependencies..."
+        
+        echo "=== Outdated Packages ==="
+        dotnet list "FPVMacside - Core.sln" package --outdated || true
+        
+        echo "=== Vulnerable Packages ==="
+        dotnet list "FPVMacside - Core.sln" package --vulnerable || true
+        
+        echo "=== Package Licenses ==="
+        dotnet list "FPVMacside - Core.sln" package --license || true
+    
+    - name: Check Windows Project Dependencies
+      run: |
+        echo "📦 Checking Windows project dependencies..."
+        
+        echo "=== Outdated Packages ==="
+        dotnet list FPVTracksideCore/FPVTracksideCore.sln package --outdated || true
+        
+        echo "=== Vulnerable Packages ==="
+        dotnet list FPVTracksideCore/FPVTracksideCore.sln package --vulnerable || true
+        
+        echo "=== Package Licenses ==="
+        dotnet list FPVTracksideCore/FPVTracksideCore.sln package --license || true
+    
+    - name: Generate Dependency Report
+      run: |
+        echo "📊 Generating dependency report..."
+        
+        # Create a comprehensive report
+        cat > dependency-report.md << EOF
+        # Dependency Update Report
+        
+        Generated: $(date)
+        Branch: ${{ github.ref_name }}
+        
+        ## macOS Project (FPVMacSideCore)
+        
+        ### Outdated Packages
+        \`\`\`
+        $(dotnet list "FPVMacside - Core.sln" package --outdated 2>/dev/null || echo "No outdated packages found")
+        \`\`\`
+        
+        ### Vulnerable Packages
+        \`\`\`
+        $(dotnet list "FPVMacside - Core.sln" package --vulnerable 2>/dev/null || echo "No vulnerable packages found")
+        \`\`\`
+        
+        ## Windows Project (FPVTracksideCore)
+        
+        ### Outdated Packages
+        \`\`\`
+        $(dotnet list FPVTracksideCore/FPVTracksideCore.sln package --outdated 2>/dev/null || echo "No outdated packages found")
+        \`\`\`
+        
+        ### Vulnerable Packages
+        \`\`\`
+        $(dotnet list FPVTracksideCore/FPVTracksideCore.sln package --vulnerable 2>/dev/null || echo "No vulnerable packages found")
+        \`\`\`
+        
+        ## Recommendations
+        
+        1. **Security First**: Update any vulnerable packages immediately
+        2. **Stability**: Test thoroughly after updating major versions
+        3. **Compatibility**: Ensure .NET 6.0 compatibility is maintained
+        
+        ## Update Commands
+        
+        To update packages manually:
+        
+        \`\`\`bash
+        # macOS project
+        dotnet add "FPVMacside - Core.sln" package [PackageName] --version [Version]
+        
+        # Windows project  
+        dotnet add FPVTracksideCore/FPVTracksideCore.sln package [PackageName] --version [Version]
+        \`\`\`
+        EOF
+        
+        echo "Report generated: dependency-report.md"
+    
+    - name: Upload Dependency Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: dependency-report-${{ github.run_number }}
+        path: dependency-report.md
+        retention-days: 30
+
+  auto-update-dependencies:
+    if: inputs.update_all == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Configure Git
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+    
+    - name: Update macOS Project Dependencies
+      run: |
+        echo "🔄 Updating macOS project dependencies..."
+        
+        # Get list of outdated packages
+        OUTDATED=$(dotnet list "FPVMacside - Core.sln" package --outdated --format json | jq -r '.packages[] | select(.resolvedVersion != .latestVersion) | "\(.id) \(.latestVersion)"' 2>/dev/null || true)
+        
+        if [ -n "$OUTDATED" ]; then
+          echo "$OUTDATED" | while read package version; do
+            if [ -n "$package" ] && [ -n "$version" ]; then
+              echo "Updating $package to $version"
+              dotnet add "FPVMacside - Core.sln" package "$package" --version "$version" || true
+            fi
+          done
+        else
+          echo "No outdated packages found in macOS project"
+        fi
+    
+    - name: Update Windows Project Dependencies
+      run: |
+        echo "🔄 Updating Windows project dependencies..."
+        
+        # Get list of outdated packages
+        OUTDATED=$(dotnet list FPVTracksideCore/FPVTracksideCore.sln package --outdated --format json | jq -r '.packages[] | select(.resolvedVersion != .latestVersion) | "\(.id) \(.latestVersion)"' 2>/dev/null || true)
+        
+        if [ -n "$OUTDATED" ]; then
+          echo "$OUTDATED" | while read package version; do
+            if [ -n "$package" ] && [ -n "$version" ]; then
+              echo "Updating $package to $version"
+              dotnet add FPVTracksideCore/FPVTracksideCore.sln package "$package" --version "$version" || true
+            fi
+          done
+        else
+          echo "No outdated packages found in Windows project"
+        fi
+    
+    - name: Test Updated Dependencies
+      run: |
+        echo "🧪 Testing updated dependencies..."
+        
+        # Test macOS project
+        echo "Testing macOS project..."
+        dotnet restore "FPVMacside - Core.sln"
+        dotnet build "FPVMacside - Core.sln" --configuration Debug --no-restore || exit 1
+        
+        # Test Windows project
+        echo "Testing Windows project..."
+        dotnet restore FPVTracksideCore/FPVTracksideCore.sln
+        dotnet build FPVTracksideCore/FPVTracksideCore.sln --configuration Debug --no-restore || exit 1
+        
+        echo "✅ All projects build successfully after dependency updates"
+    
+    - name: Commit and Push Changes
+      if: success()
+      run: |
+        # Check if there are any changes to commit
+        if git diff --quiet; then
+          echo "No changes to commit"
+        else
+          echo "Committing dependency updates..."
+          git add .
+          git commit -m "chore: update dependencies [skip ci]"
+          git push origin ${{ github.ref_name }}
+        fi 
