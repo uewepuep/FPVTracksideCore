@@ -390,6 +390,8 @@ namespace Composition.Nodes
 
         public virtual void ClearSelected()
         {
+            newSelected = default(T);
+            selected = default(T);
             selectedHover.Remove();
             objectProperties.ClearDisposeChildren();
             itemName.Text = "";
