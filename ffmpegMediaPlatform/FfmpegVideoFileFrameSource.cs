@@ -150,8 +150,8 @@ namespace FfmpegMediaPlatform
         {
             List<string> filters = new List<string>();
 
-            // For video files, apply vflip by default when Flipped=false (same logic as live cameras)
-            if (!VideoConfig.Flipped)
+            // For video files, only apply filters when explicitly requested (files should play as-is by default)
+            if (VideoConfig.Flipped)
                 filters.Add("vflip");
 
             if (VideoConfig.Mirrored)
@@ -201,7 +201,7 @@ namespace FfmpegMediaPlatform
                                $"-i \"{filePath}\" " +
                                $"-fflags +genpts " +  // Generate presentation timestamps
                                $"-avoid_negative_ts make_zero " +  // Handle negative timestamps
-                               $"-threads 1 " +
+                               $"-threads 4 " +
                                $"-an " +  // No audio
                                $"{(string.IsNullOrEmpty(videoFilter) ? "" : $"-vf \"{videoFilter}\" ")}" +  // Apply video filters if any
                                $"-pix_fmt rgba " +
@@ -1198,7 +1198,7 @@ namespace FfmpegMediaPlatform
                                    $"-i \"{filePath}\" " +  // Input file
                                    $"-fflags +genpts " +  // Generate presentation timestamps (output option)
                                    $"-avoid_negative_ts make_zero " +  // Handle negative timestamps (output option)
-                                   $"-threads 1 " +  // Single thread (output option)
+                                   $"-threads 4 " +  // Multi-threaded processing (output option)
                                    $"-an " +  // No audio (output option)
                                    $"{(string.IsNullOrEmpty(videoFilter) ? "" : $"-vf \"{videoFilter}\" ")}" +  // Apply video filters if any
                                    $"-pix_fmt rgba " +  // RGBA pixel format (output option)
@@ -1376,7 +1376,7 @@ namespace FfmpegMediaPlatform
                                $"-i \"{filePath}\" " +
                                $"-fflags +genpts " +
                                $"-avoid_negative_ts make_zero " +
-                               $"-threads 1 " +
+                               $"-threads 4 " +
                                $"-an " +
                                // Let FFmpeg preserve original video timing instead of forcing frame rate
                                $"-vf \"vflip,transpose=2,transpose=2\" " +  // Flip vertically and rotate 180 degrees

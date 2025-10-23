@@ -514,8 +514,7 @@ namespace UI.Video
 
             // Settings that require restarting the ffmpeg stream to take effect
             bool needsStreamRestart = newChange.PropertyInfo.Name == "VideoMode" ||
-                                      newChange.PropertyInfo.Name == "Flipped" ||
-                                      newChange.PropertyInfo.Name == "Mirrored" ||
+                                      newChange.PropertyInfo.Name == "FlipMirrored" ||
                                       newChange.PropertyInfo.Name == "RecordVideoForReplays" ||
                                       newChange.PropertyInfo.Name == "DeviceName" ||
                                       newChange.PropertyInfo.Name == "HardwareDecodeAcceleration";
@@ -540,6 +539,10 @@ namespace UI.Video
                         {
                             VideoManager.Initialize(frameSource);
 
+                            // Reinitialize the mapper node with the new frame source
+                            // This ensures the preview uses the updated stream with new flip/mirror settings
+                            InitMapperNode(Selected);
+
                             // Update the UI mapper
                             if (mapperNode != null)
                             {
@@ -560,13 +563,17 @@ namespace UI.Video
                     RefreshVideoModes();
                 }
             }
-
-            if (newChange.PropertyInfo.Name == "Splits" && Selected != null)
+            else
             {
-                Selected.VideoBounds = mapperNode.CreateChannelBounds(Selected).ToArray();
-            }
+                // Only reinitialize the mapper node if we didn't restart the stream
+                // (for stream restarts, InitMapperNode is called in the callback above)
+                if (newChange.PropertyInfo.Name == "Splits" && Selected != null)
+                {
+                    Selected.VideoBounds = mapperNode.CreateChannelBounds(Selected).ToArray();
+                }
 
-            InitMapperNode(Selected);
+                InitMapperNode(Selected);
+            }
 
             base.ChildValueChanged(newChange);
         }

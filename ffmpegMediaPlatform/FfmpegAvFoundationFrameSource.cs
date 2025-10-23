@@ -130,7 +130,7 @@ namespace FfmpegMediaPlatform
                                 $"-fflags nobuffer " +
                                 $"-flags low_delay " +
                                 $"-strict experimental " +
-                                $"-threads 1 " +
+                                $"-threads 4 " +
                                 $"-fps_mode passthrough " +
                                 $"-copyts " +
                                 $"-an " +
@@ -154,7 +154,7 @@ namespace FfmpegMediaPlatform
                                 $"-flush_packets 1 " +
                                 $"-max_delay 0 " +
                                 $"-strict experimental " +
-                                $"-threads 1 " +
+                                $"-threads 4 " +
                                 $"-fps_mode passthrough " +
                                 $"-copyts " +
                                 $"-probesize 32 " +

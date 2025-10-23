@@ -25,11 +25,11 @@ namespace FfmpegMediaPlatform
         /// <summary>
         /// Configuration flag to disable HLS functionality.
         /// Set to false to disable HLS streaming while keeping RGBA live processing.
-        /// Default: true (HLS enabled)
-        /// 
-        /// Usage: FfmpegHlsLiveFrameSource.HlsEnabled = false;
+        /// Default: false (HLS disabled for lower latency)
+        ///
+        /// Usage: FfmpegHlsLiveFrameSource.HlsEnabled = true; // to enable
         /// </summary>
-        public static bool HlsEnabled { get; set; } = true;
+        public static bool HlsEnabled { get; set; } = false;
         
         private HttpListener httpServer;
         private Thread httpServerThread;
@@ -322,48 +322,71 @@ namespace FfmpegMediaPlatform
         protected override ProcessStartInfo GetProcessStartInfo()
         {
             string inputArgs = GetPlatformSpecificInputArgs();
-            
+
+            // Build video filter string for flip/mirror
+            // Note: Mac cameras are upside down by default, Windows cameras are right-side up
+            List<string> filters = new List<string>();
+
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            {
+                // macOS: Cameras are upside down by default, apply vflip when Flipped=false to show right-side up
+                if (!VideoConfig.Flipped)
+                    filters.Add("vflip");
+            }
+            else
+            {
+                // Windows: Cameras are right-side up by default, apply vflip when Flipped=true
+                if (VideoConfig.Flipped)
+                    filters.Add("vflip");
+            }
+
+            // Mirror is the same for both platforms
+            if (VideoConfig.Mirrored)
+                filters.Add("hflip");
+
+            string videoFilter = filters.Any() ? string.Join(",", filters) + "," : "";
+
             if (HlsEnabled)
             {
                 // HLS ENABLED: Dual output FFmpeg command
                 string hlsPath = Path.Combine(hlsOutputPath, "stream.m3u8");
-                
+
                 // Log paths for debugging
                 Tools.Logger.VideoLog.LogCall(this, $"HLS output directory: {hlsOutputPath}");
                 Tools.Logger.VideoLog.LogCall(this, $"HLS playlist path: {hlsPath}");
-                
+
                 // Dual output FFmpeg command:
-                // 1. Raw RGBA to pipe:1 for live processing  
+                // 1. Raw RGBA to pipe:1 for live processing
                 // 2. HLS stream for HTTP access and recording
-                
+
                 // Log individual components for debugging
                 Tools.Logger.VideoLog.LogCall(this, $"Input args: {inputArgs}");
                 Tools.Logger.VideoLog.LogCall(this, $"Video mode: {VideoConfig.VideoMode?.Width}x{VideoConfig.VideoMode?.Height}@{VideoConfig.VideoMode?.FrameRate}fps");
-                
+
                 // Get hardware-accelerated encoding settings
                 string encodingArgs = GetHardwareEncodingArgs();
-                
+
                 // Fix: Let camera provide frames at its natural rate, don't force frame rate conversion
                 float targetFrameRate = VideoConfig.VideoMode?.FrameRate ?? 30.0f;
                 int gop = Math.Max(1, (int)Math.Round(targetFrameRate * 0.1f)); // 0.1s GOP
-                
-                // No frame rate filtering needed - recording now handles 60fps correctly
+
+                // Apply flip/mirror filters to the input before split
                 string ffmpegArgs = $"{inputArgs} " +
                                    $"-fflags nobuffer " +
                                    $"-flags low_delay " +
                                    $"-strict experimental " +
-                                   $"-threads 1 " +
+                                   $"-threads 4 " +  // Increased for better 4K60 performance
                                    $"-fps_mode passthrough " +  // Use camera's natural frame rate
                                    $"-an " +
-                                   $"-filter_complex \"[0:v]split=2[out1][out2];[out1]format=rgba[outpipe];[out2]format=yuv420p[outfile]\" " +
+                                   $"-filter_complex \"[0:v]{videoFilter}split=2[out1][out2];[out1]format=rgba[outpipe];[out2]format=yuv420p[outfile]\" " +
                                    $"-map \"[outpipe]\" -f rawvideo pipe:1 " +  // RGBA output for live display
                                    $"-map \"[outfile]\" {encodingArgs} -g {gop} -keyint_min {gop} -force_key_frames \"expr:gte(t,n_forced*0.1)\" " +  // HLS output with tighter GOP
                                    $"-hls_time 0.5 -hls_list_size 3 -hls_flags delete_segments+independent_segments " +  // Ultra-low latency: 0.5s segments, only 3 segments
                                    $"-hls_segment_type mpegts " +  // Use MPEG-TS for better streaming
                                    $"-start_number 0 " +  // Start numbering from 0
                                    $"-f hls \"{hlsPath}\"";
-                
-                Tools.Logger.VideoLog.LogCall(this, $"LIVE STREAM DEBUG: Using passthrough mode, no frame filtering");
+
+                Tools.Logger.VideoLog.LogCall(this, $"HLS Live Stream with filters: {videoFilter}");
 
                 Tools.Logger.VideoLog.LogCall(this, $"Hardware Accelerated HLS FFmpeg Command:");
                 Tools.Logger.VideoLog.LogCall(this, ffmpegArgs);
@@ -375,20 +398,20 @@ namespace FfmpegMediaPlatform
                 Tools.Logger.VideoLog.LogCall(this, $"HLS is DISABLED - using single RGBA output only");
                 Tools.Logger.VideoLog.LogCall(this, $"Input args: {inputArgs}");
                 Tools.Logger.VideoLog.LogCall(this, $"Video mode: {VideoConfig.VideoMode?.Width}x{VideoConfig.VideoMode?.Height}@{VideoConfig.VideoMode?.FrameRate}fps");
-                
-                // Single output FFmpeg command - RGBA only
+
+                // Single output FFmpeg command - RGBA only with flip/mirror filters
                 string ffmpegArgs = $"{inputArgs} " +
                                    $"-fflags nobuffer " +
                                    $"-flags low_delay " +
                                    $"-strict experimental " +
-                                   $"-threads 1 " +
+                                   $"-threads 4 " +  // Increased for better 4K60 performance
                                    $"-fps_mode passthrough " +  // Use camera's natural frame rate
                                    $"-an " +
+                                   $"-vf \"{videoFilter}format=rgba\" " +  // Apply flip/mirror and format conversion
                                    $"-f rawvideo " +
-                                   $"-pix_fmt rgba " +
                                    $"pipe:1";  // RGBA output for live display only
-                
-                Tools.Logger.VideoLog.LogCall(this, $"RGBA-Only FFmpeg Command (HLS Disabled) HW Accel: {VideoConfig.HardwareDecodeAcceleration}:");
+
+                Tools.Logger.VideoLog.LogCall(this, $"RGBA-Only FFmpeg Command (HLS Disabled) with filters: {videoFilter} HW Accel: {VideoConfig.HardwareDecodeAcceleration}:");
                 Tools.Logger.VideoLog.LogCall(this, ffmpegArgs);
                 return ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
             }
@@ -457,7 +480,7 @@ namespace FfmpegMediaPlatform
                        $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                        $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
                        $"{formatArgs}" +
-                       $"-rtbufsize 10M " +
+                       $"-rtbufsize 100M " +  // Large buffer for 4K60 capture cards to prevent frame drops
                        $"-i video=\"{name}\"";
             }
             

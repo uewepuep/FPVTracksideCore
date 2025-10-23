@@ -230,9 +230,8 @@ namespace FfmpegMediaPlatform
             }
 
             // Build video filter string for flip/mirror
-            // Note: ffmpeg cameras are upside down by default, so apply vflip when Flipped=false to show right-side up
             List<string> filters = new List<string>();
-            if (!VideoConfig.Flipped)
+            if (VideoConfig.Flipped)
                 filters.Add("vflip");
             if (VideoConfig.Mirrored)
                 filters.Add("hflip");
@@ -253,7 +252,7 @@ namespace FfmpegMediaPlatform
                                 $"-fflags nobuffer " +
                                 $"-flags low_delay " +
                                 $"-strict experimental " +
-                                $"-threads 1 " +
+                                $"-threads 4 " +
                                 $"-fps_mode passthrough " +
                                 $"-copyts " +
                                 $"-an " +
@@ -315,7 +314,7 @@ namespace FfmpegMediaPlatform
                                 $"-flush_packets 1 " +
                                 $"-max_delay 0 " +
                                 $"-strict experimental " +
-                                $"-threads 1 " +
+                                $"-threads 4 " +
                                 $"-fps_mode passthrough " +
                                 $"-copyts " +
                                 $"-probesize 32 " +
