@@ -23,7 +23,7 @@ namespace ImageServer
 
     public static class VideoFrameWorks
     {
-        public static VideoFrameWork[] Available = new VideoFrameWork[0];
+        public static List<VideoFrameWork> Available = new List<VideoFrameWork>();
 
         public static VideoFrameWork GetFramework(FrameWork frameWork)
         {
