@@ -150,9 +150,22 @@ namespace FfmpegMediaPlatform
         {
             List<string> filters = new List<string>();
 
-            // For video files, only apply filters when explicitly requested (files should play as-is by default)
-            if (VideoConfig.Flipped)
-                filters.Add("vflip");
+            // Platform-specific flip handling
+            bool isMac = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX);
+
+            // For video files, apply filters based on platform
+            if (isMac)
+            {
+                // Mac: reversed flip logic (same as camera source)
+                if (!VideoConfig.Flipped)
+                    filters.Add("vflip");
+            }
+            else
+            {
+                // Windows: only apply filters when explicitly requested
+                if (VideoConfig.Flipped)
+                    filters.Add("vflip");
+            }
 
             if (VideoConfig.Mirrored)
                 filters.Add("hflip");
