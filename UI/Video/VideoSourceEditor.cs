@@ -99,21 +99,44 @@ namespace UI.Video
             MouseMenu mouseMenu = new MouseMenu(this);
             mouseMenu.TopToBottom = false;
 
-            VideoConfig[] vcs = VideoManager.GetAvailableVideoSources().OrderBy(vc => vc.DeviceName).ToArray();
+            VideoConfig[] vcs = VideoManager.GetAvailableVideoSources().OrderBy(vc => vc.DeviceName).Except(Objects).ToArray();
             foreach (VideoConfig source in vcs)
             {
-                if (!Objects.Any(r => r.Equals(source)))
+                string sourceAsString = source.ToString();
+                if (!string.IsNullOrWhiteSpace(sourceAsString))
                 {
-                    string sourceAsString = source.ToString();
-                    if (!string.IsNullOrWhiteSpace(sourceAsString))
+                    if (VideoManager.ValidDevice(source))
                     {
-                        if (VideoManager.ValidDevice(source))
+                        mouseMenu.AddItem(sourceAsString, () => { AddNew(source); });
+                    }
+                    else
+                    {
+                        mouseMenu.AddDisabledItem(sourceAsString);
+                    }
+                }
+            }
+
+            var grouped = vcs.GroupBy(o => o.FrameWork);
+
+            if (grouped.Any())
+            {
+                MouseMenu by = mouseMenu.AddSubmenu("By Framework");
+                foreach (var group in grouped)
+                {
+                    MouseMenu frameworkSubMenu = by.AddSubmenu(group.Key.ToString());
+                    foreach (VideoConfig source in group)
+                    {
+                        string sourceAsString = source.ToString();
+                        if (!string.IsNullOrWhiteSpace(sourceAsString))
                         {
-                            mouseMenu.AddItem(sourceAsString, () => { AddNew(source); });
-                        }
-                        else
-                        {
-                            mouseMenu.AddDisabledItem(sourceAsString);
+                            if (VideoManager.ValidDevice(source))
+                            {
+                                frameworkSubMenu.AddItem(sourceAsString, () => { AddNew(source); });
+                            }
+                            else
+                            {
+                                frameworkSubMenu.AddDisabledItem(sourceAsString);
+                            }
                         }
                     }
                 }
@@ -126,7 +149,7 @@ namespace UI.Video
 
         private void AddVideoFile()
         {
-            string filename = PlatformTools.OpenFileDialog("Open WMV / JPG", "Video or Image files|*.wmv;*.jpg");
+            string filename = PlatformTools.OpenFileDialog("Open Video / Image", "Video or Image files|*.wmv;*.mp4;*.mkv;*.jpg");
             if (!string.IsNullOrWhiteSpace(filename))
             {
                 VideoConfig vs = new VideoConfig();

@@ -41,6 +41,19 @@ namespace FfmpegMediaPlatform
         public event Action<string> RecordingStarted;
         public event Action<string, bool> RecordingStopped;
 
+        public override bool Connected
+        {
+            get 
+            {
+                if (liveFrameSource == null)
+                {
+                    return false;
+                }
+
+                return liveFrameSource.Connected;
+            }
+        }
+
         public FfmpegHlsCompositeFrameSource(FfmpegMediaFramework ffmpegMediaFramework, VideoConfig videoConfig, int httpPort = 8787)
             : base(videoConfig)
         {
