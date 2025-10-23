@@ -98,13 +98,6 @@ namespace Composition.Nodes
 
         public override void Layout(RectangleF parentBounds)
         {
-#if DEBUG
-            top?.SetColor(Color.Red);
-            bottom?.SetColor(Color.Green);
-            left?.SetColor(Color.Blue);
-            right?.SetColor(Color.Yellow);
-#endif
-
             NeedsLayout = false;
             BoundsF = CalculateRelativeBounds(parentBounds);
             RectangleF bounds = BoundsF;
@@ -162,17 +155,5 @@ namespace Composition.Nodes
             FixedSize = size;
             RequestLayout();
         }
-
-#if DEBUG
-        private Color color;
-        public void SetColor(Color color) { this.color = color; }
-
-        public override void Draw(Drawer id, float parentAlpha)
-        {
-            id.QuickDraw(Bounds, color);
-
-            base.Draw(id, parentAlpha);
-        }
-#endif
     }
 }

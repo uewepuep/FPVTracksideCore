@@ -43,6 +43,7 @@ namespace WindowsPlatform
 
     public class CompositionLayerForm : LayerStackForm
     {
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public CompositorLayer CompositorLayer { get; private set; }
 
         private Action<CompositorLayer> onInitialise;

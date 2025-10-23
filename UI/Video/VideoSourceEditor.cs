@@ -56,7 +56,7 @@ namespace UI.Video
             Profile = profile;
 
             centralDock.Top.SetFixedSize(400);
-            itemName.Remove();
+            itemName.Dispose();
 
             VideoManager = videoManager;
             VideoManager.OnStart += VideoManager_OnStart;
@@ -288,14 +288,8 @@ namespace UI.Video
 
             base.SetObjects(toEdit, addRemove, cancelButton);
 
-            // Set preview at the top of the right panel
-            preview.RelativeBounds = new RectangleF(0, 0, 1, 0.46f);
-
-            // Move objectProperties down to make room for preview
-            objectProperties.RelativeBounds = new RectangleF(0, preview.RelativeBounds.Bottom, 1, buttonContainer.RelativeBounds.Y - preview.RelativeBounds.Bottom);
-
-            // Position physicalLayoutContainer to the right of the preview
-            physicalLayoutContainer.RelativeBounds = new RectangleF(1.1f, preview.RelativeBounds.Y, 0.3f, preview.RelativeBounds.Height);
+            // Position physicalLayoutContainer to the right of the preview (outside the main area)
+            physicalLayoutContainer.RelativeBounds = new RectangleF(1.1f, 0, 0.3f, 1);
         }
 
         protected override void DoSetSelected(VideoConfig obj)
@@ -518,23 +512,68 @@ namespace UI.Video
                 CheckVisible(propertyNode, Selected);
             }
 
-            if (newChange.PropertyInfo.Name == "VideoMode" || newChange.PropertyInfo.Name == "Flipped" || newChange.PropertyInfo.Name == "RecordVideoForReplays" || newChange.PropertyInfo.Name == "DeviceName")
+            // Settings that require restarting the ffmpeg stream to take effect
+            bool needsStreamRestart = newChange.PropertyInfo.Name == "VideoMode" ||
+                                      newChange.PropertyInfo.Name == "FlipMirrored" ||
+                                      newChange.PropertyInfo.Name == "RecordVideoForReplays" ||
+                                      newChange.PropertyInfo.Name == "DeviceName" ||
+                                      newChange.PropertyInfo.Name == "HardwareDecodeAcceleration";
+
+            if (needsStreamRestart && Selected != null)
             {
-                RepairVideoPreview();
-                
+                // For flip/mirror/mode changes, we need to restart the ffmpeg process
+                // to apply the new filter settings
+                Tools.Logger.VideoLog.LogCall(this, $"Property '{newChange.PropertyInfo.Name}' changed - restarting stream for '{Selected.DeviceName}'");
+
+                // Stop and remove the existing frame source
+                VideoManager.RemoveFrameSource(Selected);
+
+                // Create a new frame source with updated settings
+                VideoManager.CreateFrameSource(new VideoConfig[] { Selected }, (frameSources) =>
+                {
+                    try
+                    {
+                        // Initialize the new frame source (get the first one since we only passed one config)
+                        var frameSource = frameSources.FirstOrDefault();
+                        if (frameSource != null)
+                        {
+                            VideoManager.Initialize(frameSource);
+
+                            // Reinitialize the mapper node with the new frame source
+                            // This ensures the preview uses the updated stream with new flip/mirror settings
+                            InitMapperNode(Selected);
+
+                            // Update the UI mapper
+                            if (mapperNode != null)
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"Stream restarted - updating UI for '{Selected.DeviceName}'");
+                                mapperNode.MakeTable();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"Error restarting stream for '{Selected.DeviceName}': {ex.Message}");
+                    }
+                });
+
                 // If DeviceName changed, also refresh available video modes for the new camera
                 if (newChange.PropertyInfo.Name == "DeviceName")
                 {
                     RefreshVideoModes();
                 }
             }
-
-            if (newChange.PropertyInfo.Name == "Splits" && Selected != null)
+            else
             {
-                Selected.VideoBounds = mapperNode.CreateChannelBounds(Selected).ToArray();
-            }
+                // Only reinitialize the mapper node if we didn't restart the stream
+                // (for stream restarts, InitMapperNode is called in the callback above)
+                if (newChange.PropertyInfo.Name == "Splits" && Selected != null)
+                {
+                    Selected.VideoBounds = mapperNode.CreateChannelBounds(Selected).ToArray();
+                }
 
-            InitMapperNode(Selected);
+                InitMapperNode(Selected);
+            }
 
             base.ChildValueChanged(newChange);
         }

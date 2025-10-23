@@ -241,7 +241,7 @@ namespace FfmpegMediaPlatform
                 foreach (string deviceLine in deviceList)
                 {
                     Tools.Logger.VideoLog.LogCall(this, $"FFMPEG OUTPUT: {deviceLine}");
-                    
+
                     string[] splits = deviceLine.Split("\"");
                     if (splits.Length != 3)
                     {
@@ -249,8 +249,9 @@ namespace FfmpegMediaPlatform
                     }
                     string name = splits[1];
                     // Remove trailing VID/PID if present (for both Windows and Mac cameras)
-                    string cleanedName = System.Text.RegularExpressions.Regex.Replace(name, @"\s*VID:[0-9A-Fa-f]+\s*PID:[0-9A-Fa-f]+", "").Trim();
-                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG ✓ FOUND CAMERA: {cleanedName}");
+                    // IMPORTANT: Don't trim the name - FFmpeg expects the exact name including any trailing/leading spaces
+                    string cleanedName = System.Text.RegularExpressions.Regex.Replace(name, @"\s*VID:[0-9A-Fa-f]+\s*PID:[0-9A-Fa-f]+", "");
+                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG ✓ FOUND CAMERA: '{cleanedName}' (length: {cleanedName.Length})");
                     yield return new VideoConfig { FrameWork = FrameWork.ffmpeg, DeviceName = cleanedName, ffmpegId = cleanedName };
                 }
             }
@@ -290,13 +291,14 @@ namespace FfmpegMediaPlatform
                             string deviceIndex = match.Groups[1].Value;
                             string rawName = match.Groups[2].Value;
                             // Remove trailing VID/PID if present (for mac cameras only)
-                            string cleanedName = System.Text.RegularExpressions.Regex.Replace(rawName, @"\s*VID:[0-9A-Fa-f]+\s*PID:[0-9A-Fa-f]+", "").Trim();
-                            Tools.Logger.VideoLog.LogCall(this, $"FFMPEG ✓ FOUND CAMERA: {cleanedName}");
+                            // IMPORTANT: Don't trim the name - FFmpeg expects the exact name including any trailing/leading spaces
+                            string cleanedName = System.Text.RegularExpressions.Regex.Replace(rawName, @"\s*VID:[0-9A-Fa-f]+\s*PID:[0-9A-Fa-f]+", "");
+                            Tools.Logger.VideoLog.LogCall(this, $"FFMPEG ✓ FOUND CAMERA: '{cleanedName}' (length: {cleanedName.Length})");
                             // For AVFoundation, use cleaned device name for FFmpeg (without VID:PID)
                             // On Mac, cameras are upside down by default, but we want UI to show "None"
-                            yield return new VideoConfig { 
-                                FrameWork = FrameWork.ffmpeg, 
-                                DeviceName = cleanedName, 
+                            yield return new VideoConfig {
+                                FrameWork = FrameWork.ffmpeg,
+                                DeviceName = cleanedName,
                                 ffmpegId = cleanedName,
                                 FlipMirrored = FlipMirroreds.None  // UI shows "None" but flip logic handles Mac cameras
                             };
