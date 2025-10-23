@@ -330,7 +330,7 @@ namespace FfmpegMediaPlatform
             if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
             {
                 // macOS: Cameras are upside down by default, apply vflip when Flipped=false to show right-side up
-                if (!VideoConfig.Flipped)
+                if (VideoConfig.Flipped)
                     filters.Add("vflip");
             }
             else

@@ -156,8 +156,8 @@ namespace FfmpegMediaPlatform
             // For video files, apply filters based on platform
             if (isMac)
             {
-                // Mac: reversed flip logic (same as camera source)
-                if (!VideoConfig.Flipped)
+                // Mac: apply vflip only when explicitly requested (same as Windows)
+                if (VideoConfig.Flipped)
                     filters.Add("vflip");
             }
             else
