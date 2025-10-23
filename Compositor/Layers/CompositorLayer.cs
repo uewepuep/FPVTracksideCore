@@ -61,7 +61,7 @@ namespace Composition.Layers
         {
             updateables = new List<IUpdateableNode>();
 
-            drawer = new Drawer(device);
+            drawer = new Drawer(device, new TextureCache(device, true));
             GraphicsDevice = device;
 
             needsRedraw = true;

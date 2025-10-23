@@ -11,7 +11,6 @@ namespace DB.JSON
     {
         private SplitJsonCollection<Event> collection;
 
-
         public EventCollection(DirectoryInfo dataDirectory)
         {
             collection = new SplitJsonCollection<Event>(dataDirectory);

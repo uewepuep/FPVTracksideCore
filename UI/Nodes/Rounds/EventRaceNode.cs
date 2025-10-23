@@ -126,8 +126,6 @@ namespace UI.Nodes.Rounds
                     time.Alpha = 0.5f;
                     heading.AddChild(time);
                 }
-
-                NeedsInit = false;
             }
         }
 
@@ -522,6 +520,7 @@ namespace UI.Nodes.Rounds
         {
             if (NeedsInit)
             {
+                NeedsInit = false;
                 Init();
             }
             base.Layout(parentBounds);

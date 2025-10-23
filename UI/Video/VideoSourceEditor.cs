@@ -91,6 +91,8 @@ namespace UI.Video
                 VideoManager = null;
             }
 
+            itemName?.Dispose();
+
             base.Dispose();
         }
 

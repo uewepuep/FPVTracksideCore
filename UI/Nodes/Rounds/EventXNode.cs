@@ -1,5 +1,6 @@
 ﻿using Composition;
 using Composition.Input;
+using Composition.Layers;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
@@ -290,30 +291,28 @@ namespace UI.Nodes.Rounds
 
         private void SheetFormat(SheetFormatManager.SheetFile sheet)
         {
-            Round newRound;
-
-            if (EventManager.RaceManager.GetRaces(Round).Any())
+            LoadingLayer ll = GetLayer<LoadingLayer>();
+            ll.WorkQueue.Enqueue("Loading format", () =>
             {
-                newRound = EventManager.RoundManager.GetCreateRound(Round.RoundNumber + 1, Round.EventType);
-            }
-            else
-            {
-                newRound = Round;
-            }
+                Stage stage = null;
+                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                {
+                    stage = new Stage();
+                    stage.ID = Guid.NewGuid();
+                    stage.Name = sheet.Name;
+                    stage.SheetFormatFilename = sheet.FileInfo.Name;
 
-            Stage stage = null;
-            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
-            {
-                stage = EventManager.RoundManager.GetCreateStage(db, newRound, false);
-                stage.Name = sheet.Name;
-                stage.SheetFormatFilename = sheet.FileInfo.Name;
+                    db.Insert(stage);
 
-                newRound.Stage = stage;
-                db.Update(newRound);
-                db.Update(stage);
-            }
-
-            EventManager.RoundManager.SheetFormatManager.LoadSheet(stage, GetOrderedPilots().ToArray(), true);
+                    bool empty = !EventManager.RaceManager.GetRaces(Round).Any();
+                    if (empty)
+                    {
+                        Round.Stage = stage;
+                        db.Update(Round);
+                    }
+                }
+                EventManager.RoundManager.SheetFormatManager.LoadSheet(stage, GetOrderedPilots().ToArray(), true);
+            });
         }
 
         protected void AddRace()
