@@ -125,6 +125,10 @@ namespace ImageServer
 
         public float ChannelCoveragePercent { get; set; }
 
+        [Category("Layout")]
+        [DisplayName("Maintain Aspect Ratio")]
+        public bool MaintainAspectRatio { get; set; }
+
         [DisplayName("Missing GMFBridge")]
         [Category("Video Recording")]
         public bool NeedsGMFBridge
@@ -212,6 +216,7 @@ namespace ImageServer
             Splits = Splits.SingleChannel;
             FilePath = null;
             ChannelCoveragePercent = 99f;
+            MaintainAspectRatio = false;
             VideoBounds = new VideoBounds[] { new VideoBounds() };
             Pauseable = true;
 
@@ -257,6 +262,7 @@ namespace ImageServer
             c.DirectShowPath = DirectShowPath;
             c.MediaFoundationPath = MediaFoundationPath;
             c.ChannelCoveragePercent = ChannelCoveragePercent;
+            c.MaintainAspectRatio = MaintainAspectRatio;
             c.DeviceName = DeviceName;
             c.FilePath = FilePath;
             c.VideoMode = VideoMode;

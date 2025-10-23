@@ -113,12 +113,24 @@ namespace UI.Video
             else
             {
                 Rectangle sourceBounds = Flip(SourceBounds);
+
+                // Calculate destination rectangle - maintain aspect ratio only if setting is enabled
+                Rectangle destinationBounds;
+                if (Source.VideoConfig.MaintainAspectRatio)
+                {
+                    destinationBounds = Maths.FitBoxMaintainAspectRatio(Bounds, sourceBounds, Alignment, FitType);
+                }
+                else
+                {
+                    destinationBounds = Bounds;
+                }
+
                 // Disable draw logging to reduce spam - only log on errors
                 // if (ProcessNumber % 1800 == 0)
                 // {
-                //     Tools.Logger.VideoLog.LogCall(this, $"Draw: Drawing texture {texture.Width}x{texture.Height}, sourceBounds={sourceBounds}, Bounds={Bounds}");
+                //     Tools.Logger.VideoLog.LogCall(this, $"Draw: Drawing texture {texture.Width}x{texture.Height}, sourceBounds={sourceBounds}, destinationBounds={destinationBounds}, Bounds={Bounds}");
                 // }
-                id.Draw(texture, sourceBounds, Bounds, Tint, alpha);
+                id.Draw(texture, sourceBounds, destinationBounds, Tint, alpha);
             }
             DebugTimer.DebugEndTime(this);
 
