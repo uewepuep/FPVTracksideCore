@@ -358,6 +358,9 @@ namespace UI
         {
             Instance = Read(profile);
             ProfileInstance = profile;
+
+            // Set IOTools.EventStorageLocation for macOS custom base directory support
+            Tools.IOTools.EventStorageLocation = Instance?.EventStorageLocation;
         }
 
         public static ApplicationProfileSettings Read(Profile profile)
@@ -389,6 +392,12 @@ namespace UI
         public static void Write(Profile profile, ApplicationProfileSettings profileSettings)
         {
             Tools.IOTools.Write(profile, filename, profileSettings);
+
+            // Update IOTools.EventStorageLocation when settings are written
+            if (profileSettings != null)
+            {
+                Tools.IOTools.EventStorageLocation = profileSettings.EventStorageLocation;
+            }
         }
     }
 }

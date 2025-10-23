@@ -15,6 +15,12 @@ namespace Tools
         public static DirectoryInfo WorkingDirectory { get; set; }
 
         /// <summary>
+        /// Optional: EventStorageLocation setting for macOS absolute path detection.
+        /// Set this from UI layer to enable custom base directory on macOS.
+        /// </summary>
+        public static string EventStorageLocation { get; set; }
+
+        /// <summary>
         /// Gets the base directory for user data.
         /// On macOS: If EventStorageLocation is an absolute path, uses its parent directory as base.
         ///           Otherwise uses WorkingDirectory (Application Support).
@@ -25,27 +31,16 @@ namespace Tools
             if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
             {
                 // On macOS, check if EventStorageLocation is set to an absolute path
-                try
+                if (!string.IsNullOrEmpty(EventStorageLocation) && Path.IsPathRooted(EventStorageLocation))
                 {
-                    var settings = UI.ApplicationProfileSettings.Instance;
-                    if (settings != null && !string.IsNullOrEmpty(settings.EventStorageLocation))
+                    // Absolute path - use its parent directory as base (or itself if it's already a base)
+                    DirectoryInfo dir = new DirectoryInfo(EventStorageLocation);
+                    // Go up to parent if this looks like it's the events folder itself
+                    if (dir.Name.ToLower() == "events")
                     {
-                        if (Path.IsPathRooted(settings.EventStorageLocation))
-                        {
-                            // Absolute path - use its parent directory as base (or itself if it's already a base)
-                            DirectoryInfo dir = new DirectoryInfo(settings.EventStorageLocation);
-                            // Go up to parent if this looks like it's the events folder itself
-                            if (dir.Name.ToLower() == "events")
-                            {
-                                return dir.Parent ?? WorkingDirectory;
-                            }
-                            return dir;
-                        }
+                        return dir.Parent ?? WorkingDirectory;
                     }
-                }
-                catch
-                {
-                    // If settings not available yet, fall back to WorkingDirectory
+                    return dir;
                 }
             }
 
