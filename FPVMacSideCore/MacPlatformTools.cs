@@ -66,8 +66,29 @@ namespace FPVMacsideCore
             Console.WriteLine("Mac Platform Start");
             Console.WriteLine("Working Dir " + Directory.GetCurrentDirectory());
 
+            // Use macOS Application Support directory for user data
+            // This persists even when the app is deleted from Applications
+            string appSupport = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            workingDirectory = new DirectoryInfo(Path.Combine(appSupport, "FPVTrackside"));
+
+            // Migrate data from old Documents location if it exists
             string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            workingDirectory = new DirectoryInfo(home + "/Documents/FPVTrackside");
+            DirectoryInfo oldLocation = new DirectoryInfo(Path.Combine(home, "Documents", "FPVTrackside"));
+
+            if (oldLocation.Exists && !WorkingDirectory.Exists)
+            {
+                Console.WriteLine("Migrating user data from Documents to Application Support...");
+                try
+                {
+                    WorkingDirectory.Create();
+                    IOTools.CopyDirectory(oldLocation, WorkingDirectory, IOTools.Overwrite.Never);
+                    Console.WriteLine("Migration completed successfully");
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Migration failed: {e.Message}");
+                }
+            }
 
             if (!WorkingDirectory.Exists)
             {
@@ -76,7 +97,7 @@ namespace FPVMacsideCore
 
             IOTools.WorkingDirectory = WorkingDirectory;
 
-            Console.WriteLine("Home " + workingDirectory.FullName);
+            Console.WriteLine("User Data Directory: " + workingDirectory.FullName);
 
 
             DirectoryInfo baseDirectory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);

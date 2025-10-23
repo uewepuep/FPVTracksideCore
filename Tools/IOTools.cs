@@ -14,6 +14,44 @@ namespace Tools
     {
         public static DirectoryInfo WorkingDirectory { get; set; }
 
+        /// <summary>
+        /// Gets the base directory for user data.
+        /// On macOS: If EventStorageLocation is an absolute path, uses its parent directory as base.
+        ///           Otherwise uses WorkingDirectory (Application Support).
+        /// On Windows: Always uses WorkingDirectory (current directory).
+        /// </summary>
+        public static DirectoryInfo GetBaseDirectory()
+        {
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            {
+                // On macOS, check if EventStorageLocation is set to an absolute path
+                try
+                {
+                    var settings = UI.ApplicationProfileSettings.Instance;
+                    if (settings != null && !string.IsNullOrEmpty(settings.EventStorageLocation))
+                    {
+                        if (Path.IsPathRooted(settings.EventStorageLocation))
+                        {
+                            // Absolute path - use its parent directory as base (or itself if it's already a base)
+                            DirectoryInfo dir = new DirectoryInfo(settings.EventStorageLocation);
+                            // Go up to parent if this looks like it's the events folder itself
+                            if (dir.Name.ToLower() == "events")
+                            {
+                                return dir.Parent ?? WorkingDirectory;
+                            }
+                            return dir;
+                        }
+                    }
+                }
+                catch
+                {
+                    // If settings not available yet, fall back to WorkingDirectory
+                }
+            }
+
+            return WorkingDirectory;
+        }
+
         public static T[] Read<T>(Profile profile, string filename) where T : new()
         {
             return Read<T>(profile.GetPath(), filename, null);
@@ -26,7 +64,8 @@ namespace Tools
 
         public static T[] Read<T>(string directory, string filename, IEnumerable<KeyValuePair<string, string>> replacements) where T : new()
         {
-            FileInfo file = new FileInfo(Path.Combine(WorkingDirectory.FullName, directory, filename));
+            // Use GetBaseDirectory() to respect custom EventStorageLocation on macOS
+            FileInfo file = new FileInfo(Path.Combine(GetBaseDirectory().FullName, directory, filename));
 
             bool deleteAfterReading = false;
 
@@ -108,7 +147,8 @@ namespace Tools
 
         public static void Write<T>(string directory, string filename, params T[] items) where T : new()
         {
-            FileInfo file = new FileInfo(Path.Combine(WorkingDirectory.FullName, directory, filename));
+            // Use GetBaseDirectory() to respect custom EventStorageLocation on macOS
+            FileInfo file = new FileInfo(Path.Combine(GetBaseDirectory().FullName, directory, filename));
 
             if (!file.Directory.Exists)
             {

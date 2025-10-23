@@ -41,7 +41,12 @@ namespace UI.Video
 
         public static VideoSourceEditor GetVideoSourceEditor(EventManager em, Profile profile)
         {
-            VideoManager videoManager = new VideoManager(ApplicationProfileSettings.Instance.EventStorageLocation, profile);
+            // On macOS, use WorkingDirectory (Application Support). On Windows, use EventStorageLocation as-is.
+            string eventStoragePath = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX)
+                ? Path.Combine(IOTools.WorkingDirectory.FullName, ApplicationProfileSettings.Instance.EventStorageLocation)
+                : ApplicationProfileSettings.Instance.EventStorageLocation;
+
+            VideoManager videoManager = new VideoManager(eventStoragePath, profile);
 
             videoManager.LoadDevices();
             videoManager.MaintainConnections = true;

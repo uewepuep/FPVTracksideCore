@@ -98,7 +98,12 @@ namespace UI
                 Logger.UI.LogException(this, ex);
             }
 
-            DirectoryInfo eventDirectory = new DirectoryInfo(Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocation, eventManager.Event.ID.ToString()));
+            // On macOS, use WorkingDirectory (Application Support). On Windows, use EventStorageLocation as-is (relative to current directory).
+            string eventDirectoryPath = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX)
+                ? Path.Combine(platformTools.WorkingDirectory.FullName, ApplicationProfileSettings.Instance.EventStorageLocation, eventManager.Event.ID.ToString())
+                : Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocation, eventManager.Event.ID.ToString());
+
+            DirectoryInfo eventDirectory = new DirectoryInfo(eventDirectoryPath);
 
 
             workQueueStartStopRace = new WorkQueue("Event Layer - Start Stop Race");

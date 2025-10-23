@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using UI;
 using RaceLib;
+using System.IO;
 
 namespace FPVMacsideCore
 {
@@ -55,7 +56,7 @@ namespace FPVMacsideCore
         protected override void LoadContent()
         {
             Theme.Initialise(GraphicsDevice, PlatformTools.WorkingDirectory, "Dark");
-            DirectoryInfo eventDir = new DirectoryInfo(ApplicationProfileSettings.Instance.EventStorageLocation);
+            DirectoryInfo eventDir = new DirectoryInfo(Path.Combine(PlatformTools.WorkingDirectory.FullName, ApplicationProfileSettings.Instance.EventStorageLocation));
             DatabaseFactory.Init(new DB.DatabaseFactory(Data, eventDir));
 
 

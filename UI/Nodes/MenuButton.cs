@@ -302,29 +302,43 @@ namespace UI.Nodes
             {
                 openDirectory.AddItem("Open Event Data Directory", () =>
                 {
-                    string eventPath = Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocation, eventManager.EventId.ToString());
+                    // On macOS, use WorkingDirectory (Application Support). On Windows, use EventStorageLocation as-is.
+                    string eventPath = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX)
+                        ? Path.Combine(PlatformTools.WorkingDirectory.FullName, ApplicationProfileSettings.Instance.EventStorageLocation, eventManager.EventId.ToString())
+                        : Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocation, eventManager.EventId.ToString());
                     PlatformTools.OpenFileManager(eventPath);
                 });
             }
 
             openDirectory.AddItem("Open Events Directory", () =>
             {
-                PlatformTools.OpenFileManager(ApplicationProfileSettings.Instance.EventStorageLocation);
+                // On macOS, use WorkingDirectory (Application Support). On Windows, use EventStorageLocation as-is.
+                string eventsPath = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX)
+                    ? Path.Combine(PlatformTools.WorkingDirectory.FullName, ApplicationProfileSettings.Instance.EventStorageLocation)
+                    : ApplicationProfileSettings.Instance.EventStorageLocation;
+                PlatformTools.OpenFileManager(eventsPath);
             });
 
             openDirectory.AddItem("Open Pilot Profile Image Directory", () =>
             {
-                PlatformTools.OpenFileManager(Path.Combine(PlatformTools.WorkingDirectory.FullName, "pilots"));
+                // On macOS: uses Application Support, or custom absolute path if EventStorageLocation is absolute
+                // On Windows: uses current directory
+                string pilotsPath = Path.Combine(IOTools.GetBaseDirectory().FullName, "pilots");
+                PlatformTools.OpenFileManager(pilotsPath);
             });
 
             openDirectory.AddItem("Open Tracks Directory", () =>
             {
-                PlatformTools.OpenFileManager(Path.Combine(PlatformTools.WorkingDirectory.FullName, "Tracks"));
+                // On macOS: uses Application Support, or custom absolute path if EventStorageLocation is absolute
+                // On Windows: uses current directory
+                string tracksPath = Path.Combine(IOTools.GetBaseDirectory().FullName, "Tracks");
+                PlatformTools.OpenFileManager(tracksPath);
             });
 
             openDirectory.AddItem("Open FPVTrackside Directory", () =>
             {
-                PlatformTools.OpenFileManager(PlatformTools.WorkingDirectory.FullName);
+                // Opens the base directory (Application Support on macOS, or custom location if set)
+                PlatformTools.OpenFileManager(IOTools.GetBaseDirectory().FullName);
             });
 
             AddMenus(root);

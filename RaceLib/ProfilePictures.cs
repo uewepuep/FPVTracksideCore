@@ -22,7 +22,9 @@ namespace RaceLib
 
         public IEnumerable<FileInfo> GetPilotProfileMedia()
         {
-            DirectoryInfo pilotProfileDirectory = new DirectoryInfo("pilots");
+            // On macOS: uses Application Support, or custom absolute path if EventStorageLocation is absolute
+            // On Windows: uses current directory
+            DirectoryInfo pilotProfileDirectory = new DirectoryInfo(Path.Combine(IOTools.GetBaseDirectory().FullName, "pilots"));
 
             if (!pilotProfileDirectory.Exists) {
                 pilotProfileDirectory.Create();
@@ -47,7 +49,9 @@ namespace RaceLib
 
         public void FindProfilePictures(Pilot[] pilots)
         {
-            string currentDirectory = Directory.GetCurrentDirectory();
+            // On macOS: uses Application Support, or custom absolute path if EventStorageLocation is absolute
+            // On Windows: uses current directory
+            string currentDirectory = IOTools.GetBaseDirectory().FullName;
 
             List<string> listOfExt = extensions.ToList();
 
