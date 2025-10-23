@@ -132,24 +132,21 @@ namespace UI.Video
 
         public Rectangle Flip(Rectangle src)
         {
+            // FFmpeg sources now handle flip/mirror in the video filter chain for better performance
+            // So we skip the code-side flip/mirror for ffmpeg sources
+            bool isFfmpegSource = Source.VideoConfig.FrameWork == FrameWork.ffmpeg;
+
+            if (isFfmpegSource)
+            {
+                // FFmpeg already applied vflip/hflip filters - return source unchanged
+                return src;
+            }
+
+            // For non-ffmpeg sources, apply flip/mirror in code as before
             bool flipped = Source.Direction == FrameSource.Directions.TopDown;
 
-            // Special handling for ffmpeg cameras (Mac AVFoundation and Windows DirectShow) - they are upside down by default
-            bool isFfmpegCamera = Source.VideoConfig.FrameWork == FrameWork.ffmpeg;
-            
-            if (isFfmpegCamera)
-            {
-                // For ffmpeg cameras (Mac/Windows): "None" should show right-side up (so flip), "Flipped" should show upside down (so don't flip) 
-                if (!Source.VideoConfig.Flipped)
-                    flipped = !flipped;  // When UI shows "None", flip to make it right-side up
-                // When UI shows "Flipped", don't change flipped state (stays upside down)
-            }
-            else
-            {
-                // Original logic for non-ffmpeg cameras
-                if (Source.VideoConfig.Flipped)
-                    flipped = !flipped;
-            }
+            if (Source.VideoConfig.Flipped)
+                flipped = !flipped;
 
             if (flipped)
                 src = src.Flip(texture.Height);
@@ -197,26 +194,25 @@ namespace UI.Video
 
         public void SaveImage(string filename)
         {
-            bool flipped = Source.Direction == FrameSource.Directions.TopDown;
+            // FFmpeg sources now handle flip/mirror in the video filter chain
+            // So the texture is already in the correct orientation for ffmpeg sources
+            bool isFfmpegSource = Source.VideoConfig.FrameWork == FrameWork.ffmpeg;
 
-            // Special handling for ffmpeg cameras (Mac AVFoundation and Windows DirectShow) - they are upside down by default
-            bool isFfmpegCamera = Source.VideoConfig.FrameWork == FrameWork.ffmpeg;
-            
-            if (isFfmpegCamera)
+            if (isFfmpegSource)
             {
-                // For ffmpeg cameras (Mac/Windows): "None" should show right-side up (so flip), "Flipped" should show upside down (so don't flip) 
-                if (!Source.VideoConfig.Flipped)
-                    flipped = !flipped;  // When UI shows "None", flip to make it right-side up
-                // When UI shows "Flipped", don't change flipped state (stays upside down)
+                // FFmpeg already applied vflip/hflip - save texture as-is
+                texture.SaveAs(filename, false, false);
             }
             else
             {
-                // Original logic for non-ffmpeg cameras
+                // For non-ffmpeg sources, apply flip/mirror during save
+                bool flipped = Source.Direction == FrameSource.Directions.TopDown;
+
                 if (Source.VideoConfig.Flipped)
                     flipped = !flipped;
-            }
 
-            texture.SaveAs(filename, Source.VideoConfig.Mirrored, flipped);
+                texture.SaveAs(filename, Source.VideoConfig.Mirrored, flipped);
+            }
         }
     }
 }

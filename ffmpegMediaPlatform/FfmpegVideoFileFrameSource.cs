@@ -145,6 +145,21 @@ namespace FfmpegMediaPlatform
             LoadFrameTimesFromRecordInfo();
         }
 
+        // Helper method to build video filter string based on VideoConfig settings
+        private string BuildVideoFilter()
+        {
+            List<string> filters = new List<string>();
+
+            // For video files, apply vflip by default when Flipped=false (same logic as live cameras)
+            if (!VideoConfig.Flipped)
+                filters.Add("vflip");
+
+            if (VideoConfig.Mirrored)
+                filters.Add("hflip");
+
+            return filters.Any() ? string.Join(",", filters) : "";
+        }
+
         protected override ProcessStartInfo GetProcessStartInfo()
         {
             // If we have seek args, use them instead of generating normal args
@@ -177,9 +192,9 @@ namespace FfmpegMediaPlatform
 
             // Build FFmpeg command for video file playback with interactive seeking support
             // Use proper settings for smooth video file playback
-            
-            // Build video filter chain based on playback speed
-            string videoFilter = "vflip"; // Base filter to flip video vertically
+
+            // Build video filter chain based on VideoConfig settings
+            string videoFilter = BuildVideoFilter();
             string reFlag = "-re"; // Default: use -re for proper timing
             
             string ffmpegArgs = $"{(string.IsNullOrEmpty(reFlag) ? "" : reFlag + " ")}" +  // Read input at native frame rate (only for normal speed)
@@ -188,7 +203,7 @@ namespace FfmpegMediaPlatform
                                $"-avoid_negative_ts make_zero " +  // Handle negative timestamps
                                $"-threads 1 " +
                                $"-an " +  // No audio
-                               $"-vf \"{videoFilter}\" " +  // Apply video filters (vflip)
+                               $"{(string.IsNullOrEmpty(videoFilter) ? "" : $"-vf \"{videoFilter}\" ")}" +  // Apply video filters if any
                                $"-pix_fmt rgba " +
                                $"-f rawvideo pipe:1";
 
@@ -1174,10 +1189,10 @@ namespace FfmpegMediaPlatform
                 // Put -ss BEFORE -i for efficient input seeking (avoids decoding unnecessary frames)
                 // Input options (-ss, -re) must come before -i, output options come after
                 
-                // Build video filter chain based on playback speed (same as GetProcessStartInfo)
-                string videoFilter = "vflip"; // Base filter to flip video vertically
+                // Build video filter chain based on VideoConfig settings (same as GetProcessStartInfo)
+                string videoFilter = BuildVideoFilter();
                 string reFlag = "-re"; // Default: use -re for proper timing
-                
+
                 string ffmpegArgs = $"-ss {seekTime.TotalSeconds:F3} " +  // Seek to specific time (BEFORE input for fast seek)
                                    $"{(string.IsNullOrEmpty(reFlag) ? "" : reFlag + " ")}" +  // Read input at native frame rate (only for normal speed)
                                    $"-i \"{filePath}\" " +  // Input file
@@ -1185,7 +1200,7 @@ namespace FfmpegMediaPlatform
                                    $"-avoid_negative_ts make_zero " +  // Handle negative timestamps (output option)
                                    $"-threads 1 " +  // Single thread (output option)
                                    $"-an " +  // No audio (output option)
-                                   $"-vf \"{videoFilter}\" " +  // Apply video filters (vflip)
+                                   $"{(string.IsNullOrEmpty(videoFilter) ? "" : $"-vf \"{videoFilter}\" ")}" +  // Apply video filters if any
                                    $"-pix_fmt rgba " +  // RGBA pixel format (output option)
                                    $"-f rawvideo pipe:1";  // Raw video output to stdout (output option)
 

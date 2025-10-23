@@ -212,7 +212,7 @@ namespace FfmpegMediaPlatform
             string name = VideoConfig.ffmpegId;
             string format = VideoConfig.VideoMode.Format;
             string ffmpegArgs;
-            
+
             // Build format-specific input arguments
             string inputFormatArgs = "";
             if (!string.IsNullOrEmpty(format))
@@ -222,17 +222,27 @@ namespace FfmpegMediaPlatform
                 {
                     inputFormatArgs = $"-vcodec {format} ";
                 }
-                // For pixel formats like yuyv422, use pixel_format parameter  
+                // For pixel formats like yuyv422, use pixel_format parameter
                 else if (format != "uyvy422") // uyvy422 is the default, don't specify explicitly
                 {
                     inputFormatArgs = $"-pixel_format {format} ";
                 }
             }
-            
+
+            // Build video filter string for flip/mirror
+            // Note: ffmpeg cameras are upside down by default, so apply vflip when Flipped=false to show right-side up
+            List<string> filters = new List<string>();
+            if (!VideoConfig.Flipped)
+                filters.Add("vflip");
+            if (VideoConfig.Mirrored)
+                filters.Add("hflip");
+
+            string videoFilter = filters.Any() ? string.Join(",", filters) + "," : "";
+
             if (Recording && !string.IsNullOrEmpty(recordingFilename))
             {
                 string recordingPath = Path.GetFullPath(recordingFilename);
-                
+
                 // Use hardware-accelerated H.264 encoding for Windows (try NVENC first, fallback to software)
                 ffmpegArgs = $"-f dshow " +
                                 $"-rtbufsize 2048M " +
@@ -247,33 +257,56 @@ namespace FfmpegMediaPlatform
                                 $"-fps_mode passthrough " +
                                 $"-copyts " +
                                 $"-an " +
-                                $"-filter_complex \"split=2[out1][out2];[out1]format=rgba[outpipe];[out2]format=yuv420p[outfile]\" " +
+                                $"-filter_complex \"[0:v]{videoFilter}split=2[out1][out2];[out1]format=rgba[outpipe];[out2]format=yuv420p[outfile]\" " +
                                 $"-map \"[outpipe]\" -f rawvideo pipe:1 " +
                                 $"-map \"[outfile]\" -c:v h264_nvenc -preset llhp -tune zerolatency -b:v 5M -f matroska -avoid_negative_ts make_zero \"{recordingPath}\"";
-                
-                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Windows Recording Mode ({format}): {ffmpegArgs}");
+
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Windows Recording Mode ({format}, filters: {videoFilter}): {ffmpegArgs}");
             }
             else
             {
                 // Live mode: Use hardware decode acceleration when available (only for compressed formats)
                 string hwaccelArgs = "";
+                string decoderCodec = "";
+
                 if (VideoConfig.HardwareDecodeAcceleration && VideoConfig.IsCompressedVideoFormat)
                 {
-                    // Try NVDEC first (NVIDIA), then DXVA2/D3D11VA (Intel/AMD), fallback to software
-                    hwaccelArgs = "-hwaccel cuda ";
-                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode acceleration enabled for {VideoConfig.VideoMode?.Format} - trying NVDEC/CUDA");
+                    // For H264/MJPEG from capture cards, use CUVID decoder for NVIDIA GPUs
+                    // This provides better performance than generic hwaccel for compressed streams
+                    if (format == "h264")
+                    {
+                        decoderCodec = "-c:v h264_cuvid ";
+                        hwaccelArgs = "-hwaccel cuda -hwaccel_output_format cuda ";
+                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode: Using h264_cuvid decoder for H264 capture card");
+                    }
+                    else if (format == "mjpeg")
+                    {
+                        decoderCodec = "-c:v mjpeg_cuvid ";
+                        hwaccelArgs = "-hwaccel cuda -hwaccel_output_format cuda ";
+                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode: Using mjpeg_cuvid decoder for MJPEG capture card");
+                    }
+                    else
+                    {
+                        // Fallback to generic hardware acceleration for other formats
+                        hwaccelArgs = "-hwaccel cuda ";
+                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode: Using generic CUDA hwaccel for {format}");
+                    }
                 }
                 else if (VideoConfig.HardwareDecodeAcceleration && !VideoConfig.IsCompressedVideoFormat)
                 {
                     Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode acceleration skipped for uncompressed format: {VideoConfig.VideoMode?.Format}");
                 }
-                
+
                 // PERFORMANCE: Enhanced low-delay flags for 4K video to reduce 1-second startup delay
+                // Note: When using CUVID decoder, filters must handle CUDA frames or upload/download from GPU
+                string filterPrefix = (hwaccelArgs.Contains("cuda") && decoderCodec != "") ? "hwdownload,format=nv12," : "";
+
                 ffmpegArgs = $"-f dshow " +
                                 $"{hwaccelArgs}" +
                                 $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                                 $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
                                 $"{inputFormatArgs}" +
+                                $"{decoderCodec}" +
                                 $"-rtbufsize 2M " +
                                 $"-i video=\"{name}\" " +
                                 $"-fflags nobuffer+fastseek+flush_packets " +
@@ -288,10 +321,10 @@ namespace FfmpegMediaPlatform
                                 $"-probesize 32 " +
                                 $"-analyzeduration 0 " +
                                 $"-an " +
-                                $"-filter_complex \"split=2[out1][out2];[out1]format=rgba[outpipe];[out2]null[outnull]\" " +
+                                $"-filter_complex \"[0:v]{filterPrefix}{videoFilter}split=2[out1][out2];[out1]format=rgba[outpipe];[out2]null[outnull]\" " +
                                 $"-map \"[outpipe]\" -f rawvideo pipe:1";
-                
-                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Windows Live Mode ({format}) HW Accel: {VideoConfig.HardwareDecodeAcceleration}: {ffmpegArgs}");
+
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Windows Live Mode ({format}, filters: {videoFilter}) HW Accel: {VideoConfig.HardwareDecodeAcceleration}: {ffmpegArgs}");
             }
             return ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
         }

@@ -107,11 +107,21 @@ namespace FfmpegMediaPlatform
         {
             string name = VideoConfig.ffmpegId;
             string ffmpegArgs;
-            
+
+            // Build video filter string for flip/mirror
+            // Note: ffmpeg cameras are upside down by default, so apply vflip when Flipped=false to show right-side up
+            List<string> filters = new List<string>();
+            if (!VideoConfig.Flipped)
+                filters.Add("vflip");
+            if (VideoConfig.Mirrored)
+                filters.Add("hflip");
+
+            string videoFilter = filters.Any() ? string.Join(",", filters) + "," : "";
+
             if (Recording && !string.IsNullOrEmpty(recordingFilename))
             {
                 string recordingPath = Path.GetFullPath(recordingFilename);
-                
+
                 // Use hardware-accelerated H.264 encoding for recording - let camera use its natural framerate
                 ffmpegArgs = $"-f avfoundation " +
                                 $"-pixel_format uyvy422 " +
@@ -124,11 +134,11 @@ namespace FfmpegMediaPlatform
                                 $"-fps_mode passthrough " +
                                 $"-copyts " +
                                 $"-an " +
-                                $"-filter_complex \"split=2[out1][out2];[out1]format=rgba[outpipe];[out2]format=yuv420p[outfile]\" " +
+                                $"-filter_complex \"[0:v]{videoFilter}split=2[out1][out2];[out1]format=rgba[outpipe];[out2]format=yuv420p[outfile]\" " +
                                 $"-map \"[outpipe]\" -f rawvideo pipe:1 " +
                                 $"-map \"[outfile]\" -c:v h264_videotoolbox -preset ultrafast -tune zerolatency -b:v 5M -f matroska -avoid_negative_ts make_zero \"{recordingPath}\"";
-                
-                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG macOS Recording Mode: {ffmpegArgs}");
+
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG macOS Recording Mode (filters: {videoFilter}): {ffmpegArgs}");
             }
             else
             {
@@ -150,10 +160,10 @@ namespace FfmpegMediaPlatform
                                 $"-probesize 32 " +
                                 $"-analyzeduration 0 " +
                                 $"-an " +
-                                $"-filter_complex \"split=2[out1][out2];[out1]format=rgba[outpipe];[out2]null[outnull]\" " +
+                                $"-filter_complex \"[0:v]{videoFilter}split=2[out1][out2];[out1]format=rgba[outpipe];[out2]null[outnull]\" " +
                                 $"-map \"[outpipe]\" -f rawvideo pipe:1";
-                
-                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG macOS Live Mode (dual stream): {ffmpegArgs}");
+
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG macOS Live Mode (filters: {videoFilter}): {ffmpegArgs}");
             }
             return ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
         }

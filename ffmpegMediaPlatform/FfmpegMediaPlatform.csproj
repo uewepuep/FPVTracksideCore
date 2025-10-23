@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <!-- Native FFmpeg libraries for Windows -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0-windows' OR '$(TargetFramework)' == 'net60-windows'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-windows' OR '$(TargetFramework)' == 'net6.0-windows' OR '$(TargetFramework)' == 'net60-windows'">
     <!-- Always copy Windows libraries when building for Windows target framework -->
     <None Include="ffmpeg-libs\windows\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
