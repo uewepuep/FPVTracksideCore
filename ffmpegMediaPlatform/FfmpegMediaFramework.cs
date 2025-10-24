@@ -102,6 +102,23 @@ namespace FfmpegMediaPlatform
                 }
                 else
                 {
+                    // Stupid github wont allow > 100mb file, so it's zipped.
+                    string localZipFile = "ffmpeg.zip";
+                    try
+                    {
+                        if (File.Exists(localZipFile))
+                        {
+                            Console.WriteLine($"Decompressing {localZipFile}");
+                            System.IO.Compression.ZipFile.ExtractToDirectory(localZipFile, ".");
+                            File.Delete(localZipFile);
+                        }
+                    }
+                    catch (Exception ex) 
+                    {
+                        Console.WriteLine($"Failed to Decompress {localZipFile} {ex.Message}");
+                    }
+
+
                     // Fallback to looking for ffmpeg in current directory or PATH
                     execName = "ffmpeg";
 
