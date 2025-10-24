@@ -98,10 +98,24 @@ namespace UI
                 Logger.UI.LogException(this, ex);
             }
 
-            // On macOS, use WorkingDirectory (Application Support). On Windows, use EventStorageLocation as-is (relative to current directory).
-            string eventDirectoryPath = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX)
-                ? Path.Combine(platformTools.WorkingDirectory.FullName, ApplicationProfileSettings.Instance.EventStorageLocation, eventManager.Event.ID.ToString())
-                : Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocation, eventManager.Event.ID.ToString());
+            // On macOS: EventStorageLocation is the base directory, events go in /events/ subdirectory
+            // On Windows: EventStorageLocation is the events directory itself
+            string eventDirectoryPath;
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            {
+                eventDirectoryPath = Path.Combine(
+                    ApplicationProfileSettings.Instance.EventStorageLocationExpanded,
+                    "events",
+                    eventManager.Event.ID.ToString()
+                );
+            }
+            else
+            {
+                eventDirectoryPath = Path.Combine(
+                    ApplicationProfileSettings.Instance.EventStorageLocationExpanded,
+                    eventManager.Event.ID.ToString()
+                );
+            }
 
             DirectoryInfo eventDirectory = new DirectoryInfo(eventDirectoryPath);
 

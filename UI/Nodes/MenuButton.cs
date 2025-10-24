@@ -302,20 +302,34 @@ namespace UI.Nodes
             {
                 openDirectory.AddItem("Open Event Data Directory", () =>
                 {
-                    // On macOS, use WorkingDirectory (Application Support). On Windows, use EventStorageLocation as-is.
-                    string eventPath = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX)
-                        ? Path.Combine(PlatformTools.WorkingDirectory.FullName, ApplicationProfileSettings.Instance.EventStorageLocation, eventManager.EventId.ToString())
-                        : Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocation, eventManager.EventId.ToString());
+                    // On macOS: EventStorageLocation is base directory, events go in /events/ subdirectory
+                    // On Windows: EventStorageLocation is the events directory itself
+                    string eventPath;
+                    if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+                    {
+                        eventPath = Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocationExpanded, "events", eventManager.EventId.ToString());
+                    }
+                    else
+                    {
+                        eventPath = Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocationExpanded, eventManager.EventId.ToString());
+                    }
                     PlatformTools.OpenFileManager(eventPath);
                 });
             }
 
             openDirectory.AddItem("Open Events Directory", () =>
             {
-                // On macOS, use WorkingDirectory (Application Support). On Windows, use EventStorageLocation as-is.
-                string eventsPath = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX)
-                    ? Path.Combine(PlatformTools.WorkingDirectory.FullName, ApplicationProfileSettings.Instance.EventStorageLocation)
-                    : ApplicationProfileSettings.Instance.EventStorageLocation;
+                // On macOS: EventStorageLocation is base directory, events go in /events/ subdirectory
+                // On Windows: EventStorageLocation is the events directory itself
+                string eventsPath;
+                if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+                {
+                    eventsPath = Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocationExpanded, "events");
+                }
+                else
+                {
+                    eventsPath = ApplicationProfileSettings.Instance.EventStorageLocationExpanded;
+                }
                 PlatformTools.OpenFileManager(eventsPath);
             });
 

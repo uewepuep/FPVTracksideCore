@@ -22,7 +22,8 @@ namespace Tools
 
         /// <summary>
         /// Gets the base directory for user data.
-        /// On macOS: If EventStorageLocation is an absolute path, uses its parent directory as base.
+        /// On macOS: If EventStorageLocation is an absolute path, uses it as base directory.
+        ///           If path ends with /events/, strips that off since it's just the subfolder.
         ///           Otherwise uses WorkingDirectory (Application Support).
         /// On Windows: Always uses WorkingDirectory (current directory).
         /// </summary>
@@ -33,13 +34,16 @@ namespace Tools
                 // On macOS, check if EventStorageLocation is set to an absolute path
                 if (!string.IsNullOrEmpty(EventStorageLocation) && Path.IsPathRooted(EventStorageLocation))
                 {
-                    // Absolute path - use its parent directory as base (or itself if it's already a base)
+                    // Absolute path - use it as base directory
                     DirectoryInfo dir = new DirectoryInfo(EventStorageLocation);
-                    // Go up to parent if this looks like it's the events folder itself
-                    if (dir.Name.ToLower() == "events")
+
+                    // If user manually added "/events/" to the end, strip it off
+                    // since on macOS this setting controls the base directory for ALL data
+                    if (dir.Name.ToLower() == "events" && dir.Parent != null)
                     {
-                        return dir.Parent ?? WorkingDirectory;
+                        return dir.Parent;
                     }
+
                     return dir;
                 }
             }

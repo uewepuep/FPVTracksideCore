@@ -71,25 +71,6 @@ namespace FPVMacsideCore
             string appSupport = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             workingDirectory = new DirectoryInfo(Path.Combine(appSupport, "FPVTrackside"));
 
-            // Migrate data from old Documents location if it exists
-            string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            DirectoryInfo oldLocation = new DirectoryInfo(Path.Combine(home, "Documents", "FPVTrackside"));
-
-            if (oldLocation.Exists && !WorkingDirectory.Exists)
-            {
-                Console.WriteLine("Migrating user data from Documents to Application Support...");
-                try
-                {
-                    WorkingDirectory.Create();
-                    IOTools.CopyDirectory(oldLocation, WorkingDirectory, IOTools.Overwrite.Never);
-                    Console.WriteLine("Migration completed successfully");
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine($"Migration failed: {e.Message}");
-                }
-            }
-
             if (!WorkingDirectory.Exists)
             {
                 WorkingDirectory.Create();

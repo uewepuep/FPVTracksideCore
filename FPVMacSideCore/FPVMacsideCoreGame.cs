@@ -56,7 +56,8 @@ namespace FPVMacsideCore
         protected override void LoadContent()
         {
             Theme.Initialise(GraphicsDevice, PlatformTools.WorkingDirectory, "Dark");
-            DirectoryInfo eventDir = new DirectoryInfo(Path.Combine(PlatformTools.WorkingDirectory.FullName, ApplicationProfileSettings.Instance.EventStorageLocation));
+            // On macOS, EventStorageLocation is the base directory, events go in /events/ subdirectory
+            DirectoryInfo eventDir = new DirectoryInfo(Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocationExpanded, "events"));
             DatabaseFactory.Init(new DB.DatabaseFactory(Data, eventDir));
 
 

@@ -63,7 +63,31 @@ namespace UI
         public int VideosToKeep { get; set; }
         [Category("Data")]
         [NeedsRestart]
+        [DisplayName("Data Storage Location")]
+        [Description("macOS: Absolute path (e.g. /Volumes/Drive/Data/) moves ALL data to that location. Relative path (e.g. events/) keeps all data in Application Support. Windows: Only affects events folder.")]
         public string EventStorageLocation { get; set; }
+
+        /// <summary>
+        /// Gets EventStorageLocation with ~ expanded to full home path on macOS.
+        /// Use this instead of EventStorageLocation when building actual paths.
+        /// </summary>
+        [Browsable(false)]
+        public string EventStorageLocationExpanded
+        {
+            get
+            {
+                string path = EventStorageLocation;
+                if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+                {
+                    if (!string.IsNullOrEmpty(path) && path.StartsWith("~"))
+                    {
+                        string homeDir = System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile);
+                        path = homeDir + path.Substring(1);
+                    }
+                }
+                return path;
+            }
+        }
 
         [Category("Static Detector")]
         [NeedsRestart]
@@ -360,7 +384,19 @@ namespace UI
             ProfileInstance = profile;
 
             // Set IOTools.EventStorageLocation for macOS custom base directory support
-            Tools.IOTools.EventStorageLocation = Instance?.EventStorageLocation;
+            string eventStorageLocation = Instance?.EventStorageLocation;
+
+            // Expand ~ to full home directory path on macOS
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            {
+                if (!string.IsNullOrEmpty(eventStorageLocation) && eventStorageLocation.StartsWith("~"))
+                {
+                    string homeDir = System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile);
+                    eventStorageLocation = homeDir + eventStorageLocation.Substring(1);
+                }
+            }
+
+            Tools.IOTools.EventStorageLocation = eventStorageLocation;
         }
 
         public static ApplicationProfileSettings Read(Profile profile)
@@ -377,6 +413,29 @@ namespace UI
             catch
             {
                 s = new ApplicationProfileSettings();
+            }
+
+            // On macOS, convert relative EventStorageLocation to absolute base directory path for clarity
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            {
+                if (!string.IsNullOrEmpty(s.EventStorageLocation) &&
+                    !System.IO.Path.IsPathRooted(s.EventStorageLocation) &&
+                    !s.EventStorageLocation.StartsWith("~"))  // Already converted
+                {
+                    // It's a relative path - show the base directory (Application Support)
+                    // Not the events subfolder, since this controls ALL data on macOS
+                    s.EventStorageLocation = Tools.IOTools.WorkingDirectory.FullName;
+                }
+
+                // Replace home directory with ~ for shorter display (but only if it's a full path)
+                if (!string.IsNullOrEmpty(s.EventStorageLocation) && System.IO.Path.IsPathRooted(s.EventStorageLocation))
+                {
+                    string homeDir = System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile);
+                    if (s.EventStorageLocation.StartsWith(homeDir))
+                    {
+                        s.EventStorageLocation = "~" + s.EventStorageLocation.Substring(homeDir.Length);
+                    }
+                }
             }
 
             Write(profile, s);
@@ -396,7 +455,19 @@ namespace UI
             // Update IOTools.EventStorageLocation when settings are written
             if (profileSettings != null)
             {
-                Tools.IOTools.EventStorageLocation = profileSettings.EventStorageLocation;
+                string eventStorageLocation = profileSettings.EventStorageLocation;
+
+                // Expand ~ to full home directory path on macOS
+                if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+                {
+                    if (!string.IsNullOrEmpty(eventStorageLocation) && eventStorageLocation.StartsWith("~"))
+                    {
+                        string homeDir = System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile);
+                        eventStorageLocation = homeDir + eventStorageLocation.Substring(1);
+                    }
+                }
+
+                Tools.IOTools.EventStorageLocation = eventStorageLocation;
             }
         }
     }
