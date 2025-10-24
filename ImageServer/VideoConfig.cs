@@ -485,6 +485,7 @@ namespace ImageServer
             videoConfig.FlipMirrored = FlipMirrored;
             videoConfig.Pauseable = true;  // Allow ffmpeg cameras to be paused when not visible
             videoConfig.DeviceLatency = DeviceLatency;
+            videoConfig.MaintainAspectRatio = true;  // Force correct aspect ratio for replay videos
             return videoConfig;
         }
     }

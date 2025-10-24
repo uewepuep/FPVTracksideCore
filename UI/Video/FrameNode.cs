@@ -118,7 +118,10 @@ namespace UI.Video
                 Rectangle destinationBounds;
                 if (Source.VideoConfig.MaintainAspectRatio)
                 {
-                    destinationBounds = Maths.FitBoxMaintainAspectRatio(Bounds, sourceBounds, Alignment, FitType);
+                    // Use SourceBounds (before flip) for aspect ratio calculation since flip can make dimensions negative
+                    // The flip is only for rendering, not for aspect ratio calculation
+                    Rectangle aspectSourceBounds = new Rectangle(0, 0, Math.Abs(SourceBounds.Width), Math.Abs(SourceBounds.Height));
+                    destinationBounds = Maths.FitBoxMaintainAspectRatio(Bounds, aspectSourceBounds, Alignment, FitType);
                 }
                 else
                 {
