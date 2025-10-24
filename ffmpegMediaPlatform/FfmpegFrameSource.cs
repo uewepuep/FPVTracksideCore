@@ -373,11 +373,11 @@ namespace FfmpegMediaPlatform
                 }
                 
                 Tools.Logger.VideoLog.LogCall(this, $"FFMPEG (Windows) Killed {killedCount} ffmpeg processes for camera cleanup");
-                
-                // Small delay to ensure processes are fully terminated
+
+                // Small delay to ensure processes are fully terminated (reduced from 200ms to 50ms for faster restarts)
                 if (killedCount > 0)
                 {
-                    System.Threading.Thread.Sleep(200);
+                    System.Threading.Thread.Sleep(50);
                 }
             }
             catch (Exception ex)
@@ -520,29 +520,46 @@ namespace FfmpegMediaPlatform
             {
                 run = true;
                 Connected = true;
-                
+
                 // Start recording worker task for async frame processing
                 StartRecordingWorkerTask();
 
                 thread = new Thread(Run);
                 thread.Name = "ffmpeg - " + VideoConfig.DeviceName;
                 thread.Start();
-                
+
                 // PERFORMANCE: Start parallel frame processing task
                 frameProcessingTask = Task.Run(async () => await FrameProcessingLoop(frameProcessingCancellation.Token));
 
                 process.BeginErrorReadLine();
-                
-                // Fallback initialization after 5 seconds if not already initialized
-                Task.Delay(5000).ContinueWith(_ => 
+
+                // Windows-specific: Initialize immediately for DirectShow cameras
+                // DirectShow takes time to output FFmpeg messages, causing 5-10 second delays
+                bool isWindows = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+                if (isWindows)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "Windows: Scheduling immediate initialization (500ms) for fast camera startup");
+                    Task.Delay(500).ContinueWith(_ =>
+                    {
+                        if (!inited && run)
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, "Windows: Immediate initialization executing");
+                            InitializeFrameProcessing();
+                        }
+                    });
+                }
+
+                // Fallback initialization - reduced timeout for Windows (2s), keep 5s for Mac
+                int timeoutMs = isWindows ? 2000 : 5000;
+                Task.Delay(timeoutMs).ContinueWith(_ =>
                 {
                     if (!inited && run)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "Timeout-based fallback initialization");
+                        Tools.Logger.VideoLog.LogCall(this, $"Timeout-based fallback initialization ({timeoutMs}ms)");
                         InitializeFrameProcessing();
                     }
                 });
-                
+
                 return base.Start();
             }
 
@@ -553,12 +570,24 @@ namespace FfmpegMediaPlatform
         {
             Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Stopping frame source for '{VideoConfig.DeviceName}'");
             run = false;
-            
-            // For UI responsiveness, perform stop operations asynchronously
-            Task.Run(() => StopAsync());
-            
-            // Return immediately to prevent UI lockup
-            return true;
+
+            // On Windows, when restarting streams, we need to wait for cleanup to complete
+            // to avoid the new FFmpeg process failing to access the camera device
+            bool isWindows = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+
+            if (isWindows)
+            {
+                // Windows: Synchronous stop to ensure camera is released before restart
+                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG (Windows) Performing synchronous stop for '{VideoConfig.DeviceName}'");
+                StopAsync();
+                return true;
+            }
+            else
+            {
+                // Mac/Linux: Async stop for UI responsiveness
+                Task.Run(() => StopAsync());
+                return true;
+            }
         }
 
         private void StopAsync()
@@ -569,7 +598,8 @@ namespace FfmpegMediaPlatform
                 if (thread != null && thread.IsAlive)
                 {
                     Tools.Logger.VideoLog.LogCall(this, "FFMPEG Waiting for reading thread to finish");
-                    if (!thread.Join(3000))
+                    // Shorter wait (1 second instead of 3) for faster camera restarts
+                    if (!thread.Join(1000))
                     {
                         Tools.Logger.VideoLog.LogCall(this, "FFMPEG Reading thread didn't finish in time, continuing with cleanup");
                     }
@@ -656,7 +686,9 @@ namespace FfmpegMediaPlatform
                         try
                         {
                             process.Kill();
-                            if (!process.WaitForExit(3000))
+                            // Shorter wait for non-recording scenarios (1 second instead of 3)
+                            // This speeds up camera restarts significantly on Windows
+                            if (!process.WaitForExit(1000))
                             {
                                 Tools.Logger.VideoLog.LogCall(this, "FFMPEG Process didn't exit after kill - this is unusual");
                             }
