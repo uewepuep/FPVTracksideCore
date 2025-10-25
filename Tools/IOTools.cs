@@ -46,6 +46,13 @@ namespace Tools
 
                     return dir;
                 }
+
+                // On macOS, if WorkingDirectory not set yet, use Application Support directly
+                if (WorkingDirectory == null)
+                {
+                    string appSupport = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+                    return new DirectoryInfo(System.IO.Path.Combine(appSupport, "FPVTrackside"));
+                }
             }
 
             return WorkingDirectory;

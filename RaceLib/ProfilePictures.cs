@@ -79,7 +79,12 @@ namespace RaceLib
                         }
                         if (!string.IsNullOrEmpty(p.PhotoPath))
                         {
-                            p.PhotoPath = Path.GetRelativePath(currentDirectory, p.PhotoPath);
+                            // On Windows: use relative path (for backwards compatibility)
+                            // On macOS: use absolute path (because working directory != data directory)
+                            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+                            {
+                                p.PhotoPath = Path.GetRelativePath(currentDirectory, p.PhotoPath);
+                            }
                         }
                     }
                     catch (Exception ex)

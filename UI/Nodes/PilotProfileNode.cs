@@ -121,6 +121,15 @@ namespace UI.Nodes
 
                 string repaired = System.Text.RegularExpressions.Regex.Replace(filename, @"[^\w\-. \/\\:]", "");
 
+                // On macOS: if path is relative, make it absolute using the base directory
+                if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+                {
+                    if (!Path.IsPathRooted(repaired))
+                    {
+                        repaired = Path.Combine(IOTools.GetBaseDirectory().FullName, repaired);
+                    }
+                }
+
                 FileInfo fileInfo = new FileInfo(repaired);
                 if (fileInfo.Exists)
                 {
