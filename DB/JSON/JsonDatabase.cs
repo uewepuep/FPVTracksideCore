@@ -44,7 +44,11 @@ namespace DB.JSON
             Clubs = new JsonCollection<Club>(DataDirectory);
             Channels = new ChannelCollection();
 
-            DirectoryInfo trackDir = new DirectoryInfo("Tracks");
+            // Tracks are stored in the WorkingDirectory (user documents folder on Mac)
+            string tracksPath = Tools.IOTools.WorkingDirectory != null
+                ? Path.Combine(Tools.IOTools.WorkingDirectory.FullName, "Tracks")
+                : "Tracks";
+            DirectoryInfo trackDir = new DirectoryInfo(tracksPath);
             if (!trackDir.Exists)
             {
                 trackDir.Create();

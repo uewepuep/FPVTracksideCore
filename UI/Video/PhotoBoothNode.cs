@@ -39,19 +39,26 @@ namespace UI.Video
 
         public ICaptureFrameSource CaptureFrameSource { get; private set; }
 
-        public DirectoryInfo PilotsDirectory { get; private set; }
+        public DirectoryInfo PilotsDirectory
+        {
+            get
+            {
+                // Always use absolute path from the base directory
+                string pilotsPath = Path.Combine(IOTools.GetBaseDirectory().FullName, "pilots");
+                return new DirectoryInfo(pilotsPath);
+            }
+        }
 
         public event Action<Pilot> OnNewPhoto;
 
         public TimeSpan Timeout { get; private set; }
 
-        public PhotoBoothNode(VideoManager videoManager, EventManager eventManager, SoundManager soundManager) 
+        public PhotoBoothNode(VideoManager videoManager, EventManager eventManager, SoundManager soundManager)
         {
             this.videoManager = videoManager;
             this.eventManager = eventManager;
             this.soundManager = soundManager;
 
-            PilotsDirectory = new DirectoryInfo("pilots/");
             Timeout = TimeSpan.FromSeconds(10);
         }
 
@@ -138,16 +145,35 @@ namespace UI.Video
             soundManager.PlaySound(SoundKey.PhotoboothTrigger);
 
             string filenameSafe = Maths.SafeFileNameFromString(Pilot.Name + "_temp.png");
-            
-            string newPath = Path.Combine(PilotsDirectory.FullName, filenameSafe);
-            newPath = Path.GetRelativePath(Directory.GetCurrentDirectory(), newPath);
+
+            // Ensure pilots directory exists
+            DirectoryInfo pilotsDir = PilotsDirectory;
+            Console.WriteLine($"[PhotoBooth] PilotsDirectory: {pilotsDir.FullName}");
+            Console.WriteLine($"[PhotoBooth] Directory exists: {pilotsDir.Exists}");
+
+            if (!pilotsDir.Exists)
+            {
+                pilotsDir.Create();
+                Console.WriteLine($"[PhotoBooth] Created directory: {pilotsDir.FullName}");
+            }
+
+            string newPath = Path.Combine(pilotsDir.FullName, filenameSafe);
+            Console.WriteLine($"[PhotoBooth] New photo path: {newPath}");
+            Console.WriteLine($"[PhotoBooth] Pilot.PhotoPath (existing): {Pilot.PhotoPath}");
+
+            // Use absolute path for saving (works on both Windows and macOS)
             camNode.FrameNode.SaveImage(newPath);
 
             if (File.Exists(newPath))
             {
+                Console.WriteLine($"[PhotoBooth] Photo saved successfully: {newPath}");
                 ConfirmPictureNode confirmPictureNode = new ConfirmPictureNode(eventManager.EventId, Pilot, Pilot.PhotoPath, newPath);
                 confirmPictureNode.OnUseNew += ConfirmPictureNode_OnUseNew;
                 GetLayer<PopupLayer>().Popup(confirmPictureNode);
+            }
+            else
+            {
+                Console.WriteLine($"[PhotoBooth] ERROR: Photo not saved at: {newPath}");
             }
         }
 
@@ -410,13 +436,57 @@ namespace UI.Video
         public ConfirmPictureNode(Guid eventId, Pilot pilot, string existingFilename, string newFilename)
         {
             this.eventId = eventId;
-            this.pilot = pilot; 
+            this.pilot = pilot;
+
+            Console.WriteLine($"[ConfirmPicture] Constructor called");
+            Console.WriteLine($"[ConfirmPicture] Existing filename: {existingFilename}");
+            Console.WriteLine($"[ConfirmPicture] New filename: {newFilename}");
+            Console.WriteLine($"[ConfirmPicture] IOTools.GetBaseDirectory(): {IOTools.GetBaseDirectory().FullName}");
+            Console.WriteLine($"[ConfirmPicture] Directory.GetCurrentDirectory(): {Directory.GetCurrentDirectory()}");
+
+            // On macOS: convert relative paths to absolute before creating FileInfo
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            {
+                if (!string.IsNullOrEmpty(existingFilename) && !Path.IsPathRooted(existingFilename))
+                {
+                    string originalExisting = existingFilename;
+                    // Don't combine paths that contain ../ - they're broken old paths, just ignore
+                    if (!existingFilename.Contains("../"))
+                    {
+                        existingFilename = Path.Combine(IOTools.GetBaseDirectory().FullName, existingFilename);
+                        Console.WriteLine($"[ConfirmPicture] Converted existing: {originalExisting} -> {existingFilename}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[ConfirmPicture] Skipping conversion of broken path: {originalExisting}");
+                        existingFilename = null; // Treat as non-existent
+                    }
+                }
+                if (!Path.IsPathRooted(newFilename))
+                {
+                    string originalNew = newFilename;
+                    // Don't combine paths that contain ../ - they're broken old paths
+                    if (!newFilename.Contains("../"))
+                    {
+                        newFilename = Path.Combine(IOTools.GetBaseDirectory().FullName, newFilename);
+                        Console.WriteLine($"[ConfirmPicture] Converted new: {originalNew} -> {newFilename}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[ConfirmPicture] ERROR: New photo has broken path: {originalNew}");
+                    }
+                }
+            }
 
             if (!string.IsNullOrEmpty(existingFilename))
             {
                 existingPhoto = new FileInfo(existingFilename);
+                Console.WriteLine($"[ConfirmPicture] Existing photo FileInfo.FullName: {existingPhoto.FullName}");
+                Console.WriteLine($"[ConfirmPicture] Existing photo exists: {existingPhoto.Exists}");
             }
             newPhoto = new FileInfo(newFilename);
+            Console.WriteLine($"[ConfirmPicture] New photo FileInfo.FullName: {newPhoto.FullName}");
+            Console.WriteLine($"[ConfirmPicture] New photo exists: {newPhoto.Exists}");
 
             Scale(0.8f, 0.6f);
             Node photoContainer = new Node();
@@ -446,26 +516,48 @@ namespace UI.Video
         {
             try
             {
+                Console.WriteLine($"[UseNew] Starting UseNew");
+                Console.WriteLine($"[UseNew] Existing photo: {existingPhoto?.FullName}");
+                Console.WriteLine($"[UseNew] New photo: {newPhoto.FullName}");
+
                 existingPhoto?.Delete();
 
                 FileInfo newFileName = new FileInfo(newPhoto.FullName.Replace("_temp", ""));
+                Console.WriteLine($"[UseNew] Final filename: {newFileName.FullName}");
+
                 if (newFileName.Exists)
                 {
+                    Console.WriteLine($"[UseNew] Final file already exists, deleting");
                     newFileName.Delete();
                 }
 
                 newPhoto.MoveTo(newFileName.FullName);
+                Console.WriteLine($"[UseNew] Moved {newPhoto.FullName} -> {newFileName.FullName}");
 
-                pilot.PhotoPath = Path.GetRelativePath(Directory.GetCurrentDirectory(), newFileName.FullName);
+                // On macOS: store absolute path. On Windows: store relative path
+                if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+                {
+                    pilot.PhotoPath = newFileName.FullName;
+                    Console.WriteLine($"[UseNew] macOS: Storing absolute path in DB: {pilot.PhotoPath}");
+                }
+                else
+                {
+                    pilot.PhotoPath = Path.GetRelativePath(Directory.GetCurrentDirectory(), newFileName.FullName);
+                    Console.WriteLine($"[UseNew] Windows: Storing relative path in DB: {pilot.PhotoPath}");
+                }
+
                 using (IDatabase db = DatabaseFactory.Open(eventId))
                 {
                     db.Upsert(pilot);
                 }
+                Console.WriteLine($"[UseNew] Database updated successfully");
 
                 OnUseNew?.Invoke(pilot);
             }
-            catch (Exception ex) 
-            { 
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[UseNew] ERROR: {ex.Message}");
+                Console.WriteLine($"[UseNew] Stack trace: {ex.StackTrace}");
                 GetLayer<PopupLayer>().PopupMessage(ex.Message);
             }
             

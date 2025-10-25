@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -16,11 +17,15 @@ namespace WindowsPlatform
 {
     public class LayerStackControl : GraphicsDeviceControl
     {
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public LayerStack LayerStack { get; private set; }
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public GameWindow GameWindow { get; private set; }
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public DateTime Start { get; private set; }
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public DateTime LastFrame { get; private set; }
 
         public event Action<GraphicsDevice, LayerStack> OnInitialise;

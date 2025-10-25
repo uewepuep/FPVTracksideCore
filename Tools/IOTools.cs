@@ -14,6 +14,50 @@ namespace Tools
     {
         public static DirectoryInfo WorkingDirectory { get; set; }
 
+        /// <summary>
+        /// Optional: EventStorageLocation setting for macOS absolute path detection.
+        /// Set this from UI layer to enable custom base directory on macOS.
+        /// </summary>
+        public static string EventStorageLocation { get; set; }
+
+        /// <summary>
+        /// Gets the base directory for user data.
+        /// On macOS: If EventStorageLocation is an absolute path, uses it as base directory.
+        ///           If path ends with /events/, strips that off since it's just the subfolder.
+        ///           Otherwise uses WorkingDirectory (Application Support).
+        /// On Windows: Always uses WorkingDirectory (current directory).
+        /// </summary>
+        public static DirectoryInfo GetBaseDirectory()
+        {
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            {
+                // On macOS, check if EventStorageLocation is set to an absolute path
+                if (!string.IsNullOrEmpty(EventStorageLocation) && Path.IsPathRooted(EventStorageLocation))
+                {
+                    // Absolute path - use it as base directory
+                    DirectoryInfo dir = new DirectoryInfo(EventStorageLocation);
+
+                    // If user manually added "/events/" to the end, strip it off
+                    // since on macOS this setting controls the base directory for ALL data
+                    if (dir.Name.ToLower() == "events" && dir.Parent != null)
+                    {
+                        return dir.Parent;
+                    }
+
+                    return dir;
+                }
+
+                // On macOS, if WorkingDirectory not set yet, use Application Support directly
+                if (WorkingDirectory == null)
+                {
+                    string appSupport = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+                    return new DirectoryInfo(System.IO.Path.Combine(appSupport, "FPVTrackside"));
+                }
+            }
+
+            return WorkingDirectory;
+        }
+
         public static T[] Read<T>(Profile profile, string filename) where T : new()
         {
             return Read<T>(profile.GetPath(), filename, null);
@@ -26,7 +70,8 @@ namespace Tools
 
         public static T[] Read<T>(string directory, string filename, IEnumerable<KeyValuePair<string, string>> replacements) where T : new()
         {
-            FileInfo file = new FileInfo(Path.Combine(WorkingDirectory.FullName, directory, filename));
+            // Use GetBaseDirectory() to respect custom EventStorageLocation on macOS
+            FileInfo file = new FileInfo(Path.Combine(GetBaseDirectory().FullName, directory, filename));
 
             bool deleteAfterReading = false;
 
@@ -108,7 +153,8 @@ namespace Tools
 
         public static void Write<T>(string directory, string filename, params T[] items) where T : new()
         {
-            FileInfo file = new FileInfo(Path.Combine(WorkingDirectory.FullName, directory, filename));
+            // Use GetBaseDirectory() to respect custom EventStorageLocation on macOS
+            FileInfo file = new FileInfo(Path.Combine(GetBaseDirectory().FullName, directory, filename));
 
             if (!file.Directory.Exists)
             {

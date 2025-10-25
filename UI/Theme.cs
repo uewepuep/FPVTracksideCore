@@ -156,8 +156,10 @@ namespace UI
                         IOTools.Write(directory.FullName, themeFile.Name, theme);
 
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        Logger.UI.LogException(null, ex);
+                        Logger.UI.Log(null, $"Failed to load theme from {directory.FullName}/theme.xml: {ex.Message}");
                         continue;
                     }
 
@@ -188,8 +190,10 @@ namespace UI
 
                         theme = theme2.ToTheme(graphicsDevice, new Theme());
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        Logger.UI.LogException(null, ex);
+                        Logger.UI.Log(null, $"Failed to load theme from {directory.FullName}/theme2.xml: {ex.Message}");
                         continue;
                     }
 
@@ -207,9 +211,22 @@ namespace UI
 
             DirectoryInfo themesDirectory = new DirectoryInfo(Path.Combine(workingDirectory.FullName, "themes/"));
 
+            Logger.UI.Log(null, $"Loading themes from: {themesDirectory.FullName}");
+
+            if (!themesDirectory.Exists)
+            {
+                Logger.UI.Log(null, $"Themes directory does not exist: {themesDirectory.FullName}");
+            }
+            else
+            {
+                Logger.UI.Log(null, $"Themes directory exists with {themesDirectory.GetDirectories().Length} subdirectories");
+            }
+
             themes.AddRange(Load(themesDirectory, gd));
 
             Themes = themes.ToList();
+
+            Logger.UI.Log(null, $"Successfully loaded {Themes.Count} theme(s)");
 
             if (ApplicationProfileSettings.Instance != null)
             {
@@ -233,8 +250,29 @@ namespace UI
 
             if (Current == null)
             {
-                Logger.UI.Log(null, "No Themes");
-                return;
+                Logger.UI.Log(null, $"No Themes loaded from {themesDirectory.FullName}. Creating fallback default theme.");
+
+                // Create a minimal fallback theme so the application can continue
+                Current = new Theme();
+                Current.Name = "Default Fallback";
+                Current.Directory = workingDirectory;
+
+                // Set essential properties that might be null
+                Current.Background = new ToolTexture("", 32, 32, 32);  // Dark gray background
+                Current.TextMain = new ToolColor(255, 255, 255);      // White text
+                Current.TextAlt = new ToolColor(200, 200, 200);       // Light gray text
+                Current.Panel = new ToolColor(48, 48, 48, 255);       // Dark panel
+                Current.PanelAlt = new ToolColor(64, 64, 64, 255);    // Slightly lighter panel
+                Current.Button = new ToolColor(80, 80, 255);          // Blue button
+                Current.Hover = new ToolColor(100, 100, 255);         // Lighter blue hover
+                Current.TopPanel = new ToolTexture("", 24, 24, 24);   // Dark top panel
+                Current.TopPanelText = new ToolColor(255, 255, 255);  // White top panel text
+                Current.EventSelectorTop = new ToolTexture("", 24, 24, 24);
+                Current.MenuBackground = new ToolColor(32, 32, 32, 240);
+                Current.MenuText = new ToolColor(255, 255, 255);
+                Current.MenuTextInactive = new ToolColor(128, 128, 128);
+
+                Logger.UI.Log(null, "Fallback theme created successfully. Application will continue with default appearance.");
             }
 
             LocaliseFilenames(Current.Directory, Current);

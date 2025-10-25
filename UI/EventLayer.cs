@@ -98,7 +98,26 @@ namespace UI
                 Logger.UI.LogException(this, ex);
             }
 
-            DirectoryInfo eventDirectory = new DirectoryInfo(Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocation, eventManager.Event.ID.ToString()));
+            // On macOS: EventStorageLocation is the base directory, events go in /events/ subdirectory
+            // On Windows: EventStorageLocation is the events directory itself
+            string eventDirectoryPath;
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            {
+                eventDirectoryPath = Path.Combine(
+                    ApplicationProfileSettings.Instance.EventStorageLocationExpanded,
+                    "events",
+                    eventManager.Event.ID.ToString()
+                );
+            }
+            else
+            {
+                eventDirectoryPath = Path.Combine(
+                    ApplicationProfileSettings.Instance.EventStorageLocationExpanded,
+                    eventManager.Event.ID.ToString()
+                );
+            }
+
+            DirectoryInfo eventDirectory = new DirectoryInfo(eventDirectoryPath);
 
 
             workQueueStartStopRace = new WorkQueue("Event Layer - Start Stop Race");
@@ -106,7 +125,10 @@ namespace UI
             showPilotList = true;
 
             EventManager = eventManager;
-            EventManager.SetChannelColors(Theme.Current.ChannelColors.XNA());
+            if (Theme.Current != null)
+            {
+                EventManager.SetChannelColors(Theme.Current.ChannelColors.XNA());
+            }
 
             RaceStringFormatter.Instance.Practice = Translator.Get("EventTypes.Practice", "Practice");
             RaceStringFormatter.Instance.TimeTrial = Translator.Get("EventTypes.TimeTrial", "Time Trial");
@@ -609,6 +631,7 @@ namespace UI
                 Race current = EventManager.RaceManager.CurrentRace;
                 EventManager.RaceManager.ClearRace();
 
+                videoManager.StopDevices();
                 videoManager.LoadCreateDevices((fs) =>
                 {
                     ChannelsGridNode.FillChannelNodes();

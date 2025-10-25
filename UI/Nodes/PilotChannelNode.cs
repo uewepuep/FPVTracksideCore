@@ -98,7 +98,20 @@ namespace UI.Nodes
                 return;
             }
 
-            profileIcon.Visible = System.IO.File.Exists(Pilot.PhotoPath);
+            // On macOS: convert relative paths to absolute before checking existence
+            string photoPath = Pilot.PhotoPath;
+            if (!string.IsNullOrEmpty(photoPath))
+            {
+                if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+                {
+                    if (!System.IO.Path.IsPathRooted(photoPath))
+                    {
+                        photoPath = System.IO.Path.Combine(IOTools.GetBaseDirectory().FullName, photoPath);
+                    }
+                }
+            }
+
+            profileIcon.Visible = System.IO.File.Exists(photoPath);
 
             if (profileIcon.Visible)
             {

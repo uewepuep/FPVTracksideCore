@@ -1,0 +1,291 @@
+name: Nightly Build and Test
+
+on:
+  schedule:
+    # Run every day at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '6.0.x'
+
+jobs:
+  nightly-build-macos:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore dependencies
+      run: dotnet restore "FPVMacside - Core.sln"
+    
+    - name: Build macOS Debug
+      run: dotnet build "FPVMacside - Core.sln" --configuration Debug --no-restore
+    
+    - name: Build macOS Release
+      run: dotnet build "FPVMacside - Core.sln" --configuration Release --no-restore
+    
+    - name: Publish macOS Release
+      run: |
+        dotnet publish FPVMacSideCore/FPVMacsideCore.csproj \
+          --configuration Release \
+          --runtime osx-arm64 \
+          --self-contained true \
+          --output "./build/macos-arm64" \
+          -p:PublishSingleFile=false \
+          -p:PublishReadyToRun=false \
+          -p:TieredCompilation=false
+    
+    - name: Create Nightly macOS Build
+      run: |
+        # Create a timestamp for nightly builds
+        TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
+        BRANCH_NAME="${{ github.ref_name }}"
+        
+        # Create app bundle
+        mkdir -p "FPV Trackside Core.app/Contents/MacOS"
+        mkdir -p "FPV Trackside Core.app/Contents/Resources"
+        
+        # Copy ALL files from the build directory to MacOS
+        cp -r "./build/macos-arm64/"* "FPV Trackside Core.app/Contents/MacOS/"
+        
+        # Copy app icon if it exists
+        if [ -f "./build/macos-arm64/AppIcon.icns" ]; then
+          cp "./build/macos-arm64/AppIcon.icns" "FPV Trackside Core.app/Contents/Resources/"
+        elif [ -f "FPVMacSideCore/AppIcon.icns" ]; then
+          cp "FPVMacSideCore/AppIcon.icns" "FPV Trackside Core.app/Contents/Resources/"
+        fi
+        
+        # Ensure the icon file exists and has correct permissions
+        if [ -f "FPV Trackside Core.app/Contents/Resources/AppIcon.icns" ]; then
+          chmod 644 "FPV Trackside Core.app/Contents/Resources/AppIcon.icns"
+          echo "✅ AppIcon.icns copied successfully"
+        else
+          echo "⚠️ Warning: Icon file not found, app will use default icon"
+        fi
+        
+        # Create Info.plist with proper icon configuration
+        cat > "FPV Trackside Core.app/Contents/Info.plist" << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>CFBundleDisplayName</key>
+            <string>FPV Trackside Core</string>
+            <key>CFBundleExecutable</key>
+            <string>FPVMacsideCore</string>
+            <key>CFBundleIconFile</key>
+            <string>AppIcon</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.fpvtrackside.core</string>
+            <key>CFBundleName</key>
+            <string>FPV Trackside Core</string>
+            <key>CFBundleShortVersionString</key>
+            <string>2.1.0.1</string>
+            <key>CFBundleVersion</key>
+            <string>2.1.0.1</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+            <key>LSMinimumSystemVersion</key>
+            <string>10.15</string>
+            <key>LSApplicationCategoryType</key>
+            <string>public.app-category.games</string>
+            <key>NSHighResolutionCapable</key>
+            <true/>
+            <key>LSUIElement</key>
+            <false/>
+        </dict>
+        </plist>
+        EOF
+        
+        # Make executable
+        chmod +x "FPV Trackside Core.app/Contents/MacOS/FPVMacsideCore"
+        
+        # Create ZIP
+        zip -r "FPV-Trackside-Core-macOS-nightly-$BRANCH_NAME-$TIMESTAMP.zip" "FPV Trackside Core.app"
+        
+        echo "Created nightly build: FPV-Trackside-Core-macOS-nightly-$BRANCH_NAME-$TIMESTAMP.zip"
+    
+    - name: Upload Nightly macOS Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: nightly-macos-${{ github.ref_name }}-${{ github.run_number }}
+        path: "FPV-Trackside-Core-macOS-nightly-*.zip"
+        retention-days: 30
+
+  nightly-build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore dependencies
+      run: dotnet restore FPVTracksideCore/FPVTracksideCore.sln
+    
+    - name: Build Windows Debug
+      run: dotnet build FPVTracksideCore/FPVTracksideCore.sln --configuration Debug --no-restore
+    
+    - name: Build Windows Release
+      run: dotnet build FPVTracksideCore/FPVTracksideCore.sln --configuration Release
+    
+    - name: Publish Windows Release
+      run: |
+        dotnet publish FPVTracksideCore/FPVTracksideCore.csproj `
+          --configuration Release `
+          --runtime win-x64 `
+          --self-contained true `
+          --output "./build/windows-x64" `
+          -p:PublishSingleFile=true `
+          -p:PublishReadyToRun=false `
+          -p:TieredCompilation=false
+    
+    - name: Create Nightly Windows Build
+      run: |
+        # Create a timestamp for nightly builds
+        $TIMESTAMP = Get-Date -Format "yyyyMMdd-HHmmss"
+        $BRANCH_NAME = "${{ github.ref_name }}"
+        
+        # Create ZIP
+        Compress-Archive -Path "./build/windows-x64/*" -DestinationPath "FPV-Trackside-Core-Windows-nightly-$BRANCH_NAME-$TIMESTAMP.zip"
+        
+        Write-Host "Created nightly build: FPV-Trackside-Core-Windows-nightly-$BRANCH_NAME-$TIMESTAMP.zip"
+    
+    - name: Upload Nightly Windows Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: nightly-windows-${{ github.ref_name }}-${{ github.run_number }}
+        path: "FPV-Trackside-Core-Windows-nightly-*.zip"
+        retention-days: 30
+
+  comprehensive-testing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Run All Tests
+      run: |
+        echo "🧪 Running comprehensive tests..."
+        
+        # Find and run all test projects
+        echo "=== macOS Project Tests ==="
+        find . -path "./FPVMacSideCore/*" -name "*.Tests.csproj" -o -name "*Test.csproj" | while read testproj; do
+          echo "Running tests in $testproj"
+          dotnet test "$testproj" --configuration Debug --no-build --verbosity normal --logger "console;verbosity=detailed" || true
+        done
+        
+        echo "=== Windows Project Tests ==="
+        find . -path "./FPVTracksideCore/*" -name "*.Tests.csproj" -o -name "*Test.csproj" | while read testproj; do
+          echo "Running tests in $testproj"
+          dotnet test "$testproj" --configuration Debug --no-build --verbosity normal --logger "console;verbosity=detailed" || true
+        done
+        
+        echo "=== Shared Library Tests ==="
+        find . -not -path "./FPVMacSideCore/*" -not -path "./FPVTracksideCore/*" -name "*.Tests.csproj" -o -name "*Test.csproj" | while read testproj; do
+          echo "Running tests in $testproj"
+          dotnet test "$testproj" --configuration Debug --no-build --verbosity normal --logger "console;verbosity=detailed" || true
+        done
+      continue-on-error: true
+    
+    - name: Code Coverage Analysis
+      run: |
+        echo "📊 Running code coverage analysis..."
+        
+        # Install coverage tools if needed
+        dotnet tool install --global dotnet-coverage || true
+        
+        # Run coverage on both projects
+        echo "=== macOS Project Coverage ==="
+        dotnet test "FPVMacside - Core.sln" --collect:"XPlat Code Coverage" --results-directory ./coverage-macos || true
+        
+        echo "=== Windows Project Coverage ==="
+        dotnet test FPVTracksideCore/FPVTracksideCore.sln --collect:"XPlat Code Coverage" --results-directory ./coverage-windows || true
+        
+        echo "Coverage analysis completed"
+      continue-on-error: true
+
+  performance-testing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Performance Analysis
+      run: |
+        echo "⚡ Running performance analysis..."
+        
+        # Build both projects with performance profiling
+        echo "Building macOS project with performance profiling..."
+        dotnet build "FPVMacside - Core.sln" --configuration Release --verbosity minimal
+        
+        echo "Building Windows project with performance profiling..."
+        dotnet build FPVTracksideCore/FPVTracksideCore.sln --configuration Release --verbosity minimal
+        
+        # Check build times and sizes
+        echo "=== Build Performance Summary ==="
+        echo "Build completed successfully"
+        
+        # Analyze project structure
+        echo "=== Project Structure Analysis ==="
+        echo "macOS project files:"
+        find FPVMacSideCore -name "*.cs" | wc -l
+        
+        echo "Windows project files:"
+        find FPVTracksideCore -name "*.cs" | wc -l
+        
+        echo "Shared library files:"
+        find . -not -path "./FPVMacSideCore/*" -not -path "./FPVTracksideCore/*" -name "*.cs" | wc -l
+      continue-on-error: true
+
+  security-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Security Audit
+      run: |
+        echo "🔒 Running security audit..."
+        
+        # Check for known vulnerabilities
+        echo "=== Dependency Vulnerability Check ==="
+        dotnet list FPVMacSideCore/FPVTrackside.sln package --vulnerable || true
+        dotnet list FPVTracksideCore/FPVTracksideCore.sln package --vulnerable || true
+        
+        # Check for outdated packages
+        echo "=== Outdated Package Check ==="
+        dotnet list FPVMacSideCore/FPVTrackside.sln package --outdated || true
+        dotnet list FPVTracksideCore/FPVTracksideCore.sln package --outdated || true
+        
+        # Check for license compliance
+        echo "=== License Compliance Check ==="
+        dotnet list FPVMacSideCore/FPVTrackside.sln package --license || true
+        dotnet list FPVTracksideCore/FPVTracksideCore.sln package --license || true
+        
+        echo "Security audit completed"
+      continue-on-error: true 

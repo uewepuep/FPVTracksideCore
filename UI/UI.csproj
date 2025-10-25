@@ -6,7 +6,7 @@
     <ApplicationIcon />
     <Platforms>AnyCPU;x64</Platforms>
     <StartupObject />
-    <Version>2.0.70.8</Version>
+    <Version>2.1.0.8</Version>
 	  <Self-Contained>true</Self-Contained>
   </PropertyGroup>
 
@@ -23,6 +23,7 @@
     <ProjectReference Include="..\DB\DB.csproj" />
     <ProjectReference Include="..\Compositor\Composition.csproj" />
     <ProjectReference Include="..\ExternalData\ExternalData.csproj" />
+    <ProjectReference Include="..\ffmpegMediaPlatform\FfmpegMediaPlatform.csproj" />
     <ProjectReference Include="..\ImageServer\ImageServer.csproj" />
     <ProjectReference Include="..\RaceLib\RaceLib.csproj" />
     <ProjectReference Include="..\Sound\Sound.csproj" />

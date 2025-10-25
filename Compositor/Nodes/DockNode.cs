@@ -1,5 +1,4 @@
-﻿using Composition.Input;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -99,13 +98,6 @@ namespace Composition.Nodes
 
         public override void Layout(RectangleF parentBounds)
         {
-#if DEBUG
-            top?.SetColor(Color.Red);
-            bottom?.SetColor(Color.Green);
-            left?.SetColor(Color.Blue);
-            right?.SetColor(Color.Yellow);
-#endif
-
             NeedsLayout = false;
             BoundsF = CalculateRelativeBounds(parentBounds);
             RectangleF bounds = BoundsF;
@@ -163,33 +155,5 @@ namespace Composition.Nodes
             FixedSize = size;
             RequestLayout();
         }
-
-#if DEBUG
-        private Color color;
-
-        private bool hover;
-
-        public void SetColor(Color color) { this.color = color; }
-
-        public override void Draw(Drawer id, float parentAlpha)
-        {
-            Rectangle singleLine = Bounds;
-            singleLine.Height = 1;
-
-            //if (hover)
-            //{
-            //    id.QuickDraw(singleLine, Color.Magenta);
-            //}
-            //id.QuickDraw(singleLine, color);
-
-            base.Draw(id, parentAlpha);
-        }
-
-        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
-        {
-            hover = Contains(mouseInputEvent.Position);
-            return base.OnMouseInput(mouseInputEvent);
-        }
-#endif
     }
 }

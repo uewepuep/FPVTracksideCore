@@ -31,7 +31,8 @@ namespace UI.Nodes
             MouseMenu mouseMenu = new MouseMenu(this);
             mouseMenu.LeftToRight = false;
 
-            foreach (Profile profile in Profile.GetProfiles(PlatformTools.WorkingDirectory))
+            // Use GetBaseDirectory() to respect custom EventStorageLocation on macOS
+            foreach (Profile profile in Profile.GetProfiles(IOTools.GetBaseDirectory()))
             {
                 Profile temp = profile;
                 mouseMenu.AddItem(profile.Name, () => { ProfileSet?.Invoke(temp); });
@@ -44,7 +45,8 @@ namespace UI.Nodes
                 TextPopupNode textPopupNode = new TextPopupNode("Add Profile", "Profile Name", "");
                 textPopupNode.OnOK += (string name) =>
                 {
-                    Profile profile = Profile.AddProfile(PlatformTools.WorkingDirectory, name);
+                    // Use GetBaseDirectory() to respect custom EventStorageLocation on macOS
+                    Profile profile = Profile.AddProfile(IOTools.GetBaseDirectory(), name);
 
                     if (profile != null)
                     {
@@ -58,7 +60,8 @@ namespace UI.Nodes
                 TextPopupNode textPopupNode = new TextPopupNode("Edit Profile Name", "New Name", profile.Name);
                 textPopupNode.OnOK += (string name) =>
                 {
-                    if (!Profile.RenameProfile(PlatformTools.WorkingDirectory, profile, name))
+                    // Use GetBaseDirectory() to respect custom EventStorageLocation on macOS
+                    if (!Profile.RenameProfile(IOTools.GetBaseDirectory(), profile, name))
                     {
                         GetLayer<PopupLayer>().PopupMessage("Failed to rename");
                         return;
@@ -73,7 +76,8 @@ namespace UI.Nodes
                 TextPopupNode textPopupNode = new TextPopupNode("Clone Profile " + profile.Name, "New Name", "");
                 textPopupNode.OnOK += (string name) =>
                 {
-                    if (!Profile.CloneProfile(PlatformTools.WorkingDirectory, profile, name))
+                    // Use GetBaseDirectory() to respect custom EventStorageLocation on macOS
+                    if (!Profile.CloneProfile(IOTools.GetBaseDirectory(), profile, name))
                     {
                         GetLayer<PopupLayer>().PopupMessage("Failed to clone");
                         return;

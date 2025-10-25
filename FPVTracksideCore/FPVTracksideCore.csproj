@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -7,7 +7,10 @@
     <Platforms>x64;AnyCPU</Platforms>
     <StartupObject />
 	  <usewpf>true</usewpf>
-	  <Version>2.0.70.8</Version>
+	  <Version>2.1.0.8</Version>
+	  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+	  <SelfContained>true</SelfContained>
+	  <EnableWindowsTargeting>true</EnableWindowsTargeting>
 	  
 	  <PublishReadyToRun>false</PublishReadyToRun>
 	  <TieredCompilation>false</TieredCompilation>
@@ -43,6 +46,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Compositor\Composition.csproj" />
+    <ProjectReference Include="..\ffmpegMediaPlatform\FfmpegMediaPlatform.csproj" />
     <ProjectReference Include="..\Tools\Tools.csproj" />
     <ProjectReference Include="..\WindowsPlatform\WindowsPlatform.csproj" />
   </ItemGroup>
@@ -53,4 +57,16 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="ffmpeg\ffmpeg.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ffmpeg\ffprobe.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- Windows FFmpeg native libraries are copied through ffmpegMediaPlatform project reference -->
 </Project>
+

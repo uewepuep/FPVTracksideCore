@@ -50,6 +50,7 @@ namespace UI.Video
         public bool MaintainConnections { get; set; }
 
         private Thread videoDeviceManagerThread;
+        private CancellationTokenSource cancellationTokenSource;
         private bool runWorker;
         private List<Action> todo;
 
@@ -133,7 +134,85 @@ namespace UI.Video
             MaintainConnections = true;
 
             VideoConfigs.Clear();
-            VideoConfigs.AddRange(VideoConfig.Read(Profile));
+            VideoConfig[] savedConfigs = VideoConfig.Read(Profile);
+            
+            if (savedConfigs.Length == 0)
+            {
+                Logger.VideoLog.LogCall(this, "No saved video configuration found - leaving video config empty for user to manually add cameras");
+                // Don't auto-populate with available cameras - let the user add them manually
+                // Save the empty configuration so we don't keep showing available cameras on restart
+                VideoManager.WriteDeviceConfig(Profile, VideoConfigs); // VideoConfigs is empty at this point
+            }
+            else
+            {
+                Logger.VideoLog.LogCall(this, $"Found {savedConfigs.Length} saved video configuration(s) - validating and updating with current camera capabilities");
+                
+                // Get currently available cameras
+                var availableConfigs = GetAvailableVideoSources();
+                Logger.VideoLog.LogCall(this, $"Currently detected {availableConfigs.Count()} available camera(s)");
+                
+                bool configurationUpdated = false;
+                
+                // Update existing saved configurations with optimal modes
+                foreach (var savedConfig in savedConfigs)
+                {
+                    Logger.VideoLog.LogCall(this, $"Validating saved camera: '{savedConfig.DeviceName}' (Current: {savedConfig.VideoMode.Width}x{savedConfig.VideoMode.Height}@{savedConfig.VideoMode.FrameRate}fps)");
+                    
+                    // Find matching available camera
+                    var availableConfig = availableConfigs.FirstOrDefault(ac => ac.Equals(savedConfig));
+                    if (availableConfig != null)
+                    {
+                        Logger.VideoLog.LogCall(this, $"Camera '{savedConfig.DeviceName}' is still available - detecting optimal mode...");
+                        
+                        // Use the framework from available config (may be more current)
+                        savedConfig.FrameWork = availableConfig.FrameWork;
+                        
+                        var optimalMode = DetectOptimalMode(savedConfig);
+                        if (optimalMode != null)
+                        {
+                            bool modeChanged = savedConfig.VideoMode.Width != optimalMode.Width || 
+                                             savedConfig.VideoMode.Height != optimalMode.Height || 
+                                             savedConfig.VideoMode.FrameRate != optimalMode.FrameRate;
+                            
+                            if (modeChanged)
+                            {
+                                Logger.VideoLog.LogCall(this, $"Camera capability update: {savedConfig.DeviceName} from {savedConfig.VideoMode.Width}x{savedConfig.VideoMode.Height}@{savedConfig.VideoMode.FrameRate}fps to {optimalMode.Width}x{optimalMode.Height}@{optimalMode.FrameRate}fps");
+                                Logger.VideoLog.LogCall(this, $"RECORDING FIX: This should eliminate frame rate mismatch for {savedConfig.DeviceName}");
+                                savedConfig.VideoMode = optimalMode;
+                                configurationUpdated = true;
+                            }
+                            else
+                            {
+                                Logger.VideoLog.LogCall(this, $"Camera {savedConfig.DeviceName}: Configuration matches capabilities - no frame rate issues expected");
+                            }
+                        }
+                        else
+                        {
+                            Logger.VideoLog.LogCall(this, $"⚠ Could not detect optimal mode for '{savedConfig.DeviceName}' - keeping existing configuration");
+                        }
+                    }
+                    else
+                    {
+                        Logger.VideoLog.LogCall(this, $"⚠ Saved camera '{savedConfig.DeviceName}' is no longer available - keeping configuration anyway");
+                    }
+                }
+                
+                VideoConfigs.AddRange(savedConfigs);
+                
+                // Save updated configuration if any changes were made
+                if (configurationUpdated)
+                {
+                    Logger.VideoLog.LogCall(this, "Camera configurations were updated - saving to disk");
+                    VideoManager.WriteDeviceConfig(Profile, VideoConfigs);
+                }
+                
+                Logger.VideoLog.LogCall(this, "=== CONFIGURATION VALIDATION COMPLETE ===");
+                Logger.VideoLog.LogCall(this, "Final camera configurations:");
+                foreach (var config in VideoConfigs)
+                {
+                    Logger.VideoLog.LogCall(this, $"  📹 {config.DeviceName}: {config.VideoMode.Width}x{config.VideoMode.Height}@{config.VideoMode.FrameRate}fps ({config.FrameWork})");
+                }
+            }
 
             StartThread();
         }
@@ -143,7 +222,8 @@ namespace UI.Video
             if (videoDeviceManagerThread == null)
             {
                 runWorker = true;
-                videoDeviceManagerThread = new Thread(WorkerThread);
+                cancellationTokenSource = new CancellationTokenSource();
+                videoDeviceManagerThread = new Thread(() => WorkerThread(cancellationTokenSource.Token));
                 videoDeviceManagerThread.Name = "Video Device Manager";
                 videoDeviceManagerThread.Start();
             }
@@ -189,22 +269,24 @@ namespace UI.Video
             runWorker = false;
             mutex.Set();
 
+            if (cancellationTokenSource != null)
+            {
+                cancellationTokenSource.Cancel();
+            }
+
             if (videoDeviceManagerThread != null)
             {
-                if (!videoDeviceManagerThread.Join(30000))
+                if (!videoDeviceManagerThread.Join(5000))
                 {
-                    try
-                    {
-#pragma warning disable SYSLIB0006 // Type or member is obsolete
-                        videoDeviceManagerThread.Abort();
-#pragma warning restore SYSLIB0006 // Type or member is obsolete
-                    }
-                    catch
-                    {
-                    }
+                    // Thread didn't exit within timeout - this is unusual but we'll handle it gracefully
                 }
-                videoDeviceManagerThread.Join();
                 videoDeviceManagerThread = null;
+            }
+
+            if (cancellationTokenSource != null)
+            {
+                cancellationTokenSource.Dispose();
+                cancellationTokenSource = null;
             }
         }
 
@@ -221,6 +303,94 @@ namespace UI.Video
                 frameSources.Clear();
             }
             mutex.Set();
+        }
+
+        public Mode DetectOptimalMode(VideoConfig config)
+        {
+            Logger.VideoLog.LogCall(this, $"DetectOptimalMode() called for camera: '{config.DeviceName}' (Framework: {config.FrameWork})");
+            
+            try
+            {
+                // Find the appropriate framework and query modes directly
+                foreach (VideoFrameWork frameWork in VideoFrameWorks.Available)
+                {
+                    if (config.FrameWork == frameWork.FrameWork)
+                    {
+                        Logger.VideoLog.LogCall(this, $"Using framework {frameWork.FrameWork} to detect modes");
+                        
+                        // Create a temporary instance just to get the modes
+                        using (FrameSource tempSource = frameWork.CreateFrameSource(config))
+                        {
+                            if (tempSource is IHasModes hasModes)
+                            {
+                                Logger.VideoLog.LogCall(this, "Querying available modes from camera...");
+                                var availableModes = hasModes.GetModes().ToList();
+                                
+                                Logger.VideoLog.LogCall(this, $"Camera returned {availableModes.Count} available modes");
+                                
+                                if (availableModes.Any())
+                                {
+                                    // 1st priority: 640x480 @ 30fps
+                                    var preferred = availableModes.FirstOrDefault(m => 
+                                        m.Width == 640 && m.Height == 480 && m.FrameRate >= 30);
+                                    if (preferred != null)
+                                    {
+                                        Logger.VideoLog.LogCall(this, $"✓ SELECTED (1st priority - preferred): {preferred.Width}x{preferred.Height}@{preferred.FrameRate}fps");
+                                        return preferred;
+                                    }
+                                    else
+                                    {
+                                        Logger.VideoLog.LogCall(this, "✗ 640x480@30fps not available, trying next priority");
+                                    }
+                                    
+                                    // 2nd priority: lowest resolution above 30fps
+                                    var above30fps = availableModes
+                                        .Where(m => m.FrameRate >= 30)
+                                        .OrderBy(m => m.Width * m.Height)
+                                        .ThenBy(m => m.FrameRate)
+                                        .FirstOrDefault();
+                                    if (above30fps != null)
+                                    {
+                                        Logger.VideoLog.LogCall(this, $"✓ SELECTED (2nd priority - lowest above 30fps): {above30fps.Width}x{above30fps.Height}@{above30fps.FrameRate}fps");
+                                        return above30fps;
+                                    }
+                                    else
+                                    {
+                                        Logger.VideoLog.LogCall(this, "✗ No modes above 30fps available, trying best available");
+                                    }
+                                    
+                                    // 3rd priority: best available resolution (highest framerate, then lowest resolution)
+                                    var bestMode = availableModes
+                                        .OrderByDescending(m => m.FrameRate)
+                                        .ThenBy(m => m.Width * m.Height)
+                                        .FirstOrDefault();
+                                    if (bestMode != null)
+                                    {
+                                        Logger.VideoLog.LogCall(this, $"✓ SELECTED (3rd priority - best available): {bestMode.Width}x{bestMode.Height}@{bestMode.FrameRate}fps");
+                                        return bestMode;
+                                    }
+                                }
+                                else
+                                {
+                                    Logger.VideoLog.LogCall(this, "WARNING: No modes detected from camera");
+                                }
+                            }
+                            else
+                            {
+                                Logger.VideoLog.LogCall(this, "WARNING: Frame source does not support mode detection");
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.VideoLog.LogException(this, ex);
+            }
+            
+            Logger.VideoLog.LogCall(this, "DetectOptimalMode() returning null - no optimal mode found");
+            return null;
         }
 
         public IEnumerable<VideoConfig> GetAvailableVideoSources()
@@ -302,6 +472,19 @@ namespace UI.Video
             recording = false;
             height = 0;
 
+            // For FPV feeds, check if they're configured and device is available (not necessarily streaming)
+            bool isFPVFeed = videoConfig.VideoBounds.Any(vb => vb.SourceType == SourceTypes.FPVFeed);
+            if (isFPVFeed)
+            {
+                // FPV monitor should show green if cameras are configured and device exists
+                connected = !string.IsNullOrEmpty(videoConfig.DeviceName) && videoConfig.DeviceName != "No Device";
+                recording = false; // FPV monitors don't show recording status
+                height = 480; // Default height for status display
+                Tools.Logger.VideoLog.LogCall(this, $"GetStatus: FPV feed status - Device: '{videoConfig.DeviceName}', Connected: {connected}");
+                return true;
+            }
+
+            // For non-FPV feeds, check actual frame source connection
             FrameSource frameSource = GetFrameSource(videoConfig);
             if (frameSource != null)
             {
@@ -372,7 +555,36 @@ namespace UI.Video
         {
             lock (frameSources)
             {
-                return frameSources.FirstOrDefault(dsss => dsss.VideoConfig == vs);
+                // First try exact object match
+                FrameSource existing = frameSources.FirstOrDefault(dsss => dsss.VideoConfig == vs);
+                if (existing != null)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Found existing source by object reference {existing.GetType().Name} (Instance: {existing.GetHashCode()}) for device: {vs.DeviceName}");
+                    return existing;
+                }
+                
+                // Fall back to device name match (for FPV monitor to share with race channels)
+                Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Looking for device name match, target: '{vs.DeviceName}', existing sources: {frameSources.Count}");
+                foreach (var source in frameSources)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Comparing '{vs.DeviceName}' with '{source.VideoConfig.DeviceName}'");
+                }
+                existing = frameSources.FirstOrDefault(dsss => dsss.VideoConfig.DeviceName == vs.DeviceName);
+                if (existing != null)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Found existing source by device name {existing.GetType().Name} (Instance: {existing.GetHashCode()}) for device: {vs.DeviceName}");
+                    return existing;
+                }
+                Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: No device name match found for '{vs.DeviceName}'");
+                
+                // Create new frame source if not found
+                Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Creating new source for device: {vs.DeviceName}");
+                FrameSource newSource = CreateFrameSource(vs);
+                if (newSource != null)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Created new source {newSource.GetType().Name} (Instance: {newSource.GetHashCode()}) for device: {vs.DeviceName}");
+                }
+                return newSource;
             }
         }
 
@@ -396,10 +608,39 @@ namespace UI.Video
                         }
                         else
                         {
-                            VideoFrameWork mediaFoundation = VideoFrameWorks.GetFramework(FrameWork.MediaFoundation);
-                            if (mediaFoundation != null)
+                            // Check if this is a WMV file
+                            bool isWMV = videoConfig.FilePath.EndsWith(".wmv");
+                            
+                            if (isWMV)
                             {
-                                source = mediaFoundation.CreateFrameSource(videoConfig);
+                                // Use FFmpeg for WMV files on both Windows and Mac (FFmpeg handles WMV excellently on both platforms)
+                                bool isWindows = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+                                string platform = isWindows ? "Windows" : "Mac";
+                                Tools.Logger.VideoLog.LogCall(this, $"Using FFmpeg for WMV playback on {platform} (original system used MediaFoundation on Windows, but FFmpeg handles WMV excellently on both platforms)");
+                                
+                                VideoFrameWork ffmpegFramework = VideoFrameWorks.GetFramework(FrameWork.ffmpeg);
+                                if (ffmpegFramework != null)
+                                {
+                                    source = ffmpegFramework.CreateFrameSource(videoConfig);
+                                }
+                                else
+                                {
+                                    throw new Exception("FFmpeg framework not available for WMV playback");
+                                }
+                            }
+                            else
+                            {
+                                // Use FFmpeg framework for other video file playback (MP4, MPEG-TS, etc.)
+                                Tools.Logger.VideoLog.LogCall(this, "Using FFmpeg for video file playback");
+                                VideoFrameWork ffmpegFramework = VideoFrameWorks.GetFramework(FrameWork.ffmpeg);
+                                if (ffmpegFramework != null)
+                                {
+                                    source = ffmpegFramework.CreateFrameSource(videoConfig);
+                                }
+                                else
+                                {
+                                    throw new Exception("FFmpeg framework not available for video playback");
+                                }
                             }
                         }
 
@@ -457,7 +698,31 @@ namespace UI.Video
 
                 foreach (FrameSource source in toRemove)
                 {
-                    DisposeOnWorkerThread(source);
+                    Logger.VideoLog.LogCall(this, $"Immediately stopping and disposing camera '{videoConfig.DeviceName}' to free resources for potential re-add");
+                    
+                    try
+                    {
+                        // Immediately stop the frame source to release camera
+                        if (source.State != FrameSource.States.Stopped)
+                        {
+                            source.Stop();
+                        }
+                        
+                        // Immediately dispose to kill ffmpeg processes
+                        // This ensures the camera is available for re-adding without delay
+                        source.Dispose();
+                        
+                        Logger.VideoLog.LogCall(this, $"Camera '{videoConfig.DeviceName}' immediately stopped and disposed");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.VideoLog.LogException(this, ex);
+                        Logger.VideoLog.LogCall(this, $"Exception during immediate disposal of '{videoConfig.DeviceName}' - adding to worker thread queue as fallback");
+                        
+                        // If immediate disposal fails, fall back to worker thread disposal
+                        DisposeOnWorkerThread(source);
+                    }
+                    
                     frameSources.Remove(source);
                 }
             }
@@ -467,8 +732,19 @@ namespace UI.Video
         {
             if (currentRace != null)
             {
-                return GetRecordings(currentRace).Any();
+                var recordings = GetRecordings(currentRace);
+                bool hasRecordings = recordings.Any();
+                Tools.Logger.VideoLog.LogCall(this, $"HasReplay check for race {currentRace.ID} - Found {recordings.Count()} recordings: {hasRecordings}");
+                
+                // Log the first few recordings for debugging
+                foreach (var recording in recordings.Take(3))
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"  Recording: {recording.DeviceName}, FilePath: {recording.FilePath}");
+                }
+                
+                return hasRecordings;
             }
+            Tools.Logger.VideoLog.LogCall(this, "HasReplay called with null race");
             return false;
         }
 
@@ -479,21 +755,35 @@ namespace UI.Video
 
         public IEnumerable<ChannelVideoInfo> CreateChannelVideoInfos(IEnumerable<VideoConfig> videoSources)
         {
+            Tools.Logger.VideoLog.LogCall(this, $"CreateChannelVideoInfos called with {videoSources?.Count() ?? 0} video sources");
+            
             List<ChannelVideoInfo> channelVideoInfos = new List<ChannelVideoInfo>();
             foreach (VideoConfig videoConfig in videoSources)
             {
+                Tools.Logger.VideoLog.LogCall(this, $"Processing VideoConfig: {videoConfig.DeviceName}, VideoBounds count: {videoConfig.VideoBounds?.Length ?? 0}");
+                
                 foreach (VideoBounds videoBounds in videoConfig.VideoBounds)
                 {
+                    Tools.Logger.VideoLog.LogCall(this, $"Processing VideoBounds: SourceType={videoBounds.SourceType}, Channel={videoBounds.GetChannel()?.ToString() ?? "null"}");
+                    
                     FrameSource source = null;
                     try
                     {
                         source = GetFrameSource(videoConfig);
+                        Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource returned: {source?.GetType()?.Name ?? "null"} (Instance: {source?.GetHashCode()})");
                     }
                     catch (System.Runtime.InteropServices.COMException e)
                     {
                         // Failed to load the camera..
                         Logger.VideoLog.LogException(this, e);
+                        Tools.Logger.VideoLog.LogCall(this, $"COM Exception getting frame source: {e.Message}");
                     }
+                    catch (Exception e)
+                    {
+                        Logger.VideoLog.LogException(this, e);
+                        Tools.Logger.VideoLog.LogCall(this, $"Exception getting frame source: {e.Message}");
+                    }
+                    
                     if (source != null)
                     {
                         Channel channel = videoBounds.GetChannel();
@@ -504,10 +794,16 @@ namespace UI.Video
 
                         ChannelVideoInfo cvi = new ChannelVideoInfo(videoBounds, channel, source);
                         channelVideoInfos.Add(cvi);
+                        Tools.Logger.VideoLog.LogCall(this, $"Created ChannelVideoInfo: Channel={channel}, FrameSource={source.GetType().Name} (Instance: {source.GetHashCode()})");
+                    }
+                    else
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "No frame source - skipping ChannelVideoInfo creation");
                     }
                 }
             }
 
+            Tools.Logger.VideoLog.LogCall(this, $"CreateChannelVideoInfos completed - returning {channelVideoInfos.Count} ChannelVideoInfos");
             return channelVideoInfos;
         }
 
@@ -515,24 +811,51 @@ namespace UI.Video
         public void StartRecording(Race race)
         {
             this.race = race;
+            Tools.Logger.VideoLog.LogCall(this, $"StartRecording called for race: {race?.ToString() ?? "null"}");
+            
             lock (recording)
             {
-                foreach (ICaptureFrameSource source in frameSources.OfType<ICaptureFrameSource>().Where(r => r.VideoConfig.RecordVideoForReplays))
+                var captureFrameSources = frameSources.OfType<ICaptureFrameSource>().ToList();
+                Tools.Logger.VideoLog.LogCall(this, $"Found {captureFrameSources.Count} ICaptureFrameSource instances");
+                
+                var recordingSources = captureFrameSources.Where(r => r.VideoConfig.RecordVideoForReplays).ToList();
+                Tools.Logger.VideoLog.LogCall(this, $"Found {recordingSources.Count} sources with RecordVideoForReplays=true");
+                
+                foreach (ICaptureFrameSource source in recordingSources)
                 {
+                    Tools.Logger.VideoLog.LogCall(this, $"Evaluating source: {source.GetType().Name} (Instance: {source.GetHashCode()})");
+                    Tools.Logger.VideoLog.LogCall(this, $"  - IsVisible: {source.IsVisible}");
+                    Tools.Logger.VideoLog.LogCall(this, $"  - VideoBounds count: {source.VideoConfig?.VideoBounds?.Length ?? 0}");
+                    
+                    if (source.VideoConfig?.VideoBounds != null)
+                    {
+                        var sourceTypes = source.VideoConfig.VideoBounds.Select(vb => vb.SourceType).ToArray();
+                        Tools.Logger.VideoLog.LogCall(this, $"  - Source types: [{string.Join(", ", sourceTypes)}]");
+                        bool allFPV = source.VideoConfig.VideoBounds.All(r => r.SourceType == SourceTypes.FPVFeed);
+                        Tools.Logger.VideoLog.LogCall(this, $"  - All FPV feeds: {allFPV}");
+                    }
+                    
                     // if all feeds on this source are FPV, only record if they're visible..
                     if (source.VideoConfig.VideoBounds.All(r => r.SourceType == SourceTypes.FPVFeed))
                     {
                         if (source.IsVisible)
                         {
+                            Tools.Logger.VideoLog.LogCall(this, $"  - Adding FPV source to recording (visible)");
                             recording.Add(source);
+                        }
+                        else
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"  - Skipping FPV source (not visible)");
                         }
                     }
                     else
                     {
-                        // record
+                        Tools.Logger.VideoLog.LogCall(this, $"  - Adding non-FPV source to recording");
                         recording.Add(source);
                     }
                 }
+                
+                Tools.Logger.VideoLog.LogCall(this, $"Recording collection now has {recording.Count} sources");
             }
             mutex.Set();
         }
@@ -558,8 +881,8 @@ namespace UI.Video
 
         private string GetRecordingFilename(Race race, FrameSource source)
         {
-            int index = frameSources.IndexOf(source);
-            return Path.Combine(EventDirectory.FullName, race.ID.ToString(), index.ToString());
+            // Use .mkv for better seekability and timestamp preservation as per specification
+            return Path.Combine(EventDirectory.FullName, race.ID.ToString(), source.VideoConfig.ffmpegId) + ".mkv";
         }
 
         public void LoadRecordings(Race race, FrameSourcesDelegate frameSourcesDelegate)
@@ -575,29 +898,50 @@ namespace UI.Video
         public IEnumerable<VideoConfig> GetRecordings(Race race)
         {
             DirectoryInfo raceDirectory = new DirectoryInfo(Path.Combine(EventDirectory.FullName, race.ID.ToString()));
+            Tools.Logger.VideoLog.LogCall(this, $"GetRecordings for race {race.ID} - Directory: {raceDirectory.FullName}, Exists: {raceDirectory.Exists}");
+            
             if (raceDirectory.Exists)
             {
-                foreach (FileInfo file in raceDirectory.GetFiles("*.recordinfo.xml"))
+                var recordInfoFiles = raceDirectory.GetFiles("*.recordinfo.xml");
+                Tools.Logger.VideoLog.LogCall(this, $"Found {recordInfoFiles.Length} .recordinfo.xml files");
+                
+                foreach (FileInfo file in recordInfoFiles)
                 {
+                    Tools.Logger.VideoLog.LogCall(this, $"Processing recordinfo file: {file.Name}");
                     RecodingInfo videoInfo = null;
 
                     try
                     {
                         videoInfo = IOTools.ReadSingle<RecodingInfo>(raceDirectory.FullName, file.Name);
+                        Tools.Logger.VideoLog.LogCall(this, $"Successfully read recordinfo: FilePath={videoInfo?.FilePath}");
                     }
                     catch (Exception ex)
                     {
-                        Logger.VideoLog.LogException(this, ex);
+                        Tools.Logger.VideoLog.LogException(this, ex);
                     }
 
                     if (videoInfo != null)
                     {
-                        if (File.Exists(videoInfo.FilePath))
+                        // Resolve the relative path to an absolute path for file existence check
+                        string absoluteVideoPath = Path.GetFullPath(videoInfo.FilePath);
+                        bool videoFileExists = File.Exists(absoluteVideoPath);
+                        Tools.Logger.VideoLog.LogCall(this, $"Video file exists: {videoFileExists} - {videoInfo.FilePath} (resolved to: {absoluteVideoPath})");
+                        
+                        if (videoFileExists)
                         {
+                            Tools.Logger.VideoLog.LogCall(this, $"Yielding video config for: {videoInfo.FilePath}");
                             yield return videoInfo.GetVideoConfig();
+                        }
+                        else
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"Video file not found: {videoInfo.FilePath} (resolved to: {absoluteVideoPath})");
                         }
                     }
                 }
+            }
+            else
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"Race directory does not exist: {raceDirectory.FullName}");
             }
         }
 
@@ -609,6 +953,19 @@ namespace UI.Video
                 RemoveFrameSource(videoConfig);
                 FrameSource fs = CreateFrameSource(videoConfig);
                 list.Add(fs);
+                
+                // For resolution changes, ensure immediate camera restart with new settings
+                if (fs != null)
+                {
+                    Logger.VideoLog.LogCall(this, $"Resolution change detected for '{videoConfig.DeviceName}' - forcing immediate clean restart");
+                    
+                    // Force immediate initialization by adding to queue and waking up worker thread
+                    Initialize(fs);
+                    
+                    // Wake up worker thread immediately to process the initialization
+                    // This prevents delays when resolution changes
+                    mutex.Set();
+                }
             }
 
             DoOnWorkerThread(() =>
@@ -651,7 +1008,22 @@ namespace UI.Video
                     {
                         file.Delete();
 
-                        FileInfo xmlconfig = new FileInfo(file.FullName.Replace(".wmv", ".recordinfo.xml"));
+                        // Handle different video file extensions for XML cleanup
+                        string xmlPath = file.FullName;
+                        if (xmlPath.EndsWith(".wmv"))
+                        {
+                            xmlPath = xmlPath.Replace(".wmv", ".recordinfo.xml");
+                        }
+                        else if (xmlPath.EndsWith(".mp4"))
+                        {
+                            xmlPath = xmlPath.Replace(".mp4", ".recordinfo.xml");
+                        }
+                        else if (xmlPath.EndsWith(".mkv"))
+                        {
+                            xmlPath = xmlPath.Replace(".mkv", ".recordinfo.xml");
+                        }
+                        
+                        FileInfo xmlconfig = new FileInfo(xmlPath);
                         if (xmlconfig.Exists)
                         {
                             xmlconfig.Delete();
@@ -684,6 +1056,11 @@ namespace UI.Video
                     {
                         yield return fileInfo;
                     }
+
+                    foreach (FileInfo fileInfo in raceDir.GetFiles("*.mkv"))
+                    {
+                        yield return fileInfo;
+                    }
                 }
             }
         }
@@ -710,12 +1087,12 @@ namespace UI.Video
             }
         }
 
-        private void WorkerThread()
+        private void WorkerThread(CancellationToken cancellationToken)
         {
             bool someFinalising = false;
 
             List<FrameSource> needsVideoInfoWrite = new List<FrameSource>();
-            while (runWorker)
+            while (runWorker && !cancellationToken.IsCancellationRequested)
             {
                 try
                 {
@@ -725,7 +1102,7 @@ namespace UI.Video
                         
                     }
 
-                    if (!runWorker)
+                    if (!runWorker || cancellationToken.IsCancellationRequested)
                         break;
 
                     if (someFinalising)
@@ -756,6 +1133,7 @@ namespace UI.Video
                                     }
                                     
                                     string filename = GetRecordingFilename(race, (FrameSource)source);
+                                    Tools.Logger.VideoLog.LogCall(this, $"Calling StartRecording on {source.GetType().Name} (Instance: {source.GetHashCode()}) with filename: {filename}");
                                     source.StartRecording(filename);
                                     doCountClean = true;
 
@@ -799,13 +1177,52 @@ namespace UI.Video
                         {
                             try
                             {
-                                if (source.FrameTimes != null && source.FrameTimes.Any())
+                                // Check if this is an RGBA recording source
+                                bool isRgbaRecording = source.GetType().Name.Contains("Composite") || source.GetType().Name.Contains("Hls");
+                                
+                                if (isRgbaRecording)
                                 {
-                                    RecodingInfo vi = new RecodingInfo(source);
-
-                                    FileInfo fileinfo = new FileInfo(vi.FilePath.Replace(".wmv", "") + ".recordinfo.xml");
-                                    IOTools.Write(fileinfo.Directory.FullName, fileinfo.Name, vi);
+                                    // For RGBA recording, XML is now generated by RgbaRecorderManager from camera loop
+                                    // No need to generate it here to avoid duplicates
+                                    Tools.Logger.VideoLog.LogCall(this, $"RGBA recording detected for {source.GetType().Name} - XML metadata handled by camera loop");
                                     needsVideoInfoWrite.Remove((FrameSource)source);
+                                }
+                                else
+                                {
+                                    // For non-RGBA recording, use existing logic
+                                    bool canGenerateXml = source.FrameTimes != null && source.FrameTimes.Any();
+                                    
+                                    if (canGenerateXml)
+                                    {
+                                        Tools.Logger.VideoLog.LogCall(this, $"Generating XML for {source.GetType().Name} with {source.FrameTimes.Length} frame times");
+                                        
+                                        RecodingInfo vi = new RecodingInfo(source);
+
+                                        // Handle both .wmv and .mp4 file extensions for metadata files
+                                        string basePath = vi.FilePath;
+                                        if (basePath.EndsWith(".wmv"))
+                                        {
+                                            basePath = basePath.Replace(".wmv", "");
+                                        }
+                                        else if (basePath.EndsWith(".mp4"))
+                                        {
+                                            basePath = basePath.Replace(".mp4", "");
+                                        }
+                                        else if (basePath.EndsWith(".ts"))
+                                        {
+                                            basePath = basePath.Replace(".ts", "");
+                                        }
+                                        else if (basePath.EndsWith(".mkv"))
+                                        {
+                                            basePath = basePath.Replace(".mkv", "");
+                                        }
+                                        
+                                        FileInfo fileinfo = new FileInfo(basePath + ".recordinfo.xml");
+                                        IOTools.Write(fileinfo.Directory.FullName, fileinfo.Name, vi);
+                                        needsVideoInfoWrite.Remove((FrameSource)source);
+                                        
+                                        Tools.Logger.VideoLog.LogCall(this, $"Generated XML file: {fileinfo.FullName} with {source.FrameTimes.Length} frame times");
+                                    }
                                 }
                             }
                             catch (Exception e)
@@ -967,6 +1384,16 @@ namespace UI.Video
                     }
                     else
                     {
+                        // Stop any existing frame source for this camera to avoid access conflicts
+                        FrameSource existingSource = GetFrameSource(vs);
+                        if (existingSource != null)
+                        {
+                            Logger.VideoLog.LogCall(this, $"Stopping existing frame source for '{vs.DeviceName}' to query modes");
+                            existingSource.Stop();
+                            // Small delay to ensure camera is fully released
+                            System.Threading.Thread.Sleep(500);
+                        }
+
                         // Clear the video mode so it's not a problem getting new modes if the current one doesnt work?
                         VideoConfig clone = vs.Clone();
                         clone.VideoMode = new Mode();
@@ -985,6 +1412,13 @@ namespace UI.Video
                                     }
                                 }
                             }
+                        }
+                        
+                        // Restart the existing source if it was running
+                        if (existingSource != null)
+                        {
+                            Logger.VideoLog.LogCall(this, $"Restarting frame source for '{vs.DeviceName}' after mode query");
+                            Initialize(existingSource);
                         }
                     }
 
