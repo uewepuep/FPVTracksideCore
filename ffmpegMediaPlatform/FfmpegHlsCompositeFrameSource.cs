@@ -18,17 +18,17 @@ namespace FfmpegMediaPlatform
         private bool disposed;
 
         // ICaptureFrameSource implementation
-        public new bool IsVisible => liveFrameSource?.IsVisible ?? false;
+        public override bool IsVisible => liveFrameSource?.IsVisible ?? false;
         public FrameTime[] FrameTimes => liveFrameSource?.FrameTimes ?? new FrameTime[0];
         public string Filename => liveFrameSource?.Filename ?? "";
-        public new VideoConfig VideoConfig => liveFrameSource?.VideoConfig;
+        public override VideoConfig VideoConfig => liveFrameSource?.VideoConfig;
         public bool RecordNextFrameTime { get; set; }
         
         // Additional properties for compatibility
         public DateTime StartTime => DateTime.Now; // HLS streams don't have a fixed start time
         
         // Recording-related properties
-        public new bool Recording => liveFrameSource?.Recording ?? false;
+        public override bool Recording => liveFrameSource?.Recording ?? false;
         public bool ManualRecording { get; set; }
         public bool Finalising => false; // HLS recording doesn't have a finalizing state
         public string HlsStreamUrl => liveFrameSource?.HlsStreamUrl;
@@ -65,7 +65,7 @@ namespace FfmpegMediaPlatform
             // Forward frame events from live source to UI and track for recording
             liveFrameSource.OnFrameEvent += ForwardFrameEvent;
             
-            Tools.Logger.VideoLog.LogCall(this, $"HLS Composite Frame Source initialized for device: {videoConfig.DeviceName} (Instance: {GetHashCode()})");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"HLS Composite Frame Source initialized for device: {videoConfig.DeviceName} (Instance: {GetHashCode()})");
 
             Direction = Directions.BottomUp;
         }
@@ -83,7 +83,7 @@ namespace FfmpegMediaPlatform
             // Log texture updates only occasionally to reduce spam
             if (drawFrameId % 120 == 0)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"UpdateTexture: drawFrameId={drawFrameId}, result={result}, texture={(texture != null ? $"{texture.Width}x{texture.Height}" : "null")}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"UpdateTexture: drawFrameId={drawFrameId}, result={result}, texture={(texture != null ? $"{texture.Width}x{texture.Height}" : "null")}");
             }
             
             return result;
@@ -94,7 +94,7 @@ namespace FfmpegMediaPlatform
         public override Microsoft.Xna.Framework.Graphics.SurfaceFormat FrameFormat => Microsoft.Xna.Framework.Graphics.SurfaceFormat.Color;
         
         // Forward state from live frame source
-        public new FrameSource.States State => liveFrameSource?.State ?? FrameSource.States.Stopped;
+        public override FrameSource.States State => liveFrameSource?.State ?? FrameSource.States.Stopped;
 
         private void ForwardFrameEvent(long sampleTime, long frameNumber)
         {
@@ -105,19 +105,19 @@ namespace FfmpegMediaPlatform
 
         public override bool Start()
         {
-            Tools.Logger.VideoLog.LogCall(this, $"Starting HLS Composite Frame Source (Instance: {GetHashCode()})");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"Starting HLS Composite Frame Source (Instance: {GetHashCode()})");
             
             // Check if the live frame source is actually healthy (not just "Running" state)
             bool isHealthy = IsLiveStreamHealthy();
             
             if (liveFrameSource.State == FrameSource.States.Running && isHealthy)
             {
-                Tools.Logger.VideoLog.LogCall(this, "HLS Live Frame Source already running and healthy - no restart needed");
+                Tools.Logger.VideoLog.LogDebugCall(this, "HLS Live Frame Source already running and healthy - no restart needed");
                 return true;
             }
             else if (liveFrameSource.State == FrameSource.States.Running && !isHealthy)
             {
-                Tools.Logger.VideoLog.LogCall(this, "HLS Live Frame Source reports running but is unhealthy - restarting");
+                Tools.Logger.VideoLog.LogDebugCall(this, "HLS Live Frame Source reports running but is unhealthy - restarting");
                 liveFrameSource.Stop();
                 System.Threading.Thread.Sleep(1000); // Brief pause for cleanup
             }
@@ -126,11 +126,11 @@ namespace FfmpegMediaPlatform
             
             if (result)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"HLS Composite Frame Source started - Stream URL: {HlsStreamUrl}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"HLS Composite Frame Source started - Stream URL: {HlsStreamUrl}");
             }
             else
             {
-                Tools.Logger.VideoLog.LogCall(this, "Failed to start HLS Composite Frame Source");
+                Tools.Logger.VideoLog.LogDebugCall(this, "Failed to start HLS Composite Frame Source");
             }
             
             return result;
@@ -148,7 +148,7 @@ namespace FfmpegMediaPlatform
                 // Check if RGBA frames are flowing from pipe:1 for live display
                 bool framesFlowing = liveFrameSource.Connected;
                 
-                Tools.Logger.VideoLog.LogCall(this, $"Live Stream Health Check - RGBA frames flowing: {framesFlowing}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Live Stream Health Check - RGBA frames flowing: {framesFlowing}");
                 
                 return framesFlowing;
             }
@@ -161,7 +161,7 @@ namespace FfmpegMediaPlatform
 
         public override bool Stop()
         {
-            Tools.Logger.VideoLog.LogCall(this, "Stopping HLS Composite Frame Source");
+            Tools.Logger.VideoLog.LogDebugCall(this, "Stopping HLS Composite Frame Source");
             
             // Stop recording first if active
             if (Recording)
@@ -171,7 +171,7 @@ namespace FfmpegMediaPlatform
             
             bool result = liveFrameSource.Stop();
             
-            Tools.Logger.VideoLog.LogCall(this, "HLS Composite Frame Source stopped");
+            Tools.Logger.VideoLog.LogDebugCall(this, "HLS Composite Frame Source stopped");
             return result;
         }
 
@@ -179,13 +179,13 @@ namespace FfmpegMediaPlatform
         {
             // HLS streams don't support pause/unpause in the traditional sense
             // The live stream continues, but we could potentially pause the display
-            Tools.Logger.VideoLog.LogCall(this, "Pause not supported for HLS Composite Frame Source");
+            Tools.Logger.VideoLog.LogDebugCall(this, "Pause not supported for HLS Composite Frame Source");
             return false;
         }
 
         public override bool Unpause()
         {
-            Tools.Logger.VideoLog.LogCall(this, "Unpause not supported for HLS Composite Frame Source");
+            Tools.Logger.VideoLog.LogDebugCall(this, "Unpause not supported for HLS Composite Frame Source");
             return false;
         }
 
@@ -206,24 +206,24 @@ namespace FfmpegMediaPlatform
         {
             if (Recording)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"Already recording to {liveFrameSource.Filename}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Already recording to {liveFrameSource.Filename}");
                 return;
             }
 
             if (liveFrameSource.State != FrameSource.States.Running)
             {
-                Tools.Logger.VideoLog.LogCall(this, "Cannot start recording - live stream is not running");
+                Tools.Logger.VideoLog.LogDebugCall(this, "Cannot start recording - live stream is not running");
                 return;
             }
 
             // Frame timing is now handled by the live frame source's RGBA recorder
 
-            Tools.Logger.VideoLog.LogCall(this, $"Starting RGBA recording to {filename}");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"Starting RGBA recording to {filename}");
             
             // Delegate to the live frame source's RGBA recording capability
             liveFrameSource.StartRecording(filename);
             
-            Tools.Logger.VideoLog.LogCall(this, $"RGBA recording started via live frame source to {filename}");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"RGBA recording started via live frame source to {filename}");
         }
 
         /// <summary>
@@ -241,16 +241,16 @@ namespace FfmpegMediaPlatform
         {
             if (!Recording)
             {
-                Tools.Logger.VideoLog.LogCall(this, "Not currently recording");
+                Tools.Logger.VideoLog.LogDebugCall(this, "Not currently recording");
                 return;
             }
 
-            Tools.Logger.VideoLog.LogCall(this, "Stopping RGBA recording");
+            Tools.Logger.VideoLog.LogDebugCall(this, "Stopping RGBA recording");
             
             // Delegate to the live frame source's RGBA recording capability
             liveFrameSource.StopRecording();
             
-            Tools.Logger.VideoLog.LogCall(this, "RGBA recording stopped via live frame source");
+            Tools.Logger.VideoLog.LogDebugCall(this, "RGBA recording stopped via live frame source");
         }
 
         /// <summary>
@@ -263,7 +263,7 @@ namespace FfmpegMediaPlatform
         {
             if (maxDurationSeconds > 0)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"Warning: Maximum duration ({maxDurationSeconds}s) is not supported with RGBA recording - starting unlimited recording");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Warning: Maximum duration ({maxDurationSeconds}s) is not supported with RGBA recording - starting unlimited recording");
             }
             
             // Delegate to the regular StartRecording method
@@ -293,7 +293,7 @@ namespace FfmpegMediaPlatform
             if (disposed)
                 return;
 
-            Tools.Logger.VideoLog.LogCall(this, "Disposing HLS Composite Frame Source");
+            Tools.Logger.VideoLog.LogDebugCall(this, "Disposing HLS Composite Frame Source");
 
             try
             {

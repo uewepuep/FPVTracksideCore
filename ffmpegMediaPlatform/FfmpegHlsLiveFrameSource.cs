@@ -56,35 +56,35 @@ namespace FfmpegMediaPlatform
                 // Ensure HLS output directory exists with proper permissions
                 try
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"Binary directory: {binaryDir}");
-                    Tools.Logger.VideoLog.LogCall(this, $"Current working directory: {Directory.GetCurrentDirectory()}");
-                    Tools.Logger.VideoLog.LogCall(this, $"Target HLS path: {hlsOutputPath}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"Binary directory: {binaryDir}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"Current working directory: {Directory.GetCurrentDirectory()}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"Target HLS path: {hlsOutputPath}");
                     
                     if (Directory.Exists(hlsOutputPath))
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "Removing existing HLS directory");
+                        Tools.Logger.VideoLog.LogDebugCall(this, "Removing existing HLS directory");
                         Directory.Delete(hlsOutputPath, true);
                     }
                     Directory.CreateDirectory(hlsOutputPath);
-                    Tools.Logger.VideoLog.LogCall(this, $"Created HLS directory: {hlsOutputPath}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"Created HLS directory: {hlsOutputPath}");
                     
                     // Test directory writability
                     string testFile = Path.Combine(hlsOutputPath, "test_write.tmp");
                     File.WriteAllText(testFile, "test");
                     File.Delete(testFile);
-                    Tools.Logger.VideoLog.LogCall(this, "HLS directory write test passed");
+                    Tools.Logger.VideoLog.LogDebugCall(this, "HLS directory write test passed");
                     
-                    Tools.Logger.VideoLog.LogCall(this, $"HLS Live Frame Source initialized - HTTP port: {httpPort}, HLS path: {hlsOutputPath}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"HLS Live Frame Source initialized - HTTP port: {httpPort}, HLS path: {hlsOutputPath}");
                 }
                 catch (Exception ex)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"Failed to create writable HLS directory: {ex.Message}");
+                    Tools.Logger.VideoLog.LogException(this, "Failed to create writable HLS directory", ex);
                     throw new InvalidOperationException($"Cannot create writable HLS directory at {hlsOutputPath}", ex);
                 }
             }
             else
             {
-                Tools.Logger.VideoLog.LogCall(this, "HLS Live Frame Source initialized with HLS DISABLED - HTTP port: {httpPort}");
+                Tools.Logger.VideoLog.LogDebugCall(this, "HLS Live Frame Source initialized with HLS DISABLED - HTTP port: {httpPort}");
             }
         }
 
@@ -105,13 +105,13 @@ namespace FfmpegMediaPlatform
 
         private IEnumerable<Mode> GetMacOSModes()
         {
-            Tools.Logger.VideoLog.LogCall(this, $"GetMacOSModes() called - querying AVFoundation capabilities for '{VideoConfig.DeviceName}'");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"GetMacOSModes() called - querying AVFoundation capabilities for '{VideoConfig.DeviceName}'");
             List<Mode> supportedModes = new List<Mode>();
             
             try
             {
                 string testArgs = $"-f avfoundation -framerate 30 -video_size 1234x5678 -i \"{VideoConfig.DeviceName}\"";
-                Tools.Logger.VideoLog.LogCall(this, $"Querying supported modes with command: ffmpeg {testArgs}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Querying supported modes with command: ffmpeg {testArgs}");
                 
                 var output = ffmpegMediaFramework.GetFfmpegText(testArgs, l => 
                     l.Contains("Supported modes:") || 
@@ -161,7 +161,7 @@ namespace FfmpegMediaPlatform
                     }
                 }
                 
-                Tools.Logger.VideoLog.LogCall(this, $"macOS camera capability detection complete: {supportedModes.Count} supported modes found");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"macOS camera capability detection complete: {supportedModes.Count} supported modes found");
             }
             catch (Exception ex)
             {
@@ -173,7 +173,7 @@ namespace FfmpegMediaPlatform
 
         private IEnumerable<Mode> GetWindowsModes()
         {
-            Tools.Logger.VideoLog.LogCall(this, $"GetWindowsModes() called - querying DirectShow capabilities for '{VideoConfig.DeviceName}'");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"GetWindowsModes() called - querying DirectShow capabilities for '{VideoConfig.DeviceName}'");
             List<Mode> supportedModes = new List<Mode>();
             
             try
@@ -309,7 +309,7 @@ namespace FfmpegMediaPlatform
                     index++;
                 }
                 
-                Tools.Logger.VideoLog.LogCall(this, $"Windows camera capability detection complete: {supportedModes.Count} supported modes found");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Windows camera capability detection complete: {supportedModes.Count} supported modes found");
             }
             catch (Exception ex)
             {
@@ -352,16 +352,16 @@ namespace FfmpegMediaPlatform
                 string hlsPath = Path.Combine(hlsOutputPath, "stream.m3u8");
 
                 // Log paths for debugging
-                Tools.Logger.VideoLog.LogCall(this, $"HLS output directory: {hlsOutputPath}");
-                Tools.Logger.VideoLog.LogCall(this, $"HLS playlist path: {hlsPath}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"HLS output directory: {hlsOutputPath}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"HLS playlist path: {hlsPath}");
 
                 // Dual output FFmpeg command:
                 // 1. Raw RGBA to pipe:1 for live processing
                 // 2. HLS stream for HTTP access and recording
 
                 // Log individual components for debugging
-                Tools.Logger.VideoLog.LogCall(this, $"Input args: {inputArgs}");
-                Tools.Logger.VideoLog.LogCall(this, $"Video mode: {VideoConfig.VideoMode?.Width}x{VideoConfig.VideoMode?.Height}@{VideoConfig.VideoMode?.FrameRate}fps");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Input args: {inputArgs}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Video mode: {VideoConfig.VideoMode?.Width}x{VideoConfig.VideoMode?.Height}@{VideoConfig.VideoMode?.FrameRate}fps");
 
                 // Get hardware-accelerated encoding settings
                 string encodingArgs = GetHardwareEncodingArgs();
@@ -386,18 +386,18 @@ namespace FfmpegMediaPlatform
                                    $"-start_number 0 " +  // Start numbering from 0
                                    $"-f hls \"{hlsPath}\"";
 
-                Tools.Logger.VideoLog.LogCall(this, $"HLS Live Stream with filters: {videoFilter}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"HLS Live Stream with filters: {videoFilter}");
 
-                Tools.Logger.VideoLog.LogCall(this, $"Hardware Accelerated HLS FFmpeg Command:");
-                Tools.Logger.VideoLog.LogCall(this, ffmpegArgs);
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Hardware Accelerated HLS FFmpeg Command:");
+                Tools.Logger.VideoLog.LogDebugCall(this, ffmpegArgs);
                 return ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
             }
             else
             {
                 // HLS DISABLED: Single output - RGBA only for live processing
-                Tools.Logger.VideoLog.LogCall(this, $"HLS is DISABLED - using single RGBA output only");
-                Tools.Logger.VideoLog.LogCall(this, $"Input args: {inputArgs}");
-                Tools.Logger.VideoLog.LogCall(this, $"Video mode: {VideoConfig.VideoMode?.Width}x{VideoConfig.VideoMode?.Height}@{VideoConfig.VideoMode?.FrameRate}fps");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"HLS is DISABLED - using single RGBA output only");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Input args: {inputArgs}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Video mode: {VideoConfig.VideoMode?.Width}x{VideoConfig.VideoMode?.Height}@{VideoConfig.VideoMode?.FrameRate}fps");
 
                 // Single output FFmpeg command - RGBA only with flip/mirror filters
                 string ffmpegArgs = $"{inputArgs} " +
@@ -411,8 +411,8 @@ namespace FfmpegMediaPlatform
                                    $"-f rawvideo " +
                                    $"pipe:1";  // RGBA output for live display only
 
-                Tools.Logger.VideoLog.LogCall(this, $"RGBA-Only FFmpeg Command (HLS Disabled) with filters: {videoFilter} HW Accel: {VideoConfig.HardwareDecodeAcceleration}:");
-                Tools.Logger.VideoLog.LogCall(this, ffmpegArgs);
+                Tools.Logger.VideoLog.LogDebugCall(this, $"RGBA-Only FFmpeg Command (HLS Disabled) with filters: {videoFilter} HW Accel: {VideoConfig.HardwareDecodeAcceleration}:");
+                Tools.Logger.VideoLog.LogDebugCall(this, ffmpegArgs);
                 return ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
             }
         }
@@ -423,18 +423,18 @@ namespace FfmpegMediaPlatform
             
             if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
             {
-                Tools.Logger.VideoLog.LogCall(this, $"CAMERA DEBUG: Requesting {VideoConfig.VideoMode.FrameRate}fps from camera '{name}'");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"CAMERA DEBUG: Requesting {VideoConfig.VideoMode.FrameRate}fps from camera '{name}'");
                 
                 // Add hardware decode acceleration for macOS (only for compressed formats)
                 string hwaccelArgs = "";
                 if (VideoConfig.HardwareDecodeAcceleration && VideoConfig.IsCompressedVideoFormat)
                 {
                     hwaccelArgs = "-hwaccel videotoolbox ";
-                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode acceleration enabled for {VideoConfig.VideoMode?.Format} - trying VideoToolbox");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Hardware decode acceleration enabled for {VideoConfig.VideoMode?.Format} - trying VideoToolbox");
                 }
                 else if (VideoConfig.HardwareDecodeAcceleration && !VideoConfig.IsCompressedVideoFormat)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode acceleration skipped for uncompressed format: {VideoConfig.VideoMode?.Format}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Hardware decode acceleration skipped for uncompressed format: {VideoConfig.VideoMode?.Format}");
                 }
                 
                 return $"-f avfoundation " +
@@ -451,11 +451,11 @@ namespace FfmpegMediaPlatform
                 if (VideoConfig.HardwareDecodeAcceleration && VideoConfig.IsCompressedVideoFormat)
                 {
                     hwaccelArgs = "-hwaccel cuda ";
-                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode acceleration enabled for {VideoConfig.VideoMode?.Format} - trying NVDEC/CUDA");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Hardware decode acceleration enabled for {VideoConfig.VideoMode?.Format} - trying NVDEC/CUDA");
                 }
                 else if (VideoConfig.HardwareDecodeAcceleration && !VideoConfig.IsCompressedVideoFormat)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Hardware decode acceleration skipped for uncompressed format: {VideoConfig.VideoMode?.Format}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Hardware decode acceleration skipped for uncompressed format: {VideoConfig.VideoMode?.Format}");
                 }
                 
                 // Build format-specific input arguments
@@ -501,7 +501,7 @@ namespace FfmpegMediaPlatform
                 {
                     // macOS - Use VideoToolbox hardware acceleration
                     string decodingArgs = useHardwareDecoding ? GetMacOSHardwareDecodingArgs() : "";
-                    Tools.Logger.VideoLog.LogCall(this, $"Using macOS VideoToolbox hardware encoding (hardware decode: {useHardwareDecoding})");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"Using macOS VideoToolbox hardware encoding (hardware decode: {useHardwareDecoding})");
                     return $"{decodingArgs}-c:v h264_videotoolbox -q:v 50 -realtime 1 " +
                            "-b:v 8M -maxrate 12M -bufsize 2M " +
                            "-pix_fmt yuv420p -profile:v high -level 4.0";
@@ -520,11 +520,11 @@ namespace FfmpegMediaPlatform
             catch (Exception ex)
             {
                 Tools.Logger.VideoLog.LogException(this, ex);
-                Tools.Logger.VideoLog.LogCall(this, "Hardware encoding detection failed, falling back to software");
+                Tools.Logger.VideoLog.LogDebugCall(this, "Hardware encoding detection failed, falling back to software");
             }
 
             // Fallback to software encoding
-            Tools.Logger.VideoLog.LogCall(this, $"Using software encoding (libx264) (hardware decode: {useHardwareDecoding})");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"Using software encoding (libx264) (hardware decode: {useHardwareDecoding})");
             string softwareDecodingArgs = useHardwareDecoding ? GetSoftwareHardwareDecodingArgs() : "";
             return $"{softwareDecodingArgs}-c:v libx264 -preset medium -tune zerolatency -crf 18 " +
                    "-b:v 8M -maxrate 12M -bufsize 2M " +
@@ -541,7 +541,7 @@ namespace FfmpegMediaPlatform
             // Try NVIDIA NVENC first (most common for gaming/streaming)
             if (IsEncoderAvailable("h264_nvenc"))
             {
-                Tools.Logger.VideoLog.LogCall(this, $"Using NVIDIA NVENC hardware encoding (hardware decode: {useHardwareDecoding})");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Using NVIDIA NVENC hardware encoding (hardware decode: {useHardwareDecoding})");
                 return $"{decodingArgs}-c:v h264_nvenc -preset p3 -tune ll -rc vbr " +
                        "-cq 18 -b:v 8M -maxrate 12M -bufsize 2M " +
                        "-pix_fmt yuv420p -profile:v high -level 4.0";   
@@ -550,14 +550,14 @@ namespace FfmpegMediaPlatform
             // Try Intel Quick Sync Video
             if (IsEncoderAvailable("h264_qsv"))
             {
-                Tools.Logger.VideoLog.LogCall(this, $"Using Intel Quick Sync Video hardware encoding (hardware decode: {useHardwareDecoding})");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Using Intel Quick Sync Video hardware encoding (hardware decode: {useHardwareDecoding})");
                 return $"{decodingArgs}-c:v h264_qsv -preset veryfast -global_quality 18 " +
                        "-b:v 8M -maxrate 12M -bufsize 2M " +
                        "-pix_fmt yuv420p -profile:v high -level 4.0";
             }
             
             // Fallback to software
-            Tools.Logger.VideoLog.LogCall(this, $"No hardware encoders detected on Windows, using software (hardware decode: {useHardwareDecoding})");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"No hardware encoders detected on Windows, using software (hardware decode: {useHardwareDecoding})");
             return $"{decodingArgs}-c:v libx264 -preset medium -tune zerolatency -crf 18 " +
                    "-b:v 8M -maxrate 12M -bufsize 2M " +
                    "-pix_fmt yuv420p -profile:v high -level 4.0";
@@ -573,7 +573,7 @@ namespace FfmpegMediaPlatform
             // Try NVIDIA NVENC first
             if (IsEncoderAvailable("h264_nvenc"))
             {
-                Tools.Logger.VideoLog.LogCall(this, $"Using NVIDIA NVENC hardware encoding on Linux (hardware decode: {useHardwareDecoding})");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Using NVIDIA NVENC hardware encoding on Linux (hardware decode: {useHardwareDecoding})");
                 return $"{decodingArgs}-c:v h264_nvenc -preset p1 -tune ll -rc vbr " +
                        "-cq 18 -b:v 8M -maxrate 12M -bufsize 2M " +
                        "-pix_fmt yuv420p -profile:v high -level 4.0";
@@ -582,14 +582,14 @@ namespace FfmpegMediaPlatform
             // Try VAAPI (Intel/AMD integrated graphics)
             if (IsEncoderAvailable("h264_vaapi"))
             {
-                Tools.Logger.VideoLog.LogCall(this, $"Using VAAPI hardware encoding on Linux (hardware decode: {useHardwareDecoding})");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Using VAAPI hardware encoding on Linux (hardware decode: {useHardwareDecoding})");
                 return $"{decodingArgs}-c:v h264_vaapi -qp 18 " +
                        "-b:v 8M -maxrate 12M -bufsize 2M " +
                        "-pix_fmt yuv420p -profile:v high -level 4.0";
             }
             
             // Fallback to software
-            Tools.Logger.VideoLog.LogCall(this, $"No hardware encoders detected on Linux, using software (hardware decode: {useHardwareDecoding})");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"No hardware encoders detected on Linux, using software (hardware decode: {useHardwareDecoding})");
             return $"{decodingArgs}-c:v libx264 -preset medium -tune zerolatency -crf 18 " +
                    "-b:v 8M -maxrate 12M -bufsize 2M " +
                    "-pix_fmt yuv420p -profile:v high -level 4.0";
@@ -601,7 +601,7 @@ namespace FfmpegMediaPlatform
         private string GetMacOSHardwareDecodingArgs()
         {
             // macOS VideoToolbox hardware decoding for compressed video
-            Tools.Logger.VideoLog.LogCall(this, "Adding macOS VideoToolbox hardware decode acceleration");
+            Tools.Logger.VideoLog.LogDebugCall(this, "Adding macOS VideoToolbox hardware decode acceleration");
             return "-hwaccel videotoolbox -hwaccel_output_format videotoolbox_vld ";
         }
 
@@ -613,21 +613,21 @@ namespace FfmpegMediaPlatform
             // Windows - Try NVDEC first, then DXVA2, then D3D11VA
             if (IsDecoderAvailable("h264_cuvid"))
             {
-                Tools.Logger.VideoLog.LogCall(this, "Adding Windows NVDEC hardware decode acceleration");
+                Tools.Logger.VideoLog.LogDebugCall(this, "Adding Windows NVDEC hardware decode acceleration");
                 return "-hwaccel cuda -hwaccel_output_format cuda ";
             }
             else if (IsDecoderAvailable("dxva2"))
             {
-                Tools.Logger.VideoLog.LogCall(this, "Adding Windows DXVA2 hardware decode acceleration");
+                Tools.Logger.VideoLog.LogDebugCall(this, "Adding Windows DXVA2 hardware decode acceleration");
                 return "-hwaccel dxva2 ";
             }
             else if (IsDecoderAvailable("d3d11va"))
             {
-                Tools.Logger.VideoLog.LogCall(this, "Adding Windows D3D11VA hardware decode acceleration");
+                Tools.Logger.VideoLog.LogDebugCall(this, "Adding Windows D3D11VA hardware decode acceleration");
                 return "-hwaccel d3d11va ";
             }
             
-            Tools.Logger.VideoLog.LogCall(this, "No Windows hardware decoders available, using software decode");
+            Tools.Logger.VideoLog.LogDebugCall(this, "No Windows hardware decoders available, using software decode");
             return "";
         }
 
@@ -639,16 +639,16 @@ namespace FfmpegMediaPlatform
             // Linux - Try NVDEC first, then VAAPI
             if (IsDecoderAvailable("h264_cuvid"))
             {
-                Tools.Logger.VideoLog.LogCall(this, "Adding Linux NVDEC hardware decode acceleration");
+                Tools.Logger.VideoLog.LogDebugCall(this, "Adding Linux NVDEC hardware decode acceleration");
                 return "-hwaccel cuda -hwaccel_output_format cuda ";
             }
             else if (IsDecoderAvailable("vaapi"))
             {
-                Tools.Logger.VideoLog.LogCall(this, "Adding Linux VAAPI hardware decode acceleration");
+                Tools.Logger.VideoLog.LogDebugCall(this, "Adding Linux VAAPI hardware decode acceleration");
                 return "-hwaccel vaapi -hwaccel_output_format vaapi ";
             }
             
-            Tools.Logger.VideoLog.LogCall(this, "No Linux hardware decoders available, using software decode");
+            Tools.Logger.VideoLog.LogDebugCall(this, "No Linux hardware decoders available, using software decode");
             return "";
         }
 
@@ -658,7 +658,7 @@ namespace FfmpegMediaPlatform
         private string GetSoftwareHardwareDecodingArgs()
         {
             // Generic hardware acceleration attempt - let FFmpeg auto-detect
-            Tools.Logger.VideoLog.LogCall(this, "Attempting auto hardware decode acceleration");
+            Tools.Logger.VideoLog.LogDebugCall(this, "Attempting auto hardware decode acceleration");
             return "-hwaccel auto ";
         }
 
@@ -700,22 +700,22 @@ namespace FfmpegMediaPlatform
 
         public override bool Start()
         {
-            Tools.Logger.VideoLog.LogCall(this, HlsEnabled ? "Starting HLS Live Frame Source" : "Starting RGBA-Only Live Frame Source (HLS Disabled)");
+            Tools.Logger.VideoLog.LogDebugCall(this, HlsEnabled ? "Starting HLS Live Frame Source" : "Starting RGBA-Only Live Frame Source (HLS Disabled)");
             
             if (!HlsEnabled)
             {
-                Tools.Logger.VideoLog.LogCall(this, "HLS is disabled, skipping HLS directory check and HTTP server.");
+                Tools.Logger.VideoLog.LogDebugCall(this, "HLS is disabled, skipping HLS directory check and HTTP server.");
                 // Start the FFmpeg process with single RGBA output only
-                Tools.Logger.VideoLog.LogCall(this, "Attempting to start FFmpeg process with single RGBA output");
+                Tools.Logger.VideoLog.LogDebugCall(this, "Attempting to start FFmpeg process with single RGBA output");
                 bool rgbaResult = base.Start();
                 
                 if (rgbaResult)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "RGBA-Only Live Stream started successfully (HLS Disabled)");
+                    Tools.Logger.VideoLog.LogDebugCall(this, "RGBA-Only Live Stream started successfully (HLS Disabled)");
                 }
                 else
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "FAILED to start RGBA-Only Live Stream - FFmpeg process did not start");
+                    Tools.Logger.VideoLog.LogDebugCall(this, "FAILED to start RGBA-Only Live Stream - FFmpeg process did not start");
                 }
                 
                 return rgbaResult;
@@ -725,7 +725,7 @@ namespace FfmpegMediaPlatform
             // Ensure HLS directory still exists before starting FFmpeg
             if (!Directory.Exists(hlsOutputPath))
             {
-                Tools.Logger.VideoLog.LogCall(this, $"HLS directory missing, recreating: {hlsOutputPath}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"HLS directory missing, recreating: {hlsOutputPath}");
                 try
                 {
                     Directory.CreateDirectory(hlsOutputPath);
@@ -733,7 +733,7 @@ namespace FfmpegMediaPlatform
                 catch (Exception ex)
                 {
                     Tools.Logger.VideoLog.LogException(this, ex);
-                    Tools.Logger.VideoLog.LogCall(this, $"Failed to recreate HLS directory: {ex.Message}");
+                    Tools.Logger.VideoLog.LogException(this, "Failed to recreate HLS directory", ex);
                     return false;
                 }
             }
@@ -741,26 +741,26 @@ namespace FfmpegMediaPlatform
             // Start HTTP server first
             if (!StartHttpServer())
             {
-                Tools.Logger.VideoLog.LogCall(this, "Failed to start HTTP server, cannot start HLS streaming");
+                Tools.Logger.VideoLog.LogDebugCall(this, "Failed to start HTTP server, cannot start HLS streaming");
                 return false;
             }
             
             // Start the FFmpeg process with dual outputs
-            Tools.Logger.VideoLog.LogCall(this, "Attempting to start FFmpeg process with dual outputs");
+            Tools.Logger.VideoLog.LogDebugCall(this, "Attempting to start FFmpeg process with dual outputs");
             bool result = base.Start();
             
             if (result)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"HLS Live Stream started successfully - Stream URL: {HlsStreamUrl}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"HLS Live Stream started successfully - Stream URL: {HlsStreamUrl}");
             }
             else
             {
-                Tools.Logger.VideoLog.LogCall(this, "FAILED to start HLS Live Stream - FFmpeg process did not start");
-                Tools.Logger.VideoLog.LogCall(this, "This could be due to:");
-                Tools.Logger.VideoLog.LogCall(this, "1. Invalid FFmpeg command syntax");
-                Tools.Logger.VideoLog.LogCall(this, "2. Camera/device not available");
-                Tools.Logger.VideoLog.LogCall(this, "3. HLS output directory permission issues");
-                Tools.Logger.VideoLog.LogCall(this, "4. FFmpeg codec/filter issues");
+                Tools.Logger.VideoLog.LogDebugCall(this, "FAILED to start HLS Live Stream - FFmpeg process did not start");
+                Tools.Logger.VideoLog.LogDebugCall(this, "This could be due to:");
+                Tools.Logger.VideoLog.LogDebugCall(this, "1. Invalid FFmpeg command syntax");
+                Tools.Logger.VideoLog.LogDebugCall(this, "2. Camera/device not available");
+                Tools.Logger.VideoLog.LogDebugCall(this, "3. HLS output directory permission issues");
+                Tools.Logger.VideoLog.LogDebugCall(this, "4. FFmpeg codec/filter issues");
                 StopHttpServer();
             }
             
@@ -769,7 +769,7 @@ namespace FfmpegMediaPlatform
 
         public override bool Stop()
         {
-            Tools.Logger.VideoLog.LogCall(this, "Stopping HLS Live Frame Source (immediate kill - no graceful shutdown)");
+            Tools.Logger.VideoLog.LogDebugCall(this, "Stopping HLS Live Frame Source (immediate kill - no graceful shutdown)");
             
             // Force immediate stop for live stream - override base behavior
             bool result = StopImmediate();
@@ -783,31 +783,31 @@ namespace FfmpegMediaPlatform
         /// </summary>
         private bool StopImmediate()
         {
-            Tools.Logger.VideoLog.LogCall(this, "Forcing immediate HLS live stream termination");
+            Tools.Logger.VideoLog.LogDebugCall(this, "Forcing immediate HLS live stream termination");
             run = false;
             
             // Kill reading thread immediately
             if (thread != null && thread.IsAlive)
             {
-                Tools.Logger.VideoLog.LogCall(this, "Terminating reading thread immediately");
+                Tools.Logger.VideoLog.LogDebugCall(this, "Terminating reading thread immediately");
                 thread = null; // Don't wait for thread to finish
             }
             
             // Kill FFmpeg process immediately
             if (process != null && !process.HasExited)
             {
-                Tools.Logger.VideoLog.LogCall(this, "Killing HLS FFmpeg process immediately (no graceful shutdown)");
+                Tools.Logger.VideoLog.LogDebugCall(this, "Killing HLS FFmpeg process immediately (no graceful shutdown)");
                 try
                 {
                     process.Kill();
                     if (!process.WaitForExit(1000)) // Very short timeout
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "Process didn't die in 1 second, continuing anyway");
+                        Tools.Logger.VideoLog.LogDebugCall(this, "Process didn't die in 1 second, continuing anyway");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"Error killing HLS process: {ex.Message}");
+                    Tools.Logger.VideoLog.LogException(this, "Error killing HLS process", ex);
                 }
             }
             
@@ -819,12 +819,12 @@ namespace FfmpegMediaPlatform
                 }
                 catch (Exception ex)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"Error disposing HLS process: {ex.Message}");
+                    Tools.Logger.VideoLog.LogException(this, "Error disposing HLS process", ex);
                 }
                 process = null;
             }
             
-            Tools.Logger.VideoLog.LogCall(this, "HLS Live Frame Source stopped immediately");
+            Tools.Logger.VideoLog.LogDebugCall(this, "HLS Live Frame Source stopped immediately");
             return true;
         }
 
@@ -834,13 +834,13 @@ namespace FfmpegMediaPlatform
             {
                 if (httpServerRunning)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "HTTP server already running");
+                    Tools.Logger.VideoLog.LogDebugCall(this, "HTTP server already running");
                     return true;
                 }
 
                 if (!HlsEnabled)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "HLS is disabled, skipping HTTP server start.");
+                    Tools.Logger.VideoLog.LogDebugCall(this, "HLS is disabled, skipping HTTP server start.");
                     return true;
                 }
 
@@ -858,13 +858,13 @@ namespace FfmpegMediaPlatform
                     };
                     httpServerThread.Start();
                     
-                    Tools.Logger.VideoLog.LogCall(this, $"HTTP server started on port {httpPort}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"HTTP server started on port {httpPort}");
                     return true;
                 }
                 catch (Exception ex)
                 {
                     Tools.Logger.VideoLog.LogException(this, ex);
-                    Tools.Logger.VideoLog.LogCall(this, $"Failed to start HTTP server on port {httpPort}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"Failed to start HTTP server on port {httpPort}");
                     return false;
                 }
             }
@@ -879,7 +879,7 @@ namespace FfmpegMediaPlatform
 
                 if (!HlsEnabled)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "HLS is disabled, skipping HTTP server stop.");
+                    Tools.Logger.VideoLog.LogDebugCall(this, "HLS is disabled, skipping HTTP server stop.");
                     return;
                 }
 
@@ -890,7 +890,7 @@ namespace FfmpegMediaPlatform
                     httpServer?.Close();
                     httpServerThread?.Join(5000);
                     
-                    Tools.Logger.VideoLog.LogCall(this, "HTTP server stopped");
+                    Tools.Logger.VideoLog.LogDebugCall(this, "HTTP server stopped");
                 }
                 catch (Exception ex)
                 {
@@ -906,7 +906,7 @@ namespace FfmpegMediaPlatform
 
         private void HttpServerWorker()
         {
-            Tools.Logger.VideoLog.LogCall(this, "HTTP server worker thread started");
+            Tools.Logger.VideoLog.LogDebugCall(this, "HTTP server worker thread started");
             
             while (httpServerRunning)
             {
@@ -926,7 +926,7 @@ namespace FfmpegMediaPlatform
                 }
             }
             
-            Tools.Logger.VideoLog.LogCall(this, "HTTP server worker thread stopped");
+            Tools.Logger.VideoLog.LogDebugCall(this, "HTTP server worker thread stopped");
         }
 
         private void HandleHttpRequest(HttpListenerContext context)
@@ -934,7 +934,7 @@ namespace FfmpegMediaPlatform
             try
             {
                 string requestPath = context.Request.Url.AbsolutePath;
-                Tools.Logger.VideoLog.LogCall(this, $"HTTP request: {requestPath}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"HTTP request: {requestPath}");
                 
                 if (HlsEnabled)
                 {
@@ -968,7 +968,7 @@ namespace FfmpegMediaPlatform
                         else
                         {
                             context.Response.StatusCode = 404;
-                            Tools.Logger.VideoLog.LogCall(this, $"HLS file not found: {filePath}");
+                            Tools.Logger.VideoLog.LogDebugCall(this, $"HLS file not found: {filePath}");
                         }
                     }
                     else

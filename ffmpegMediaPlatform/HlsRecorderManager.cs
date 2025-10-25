@@ -50,7 +50,7 @@ namespace FfmpegMediaPlatform
             {
                 if (isRecording)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "Recording already in progress, cannot start new recording");
+                    Tools.Logger.VideoLog.LogDebugCall(this, "Recording already in progress, cannot start new recording");
                     return false;
                 }
 
@@ -66,7 +66,7 @@ namespace FfmpegMediaPlatform
                     // Check if HLS stream is available before starting recording
                     if (!WaitForHlsStream(hlsStreamUrl, timeoutSeconds: 5))
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"HLS stream not available at {hlsStreamUrl} - cannot start recording");
+                        Tools.Logger.VideoLog.LogDebugCall(this, $"HLS stream not available at {hlsStreamUrl} - cannot start recording");
                         return false;
                     }
 
@@ -76,9 +76,11 @@ namespace FfmpegMediaPlatform
                     // Build FFmpeg command to record from HLS stream
                     string ffmpegArgs = BuildRecordingCommand(hlsStreamUrl, outputPath, maxDurationSeconds);
                     
-                    Tools.Logger.VideoLog.LogCall(this, $"Starting HLS recording: {ffmpegArgs}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"Starting HLS recording: {ffmpegArgs}");
 
                     var processStartInfo = ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
+
+                    System.Diagnostics.Debug.Assert(recordingProcess == null);
                     recordingProcess = new Process();
                     recordingProcess.StartInfo = processStartInfo;
                     
@@ -92,21 +94,21 @@ namespace FfmpegMediaPlatform
                         recordingProcess.BeginErrorReadLine();
                         isRecording = true;
                         
-                        Tools.Logger.VideoLog.LogCall(this, $"HLS recording started successfully - PID: {recordingProcess.Id}, Output: {outputPath}");
+                        Tools.Logger.VideoLog.LogDebugCall(this, $"HLS recording started successfully - PID: {recordingProcess.Id}, Output: {outputPath}");
                         RecordingStarted?.Invoke(outputPath);
                         
                         return true;
                     }
                     else
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "Failed to start HLS recording process");
+                        Tools.Logger.VideoLog.LogDebugCall(this, "Failed to start HLS recording process");
                         return false;
                     }
                 }
                 catch (Exception ex)
                 {
                     Tools.Logger.VideoLog.LogException(this, ex);
-                    Tools.Logger.VideoLog.LogCall(this, $"Exception while starting HLS recording: {ex.Message}");
+                    Tools.Logger.VideoLog.LogException(this, "Exception while starting HLS recording", ex);
                     return false;
                 }
             }
@@ -141,13 +143,13 @@ namespace FfmpegMediaPlatform
             {
                 if (!isRecording || recordingProcess == null)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "No recording in progress to stop");
+                    Tools.Logger.VideoLog.LogDebugCall(this, "No recording in progress to stop");
                     return true;
                 }
 
                 try
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"Stopping HLS recording immediately - PID: {recordingProcess.Id}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"Stopping HLS recording immediately - PID: {recordingProcess.Id}");
 
                     bool success = false;
                     string outputPath = currentOutputPath;
@@ -162,18 +164,18 @@ namespace FfmpegMediaPlatform
                         }
                         catch (Exception ex)
                         {
-                            Tools.Logger.VideoLog.LogCall(this, $"Could not send quit command to FFmpeg: {ex.Message}");
+                            Tools.Logger.VideoLog.LogException(this, "Could not send quit command to FFmpeg", ex);
                         }
 
                         // Wait for graceful exit
                         if (recordingProcess.WaitForExit(timeoutMs))
                         {
                             success = recordingProcess.ExitCode == 0;
-                            Tools.Logger.VideoLog.LogCall(this, $"HLS recording stopped gracefully - Exit code: {recordingProcess.ExitCode}");
+                            Tools.Logger.VideoLog.LogDebugCall(this, $"HLS recording stopped gracefully - Exit code: {recordingProcess.ExitCode}");
                         }
                         else
                         {
-                            Tools.Logger.VideoLog.LogCall(this, "HLS recording did not stop gracefully, force killing");
+                            Tools.Logger.VideoLog.LogDebugCall(this, "HLS recording did not stop gracefully, force killing");
                             recordingProcess.Kill();
                             recordingProcess.WaitForExit(5000);
                             success = false;
@@ -182,7 +184,7 @@ namespace FfmpegMediaPlatform
                     else
                     {
                         success = recordingProcess.ExitCode == 0;
-                        Tools.Logger.VideoLog.LogCall(this, $"HLS recording process already exited - Exit code: {recordingProcess.ExitCode}");
+                        Tools.Logger.VideoLog.LogDebugCall(this, $"HLS recording process already exited - Exit code: {recordingProcess.ExitCode}");
                     }
 
                     // Verify output file was created and has content
@@ -191,17 +193,17 @@ namespace FfmpegMediaPlatform
                         var fileInfo = new FileInfo(outputPath);
                         if (fileInfo.Length > 0)
                         {
-                            Tools.Logger.VideoLog.LogCall(this, $"HLS recording completed successfully - File size: {fileInfo.Length} bytes");
+                            Tools.Logger.VideoLog.LogDebugCall(this, $"HLS recording completed successfully - File size: {fileInfo.Length} bytes");
                         }
                         else
                         {
-                            Tools.Logger.VideoLog.LogCall(this, "HLS recording file is empty, marking as failed");
+                            Tools.Logger.VideoLog.LogDebugCall(this, "HLS recording file is empty, marking as failed");
                             success = false;
                         }
                     }
                     else if (success)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "HLS recording file does not exist, marking as failed");
+                        Tools.Logger.VideoLog.LogDebugCall(this, "HLS recording file does not exist, marking as failed");
                         success = false;
                     }
 
@@ -221,7 +223,7 @@ namespace FfmpegMediaPlatform
                 catch (Exception ex)
                 {
                     Tools.Logger.VideoLog.LogException(this, ex);
-                    Tools.Logger.VideoLog.LogCall(this, $"Exception while stopping HLS recording: {ex.Message}");
+                    Tools.Logger.VideoLog.LogException(this, "Exception while stopping HLS recording", ex);
                     isRecording = false;
                     delayedStopScheduled = false; // Reset the delayed stop flag
                     RecordingStopped?.Invoke(currentOutputPath, false);
@@ -243,18 +245,18 @@ namespace FfmpegMediaPlatform
             {
                 if (!isRecording || recordingProcess == null)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "No recording in progress to stop");
+                    Tools.Logger.VideoLog.LogDebugCall(this, "No recording in progress to stop");
                     return true;
                 }
 
                 // Check if delayed stop is already scheduled
                 if (delayedStopScheduled)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "Delayed stop already scheduled - ignoring duplicate request");
+                    Tools.Logger.VideoLog.LogDebugCall(this, "Delayed stop already scheduled - ignoring duplicate request");
                     return true;
                 }
 
-                Tools.Logger.VideoLog.LogCall(this, $"Scheduling delayed stop in {bufferDelaySeconds} seconds to capture HLS buffer - PID: {recordingProcess.Id}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Scheduling delayed stop in {bufferDelaySeconds} seconds to capture HLS buffer - PID: {recordingProcess.Id}");
                 
                 // Cancel any existing delayed stop timer
                 delayedStopTimer?.Dispose();
@@ -265,13 +267,13 @@ namespace FfmpegMediaPlatform
                     callback: _ => {
                         try
                         {
-                            Tools.Logger.VideoLog.LogCall(this, "Executing delayed HLS recording stop");
+                            Tools.Logger.VideoLog.LogDebugCall(this, "Executing delayed HLS recording stop");
                             StopRecordingImmediate(timeoutMs);
                         }
                         catch (Exception ex)
                         {
                             Tools.Logger.VideoLog.LogException(this, ex);
-                            Tools.Logger.VideoLog.LogCall(this, $"Exception during delayed stop: {ex.Message}");
+                            Tools.Logger.VideoLog.LogException(this, "Exception during delayed stop", ex);
                         }
                         finally
                         {
@@ -288,7 +290,7 @@ namespace FfmpegMediaPlatform
                     period: Timeout.InfiniteTimeSpan
                 );
 
-                Tools.Logger.VideoLog.LogCall(this, $"HLS recording will stop in {bufferDelaySeconds} seconds to capture remaining buffer content");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"HLS recording will stop in {bufferDelaySeconds} seconds to capture remaining buffer content");
                 return true; // Return true immediately - the actual stop happens later
             }
         }
@@ -300,7 +302,7 @@ namespace FfmpegMediaPlatform
         {
             try
             {
-                Tools.Logger.VideoLog.LogCall(this, $"Waiting up to {timeoutSeconds} seconds for HLS stream at {hlsStreamUrl}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Waiting up to {timeoutSeconds} seconds for HLS stream at {hlsStreamUrl}");
                 
                 var timeout = DateTime.Now.AddSeconds(timeoutSeconds);
                 
@@ -319,7 +321,7 @@ namespace FfmpegMediaPlatform
                                 // Basic validation that this looks like an M3U8 playlist
                                 if (content.Contains("#EXTM3U") || content.Contains("#EXT-X-VERSION"))
                                 {
-                                    Tools.Logger.VideoLog.LogCall(this, "HLS stream is available and valid");
+                                    Tools.Logger.VideoLog.LogDebugCall(this, "HLS stream is available and valid");
                                     return true;
                                 }
                             }
@@ -333,13 +335,13 @@ namespace FfmpegMediaPlatform
                     System.Threading.Thread.Sleep(500); // Wait 500ms between attempts
                 }
                 
-                Tools.Logger.VideoLog.LogCall(this, $"Timeout waiting for HLS stream after {timeoutSeconds} seconds");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Timeout waiting for HLS stream after {timeoutSeconds} seconds");
                 return false;
             }
             catch (Exception ex)
             {
                 Tools.Logger.VideoLog.LogException(this, ex);
-                Tools.Logger.VideoLog.LogCall(this, $"Exception while waiting for HLS stream: {ex.Message}");
+                Tools.Logger.VideoLog.LogException(this, "Exception while waiting for HLS stream", ex);
                 return false;
             }
         }
@@ -370,13 +372,13 @@ namespace FfmpegMediaPlatform
         {
             if (e.Data != null)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"HLS Recording FFmpeg: {e.Data}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"HLS Recording FFmpeg: {e.Data}");
                 
                 // Log any errors or warnings
                 if (e.Data.Contains("error") || e.Data.Contains("Error") || 
                     e.Data.Contains("warning") || e.Data.Contains("Warning"))
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"HLS Recording Issue: {e.Data}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"HLS Recording Issue: {e.Data}");
                 }
             }
         }
@@ -387,7 +389,7 @@ namespace FfmpegMediaPlatform
             {
                 if (isRecording)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"HLS recording process exited unexpectedly - Exit code: {recordingProcess?.ExitCode}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"HLS recording process exited unexpectedly - Exit code: {recordingProcess?.ExitCode}");
                     
                     bool success = recordingProcess?.ExitCode == 0;
                     string outputPath = currentOutputPath;
@@ -432,7 +434,7 @@ namespace FfmpegMediaPlatform
             {
                 if (frameSourceForRecordInfo == null)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "No frame source available for .recordinfo.xml generation");
+                    Tools.Logger.VideoLog.LogDebugCall(this, "No frame source available for .recordinfo.xml generation");
                     return;
                 }
 
@@ -458,13 +460,13 @@ namespace FfmpegMediaPlatform
                 // Write the .recordinfo.xml file
                 IOTools.Write(recordInfoFile.Directory.FullName, recordInfoFile.Name, recordingInfo);
                 
-                Tools.Logger.VideoLog.LogCall(this, $"Generated .recordinfo.xml file: {recordInfoFile.FullName}");
-                Tools.Logger.VideoLog.LogCall(this, $"Frame times count: {recordingInfo.FrameTimes?.Length ?? 0}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Generated .recordinfo.xml file: {recordInfoFile.FullName}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Frame times count: {recordingInfo.FrameTimes?.Length ?? 0}");
             }
             catch (Exception ex)
             {
                 Tools.Logger.VideoLog.LogException(this, ex);
-                Tools.Logger.VideoLog.LogCall(this, $"Failed to generate .recordinfo.xml file for {videoFilePath}: {ex.Message}");
+                Tools.Logger.VideoLog.LogException(this, "Failed to generate .recordinfo.xml file for {videoFilePath}", ex);
             }
         }
 

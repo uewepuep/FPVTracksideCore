@@ -24,7 +24,7 @@ namespace ImageServer
             Paused
         }
 
-        public States State { get; private set; }
+        public virtual States State { get; private set; }
 
         public abstract bool UpdateTexture(GraphicsDevice graphicsDevice, int drawFrameId, ref Texture2D texture);
         public abstract int FrameWidth { get; }
@@ -38,16 +38,16 @@ namespace ImageServer
         public long FrameProcessNumber { get; set; }
         public long SampleTime { get; set; }
 
-        public VideoConfig VideoConfig { get; private set; }
+        public virtual VideoConfig VideoConfig { get; private set; }
 
         public virtual bool Connected { get; protected set; }
 
         public bool IsDisposed { get; private set; }
 
-        public bool IsVisible { get; set; }
+        public virtual bool IsVisible { get; set; }
 
         public bool DrawnThisGraphicsFrame { get; set; }
-        public bool Recording { get; protected set; }
+        public virtual bool Recording { get; protected set; }
         public bool RebootRequired { get; protected set; }
 
         public enum Directions

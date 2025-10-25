@@ -31,6 +31,8 @@ namespace FfmpegMediaPlatform
             // Use local ffmpeg binaries from ./ffmpeg directory on Mac
             if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
             {
+                avfoundation = true;
+
                 // Get the current directory and construct path to ffmpeg binaries
                 string currentDir = Directory.GetCurrentDirectory();
                 
@@ -90,8 +92,10 @@ namespace FfmpegMediaPlatform
                     Console.WriteLine("Local and Homebrew ffmpeg not found, using system PATH ffmpeg");
                 }
             }
-            else
+            else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
             {
+                dshow = true;
+
                 // On Windows, try to find ffmpeg.exe in the ffmpeg subdirectory first
                 string localFfmpegPath = Path.Combine("ffmpeg", "ffmpeg.exe");
                 
@@ -133,13 +137,6 @@ namespace FfmpegMediaPlatform
                     }
                 }
             }
-
-            IEnumerable<string> devices = GetFfmpegText("-devices");
-            dshow = devices?.Any(l => l != null && l.Contains("dshow")) ?? false;
-            avfoundation = devices?.Any(l => l != null && l.Contains("avfoundation")) ?? false; // Default to true on Mac
-
-            GetVideoConfigs();
-
         }
 
         public ProcessStartInfo GetProcessStartInfo(string args)
@@ -213,13 +210,13 @@ namespace FfmpegMediaPlatform
                 {
                     try
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"PLAYBACK PATH: Native ffmpeg lib for Mac video file replay → {System.IO.Path.GetFileName(vc.FilePath)}");
+                        Tools.Logger.VideoLog.LogDebugCall(this, $"PLAYBACK PATH: Native ffmpeg lib for Mac video file replay → {System.IO.Path.GetFileName(vc.FilePath)}");
                         return new FfmpegLibVideoFileFrameSource(vc);
                     }
                     catch (Exception ex)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"Native library failed, falling back to external ffmpeg process: {ex.Message}");
-                        Tools.Logger.VideoLog.LogCall(this, $"PLAYBACK PATH: External ffmpeg process for Mac video file replay → {System.IO.Path.GetFileName(vc.FilePath)}");
+                        Tools.Logger.VideoLog.LogException(this, "Native library failed, falling back to external ffmpeg process", ex);
+                        Tools.Logger.VideoLog.LogDebugCall(this, $"PLAYBACK PATH: External ffmpeg process for Mac video file replay → {System.IO.Path.GetFileName(vc.FilePath)}");
                         return new FfmpegVideoFileFrameSource(this, vc);
                     }
                 }
@@ -228,12 +225,12 @@ namespace FfmpegMediaPlatform
                     // On other platforms, prefer in-process libav for replay; fallback to external binary if init fails
                     try
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"PLAYBACK PATH: In-process ffmpeg lib for video file replay → {System.IO.Path.GetFileName(vc.FilePath)}");
+                        Tools.Logger.VideoLog.LogDebugCall(this, $"PLAYBACK PATH: In-process ffmpeg lib for video file replay → {System.IO.Path.GetFileName(vc.FilePath)}");
                         return new FfmpegLibVideoFileFrameSource(vc);
                     }
                     catch (Exception ex)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"PLAYBACK PATH FALLBACK: External ffmpeg process due to lib error: {ex.Message}");
+                        Tools.Logger.VideoLog.LogException(this, "PLAYBACK PATH FALLBACK: External ffmpeg process due to lib error", ex);
                         return new FfmpegVideoFileFrameSource(this, vc);
                     }
                 }
@@ -241,7 +238,7 @@ namespace FfmpegMediaPlatform
             else
             {
                 // Live camera capture via ffmpeg process with HLS composite
-                Tools.Logger.VideoLog.LogCall(this, $"PLAYBACK PATH: Live capture via ffmpeg (HLS composite) → {vc.DeviceName}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"PLAYBACK PATH: Live capture via ffmpeg (HLS composite) → {vc.DeviceName}");
                 return new FfmpegHlsCompositeFrameSource(this, vc);
             }
         }
@@ -251,13 +248,13 @@ namespace FfmpegMediaPlatform
             if (dshow)
             {
                 string listDevicesCommand = "-list_devices true -f dshow -i dummy";
-                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG COMMAND (list cameras): ffmpeg {listDevicesCommand}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG COMMAND (list cameras): ffmpeg {listDevicesCommand}");
                 
                 IEnumerable<string> deviceList = GetFfmpegText(listDevicesCommand, l => l.Contains("[dshow @") && l.Contains("(video)"));
 
                 foreach (string deviceLine in deviceList)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG OUTPUT: {deviceLine}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG OUTPUT: {deviceLine}");
 
                     string[] splits = deviceLine.Split("\"");
                     if (splits.Length != 3)
@@ -268,7 +265,7 @@ namespace FfmpegMediaPlatform
                     // Remove trailing VID/PID if present (for both Windows and Mac cameras)
                     // IMPORTANT: Don't trim the name - FFmpeg expects the exact name including any trailing/leading spaces
                     string cleanedName = System.Text.RegularExpressions.Regex.Replace(name, @"\s*VID:[0-9A-Fa-f]+\s*PID:[0-9A-Fa-f]+", "");
-                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG ✓ FOUND CAMERA: '{cleanedName}' (length: {cleanedName.Length})");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG ✓ FOUND CAMERA: '{cleanedName}' (length: {cleanedName.Length})");
                     yield return new VideoConfig { FrameWork = FrameWork.ffmpeg, DeviceName = cleanedName, ffmpegId = cleanedName };
                 }
             }
@@ -276,7 +273,7 @@ namespace FfmpegMediaPlatform
             if (avfoundation)
             {
                 string listDevicesCommand = "-list_devices true -f avfoundation -i dummy";
-                Tools.Logger.VideoLog.LogCall(this, $"FFMPEG COMMAND (list cameras): ffmpeg {listDevicesCommand}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG COMMAND (list cameras): ffmpeg {listDevicesCommand}");
                 
                 IEnumerable<string> deviceList = GetFfmpegText(listDevicesCommand, l => l.Contains("AVFoundation"));
 
@@ -284,7 +281,7 @@ namespace FfmpegMediaPlatform
 
                 foreach (string deviceLine in deviceList)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"FFMPEG OUTPUT: {deviceLine}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG OUTPUT: {deviceLine}");
                     
                     if (deviceLine.Contains("video devices:"))
                     {
@@ -310,7 +307,7 @@ namespace FfmpegMediaPlatform
                             // Remove trailing VID/PID if present (for mac cameras only)
                             // IMPORTANT: Don't trim the name - FFmpeg expects the exact name including any trailing/leading spaces
                             string cleanedName = System.Text.RegularExpressions.Regex.Replace(rawName, @"\s*VID:[0-9A-Fa-f]+\s*PID:[0-9A-Fa-f]+", "");
-                            Tools.Logger.VideoLog.LogCall(this, $"FFMPEG ✓ FOUND CAMERA: '{cleanedName}' (length: {cleanedName.Length})");
+                            Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG ✓ FOUND CAMERA: '{cleanedName}' (length: {cleanedName.Length})");
                             // For AVFoundation, use cleaned device name for FFmpeg (without VID:PID)
                             // On Mac, cameras are upside down by default, but we want UI to show "None"
                             yield return new VideoConfig {
@@ -374,12 +371,12 @@ namespace FfmpegMediaPlatform
                     m.Width == 640 && m.Height == 480 && m.FrameRate >= 30);
                 if (preferred != null)
                 {
-                    Logger.VideoLog.LogCall(this, $"✓ SELECTED (1st priority - preferred): {preferred.Width}x{preferred.Height}@{preferred.FrameRate}fps");
+                    Logger.VideoLog.LogDebugCall(this, $"✓ SELECTED (1st priority - preferred): {preferred.Width}x{preferred.Height}@{preferred.FrameRate}fps");
                     return preferred;
                 }
                 else
                 {
-                    Logger.VideoLog.LogCall(this, "✗ 640x480@30fps not available, trying next priority");
+                    Logger.VideoLog.LogDebugCall(this, "✗ 640x480@30fps not available, trying next priority");
                 }
 
                 // 2nd priority: lowest resolution above 30fps
@@ -390,12 +387,12 @@ namespace FfmpegMediaPlatform
                     .FirstOrDefault();
                 if (above30fps != null)
                 {
-                    Logger.VideoLog.LogCall(this, $"✓ SELECTED (2nd priority - lowest above 30fps): {above30fps.Width}x{above30fps.Height}@{above30fps.FrameRate}fps");
+                    Logger.VideoLog.LogDebugCall(this, $"✓ SELECTED (2nd priority - lowest above 30fps): {above30fps.Width}x{above30fps.Height}@{above30fps.FrameRate}fps");
                     return above30fps;
                 }
                 else
                 {
-                    Logger.VideoLog.LogCall(this, "✗ No modes above 30fps available, trying best available");
+                    Logger.VideoLog.LogDebugCall(this, "✗ No modes above 30fps available, trying best available");
                 }
 
                 // 3rd priority: best available resolution (highest framerate, then lowest resolution)
@@ -405,13 +402,13 @@ namespace FfmpegMediaPlatform
                     .FirstOrDefault();
                 if (bestMode != null)
                 {
-                    Logger.VideoLog.LogCall(this, $"✓ SELECTED (3rd priority - best available): {bestMode.Width}x{bestMode.Height}@{bestMode.FrameRate}fps");
+                    Logger.VideoLog.LogDebugCall(this, $"✓ SELECTED (3rd priority - best available): {bestMode.Width}x{bestMode.Height}@{bestMode.FrameRate}fps");
                     return bestMode;
                 }
             }
             else
             {
-                Logger.VideoLog.LogCall(this, "WARNING: No modes detected from camera");
+                Logger.VideoLog.LogDebugCall(this, "WARNING: No modes detected from camera");
             }
 
             return null;

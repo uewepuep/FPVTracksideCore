@@ -240,6 +240,13 @@ namespace Tools
             }
         }
 
+        public void LogDebugCall(object caller, params object[] targets)
+        {
+#if DEBUG
+            LogCall(caller, targets);
+#endif  
+        }
+
         public void LogStackTrace(object caller, params object[] targets)
         {
             if (!Enabled)
@@ -247,6 +254,15 @@ namespace Tools
 
             StackTrace stackTrace = new StackTrace(true);
             Log(caller, stackTrace.ToString(), string.Join(", ", targets), LogType.Error);
+        }
+
+
+        public void LogException(object caller, string message, Exception exception)
+        {
+            if (!Enabled)
+                return;
+
+            Log(caller, message + ": " + exception.ToString(), null, LogType.Exception);
         }
 
         public void LogException(object caller, Exception exception)

@@ -209,7 +209,7 @@ namespace UI
             GraphicsDeviceManager.SynchronizeWithVerticalRetrace = ApplicationProfileSettings.Instance.VSync;
             GraphicsDeviceManager.ApplyChanges();
 
-
+            
             loadingLayer.WorkQueue.Enqueue("Database Upgrade", DatabaseUpgrade);
 
             loadingLayer.WorkQueue.Enqueue("Load Translations", LoadTranslations);

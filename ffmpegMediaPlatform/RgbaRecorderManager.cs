@@ -73,7 +73,7 @@ namespace FfmpegMediaPlatform
             {
                 if (isRecording)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "Recording already in progress, cannot start new recording");
+                    Tools.Logger.VideoLog.LogDebugCall(this, "Recording already in progress, cannot start new recording");
                     return false;
                 }
 
@@ -117,12 +117,13 @@ namespace FfmpegMediaPlatform
                     // Build FFmpeg command to accept RGBA frames from stdin
                     string ffmpegArgs = BuildRecordingCommand(outputPath, frameWidth, frameHeight, frameRate);
                     
-                    Tools.Logger.VideoLog.LogCall(this, $"Starting RGBA recording: {ffmpegArgs}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"Starting RGBA recording: {ffmpegArgs}");
 
                     var processStartInfo = ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
                     processStartInfo.RedirectStandardInput = true;
                     processStartInfo.UseShellExecute = false;
-                    
+
+                    System.Diagnostics.Debug.Assert(recordingProcess == null);
                     recordingProcess = new Process();
                     recordingProcess.StartInfo = processStartInfo;
                     
@@ -139,21 +140,21 @@ namespace FfmpegMediaPlatform
                         // PERFORMANCE: Start async frame writing task
                         frameWritingTask = Task.Run(async () => await FrameWritingLoop(frameWritingCancellation.Token));
                         
-                        Tools.Logger.VideoLog.LogCall(this, $"RGBA recording started successfully - PID: {recordingProcess.Id}, Output: {outputPath}");
+                        Tools.Logger.VideoLog.LogDebugCall(this, $"RGBA recording started successfully - PID: {recordingProcess.Id}, Output: {outputPath}");
                         RecordingStarted?.Invoke(outputPath);
                         
                         return true;
                     }
                     else
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "Failed to start RGBA recording process");
+                        Tools.Logger.VideoLog.LogDebugCall(this, "Failed to start RGBA recording process");
                         return false;
                     }
                 }
                 catch (Exception ex)
                 {
                     Tools.Logger.VideoLog.LogException(this, ex);
-                    Tools.Logger.VideoLog.LogCall(this, $"Exception while starting RGBA recording: {ex.Message}");
+                    Tools.Logger.VideoLog.LogException(this, "Exception while starting RGBA recording", ex);
                     CleanupRecordingProcess(); // Ensure ffmpeg process is cleaned up if exception occurs after process.Start()
                     return false;
                 }
@@ -187,7 +188,7 @@ namespace FfmpegMediaPlatform
                         double totalSeconds = (currentTime - recordingStartTime).TotalSeconds;
                         double avgFps = recordingFrameCounter > 0 ? recordingFrameCounter / totalSeconds : 0;
                         
-                        Tools.Logger.VideoLog.LogCall(this, $"RECORDING TIMING: Frame {recordingFrameCounter}, Recent: {actualFps:F3}fps, Average: {avgFps:F3}fps, PerFrame: {intervalMs/100:F2}ms (wallclock-driven)");
+                        Tools.Logger.VideoLog.LogDebugCall(this, $"RECORDING TIMING: Frame {recordingFrameCounter}, Recent: {actualFps:F3}fps, Average: {avgFps:F3}fps, PerFrame: {intervalMs/100:F2}ms (wallclock-driven)");
                         lastFrameWriteTime = currentTime;
                     }
                     
@@ -208,7 +209,7 @@ namespace FfmpegMediaPlatform
                 catch (Exception ex)
                 {
                     Tools.Logger.VideoLog.LogException(this, ex);
-                    Tools.Logger.VideoLog.LogCall(this, $"Error writing RGBA frame: {ex.Message}");
+                    Tools.Logger.VideoLog.LogException(this, "Error writing RGBA frame", ex);
                     return false;
                 }
             }
@@ -244,7 +245,7 @@ namespace FfmpegMediaPlatform
                 
                 if (!isRecording || recordingProcess == null)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "No recording in progress to stop");
+                    Tools.Logger.VideoLog.LogDebugCall(this, "No recording in progress to stop");
                     return true;
                 }
                 
@@ -266,7 +267,7 @@ namespace FfmpegMediaPlatform
                     }
                     catch (TimeoutException)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "Frame writing task did not complete in time");
+                        Tools.Logger.VideoLog.LogDebugCall(this, "Frame writing task did not complete in time");
                     }
                 }
 
@@ -283,18 +284,18 @@ namespace FfmpegMediaPlatform
                     }
                     catch (Exception ex)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"Could not close stdin to FFmpeg: {ex.Message}");
+                        Tools.Logger.VideoLog.LogException(this, "Could not close stdin to FFmpeg", ex);
                     }
 
                     // Wait for graceful exit
                     if (processToStop.WaitForExit(timeoutMs))
                     {
                         success = processToStop.ExitCode == 0;
-                        Tools.Logger.VideoLog.LogCall(this, $"RGBA recording stopped gracefully - Exit code: {processToStop.ExitCode}");
+                        Tools.Logger.VideoLog.LogDebugCall(this, $"RGBA recording stopped gracefully - Exit code: {processToStop.ExitCode}");
                     }
                     else
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "RGBA recording did not stop gracefully, force killing");
+                        Tools.Logger.VideoLog.LogDebugCall(this, "RGBA recording did not stop gracefully, force killing");
                         processToStop.Kill();
                         processToStop.WaitForExit(5000);
                         success = false;
@@ -303,7 +304,7 @@ namespace FfmpegMediaPlatform
                 else
                 {
                     success = processToStop.ExitCode == 0;
-                    Tools.Logger.VideoLog.LogCall(this, $"RGBA recording process already exited - Exit code: {processToStop.ExitCode}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"RGBA recording process already exited - Exit code: {processToStop.ExitCode}");
                 }
 
                 // Verify output file was created and has content
@@ -312,17 +313,17 @@ namespace FfmpegMediaPlatform
                     var fileInfo = new FileInfo(outputPath);
                     if (fileInfo.Length > 0)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"RGBA recording completed successfully - File size: {fileInfo.Length} bytes");
+                        Tools.Logger.VideoLog.LogDebugCall(this, $"RGBA recording completed successfully - File size: {fileInfo.Length} bytes");
                     }
                     else
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "RGBA recording file is empty, marking as failed");
+                        Tools.Logger.VideoLog.LogDebugCall(this, "RGBA recording file is empty, marking as failed");
                         success = false;
                     }
                 }
                 else if (success)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "RGBA recording file does not exist, marking as failed");
+                    Tools.Logger.VideoLog.LogDebugCall(this, "RGBA recording file does not exist, marking as failed");
                     success = false;
                 }
                 
@@ -344,8 +345,7 @@ namespace FfmpegMediaPlatform
             }
             catch (Exception ex)
             {
-                Tools.Logger.VideoLog.LogException(this, ex);
-                Tools.Logger.VideoLog.LogCall(this, $"Exception while stopping RGBA recording: {ex.Message}");
+                Tools.Logger.VideoLog.LogException(this, "Exception while stopping RGBA recording", ex);
                 
                 // Update state in lock
                 lock (recordingLock)
@@ -386,9 +386,10 @@ namespace FfmpegMediaPlatform
                                $"-avoid_negative_ts make_zero " +          // Handle timing issues
                                $"-movflags +faststart " +                  // Optimize for streaming
                                $"-y " +                                    // Overwrite output file
+                               $"-f mp4 " +                                // MP4 output format.
                                $"\"{outputPath}\"";
 
-            Tools.Logger.VideoLog.LogCall(this, $"RGBA Recording ffmpeg command (preserving source timing - no framerate forcing): {ffmpegArgs}");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"RGBA Recording ffmpeg command (preserving source timing - no framerate forcing): {ffmpegArgs}");
             return ffmpegArgs;
         }
 
@@ -396,13 +397,13 @@ namespace FfmpegMediaPlatform
         {
             if (e.Data != null)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"RGBA Recording FFmpeg: {e.Data}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"RGBA Recording FFmpeg: {e.Data}");
                 
                 // Log any errors or warnings
                 if (e.Data.Contains("error") || e.Data.Contains("Error") || 
                     e.Data.Contains("warning") || e.Data.Contains("Warning"))
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"RGBA Recording Issue: {e.Data}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"RGBA Recording Issue: {e.Data}");
                 }
             }
         }
@@ -413,7 +414,7 @@ namespace FfmpegMediaPlatform
             {
                 if (isRecording)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"RGBA recording process exited unexpectedly - Exit code: {recordingProcess?.ExitCode}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"RGBA recording process exited unexpectedly - Exit code: {recordingProcess?.ExitCode}");
                     
                     bool success = recordingProcess?.ExitCode == 0;
                     string outputPath = currentOutputPath;
@@ -422,6 +423,8 @@ namespace FfmpegMediaPlatform
                     RecordingStopped?.Invoke(outputPath, success);
                 }
             }
+
+            CleanupRecordingProcess();
         }
 
         private void CleanupRecordingProcess()
@@ -474,12 +477,12 @@ namespace FfmpegMediaPlatform
             catch (OperationCanceledException)
             {
                 // Expected when stopping recording
-                Tools.Logger.VideoLog.LogCall(this, "Frame writing loop cancelled");
+                Tools.Logger.VideoLog.LogDebugCall(this, "Frame writing loop cancelled");
             }
             catch (Exception ex)
             {
                 Tools.Logger.VideoLog.LogException(this, ex);
-                Tools.Logger.VideoLog.LogCall(this, $"Error in async frame writing loop: {ex.Message}");
+                Tools.Logger.VideoLog.LogException(this, "Error in async frame writing loop", ex);
             }
         }
 
@@ -493,7 +496,7 @@ namespace FfmpegMediaPlatform
             {
                 if (frameSourceForRecordInfo == null)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "No frame source available for .recordinfo.xml generation");
+                    Tools.Logger.VideoLog.LogDebugCall(this, "No frame source available for .recordinfo.xml generation");
                     return;
                 }
 
@@ -526,19 +529,19 @@ namespace FfmpegMediaPlatform
                 if (recordInfoFile.Exists)
                 {
                     var fileInfo = new FileInfo(recordInfoFile.FullName);
-                    Tools.Logger.VideoLog.LogCall(this, $"Generated .recordinfo.xml file: {recordInfoFile.FullName} ({fileInfo.Length} bytes)");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"Generated .recordinfo.xml file: {recordInfoFile.FullName} ({fileInfo.Length} bytes)");
                 }
                 else
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"WARNING: .recordinfo.xml file was not created: {recordInfoFile.FullName}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"WARNING: .recordinfo.xml file was not created: {recordInfoFile.FullName}");
                 }
                 
-                Tools.Logger.VideoLog.LogCall(this, $"Frame times count: {frameTimes.Count}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Frame times count: {frameTimes.Count}");
             }
             catch (Exception ex)
             {
                 Tools.Logger.VideoLog.LogException(this, ex);
-                Tools.Logger.VideoLog.LogCall(this, $"Failed to generate .recordinfo.xml file for {videoFilePath}: {ex.Message}");
+                Tools.Logger.VideoLog.LogException(this, "Failed to generate .recordinfo.xml file for {videoFilePath}", ex);
             }
         }
 

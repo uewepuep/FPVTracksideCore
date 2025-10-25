@@ -54,14 +54,14 @@ namespace FfmpegMediaPlatform
                 // Use the longer duration to account for buffered frames at the end
                 var finalDuration = xmlDuration > fallbackDuration ? xmlDuration : fallbackDuration;
                 
-                Tools.Logger.VideoLog.LogCall(typeof(UnifiedFrameTimingManager), 
+                Tools.Logger.VideoLog.LogDebugCall(typeof(UnifiedFrameTimingManager), 
                     $"Unified duration calculation: XML={xmlDuration.TotalSeconds:F3}s, Fallback={fallbackDuration.TotalSeconds:F3}s, Using={finalDuration.TotalSeconds:F3}s " +
                     $"(first: {firstFrame.Time:HH:mm:ss.fff}, last: {lastFrame.Time:HH:mm:ss.fff})");
                 
                 return finalDuration;
             }
             
-            Tools.Logger.VideoLog.LogCall(typeof(UnifiedFrameTimingManager), 
+            Tools.Logger.VideoLog.LogDebugCall(typeof(UnifiedFrameTimingManager), 
                 $"Unified duration calculation: No frame times available, using fallback = {fallbackDuration.TotalSeconds:F3}s");
             
             return fallbackDuration;
@@ -77,7 +77,7 @@ namespace FfmpegMediaPlatform
         {
             if (frameTimes == null || frameTimes.Length < 10)
             {
-                Tools.Logger.VideoLog.LogCall(typeof(UnifiedFrameTimingManager), 
+                Tools.Logger.VideoLog.LogDebugCall(typeof(UnifiedFrameTimingManager), 
                     "Cannot validate frame timing: insufficient frame data");
                 return false;
             }
@@ -89,7 +89,7 @@ namespace FfmpegMediaPlatform
             var frameRateDifference = Math.Abs(averageFrameRate - expectedFrameRate);
             var isConsistent = frameRateDifference < (expectedFrameRate * 0.1); // Within 10%
             
-            Tools.Logger.VideoLog.LogCall(typeof(UnifiedFrameTimingManager), 
+            Tools.Logger.VideoLog.LogDebugCall(typeof(UnifiedFrameTimingManager), 
                 $"Frame timing validation: Expected {expectedFrameRate:F1}fps, Measured {averageFrameRate:F1}fps, " +
                 $"Difference {frameRateDifference:F1}fps, Consistent: {isConsistent}");
             
@@ -115,7 +115,7 @@ namespace FfmpegMediaPlatform
         public static DateTime InitializeRecordingStartTime()
         {
             var startTime = GetHighPrecisionTimestamp();
-            Tools.Logger.VideoLog.LogCall(typeof(UnifiedFrameTimingManager), 
+            Tools.Logger.VideoLog.LogDebugCall(typeof(UnifiedFrameTimingManager), 
                 $"Unified recording start time initialized: {startTime:HH:mm:ss.fff}");
             return startTime;
         }
