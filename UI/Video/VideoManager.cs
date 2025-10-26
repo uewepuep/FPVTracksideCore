@@ -950,19 +950,37 @@ namespace UI.Video
 
                     if (videoInfo != null)
                     {
-                        // Resolve the relative path to an absolute path for file existence check
-                        string absoluteVideoPath = Path.GetFullPath(videoInfo.FilePath);
-                        bool videoFileExists = File.Exists(absoluteVideoPath);
-                        Tools.Logger.VideoLog.LogCall(this, $"Video file exists: {videoFileExists} - {videoInfo.FilePath} (resolved to: {absoluteVideoPath})");
-                        
+                        var videoConfig = videoInfo.GetVideoConfig();
+
+                        // Resolve the path if it's relative
+                        if (!Path.IsPathRooted(videoConfig.FilePath))
+                        {
+                            // The FilePath in the XML is relative to the base storage location
+                            // On macOS: Application Support/FPVTrackside/
+                            // On Windows: The events directory parent
+                            string baseDirectory = Path.GetDirectoryName(EventDirectory.FullName);
+                            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+                            {
+                                // On macOS, EventDirectory is Application Support/FPVTrackside/events/
+                                // We need to go up one level to get to Application Support/FPVTrackside/
+                                baseDirectory = Path.GetDirectoryName(baseDirectory);
+                            }
+                            videoConfig.FilePath = Path.Combine(baseDirectory, videoConfig.FilePath);
+                            Tools.Logger.VideoLog.LogCall(this, $"Resolved relative path to: {videoConfig.FilePath}");
+                        }
+
+                        // Double-check that the file exists at the resolved path
+                        bool videoFileExists = File.Exists(videoConfig.FilePath);
+                        Tools.Logger.VideoLog.LogCall(this, $"Video file exists: {videoFileExists} - {videoConfig.FilePath}");
+
                         if (videoFileExists)
                         {
-                            Tools.Logger.VideoLog.LogCall(this, $"Yielding video config for: {videoInfo.FilePath}");
-                            yield return videoInfo.GetVideoConfig();
+                            Tools.Logger.VideoLog.LogCall(this, $"Yielding video config for: {videoConfig.FilePath}");
+                            yield return videoConfig;
                         }
                         else
                         {
-                            Tools.Logger.VideoLog.LogCall(this, $"Video file not found: {videoInfo.FilePath} (resolved to: {absoluteVideoPath})");
+                            Tools.Logger.VideoLog.LogCall(this, $"Video file not found: {videoConfig.FilePath}");
                         }
                     }
                 }
