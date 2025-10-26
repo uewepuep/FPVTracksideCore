@@ -225,42 +225,13 @@ namespace UI.Video
 
         public IEnumerable<VideoConfig> GetAvailableVideoSources()
         {
-            List<VideoConfig> configs = new List<VideoConfig>();
-
             foreach (VideoFrameWork videoFramework in VideoFrameWorks.Available)
             {
                 foreach (VideoConfig videoConfig in videoFramework.GetVideoConfigs())
                 {
-                    VideoConfig fromAnotherFramework = GetMatch(configs.Where(r => r.DeviceName == videoConfig.DeviceName), videoConfig.MediaFoundationPath, videoConfig.DirectShowPath);
-                    if (fromAnotherFramework != null)
-                    {
-                        if (fromAnotherFramework.DirectShowPath == null)
-                            fromAnotherFramework.DirectShowPath = videoConfig.DirectShowPath;
-
-                        if (fromAnotherFramework.MediaFoundationPath == null)
-                            fromAnotherFramework.MediaFoundationPath = videoConfig.MediaFoundationPath;
-                    }
-                    else
-                    {
-                        configs.Add(videoConfig);
-                    }
+                    yield return videoConfig;
                 }
             }
-
-            // Set any usbports
-            foreach (VideoConfig vc in configs)
-            {
-                if (configs.Where(other => other.DeviceName == vc.DeviceName).Count() > 1)
-                {
-                    vc.AnyUSBPort = false;
-                }
-                else
-                {
-                    vc.AnyUSBPort = true;
-                }
-            }
-
-            return configs;
         }
 
         public IEnumerable<string> GetAvailableAudioSources()
@@ -272,28 +243,6 @@ namespace UI.Video
                     yield return audioSource;
                 }
             }
-        }
-
-        private VideoConfig GetMatch(IEnumerable<VideoConfig> videoConfigs, params string[] paths)
-        {
-            if (paths.Any())
-            {
-                Regex regex = new Regex("(#[A-z0-9_&#]*)");
-
-                foreach (string path in paths)
-                {
-                    if (string.IsNullOrEmpty(path))
-                        continue;
-
-                    Match match = regex.Match(path);
-                    if (match.Success)
-                    {
-                        string common = match.Groups[1].Value;
-                        return videoConfigs.Where(v => v.PathContains(common)).FirstOrDefault();
-                    }
-                }
-            }
-            return null;
         }
 
         public bool GetStatus(VideoConfig videoConfig, out bool connected, out bool recording, out int height)
@@ -973,17 +922,23 @@ namespace UI.Video
 
                         foreach (VideoFrameWork frameWork in VideoFrameWorks.Available)
                         {
-                            if (clone.FrameWork == frameWork.FrameWork)
+                            FrameSource source = null;
+                            try
                             {
                                 // Create a temporary instance just to get the modes...
-                                using (FrameSource source = frameWork.CreateFrameSource(clone))
+                                source = frameWork.CreateFrameSource(clone);
+                                if (source == null)
+                                    break;
+
+                                modes.AddRange(source.GetModes());
+                                if (source.RebootRequired)
                                 {
-                                    modes.AddRange(source.GetModes());
-                                    if (source.RebootRequired)
-                                    {
-                                        result.RebootRequired = true;
-                                    }
+                                    result.RebootRequired = true;
                                 }
+                            }
+                            finally
+                            {
+                                source?.Dispose();
                             }
                         }
                     }

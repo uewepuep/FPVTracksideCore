@@ -237,15 +237,43 @@ namespace ImageServer
                 }
             }
 
-            if (AnyUSBPort || DirectShowPath == null)
-            {
+            return name;
+        }
+
+        public string ToStringUnique(IEnumerable<VideoConfig> others)
+        {
+            string name = ToString();
+
+            VideoConfig[] sameName = others.Where(r => r != this && r.DeviceName.ToLower().Trim() ==  DeviceName.ToLower().Trim()).ToArray();
+
+            // no other devices
+            if (sameName.Length == 0)
                 return name;
-            }
-            else
+
+            // If there are the same device with different frameworks
+            int frameworkCount = sameName.Select(o => o.FrameWork).Distinct().Count();
+            if (frameworkCount == sameName.Length)
             {
-                string hashCode = DirectShowPath.GetHashCode().ToString("X8");
-                return name + " #" + hashCode.Substring(0, 2);
+                name += " - " + FrameWork.ToString();
             }
+
+            // End up just hashing the id.
+            if (sameName.Any(r => r.FrameWork == FrameWork))
+            {
+                string toHash = DirectShowPath;
+                if (toHash == null)
+                    toHash = MediaFoundationPath;
+                if (toHash == null)
+                    toHash = ffmpegId;
+
+                if (toHash != null)
+                { 
+                    string hashCode = toHash.GetHashCode().ToString("X8");
+                    name += " #" + hashCode.Substring(0, 2);
+                }
+            }
+
+            return name;
         }
 
         private const string filename = "VideoSettings.xml";

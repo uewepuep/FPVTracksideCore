@@ -47,13 +47,9 @@ namespace ImageServer
 
             double frameRate = Math.Round(FrameRate, 2);
 
-            string framework = FrameWork.ToString();
-            if (FrameWork == FrameWork.DirectShow)
-            {
-                framework += "(Legacy)";
-            }
+            string framework = FrameWork.ToStringShort();
 
-            return Width + " x " + Height + " " + frameRate + "hz " + framework + " " + Format;
+            return framework + " " + Width + "x" + Height + " " + frameRate + "hz " + Format;
         }
 
         public override int GetHashCode()

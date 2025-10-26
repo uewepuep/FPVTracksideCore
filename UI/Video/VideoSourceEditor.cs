@@ -99,10 +99,12 @@ namespace UI.Video
             MouseMenu mouseMenu = new MouseMenu(this);
             mouseMenu.TopToBottom = false;
 
-            VideoConfig[] vcs = VideoManager.GetAvailableVideoSources().OrderBy(vc => vc.DeviceName).Except(Objects).ToArray();
-            foreach (VideoConfig source in vcs)
+            VideoConfig[] vcs = VideoManager.GetAvailableVideoSources().Except(Objects).OrderBy(vc => vc.DeviceName).ToArray();
+
+            IEnumerable<VideoConfig> combined = vcs.CombineVideoSources();
+            foreach (VideoConfig source in combined)
             {
-                string sourceAsString = source.ToString();
+                string sourceAsString = source.ToStringUnique(vcs);
                 if (!string.IsNullOrWhiteSpace(sourceAsString))
                 {
                     if (VideoManager.ValidDevice(source))
@@ -117,7 +119,6 @@ namespace UI.Video
             }
 
             var grouped = vcs.GroupBy(o => o.FrameWork);
-
             if (grouped.Any())
             {
                 MouseMenu by = mouseMenu.AddSubmenu("By Framework");
@@ -480,11 +481,10 @@ namespace UI.Video
 
             private void SetOptions(Mode[] ms)
             {
-                IEnumerable<Mode> ordered = ms.OrderByDescending(m => m.FrameWork)
-                                                     .ThenByDescending(m => m.Width)
-                                                     .ThenByDescending(m => m.Height)
-                                                     .ThenByDescending(m => m.FrameRate)
-                                                     .ThenByDescending(m => m.Format);
+                    IEnumerable<Mode> ordered = ms.OrderByDescending(m => m.Width)
+                                                  .ThenByDescending(m => m.Height)
+                                                  .ThenByDescending(m => m.FrameRate)
+                                                  .ThenByDescending(m => m.ToString());
 
                 if (ms.Any())
                 {

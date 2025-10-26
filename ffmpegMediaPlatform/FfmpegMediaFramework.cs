@@ -249,8 +249,10 @@ namespace FfmpegMediaPlatform
             {
                 string listDevicesCommand = "-list_devices true -f dshow -i dummy";
                 Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG COMMAND (list cameras): ffmpeg {listDevicesCommand}");
-                
-                IEnumerable<string> deviceList = GetFfmpegText(listDevicesCommand, l => l.Contains("[dshow @") && l.Contains("(video)"));
+
+                IEnumerable<string> responseText = GetFfmpegText(listDevicesCommand);
+                IEnumerable<string> deviceList = responseText.Where(l => l.Contains("[dshow @") && l.Contains("(video)"));
+                IEnumerable<string> alternativeNames = responseText.Where(l => l.Contains("[dshow @") && l.Contains("Alternative name"));
 
                 foreach (string deviceLine in deviceList)
                 {
@@ -261,12 +263,26 @@ namespace FfmpegMediaPlatform
                     {
                         continue;
                     }
+
+                    string dshowID = splits[0];
+                    string alternativeName = alternativeNames.FirstOrDefault(l => l.Contains(dshowID));
+
+                    string dshowPath = "";
+                    if (!string.IsNullOrEmpty(alternativeName))
+                    {
+                        Match m = System.Text.RegularExpressions.Regex.Match(alternativeName, "\"(.*)\"");
+                        if (m.Success)
+                        {
+                            dshowPath = m.Groups[1].Value;
+                        }
+                    }
+
                     string name = splits[1];
                     // Remove trailing VID/PID if present (for both Windows and Mac cameras)
                     // IMPORTANT: Don't trim the name - FFmpeg expects the exact name including any trailing/leading spaces
                     string cleanedName = System.Text.RegularExpressions.Regex.Replace(name, @"\s*VID:[0-9A-Fa-f]+\s*PID:[0-9A-Fa-f]+", "");
                     Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG ✓ FOUND CAMERA: '{cleanedName}' (length: {cleanedName.Length})");
-                    yield return new VideoConfig { FrameWork = FrameWork.ffmpeg, DeviceName = cleanedName, ffmpegId = cleanedName };
+                    yield return new VideoConfig { FrameWork = FrameWork.ffmpeg, DeviceName = cleanedName, ffmpegId = dshowPath, DirectShowPath=dshowPath };
                 }
             }
 

@@ -173,7 +173,7 @@ namespace FfmpegMediaPlatform
 
         private IEnumerable<Mode> GetWindowsModes()
         {
-            Tools.Logger.VideoLog.LogDebugCall(this, $"GetWindowsModes() called - querying DirectShow capabilities for '{VideoConfig.DeviceName}'");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"GetWindowsModes() called - querying DirectShow capabilities for '{VideoConfig.ffmpegId}'");
             List<Mode> supportedModes = new List<Mode>();
             
             try
