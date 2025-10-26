@@ -269,6 +269,15 @@ namespace ImageServer
             c.Pauseable = Pauseable;
             c.RecordVideoForReplays = RecordVideoForReplays;
             c.FrameWork = FrameWork;
+            c.FlipMirrored = FlipMirrored;
+            c.VideoBounds = VideoBounds;
+            c.FrameTimes = FrameTimes;
+            c.DeviceLatency = DeviceLatency;
+            c.AudioDevice = AudioDevice;
+            c.HardwareDecodeAcceleration = HardwareDecodeAcceleration;
+            c.RecordResolution = RecordResolution;
+            c.RecordFrameRate = RecordFrameRate;
+            c.AnyUSBPort = AnyUSBPort;
             return c;
         }
 
