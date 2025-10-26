@@ -383,7 +383,8 @@ namespace FfmpegMediaPlatform
             rgbaBuffer = new byte[bufSize];
             rgbaHandle = GCHandle.Alloc(rgbaBuffer, GCHandleType.Pinned);
             rgbaPtr = rgbaHandle.AddrOfPinnedObject();
-            rawTextures = new XBuffer<RawTexture>(5, FrameWidth, FrameHeight);
+            // Increased buffer from 5 to 10 to reduce frame drops in multi-video grids
+            rawTextures = new XBuffer<RawTexture>(10, FrameWidth, FrameHeight);
 
             run = true;
             readerThread = new Thread(ReadLoop) { Name = "libav-replay" };
@@ -694,9 +695,10 @@ namespace FfmpegMediaPlatform
                                 }
                                 else
                                 {
-                                    // Reset timing baseline every 5 seconds to prevent accumulating drift
+                                    // Reset timing baseline every 60 seconds to prevent accumulating drift
+                                    // Increased from 5s to 60s to reduce synchronization issues in multi-video grids
                                     var timeSinceLastReset = DateTime.UtcNow - playbackStartTime;
-                                    if (timeSinceLastReset.TotalSeconds > 5.0)
+                                    if (timeSinceLastReset.TotalSeconds > 60.0)
                                     {
                                         playbackStartTime = DateTime.UtcNow;
                                         playbackStartMediaTime = mediaTime;

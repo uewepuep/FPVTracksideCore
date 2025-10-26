@@ -559,32 +559,31 @@ namespace UI.Video
                 FrameSource existing = frameSources.FirstOrDefault(dsss => dsss.VideoConfig == vs);
                 if (existing != null)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Found existing source by object reference {existing.GetType().Name} (Instance: {existing.GetHashCode()}) for device: {vs.DeviceName}");
                     return existing;
                 }
-                
-                // Fall back to device name match (for FPV monitor to share with race channels)
-                Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Looking for device name match, target: '{vs.DeviceName}', existing sources: {frameSources.Count}");
-                foreach (var source in frameSources)
+
+                // Check if this is a video file source (replay mode)
+                bool isVideoFile = !string.IsNullOrEmpty(vs.FilePath);
+
+                // For video files, don't try to match by device name
+                // Each cloned VideoConfig should get its own source
+                if (isVideoFile)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Comparing '{vs.DeviceName}' with '{source.VideoConfig.DeviceName}'");
+                    // Create new source for this VideoConfig
+                    FrameSource newSource = CreateFrameSource(vs);
+                    return newSource;
                 }
+
+                // Fall back to device name match (for FPV monitor to share with race channels - live cameras only)
                 existing = frameSources.FirstOrDefault(dsss => dsss.VideoConfig.DeviceName == vs.DeviceName);
                 if (existing != null)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Found existing source by device name {existing.GetType().Name} (Instance: {existing.GetHashCode()}) for device: {vs.DeviceName}");
                     return existing;
                 }
-                Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: No device name match found for '{vs.DeviceName}'");
-                
+
                 // Create new frame source if not found
-                Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Creating new source for device: {vs.DeviceName}");
-                FrameSource newSource = CreateFrameSource(vs);
-                if (newSource != null)
-                {
-                    Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Created new source {newSource.GetType().Name} (Instance: {newSource.GetHashCode()}) for device: {vs.DeviceName}");
-                }
-                return newSource;
+                FrameSource newSource2 = CreateFrameSource(vs);
+                return newSource2;
             }
         }
 
@@ -755,35 +754,41 @@ namespace UI.Video
 
         public IEnumerable<ChannelVideoInfo> CreateChannelVideoInfos(IEnumerable<VideoConfig> videoSources)
         {
-            Tools.Logger.VideoLog.LogCall(this, $"CreateChannelVideoInfos called with {videoSources?.Count() ?? 0} video sources");
-            
             List<ChannelVideoInfo> channelVideoInfos = new List<ChannelVideoInfo>();
             foreach (VideoConfig videoConfig in videoSources)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"Processing VideoConfig: {videoConfig.DeviceName}, VideoBounds count: {videoConfig.VideoBounds?.Length ?? 0}");
-                
+                // For video files with multiple VideoBounds, we need to create separate VideoConfigs
+                // This ensures each channel gets its own frame source to prevent frame competition
+                bool isVideoFile = !string.IsNullOrEmpty(videoConfig.FilePath);
+                bool hasMultipleBounds = videoConfig.VideoBounds != null && videoConfig.VideoBounds.Length > 1;
+
                 foreach (VideoBounds videoBounds in videoConfig.VideoBounds)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"Processing VideoBounds: SourceType={videoBounds.SourceType}, Channel={videoBounds.GetChannel()?.ToString() ?? "null"}");
-                    
                     FrameSource source = null;
                     try
                     {
-                        source = GetFrameSource(videoConfig);
-                        Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource returned: {source?.GetType()?.Name ?? "null"} (Instance: {source?.GetHashCode()})");
+                        // For video files with multiple bounds, clone the VideoConfig to ensure each gets its own source
+                        VideoConfig configToUse = videoConfig;
+                        if (isVideoFile && hasMultipleBounds)
+                        {
+                            // Clone the VideoConfig to ensure this VideoBounds gets its own frame source
+                            configToUse = videoConfig.Clone();
+                            // Keep only this specific VideoBounds in the clone
+                            configToUse.VideoBounds = new VideoBounds[] { videoBounds };
+                        }
+
+                        source = GetFrameSource(configToUse);
                     }
                     catch (System.Runtime.InteropServices.COMException e)
                     {
                         // Failed to load the camera..
                         Logger.VideoLog.LogException(this, e);
-                        Tools.Logger.VideoLog.LogCall(this, $"COM Exception getting frame source: {e.Message}");
                     }
                     catch (Exception e)
                     {
                         Logger.VideoLog.LogException(this, e);
-                        Tools.Logger.VideoLog.LogCall(this, $"Exception getting frame source: {e.Message}");
                     }
-                    
+
                     if (source != null)
                     {
                         Channel channel = videoBounds.GetChannel();
@@ -794,16 +799,10 @@ namespace UI.Video
 
                         ChannelVideoInfo cvi = new ChannelVideoInfo(videoBounds, channel, source);
                         channelVideoInfos.Add(cvi);
-                        Tools.Logger.VideoLog.LogCall(this, $"Created ChannelVideoInfo: Channel={channel}, FrameSource={source.GetType().Name} (Instance: {source.GetHashCode()})");
-                    }
-                    else
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, "No frame source - skipping ChannelVideoInfo creation");
                     }
                 }
             }
 
-            Tools.Logger.VideoLog.LogCall(this, $"CreateChannelVideoInfos completed - returning {channelVideoInfos.Count} ChannelVideoInfos");
             return channelVideoInfos;
         }
 
