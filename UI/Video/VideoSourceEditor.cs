@@ -13,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Tools;
 using UI.Nodes;
@@ -317,6 +318,12 @@ namespace UI.Video
             if (propertyNode == null)
                 return;
 
+            ConditionalFrameworksAttribute conditionalFramework = propertyNode.PropertyInfo.GetCustomAttribute<ConditionalFrameworksAttribute>();
+            if (conditionalFramework != null)
+            {
+                propertyNode.Visible = conditionalFramework.Has(obj.FrameWork);
+            }
+
             string name = propertyNode.PropertyInfo.Name;
             if (name.Contains("Splits") && name != "Splits" && obj.Splits != Splits.Custom)
             {
@@ -328,6 +335,7 @@ namespace UI.Video
         {
             if (VideoManager != null && Selected != null)
             {
+                VideoManager.ClearRestart();
                 VideoManager.CreateFrameSource(new VideoConfig[] { Selected }, (fs) =>
                 {
                     if (mapperNode != null)
@@ -426,6 +434,8 @@ namespace UI.Video
 
             private bool rebootRequired;
 
+            private AutoResetEvent mutex;
+
             public ModePropertyNode(VideoSourceEditor vse, VideoConfig obj, PropertyInfo pi, Color background, Color textColor, Color hoverColor)
                 : base(obj, pi, background, textColor, hoverColor)
             {
@@ -433,6 +443,15 @@ namespace UI.Video
                 modes = new Mode[0];
 
                 rebootRequired = false;
+                mutex = new AutoResetEvent(false);
+            }
+
+            public override void Dispose()
+            {
+                mutex?.Dispose();
+                mutex = null;
+
+                base.Dispose();
             }
 
             private void AcceptModes(VideoManager.ModesResult result)
@@ -449,6 +468,8 @@ namespace UI.Video
                 }
 
                 SetOptions(modes);
+
+                mutex.Set();
                 ShowMouseMenu();
             }
 
@@ -456,16 +477,19 @@ namespace UI.Video
             {
                 if (mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Released)
                 {
-                    bool forceAllModes = Keyboard.GetState().IsKeyDown(Keys.LeftControl) || Keyboard.GetState().IsKeyDown(Keys.RightControl);
-                    if (forceAllModes)
+                    if (rebootRequired || !modes.Any())
                     {
-                        // Get ALL the modes form the device
-                        vse.VideoManager.GetModes(Object, true, AcceptModes);
-                    }
-                    else if (rebootRequired || !modes.Any())
-                    {
+                        LoadingLayer ll = GetLayer<LoadingLayer>();
+
+                        ll.WorkQueue.Enqueue("Reading modes from Device", () => 
+                        {
+                            mutex.WaitOne(20000); 
+                        });
+
+                        vse.VideoManager.ClearRestart();
+
                         // Get the normal modes form the device
-                        vse.VideoManager.GetModes(Object, false, AcceptModes);
+                        vse.VideoManager.GetModes(Object, true, AcceptModes);
                     }
                     else
                     {

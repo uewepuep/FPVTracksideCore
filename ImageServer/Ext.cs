@@ -39,16 +39,34 @@ namespace ImageServer
             switch (frameWork)
             {
                 case FrameWork.MediaFoundation:
-                    return "MF     ";
+                    return "MF";
 
                 case FrameWork.DirectShow:
-                    return "dShow  ";
+                    return "DS";
 
                 case FrameWork.ffmpeg:
-                    return "ffmpeg";
+                    return "ff";
 
                 default:
                     return frameWork.ToString().Substring(0, 2);
+            }
+        }
+
+        public static string ToStringLong(this FrameWork frameWork)
+        {
+            switch (frameWork)
+            {
+                case FrameWork.MediaFoundation:
+                    return "MediaFoundation";
+
+                case FrameWork.DirectShow:
+                    return "DirectShow     ";
+
+                case FrameWork.ffmpeg:
+                    return "ffmpeg         ";
+
+                default:
+                    return frameWork.ToString();
             }
         }
 

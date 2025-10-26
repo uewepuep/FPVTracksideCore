@@ -159,6 +159,7 @@ namespace ImageServer
 
         [Category("Video Recording")]
         [DisplayName("Hardware Decode Acceleration")]
+        [ConditionalFrameworks(FrameWork.ffmpeg)]
         public bool HardwareDecodeAcceleration
         {
             get => IsCompressedVideoFormat ? hardwareDecodeAcceleration : false;
@@ -189,7 +190,19 @@ namespace ImageServer
         public FrameTime[] FrameTimes { get; set; }
 
         [System.ComponentModel.Browsable(false)]
-        public FrameWork FrameWork { get; set; }
+        [JsonIgnore]
+        [XmlIgnore]
+        public FrameWork FrameWork
+        {
+            get
+            {
+                return VideoMode.FrameWork;
+            }
+            set 
+            { 
+                VideoMode.FrameWork = value;
+            }
+        }
 
         public VideoBounds[] VideoBounds { get; set; }
 
@@ -535,6 +548,20 @@ namespace ImageServer
             videoConfig.Pauseable = true;  // Allow ffmpeg cameras to be paused when not visible
             videoConfig.DeviceLatency = DeviceLatency;
             return videoConfig;
+        }
+    }
+
+    public class ConditionalFrameworksAttribute : Attribute
+    {
+        public FrameWork[] FrameWorks { get; set; }
+        public ConditionalFrameworksAttribute(params FrameWork[] frameWork)
+        {
+            this.FrameWorks = frameWork;
+        }
+
+        public bool Has(FrameWork frameWork)
+        {
+            return FrameWorks.Contains(frameWork);
         }
     }
 }

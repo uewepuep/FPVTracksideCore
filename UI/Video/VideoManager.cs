@@ -208,7 +208,7 @@ namespace UI.Video
             }
         }
 
-        public void Clear()
+        private void Clear()
         {
             Logger.VideoLog.LogCall(this);
             mutex.Set();
@@ -221,6 +221,12 @@ namespace UI.Video
                 frameSources.Clear();
             }
             mutex.Set();
+        }
+
+        public void ClearRestart()
+        {
+            StopDevices();
+            StartThread();
         }
 
         public IEnumerable<VideoConfig> GetAvailableVideoSources()
