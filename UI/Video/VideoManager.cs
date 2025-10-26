@@ -541,13 +541,10 @@ namespace UI.Video
 
         public IEnumerable<FrameSource> GetFrameSources()
         {
-            foreach (VideoConfig vs in VideoConfigs)
+            // Return all managed frame sources (including cloned sources for replay)
+            lock (frameSources)
             {
-                FrameSource source = GetFrameSource(vs);
-                if (source != null)
-                {
-                    yield return source;
-                }
+                return frameSources.ToList();
             }
         }
 
@@ -562,19 +559,7 @@ namespace UI.Video
                     return existing;
                 }
 
-                // Check if this is a video file source (replay mode)
-                bool isVideoFile = !string.IsNullOrEmpty(vs.FilePath);
-
-                // For video files, don't try to match by device name
-                // Each cloned VideoConfig should get its own source
-                if (isVideoFile)
-                {
-                    // Create new source for this VideoConfig
-                    FrameSource newSource = CreateFrameSource(vs);
-                    return newSource;
-                }
-
-                // Fall back to device name match (for FPV monitor to share with race channels - live cameras only)
+                // Fall back to device name match (for FPV monitor to share with race channels)
                 existing = frameSources.FirstOrDefault(dsss => dsss.VideoConfig.DeviceName == vs.DeviceName);
                 if (existing != null)
                 {
@@ -582,8 +567,8 @@ namespace UI.Video
                 }
 
                 // Create new frame source if not found
-                FrameSource newSource2 = CreateFrameSource(vs);
-                return newSource2;
+                FrameSource newSource = CreateFrameSource(vs);
+                return newSource;
             }
         }
 
@@ -755,29 +740,70 @@ namespace UI.Video
         public IEnumerable<ChannelVideoInfo> CreateChannelVideoInfos(IEnumerable<VideoConfig> videoSources)
         {
             List<ChannelVideoInfo> channelVideoInfos = new List<ChannelVideoInfo>();
+
             foreach (VideoConfig videoConfig in videoSources)
             {
-                // For video files with multiple VideoBounds, we need to create separate VideoConfigs
-                // This ensures each channel gets its own frame source to prevent frame competition
-                bool isVideoFile = !string.IsNullOrEmpty(videoConfig.FilePath);
+                // Check if this is a video file with multiple bounds (replay scenario)
+                bool isVideoFile = !string.IsNullOrEmpty(videoConfig.FilePath) &&
+                                   !videoConfig.FilePath.EndsWith(".jpg") &&
+                                   !videoConfig.FilePath.EndsWith(".png");
                 bool hasMultipleBounds = videoConfig.VideoBounds != null && videoConfig.VideoBounds.Length > 1;
 
-                foreach (VideoBounds videoBounds in videoConfig.VideoBounds)
+                if (isVideoFile && hasMultipleBounds)
                 {
+                    // For video files with multiple bounds (replay), create separate sources for each channel
+                    // to prevent flickering caused by buffer competition
+                    Tools.Logger.VideoLog.LogCall(this, $"Creating separate sources for video file replay: {videoConfig.FilePath} with {videoConfig.VideoBounds.Length} bounds");
+
+                    foreach (VideoBounds videoBounds in videoConfig.VideoBounds)
+                    {
+                        // Clone the config but with only this specific bounds
+                        VideoConfig clonedConfig = videoConfig.Clone();
+                        clonedConfig.VideoBounds = new VideoBounds[] { videoBounds };
+
+                        FrameSource source = null;
+                        try
+                        {
+                            source = CreateFrameSource(clonedConfig);
+                        }
+                        catch (System.Runtime.InteropServices.COMException e)
+                        {
+                            Logger.VideoLog.LogException(this, e);
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.VideoLog.LogException(this, e);
+                        }
+
+                        if (source != null)
+                        {
+                            Channel channel = videoBounds.GetChannel();
+                            if (channel == null)
+                            {
+                                channel = Channel.None;
+                            }
+
+                            ChannelVideoInfo cvi = new ChannelVideoInfo(videoBounds, channel, source);
+                            channelVideoInfos.Add(cvi);
+
+                            // Add to frame sources list for management
+                            lock (frameSources)
+                            {
+                                if (!frameSources.Contains(source))
+                                {
+                                    frameSources.Add(source);
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Normal case - single source for all bounds
                     FrameSource source = null;
                     try
                     {
-                        // For video files with multiple bounds, clone the VideoConfig to ensure each gets its own source
-                        VideoConfig configToUse = videoConfig;
-                        if (isVideoFile && hasMultipleBounds)
-                        {
-                            // Clone the VideoConfig to ensure this VideoBounds gets its own frame source
-                            configToUse = videoConfig.Clone();
-                            // Keep only this specific VideoBounds in the clone
-                            configToUse.VideoBounds = new VideoBounds[] { videoBounds };
-                        }
-
-                        source = GetFrameSource(configToUse);
+                        source = GetFrameSource(videoConfig);
                     }
                     catch (System.Runtime.InteropServices.COMException e)
                     {
@@ -791,14 +817,17 @@ namespace UI.Video
 
                     if (source != null)
                     {
-                        Channel channel = videoBounds.GetChannel();
-                        if (channel == null)
+                        foreach (VideoBounds videoBounds in videoConfig.VideoBounds)
                         {
-                            channel = Channel.None;
-                        }
+                            Channel channel = videoBounds.GetChannel();
+                            if (channel == null)
+                            {
+                                channel = Channel.None;
+                            }
 
-                        ChannelVideoInfo cvi = new ChannelVideoInfo(videoBounds, channel, source);
-                        channelVideoInfos.Add(cvi);
+                            ChannelVideoInfo cvi = new ChannelVideoInfo(videoBounds, channel, source);
+                            channelVideoInfos.Add(cvi);
+                        }
                     }
                 }
             }
