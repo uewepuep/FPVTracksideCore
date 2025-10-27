@@ -68,7 +68,7 @@ namespace FfmpegMediaPlatform
                                     Width = width,
                                     Height = height,
                                     FrameRate = frameRate,
-                                    FrameWork = FrameWork.ffmpeg,
+                                    FrameWork = FrameWork.FFmpeg,
                                     Index = index,
                                     Format = "uyvy422"
                                 };

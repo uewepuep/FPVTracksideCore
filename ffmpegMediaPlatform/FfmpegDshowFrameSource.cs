@@ -178,7 +178,7 @@ namespace FfmpegMediaPlatform
                 // Add sorted modes to supportedModes list
                 foreach (var mode in sortedModes)
                 {
-                    var videoMode = new Mode { Format = mode.format, Width = mode.width, Height = mode.height, FrameRate = mode.fps, FrameWork = FrameWork.ffmpeg, Index = index };
+                    var videoMode = new Mode { Format = mode.format, Width = mode.width, Height = mode.height, FrameRate = mode.fps, FrameWork = FrameWork.FFmpeg, Index = index };
                     supportedModes.Add(videoMode);
                     Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG ✓ ADDED MODE: {mode.width}x{mode.height}@{mode.fps}fps ({mode.format}) (Index {index}, Priority {mode.priority})");
                     index++;

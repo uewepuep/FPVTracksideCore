@@ -150,7 +150,7 @@ namespace FfmpegMediaPlatform
                                     Width = width,
                                     Height = height,
                                     FrameRate = frameRate,
-                                    FrameWork = FrameWork.ffmpeg,
+                                    FrameWork = FrameWork.FFmpeg,
                                     Index = index,
                                     Format = "uyvy422"
                                 };
@@ -304,7 +304,7 @@ namespace FfmpegMediaPlatform
                 // Add sorted modes to supportedModes list
                 foreach (var mode in sortedModes)
                 {
-                    var videoMode = new Mode { Format = mode.format, Width = mode.width, Height = mode.height, FrameRate = mode.fps, FrameWork = FrameWork.ffmpeg, Index = index };
+                    var videoMode = new Mode { Format = mode.format, Width = mode.width, Height = mode.height, FrameRate = mode.fps, FrameWork = FrameWork.FFmpeg, Index = index };
                     supportedModes.Add(videoMode);
                     index++;
                 }

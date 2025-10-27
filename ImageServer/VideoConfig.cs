@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Tools;
@@ -159,7 +160,7 @@ namespace ImageServer
 
         [Category("Video Recording")]
         [DisplayName("Hardware Decode Acceleration")]
-        [ConditionalFrameworks(FrameWork.ffmpeg)]
+        [ConditionalFrameworks(FrameWork.FFmpeg)]
         public bool HardwareDecodeAcceleration
         {
             get => IsCompressedVideoFormat ? hardwareDecodeAcceleration : false;
@@ -198,8 +199,8 @@ namespace ImageServer
             {
                 return VideoMode.FrameWork;
             }
-            set 
-            { 
+            set
+            {
                 VideoMode.FrameWork = value;
             }
         }
@@ -214,6 +215,24 @@ namespace ImageServer
             get
             {
                 return VideoBounds.Any(vb => vb.SourceType == SourceTypes.PhotoBooth);
+            }
+        }
+
+        [System.ComponentModel.Browsable(false)]
+        [JsonIgnore]
+        [XmlIgnore]
+        public IEnumerable<string> IDPaths
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(MediaFoundationPath))
+                    yield return MediaFoundationPath;
+
+                if (!string.IsNullOrEmpty(DirectShowPath))
+                    yield return DirectShowPath;
+
+                if (!string.IsNullOrEmpty(ffmpegId))
+                    yield return ffmpegId;
             }
         }
 
@@ -257,7 +276,7 @@ namespace ImageServer
         {
             string name = ToString();
 
-            VideoConfig[] sameName = others.Where(r => r != this && r.DeviceName.ToLower().Trim() ==  DeviceName.ToLower().Trim()).ToArray();
+            VideoConfig[] sameName = others.Where(r => r != this && r.DeviceName.ToLower().Trim() == DeviceName.ToLower().Trim()).ToArray();
 
             // no other devices
             if (sameName.Length == 0)
@@ -280,7 +299,7 @@ namespace ImageServer
                     toHash = ffmpegId;
 
                 if (toHash != null)
-                { 
+                {
                     string hashCode = toHash.GetHashCode().ToString("X8");
                     name += " #" + hashCode.Substring(0, 2);
                 }
@@ -309,8 +328,6 @@ namespace ImageServer
 
         public static VideoConfig[] Read(Profile profile)
         {
-
-
             VideoConfig[] s = null;
             try
             {
@@ -369,18 +386,35 @@ namespace ImageServer
             return hash;
         }
 
-        public bool PathContains(string common)
+        public bool Matches(VideoConfig other)
         {
-            if (MediaFoundationPath != null && MediaFoundationPath.Contains(common))
-            {
-                return true;
-            }
+            Regex regex = new Regex("(#[A-z0-9_&#]*)");
 
-            if (DirectShowPath != null && DirectShowPath.Contains(common))
+            foreach (string path in IDPaths)
             {
-                return true;
-            }
+                if (string.IsNullOrEmpty(path))
+                    continue;
 
+                Match match = regex.Match(path);
+                if (match.Success)
+                {
+                    string common = match.Groups[1].Value;
+                    if (other.IDPaths.Any(p => p.Contains(common)))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        public bool Matches(IEnumerable<VideoConfig> others)
+        {
+            foreach (VideoConfig other in others)
+            {
+                if (other.Matches(this))
+                    return true;
+            }
             return false;
         }
     }

@@ -100,12 +100,14 @@ namespace UI.Video
             MouseMenu mouseMenu = new MouseMenu(this);
             mouseMenu.TopToBottom = false;
 
-            VideoConfig[] vcs = VideoManager.GetAvailableVideoSources().Except(Objects).OrderBy(vc => vc.DeviceName).ToArray();
+            IEnumerable<VideoConfig> all = VideoManager.GetAvailableVideoSources();
 
-            IEnumerable<VideoConfig> combined = vcs.CombineVideoSources();
+            VideoConfig[] notInUse = all.Where(r => !r.Matches(Objects)).OrderBy(vc => vc.DeviceName).ToArray();
+                        
+            IEnumerable<VideoConfig> combined = notInUse.CombineVideoSources();
             foreach (VideoConfig source in combined)
             {
-                string sourceAsString = source.ToStringUnique(vcs);
+                string sourceAsString = source.ToStringUnique(combined);
                 if (!string.IsNullOrWhiteSpace(sourceAsString))
                 {
                     if (VideoManager.ValidDevice(source))
@@ -118,8 +120,12 @@ namespace UI.Video
                     }
                 }
             }
+            
+            mouseMenu.AddItem("File", AddVideoFile);
+            //mouseMenu.AddItem("RTSP URL", AddURL);
 
-            var grouped = vcs.GroupBy(o => o.FrameWork);
+            // Group by framework.
+            var grouped = notInUse.GroupBy(o => o.FrameWork);
             if (grouped.Any())
             {
                 MouseMenu by = mouseMenu.AddSubmenu("By Framework");
@@ -144,8 +150,6 @@ namespace UI.Video
                 }
             }
 
-            mouseMenu.AddItem("File", AddVideoFile);
-            //mouseMenu.AddItem("RTSP URL", AddURL);
             mouseMenu.Show(addButton);
         }
 
@@ -457,6 +461,7 @@ namespace UI.Video
             private void AcceptModes(VideoManager.ModesResult result)
             {
                 modes = TrimModes(result.Modes).ToArray();
+
                 if (result.RebootRequired)
                 {
                     GetLayer<PopupLayer>().PopupMessage("Please reboot capture device: " + Object.DeviceName);
@@ -505,12 +510,14 @@ namespace UI.Video
 
             private void SetOptions(Mode[] ms)
             {
-                    IEnumerable<Mode> ordered = ms.OrderByDescending(m => m.Width)
-                                                  .ThenByDescending(m => m.Height)
-                                                  .ThenByDescending(m => m.FrameRate)
-                                                  .ThenByDescending(m => m.ToString());
 
-                if (ms.Any())
+                IEnumerable<Mode> ordered = modes.OrderByDescending(m => m.Width)
+                                                .ThenByDescending(m => m.Height)
+                                                .ThenByDescending(m => m.FrameRate)
+                                                .ThenBy(m => VideoFrameWorks.IndexOf(m.FrameWork))
+                                                .ThenByDescending(m => m.ToString());
+
+                if (ordered.Any())
                 {
                     Options = ordered.OfType<object>().ToList();
                 }

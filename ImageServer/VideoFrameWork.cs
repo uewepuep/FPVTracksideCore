@@ -29,5 +29,18 @@ namespace ImageServer
         {
             return Available.FirstOrDefault(f => f.FrameWork == frameWork);
         }
+
+        public static int IndexOf(FrameWork frameWork)
+        {
+            int index = 0;
+            foreach (VideoFrameWork a in Available)
+            {
+                if (a.FrameWork == frameWork)
+                    return index;
+                index++;
+            }
+
+            return int.MaxValue;
+        }
     }
 }

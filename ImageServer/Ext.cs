@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -44,8 +45,8 @@ namespace ImageServer
                 case FrameWork.DirectShow:
                     return "DS";
 
-                case FrameWork.ffmpeg:
-                    return "ff";
+                case FrameWork.FFmpeg:
+                    return "FF";
 
                 default:
                     return frameWork.ToString().Substring(0, 2);
@@ -62,8 +63,8 @@ namespace ImageServer
                 case FrameWork.DirectShow:
                     return "DirectShow     ";
 
-                case FrameWork.ffmpeg:
-                    return "ffmpeg         ";
+                case FrameWork.FFmpeg:
+                    return "FFmpeg         ";
 
                 default:
                     return frameWork.ToString();
@@ -73,25 +74,34 @@ namespace ImageServer
         public static IEnumerable<VideoConfig> CombineVideoSources(this IEnumerable<VideoConfig> sources)
         {
             List<VideoConfig> configs = new List<VideoConfig>();
+            List<VideoConfig> toRemove = new List<VideoConfig>();
+
             foreach (VideoConfig videoConfig in sources)
             {
-                VideoConfig fromAnotherFramework = GetMatch(configs.Where(r => r.DeviceName == videoConfig.DeviceName), videoConfig.MediaFoundationPath, videoConfig.DirectShowPath);
-                if (fromAnotherFramework != null)
-                {
-                    if (fromAnotherFramework.DirectShowPath == null)
-                        fromAnotherFramework.DirectShowPath = videoConfig.DirectShowPath;
+                if (toRemove.Contains(videoConfig))
+                    continue;
 
-                    if (fromAnotherFramework.MediaFoundationPath == null)
-                        fromAnotherFramework.MediaFoundationPath = videoConfig.MediaFoundationPath;
-
-                    if (fromAnotherFramework.ffmpegId == null)
-                        fromAnotherFramework.ffmpegId = videoConfig.ffmpegId;
-                }
-                else
+                IEnumerable<VideoConfig> notCurrent = sources.Where(r => r != videoConfig);
+                IEnumerable<VideoConfig> fromAnotherFramework = GetMatch(videoConfig, notCurrent);
+                if (fromAnotherFramework.Any())
                 {
-                    configs.Add(videoConfig);
+                    foreach (VideoConfig another in fromAnotherFramework)
+                    {
+                        if (videoConfig.DirectShowPath == null)
+                            videoConfig.DirectShowPath = another.DirectShowPath;
+
+                        if (videoConfig.MediaFoundationPath == null)
+                            videoConfig.MediaFoundationPath = another.MediaFoundationPath;
+
+                        if (videoConfig.ffmpegId == null)
+                            videoConfig.ffmpegId = another.ffmpegId;
+                    }
+
+                    toRemove.AddRange(fromAnotherFramework);
                 }
+                configs.Add(videoConfig);
             }
+
 
             // Set any usbports
             foreach (VideoConfig vc in configs)
@@ -109,26 +119,13 @@ namespace ImageServer
             return configs;
         }
 
-        private static VideoConfig GetMatch(IEnumerable<VideoConfig> videoConfigs, params string[] paths)
+        private static IEnumerable<VideoConfig> GetMatch(VideoConfig matchThis, IEnumerable<VideoConfig> videoConfigs)
         {
-            if (paths.Any())
+            foreach (VideoConfig videoConfig in videoConfigs)
             {
-                Regex regex = new Regex("(#[A-z0-9_&#]*)");
-
-                foreach (string path in paths)
-                {
-                    if (string.IsNullOrEmpty(path))
-                        continue;
-
-                    Match match = regex.Match(path);
-                    if (match.Success)
-                    {
-                        string common = match.Groups[1].Value;
-                        return videoConfigs.Where(v => v.PathContains(common)).FirstOrDefault();
-                    }
-                }
+                if (matchThis.Matches(videoConfig))
+                    yield return videoConfig;
             }
-            return null;
         }
     }
 }

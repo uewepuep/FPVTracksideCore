@@ -165,7 +165,7 @@ namespace FfmpegMediaPlatform
                 Height = FrameHeight,
                 FrameRate = (float)(FrameRate > 0 ? FrameRate : 30.0),
                 Format = "rgba",
-                FrameWork = FrameWork.ffmpeg
+                FrameWork = FrameWork.FFmpeg
             };
         }
 
@@ -351,7 +351,7 @@ namespace FfmpegMediaPlatform
             if (ffmpeg.avcodec_open2(codecCtx, codec, null) < 0) throw new Exception("avcodec_open2 failed");
 
             // set width/height
-            VideoConfig.VideoMode ??= new Mode { Width = codecCtx->width, Height = codecCtx->height, FrameRate = 30, FrameWork = FrameWork.ffmpeg };
+            VideoConfig.VideoMode ??= new Mode { Width = codecCtx->width, Height = codecCtx->height, FrameRate = 30, FrameWork = FrameWork.FFmpeg };
             VideoConfig.VideoMode.Width = codecCtx->width;
             VideoConfig.VideoMode.Height = codecCtx->height;
 

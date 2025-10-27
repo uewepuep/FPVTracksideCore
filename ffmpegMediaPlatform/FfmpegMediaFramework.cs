@@ -15,7 +15,7 @@ namespace FfmpegMediaPlatform
         {
             get
             {
-                return FrameWork.ffmpeg;
+                return FrameWork.FFmpeg;
             }
         }
 
@@ -251,11 +251,14 @@ namespace FfmpegMediaPlatform
                 Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG COMMAND (list cameras): ffmpeg {listDevicesCommand}");
 
                 IEnumerable<string> responseText = GetFfmpegText(listDevicesCommand);
-                IEnumerable<string> deviceList = responseText.Where(l => l.Contains("[dshow @") && l.Contains("(video)"));
-                IEnumerable<string> alternativeNames = responseText.Where(l => l.Contains("[dshow @") && l.Contains("Alternative name"));
-
-                foreach (string deviceLine in deviceList)
+               
+                string[] deviceList = responseText.Where(l => l.Contains("[dshow @") && l.Contains("(video)")).ToArray();
+                string[] alternativeNames = responseText.Where(l => l.Contains("[dshow @") && l.Contains("Alternative name")).ToArray();
+                for (int i = 0; i < deviceList.Length && i < alternativeNames.Length; i++)
                 {
+                    string deviceLine = deviceList[i];
+                    string alternativeName = alternativeNames[i];
+
                     Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG OUTPUT: {deviceLine}");
 
                     string[] splits = deviceLine.Split("\"");
@@ -263,9 +266,6 @@ namespace FfmpegMediaPlatform
                     {
                         continue;
                     }
-
-                    string dshowID = splits[0];
-                    string alternativeName = alternativeNames.FirstOrDefault(l => l.Contains(dshowID));
 
                     string dshowPath = "";
                     if (!string.IsNullOrEmpty(alternativeName))
@@ -276,13 +276,8 @@ namespace FfmpegMediaPlatform
                             dshowPath = m.Groups[1].Value;
                         }
                     }
-
                     string name = splits[1];
-                    // Remove trailing VID/PID if present (for both Windows and Mac cameras)
-                    // IMPORTANT: Don't trim the name - FFmpeg expects the exact name including any trailing/leading spaces
-                    string cleanedName = System.Text.RegularExpressions.Regex.Replace(name, @"\s*VID:[0-9A-Fa-f]+\s*PID:[0-9A-Fa-f]+", "");
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG ✓ FOUND CAMERA: '{cleanedName}' (length: {cleanedName.Length})");
-                    yield return new VideoConfig { FrameWork = FrameWork.ffmpeg, DeviceName = cleanedName, ffmpegId = dshowPath, DirectShowPath=dshowPath };
+                    yield return new VideoConfig { FrameWork = FrameWork.FFmpeg, DeviceName = name, ffmpegId = dshowPath };
                 }
             }
 
@@ -327,7 +322,7 @@ namespace FfmpegMediaPlatform
                             // For AVFoundation, use cleaned device name for FFmpeg (without VID:PID)
                             // On Mac, cameras are upside down by default, but we want UI to show "None"
                             yield return new VideoConfig {
-                                FrameWork = FrameWork.ffmpeg,
+                                FrameWork = FrameWork.FFmpeg,
                                 DeviceName = cleanedName,
                                 ffmpegId = cleanedName,
                                 FlipMirrored = FlipMirroreds.None  // UI shows "None" but flip logic handles Mac cameras

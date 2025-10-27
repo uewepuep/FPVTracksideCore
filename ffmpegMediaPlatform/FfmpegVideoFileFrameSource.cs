@@ -655,7 +655,7 @@ namespace FfmpegMediaPlatform
                     Width = 1280,
                     Height = 720,
                     FrameRate = 30.0f,
-                    FrameWork = FrameWork.ffmpeg
+                    FrameWork = FrameWork.FFmpeg
                 };
             }
             
@@ -814,7 +814,7 @@ namespace FfmpegMediaPlatform
                             Width = width,
                             Height = height,
                             FrameRate = (float)frameRate,
-                            FrameWork = FrameWork.ffmpeg
+                            FrameWork = FrameWork.FFmpeg
                         };
                     }
                     else
@@ -1357,7 +1357,7 @@ namespace FfmpegMediaPlatform
                 FrameRate = VideoConfig.VideoMode?.FrameRate ?? 30.0f,
                 Format = "rgba",
                 Index = 0,
-                FrameWork = FrameWork.ffmpeg
+                FrameWork = FrameWork.FFmpeg
             };
             
             return new List<Mode> { mode };
