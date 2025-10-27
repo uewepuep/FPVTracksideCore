@@ -3,6 +3,7 @@ using Composition.Text;
 using Microsoft.Xna.Framework;
 using UI;
 using RaceLib;
+using ImageServer;
 
 namespace FPVMacsideCore
 {
@@ -39,6 +40,8 @@ namespace FPVMacsideCore
 
             base.LoadContent();
             BitmapFontLibrary.Init(PlatformTools.WorkingDirectory);
+
+            VideoFrameWorks.Available.Add(new FfmpegMediaPlatform.FfmpegMediaFramework());
         }
     }
 

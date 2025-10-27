@@ -89,11 +89,6 @@ namespace FPVMacsideCore
 
             todo = new List<Action>();
             maclipboard = new Maclipboard();
-
-            VideoFrameWorks.Available = new VideoFrameWork[]
-            {
-                new FfmpegMediaPlatform.FfmpegMediaFramework()
-            };
         }
 
         private void CopyToHomeDir(DirectoryInfo oldWorkDir)
