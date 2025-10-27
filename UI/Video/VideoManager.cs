@@ -955,18 +955,32 @@ namespace UI.Video
                         // Resolve the path if it's relative
                         if (!Path.IsPathRooted(videoConfig.FilePath))
                         {
-                            // The FilePath in the XML is relative to the base storage location
-                            // On macOS: Application Support/FPVTrackside/
-                            // On Windows: The events directory parent
-                            string baseDirectory = Path.GetDirectoryName(EventDirectory.FullName);
-                            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+                            // First check if the file exists in the same directory as the recordinfo.xml
+                            string videoFileName = Path.GetFileName(videoConfig.FilePath);
+                            string localPath = Path.Combine(raceDirectory.FullName, videoFileName);
+
+                            if (File.Exists(localPath))
                             {
-                                // On macOS, EventDirectory is Application Support/FPVTrackside/events/
-                                // We need to go up one level to get to Application Support/FPVTrackside/
-                                baseDirectory = Path.GetDirectoryName(baseDirectory);
+                                // Use the local file if it exists
+                                videoConfig.FilePath = localPath;
+                                Tools.Logger.VideoLog.LogCall(this, $"Found video file in race directory: {videoConfig.FilePath}");
                             }
-                            videoConfig.FilePath = Path.Combine(baseDirectory, videoConfig.FilePath);
-                            Tools.Logger.VideoLog.LogCall(this, $"Resolved relative path to: {videoConfig.FilePath}");
+                            else
+                            {
+                                // Try to resolve the relative path
+                                // The FilePath in the XML is relative to the base storage location
+                                // On macOS: Application Support/FPVTrackside/
+                                // On Windows: The events directory parent
+                                string baseDirectory = Path.GetDirectoryName(EventDirectory.FullName);
+                                if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+                                {
+                                    // On macOS, EventDirectory is Application Support/FPVTrackside/events/
+                                    // We need to go up one level to get to Application Support/FPVTrackside/
+                                    baseDirectory = Path.GetDirectoryName(baseDirectory);
+                                }
+                                videoConfig.FilePath = Path.Combine(baseDirectory, videoConfig.FilePath);
+                                Tools.Logger.VideoLog.LogCall(this, $"Resolved relative path to: {videoConfig.FilePath}");
+                            }
                         }
 
                         // Double-check that the file exists at the resolved path
@@ -975,8 +989,17 @@ namespace UI.Video
 
                         if (videoFileExists)
                         {
-                            Tools.Logger.VideoLog.LogCall(this, $"Yielding video config for: {videoConfig.FilePath}");
-                            yield return videoConfig;
+                            // Check if the file has a minimum size (1KB) to avoid loading corrupted/empty files
+                            FileInfo videoFileInfo = new FileInfo(videoConfig.FilePath);
+                            if (videoFileInfo.Length < 1024) // Less than 1KB is definitely corrupted/empty
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"Video file too small ({videoFileInfo.Length} bytes), skipping: {videoConfig.FilePath}");
+                            }
+                            else
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"Yielding video config for: {videoConfig.FilePath} (size: {videoFileInfo.Length} bytes)");
+                                yield return videoConfig;
+                            }
                         }
                         else
                         {
