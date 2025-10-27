@@ -352,6 +352,10 @@ namespace UI.Video
                             if (recordingFrameWork == FrameWork.DirectShow)
                                 recordingFrameWork = FrameWork.MediaFoundation;
 
+                            // TODO Remove this once ffmpeg playback is working in windows..
+                            if (recordingFrameWork == FrameWork.FFmpeg && available.Contains(FrameWork.MediaFoundation))
+                                recordingFrameWork = FrameWork.MediaFoundation;
+
                             // just use the first available if the recording one isn't ok.
                             if (!available.Contains(recordingFrameWork) && available.Any())
                             {
