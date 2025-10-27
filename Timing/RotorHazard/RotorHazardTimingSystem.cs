@@ -506,6 +506,7 @@ namespace Timing.RotorHazard
                 raceStartPilots.race_name = startMetaData.RaceName;
                 raceStartPilots.bracket = startMetaData.Bracket;
 
+                Logger.TimingLog.Log(this, $"Staging race with race_id: {startMetaData.RaceId}, race_number: {startMetaData.RaceNumber}, round_number: {startMetaData.RoundNumber}");
 
                 socket?.EmitAsync("ts_race_stage", (r) =>
                 { 
@@ -648,7 +649,7 @@ namespace Timing.RotorHazard
 
                 foreach (var rhmarshalData in raceMarshalDataList)
                 {
-                    Logger.TimingLog.Log(this, "Received race marshal data for pilot: " + rhmarshalData.callsign);
+                    Logger.TimingLog.Log(this, "Received race marshal data for pilot: " + rhmarshalData.callsign + " for race_id: " + rhmarshalData.race_id);
 
                     RaceMarshalLap[] orderedLaps = rhmarshalData.laps.OrderBy(l => l.lap_time_stamp).ToArray();
 
