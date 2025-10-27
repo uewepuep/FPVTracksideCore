@@ -1451,17 +1451,15 @@ namespace FfmpegMediaPlatform
                 {
                     return;
                 }
-                
-                // Load the recording info using absolute paths
-                var recordingInfo = IOTools.ReadSingle<RecodingInfo>(Path.GetDirectoryName(absoluteRecordInfoPath), Path.GetFileName(absoluteRecordInfoPath));
-                if (recordingInfo != null && recordingInfo.FrameTimes != null && recordingInfo.FrameTimes.Length > 0)
+
+                if (VideoConfig != null && VideoConfig.FrameTimes != null && VideoConfig.FrameTimes.Length > 0)
                 {
                     // Set the loaded frame times - need to access via reflection or create a protected setter
-                    SetFrameTimes(recordingInfo.FrameTimes);
+                    SetFrameTimes(VideoConfig.FrameTimes);
                     
                     // Update the start time based on the first frame
-                    var firstFrame = recordingInfo.FrameTimes.OrderBy(f => f.Time).First();
-                    var lastFrame = recordingInfo.FrameTimes.OrderBy(f => f.Time).Last();
+                    var firstFrame = VideoConfig.FrameTimes.OrderBy(f => f.Time).First();
+                    var lastFrame = VideoConfig.FrameTimes.OrderBy(f => f.Time).Last();
                     startTime = firstFrame.Time;
                     originalVideoStartTime = firstFrame.Time; // Preserve the original video start time for seeking
                     
@@ -1469,7 +1467,7 @@ namespace FfmpegMediaPlatform
                     TimeSpan ffprobeDuration = DetermineActualDuration(videoFilePath);
                     
                     // Use unified duration calculation logic with ffprobe as fallback
-                    var xmlDuration = UnifiedFrameTimingManager.CalculateVideoDuration(recordingInfo.FrameTimes, ffprobeDuration);
+                    var xmlDuration = UnifiedFrameTimingManager.CalculateVideoDuration(VideoConfig.FrameTimes, ffprobeDuration);
                     
                     // Duration selection: prefer the shorter of XML-derived duration and container duration
                     // This avoids progress bar overhang when one source slightly overestimates length
@@ -1496,7 +1494,7 @@ namespace FfmpegMediaPlatform
                     
                     // Validate frame timing consistency to detect platform-specific issues
                     bool isConsistent = UnifiedFrameTimingManager.ValidateFrameTimingConsistency(
-                        recordingInfo.FrameTimes, VideoConfig.VideoMode?.FrameRate ?? 30.0f);
+                        VideoConfig.FrameTimes, VideoConfig.VideoMode?.FrameRate ?? 30.0f);
                     
                     if (!isConsistent)
                     {

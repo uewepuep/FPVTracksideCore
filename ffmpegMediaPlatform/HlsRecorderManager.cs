@@ -209,13 +209,7 @@ namespace FfmpegMediaPlatform
 
                     isRecording = false;
                     delayedStopScheduled = false; // Reset the delayed stop flag
-                    
-                    // Generate .recordinfo.xml file if we have a frame source
-                    if (success && frameSourceForRecordInfo != null)
-                    {
-                        GenerateRecordInfoFile(outputPath);
-                    }
-                    
+                                        
                     RecordingStopped?.Invoke(outputPath, success);
                     
                     return success;
@@ -423,53 +417,6 @@ namespace FfmpegMediaPlatform
                 Tools.Logger.VideoLog.LogException(this, ex);
             }
         }
-
-        /// <summary>
-        /// Generate .recordinfo.xml file for the recorded video to enable replay functionality
-        /// </summary>
-        /// <param name="videoFilePath">Path to the recorded video file</param>
-        private void GenerateRecordInfoFile(string videoFilePath)
-        {
-            try
-            {
-                if (frameSourceForRecordInfo == null)
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, "No frame source available for .recordinfo.xml generation");
-                    return;
-                }
-
-                // Create RecodingInfo from the frame source
-                var recordingInfo = new RecodingInfo(frameSourceForRecordInfo);
-                
-                // Use relative path for the recording info
-                recordingInfo.FilePath = Path.GetRelativePath(Directory.GetCurrentDirectory(), videoFilePath);
-                
-                // Generate .recordinfo.xml filename alongside the video file
-                string basePath = videoFilePath;
-                if (basePath.EndsWith(".mp4"))
-                {
-                    basePath = basePath.Replace(".mp4", "");
-                }
-                else if (basePath.EndsWith(".mkv"))
-                {
-                    basePath = basePath.Replace(".mkv", "");
-                }
-                
-                FileInfo recordInfoFile = new FileInfo(basePath + ".recordinfo.xml");
-                
-                // Write the .recordinfo.xml file
-                IOTools.Write(recordInfoFile.Directory.FullName, recordInfoFile.Name, recordingInfo);
-                
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Generated .recordinfo.xml file: {recordInfoFile.FullName}");
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Frame times count: {recordingInfo.FrameTimes?.Length ?? 0}");
-            }
-            catch (Exception ex)
-            {
-                Tools.Logger.VideoLog.LogException(this, ex);
-                Tools.Logger.VideoLog.LogException(this, "Failed to generate .recordinfo.xml file for {videoFilePath}", ex);
-            }
-        }
-
         public void Dispose()
         {
             if (isRecording)

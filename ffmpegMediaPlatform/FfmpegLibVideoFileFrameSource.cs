@@ -45,7 +45,7 @@ namespace FfmpegMediaPlatform
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"FFmpeg.AutoGen initialization failed: {ex.Message}");
+                Tools.Logger.VideoLog.LogDebug($"FFmpeg.AutoGen initialization failed: {ex.Message}");
                 // Don't throw here - let the instance constructor handle it
             }
         }
@@ -89,18 +89,29 @@ namespace FfmpegMediaPlatform
             startTime = DateTime.Now; // default when no XML timing
             frameRate = 30.0;
             length = TimeSpan.Zero;
-            
+            needInit = true;
+        }
+
+        private bool needInit;
+        private void Init()
+        {
+            if (!needInit)
+                return;
+
+            needInit = false;
+
+
             // Check if native libraries are available before proceeding
             try
             {
                 FfmpegNativeLoader.EnsureRegistered();
-                
+
                 // Test basic library functionality
                 if (ffmpeg.av_log_set_level == null)
                 {
                     throw new NotSupportedException("FFmpeg native libraries not properly loaded");
                 }
-                
+
                 // Only try to initialize metadata if libraries are working
                 InitializeMetadataEarly();
             }
@@ -111,6 +122,7 @@ namespace FfmpegMediaPlatform
                 throw new NotSupportedException($"FFmpeg native libraries not available: {ex.Message}", ex);
             }
         }
+
 
         public FrameTime[] FrameTimes => frameTimesData;
         public DateTime StartTime => startTime;
@@ -246,14 +258,9 @@ namespace FfmpegMediaPlatform
                 else if (basePath.EndsWith(".ts", StringComparison.OrdinalIgnoreCase)) basePath = basePath[..^3];
                 else if (basePath.EndsWith(".mkv", StringComparison.OrdinalIgnoreCase)) basePath = basePath[..^4];
 
-                string recordInfoPath = basePath + ".recordinfo.xml";
-                string absoluteRecordInfoPath = Path.GetFullPath(recordInfoPath);
-                if (!File.Exists(absoluteRecordInfoPath)) return;
-
-                var recordingInfo = IOTools.ReadSingle<RecodingInfo>(Path.GetDirectoryName(absoluteRecordInfoPath), Path.GetFileName(absoluteRecordInfoPath));
-                if (recordingInfo?.FrameTimes != null && recordingInfo.FrameTimes.Length > 0)
+                if (VideoConfig?.FrameTimes != null && VideoConfig.FrameTimes.Length > 0)
                 {
-                    frameTimesData = recordingInfo.FrameTimes;
+                    frameTimesData = VideoConfig.FrameTimes;
                     var firstFrame = frameTimesData[0];
                     var lastFrame = frameTimesData[^1];
                     startTime = firstFrame.Time;
@@ -275,19 +282,21 @@ namespace FfmpegMediaPlatform
 
         public override bool Start()
         {
+            Init();
+
             Tools.Logger.VideoLog.LogDebugCall(this, "PLAYBACK ENGINE: ffmpeg LIB (in-process libav)");
             // Ensure native dylibs are resolved (Homebrew path on macOS)
             FfmpegNativeLoader.EnsureRegistered();
             
             // Debug: Check which FFmpeg functions are available
-            Console.WriteLine($"FFmpeg function availability check:");
-            Console.WriteLine($"  av_log_set_level: {(ffmpeg.av_log_set_level != null ? "OK" : "NULL")}");
-            Console.WriteLine($"  avformat_open_input: {(ffmpeg.avformat_open_input != null ? "OK" : "NULL")}");
-            Console.WriteLine($"  avformat_find_stream_info: {(ffmpeg.avformat_find_stream_info != null ? "OK" : "NULL")}");
-            Console.WriteLine($"  avcodec_find_decoder: {(ffmpeg.avcodec_find_decoder != null ? "OK" : "NULL")}");
-            Console.WriteLine($"  avcodec_alloc_context3: {(ffmpeg.avcodec_alloc_context3 != null ? "OK" : "NULL")}");
-            Console.WriteLine($"  avcodec_parameters_to_context: {(ffmpeg.avcodec_parameters_to_context != null ? "OK" : "NULL")}");
-            Console.WriteLine($"  avcodec_open2: {(ffmpeg.avcodec_open2 != null ? "OK" : "NULL")}");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"FFmpeg function availability check:");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"  av_log_set_level: {(ffmpeg.av_log_set_level != null ? "OK" : "NULL")}");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"  avformat_open_input: {(ffmpeg.avformat_open_input != null ? "OK" : "NULL")}");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"  avformat_find_stream_info: {(ffmpeg.avformat_find_stream_info != null ? "OK" : "NULL")}");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"  avcodec_find_decoder: {(ffmpeg.avcodec_find_decoder != null ? "OK" : "NULL")}");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"  avcodec_alloc_context3: {(ffmpeg.avcodec_alloc_context3 != null ? "OK" : "NULL")}");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"  avcodec_parameters_to_context: {(ffmpeg.avcodec_parameters_to_context != null ? "OK" : "NULL")}");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"  avcodec_open2: {(ffmpeg.avcodec_open2 != null ? "OK" : "NULL")}");
             
             // Check if critical functions are available
             if (ffmpeg.avformat_open_input == null || ffmpeg.avformat_find_stream_info == null || 
@@ -301,11 +310,11 @@ namespace FfmpegMediaPlatform
             {
                 // Test a simple function call to see if bindings work
                 var testVersion = ffmpeg.avformat_version();
-                Console.WriteLine($"FFmpeg avformat_version test: {testVersion} (SUCCESS)");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"FFmpeg avformat_version test: {testVersion} (SUCCESS)");
             }
             catch (Exception funcTest)
             {
-                Console.WriteLine($"FFmpeg function call test failed: {funcTest.Message}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"FFmpeg function call test failed: {funcTest.Message}");
                 throw new NotSupportedException($"FFmpeg native library functions not working: {funcTest.Message}", funcTest);
             }
             
@@ -316,7 +325,7 @@ namespace FfmpegMediaPlatform
             }
             catch (Exception logEx)
             {
-                Console.WriteLine($"Warning: Could not set FFmpeg log level: {logEx.Message}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Warning: Could not set FFmpeg log level: {logEx.Message}");
                 // Continue without setting log level - this is not critical
             }
             string path = VideoConfig.FilePath;

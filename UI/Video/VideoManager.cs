@@ -1,6 +1,4 @@
-﻿using UI.Nodes;
-using ImageServer;
-using Microsoft.Xna.Framework.Graphics;
+﻿using ImageServer;
 using RaceLib;
 using System;
 using System.Collections.Generic;
@@ -10,11 +8,7 @@ using System.Threading.Tasks;
 using Tools;
 using System.Threading;
 using System.IO;
-using Microsoft.Xna.Framework.Media;
 using Composition;
-using System.Text.RegularExpressions;
-using UI;
-using static UI.Video.VideoManager;
 
 namespace UI.Video
 {
@@ -351,10 +345,23 @@ namespace UI.Video
                         }
                         else
                         {
-                            VideoFrameWork mediaFoundation = VideoFrameWorks.GetFramework(FrameWork.MediaFoundation);
-                            if (mediaFoundation != null)
+                            IEnumerable<FrameWork> available = VideoFrameWorks.Available.Select(x => x.FrameWork);
+                            FrameWork recordingFrameWork = videoConfig.FrameWork;
+
+                            // DS can be viewed just fine in the better MF.
+                            if (recordingFrameWork == FrameWork.DirectShow)
+                                recordingFrameWork = FrameWork.MediaFoundation;
+
+                            // just use the first available if the recording one isn't ok.
+                            if (!available.Contains(recordingFrameWork) && available.Any())
                             {
-                                source = mediaFoundation.CreateFrameSource(videoConfig);
+                                recordingFrameWork = available.FirstOrDefault();
+                            }
+
+                            VideoFrameWork framework = VideoFrameWorks.GetFramework(recordingFrameWork);
+                            if (framework != null)
+                            {
+                                source = framework.CreateFrameSource(videoConfig);
                             }
                         }
 
@@ -535,7 +542,6 @@ namespace UI.Video
                 foreach (FileInfo file in raceDirectory.GetFiles("*.recordinfo.xml"))
                 {
                     RecodingInfo videoInfo = null;
-
                     try
                     {
                         videoInfo = IOTools.ReadSingle<RecodingInfo>(raceDirectory.FullName, file.Name);
@@ -556,18 +562,24 @@ namespace UI.Video
             }
         }
 
+        private FileInfo GetRecordingInfoFileName(FileInfo videoFile)
+        {
+            string noExtension = videoFile.NoExtension();
+            return new FileInfo(noExtension + ".recordinfo.xml");
+        }
+
         public void CreateFrameSource(IEnumerable<VideoConfig> videoConfigs, FrameSourcesDelegate frameSourcesDelegate)
         {
-            List<FrameSource> list = new List<FrameSource>();
-            foreach (var videoConfig in videoConfigs)
-            {
-                RemoveFrameSource(videoConfig);
-                FrameSource fs = CreateFrameSource(videoConfig);
-                list.Add(fs);
-            }
-
             DoOnWorkerThread(() =>
             {
+                List<FrameSource> list = new List<FrameSource>();
+                foreach (var videoConfig in videoConfigs)
+                {
+                    RemoveFrameSource(videoConfig);
+                    FrameSource fs = CreateFrameSource(videoConfig);
+                    list.Add(fs);
+                }
+
                 if (frameSourcesDelegate != null)
                 {
                     frameSourcesDelegate(list);
@@ -606,7 +618,7 @@ namespace UI.Video
                     {
                         file.Delete();
 
-                        FileInfo xmlconfig = new FileInfo(file.FullName.Replace(".wmv", ".recordinfo.xml"));
+                        FileInfo xmlconfig = GetRecordingInfoFileName(file);
                         if (xmlconfig.Exists)
                         {
                             xmlconfig.Delete();
@@ -626,18 +638,17 @@ namespace UI.Video
 
             DirectoryInfo parentDirectory = EventDirectory.Parent;
 
+            string[] fileExtensions = VideoFrameWorks.Available.SelectMany(f => f.GetFileExtensions()).Distinct().ToArray();
             foreach (DirectoryInfo eventDir in parentDirectory.EnumerateDirectories())
             {
                 foreach (DirectoryInfo raceDir in eventDir.EnumerateDirectories())
                 {
-                    foreach (FileInfo fileInfo in raceDir.GetFiles("*.wmv"))
+                    foreach (string extension in fileExtensions)
                     {
-                        yield return fileInfo;
-                    }
-
-                    foreach (FileInfo fileInfo in raceDir.GetFiles("*.mp4"))
-                    {
-                        yield return fileInfo;
+                        foreach (FileInfo fileInfo in raceDir.GetFiles("*" + extension))
+                        {
+                            yield return fileInfo;
+                        }
                     }
                 }
             }
@@ -735,9 +746,8 @@ namespace UI.Video
                                     {
                                         source.StopRecording();
                                         someFinalising = true;
+                                        needsVideoInfoWrite.Add((FrameSource)source);
                                     }
-
-                                    needsVideoInfoWrite.Add((FrameSource)source);
                                 }
                             }
                         }
@@ -757,9 +767,9 @@ namespace UI.Video
                                 if (source.FrameTimes != null && source.FrameTimes.Any())
                                 {
                                     RecodingInfo vi = new RecodingInfo(source);
-
-                                    FileInfo fileinfo = new FileInfo(vi.FilePath.Replace(".wmv", "") + ".recordinfo.xml");
-                                    IOTools.Write(fileinfo.Directory.FullName, fileinfo.Name, vi);
+                                    FileInfo videoFile = new FileInfo(vi.FilePath);
+                                    FileInfo recordingInfo = GetRecordingInfoFileName(videoFile);
+                                    IOTools.Write(recordingInfo.Directory.FullName, recordingInfo.Name, vi);
                                     needsVideoInfoWrite.Remove((FrameSource)source);
                                 }
                             }

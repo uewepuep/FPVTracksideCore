@@ -188,12 +188,12 @@ namespace Tools
 
         public static string NoExtension(this FileInfo file)
         {
-            if (file.Name.EndsWith(file.Extension))
+            if (file.FullName.EndsWith(file.Extension))
             {
-                return file.Name.Substring(0, file.Name.Length - file.Extension.Length);
+                return file.FullName.Substring(0, file.FullName.Length - file.Extension.Length);
             }
 
-            return file.Name;
+            return file.FullName;
         }
 
         public static string ToString(this double? d, string f)

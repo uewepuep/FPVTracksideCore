@@ -327,18 +327,6 @@ namespace FfmpegMediaPlatform
                     success = false;
                 }
                 
-                // Generate XML metadata file from the camera loop timing data
-                // This ensures the XML metadata is generated with camera-native timing
-                if (success)
-                {
-                    GenerateRecordInfoFile(outputPath);
-                    
-                    // Add a small delay to ensure file system has time to register the new file
-                    // This prevents race conditions where the UI checks for recordings before
-                    // the .recordinfo.xml file is fully written to disk
-                    Task.Delay(100).Wait();
-                }
-                
                 RecordingStopped?.Invoke(outputPath, success);
                 
                 return success;
@@ -485,67 +473,6 @@ namespace FfmpegMediaPlatform
                 Tools.Logger.VideoLog.LogException(this, "Error in async frame writing loop", ex);
             }
         }
-
-        /// <summary>
-        /// Generate .recordinfo.xml file for the recorded video using collected frame timing data
-        /// </summary>
-        /// <param name="videoFilePath">Path to the recorded video file</param>
-        private void GenerateRecordInfoFile(string videoFilePath)
-        {
-            try
-            {
-                if (frameSourceForRecordInfo == null)
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, "No frame source available for .recordinfo.xml generation");
-                    return;
-                }
-
-                // Create RecodingInfo using collected frame timing data
-                var recordingInfo = new RecodingInfo(frameSourceForRecordInfo);
-                
-                // Override frame times with our collected data
-                recordingInfo.FrameTimes = frameTimes.ToArray();
-                
-                // Use relative path for the recording info
-                recordingInfo.FilePath = Path.GetRelativePath(Directory.GetCurrentDirectory(), videoFilePath);
-                
-                // Generate .recordinfo.xml filename alongside the video file
-                string basePath = videoFilePath;
-                if (basePath.EndsWith(".mp4"))
-                {
-                    basePath = basePath.Replace(".mp4", "");
-                }
-                else if (basePath.EndsWith(".mkv"))
-                {
-                    basePath = basePath.Replace(".mkv", "");
-                }
-                
-                FileInfo recordInfoFile = new FileInfo(basePath + ".recordinfo.xml");
-                
-                // Write the .recordinfo.xml file
-                IOTools.Write(recordInfoFile.Directory.FullName, recordInfoFile.Name, recordingInfo);
-                
-                // Verify the file was written successfully
-                if (recordInfoFile.Exists)
-                {
-                    var fileInfo = new FileInfo(recordInfoFile.FullName);
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"Generated .recordinfo.xml file: {recordInfoFile.FullName} ({fileInfo.Length} bytes)");
-                }
-                else
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"WARNING: .recordinfo.xml file was not created: {recordInfoFile.FullName}");
-                }
-                
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Frame times count: {frameTimes.Count}");
-            }
-            catch (Exception ex)
-            {
-                Tools.Logger.VideoLog.LogException(this, ex);
-                Tools.Logger.VideoLog.LogException(this, "Failed to generate .recordinfo.xml file for {videoFilePath}", ex);
-            }
-        }
-
-
         public void Dispose()
         {
             if (isRecording)

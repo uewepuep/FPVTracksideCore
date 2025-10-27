@@ -240,6 +240,11 @@ namespace Tools
             }
         }
 
+        public void LogDebug(params object[] targets)
+        {
+            LogDebugCall(null, targets);
+        }
+
         public void LogDebugCall(object caller, params object[] targets)
         {
 #if DEBUG

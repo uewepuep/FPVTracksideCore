@@ -50,7 +50,7 @@ namespace FfmpegMediaPlatform
                     if (Directory.Exists(path))
                     {
                         ffmpegDir = path;
-                        Console.WriteLine($"Found ffmpeg directory: {ffmpegDir}");
+                        Tools.Logger.VideoLog.LogDebugCall(this, $"Found ffmpeg directory: {ffmpegDir}");
                         break;
                     }
                 }
@@ -70,17 +70,17 @@ namespace FfmpegMediaPlatform
                         ffmpegPath = Path.Combine(ffmpegDir, "ffmpeg-intel");
                     }
                     
-                    Console.WriteLine($"Looking for ffmpeg binary at: {ffmpegPath}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"Looking for ffmpeg binary at: {ffmpegPath}");
                     
                     // Check if the local ffmpeg binary exists
                     if (File.Exists(ffmpegPath))
                     {
                         execName = ffmpegPath;
-                        Console.WriteLine($"Using local ffmpeg binary: {ffmpegPath} for architecture: {processArch}");
+                        Tools.Logger.VideoLog.LogDebugCall(this, $"Using local ffmpeg binary: {ffmpegPath} for architecture: {processArch}");
                     }
                     else
                     {
-                        Console.WriteLine($"Local ffmpeg binary not found at: {ffmpegPath}");
+                        Tools.Logger.VideoLog.LogDebugCall(this, $"Local ffmpeg binary not found at: {ffmpegPath}");
                         ffmpegPath = null; // Reset to null so we fall back
                     }
                 }
@@ -89,7 +89,7 @@ namespace FfmpegMediaPlatform
                 if (ffmpegPath == null)
                 {
                     execName = "ffmpeg"; // fallback to PATH
-                    Console.WriteLine("Local and Homebrew ffmpeg not found, using system PATH ffmpeg");
+                    Tools.Logger.VideoLog.LogDebugCall(this, "Local and Homebrew ffmpeg not found, using system PATH ffmpeg");
                 }
             }
             else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
@@ -102,7 +102,7 @@ namespace FfmpegMediaPlatform
                 if (File.Exists(localFfmpegPath))
                 {
                     execName = localFfmpegPath;
-                    Console.WriteLine($"Using local ffmpeg binary: {localFfmpegPath}");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"Using local ffmpeg binary: {localFfmpegPath}");
                 }
                 else
                 {
@@ -112,14 +112,14 @@ namespace FfmpegMediaPlatform
                     {
                         if (File.Exists(localZipFile))
                         {
-                            Console.WriteLine($"Decompressing {localZipFile}");
+                            Tools.Logger.VideoLog.LogDebugCall(this, $"Decompressing {localZipFile}");
                             System.IO.Compression.ZipFile.ExtractToDirectory(localZipFile, ".");
                             File.Delete(localZipFile);
                         }
                     }
                     catch (Exception ex) 
                     {
-                        Console.WriteLine($"Failed to Decompress {localZipFile} {ex.Message}");
+                        Tools.Logger.VideoLog.LogDebugCall(this, $"Failed to Decompress {localZipFile} {ex.Message}");
                     }
 
 
@@ -195,7 +195,7 @@ namespace FfmpegMediaPlatform
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                Tools.Logger.VideoLog.LogDebugCall(this, e.Message);
                 return new string[] { };
             }            
         }
@@ -433,6 +433,11 @@ namespace FfmpegMediaPlatform
         public IEnumerable<string> GetAudioSources()
         {
             yield break;
+        }
+
+        public IEnumerable<string> GetFileExtensions()
+        {
+            return [".mp4"];
         }
     }
 }

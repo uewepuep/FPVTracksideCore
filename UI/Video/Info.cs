@@ -45,6 +45,9 @@ namespace UI.Video
 
         public float DeviceLatency { get; set; }
 
+        public FrameWork FrameWork { get; set; }
+
+
         public RecodingInfo()
         {
             FrameTimes = new FrameTime[0];
@@ -58,6 +61,7 @@ namespace UI.Video
             ChannelBounds = captureFrameSource.VideoConfig.VideoBounds;
             FlipMirrored = captureFrameSource.VideoConfig.FlipMirrored;
             DeviceLatency = captureFrameSource.VideoConfig.DeviceLatency;
+            FrameWork = captureFrameSource.VideoConfig.FrameWork;
         }
 
         public VideoConfig GetVideoConfig()
@@ -70,6 +74,7 @@ namespace UI.Video
             videoConfig.FlipMirrored = FlipMirrored;
             videoConfig.Pauseable = false;
             videoConfig.DeviceLatency = DeviceLatency;
+            videoConfig.FrameWork = FrameWork;
             return videoConfig;
         }
     }

@@ -27,14 +27,14 @@ namespace FfmpegMediaPlatform
 
                     try
                     {
-                        Console.WriteLine("FfmpegGlobalInitializer: Pre-loading FFmpeg bindings...");
+                        Tools.Logger.VideoLog.LogDebug("FfmpegGlobalInitializer: Pre-loading FFmpeg bindings...");
                         FfmpegNativeLoader.EnsureRegistered();
                         _initialized = true;
-                        Console.WriteLine("FfmpegGlobalInitializer: FFmpeg bindings pre-loaded successfully");
+                        Tools.Logger.VideoLog.LogDebug("FfmpegGlobalInitializer: FFmpeg bindings pre-loaded successfully");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"FfmpegGlobalInitializer: Failed to pre-load FFmpeg bindings: {ex.Message}");
+                        Tools.Logger.VideoLog.LogDebug($"FfmpegGlobalInitializer: Failed to pre-load FFmpeg bindings: {ex.Message}");
                         // Don't set initialized to true if it failed, so it can be retried later
                     }
                 }
@@ -59,7 +59,7 @@ namespace FfmpegMediaPlatform
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"FfmpegGlobalInitializer: Failed to initialize FFmpeg bindings: {ex.Message}");
+                    Tools.Logger.VideoLog.LogDebug($"FfmpegGlobalInitializer: Failed to initialize FFmpeg bindings: {ex.Message}");
                     throw;
                 }
             }
@@ -81,7 +81,7 @@ namespace FfmpegMediaPlatform
                 {
                     try
                     {
-                        Console.WriteLine("FfmpegGlobalInitializer: Cleaning up FFmpeg bindings...");
+                        Tools.Logger.VideoLog.LogDebug("FfmpegGlobalInitializer: Cleaning up FFmpeg bindings...");
                         
                         // Force garbage collection to release any native resources
                         GC.Collect();
@@ -89,11 +89,11 @@ namespace FfmpegMediaPlatform
                         GC.Collect();
                         
                         _initialized = false;
-                        Console.WriteLine("FfmpegGlobalInitializer: FFmpeg bindings cleanup completed");
+                        Tools.Logger.VideoLog.LogDebug("FfmpegGlobalInitializer: FFmpeg bindings cleanup completed");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"FfmpegGlobalInitializer: Error during cleanup: {ex.Message}");
+                        Tools.Logger.VideoLog.LogDebug($"FfmpegGlobalInitializer: Error during cleanup: {ex.Message}");
                     }
                 }
             }

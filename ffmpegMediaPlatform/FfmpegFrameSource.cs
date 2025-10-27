@@ -121,6 +121,8 @@ namespace FfmpegMediaPlatform
 
         public void StartRecording(string filename)
         {
+            filename += ".mp4";
+
             if (Recording)
             {
                 Tools.Logger.VideoLog.LogDebugCall(this, $"Already recording to {recordingFilename}");
@@ -783,7 +785,7 @@ namespace FfmpegMediaPlatform
                         if (bytesRead == 0)
                         {
                             // End of stream or process ended
-                            if (process.HasExited)
+                            if (process == null || process.HasExited)
                             {
                                 Tools.Logger.VideoLog.LogDebugCall(this, "FFmpeg process ended during read");
                                 break;
