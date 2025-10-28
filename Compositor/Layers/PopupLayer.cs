@@ -7,6 +7,7 @@ using Composition.Input;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Tools;
 
 namespace Composition.Layers
 {
@@ -129,16 +130,47 @@ namespace Composition.Layers
         }
     }
 
-    class PopupBackgroundNode : ColorNode
+    class PopupBackgroundNode : Node
     {
+        private ColorNode backgroundNode;
+
         public PopupBackgroundNode() 
-            : base(Color.FromNonPremultiplied(8, 8, 8, 128))
         {
+            backgroundNode = new ColorNode(Color.FromNonPremultiplied(8, 8, 8, 128));
         }
 
         public override void Draw(Drawer id, float parentAlpha)
         {
-            base.Draw(id, parentAlpha);
+            DrawChildren(id, parentAlpha);
+        }
+
+        public override void Layout(RectangleF parentBounds)
+        {
+            base.Layout(parentBounds);
+            backgroundNode.Layout(parentBounds);
+        }
+
+        public override void DrawChildren(Drawer id, float parentAlpha)
+        {
+            Node[] children = Children;
+            for (int i = 0; i < children.Length; i++)
+            {
+                Node n = children[i];
+
+                // Draw background last only
+                if (n == backgroundNode)
+                    continue;
+
+                if (i == children.Length - 1)
+                {
+                    backgroundNode.Draw(id, parentAlpha * Alpha);
+                }
+
+                if (n.Drawable)
+                {
+                    n.Draw(id, parentAlpha * Alpha);
+                }
+            }
         }
     }
 }

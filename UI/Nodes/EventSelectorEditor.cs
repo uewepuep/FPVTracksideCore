@@ -208,6 +208,10 @@ namespace UI.Nodes
 
             SetSelected(lastOpened);
 
+
+            Node[] buttons = new Node[] { addButton, removeButton, CloneButton, RecoverButton, cancelButton, okButton };
+            buttonContainer.SetOrder(buttons);
+
             AlignVisibleButtons();
         }
 

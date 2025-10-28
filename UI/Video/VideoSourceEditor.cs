@@ -97,60 +97,63 @@ namespace UI.Video
 
         protected override void AddOnClick(MouseInputEvent mie)
         {
-            MouseMenu mouseMenu = new MouseMenu(this);
-            mouseMenu.TopToBottom = false;
-
-            IEnumerable<VideoConfig> all = VideoManager.GetAvailableVideoSources();
-
-            VideoConfig[] notInUse = all.Where(r => !r.Matches(Objects)).OrderBy(vc => vc.DeviceName).ToArray();
-                        
-            IEnumerable<VideoConfig> combined = notInUse.CombineVideoSources();
-            foreach (VideoConfig source in combined)
+            LoadingLayer ll = GetLayer<LoadingLayer>();
+            ll.WorkQueue.Enqueue("Reading Devices", () =>
             {
-                string sourceAsString = source.ToStringUnique(combined);
-                if (!string.IsNullOrWhiteSpace(sourceAsString))
+                MouseMenu mouseMenu = new MouseMenu(this);
+                mouseMenu.TopToBottom = false;
+
+                IEnumerable<VideoConfig> all = VideoManager.GetAvailableVideoSources();
+
+                VideoConfig[] notInUse = all.Where(r => !r.Matches(Objects)).OrderBy(vc => vc.DeviceName).ToArray();
+                        
+                IEnumerable<VideoConfig> combined = notInUse.CombineVideoSources();
+                foreach (VideoConfig source in combined)
                 {
-                    if (VideoManager.ValidDevice(source))
+                    string sourceAsString = source.ToStringUnique(combined);
+                    if (!string.IsNullOrWhiteSpace(sourceAsString))
                     {
-                        mouseMenu.AddItem(sourceAsString, () => { AddNew(source); });
-                    }
-                    else
-                    {
-                        mouseMenu.AddDisabledItem(sourceAsString);
+                        if (VideoManager.ValidDevice(source))
+                        {
+                            mouseMenu.AddItem(sourceAsString, () => { AddNew(source); });
+                        }
+                        else
+                        {
+                            mouseMenu.AddDisabledItem(sourceAsString);
+                        }
                     }
                 }
-            }
             
-            mouseMenu.AddItem("File", AddVideoFile);
-            //mouseMenu.AddItem("RTSP URL", AddURL);
+                mouseMenu.AddItem("File", AddVideoFile);
+                //mouseMenu.AddItem("RTSP URL", AddURL);
 
-            // Group by framework.
-            var grouped = notInUse.GroupBy(o => o.FrameWork);
-            if (grouped.Any())
-            {
-                MouseMenu by = mouseMenu.AddSubmenu("By Framework");
-                foreach (var group in grouped)
+                // Group by framework.
+                var grouped = notInUse.GroupBy(o => o.FrameWork);
+                if (grouped.Any())
                 {
-                    MouseMenu frameworkSubMenu = by.AddSubmenu(group.Key.ToString());
-                    foreach (VideoConfig source in group)
+                    MouseMenu by = mouseMenu.AddSubmenu("By Framework");
+                    foreach (var group in grouped)
                     {
-                        string sourceAsString = source.ToString();
-                        if (!string.IsNullOrWhiteSpace(sourceAsString))
+                        MouseMenu frameworkSubMenu = by.AddSubmenu(group.Key.ToString());
+                        foreach (VideoConfig source in group)
                         {
-                            if (VideoManager.ValidDevice(source))
+                            string sourceAsString = source.ToString();
+                            if (!string.IsNullOrWhiteSpace(sourceAsString))
                             {
-                                frameworkSubMenu.AddItem(sourceAsString, () => { AddNew(source); });
-                            }
-                            else
-                            {
-                                frameworkSubMenu.AddDisabledItem(sourceAsString);
+                                if (VideoManager.ValidDevice(source))
+                                {
+                                    frameworkSubMenu.AddItem(sourceAsString, () => { AddNew(source); });
+                                }
+                                else
+                                {
+                                    frameworkSubMenu.AddDisabledItem(sourceAsString);
+                                }
                             }
                         }
                     }
                 }
-            }
-
-            mouseMenu.Show(addButton);
+                mouseMenu.Show(addButton);
+            });
         }
 
         private void AddVideoFile()
