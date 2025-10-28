@@ -40,10 +40,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="ffmpeg.exe" Condition="'$(TargetFramework)' == 'net9.0-windows'">
+    <None Update="ffmpeg" Condition="'$(TargetFramework)' == 'net9.0'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="ffmpeg" Condition="'$(TargetFramework)' == 'net9.0'">
+    <None Update="ffmpeg.zip">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
