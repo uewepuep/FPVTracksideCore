@@ -40,7 +40,7 @@ namespace Webb
 
         public EventWebServer(EventManager eventManager, SoundManager soundManager, IRaceControl raceControl, IEnumerable<Tools.ToolColor> channelColors)
         {
-            CSSStyleSheet = new FileInfo("httpfiles/style.css");
+            CSSStyleSheet = new FileInfo(Path.Combine("httpfiles", "style.css"));
             this.eventManager = eventManager;
             this.soundManager = soundManager;
             this.raceControl = raceControl;
@@ -174,7 +174,7 @@ namespace Webb
                 string[] parameters = requestPath.Skip(1).ToArray();
 
                 string content = "";
-                DirectoryInfo eventRoot = new DirectoryInfo("events/" + eventManager.Event.ID.ToString());
+                DirectoryInfo eventRoot = new DirectoryInfo(Path.Combine("events", eventManager.Event.ID.ToString()));
                 switch (action)
                 {
                     case "events":

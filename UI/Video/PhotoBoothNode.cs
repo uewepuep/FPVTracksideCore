@@ -51,7 +51,7 @@ namespace UI.Video
             this.eventManager = eventManager;
             this.soundManager = soundManager;
 
-            PilotsDirectory = new DirectoryInfo("pilots/");
+            PilotsDirectory = new DirectoryInfo("pilots");
             Timeout = TimeSpan.FromSeconds(10);
         }
 

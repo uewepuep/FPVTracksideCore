@@ -16,7 +16,7 @@ namespace DB.JSON
             if (firstRun)
             {
                 JsonIO<Channel> io = new JsonIO<Channel>();
-                io.Write("httpfiles/Channels.json", All());
+                io.Write(Path.Combine("httpfiles", "Channels.json"), All());
                 firstRun = false;
             }
         }

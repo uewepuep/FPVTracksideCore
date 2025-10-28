@@ -67,7 +67,7 @@ namespace FPVMacsideCore
             Console.WriteLine("Working Dir " + Directory.GetCurrentDirectory());
 
             string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            workingDirectory = new DirectoryInfo(home + "/Documents/FPVTrackside");
+            workingDirectory = new DirectoryInfo(Path.Combine(home, "Documents", "FPVTrackside"));
 
             if (!WorkingDirectory.Exists)
             {

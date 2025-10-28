@@ -302,23 +302,23 @@ namespace UI.Nodes
             {
                 openDirectory.AddItem("Open Event Data Directory", () =>
                 {
-                    OpenCurrentDirectory("events\\" + eventManager.EventId + "\\");
+                    OpenCurrentDirectory("events", eventManager.EventId.ToString());
                 });
             }
 
             openDirectory.AddItem("Open Events Directory", () =>
             {
-                OpenCurrentDirectory("events\\");
+                OpenCurrentDirectory("events");
             });
 
             openDirectory.AddItem("Open Pilot Profile Image Directory", () =>
             {
-                OpenCurrentDirectory("pilots\\");
+                OpenCurrentDirectory("pilots");
             });
 
             openDirectory.AddItem("Open Tracks Directory", () =>
             {
-                OpenCurrentDirectory("Tracks\\");
+                OpenCurrentDirectory("Tracks");
             });
 
             openDirectory.AddItem("Open FPVTrackside Directory", () =>
@@ -571,12 +571,12 @@ namespace UI.Nodes
             GetLayer<PopupLayer>().Popup(editor);
         }
 
-        public void OpenCurrentDirectory(string addition = "")
+        public void OpenCurrentDirectory(params string[] paths)
         {
             string path = Directory.GetCurrentDirectory();
-            if (!string.IsNullOrEmpty(addition))
+            if (paths.Any())
             {
-                path = Path.Combine(path, addition);
+                path = Path.Combine(path, Path.Combine(paths));
             }
 
             PlatformTools.OpenFileManager(path);

@@ -100,7 +100,6 @@ namespace UI
 
             DirectoryInfo eventDirectory = new DirectoryInfo(Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocation, eventManager.Event.ID.ToString()));
 
-
             workQueueStartStopRace = new WorkQueue("Event Layer - Start Stop Race");
 
             showPilotList = true;
