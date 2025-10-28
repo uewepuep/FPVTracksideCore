@@ -341,7 +341,7 @@ namespace UI.Video
 #if !DEBUG
                             // TODO Remove this once ffmpeg playback is working in windows..
                             if (recordingFrameWork == FrameWork.FFmpeg && available.Contains(FrameWork.MediaFoundation))
-                                recordingFrameWork = FrameWork.MediaFoundation
+                                recordingFrameWork = FrameWork.MediaFoundation;
 #endif
 
                             // just use the first available if the recording one isn't ok.
