@@ -263,20 +263,6 @@ namespace UI.Video
             return false;
         }
 
-        //public IEnumerable<VideoConfig> GetUnavailableVideoSources()
-        //{
-        //    foreach (DsDevice ds in DirectShowHelper.VideoCaptureDevices)
-        //    {
-        //        VideoConfig videoConfig = new VideoConfig() { DeviceName = ds.Name, DirectShowPath = ds.DevicePath };
-        //        ds.Dispose();
-
-        //        if (!ValidDevice(videoConfig))
-        //        {
-        //            yield return videoConfig;
-        //        }
-        //    }
-        //}
-
         public bool ValidDevice(VideoConfig vc)
         {
             string[] whitelist = new string[]

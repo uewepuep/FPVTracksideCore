@@ -195,7 +195,7 @@ namespace FfmpegMediaPlatform
             }
             catch (Exception e)
             {
-                Tools.Logger.VideoLog.LogDebugCall(this, e.Message);
+                Tools.Logger.VideoLog.LogException(this, e);
                 return new string[] { };
             }            
         }
@@ -298,7 +298,7 @@ namespace FfmpegMediaPlatform
                     {
                         inVideo = true;
                         continue;
-                    }
+                    } 
 
                     if (deviceLine.Contains("audio devices:"))
                     {
