@@ -89,17 +89,6 @@ namespace FfmpegMediaPlatform
             startTime = DateTime.Now; // default when no XML timing
             frameRate = 30.0;
             length = TimeSpan.Zero;
-            needInit = true;
-        }
-
-        private bool needInit;
-        private void Init()
-        {
-            if (!needInit)
-                return;
-
-            needInit = false;
-
 
             // Check if native libraries are available before proceeding
             try
@@ -282,8 +271,6 @@ namespace FfmpegMediaPlatform
 
         public override bool Start()
         {
-            Init();
-
             Tools.Logger.VideoLog.LogDebugCall(this, "PLAYBACK ENGINE: ffmpeg LIB (in-process libav)");
             // Ensure native dylibs are resolved (Homebrew path on macOS)
             FfmpegNativeLoader.EnsureRegistered();
@@ -348,14 +335,17 @@ namespace FfmpegMediaPlatform
             }
             if (videoStreamIndex < 0) throw new Exception("no video stream");
 
-            var st = fmt->streams[videoStreamIndex];
-            var codecpar = st->codecpar;
-            var codec = ffmpeg.avcodec_find_decoder(codecpar->codec_id);
+            AVStream* st = fmt->streams[videoStreamIndex];
+            AVCodecParameters* codecpar = st->codecpar;
+            AVCodec* codec = ffmpeg.avcodec_find_decoder(codecpar->codec_id);
             if (codec == null) throw new Exception("decoder not found");
             codecCtx = ffmpeg.avcodec_alloc_context3(codec);
             if (codecCtx == null) throw new Exception("alloc codec ctx failed");
             if (ffmpeg.avcodec_parameters_to_context(codecCtx, codecpar) < 0) throw new Exception("params->ctx failed");
-            codecCtx->thread_count = 0; // auto threads
+
+            // This seems to crash the ffmpeg.avcodec_open2, at least on windows.
+            //codecCtx->thread_count = 0; // auto threads
+
             codecCtx->flags2 |= ffmpeg.AV_CODEC_FLAG2_FAST;
             if (ffmpeg.avcodec_open2(codecCtx, codec, null) < 0) throw new Exception("avcodec_open2 failed");
 
