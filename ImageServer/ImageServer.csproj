@@ -13,7 +13,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
 
   <ItemGroup>
-    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4">
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1">
 		  <PrivateAssets>all</PrivateAssets>
 	  </PackageReference>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />

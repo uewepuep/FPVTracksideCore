@@ -13,7 +13,7 @@
 
 
 	<ItemGroup>
-		<PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.4" />
+		<PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.4.1" />
 		<PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
 	  <PackageReference Include="System.Speech" Version="6.0.0" />
 	</ItemGroup>
