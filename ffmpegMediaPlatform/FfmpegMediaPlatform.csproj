@@ -28,6 +28,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>ffmpeg-libs\macos\%(Filename)%(Extension)</Link>
     </None>
+    <None Include="ffmpeg\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <!-- Native FFmpeg libraries for Windows -->
