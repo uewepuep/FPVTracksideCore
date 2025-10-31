@@ -342,16 +342,19 @@ namespace UI.Video
         {
             if (VideoManager != null && Selected != null)
             {
-                VideoManager.ClearRestart();
-                VideoManager.CreateFrameSource(new VideoConfig[] { Selected }, (fs) =>
+                LoadingLayer ll = GetLayer<LoadingLayer>();
+                ll.WorkQueue.Enqueue("Closing Device(s)", VideoManager.ClearRestart);
+                ll.WorkQueue.Enqueue("Opening " + Selected.DeviceName, () => 
                 {
-                    if (mapperNode != null)
+                    VideoManager.CreateFrameSource(new VideoConfig[] { Selected }, (fs) =>
                     {
-                        mapperNode.MakeTable();
-                    }
+                        if (mapperNode != null)
+                        {
+                            mapperNode.MakeTable();
+                        }
+                    });
+                    InitMapperNode(Selected);
                 });
-
-                InitMapperNode(Selected);
             }
         }
 

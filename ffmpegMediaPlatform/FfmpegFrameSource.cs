@@ -598,8 +598,7 @@ namespace FfmpegMediaPlatform
                 if (thread != null && thread.IsAlive)
                 {
                     Tools.Logger.VideoLog.LogDebugCall(this, "FFMPEG Waiting for reading thread to finish");
-                    // Shorter wait (1 second instead of 3) for faster camera restarts
-                    if (!thread.Join(1000))
+                    if (!thread.Join(10000))
                     {
                         Tools.Logger.VideoLog.LogDebugCall(this, "FFMPEG Reading thread didn't finish in time, continuing with cleanup");
                     }
@@ -657,11 +656,11 @@ namespace FfmpegMediaPlatform
                             }
                             
                             // Wait for graceful shutdown
-                            if (!process.WaitForExit(5000))
+                            if (!process.WaitForExit(10000))
                             {
                                 Tools.Logger.VideoLog.LogDebugCall(this, "FFMPEG Graceful shutdown timeout, forcing kill");
                                 process.Kill();
-                                process.WaitForExit(3000);
+                                process.WaitForExit(10000);
                             }
                             else
                             {
@@ -674,7 +673,7 @@ namespace FfmpegMediaPlatform
                             try
                             {
                                 process.Kill();
-                                process.WaitForExit(3000);
+                                process.WaitForExit(10000);
                             }
                             catch (Exception killEx)
                             {
@@ -690,7 +689,7 @@ namespace FfmpegMediaPlatform
                             process.Kill();
                             // Shorter wait for non-recording scenarios (1 second instead of 3)
                             // This speeds up camera restarts significantly on Windows
-                            if (!process.WaitForExit(1000))
+                            if (!process.WaitForExit(10000))
                             {
                                 Tools.Logger.VideoLog.LogDebugCall(this, "FFMPEG Process didn't exit after kill - this is unusual");
                             }

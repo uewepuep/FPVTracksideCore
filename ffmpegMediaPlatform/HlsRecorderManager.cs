@@ -177,7 +177,7 @@ namespace FfmpegMediaPlatform
                         {
                             Tools.Logger.VideoLog.LogDebugCall(this, "HLS recording did not stop gracefully, force killing");
                             recordingProcess.Kill();
-                            recordingProcess.WaitForExit(5000);
+                            recordingProcess.WaitForExit(10000);
                             success = false;
                         }
                     }

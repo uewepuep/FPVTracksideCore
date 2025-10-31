@@ -800,7 +800,7 @@ namespace FfmpegMediaPlatform
                 try
                 {
                     process.Kill();
-                    if (!process.WaitForExit(1000)) // Very short timeout
+                    if (!process.WaitForExit(10000))
                     {
                         Tools.Logger.VideoLog.LogDebugCall(this, "Process didn't die in 1 second, continuing anyway");
                     }
@@ -888,7 +888,7 @@ namespace FfmpegMediaPlatform
                     httpServerRunning = false;
                     httpServer?.Stop();
                     httpServer?.Close();
-                    httpServerThread?.Join(5000);
+                    httpServerThread?.Join(10000);
                     
                     Tools.Logger.VideoLog.LogDebugCall(this, "HTTP server stopped");
                 }

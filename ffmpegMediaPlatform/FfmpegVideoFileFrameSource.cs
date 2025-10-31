@@ -886,8 +886,8 @@ namespace FfmpegMediaPlatform
                         try
                         {
                             process.Kill();
-                            // Give it a short time to exit gracefully, but don't wait too long
-                            if (process.WaitForExit(1000))
+                            // Give it a time to exit gracefully, but don't wait too long
+                            if (process.WaitForExit(10000))
                             {
                                 Tools.Logger.VideoLog.LogDebugCall(this, "FFmpeg process stopped successfully for pause");
                             }
@@ -948,7 +948,7 @@ namespace FfmpegMediaPlatform
                         {
                             process.Kill();
                             // Give it a short time to exit gracefully, but don't wait too long
-                            if (process.WaitForExit(1000))
+                            if (process.WaitForExit(10000))
                             {
                                 Tools.Logger.VideoLog.LogDebugCall(this, "FFmpeg process stopped successfully");
                             }
@@ -1079,7 +1079,7 @@ namespace FfmpegMediaPlatform
                         {
                             process.Kill();
                             // Wait for the process to actually exit (synchronous)
-                            if (process.WaitForExit(1000))
+                            if (process.WaitForExit(10000))
                             {
                                 Tools.Logger.VideoLog.LogDebugCall(this, $"FFmpeg process killed and exited successfully for seek");
                             }
@@ -1122,7 +1122,7 @@ namespace FfmpegMediaPlatform
                     Tools.Logger.VideoLog.LogDebugCall(this, $"Reading thread still alive, waiting for it to finish");
                     run = false; // Make sure the thread loop will exit
                     
-                    if (!thread.Join(2000)) // Wait up to 2 seconds for thread to finish
+                    if (!thread.Join(10000)) // Wait up to 2 seconds for thread to finish
                     {
                         Tools.Logger.VideoLog.LogDebugCall(this, $"Reading thread didn't finish in 2 seconds, proceeding anyway");
                     }

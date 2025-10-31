@@ -139,6 +139,12 @@ namespace Composition.Layers
             backgroundNode = new ColorNode(Color.FromNonPremultiplied(8, 8, 8, 128));
         }
 
+        public override void Dispose()
+        {
+            backgroundNode.Dispose();
+            base.Dispose();
+        }
+
         public override void Draw(Drawer id, float parentAlpha)
         {
             DrawChildren(id, parentAlpha);

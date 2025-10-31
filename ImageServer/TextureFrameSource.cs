@@ -53,8 +53,10 @@ namespace ImageServer
 
         public void StopProcessing()
         {
+            //Stop processing frames.
             processImages = false;
 
+            //But trigger the mutex so we actually hit the while loop condition.
             if (mutex != null)
             {
                 mutex.Set();
@@ -67,7 +69,7 @@ namespace ImageServer
 
             if (imageProcessor != null)
             {
-                if (!imageProcessor.Join(5000))
+                if (!imageProcessor.Join(10000))
                 {
                     imageProcessor = null;
                     return false && base.Stop();
@@ -81,7 +83,8 @@ namespace ImageServer
 
         public override void CleanUp()
         {
-            processImages = false;
+            StopProcessing();
+
             base.CleanUp();
 
             if (rawTextures != null)

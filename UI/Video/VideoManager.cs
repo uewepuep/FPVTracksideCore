@@ -178,6 +178,7 @@ namespace UI.Video
 
         public void StopDevices()
         {
+            // Triggers all devices to stop.
             Clear();
 
             runWorker = false;

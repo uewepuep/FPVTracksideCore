@@ -845,7 +845,7 @@ namespace FfmpegMediaPlatform
             if (readerThread != null && readerThread.IsAlive)
             {
                 Tools.Logger.VideoLog.LogDebugCall(this, "Waiting for reader thread to stop...");
-                if (!readerThread.Join(2000)) // Wait up to 2 seconds
+                if (!readerThread.Join(10000))
                 {
                     Tools.Logger.VideoLog.LogDebugCall(this, "WARNING: Reader thread did not stop within 2 seconds");
                 }

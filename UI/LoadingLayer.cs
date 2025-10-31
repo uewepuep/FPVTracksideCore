@@ -21,6 +21,7 @@ namespace UI
 
         private BorderPanelShadowNode borderPanelNode;
         private ProgressBarNode progressBar;
+        private ColorNode backgroundNode;
 
         public WorkQueue WorkQueue { get; set; }
 
@@ -34,6 +35,9 @@ namespace UI
             WorkQueue.OnCompleteOne += OnCompleteOne;
             WorkQueue.OnCompleteLast += OnCompleteLast;
             WorkQueue.BeforeStart += WorkQueue_BeforeStart;
+
+            backgroundNode = new ColorNode(Color.FromNonPremultiplied(8, 8, 8, 128));
+            Root.AddChild(backgroundNode);
 
             borderPanelNode = new BorderPanelShadowNode();
             borderPanelNode.Scale(0.2f, 0.06f);

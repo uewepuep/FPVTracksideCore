@@ -297,7 +297,7 @@ namespace FfmpegMediaPlatform
                     {
                         Tools.Logger.VideoLog.LogDebugCall(this, "RGBA recording did not stop gracefully, force killing");
                         processToStop.Kill();
-                        processToStop.WaitForExit(5000);
+                        processToStop.WaitForExit(10000);
                         success = false;
                     }
                 }
