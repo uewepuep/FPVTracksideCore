@@ -824,7 +824,6 @@ namespace FfmpegMediaPlatform
                         ProcessCameraFrame();
                         
                         consecutiveErrors = 0; // Reset error counter on successful frame
-                        Connected = true; // Ensure we're marked as connected when receiving data
                     }
                     else if (totalBytesRead > 0)
                     {
