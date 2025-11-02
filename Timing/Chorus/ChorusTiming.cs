@@ -57,7 +57,7 @@ namespace Timing.Chorus
                 {
                     if (voltage != 0)
                     {
-                        yield return new StatusItem() { StatusOK = voltage > 14, Value = voltage + "v" };
+                        yield return new StatusItem() { StatusOK = voltage > 7, Value = voltage + "v" };
                     }
                 }
                 else
@@ -156,6 +156,7 @@ namespace Timing.Chorus
                 tcpListenerThread.Start();
 
                 Send("N0");
+                Send("R*v");
                 NodeCount = 8;
                 return true;
             }
@@ -282,7 +283,10 @@ namespace Timing.Chorus
             
 
             nodeTofrequency.Clear();
-            //Send("R*I0000");
+            if (rssiRequested) Send("R*I0000");
+
+            // send voltage request
+            //Send("R*v");
             // Set the min laptime on all.
             Send("R*M" + Chorus32Settings.MinLapTimeSeconds.ToString("X2"));
             
@@ -323,13 +327,14 @@ namespace Timing.Chorus
 
                 index++;
             }
-            
+            /*
             while (index < 8)
             {
                 string node = "R" + index;
                 Send(node + "A0"); // Deactivate unused nodes
                 index++;
             }
+            */
             return true;
         }
 
@@ -337,7 +342,6 @@ namespace Timing.Chorus
         {
             requestStart = DateTime.Now;
             responseStart = DateTime.Now;
-            Send("R*R2");
             return Send("R*R2");
         }
 
@@ -364,7 +368,6 @@ namespace Timing.Chorus
         public bool EndDetection(EndDetectionType type)
         {
             rssiRequested = false; // Allow next RSSI request 
-            Send("R*R0");
             return Send("R*R0"); 
         }
 
