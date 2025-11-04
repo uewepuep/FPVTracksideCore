@@ -33,6 +33,9 @@ namespace FPVMacsideCore
 
         protected override void LoadContent()
         {
+            // Pre-load FFmpeg bindings in background to avoid delays when entering replay mode
+            FfmpegMediaPlatform.FfmpegGlobalInitializer.InitializeAsync();
+
             Theme.Initialise(GraphicsDevice, PlatformTools.WorkingDirectory, "Dark");
             DirectoryInfo eventDir = new DirectoryInfo(ApplicationProfileSettings.Instance.EventStorageLocation);
             DatabaseFactory.Init(new DB.DatabaseFactory(Data, eventDir));

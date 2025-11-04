@@ -248,7 +248,7 @@ namespace Tools
         public void LogDebugCall(object caller, params object[] targets)
         {
 #if DEBUG
-            LogCall(caller, targets);
+            //LogCall(caller, targets);
 #endif  
         }
 

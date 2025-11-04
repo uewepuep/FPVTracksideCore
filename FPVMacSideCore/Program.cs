@@ -15,10 +15,25 @@ namespace FPVMacsideCore
         [MTAThread]
         static void Main()
         {
+
 #if !DEBUG
             try
 #endif
             {
+                // Add exit handlers to ensure proper cleanup
+                Console.CancelKeyPress += (sender, e) =>
+                {
+                    Console.WriteLine("Application interrupted - performing cleanup...");
+                    FfmpegMediaPlatform.FfmpegMediaFramework.PerformCleanup();
+                    Environment.Exit(0);
+                };
+
+                AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
+                {
+                    Console.WriteLine("Application exiting - performing cleanup...");
+                    FfmpegMediaPlatform.FfmpegMediaFramework.PerformCleanup();
+                };
+
                 using (var game = new FPVMacsideCoreGame())
                 {
                    game.Run();

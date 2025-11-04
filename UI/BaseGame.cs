@@ -141,8 +141,9 @@ namespace UI
             if (!ApplicationProfileSettings.Instance.UseDirectX9)
             {
                 GraphicsDeviceManager.GraphicsProfile = GraphicsProfile.HiDef;
-                GraphicsDeviceManager.ApplyChanges();
             }
+            GraphicsDeviceManager.SynchronizeWithVerticalRetrace = ApplicationProfileSettings.Instance.VSync;
+            GraphicsDeviceManager.ApplyChanges();
 
             Window.Position = new Point(Math.Max(Window.Position.X, 0), Math.Max(Window.Position.Y, 0));
 
@@ -206,8 +207,6 @@ namespace UI
             int frameRate = Math.Min(1000, Math.Max(1, ApplicationProfileSettings.Instance.FrameRateLimit));
             TargetElapsedTime = TimeSpan.FromSeconds(1f / frameRate);
             IsFixedTimeStep = true;
-            GraphicsDeviceManager.SynchronizeWithVerticalRetrace = ApplicationProfileSettings.Instance.VSync;
-            GraphicsDeviceManager.ApplyChanges();
 
             
             loadingLayer.WorkQueue.Enqueue("Database Upgrade", DatabaseUpgrade);
