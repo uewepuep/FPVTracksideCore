@@ -564,7 +564,7 @@ namespace RaceLib
             Stage stage = race.Round.Stage;
             if (stage != null)
             {
-                roundFormat = EventManager.RoundManager.GetRoundFormat(stage.StageType);
+                roundFormat = EventManager.RoundManager.GetRoundFormat(stage);
                 if (roundFormat != null)
                 {
                     roundFormat.AdjustResults(race, newResults);

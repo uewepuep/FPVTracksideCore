@@ -10,8 +10,8 @@ namespace RaceLib.Format
     {
         private int startNumber;
 
-        public DoubleElimination(EventManager em)
-           : base(em)
+        public DoubleElimination(EventManager em, Stage stage)
+           : base(em, stage)
         {
         }
 

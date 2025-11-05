@@ -9,8 +9,8 @@ namespace RaceLib.Format
     public class SeededFormat : RoundFormat
     {
 
-        public SeededFormat(EventManager eventManager)
-            : base(eventManager)
+        public SeededFormat(EventManager em, Stage stage = null)
+           : base(em, stage)
         {
         }
 

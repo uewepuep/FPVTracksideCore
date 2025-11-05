@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 
 namespace RaceLib.Format
 {
@@ -17,19 +18,15 @@ namespace RaceLib.Format
         public ResultManager ResultManager { get => EventManager.ResultManager; }
 
 
-        public StreetLeague(EventManager em) 
-            : base(em)
+        public StreetLeague(EventManager em, Stage stage) 
+            : base(em, stage)
         {
         }
 
         public override IEnumerable<Race> GenerateRound(IDatabase db, IEnumerable<Race> preExisting, Round newRound, RoundPlan plan)
         {
-            return NextPointsRound(preExisting, newRound);
-        }
-
-        public IEnumerable<Race> NextPointsRound(IEnumerable<Race> preExisting, Round newRound)
-        {
-            IEnumerable<Race> races = preExisting;
+            Round lastRound = EventManager.RoundManager.PreviousRound(newRound);
+            IEnumerable<Race> races = EventManager.RaceManager.GetRaces(lastRound);
 
             List<Race> newRaces = new List<Race>();
             var Pilots = new List<Pilot>();
@@ -42,20 +39,22 @@ namespace RaceLib.Format
                 }
             }
 
-            if (!Pilots.Any())
-            {
-                Pilots.AddRange(EventManager.Event.Pilots);
-            }
-
             // Sort pilots into races based on their event total points, lowest points in earliest rounds
             // For uneven groups push empty spots to higher groups
             var pilotPoints = ResultManager.Results.GroupBy(r => r.Pilot).Select(r => new { pilot = r.Key, points = r.Sum(r => r.Points) }).OrderBy(r => r.points).ToList();
             var groupBalance = GetGroupBalance(pilotPoints.Count, races.First().Channels.Length);
             var sampleRace = races.First();
 
+            int raceIndex = 0;
             foreach (var group in groupBalance)
             {
-                Race r = sampleRace.Clone();
+                Race r = preExisting.GetAtIndex(raceIndex);
+                if (r == null)
+                {
+                    r = sampleRace.Clone();
+                    newRaces.Add(r);
+                }
+
                 r.Round = newRound;
                 r.PilotChannels.Clear();
                 foreach (var pc in EventManager.Event.Channels)
@@ -94,7 +93,7 @@ namespace RaceLib.Format
                 }
 
                 r.PilotChannels.RemoveAll(e => e.Pilot == null);
-                newRaces.Add(r);
+                raceIndex++;
             }
 
             foreach (Race r in newRaces)

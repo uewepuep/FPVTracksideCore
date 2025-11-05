@@ -50,14 +50,10 @@ namespace RaceLib
                 SheetFormatManager.OnRaceResultChange(race);
             }
 
-            Round r = NextRound(race.Round);
-            if (r != null)
+            if (race.Round.Stage != null)
             {
-                if (r.Stage != null)
-                {
-                    RoundFormat roundFormat = GetRoundFormat(r.Stage.StageType);
-                    GenerateRound(race.Round, roundFormat);
-                }
+                RoundFormat roundFormat = GetRoundFormat(race.Round.Stage);
+                GenerateRound(race.Round, roundFormat);
             }
         }
 
@@ -205,7 +201,7 @@ namespace RaceLib
 
         public IEnumerable<Race> GenerateRound(Round callingRound, RoundFormat roundFormat)
         {
-            Round newRound = GetCreateRound(callingRound.RoundNumber + 1, callingRound.EventType);
+            Round newRound = GetCreateRound(callingRound.RoundNumber + 1, callingRound.EventType, callingRound.Stage);
 
             RoundPlan roundPlan = new RoundPlan(EventManager, callingRound, null);
             return Generate(roundFormat, newRound, roundPlan);
@@ -404,29 +400,38 @@ namespace RaceLib
 
         public IEnumerable<Pilot> GetOutputPilots(Round round)
         {
-            RoundFormat roundFormat = GetRoundFormat(round.StageType);
+            RoundFormat roundFormat;
+            if (round.Stage != null)
+            {
+                roundFormat = GetRoundFormat(round.Stage);
+            }
+            else
+            {
+                roundFormat = new AutoFormat(EventManager);
+            }
+
             return roundFormat.GetOutputPilots(round);
         }
 
-        public RoundFormat GetRoundFormat(StageTypes type)
+        public RoundFormat GetRoundFormat(Stage stage)
         {
-            switch (type)
+            switch (stage.StageType)
             {
                 case StageTypes.DoubleElimination:
-                    return new DoubleElimination(EventManager);
+                    return new DoubleElimination(EventManager, stage);
 
                 case StageTypes.Final:
-                    return new FinalFormat(EventManager);
+                    return new FinalFormat(EventManager, stage);
 
                 case StageTypes.StreetLeague: 
-                    return new StreetLeague(EventManager);
+                    return new StreetLeague(EventManager, stage);
 
                 case StageTypes.ChaseTheAce: 
-                    return new ChaseTheAce(EventManager);
+                    return new ChaseTheAce(EventManager, stage);
 
                 case StageTypes.Default:
                 default:
-                    return new AutoFormat(EventManager);
+                    return new AutoFormat(EventManager, stage);
             }
         }
 

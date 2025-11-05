@@ -8,8 +8,8 @@ namespace RaceLib.Format
 {
     public class ChaseTheAce : RoundFormat
     {
-        public ChaseTheAce(EventManager em)
-           : base(em)
+        public ChaseTheAce(EventManager em, Stage stage)
+           : base(em, stage)
         {
         }
 

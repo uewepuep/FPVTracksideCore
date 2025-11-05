@@ -12,9 +12,12 @@ namespace RaceLib.Format
         public EventManager EventManager { get; private set; }
         public RaceManager RaceManager { get { return EventManager.RaceManager; } }
 
-        public RoundFormat(EventManager em)
+        public Stage Stage { get; private set; }
+
+        public RoundFormat(EventManager em, Stage stage)
         {
             EventManager = em;
+            Stage = stage;
         }
 
         public abstract IEnumerable<Race> GenerateRound(IDatabase db, IEnumerable<Race> preExisting, Round newRound, RoundPlan plan);

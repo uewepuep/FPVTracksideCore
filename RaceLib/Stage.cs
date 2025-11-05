@@ -75,17 +75,17 @@ namespace RaceLib
 
         public void AutoName(RoundManager roundManager)
         {
-            string title = "Stage";
+            Name = "Stage";
 
             if (StageType != StageTypes.Default)
             {
-                title = StageType.ToString().CamelCaseToHuman();
+                Name = StageType.ToString().CamelCaseToHuman();
             }
 
             IEnumerable<Round> rounds = roundManager.GetStageRounds(this);
             if (rounds.Any())
             {
-                Name = title + " " + (roundManager.GetStages().Count());
+                Name = Name + " " + (roundManager.GetStages().Count());
             }
         }
 

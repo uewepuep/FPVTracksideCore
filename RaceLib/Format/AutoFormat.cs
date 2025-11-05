@@ -6,8 +6,8 @@ namespace RaceLib.Format
 {
     public class AutoFormat : RoundFormat
     {
-        public AutoFormat(EventManager em) 
-            : base(em)
+        public AutoFormat(EventManager em, Stage stage = null)
+           : base(em, stage)
         {
         }
 

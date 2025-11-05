@@ -11,8 +11,8 @@ namespace RaceLib.Format
     {
         public ResultManager PointsManager { get { return EventManager.ResultManager; } }
 
-        public FinalFormat(EventManager eventManager)
-            :base(eventManager)
+        public FinalFormat(EventManager em, Stage stage = null)
+           : base(em, stage)
         {
         }
 

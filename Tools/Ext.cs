@@ -41,7 +41,12 @@ namespace Tools
             float intervals = (float)(DateTime.Now - start).TotalSeconds / intervalSeconds;
             int index = ((int)intervals) % length;
 
-            return things.GetAtIndex(index);
+            T result = things.GetAtIndex(index);
+            if (result.Equals(default(T)))
+            {
+                result = things.LastOrDefault();
+            }
+            return result;
         }
 
         public static T GetAtIndex<T>(this IEnumerable<T> things, int index)
@@ -55,7 +60,7 @@ namespace Tools
                 }
                 i++;
             }
-            return things.LastOrDefault();
+            return default(T);
         }
 
 

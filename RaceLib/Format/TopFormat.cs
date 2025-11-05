@@ -8,8 +8,8 @@ namespace RaceLib.Format
 {
     public class TopFormat : RoundFormat
     {
-        public TopFormat(EventManager eventManager)
-            : base(eventManager)
+        public TopFormat(EventManager em, Stage stage = null)
+           : base(em, stage)
         {
         }
 
