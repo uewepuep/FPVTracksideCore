@@ -34,12 +34,9 @@ namespace ImageServer
 
         public override bool Start()
         {
-            if (imageProcessor != null)
+            if (!StopProcessing())
             {
-                if (!JoinImageProcessor())
-                {
-                    return false;
-                }
+                return false;
             }
             
             if (ASync)
@@ -59,8 +56,11 @@ namespace ImageServer
             return base.Start();
         }
 
-        public void StopProcessing()
+        public bool StopProcessing()
         {
+            if (!processImages)
+                return true;
+
             //Stop processing frames.
             processImages = false;
 
@@ -69,13 +69,22 @@ namespace ImageServer
             {
                 mutex.Set();
             }
+
+            if (imageProcessor != null)
+            {
+                if (!imageProcessor.Join(10000))
+                {
+                    return false;
+                }
+                imageProcessor = null;
+            }
+
+            return true;
         }
 
         public override bool Stop()
         {
-            StopProcessing();
-
-            if (!JoinImageProcessor())
+            if (!StopProcessing())
             {
                 base.Stop();
                 return false;
@@ -84,18 +93,6 @@ namespace ImageServer
             return base.Stop();
         }
 
-        private bool JoinImageProcessor()
-        {
-            if (imageProcessor != null)
-            {
-                if (imageProcessor.Join(10000))
-                {
-                    imageProcessor = null;
-                    return true;
-                }
-            }
-            return false;
-        }
 
         public override void CleanUp()
         {
