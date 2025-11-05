@@ -16,19 +16,9 @@ namespace RaceLib
         [Category("Editable Details")]
         public int RoundNumber { get; set; }
 
-        public enum RoundTypes
-        {
-            Round = 0,
-            Final,
-            DoubleElimination
-        }
 
         [Category("Editable Details")]
         public EventTypes EventType { get; set; }
-
-        [Category("Editable Details")]
-        public RoundTypes RoundType { get; set; }
-        
 
         [Category("Editable Details")]
         public bool Valid { get; set; }
@@ -45,13 +35,24 @@ namespace RaceLib
 
         public Stage Stage { get; set; }
 
+        public StageTypes StageType
+        {
+            get
+            {
+                if (Stage == null)
+                {
+                    return StageTypes.Default;
+                }
+                return Stage.StageType;
+            }
+        }
+
         public Round()
         {
             Order = -1;
             Valid = true;
             EventType = EventTypes.Race;
             RoundNumber = 1;
-            RoundType = RoundTypes.Round;
             Name = "";
         }
 
@@ -74,7 +75,7 @@ namespace RaceLib
                 return false;
             }
 
-            if (RoundType != RoundTypes.Round)
+            if (StageType != StageTypes.Default)
             {
                 return false;
             }

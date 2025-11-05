@@ -112,7 +112,7 @@ namespace UI.Nodes.Rounds
 
             Round[] rounds = races.Select(r => r.Round).Distinct().ToArray();
 
-            bool roundPositionRollover = rounds.Any(r => r.RoundType == Round.RoundTypes.Final);
+            bool roundPositionRollover = rounds.Any(r => r.StageType == StageTypes.Final);
             if (Round.Stage != null && Round.Stage.PointSummary != null)
             {
                 roundPositionRollover &= Round.Stage.PointSummary.RoundPositionRollover;

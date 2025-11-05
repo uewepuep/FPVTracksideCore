@@ -203,7 +203,7 @@ namespace UI.Nodes.Rounds
             eventXNode.CustomRound += GenerateCustomRound;
             eventXNode.ChangeChannels += GenerateChangeChannels;
             eventXNode.Finals += GenerateFinal;
-            eventXNode.DoubleElim += GenerateDoubleElim;
+            eventXNode.AddRoundFromType += GenerateRoundFromType;
             eventXNode.SumPoints += ToggleSumPoints;
             eventXNode.Times += ToggleTimePoints;
             eventXNode.LapCounts += ToggleLapCount;
@@ -226,7 +226,7 @@ namespace UI.Nodes.Rounds
 
                     ern.PastePilot += Paste;
                     ern.MatchChannels += MatchChannels;
-                    ern.SetRaceTypes += SetRoundType;
+                    ern.SetRaceTypes += SetStageType;
                     ern.NeedFullRefresh += Refresh;
                     ern.RemoveRound += RoundManager.RemoveRound;
                     ern.FillRound += FillRound;
@@ -352,9 +352,9 @@ namespace UI.Nodes.Rounds
             Refresh();
         }
 
-        private void SetRoundType(EventTypes type, Round round)
+        private void SetStageType(EventTypes type, Round round)
         {
-            RoundManager.SetRoundType(type, round);
+            RoundManager.SetStageType(type, round);
             Refresh();
         }
 
@@ -412,9 +412,10 @@ namespace UI.Nodes.Rounds
             Scroller.ScrollToEnd(scrollTime);
         }
 
-        private void GenerateDoubleElim(Round callingRound)
+        private void GenerateRoundFromType(Round round, StageTypes stageType)
         {
-            RoundManager.GenerateDoubleElimination(callingRound);
+            RoundFormat roundFormat = RoundManager.GetRoundFormat(stageType);
+            RoundManager.GenerateRound(round, roundFormat);
             Refresh();
         }
 

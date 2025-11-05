@@ -23,6 +23,8 @@ namespace DB.JSON
 
         public int Order { get; set; }
 
+        public RaceLib.StageTypes StageType { get; set; }
+
         public Stage() { }
 
         public Stage(RaceLib.Stage obj)

@@ -5,9 +5,19 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 
 namespace RaceLib
 {
+    public enum StageTypes
+    {
+        Default,
+        DoubleElimination,
+        ChaseTheAce,
+        StreetLeague,
+        Final
+    }
+
     public class Stage : BaseObject
     {
         public string Name { get; set; }
@@ -50,6 +60,7 @@ namespace RaceLib
         public bool Valid { get; set; }
 
         public int Order { get; set; }
+        public StageTypes StageType { get; set; }
 
         public Stage()
         {
@@ -59,14 +70,22 @@ namespace RaceLib
             Color = Color.Transparent;
             Name = "";
             Valid = true;
+            StageType = StageTypes.Default;
         }
 
         public void AutoName(RoundManager roundManager)
         {
+            string title = "Stage";
+
+            if (StageType != StageTypes.Default)
+            {
+                title = StageType.ToString().CamelCaseToHuman();
+            }
+
             IEnumerable<Round> rounds = roundManager.GetStageRounds(this);
             if (rounds.Any())
             {
-                Name = "Stage " + (roundManager.GetStages().Count());
+                Name = title + " " + (roundManager.GetStages().Count());
             }
         }
 

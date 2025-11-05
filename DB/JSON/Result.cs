@@ -24,7 +24,8 @@ namespace DB.JSON
         public bool DNF { get; set; }
 
         public string ResultType { get; set; }
-
+        public TimeSpan Time { get; set; }
+        public int LapsFinished { get; set; }
 
         public Result() { }
 

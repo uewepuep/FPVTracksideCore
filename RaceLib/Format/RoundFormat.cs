@@ -72,5 +72,8 @@ namespace RaceLib.Format
             return max;
         }
 
+        public virtual void AdjustResults(Race race, IEnumerable<Result> results)
+        {
+        }
     }
 }

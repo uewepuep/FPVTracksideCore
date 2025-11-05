@@ -1612,7 +1612,7 @@ namespace RaceLib
                                                   && r.RoundNumber >= start.RoundNumber
                                                   && r.RoundNumber <= end.RoundNumber
                                                   && r.Round.EventType == end.EventType
-                                                  && r.Round.RoundType == end.RoundType);
+                                                  && r.Round.Stage == end.Stage);
         }
 
 

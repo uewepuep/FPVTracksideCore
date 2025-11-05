@@ -57,10 +57,10 @@ namespace UI.Nodes.Rounds
 
             string instructionText;
 
-            switch (round.RoundType)
+            switch (round.StageType)
             {
-                case Round.RoundTypes.DoubleElimination:
-                case Round.RoundTypes.Final:
+                case StageTypes.DoubleElimination:
+                case StageTypes.Final:
                     instructionText = Translator.Get("Label.RoundEmptyFinal", "Races will be automatically\nadded as more results come in.");
                     break;
                 default:
@@ -129,9 +129,9 @@ namespace UI.Nodes.Rounds
 
         private void UpdateTitle()
         {
-            if (Round.RoundType != Round.RoundTypes.Round)
+            if (Round.StageType != StageTypes.Default)
             {
-                string a = Round.RoundType.ToString();
+                string a = Round.StageType.ToString();
                 SetSubHeading(a.CamelCaseToHuman());
             }
             else
@@ -237,7 +237,7 @@ namespace UI.Nodes.Rounds
 
             if (EventManager.ExternalRaceProviders != null)
             {
-                if (EventManager.RoundManager.GetLastRound(Round.EventType, Round.RoundType) == Round)
+                if (EventManager.RoundManager.GetLastRound(Round.EventType, Round.Stage) == Round)
                 {
                     foreach (var external in EventManager.ExternalRaceProviders)
                     {
@@ -540,7 +540,7 @@ namespace UI.Nodes.Rounds
             canSum = true;
             canClone = true;
             canAddTimes = true;
-            canAddFinal = Round.RoundType != Round.RoundTypes.Final;
+            canAddFinal = Round.StageType != StageTypes.Final;
             canAddRace = true;
 
             RemoveRoundButton.Visible = canRemove;

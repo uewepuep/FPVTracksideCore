@@ -36,6 +36,8 @@ namespace RaceLib
                 return Race.Bracket;
             }
         }
+        public TimeSpan Time { get; set; }
+        public int LapsFinished { get; set; }
 
         public bool DNF { get; set; }
 

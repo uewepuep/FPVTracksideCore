@@ -53,17 +53,12 @@ namespace RaceLib
             Round r = NextRound(race.Round);
             if (r != null)
             {
-                if (r.RoundType == Round.RoundTypes.DoubleElimination)
+                if (r.Stage != null)
                 {
-                    GenerateDoubleElimination(race.Round);
-                }
-
-                if (r.RoundType == Round.RoundTypes.Final)
-                {
-                    GenerateFinal(race.Round);
+                    RoundFormat roundFormat = GetRoundFormat(r.Stage.StageType);
+                    GenerateRound(race.Round, roundFormat);
                 }
             }
-            
         }
 
         public Round NextRound(Round round)
@@ -89,7 +84,7 @@ namespace RaceLib
             }
         }
 
-        public void SetRoundType(EventTypes type, Round round)
+        public void SetStageType(EventTypes type, Round round)
         {
             round.EventType = type;
 
@@ -161,14 +156,14 @@ namespace RaceLib
                 return Enumerable.Empty<Round>();
             }
 
-            if (start.RoundType != end.RoundType)
+            if (start.Stage != end.Stage)
             {
                 return Enumerable.Empty<Round>();
             }
 
             lock (Event.Rounds)
             {
-                return Event.Rounds.Where(r => r.Order <= end.Order && r.Order >= start.Order && r.RoundType == end.RoundType).OrderBy(r => r.Order);
+                return Event.Rounds.Where(r => r.Order <= end.Order && r.Order >= start.Order && r.Stage == end.Stage).OrderBy(r => r.Order);
             }
         }
 
@@ -208,21 +203,9 @@ namespace RaceLib
             return Generate(roundFormat, newRound, roundPlan);
         }
 
-        public IEnumerable<Race> GenerateChaseTheAce(Round callingRound)
+        public IEnumerable<Race> GenerateRound(Round callingRound, RoundFormat roundFormat)
         {
             Round newRound = GetCreateRound(callingRound.RoundNumber + 1, callingRound.EventType);
-
-            ChaseTheAce roundFormat = new ChaseTheAce(EventManager);
-
-            RoundPlan roundPlan = new RoundPlan(EventManager, callingRound, null);
-            return Generate(roundFormat, newRound, roundPlan);
-        }
-
-        public IEnumerable<Race> GenerateDoubleElimination(Round callingRound)
-        {
-            Round newRound = GetCreateRound(callingRound.RoundNumber + 1, callingRound.EventType);
-
-            DoubleElimination roundFormat = new DoubleElimination(EventManager);
 
             RoundPlan roundPlan = new RoundPlan(EventManager, callingRound, null);
             return Generate(roundFormat, newRound, roundPlan);
@@ -282,18 +265,19 @@ namespace RaceLib
             }
         }
 
-        public Round GetFirstRound(EventTypes eventType, Round.RoundTypes roundType = Round.RoundTypes.Round)
+        public Round GetFirstRound(EventTypes eventType, Stage stage = null)
         {
             lock (Event.Rounds)
             {
-                return Event.Rounds.FirstOrDefault(r => r.EventType == eventType && r.RoundType == roundType);
+                return Event.Rounds.FirstOrDefault(r => r.EventType == eventType && r.Stage == stage);
             }
         }
-        public Round GetLastRound(EventTypes eventType, Round.RoundTypes roundType = Round.RoundTypes.Round)
+
+        public Round GetLastRound(EventTypes eventType, Stage stage = null)
         {
             lock (Event.Rounds)
             {
-                return Event.Rounds.LastOrDefault(r => r.Valid && r.EventType == eventType && r.RoundType == roundType);
+                return Event.Rounds.LastOrDefault(r => r.Valid && r.EventType == eventType && r.Stage == stage);
             }
         }
 
@@ -420,19 +404,27 @@ namespace RaceLib
 
         public IEnumerable<Pilot> GetOutputPilots(Round round)
         {
-            RoundFormat roundFormat = GetRoundFormat(round.RoundType);
+            RoundFormat roundFormat = GetRoundFormat(round.StageType);
             return roundFormat.GetOutputPilots(round);
         }
 
-        public RoundFormat GetRoundFormat(Round.RoundTypes type)
+        public RoundFormat GetRoundFormat(StageTypes type)
         {
             switch (type)
             {
-                case Round.RoundTypes.DoubleElimination:
+                case StageTypes.DoubleElimination:
                     return new DoubleElimination(EventManager);
-                case Round.RoundTypes.Final:
+
+                case StageTypes.Final:
                     return new FinalFormat(EventManager);
-                case Round.RoundTypes.Round:
+
+                case StageTypes.StreetLeague: 
+                    return new StreetLeague(EventManager);
+
+                case StageTypes.ChaseTheAce: 
+                    return new ChaseTheAce(EventManager);
+
+                case StageTypes.Default:
                 default:
                     return new AutoFormat(EventManager);
             }
@@ -464,7 +456,6 @@ namespace RaceLib
             int maxRound = RaceManager.GetMaxRoundNumber(round.EventType);
 
             Round newRound = GetCreateRound(maxRound + 1, round.EventType);
-            newRound.RoundType = round.RoundType;
             newRound.Stage = round.Stage;
 
             List<Race> newRaces = new List<Race>();

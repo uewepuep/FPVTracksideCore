@@ -979,5 +979,16 @@ namespace RaceLib
         {
             return Type + " " + RaceNumber + " (Round " + RoundNumber +  ") with " + PilotChannels.Count + " pilots.";
         }
+
+        public Detection GetLastDetection(Pilot pilot)
+        {
+            int lastValidSector = int.MaxValue;
+            if (Type == EventTypes.Race)
+            {
+                lastValidSector = Detection.RaceSectorCalculator(TargetLaps, 0);
+            }
+            Detection detection = Detections.LastOrDefault(d => d.Valid && d.RaceSector <= lastValidSector && d.Pilot == pilot);
+            return detection;
+        }
     }
 }

@@ -215,10 +215,16 @@ namespace RaceLib
             return races.Where(r => r.Bracket == bracket);
         }
 
-        public static Round GetRound(this IEnumerable<Race> races)
+        public static Round GetFirstRound(this IEnumerable<Race> races)
         {
-            Round firstRound = races.Select(r => r.Round).FirstOrDefault();
+            Round firstRound = races.Select(r => r.Round).OrderBy(r => r.Order).FirstOrDefault();
             return firstRound;
+        }
+
+        public static Round GetLastRound(this IEnumerable<Race> races)
+        {
+            Round last = races.Select(r => r.Round).OrderBy(r => r.Order).LastOrDefault();
+            return last;
         }
 
         public static IEnumerable<Race> GetRacesInRound(this IEnumerable<Race> races, int round)
@@ -255,15 +261,14 @@ namespace RaceLib
 
             string name = "";
 
-            switch (lastRound.RoundType)
+            Stage stage = lastRound.Stage;
+            if (stage != null)
             {
-                case Round.RoundTypes.Round:
-                    name = RaceStringFormatter.Instance.GetEventTypeText(lastEventType);
-                    break;
-                case Round.RoundTypes.DoubleElimination:
-                case Round.RoundTypes.Final:
-                    name = lastRound.RoundType.ToString().CamelCaseToHuman();
-                    break;
+                name = stage.ToString();
+            }
+            else
+            {
+                name = RaceStringFormatter.Instance.GetEventTypeText(lastEventType);
             }
 
             output += name + " Round ";
@@ -296,7 +301,8 @@ namespace RaceLib
 
                 if (pointSummary.DropWorstRound)
                     strings.Add("Drops worst round");
-                if (pointSummary.RoundPositionRollover && lastRound.RoundType == Round.RoundTypes.Final)
+
+                if (pointSummary.RoundPositionRollover && lastRound.StageType == StageTypes.Final)
                 {
                     strings.Add("Rolls over");
                 }

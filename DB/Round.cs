@@ -16,8 +16,6 @@ namespace DB
 
         public string EventType { get; set; }
 
-        public string RoundType { get; set; }
-
         public bool Valid { get; set; }
 
         public int Order { get; set; }

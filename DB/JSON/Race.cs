@@ -83,7 +83,6 @@ namespace DB.JSON
                 r.ID = Round;
                 r.Valid = true;
                 r.RoundNumber = max + 1;
-                r.RoundType = RaceLib.Round.RoundTypes.Round;
                 r.EventType = EventTypes.Unknown;
                 r.Order = r.RoundNumber * 100;
                 rounds.Insert(r);

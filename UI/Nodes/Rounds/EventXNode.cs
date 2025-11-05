@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
+using static RaceLib.Round;
 
 namespace UI.Nodes.Rounds
 {
@@ -35,7 +36,7 @@ namespace UI.Nodes.Rounds
         public event RoundDelegate ChangeChannels;
         public event RoundDelegate Finals;
         public event RoundDelegate Clone;
-        public event RoundDelegate DoubleElim;
+        public event Action<Round, StageTypes> AddRoundFromType;
 
         public event RoundDelegate RemoveRound;
         public event RoundDelegate SumPoints;
@@ -168,7 +169,7 @@ namespace UI.Nodes.Rounds
 
             if (EventManager.ExternalRaceProviders != null)
             {
-                if (EventManager.RoundManager.GetLastRound(Round.EventType, Round.RoundType) == Round)
+                if (EventManager.RoundManager.GetLastRound(Round.EventType, Round.Stage) == Round)
                 {
                     if (EventManager.RaceManager.GetRaces(Round).All(r => r.Ended))
                     {
@@ -209,7 +210,7 @@ namespace UI.Nodes.Rounds
 
             if (EventManager.ExternalRaceProviders != null)
             {
-                if (EventManager.RoundManager.GetLastRound(Round.EventType, Round.RoundType) == Round)
+                if (EventManager.RoundManager.GetLastRound(Round.EventType, Round.Stage) == Round)
                 {
                     foreach (var external in EventManager.ExternalRaceProviders)
                     {
@@ -241,14 +242,22 @@ namespace UI.Nodes.Rounds
 
         protected void AddFormatMenu(MouseMenu format)
         {
-            format.AddItem("Double Elimination", () => { DoubleElim?.Invoke(Round); });
+            foreach (StageTypes stageType in Enum.GetValues<StageTypes>().Except([StageTypes.Default]))
+            {
+                string name = stageType.ToString().CamelCaseToHuman();
+                StageTypes local = stageType;
+
+                format.AddItem(name, () => { AddRoundFromType?.Invoke(Round, local); });
+            }
+
+            format.AddBlank();
 
             //add format
             if (EventManager.RoundManager.SheetFormatManager.Sheets.Any())
             {
                 foreach (SheetFormatManager.SheetFile sheet in EventManager.RoundManager.SheetFormatManager.Sheets)
                 {
-                    string name = sheet.Name + " (" + sheet.Pilots + " pilots)";
+                    string name = "Sheet " + sheet.Name + " (" + sheet.Pilots + " pilots)";
 
                     var sheet2 = sheet;
                     format.AddItem(name, () => { SheetFormat(sheet2); });

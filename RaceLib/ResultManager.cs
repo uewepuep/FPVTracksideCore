@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
+using RaceLib.Format;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -112,7 +113,7 @@ namespace RaceLib
         {
             Stage endStage = endRound.Stage;
 
-            if (endRound.RoundType != Round.RoundTypes.Round)
+            if (endStage != null)
             {
                 Round current = endRound;
                 Round best = current;
@@ -120,7 +121,7 @@ namespace RaceLib
                 while (current != null)
                 {
                     current = EventManager.RoundManager.PreviousRound(current);
-                    if (current == null || current.RoundType != endRound.RoundType || current.Stage != endStage)
+                    if (current == null || current.Stage != endStage)
                     {
                         return best;
                     }
@@ -280,7 +281,7 @@ namespace RaceLib
             if (roundInFinal == null)
                 return null;
 
-            if (roundInFinal.RoundType != Round.RoundTypes.Final)
+            if (roundInFinal.StageType != StageTypes.Final)
             {
                 if (roundInFinal.CanBePartofRollover())
                 {
@@ -309,7 +310,7 @@ namespace RaceLib
                 results = Results.Where(result => result.Pilot == pilot && races.Contains(result.Race)).ToList();
             }
 
-            bool anyFinals = races.Select(r => r.Round).Any(r => r.RoundType == Round.RoundTypes.Final);
+            bool anyFinals = races.Select(r => r.Round).Any(r => r.StageType == StageTypes.Final);
             if (roundPositionRollover && anyFinals)
             {
                 Round rolloverRound = GetRollOverRound(races.Select(r => r.Round).FirstOrDefault());
@@ -330,7 +331,7 @@ namespace RaceLib
         {
             List<Result> results = GetResults(endRound, pilot).ToList();
 
-            if (roundPositionRollover && endRound.RoundType == Round.RoundTypes.Final)
+            if (roundPositionRollover && endRound.StageType == StageTypes.Final)
             {
                 Round rolloverRound = GetRollOverRound(endRound);
                 if (rolloverRound != null)
@@ -543,7 +544,31 @@ namespace RaceLib
                 r.Position = position;
                 r.ResultType = Result.ResultTypes.Race;
                 r.DNF = dnfed;
+
+                Detection lastDetection = race.GetLastDetection(pilot);
+                if (lastDetection != null)
+                {
+                    r.Time = lastDetection.Time - race.Start;
+                    r.LapsFinished = lastDetection.LapNumber;
+                }
+                else
+                {
+                    r.LapsFinished = 0;
+                }
+
                 newResults.Add(r);
+            }
+
+
+            RoundFormat roundFormat = null;
+            Stage stage = race.Round.Stage;
+            if (stage != null)
+            {
+                roundFormat = EventManager.RoundManager.GetRoundFormat(stage.StageType);
+                if (roundFormat != null)
+                {
+                    roundFormat.AdjustResults(race, newResults);
+                }
             }
 
             if (db == null)
@@ -867,7 +892,7 @@ namespace RaceLib
             bool rollOver = RollOver(endRound);
 
             IEnumerable<Race> races = GetRoundPointRaces(endRound);
-            if (endRound.RoundType == Round.RoundTypes.Final && rollOver)
+            if (endRound.StageType == StageTypes.Final && rollOver)
             {
                 Round lastOfRounds = EventManager.ResultManager.GetLastRoundBeforeFinals(start);
 

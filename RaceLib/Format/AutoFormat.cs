@@ -25,8 +25,6 @@ namespace RaceLib.Format
             }
             else
             {
-                newRound.RoundType = plan.CallingRound.RoundType;
-
                 lastRoundRaces = RaceManager.GetRaces(plan.CallingRound).ToArray();
                 brackets = lastRoundRaces.GetBrackets().ToArray();
             }

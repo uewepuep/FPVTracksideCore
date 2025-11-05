@@ -72,7 +72,7 @@ namespace UI.Nodes.Rounds
         protected override void UpdateButtons()
         {
             base.UpdateButtons();
-            canAddFinal = Round.RoundType != Round.RoundTypes.Final;
+            canAddFinal = Round.StageType != StageTypes.Final;
 
             if (MenuButton != null)
                 MenuButton.Scale(0.6f);

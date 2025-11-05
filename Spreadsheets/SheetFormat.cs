@@ -344,9 +344,9 @@ namespace Spreadsheets
             return IsPilotColumn(columnNumber - 1);
         }
 
-        public void Save(string fileName, Dictionary<string, string> pilotNameMap, IEnumerable<string> validRoundTypes)
+        public void Save(string fileName, Dictionary<string, string> pilotNameMap, IEnumerable<string> validStageTypes)
         {
-            string[] lowerValidTypes = validRoundTypes.Select(x => x.ToLower()).ToArray();
+            string[] lowerValidTypes = validStageTypes.Select(x => x.ToLower()).ToArray();
 
             FileInfo file = new FileInfo(fileName);
 
