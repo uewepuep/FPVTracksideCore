@@ -1,13 +1,13 @@
-﻿ using System;
-using System.Collections.Generic;
+﻿using Composition.Text;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+ using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Xna.Framework.Graphics;
-using Tools;
 using System.Threading;
-using Composition.Text;
+using System.Threading.Tasks;
+using Tools;
 
 namespace Composition
 {
@@ -170,6 +170,43 @@ namespace Composition
             DrawLine(tr, br, color, thickness);
             DrawLine(br, bl, color, thickness);
             DrawLine(bl, tl, color, thickness);
+        }
+
+        public void DrawMasked(Texture2D texture, Rectangle src, Texture2D mask, Rectangle maskSrc, Rectangle dest, Color tint)
+        {
+            SpriteBatch.End();
+
+            GraphicsDevice.Clear(ClearOptions.Stencil, Color.Transparent, 0, 0);
+            Matrix m = Matrix.CreateOrthographicOffCenter(0, GraphicsDevice.PresentationParameters.BackBufferWidth, GraphicsDevice.PresentationParameters.BackBufferHeight, 0, 0, 1);
+            AlphaTestEffect a1 = new AlphaTestEffect(GraphicsDevice)
+            {
+                Projection = m
+            };
+            DepthStencilState s1 = new DepthStencilState
+            {
+                StencilEnable = true,
+                StencilFunction = CompareFunction.Always,
+                StencilPass = StencilOperation.Replace,
+                ReferenceStencil = 1,
+                DepthBufferEnable = false,
+            };
+            DepthStencilState s2 = new DepthStencilState
+            {
+                StencilEnable = true,
+                StencilFunction = CompareFunction.LessEqual,
+                StencilPass = StencilOperation.Keep,
+                ReferenceStencil = 1,
+                DepthBufferEnable = false,
+            };
+            SpriteBatch.Begin(SpriteSortMode.Immediate, null, null, s1, null, a1);
+            SpriteBatch.Draw(mask, dest, maskSrc, tint); 
+            SpriteBatch.End();
+
+            SpriteBatch.Begin(SpriteSortMode.Immediate, null, null, s2, null, a1);
+            SpriteBatch.Draw(texture, dest, src, tint);
+            SpriteBatch.End();
+
+            SpriteBatch.Begin(SpriteSortMode.Deferred, blendState, SamplerState.AnisotropicClamp, null, null, null, null);
         }
 
         public void PushClipRectangle(Rectangle clip)

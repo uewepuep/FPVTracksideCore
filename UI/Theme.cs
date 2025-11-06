@@ -73,6 +73,8 @@ namespace UI
 
         public TrackTheme TrackTheme { get; set; }
 
+        public ToolTexture PilotProfileMask { get; set; }
+
         public static Theme Current { get; private set; }
 
         public Theme()
@@ -126,6 +128,7 @@ namespace UI
             };
 
             TrackTheme = new TrackTheme();
+            PilotProfileMask = null;
         }
 
         public static List<Theme> Themes { get; private set; }

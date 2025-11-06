@@ -78,17 +78,19 @@ namespace ImageServer
         private TimeSpan length;
 
         private FrameSource frameSource;
-        private GraphicsDevice graphicsDevice;
 
         private IPlaybackFrameSource playbackFrameSource { get { return frameSource as IPlaybackFrameSource; } }
-
 
         public CachedTextureFrameSource(GraphicsDevice graphicsDevice, VideoFrameWork videoFrameWork, string filename)
             :base(new VideoConfig())
         {
             samples = new List<FrameTextureSample>();
             frameSource = videoFrameWork.CreateFrameSource(filename);
-            this.graphicsDevice = graphicsDevice;
+
+            if (frameSource != null && samples.Count == 0)
+            {
+                CopyFrameSource(graphicsDevice, frameSource);
+            }
         }
 
         public override void Dispose()
@@ -108,7 +110,7 @@ namespace ImageServer
             samples.Clear();
         }
 
-        private void CopyFrameSource(FrameSource frameSource)
+        private void CopyFrameSource(GraphicsDevice graphicsDevice, FrameSource frameSource)
         {
             int count = 0;
 
@@ -131,7 +133,6 @@ namespace ImageServer
                 FrameTextureSample texture = CreateSample(graphicsDevice, frameWidth, frameHeight, frameFormat);
 
                 Texture2D texture2D = texture as Texture2D;
-
                 if (frameSource.UpdateTexture(graphicsDevice, count, ref texture2D))
                 {
                     samples.Add(texture);
@@ -155,11 +156,6 @@ namespace ImageServer
 
         private void PlayBackThread()
         {
-            if (frameSource != null && samples.Count == 0)
-            {
-                CopyFrameSource(frameSource);
-            }
-
             int count = 0;
             while (State == States.Running)
             {

@@ -3,6 +3,7 @@ using Composition.Input;
 using Composition.Nodes;
 using ImageServer;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using RaceLib;
 using System;
 using System.Collections.Generic;
@@ -124,9 +125,15 @@ namespace UI.Nodes
                 FileInfo fileInfo = new FileInfo(repaired);
                 if (fileInfo.Exists)
                 {
-
                     string[] videoFileTypes = new[] { ".mp4", ".wmv", ".mkv" };
                     string[] imageFileTypes = new[] { ".png", ".jpg", ".jpeg" };
+
+                    string maskFilename = "";
+                    float maskSecondDrawAlpha = ApplicationProfileSettings.Instance.PilotProfileMaskAlpha;
+                    if (ApplicationProfileSettings.Instance.PilotProfileMask && Theme.Current != null && Theme.Current.PilotProfileMask != null)
+                    {
+                        maskFilename = Theme.Current.PilotProfileMask.TextureFilename;
+                    }
 
                     if (videoFileTypes.Contains(fileInfo.Extension))
                     {
@@ -144,7 +151,14 @@ namespace UI.Nodes
 
                         source.BounceRepeat = ApplicationProfileSettings.Instance.PilotProfileBoomerangRepeat;
 
-                        videoPlayer = new FileFrameNode(source);
+                        if (string.IsNullOrEmpty(maskFilename))
+                        {
+                            videoPlayer = new FileFrameNode(source);
+                        }
+                        else
+                        {
+                            videoPlayer = new FileFrameMaskedNode(source, maskFilename, maskSecondDrawAlpha);
+                        }
 
                         videoPlayer.Repeat = true;
                         videoPlayer.Play();
@@ -154,7 +168,15 @@ namespace UI.Nodes
                     }
                     else if (imageFileTypes.Contains(fileInfo.Extension))
                     {
-                        PilotPhoto = new ImageNode(fileInfo.FullName);
+                        if (string.IsNullOrEmpty(maskFilename))
+                        {
+                            PilotPhoto = new ImageNode(fileInfo.FullName);
+                        }
+                        else
+                        {
+                            PilotPhoto = new ImageMaskedNode(fileInfo.FullName, maskFilename, maskSecondDrawAlpha);
+                        }
+
                         insideOutBorderRelativeNode.AddChild(PilotPhoto, 0);
                     }
 
@@ -192,6 +214,7 @@ namespace UI.Nodes
             }
             return false;
         }
+
 
         private string PickAThing(Pilot pilot)
         {

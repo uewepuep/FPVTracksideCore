@@ -36,7 +36,7 @@ namespace Composition.Nodes
         public RectangleF RelativeSourceBounds { get; set; }
         public Rectangle SourceBounds { get; set; }
 
-        public string FileName { get; private set; }
+        public string FileName { get; protected set; }
         public Color Tint { get; set; }
 
         protected bool sharedTexture;
@@ -58,10 +58,10 @@ namespace Composition.Nodes
             SourceBounds = new Rectangle();
         }
 
-        public ImageNode(Texture2D texture)
+        public ImageNode(Texture2D texture, bool sharedTexture)
             : this()
         {
-            sharedTexture = true;
+            sharedTexture = sharedTexture;
             Texture = texture;
             if (Texture != null)
             {
@@ -110,7 +110,7 @@ namespace Composition.Nodes
             return bounds;
         }
 
-        public void UpdateAspectRatioFromTexture()
+        public virtual void UpdateAspectRatioFromTexture()
         {
             if (Texture != null)
             {
@@ -161,14 +161,14 @@ namespace Composition.Nodes
             RelativeSourceBounds = new RectangleF(0, 0, 1, 1);
         }
 
-        public void LoadImage(Drawer id)
+        public virtual void LoadImage(Drawer id)
         {
             try
             {
                 texture = id.TextureCache.GetTextureFromFilename(FileName, ReloadFromFile);
                 if (SourceBounds.Width == 0 || SourceBounds.Height == 0)
                 {
-                    SourceBounds = new Rectangle(0, 0, Texture.Width, Texture.Height);
+                    SourceBounds = new Rectangle(0, 0, texture.Width, texture.Height);
                 }
                 sharedTexture = true;
                 UpdateAspectRatioFromTexture();

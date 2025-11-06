@@ -60,6 +60,11 @@ namespace Tools
 
         public Texture2D GetTextureFromFilename(string filename, Color fallback, bool forceRefresh)
         {
+            return GetTextureFromFilename(filename, fallback, forceRefresh, PreMultipliedAlpha);
+        }
+
+        public Texture2D GetTextureFromFilename(string filename, Color fallback, bool forceRefresh, bool preMultiplyAlpha)
+        {
             if (stringToTexture == null)
             {
                 stringToTexture = new Dictionary<string, Texture2D>();
@@ -83,7 +88,7 @@ namespace Tools
                 {
                     try
                     {
-                        texture = TextureHelper.LoadTexture(GraphicsDevice, filename, PreMultipliedAlpha);
+                        texture = TextureHelper.LoadTexture(GraphicsDevice, filename, preMultiplyAlpha);
                         if (texture != null)
                         {
                             stringToTexture.Add(filename, texture);
