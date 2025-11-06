@@ -1602,6 +1602,14 @@ namespace RaceLib
             }
         }
 
+        public Race[] GetRaces(Stage stage)
+        {
+            lock (races)
+            {
+                return races.Where(r => r.Valid && r.Round.Stage == stage).ToArray();
+            }
+        }
+
         public Race[] GetRaces(Func<Race, bool> predicate)
         {
             lock (races)
