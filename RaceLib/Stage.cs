@@ -53,6 +53,19 @@ namespace RaceLib
             }
         }
 
+        public bool GeneratesRounds
+        {
+            get
+            {
+                if (StageType == StageTypes.Default || StageType == StageTypes.Final)
+                {
+                    return HasSheetFormat;
+                }
+
+                return true;
+            }
+        }
+
         [Category("Advanced")]
         public string GameTypeName { get; set; }
 

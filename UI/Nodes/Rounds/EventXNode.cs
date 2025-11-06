@@ -36,6 +36,7 @@ namespace UI.Nodes.Rounds
         public event RoundDelegate ChangeChannels;
         public event RoundDelegate Finals;
         public event RoundDelegate Clone;
+        public event RoundDelegate AddSheetFormatRound;
         public event Action<Round, StageTypes> AddRoundFromType;
 
         public event RoundDelegate RemoveRound;
@@ -182,12 +183,6 @@ namespace UI.Nodes.Rounds
                 }
             }
 
-            var sf = EventManager.RoundManager.SheetFormatManager.GetRoundSheetFormat(Round);
-            if (sf != null)
-            {
-                rootMenu.AddItem("Add Next Sheet Round", AddSheetFormatRound);
-            }
-
             // Add round
             {
                 MouseMenu addRound = rootMenu.AddSubmenu("Add Round");
@@ -242,26 +237,28 @@ namespace UI.Nodes.Rounds
 
         protected void AddFormatMenu(MouseMenu format)
         {
+
+            MouseMenu sheets = format.AddSubmenu("From Spreadsheet");
+            //add format
+            if (EventManager.RoundManager.SheetFormatManager.Sheets.Any())
+            {
+                foreach (SheetFormatManager.SheetFile sheet in EventManager.RoundManager.SheetFormatManager.Sheets)
+                {
+                    string name = sheet.Name + " (" + sheet.Pilots + " pilots)";
+
+                    var sheet2 = sheet;
+                    sheets.AddItem(name, () => { SheetFormat(sheet2); });
+                }
+            }
+
+            format.AddBlank();
+
             foreach (StageTypes stageType in Enum.GetValues<StageTypes>().Except([StageTypes.Default]))
             {
                 string name = stageType.ToString().CamelCaseToHuman();
                 StageTypes local = stageType;
 
                 format.AddItem(name, () => { AddRoundFromType?.Invoke(Round, local); });
-            }
-
-            format.AddBlank();
-
-            //add format
-            if (EventManager.RoundManager.SheetFormatManager.Sheets.Any())
-            {
-                foreach (SheetFormatManager.SheetFile sheet in EventManager.RoundManager.SheetFormatManager.Sheets)
-                {
-                    string name = "Sheet " + sheet.Name + " (" + sheet.Pilots + " pilots)";
-
-                    var sheet2 = sheet;
-                    format.AddItem(name, () => { SheetFormat(sheet2); });
-                }
             }
         }
 
@@ -271,6 +268,12 @@ namespace UI.Nodes.Rounds
             if (IsRoundInStage())
             {
                 stage = Round.Stage;
+
+                if (stage.GeneratesRounds)
+                {
+                    addRound.AddItem("Continue " + stage.Name, AddStageRound);
+                    addRound.AddBlank();
+                }
             }
 
             addRound.AddItem("Empty", () => { AddEmptyRound?.Invoke(Round, stage); });
@@ -287,14 +290,18 @@ namespace UI.Nodes.Rounds
             addRound.AddItem("Custom Round", () => { CustomRound?.Invoke(Round, stage); });
         }
 
-        private void AddSheetFormatRound()
+        private void AddStageRound()
         {
-            RoundSheetFormat roundSheetFormat = EventManager.RoundManager.SheetFormatManager.GetRoundSheetFormat(Round);
+            if (Round.Stage == null)
+                return; 
 
-            if (EventManager.RaceManager.GetRaces(Round).Any() && roundSheetFormat != null)
+            if (Round.Stage.HasSheetFormat)
             {
-                Round newRound = EventManager.RoundManager.GetCreateRound(Round.RoundNumber + 1, Round.EventType);
-                roundSheetFormat.GenerateSingleRound(newRound);
+                AddSheetFormatRound(Round);
+            }
+            else 
+            {
+                AddRoundFromType(Round, Round.Stage.StageType);
             }
         }
 

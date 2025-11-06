@@ -54,7 +54,7 @@ namespace RaceLib.Format
                     r = sampleRace.Clone();
                     newRaces.Add(r);
                 }
-
+                r.RaceNumber = raceIndex + 1;
                 r.Round = newRound;
                 r.PilotChannels.Clear();
                 foreach (var pc in EventManager.Event.Channels)

@@ -204,6 +204,7 @@ namespace UI.Nodes.Rounds
             eventXNode.ChangeChannels += GenerateChangeChannels;
             eventXNode.Finals += GenerateFinal;
             eventXNode.AddRoundFromType += GenerateRoundFromType;
+            eventXNode.AddSheetFormatRound += AddSheetFormatRound;
             eventXNode.SumPoints += ToggleSumPoints;
             eventXNode.Times += ToggleTimePoints;
             eventXNode.LapCounts += ToggleLapCount;
@@ -211,6 +212,17 @@ namespace UI.Nodes.Rounds
             eventXNode.Clone += CloneRound;
             eventXNode.AddEmptyRound += AddEmptyRound;
             eventXNode.NeedsFormatLayout += RequestLayout;
+        }
+
+        private void AddSheetFormatRound(Round round)
+        {
+            RoundSheetFormat roundSheetFormat = EventManager.RoundManager.SheetFormatManager.GetRoundSheetFormat(round);
+
+            if (EventManager.RaceManager.GetRaces(round).Any() && roundSheetFormat != null)
+            {
+                Round newRound = EventManager.RoundManager.GetCreateRound(round.RoundNumber + 1, round.EventType);
+                roundSheetFormat.GenerateSingleRound(newRound);
+            }
         }
 
         private void DoRefresh()
