@@ -67,6 +67,8 @@ namespace UI.Nodes.Rounds
                 toWrap.Clear();
                 toWrap.AddRange(nodes);
             }
+
+            RequestLayout();
         }
         
 
@@ -101,7 +103,7 @@ namespace UI.Nodes.Rounds
                 right += padding;
 
                 RectangleF bounds = new RectangleF(left - titleWidth, adjustedBounds.Y, (right - left) + titleWidth, adjustedBounds.Height);
-                SetBounds(bounds, BoundsF);
+                SetBounds(bounds, parentBounds);
                 borderNode.Layout(bounds);
             }
         }

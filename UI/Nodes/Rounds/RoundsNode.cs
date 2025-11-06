@@ -326,9 +326,14 @@ namespace UI.Nodes.Rounds
                 }
                 else
                 {
-                    StageNode stageNode = new StageNode(this, EventManager, stage);
+                    StageNode stageNode = Children.OfType<StageNode>().FirstOrDefault(s => s.Stage == stage);
+                    if (stageNode == null)
+                    {
+                        stageNode = new StageNode(this, EventManager, stage);
+                        AddChild(stageNode);
+                    }
+
                     stageNode.SetNodes(RoundNodes.Where(rn => rn.Round.Stage == stage));
-                    AddChild(stageNode);
                 }
             }
 
@@ -426,47 +431,8 @@ namespace UI.Nodes.Rounds
 
         private void GenerateRoundFromType(Round round, StageTypes stageType)
         {
-            Stage stage = null;
-            // Don't create a stage if default
-            if (stageType != StageTypes.Default)
-            {
-                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
-                {
-                    stage = new Stage();
-                    stage.ID = Guid.NewGuid();
-                    stage.StageType = stageType;
-                    stage.AutoName(RoundManager);
-
-                    db.Insert(stage);
-                }
-            }
-            else
-            {
-                stage = round.Stage;
-            }
-
-            if (stage != null)
-            {
-                // If we're filling the current round that's empty
-                if (!EventManager.RaceManager.GetRaces(round).Any())
-                {
-                    using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
-                    {
-                        round.Stage = stage;
-                        db.Update(round);
-                    }
-
-                    AutoFormat format = new AutoFormat(EventManager);
-                    RoundManager.Generate(format, round, new RoundPlan(EventManager, null, null));
-                }
-                else
-                {
-                    RoundFormat roundFormat = RoundManager.GetRoundFormat(stage);
-                    RoundManager.GenerateRound(round, roundFormat);
-                }
-                    
-                Refresh();
-            }
+            RoundManager.GenerateRoundFromType(round, stageType);
+            Refresh();
         }
 
         private void GenerateCustomRound(Round callingRound, Stage stage)

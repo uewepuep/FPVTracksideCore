@@ -201,10 +201,53 @@ namespace RaceLib
 
         public IEnumerable<Race> GenerateRound(Round callingRound, RoundFormat roundFormat)
         {
-            Round newRound = GetCreateRound(callingRound.RoundNumber + 1, callingRound.EventType, callingRound.Stage);
+            Round newRound = GetCreateRound(callingRound.RoundNumber + 1, callingRound.EventType, roundFormat.Stage);
 
             RoundPlan roundPlan = new RoundPlan(EventManager, callingRound, null);
             return Generate(roundFormat, newRound, roundPlan);
+        }
+
+        public void GenerateRoundFromType(Round round, StageTypes stageType)
+        {
+            Stage stage = null;
+            // Don't create a stage if default
+            if (stageType != StageTypes.Default && round.Stage == null)
+            {
+                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                {
+                    stage = new Stage();
+                    stage.ID = Guid.NewGuid();
+                    stage.StageType = stageType;
+                    stage.AutoName(this);
+
+                    db.Insert(stage);
+                }
+            }
+            else
+            {
+                stage = round.Stage;
+            }
+
+            if (stage != null)
+            {
+                // If we're filling the current round that's empty
+                if (!EventManager.RaceManager.GetRaces(round).Any())
+                {
+                    using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                    {
+                        round.Stage = stage;
+                        db.Update(round);
+                    }
+
+                    AutoFormat format = new AutoFormat(EventManager);
+                    Generate(format, round, new RoundPlan(EventManager, null, null));
+                }
+                else
+                {
+                    RoundFormat roundFormat = GetRoundFormat(stage);
+                    GenerateRound(round, roundFormat);
+                }
+            }
         }
 
         public IEnumerable<Race> GenerateSeededX(Round callingRound, IEnumerable<Pilot> pilots)

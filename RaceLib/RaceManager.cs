@@ -954,8 +954,15 @@ namespace RaceLib
             Logger.RaceLog.LogCall(this, CurrentRace);
 
             if (race == null)
-                return; 
+                return;
 
+            lock (races)
+            {
+                if (races.Contains(race))
+                    return;
+
+                races.Add(race);
+            }
 
             race.Event = EventManager.Event;
             race.PrimaryTimingSystemLocation = EventManager.Event.PrimaryTimingSystemLocation;
@@ -963,11 +970,6 @@ namespace RaceLib
             if (race.Type == EventTypes.CasualPractice)
             {
                 SetupCasualPractice(race);
-            }
-
-            lock (races)
-            {
-                races.Add(race);
             }
 
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
@@ -1022,15 +1024,18 @@ namespace RaceLib
             // no nulls.
             load = load.Where(r => r != null);
 
+            lock (races)
+            {
+                // none already in
+                load = load.Where(r => !races.Contains(r)).Distinct();
+            }
+
             if (load.Any())
             {
                 lock (races)
                 {
                     races.AddRange(load);
-                }
 
-                lock (races)
-                {
                     foreach (Race race in races)
                     {
                         if (race.TargetLaps == 0)

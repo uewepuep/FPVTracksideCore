@@ -58,6 +58,14 @@ namespace UI.Nodes
             paste.OnClick += Paste_OnClick;
             nextItems.AddChild(paste);
 
+            Stage stage = Round.Stage;
+            if (stage != null && stage.GeneratesRounds)
+            {
+                TextButtonNode continueRound = new TextButtonNode("Continue " + round.Stage.Name, Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
+                continueRound.OnClick += ContinueRound_OnClick;
+                nextItems.AddChild(continueRound);
+            }
+
             if (eventManager.ExternalRaceProviders != null)
             {
                 foreach (var external in eventManager.ExternalRaceProviders)
@@ -100,6 +108,13 @@ namespace UI.Nodes
         private void LastAgain_OnClick(Composition.Input.MouseInputEvent mie)
         {
             eventManager.RoundManager.CloneLastHeat(Round);
+        }
+        private void ContinueRound_OnClick(Composition.Input.MouseInputEvent mie)
+        {
+            if (Round != null && Round.Stage != null)
+            {
+                eventManager.RoundManager.GenerateRoundFromType(Round, Round.Stage.StageType);
+            }
         }
     }
 }
