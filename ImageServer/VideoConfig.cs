@@ -389,22 +389,29 @@ namespace ImageServer
 
         public bool Matches(VideoConfig other)
         {
-            Regex regex = new Regex("(#[A-z0-9_&#]*)");
+            Regex mfds = new Regex("(#[A-z0-9_&#]*)");
+            Regex dsff = new Regex("({[A-z0-9-]*}\\\\{[A-z0-9-]*})");
+
+            Regex[] regexes = [mfds, dsff];
 
             foreach (string path in IDPaths)
             {
                 if (string.IsNullOrEmpty(path))
                     continue;
 
-                Match match = regex.Match(path);
-                if (match.Success)
+                foreach (Regex regex in regexes)
                 {
-                    string common = match.Groups[1].Value;
-                    if (other.IDPaths.Any(p => p.Contains(common)))
+                    Match match = regex.Match(path);
+                    if (match.Success)
                     {
-                        return true;
+                        string common = match.Groups[1].Value;
+                        if (other.IDPaths.Any(p => p.Contains(common)))
+                        {
+                            return true;
+                        }
                     }
                 }
+
             }
             return false;
         }

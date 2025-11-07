@@ -61,7 +61,7 @@ namespace Composition.Nodes
         public ImageNode(Texture2D texture, bool sharedTexture)
             : this()
         {
-            sharedTexture = sharedTexture;
+            this.sharedTexture = sharedTexture;
             Texture = texture;
             if (Texture != null)
             {

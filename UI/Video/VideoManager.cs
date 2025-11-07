@@ -945,6 +945,10 @@ namespace UI.Video
                                     result.RebootRequired = true;
                                 }
                             }
+                            catch (Exception ex)
+                            {
+                                Logger.VideoLog.LogException(this, ex);
+                            }
                             finally
                             {
                                 source?.Dispose();
@@ -955,8 +959,10 @@ namespace UI.Video
                     result.Modes = modes.Distinct().ToArray();
                     callback(result);
                 }
-                catch
+                catch (Exception ex) 
                 {
+                    Logger.VideoLog.LogException(this, ex);
+
                     callback(result);
                 }
             });

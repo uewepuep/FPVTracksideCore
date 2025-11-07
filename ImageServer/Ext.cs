@@ -71,6 +71,24 @@ namespace ImageServer
             }
         }
 
+        public static IEnumerable<Mode> DistinctModes(this IEnumerable<Mode> modes)
+        {
+            List<Mode> result = new List<Mode>();
+            foreach (Mode b in modes)
+            {
+                if (!result.Any(a => 
+                    a.Width == b.Width 
+                 && a.Height == b.Height
+                 && a.GetRoundedFrameRate() == b.GetRoundedFrameRate() 
+                 && a.Format == b.Format
+                 && a.FrameWork == b.FrameWork))
+                {
+                    result.Add(b);
+                }
+            }
+            return result;
+        }
+
         public static IEnumerable<VideoConfig> CombineVideoSources(this IEnumerable<VideoConfig> sources)
         {
             List<VideoConfig> configs = new List<VideoConfig>();
@@ -101,7 +119,6 @@ namespace ImageServer
                 }
                 configs.Add(videoConfig);
             }
-
 
             // Set any usbports
             foreach (VideoConfig vc in configs)

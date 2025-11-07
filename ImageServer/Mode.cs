@@ -30,6 +30,7 @@ namespace ImageServer
         public int Index { get; set; }
         public FrameWork FrameWork { get; set; }
 
+
         public Mode()
         {
             Index = -1;
@@ -40,16 +41,25 @@ namespace ImageServer
             FrameWork = FrameWork.Undecided;
         }
 
+
+
+        public int GetRoundedFrameRate()
+        {
+            return (int)Math.Round(FrameRate, 0);
+        }
+
+        public string Dimensions()
+        {
+            return Width + "x" + Height + " " + GetRoundedFrameRate() + "hz";
+        }
+
         public override string ToString()
         {
             if (Index < 0)
                 return "Default resolution / frame rate";
-
-            double frameRate = Math.Round(FrameRate, 2);
-
+            
             string framework = FrameWork.ToString();
-
-            return Width + "x" + Height + " " + frameRate + "hz - " + framework + " " + Format;
+            return Dimensions() + " - " + framework + " " + Format;
         }
 
         public override int GetHashCode()

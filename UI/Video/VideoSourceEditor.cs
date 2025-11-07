@@ -466,7 +466,7 @@ namespace UI.Video
 
             private void AcceptModes(VideoManager.ModesResult result)
             {
-                modes = TrimModes(result.Modes).ToArray();
+                modes = TrimModes(result.Modes).DistinctModes().ToArray();
 
                 if (result.RebootRequired)
                 {
@@ -516,10 +516,9 @@ namespace UI.Video
 
             private void SetOptions(Mode[] ms)
             {
-
-                IEnumerable<Mode> ordered = modes.OrderByDescending(m => m.Width)
+                IEnumerable<Mode> ordered = ms.OrderByDescending(m => m.Width)
                                                 .ThenByDescending(m => m.Height)
-                                                .ThenByDescending(m => m.FrameRate)
+                                                .ThenByDescending(m => Math.Round(m.FrameRate, 0))
                                                 .ThenBy(m => VideoFrameWorks.IndexOf(m.FrameWork))
                                                 .ThenByDescending(m => m.ToString());
 
