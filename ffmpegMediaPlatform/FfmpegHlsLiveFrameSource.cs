@@ -48,6 +48,13 @@ namespace FfmpegMediaPlatform
             
             // Use the application's binary directory for HLS files to match FFmpeg's working directory
             string binaryDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+
+            // Seems to be null when installed?
+            if (string.IsNullOrEmpty(binaryDir))
+            {
+                binaryDir = Directory.GetCurrentDirectory();
+            }
+
             this.hlsOutputPath = Path.Combine(binaryDir, "trackside_hls");
             
             // Only create HLS directory if HLS is enabled
@@ -58,7 +65,7 @@ namespace FfmpegMediaPlatform
                 {
                     Tools.Logger.VideoLog.LogDebugCall(this, $"Binary directory: {binaryDir}");
                     Tools.Logger.VideoLog.LogDebugCall(this, $"Current working directory: {Directory.GetCurrentDirectory()}");
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"Target HLS path: {hlsOutputPath}");
+                    Tools.Logger.VideoLog.LogDebug(this, $"Target HLS path: {hlsOutputPath}");
                     
                     if (Directory.Exists(hlsOutputPath))
                     {
@@ -74,7 +81,7 @@ namespace FfmpegMediaPlatform
                     File.Delete(testFile);
                     Tools.Logger.VideoLog.LogDebugCall(this, "HLS directory write test passed");
                     
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"HLS Live Frame Source initialized - HTTP port: {httpPort}, HLS path: {hlsOutputPath}");
+                    Tools.Logger.VideoLog.LogDebug(this, $"HLS Live Frame Source initialized - HTTP port: {httpPort}, HLS path: {hlsOutputPath}");
                 }
                 catch (Exception ex)
                 {
