@@ -32,7 +32,7 @@ namespace UI.Nodes.Rounds
 
         public bool NeedsInit { get; set; }
 
-        public const float StandardAspectRatio = 1.4f;
+        public const float StandardAspectRatio = 1.2f; // Increased for taller cells to match original
 
         public EventRaceNode(EventManager eventManager, Race race)
         {

@@ -3,6 +3,7 @@ using Composition.Input;
 using Composition.Layers;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using RaceLib;
 using RaceLib.Format;
 using System;
@@ -11,6 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
+using Size = Tools.Size;
 
 namespace UI.Nodes.Rounds
 {
@@ -70,9 +72,92 @@ namespace UI.Nodes.Rounds
             }
         }
 
+
+        // Track if we've created a large render target
+        private bool hasLargeRenderTarget = false;
+        private Size lastLargeSize = new Size(0, 0);
+
+        public override void Update(GameTime gameTime)
+        {
+            // If we need a large render target, handle it specially to avoid recreation
+            if (Size.Width > 4096 || Size.Height > 4096)
+            {
+                // Check if we need to create or update the render target
+                if (renderTarget == null ||
+                    (hasLargeRenderTarget && (lastLargeSize.Width != Size.Width || lastLargeSize.Height != Size.Height)))
+                {
+                    // Dispose old render target if size changed
+                    if (renderTarget != null)
+                    {
+                        renderTarget.Dispose();
+                        renderTarget = null;
+                    }
+
+                    // Create new render target with the actual size
+                    renderTarget = new RenderTarget2D(drawer.GraphicsDevice, Size.Width, Size.Height);
+                    hasLargeRenderTarget = true;
+                    lastLargeSize = Size;
+                    NeedsDraw = true;
+                }
+
+                // Handle layout
+                if (NeedsLayout && Parent != null)
+                {
+                    Layout(Parent.BoundsF);
+                    NeedsLayout = false;
+                    NeedsDraw = true;
+                }
+            }
+            else
+            {
+                // For normal sizes, use the base implementation
+                hasLargeRenderTarget = false;
+                base.Update(gameTime);
+            }
+        }
+
+        protected override RenderTarget2D CreateRenderTarget(Size maxSize)
+        {
+            // Always check the actual size we want
+            Size targetSize = Size;
+
+            // If the actual size exceeds 4096, use it instead of the clamped size
+            if (targetSize.Width > 4096 || targetSize.Height > 4096)
+            {
+                // Create render target with the actual size, bypassing the 4096 limit
+                return new RenderTarget2D(drawer.GraphicsDevice, targetSize.Width, targetSize.Height);
+            }
+
+            // For normal cases, use the provided size
+            return new RenderTarget2D(drawer.GraphicsDevice, maxSize.Width, maxSize.Height);
+        }
+
+        public override void Layout(RectangleF parentBounds)
+        {
+            base.Layout(parentBounds);
+
+            // After layout, update heading to use fixed pixel position from left
+            if (heading != null && headingbg != null && headingbg.Bounds.Width > 0)
+            {
+                // Fixed 20 pixels from the left
+                float fixedLeftPixels = 20f;
+                float relativeLeft = fixedLeftPixels / headingbg.Bounds.Width;
+
+                // Ensure it doesn't go beyond reasonable bounds
+                if (relativeLeft > 0.5f) relativeLeft = 0.02f; // Fallback to 2% if container is too small
+
+                // Update heading position with fixed left offset
+                heading.RelativeBounds = new RectangleF(relativeLeft, 0.2f, 0.7f, 0.7f);
+                heading.RequestLayout();
+            }
+        }
+
         public EventXNode(EventManager ev, Round round)
         {
             Scroller.Enabled = false;
+
+            // Use an opaque background color to prevent flickering through
+            ClearColor = Theme.Current.Rounds.Background.XNA;
 
             Round = round;
 
@@ -87,6 +172,7 @@ namespace UI.Nodes.Rounds
 
             heading = new TextNode("", Theme.Current.Rounds.Text.XNA);
             heading.Alignment = RectangleAlignment.CenterLeft;
+            // Start with default relative bounds - will be updated in Layout
             heading.RelativeBounds = new RectangleF(0.02f, 0.2f, 0.7f, 0.7f);
             headingbg.AddChild(heading);
 

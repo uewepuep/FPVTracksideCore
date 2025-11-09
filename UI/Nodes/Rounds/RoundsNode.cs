@@ -524,28 +524,83 @@ namespace UI.Nodes.Rounds
 
             float height = (int)(BoundsF.Height * 0.95f);
             float y = (int)(BoundsF.Height * 0.01f) + BoundsF.Y;
-            float x = paddingX + BoundsF.X;
+
+            // Track total content width separately from screen position
+            float totalContentWidth = paddingX; // Start with initial padding
+
+            int nodeIndex = 0;
+            int nodeCount = EventXNodes.Count();
 
             foreach (EventXNode ern in EventXNodes)
             {
-                ern.Alignment = RectangleAlignment.CenterLeft;
-                ern.RelativeBounds = new RectangleF(0, 0, 1, 1);
-                ern.CalculateAspectRatio(height);
+                // Use fixed pixel width for EventRoundNode
+                int width;
+                EventRoundNode roundNode = ern as EventRoundNode;
+                if (roundNode != null && roundNode.ColumnCount > 0)
+                {
+                    // Fixed pixel width: columns * pixel width per column
+                    // Use ceiling to ensure we don't truncate width
+                    width = (int)Math.Ceiling(roundNode.ColumnCount * roundNode.ColumnPixelWidth);
+                    // Set the aspect ratio based on actual dimensions
+                    roundNode.AspectRatio = width / (float)height;
 
-                int width = (int)(height * ern.AspectRatio);
-                RectangleF bounds = new RectangleF(x - (int)Scroller.CurrentScrollPixels, y, width, height);
+                    // Debug output for Round 3
+                    if (roundNode.Round?.RoundNumber == 3)
+                    {
+                        Console.WriteLine($"[RoundsNode] Round 3 width calculation: {roundNode.ColumnCount} columns * {roundNode.ColumnPixelWidth}px = {width}px");
+                        Console.WriteLine($"[RoundsNode] Round 3 AspectRatio set to: {roundNode.AspectRatio}");
+                    }
+                }
+                else
+                {
+                    // Fallback for other node types
+                    ern.Alignment = RectangleAlignment.CenterLeft;
+                    ern.RelativeBounds = new RectangleF(0, 0, 1, 1);
+                    ern.CalculateAspectRatio(height);
+                    width = (int)(height * ern.AspectRatio);
+                }
+
+                // Position relative to the viewport with scroll offset
+                float screenX = BoundsF.X + totalContentWidth - (int)Scroller.CurrentScrollPixels;
+                RectangleF bounds = new RectangleF(screenX, y, width, height);
                 ern.SetBounds(bounds);
-                x += width;
-                x += paddingX;
+
+                // Debug output for Round 3 bounds
+                if (roundNode?.Round?.RoundNumber == 3)
+                {
+                    Console.WriteLine($"[RoundsNode] Round 3 SetBounds: X={bounds.X:F0} Y={bounds.Y:F0} W={bounds.Width:F0} H={bounds.Height:F0}");
+                }
+
+                // Track the actual content width
+                totalContentWidth += width;
+
+                // Debug: Track cumulative width
+                if (roundNode?.Round?.RoundNumber == 3)
+                {
+                    Console.WriteLine($"[RoundsNode] After Round 3: totalContentWidth = {totalContentWidth}px");
+                }
+
+                // Add padding between rounds, but not after the last one
+                if (nodeIndex < nodeCount - 1)
+                {
+                    totalContentWidth += paddingX;
+                }
+                nodeIndex++;
             }
 
             Scroller.ViewSizePixels = Bounds.Width;
 
-            Scroller.ContentSizePixels = 100;
-            if (EventXNodes.Any())
-            {
-                Scroller.ContentSizePixels += EventXNodes.Select(e => e.Bounds.Right).Max() - EventXNodes.Select(e => e.Bounds.X).Min();
-            }
+            // Add minimal padding to ensure the last round is fully visible
+            // Only add enough padding to see the edge of the last round
+            totalContentWidth += paddingX; // Just add the normal padding after the last round
+
+            // Set the content size to the actual total width we calculated
+            Scroller.ContentSizePixels = totalContentWidth;
+
+            // Debug output for scroll area
+            Console.WriteLine($"[RoundsNode] Scroll area: ViewSize={Scroller.ViewSizePixels}px, ContentSize={totalContentWidth}px");
+            Console.WriteLine($"[RoundsNode] Buffer added: {Bounds.Width}px (viewport width)");
+            Console.WriteLine($"[RoundsNode] Max scroll position: {totalContentWidth - Scroller.ViewSizePixels}px");
 
             Scroller.Layout(BoundsF);
 
