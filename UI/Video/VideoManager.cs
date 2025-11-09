@@ -225,6 +225,7 @@ namespace UI.Video
                 cancellationTokenSource = new CancellationTokenSource();
                 videoDeviceManagerThread = new Thread(() => WorkerThread(cancellationTokenSource.Token));
                 videoDeviceManagerThread.Name = "Video Device Manager";
+                videoDeviceManagerThread.IsBackground = true; // Allow app to exit even if managing devices
                 videoDeviceManagerThread.Start();
             }
         }
@@ -276,9 +277,11 @@ namespace UI.Video
 
             if (videoDeviceManagerThread != null)
             {
-                if (!videoDeviceManagerThread.Join(5000))
+                // Reduced from 5000ms to 100ms for faster shutdown
+                if (!videoDeviceManagerThread.Join(100))
                 {
-                    // Thread didn't exit within timeout - this is unusual but we'll handle it gracefully
+                    // Thread didn't exit within timeout - log for debugging
+                    Tools.Logger.VideoLog.LogCall(this, "Video device manager thread did not exit in 100ms");
                 }
                 videoDeviceManagerThread = null;
             }

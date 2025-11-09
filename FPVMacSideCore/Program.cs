@@ -20,14 +20,14 @@ namespace FPVMacsideCore
             // Add exit handlers to ensure proper cleanup
             Console.CancelKeyPress += (sender, e) =>
             {
-                Console.WriteLine("Application interrupted - performing cleanup...");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Application interrupted - performing cleanup...");
                 PerformCleanup();
                 Environment.Exit(0);
             };
-            
+
             AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
             {
-                Console.WriteLine("Application exiting - performing cleanup...");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Application exiting - performing cleanup...");
                 PerformCleanup();
             };
             
@@ -41,8 +41,10 @@ namespace FPVMacsideCore
                 game = new FPVMacsideCoreGame();
                 using (game)
                 {
-                   game.Run();
+                    game.Run();
                 }
+                // Game disposed here - check if this takes time
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Game disposed");
 #if !DEBUG
             }
             catch (Exception ex)
@@ -51,25 +53,47 @@ namespace FPVMacsideCore
             }
             finally
             {
-                Console.WriteLine("Application cleanup starting...");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Application cleanup starting...");
                 PerformCleanup();
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Finally block completed, exiting Main...");
             }
 #else
-            Console.WriteLine("Application cleanup starting...");
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Application cleanup starting...");
             PerformCleanup();
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] DEBUG cleanup completed, exiting Main...");
 #endif
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Main method exiting...");
         }
         
+        private static bool _cleanupPerformed = false;
+
         private static void PerformCleanup()
         {
+            // Prevent double cleanup
+            if (_cleanupPerformed)
+            {
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Cleanup already performed, skipping...");
+                return;
+            }
+            _cleanupPerformed = true;
+
             try
             {
-                Console.WriteLine("Starting application cleanup...");
-                
-                // Give the application a moment to finish current operations
-                System.Threading.Thread.Sleep(500);
-                
-                Console.WriteLine("Cleaning up FFmpeg processes...");
+                var cleanupStartTime = DateTime.Now;
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Starting application cleanup...");
+
+                // Set immediate termination flag for faster exit
+                FfmpegMediaPlatform.FfmpegFrameSource.ImmediateTerminationOnExit = true;
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Set immediate termination flag for FFmpeg");
+
+                // Give the application a brief moment to finish current operations
+                // Reduced from 500ms since we're using immediate termination
+                var sleepStart = DateTime.Now;
+                System.Threading.Thread.Sleep(50);
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Initial sleep completed ({(DateTime.Now - sleepStart).TotalMilliseconds:F0}ms)");
+
+                var ffmpegCleanupStart = DateTime.Now;
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Cleaning up FFmpeg processes...");
                 
                 // Kill any remaining FFmpeg processes (covers all variants)
                 string[] ffmpegNames = { "ffmpeg", "ffmpeg-arm", "ffmpeg-intel" };
@@ -88,22 +112,23 @@ namespace FPVMacsideCore
                         {
                             if (!proc.HasExited)
                             {
-                                Console.WriteLine($"Killing {processName} process {proc.Id}");
+                                var killStart = DateTime.Now;
+                                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Killing {processName} process {proc.Id}");
                                 proc.Kill();
-                                
-                                // Wait for process to exit, but don't wait too long
-                                if (!proc.WaitForExit(3000))
+
+                                // With immediate termination flag, use minimal wait
+                                if (!proc.WaitForExit(100)) // Reduced from 3000ms to 100ms
                                 {
-                                    Console.WriteLine($"Process {proc.Id} did not exit gracefully within 3 seconds");
+                                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Process {proc.Id} did not exit within 100ms ({(DateTime.Now - killStart).TotalMilliseconds:F0}ms total)");
                                 }
                                 else
                                 {
-                                    Console.WriteLine($"Process {proc.Id} exited successfully");
+                                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Process {proc.Id} exited successfully ({(DateTime.Now - killStart).TotalMilliseconds:F0}ms)");
                                 }
                             }
                             else
                             {
-                                Console.WriteLine($"{processName} process {proc.Id} already exited");
+                                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] {processName} process {proc.Id} already exited");
                             }
                         }
                         catch (Exception ex)
@@ -124,18 +149,23 @@ namespace FPVMacsideCore
                     }
                 }
                 
-                Console.WriteLine("FFmpeg process cleanup completed");
-                
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] FFmpeg process cleanup completed ({(DateTime.Now - ffmpegCleanupStart).TotalMilliseconds:F0}ms)");
+
                 // Force garbage collection before cleaning up native libraries
-                Console.WriteLine("Running garbage collection...");
+                var gcStart = DateTime.Now;
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Running garbage collection...");
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
-                
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Garbage collection completed ({(DateTime.Now - gcStart).TotalMilliseconds:F0}ms)");
+
                 // Cleanup native FFmpeg bindings
+                var nativeCleanupStart = DateTime.Now;
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Cleaning up FFmpeg native bindings...");
                 FfmpegMediaPlatform.FfmpegGlobalInitializer.Cleanup();
-                
-                Console.WriteLine("Application cleanup completed successfully");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] FFmpeg native cleanup completed ({(DateTime.Now - nativeCleanupStart).TotalMilliseconds:F0}ms)");
+
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Application cleanup completed successfully (Total: {(DateTime.Now - cleanupStartTime).TotalMilliseconds:F0}ms)");
                 
             }
             catch (Exception ex)

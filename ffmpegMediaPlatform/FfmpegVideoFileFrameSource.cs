@@ -150,19 +150,22 @@ namespace FfmpegMediaPlatform
         {
             List<string> filters = new List<string>();
 
-            // Platform-specific flip handling
+            // Platform-specific flip handling for replay
             bool isMac = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX);
 
-            // For video files, apply filters based on platform
+            // For video file replay, we need to handle orientation differently
             if (isMac)
             {
-                // Mac: apply vflip only when explicitly requested (same as Windows)
-                if (VideoConfig.Flipped)
+                // Mac recordings are stored with camera's native orientation (upside down)
+                // So we need to flip them during playback to display correctly
+                // Apply vflip by default to correct orientation, unless user wants it flipped
+                if (!VideoConfig.Flipped)
                     filters.Add("vflip");
             }
             else
             {
-                // Windows: only apply filters when explicitly requested
+                // Windows recordings are stored right-side up
+                // Only apply vflip if user explicitly wants it flipped
                 if (VideoConfig.Flipped)
                     filters.Add("vflip");
             }

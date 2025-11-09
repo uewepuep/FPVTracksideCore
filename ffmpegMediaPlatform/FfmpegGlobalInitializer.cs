@@ -81,15 +81,18 @@ namespace FfmpegMediaPlatform
                 {
                     try
                     {
-                        Console.WriteLine("FfmpegGlobalInitializer: Cleaning up FFmpeg bindings...");
-                        
+                        var startTime = DateTime.Now;
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] FfmpegGlobalInitializer: Cleaning up FFmpeg bindings...");
+
                         // Force garbage collection to release any native resources
+                        var gcStart = DateTime.Now;
                         GC.Collect();
                         GC.WaitForPendingFinalizers();
                         GC.Collect();
-                        
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] FfmpegGlobalInitializer: GC completed ({(DateTime.Now - gcStart).TotalMilliseconds:F0}ms)");
+
                         _initialized = false;
-                        Console.WriteLine("FfmpegGlobalInitializer: FFmpeg bindings cleanup completed");
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] FfmpegGlobalInitializer: FFmpeg bindings cleanup completed ({(DateTime.Now - startTime).TotalMilliseconds:F0}ms)");
                     }
                     catch (Exception ex)
                     {

@@ -45,6 +45,7 @@ namespace ImageServer
 
             imageProcessor = new Thread(ProcessImages);
             imageProcessor.Name = "Image processor";
+            imageProcessor.IsBackground = true; // Allow app to exit even if processing images
 
             imageProcessor.Start();
 
@@ -67,8 +68,10 @@ namespace ImageServer
 
             if (imageProcessor != null)
             {
-                if (!imageProcessor.Join(5000))
+                // Reduced from 5000ms to 100ms for faster shutdown
+                if (!imageProcessor.Join(100))
                 {
+                    Logger.VideoLog.Log(this, "Image processor thread did not exit in 100ms");
                     imageProcessor = null;
                     return false && base.Stop();
                 }
@@ -113,7 +116,10 @@ namespace ImageServer
 
         private void ProcessImages()
         {
-            const int timeout = 10000;
+            // Reduced from 10000ms to 100ms for responsive shutdown
+            // The mutex is signaled frequently during normal operation
+            // This shorter timeout allows quick exit when StopProcessing is called
+            const int timeout = 100;
             while (processImages)
             {
                 bool result = true;
@@ -139,8 +145,13 @@ namespace ImageServer
                 }
                 else
                 {
+                    // Check if we're shutting down before logging timeout
+                    if (!processImages)
+                        break;
+
                     if (State != States.Paused)
                     {
+                        // Only log timeouts during normal operation, not during shutdown
                         Logger.VideoLog.Log(this, "Failed to read a frame after " + timeout + "ms.");
                         Connected = false;
                     }
