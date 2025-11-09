@@ -381,7 +381,7 @@ namespace FfmpegMediaPlatform
             // FFmpeg command to read RGBA frames from stdin with real-time PTS based on wallclock
             // This allows variable frame rate recording that matches actual frame arrival times
 
-            int gop = Math.Max(1, (int)Math.Round(frameRate * 2)); // 2 second GOP for better seeking
+            int gop = Math.Max(1, (int)Math.Round(frameRate * 0.1)); // 0.1 second GOP for precise seeking
 
             string ffmpegArgs = $"-f rawvideo " +                          // Input format: raw video
                                $"-pix_fmt rgba " +                         // Pixel format: RGBA
@@ -392,6 +392,8 @@ namespace FfmpegMediaPlatform
                                $"-preset medium " +                        // Balanced preset for quality
                                $"-crf 18 " +                               // Higher quality
                                $"-g {gop} " +                              // GOP size for seeking
+                               $"-keyint_min {gop} " +                     // Minimum keyframe interval
+                               $"-force_key_frames \"expr:gte(t,n_forced*0.1)\" " + // Force keyframes every 0.1 seconds
                                $"-pix_fmt yuv420p " +                      // Output pixel format
                                $"-vsync passthrough " +                    // Preserve frame timestamps exactly as received
                                $"-video_track_timescale 90000 " +          // Standard video timescale for precise timing

@@ -22,10 +22,22 @@ namespace UI
         [Description("Enable HTTP Live Streaming for web access. Disable for performance.")]
         public bool HlsEnabled { get; set; }
 
+        [Category("Video Playback")]
+        [DisplayName("Slow Playback Speed")]
+        [Description("Speed factor for slow playback mode (0.05 to 1.0)")]
+        public float SlowPlaybackSpeed { get; set; }
+
+        [Category("Video Playback")]
+        [DisplayName("Video Sync Delay")]
+        [Description("Sync delay in seconds to compensate for camera latency (0.0 to 2.0)")]
+        public float VideoSyncDelay { get; set; }
+
         public GeneralSettings()
         {
             Profile = "Profile 1";
             HlsEnabled = false; // Disable HLS by default for performance
+            SlowPlaybackSpeed = 0.10f; // Default slow speed
+            VideoSyncDelay = 0.40f; // Default sync delay
         }
 
         protected const string filename = "GeneralSettings.xml";

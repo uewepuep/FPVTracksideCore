@@ -100,6 +100,7 @@ namespace UI.Video
             SeekNode.StopButton.OnClick += (m) => { Stop(); };
             SeekNode.SlowCheck.Checkbox.ValueChanged += Checkbox_ValueChanged;
             SeekNode.SlowSpeedChanged += OnSlowSpeedChanged;
+            SeekNode.SyncDelayChanged += OnSyncDelayChanged;
             SeekNode.ShowAll.OnClick += ShowAll_OnClick;
 
             AddChild(SeekNode);
@@ -153,7 +154,33 @@ namespace UI.Video
                 
                 // Get frame times for timeline positioning
                 var frameTimes = GetFrameTimesFromFrameSources();
-                SeekNode.SetRace(race, minStart, maxEnd, frameTimes);
+
+                // Get device latency from the first frame source
+                // Default to 1.3 seconds to compensate for typical video encoding/processing delay
+                // Increased by 0.3s based on observed timing difference
+                float deviceLatency = 0.4f;
+
+                // Get the actual FrameSource objects to access VideoConfig
+                var actualFrameSources = GetFrameSources();
+                var firstFrameSource = actualFrameSources.FirstOrDefault();
+                if (firstFrameSource != null && firstFrameSource.VideoConfig != null)
+                {
+                    if (firstFrameSource.VideoConfig.DeviceLatency > 0)
+                    {
+                        deviceLatency = firstFrameSource.VideoConfig.DeviceLatency;
+                        Tools.Logger.VideoLog.LogCall(this, $"OnChange: Using configured device latency: {deviceLatency:F3}s from VideoConfig");
+                    }
+                    else
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"OnChange: Using default device latency: {deviceLatency:F3}s (VideoConfig has no latency set)");
+                    }
+                }
+                else
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"OnChange: Using default device latency: {deviceLatency:F3}s (no VideoConfig available)");
+                }
+
+                SeekNode.SetRace(race, minStart, maxEnd, frameTimes, deviceLatency);
                 ChannelsGridNode.SetPlaybackTime(race.Start);
             }
         }
@@ -183,6 +210,13 @@ namespace UI.Video
             }
         }
 
+        private void OnSyncDelayChanged(float newDelay)
+        {
+            // Refresh the lap lines with the new sync delay
+            Tools.Logger.VideoLog.LogCall(this, $"Sync delay changed to: {newDelay:F2}s");
+            SeekNode.RefreshLapLines();
+        }
+
         public override void Dispose()
         {
             EventManager.RaceManager.OnLapDetected -= OnChange;
@@ -197,6 +231,8 @@ namespace UI.Video
         {
             foreach (IPlaybackFrameSource frameSource in GetFileFrameSources())
             {
+                // Pause the playback - maintains current position
+                Tools.Logger.VideoLog.LogCall(this, $"ReplayNode.Stop: Pausing frameSource");
                 frameSource.Pause();
             }
 
@@ -210,21 +246,9 @@ namespace UI.Video
         {
             foreach (IPlaybackFrameSource frameSource in GetFileFrameSources())
             {
-                // Check if we can access the state by casting to FrameSource
-                if (frameSource is FrameSource fs && fs.State == FrameSource.States.Paused)
-                {
-                    // Resume from paused state - don't seek, just continue
-                    Tools.Logger.VideoLog.LogCall(this, $"ReplayNode.Play: Resuming from paused state");
-                    frameSource.Play();
-                }
-                else
-                {
-                    // If not paused or can't check state, restart from current position
-                    DateTime currentTime = SeekNode.CurrentTime;
-                    Tools.Logger.VideoLog.LogCall(this, $"ReplayNode.Play: Not paused, seeking to {currentTime:HH:mm:ss.fff} and playing");
-                    frameSource.SetPosition(currentTime);
-                    frameSource.Play();
-                }
+                // Simply call Play() - the frame source will handle resume correctly
+                Tools.Logger.VideoLog.LogCall(this, $"ReplayNode.Play: Calling Play on frameSource");
+                frameSource.Play();
             }
 
             SeekNode.PlayButton.Visible = false;
@@ -236,23 +260,28 @@ namespace UI.Video
         public void Seek(DateTime seekTime)
         {
             Tools.Logger.VideoLog.LogCall(this, $"ReplayNode.Seek called with seekTime: {seekTime:HH:mm:ss.fff}");
-            
+
             // Track the seek operation to prevent Update from overriding the position immediately
             lastSeekTime = seekTime;
             lastSeekTimeSet = DateTime.Now;
-            
+
+            // Remember if we're currently playing before the seek
+            bool wasPlaying = SeekNode.StopButton.Visible;
+
             foreach (IPlaybackFrameSource frameSource in GetFileFrameSources())
             {
                 Tools.Logger.VideoLog.LogCall(this, $"ReplayNode.Seek calling SetPosition on frameSource: {frameSource.GetType().Name}");
                 frameSource.SetPosition(seekTime);
-                
-                // If the video is currently playing (stop button visible), continue playing after seek
-                if (SeekNode.StopButton.Visible)
+
+                // Only resume playing if we were playing before the seek
+                // The SetPosition should maintain the play/pause state internally
+                if (wasPlaying)
                 {
+                    // Ensure we're playing after seek
                     frameSource.Play();
                 }
             }
-            
+
             // Update the seek node's current time to reflect the new position
             SeekNode.CurrentTime = seekTime;
             SeekNode.RequestLayout();
@@ -294,6 +323,15 @@ namespace UI.Video
                 return PlaybackVideoManager.GetFrameSources().OfType<IPlaybackFrameSource>();
             }
             return new IPlaybackFrameSource[0];
+        }
+
+        private IEnumerable<FrameSource> GetFrameSources()
+        {
+            if (PlaybackVideoManager != null)
+            {
+                return PlaybackVideoManager.GetFrameSources();
+            }
+            return new FrameSource[0];
         }
 
         public void CleanUp()
@@ -403,7 +441,32 @@ namespace UI.Video
 
                     // Get frame times for timeline positioning
                     var frameTimes = GetFrameTimesFromFrameSources();
-                    SeekNode.SetRace(race, minStart, maxEnd, frameTimes);
+
+                    // Get device latency from the first frame source
+                    // Default to 1.3 seconds to compensate for typical video encoding/processing delay
+                    // Increased by 0.3s based on observed timing difference
+                    float deviceLatency = 0.4f;
+
+                    // frameSources here are IPlaybackFrameSource, need to cast to FrameSource
+                    var firstFrameSource = frameSources.FirstOrDefault() as FrameSource;
+                    if (firstFrameSource != null && firstFrameSource.VideoConfig != null)
+                    {
+                        if (firstFrameSource.VideoConfig.DeviceLatency > 0)
+                        {
+                            deviceLatency = firstFrameSource.VideoConfig.DeviceLatency;
+                            Tools.Logger.VideoLog.LogCall(this, $"ReplayRace: Using configured device latency: {deviceLatency:F3}s from VideoConfig");
+                        }
+                        else
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"ReplayRace: Using default device latency: {deviceLatency:F3}s (VideoConfig has no latency set)");
+                        }
+                    }
+                    else
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"ReplayRace: Using default device latency: {deviceLatency:F3}s (no VideoConfig available)");
+                    }
+
+                    SeekNode.SetRace(race, minStart, maxEnd, frameTimes, deviceLatency);
 
                     ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
 
@@ -415,6 +478,12 @@ namespace UI.Video
                 SeekNode.SlowCheck.Visible = true;
                 SeekNode.ShowAll.Visible = false;
                 SeekNode.SlowCheck.Checkbox.Value = false;
+
+                // Ensure sync delay controls are visible
+                SeekNode.SyncDelayLabel.Visible = true;
+                SeekNode.SyncDelayInput.Visible = true;
+                SeekNode.SyncDelayUpButton.Visible = true;
+                SeekNode.SyncDelayDownButton.Visible = true;
 
 
                 return true;
@@ -536,33 +605,27 @@ namespace UI.Video
 
                 if (primary != null)
                 {
-                    // Check if video is paused - don't update progress bar if paused
-                    bool isPaused = false;
-                    if (primary is FrameSource fs && fs.State == FrameSource.States.Paused)
-                    {
-                        isPaused = true;
-                    }
-                    
-                    // Only update progress bar when not paused
-                    if (!isPaused)
+                    // Only update progress bar when playing (Stop button is visible)
+                    bool isPlaying = SeekNode.StopButton.Visible;
+
+                    if (isPlaying)
                     {
                         DateTime currentTime = primary.CurrentTime;
 
                         // Check if we recently performed a seek operation
-                        bool recentSeek = lastSeekTime.HasValue && (DateTime.Now - lastSeekTimeSet).TotalMilliseconds < 3000; // 3 second grace period
-                        
+                        bool recentSeek = lastSeekTime.HasValue && (DateTime.Now - lastSeekTimeSet).TotalMilliseconds < 1000; // 1 second grace period
+
                         if (recentSeek)
                         {
                             // During seek grace period, use the seek time if the primary time hasn't caught up yet
-                            if (Math.Abs((lastSeekTime.Value - currentTime).TotalSeconds) > 2.0) // If primary time is still far from seek target
+                            if (Math.Abs((lastSeekTime.Value - currentTime).TotalSeconds) > 0.5) // If primary time is still far from seek target
                             {
-                                Tools.Logger.VideoLog.LogCall(this, $"Update: Using seek time {lastSeekTime.Value:HH:mm:ss.fff} instead of primary time {currentTime:HH:mm:ss.fff}");
-                                currentTime = lastSeekTime.Value;
+                                // Don't update the progress bar yet - wait for the video to catch up
+                                return;
                             }
                             else
                             {
                                 // Primary has caught up, clear the seek tracking
-                                Tools.Logger.VideoLog.LogCall(this, $"Update: Primary time caught up, clearing seek tracking");
                                 lastSeekTime = null;
                             }
                         }
@@ -588,23 +651,37 @@ namespace UI.Video
         {
             try
             {
-                
+
                 if (PlaybackVideoManager != null)
                 {
                     var allFrameSources = PlaybackVideoManager.GetFrameSources();
-                    
-                    var frameSources = allFrameSources.OfType<ICaptureFrameSource>();
-                    
-                    foreach (var frameSource in frameSources)
+
+                    // First try to get frame times from IPlaybackFrameSource (for playback mode)
+                    var playbackSources = allFrameSources.OfType<IPlaybackFrameSource>();
+                    foreach (var frameSource in playbackSources)
                     {
                         var frameTimes = frameSource.FrameTimes;
                         if (frameTimes != null && frameTimes.Length > 0)
                         {
+                            Tools.Logger.VideoLog.LogCall(this, $"Found frame times from IPlaybackFrameSource: {frameTimes.Length} frames");
+                            return frameTimes;
+                        }
+                    }
+
+                    // Fallback to ICaptureFrameSource (for recording mode)
+                    var captureSources = allFrameSources.OfType<ICaptureFrameSource>();
+                    foreach (var frameSource in captureSources)
+                    {
+                        var frameTimes = frameSource.FrameTimes;
+                        if (frameTimes != null && frameTimes.Length > 0)
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"Found frame times from ICaptureFrameSource: {frameTimes.Length} frames");
                             return frameTimes;
                         }
                     }
                 }
-                
+
+                Tools.Logger.VideoLog.LogCall(this, "No frame times found from any frame source");
                 return new FrameTime[0];
             }
             catch (Exception ex)
