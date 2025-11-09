@@ -248,12 +248,18 @@ namespace FfmpegMediaPlatform
 
                 string recordInfoPath = basePath + ".recordinfo.xml";
                 string absoluteRecordInfoPath = Path.GetFullPath(recordInfoPath);
-                if (!File.Exists(absoluteRecordInfoPath)) return;
+                Tools.Logger.VideoLog.LogCall(this, $"Looking for recordinfo file at: {absoluteRecordInfoPath}");
+                if (!File.Exists(absoluteRecordInfoPath))
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"Recordinfo file not found at: {absoluteRecordInfoPath}");
+                    return;
+                }
 
                 var recordingInfo = IOTools.ReadSingle<RecodingInfo>(Path.GetDirectoryName(absoluteRecordInfoPath), Path.GetFileName(absoluteRecordInfoPath));
                 if (recordingInfo?.FrameTimes != null && recordingInfo.FrameTimes.Length > 0)
                 {
                     frameTimesData = recordingInfo.FrameTimes;
+                    Tools.Logger.VideoLog.LogCall(this, $"Successfully loaded {frameTimesData.Length} frame times from recordinfo file");
                     var firstFrame = frameTimesData[0];
                     var lastFrame = frameTimesData[^1];
                     startTime = firstFrame.Time;

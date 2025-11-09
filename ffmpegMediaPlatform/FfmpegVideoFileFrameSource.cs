@@ -1444,12 +1444,14 @@ namespace FfmpegMediaPlatform
                 }
                 
                 string recordInfoPath = basePath + ".recordinfo.xml";
-                
+
                 // Convert to absolute path for proper file checking and IOTools usage
                 string absoluteRecordInfoPath = Path.GetFullPath(recordInfoPath);
-                
+                Tools.Logger.VideoLog.LogCall(this, $"Looking for recordinfo file at: {absoluteRecordInfoPath}");
+
                 if (!File.Exists(absoluteRecordInfoPath))
                 {
+                    Tools.Logger.VideoLog.LogCall(this, $"Recordinfo file not found at: {absoluteRecordInfoPath}");
                     return;
                 }
                 
@@ -1459,6 +1461,7 @@ namespace FfmpegMediaPlatform
                 {
                     // Set the loaded frame times - need to access via reflection or create a protected setter
                     SetFrameTimes(recordingInfo.FrameTimes);
+                    Tools.Logger.VideoLog.LogCall(this, $"Successfully loaded {recordingInfo.FrameTimes.Length} frame times from recordinfo file");
                     
                     // Update the start time based on the first frame
                     var firstFrame = recordingInfo.FrameTimes.OrderBy(f => f.Time).First();

@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <!-- Native FFmpeg libraries for macOS -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0' OR '$(TargetFramework)' == 'net6.0'">
     <!-- Always copy macOS libraries for all macOS builds (ARM64 compatible) -->
     <None Include="ffmpeg-libs\macos\*.dylib">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

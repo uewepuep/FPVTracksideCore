@@ -19,6 +19,7 @@ namespace UI.Video
     {
         public event Action<DateTime> Seek;
         public event Action<float> SlowSpeedChanged;
+        public event Action<float> SyncDelayChanged;
 
         private ProgressBarNode progressBar;
         private Node progressBarLineContainer;
@@ -44,7 +45,14 @@ namespace UI.Video
 
         public TextButtonNode ShowAll { get; private set; }
 
+        // Sync delay controls
+        public TextNode SyncDelayLabel { get; private set; }
+        public TextEditNode SyncDelayInput { get; private set; }
+        public TextButtonNode SyncDelayUpButton { get; private set; }
+        public TextButtonNode SyncDelayDownButton { get; private set; }
+
         public float SlowSpeed { get; private set; } = 0.1f; // Default to 0.1 (10% speed)
+        public float SyncDelay { get; private set; } = 0.4f; // Default to 0.4 seconds (configurable)
 
         private Node buttonsNode;
 
@@ -58,6 +66,13 @@ namespace UI.Video
         public SeekNode(EventManager eventManager, Color color)
         {
             this.eventManager = eventManager;
+
+            // Load saved values from settings
+            if (GeneralSettings.Instance != null)
+            {
+                SlowSpeed = GeneralSettings.Instance.SlowPlaybackSpeed;
+                SyncDelay = GeneralSettings.Instance.VideoSyncDelay;
+            }
 
             Node container = new Node();
             container.RelativeBounds = new RectangleF(0, 0.0f, 1, 0.6f);
@@ -75,36 +90,76 @@ namespace UI.Video
 
             float slowWidth = 0.05f;
             float speedInputWidth = 0.03f;
-            float arrowButtonWidth = 0.015f; // Width for each arrow button
+            float arrowButtonWidth = 0.035f; // Increased width for better visibility
+            float syncDelayLabelWidth = 0.06f;
+            float syncDelayInputWidth = 0.035f;
             float showAllWidth = 0.05f;
-            float totalRightWidth = showAllWidth + slowWidth + speedInputWidth + (arrowButtonWidth * 2);
+            float totalRightWidth = showAllWidth + slowWidth + speedInputWidth + arrowButtonWidth + syncDelayLabelWidth + syncDelayInputWidth + arrowButtonWidth + 0.02f;
+
+            // Calculate position for speed buttons (to the right of speed input)
+            float speedButtonsX = 1 - (showAllWidth + syncDelayLabelWidth + syncDelayInputWidth + arrowButtonWidth + arrowButtonWidth + 0.01f);
 
             SlowCheck = new TextCheckBoxNode("Slow", color, false);
-            SlowCheck.RelativeBounds = new RectangleF(1 - totalRightWidth, 0, slowWidth, 1);
+            SlowCheck.RelativeBounds = new RectangleF(speedButtonsX - speedInputWidth - slowWidth - 0.005f, 0, slowWidth, 1);
             SlowCheck.SetRatio(0.6f, 0.05f);
             SlowCheck.Scale(1, 0.8f);
             container.AddChild(SlowCheck);
 
-            SlowSpeedInput = new TextEditNode("0.10", color);
-            SlowSpeedInput.RelativeBounds = new RectangleF(1 - (showAllWidth + speedInputWidth + (arrowButtonWidth * 2)), 0, speedInputWidth, 1);
+            SlowSpeedInput = new TextEditNode(SlowSpeed.ToString("0.00"), color);
+            SlowSpeedInput.RelativeBounds = new RectangleF(speedButtonsX - speedInputWidth - 0.002f, 0, speedInputWidth, 1);
             SlowSpeedInput.Scale(1, 0.8f);
             SlowSpeedInput.TextChanged += OnSlowSpeedChanged;
             SlowSpeedInput.CanEdit = true; // Ensure it can be edited
             container.AddChild(SlowSpeedInput);
 
-            // Speed up button (↑)
-            SpeedUpButton = new TextButtonNode("▲", Color.Transparent, Theme.Current.Hover.XNA, color);
-            SpeedUpButton.RelativeBounds = new RectangleF(1 - (showAllWidth + arrowButtonWidth * 2), 0, arrowButtonWidth, 0.5f);
-            SpeedUpButton.Scale(1, 0.8f);
+            // Speed up button (+)
+            Color buttonBg = new Color(60, 60, 60, 200); // Dark gray with transparency
+            SpeedUpButton = new TextButtonNode("+", buttonBg, Theme.Current.Hover.XNA, color);
+            SpeedUpButton.RelativeBounds = new RectangleF(speedButtonsX, 0.1f, arrowButtonWidth, 0.4f);
+            SpeedUpButton.TextNode.RelativeBounds = new RectangleF(0.05f, 0.05f, 0.9f, 0.9f); // Larger text area
+            SpeedUpButton.TextNode.Scale(1.5f, 1.5f); // Make text 50% larger
             SpeedUpButton.OnClick += (m) => { AdjustSpeedPublic(0.1f); };
             container.AddChild(SpeedUpButton);
 
-            // Speed down button (↓)
-            SpeedDownButton = new TextButtonNode("▼", Color.Transparent, Theme.Current.Hover.XNA, color);
-            SpeedDownButton.RelativeBounds = new RectangleF(1 - (showAllWidth + arrowButtonWidth), 0.5f, arrowButtonWidth, 0.5f);
-            SpeedDownButton.Scale(1, 0.8f);
+            // Speed down button (-)
+            SpeedDownButton = new TextButtonNode("-", buttonBg, Theme.Current.Hover.XNA, color);
+            SpeedDownButton.RelativeBounds = new RectangleF(speedButtonsX, 0.5f, arrowButtonWidth, 0.4f);
+            SpeedDownButton.TextNode.RelativeBounds = new RectangleF(0.05f, 0.05f, 0.9f, 0.9f); // Larger text area
+            SpeedDownButton.TextNode.Scale(1.5f, 1.5f); // Make text 50% larger
             SpeedDownButton.OnClick += (m) => { AdjustSpeedPublic(-0.1f); };
             container.AddChild(SpeedDownButton);
+
+            // Sync Delay label
+            SyncDelayLabel = new TextNode("Sync Delay:", color);
+            SyncDelayLabel.RelativeBounds = new RectangleF(1 - (showAllWidth + syncDelayLabelWidth + syncDelayInputWidth + arrowButtonWidth + 0.005f), 0, syncDelayLabelWidth, 1);
+            SyncDelayLabel.Scale(1, 0.8f);
+            container.AddChild(SyncDelayLabel);
+
+            // Sync Delay input
+            SyncDelayInput = new TextEditNode(SyncDelay.ToString("0.00"), color);
+            SyncDelayInput.RelativeBounds = new RectangleF(1 - (showAllWidth + syncDelayInputWidth + arrowButtonWidth + 0.005f), 0, syncDelayInputWidth, 1);
+            SyncDelayInput.Scale(1, 0.8f);
+            SyncDelayInput.TextChanged += OnSyncDelayChanged;
+            SyncDelayInput.CanEdit = true;
+            container.AddChild(SyncDelayInput);
+
+            // Sync delay up button (+)
+            SyncDelayUpButton = new TextButtonNode("+", buttonBg, Theme.Current.Hover.XNA, color);
+            SyncDelayUpButton.RelativeBounds = new RectangleF(1 - (showAllWidth + arrowButtonWidth + 0.002f), 0.1f, arrowButtonWidth, 0.4f);
+            SyncDelayUpButton.TextNode.RelativeBounds = new RectangleF(0.05f, 0.05f, 0.9f, 0.9f); // Larger text area
+            SyncDelayUpButton.TextNode.Scale(1.5f, 1.5f); // Make text 50% larger
+            SyncDelayUpButton.OnClick += (m) => { AdjustSyncDelay(0.01f); };
+            SyncDelayUpButton.Visible = true;
+            container.AddChild(SyncDelayUpButton);
+
+            // Sync delay down button (-)
+            SyncDelayDownButton = new TextButtonNode("-", buttonBg, Theme.Current.Hover.XNA, color);
+            SyncDelayDownButton.RelativeBounds = new RectangleF(1 - (showAllWidth + arrowButtonWidth + 0.002f), 0.5f, arrowButtonWidth, 0.4f);
+            SyncDelayDownButton.TextNode.RelativeBounds = new RectangleF(0.05f, 0.05f, 0.9f, 0.9f); // Larger text area
+            SyncDelayDownButton.TextNode.Scale(1.5f, 1.5f); // Make text 50% larger
+            SyncDelayDownButton.OnClick += (m) => { AdjustSyncDelay(-0.01f); };
+            SyncDelayDownButton.Visible = true;
+            container.AddChild(SyncDelayDownButton);
 
             ShowAll = new TextButtonNode("Show All", Color.Transparent, Theme.Current.Hover.XNA, color);
             ShowAll.RelativeBounds = new RectangleF(1 - showAllWidth, 0, showAllWidth, 1);
@@ -182,19 +237,34 @@ namespace UI.Video
             return (float)Math.Clamp(factor, 0.0, 1.0);
         }
 
-        public void SetRace(Race race, DateTime mediaStart, DateTime mediaEnd, FrameTime[] frameTimes = null)
+        public void SetRace(Race race, DateTime mediaStart, DateTime mediaEnd, FrameTime[] frameTimes = null, float deviceLatency = 0, bool updateLapLines = true)
         {
             ClearFlags();
+
+            // Store values for refreshing lap lines when sync delay changes
+            currentRace = race;
+            currentMediaStart = mediaStart;
+            currentMediaEnd = mediaEnd;
+            currentFrameTimes = frameTimes;
 
             // Use the full video file timeline for the progress bar
             // This ensures the white progress bar represents the entire video file
             Start = mediaStart;
             End = mediaEnd;
-            
+
             // Debug logging for frame times
             Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR SetRace called: mediaStart={mediaStart:HH:mm:ss.fff}, mediaEnd={mediaEnd:HH:mm:ss.fff}");
             Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR FrameTimes provided: {frameTimes?.Length ?? 0} frame times");
             Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Race Start: {race.Start:HH:mm:ss.fff}, Race End: {race.End:HH:mm:ss.fff}");
+            Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR DeviceLatency (ignored, using SyncDelay): {deviceLatency:F3} seconds");
+
+            // Use the user-configurable SyncDelay instead of passed deviceLatency
+            if (deviceLatency > 0 && Math.Abs(SyncDelay - 0.4f) < 0.001f)
+            {
+                // If a device latency was passed and SyncDelay is still at default, use the device latency
+                SyncDelay = deviceLatency;
+                SyncDelayInput.Text = SyncDelay.ToString("0.00");
+            }
             
             if (frameTimes != null && frameTimes.Length > 0)
             {
@@ -213,7 +283,7 @@ namespace UI.Video
                 {
                     // Use the lap's EndTime for accurate positioning on the progress bar
                     DateTime lapEndTime = l.End;
-                    DateTime videoTime = ConvertDetectionTimeToVideoTime(lapEndTime, frameTimes, mediaStart, mediaEnd);
+                    DateTime videoTime = ConvertDetectionTimeToVideoTime(lapEndTime, frameTimes, mediaStart, mediaEnd, SyncDelay);
 
                     string lapNumber = "L" + l.Number.ToString();
                     if (l.Number == 0)
@@ -226,8 +296,8 @@ namespace UI.Video
             }
 
             // Convert race start/end times to video timeline as well
-            DateTime raceStartVideoTime = ConvertDetectionTimeToVideoTime(race.Start, frameTimes, mediaStart, mediaEnd);
-            DateTime raceEndVideoTime = ConvertDetectionTimeToVideoTime(race.End, frameTimes, mediaStart, mediaEnd);
+            DateTime raceStartVideoTime = ConvertDetectionTimeToVideoTime(race.Start, frameTimes, mediaStart, mediaEnd, SyncDelay);
+            DateTime raceEndVideoTime = ConvertDetectionTimeToVideoTime(race.End, frameTimes, mediaStart, mediaEnd, SyncDelay);
             
             AddFlagAtTime(raceStartVideoTime, Color.Green);
             AddFlagAtTime(raceEndVideoTime, Color.White);
@@ -269,7 +339,9 @@ namespace UI.Video
 
         private void AddTimeMarker(DateTime time, Color tint, string text)
         {
+            Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR AddTimeMarker: {text} at {time:HH:mm:ss.fff}");
             float factor = AddLineAtTime(time, tint);
+            Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR AddTimeMarker: {text} factor = {factor:F4} (Start={Start:HH:mm:ss.fff}, End={End:HH:mm:ss.fff})");
             TextNode textNode = new TextNode(text, tint);
             textNode.RelativeBounds = new RectangleF(factor, 0, 1, 1.2f);
             textNode.Alignment = RectangleAlignment.BottomLeft;
@@ -309,26 +381,40 @@ namespace UI.Video
         /// <summary>
         /// Convert a detection time (real-world timestamp) to video timeline position
         /// </summary>
-        private DateTime ConvertDetectionTimeToVideoTime(DateTime detectionTime, FrameTime[] frameTimes, DateTime mediaStart, DateTime mediaEnd)
+        private DateTime ConvertDetectionTimeToVideoTime(DateTime detectionTime, FrameTime[] frameTimes, DateTime mediaStart, DateTime mediaEnd, float deviceLatency = 0)
         {
             try
             {
-                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Converting detection time: {detectionTime:HH:mm:ss.fff}");
-                
+                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Converting detection time: {detectionTime:HH:mm:ss.fff} with latency: {deviceLatency:F3}s");
+
                 if (frameTimes == null || frameTimes.Length == 0)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "PROGRESSBAR No frame times available, returning original detection time");
-                    return detectionTime;
+                    Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR No frame times available, applying latency directly: {deviceLatency:F3}s");
+                    // No frame times available, but we still need to apply latency
+                    // Assume detection time maps directly to video time, just add the latency
+                    DateTime adjustedTime = detectionTime.AddSeconds(deviceLatency);
+                    Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Adjusted time: {adjustedTime:HH:mm:ss.fff} (detection + latency)");
+                    return adjustedTime;
                 }
 
-                // Use the FrameTime extension method to convert detection time to video timeline  
-                TimeSpan mediaTimeSpan = frameTimes.GetMediaTime(detectionTime, TimeSpan.Zero);
-                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR GetMediaTime returned: {mediaTimeSpan.TotalSeconds:F3} seconds");
-                
+                // Use the FrameTime extension method to convert detection time to video timeline
+                // The latency represents delay between detection and when it appears in video
+                // Positive latency will move the lines later on the timeline
+                TimeSpan latencySpan = TimeSpan.FromSeconds(deviceLatency);
+
+                // Log the conversion process for debugging
+                var firstFrame = frameTimes.OrderBy(f => f.Time).First();
+                TimeSpan rawOffset = detectionTime - firstFrame.Time;
+                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Raw offset from first frame: {rawOffset.TotalSeconds:F3}s");
+                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Adding latency: {deviceLatency:F3}s");
+
+                TimeSpan mediaTimeSpan = frameTimes.GetMediaTime(detectionTime, latencySpan);
+                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR GetMediaTime returned: {mediaTimeSpan.TotalSeconds:F3} seconds (should be raw + latency)");
+
                 // Convert the media time offset to the progress bar timeline
                 // The progress bar uses mediaStart to mediaEnd, so we add the offset to mediaStart
                 DateTime videoTime = mediaStart.Add(mediaTimeSpan);
-                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Calculated video time (mediaStart + offset): {videoTime:HH:mm:ss.fff}");
+                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Final video time: {videoTime:HH:mm:ss.fff} (mediaStart: {mediaStart:HH:mm:ss.fff} + offset: {mediaTimeSpan.TotalSeconds:F3}s)");
                 
                 // Clamp to video bounds
                 if (videoTime < mediaStart) 
@@ -370,6 +456,13 @@ namespace UI.Video
                 
                 // Notify listeners of the speed change
                 SlowSpeedChanged?.Invoke(speed);
+
+                // Save to settings
+                if (GeneralSettings.Instance != null)
+                {
+                    GeneralSettings.Instance.SlowPlaybackSpeed = speed;
+                    GeneralSettings.Write();
+                }
             }
             else
             {
@@ -414,9 +507,74 @@ namespace UI.Video
             
             SlowSpeed = newSpeed;
             SlowSpeedInput.Text = newSpeed.ToString("F2");
-            
+
             // Notify listeners of the speed change
             SlowSpeedChanged?.Invoke(newSpeed);
+
+            // Save to settings
+            if (GeneralSettings.Instance != null)
+            {
+                GeneralSettings.Instance.SlowPlaybackSpeed = newSpeed;
+                GeneralSettings.Write();
+            }
+        }
+
+        private void OnSyncDelayChanged(string text)
+        {
+            if (float.TryParse(text, out float delay))
+            {
+                // Clamp between 0 and 2 seconds
+                delay = Math.Max(0.0f, Math.Min(2.0f, delay));
+
+                if (Math.Abs(SyncDelay - delay) > 0.001f)
+                {
+                    SyncDelay = delay;
+                    SyncDelayChanged?.Invoke(SyncDelay);
+
+                    // Save to settings
+                    if (GeneralSettings.Instance != null)
+                    {
+                        GeneralSettings.Instance.VideoSyncDelay = delay;
+                        GeneralSettings.Write();
+                    }
+                }
+            }
+        }
+
+        private void AdjustSyncDelay(float delta)
+        {
+            float newDelay = SyncDelay + delta;
+
+            // Clamp between 0 and 2 seconds
+            newDelay = Math.Max(0.0f, Math.Min(2.0f, newDelay));
+
+            if (Math.Abs(SyncDelay - newDelay) > 0.001f)
+            {
+                SyncDelay = newDelay;
+                SyncDelayInput.Text = SyncDelay.ToString("0.00");
+                SyncDelayChanged?.Invoke(SyncDelay);
+
+                // Save to settings
+                if (GeneralSettings.Instance != null)
+                {
+                    GeneralSettings.Instance.VideoSyncDelay = newDelay;
+                    GeneralSettings.Write();
+                }
+            }
+        }
+
+        private Race currentRace;
+        private DateTime currentMediaStart;
+        private DateTime currentMediaEnd;
+        private FrameTime[] currentFrameTimes;
+
+        public void RefreshLapLines()
+        {
+            if (currentRace != null)
+            {
+                // Re-call SetRace with current values to refresh lap lines with new sync delay
+                SetRace(currentRace, currentMediaStart, currentMediaEnd, currentFrameTimes, 0, true);
+            }
         }
 
     }
