@@ -543,13 +543,6 @@ namespace UI.Nodes.Rounds
                     width = (int)Math.Ceiling(roundNode.ColumnCount * roundNode.ColumnPixelWidth);
                     // Set the aspect ratio based on actual dimensions
                     roundNode.AspectRatio = width / (float)height;
-
-                    // Debug output for Round 3
-                    if (roundNode.Round?.RoundNumber == 3)
-                    {
-                        Console.WriteLine($"[RoundsNode] Round 3 width calculation: {roundNode.ColumnCount} columns * {roundNode.ColumnPixelWidth}px = {width}px");
-                        Console.WriteLine($"[RoundsNode] Round 3 AspectRatio set to: {roundNode.AspectRatio}");
-                    }
                 }
                 else
                 {
@@ -565,20 +558,8 @@ namespace UI.Nodes.Rounds
                 RectangleF bounds = new RectangleF(screenX, y, width, height);
                 ern.SetBounds(bounds);
 
-                // Debug output for Round 3 bounds
-                if (roundNode?.Round?.RoundNumber == 3)
-                {
-                    Console.WriteLine($"[RoundsNode] Round 3 SetBounds: X={bounds.X:F0} Y={bounds.Y:F0} W={bounds.Width:F0} H={bounds.Height:F0}");
-                }
-
                 // Track the actual content width
                 totalContentWidth += width;
-
-                // Debug: Track cumulative width
-                if (roundNode?.Round?.RoundNumber == 3)
-                {
-                    Console.WriteLine($"[RoundsNode] After Round 3: totalContentWidth = {totalContentWidth}px");
-                }
 
                 // Add padding between rounds, but not after the last one
                 if (nodeIndex < nodeCount - 1)
@@ -596,11 +577,6 @@ namespace UI.Nodes.Rounds
 
             // Set the content size to the actual total width we calculated
             Scroller.ContentSizePixels = totalContentWidth;
-
-            // Debug output for scroll area
-            Console.WriteLine($"[RoundsNode] Scroll area: ViewSize={Scroller.ViewSizePixels}px, ContentSize={totalContentWidth}px");
-            Console.WriteLine($"[RoundsNode] Buffer added: {Bounds.Width}px (viewport width)");
-            Console.WriteLine($"[RoundsNode] Max scroll position: {totalContentWidth - Scroller.ViewSizePixels}px");
 
             Scroller.Layout(BoundsF);
 
