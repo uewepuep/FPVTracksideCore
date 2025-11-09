@@ -23,6 +23,9 @@ namespace UI.Nodes.Rounds
 
         public ImageButtonNode MenuButton { get; private set; }
 
+        public float ColumnPixelWidth { get; private set; }
+        public int ColumnCount { get; private set; }
+
         public event RoundDelegate FillRound;
         public event RoundDelegate PastePilot;
 
@@ -155,16 +158,43 @@ namespace UI.Nodes.Rounds
 
             instructionNode.Visible = !races.Any();
 
+            // Log races for Round 3
+            if (Round.RoundNumber == 3)
+            {
+                var raceList = races.ToList();
+                Console.WriteLine($"[EventRoundNode] SetRaces for Round 3: {raceList.Count} races");
+                if (raceList.Count > 0)
+                {
+                    var orderedRaces = raceList.OrderBy(r => r.RaceNumber).ToList();
+                    Console.WriteLine($"[EventRoundNode] First race number: {orderedRaces.First().RaceNumber}, Last race number: {orderedRaces.Last().RaceNumber}");
+
+                    // Check if race numbers are sequential
+                    var raceNumbers = orderedRaces.Select(r => r.RaceNumber).ToList();
+                    bool isSequential = true;
+                    for (int i = 1; i < raceNumbers.Count; i++)
+                    {
+                        if (raceNumbers[i] != raceNumbers[i-1] + 1)
+                        {
+                            isSequential = false;
+                            Console.WriteLine($"[EventRoundNode] WARNING: Non-sequential race numbers: {raceNumbers[i-1]} -> {raceNumbers[i]}");
+                        }
+                    }
+                    if (isSequential)
+                    {
+                        Console.WriteLine($"[EventRoundNode] Race numbers are sequential from {raceNumbers.First()} to {raceNumbers.Last()}");
+                    }
+                }
+            }
+
             foreach (Race race in races)
             {
                 EventRaceNode rn = RaceNodes.FirstOrDefault(ran => ran.Race == race);
                 if (rn == null)
                 {
                     rn = new EventRaceNode(EventManager, race);
-                    if (RoundsNode.RacesPerColumn < 3)
-                    {
-                        rn.AspectRatio = EventRaceNode.StandardAspectRatio * 2 / 3.0f;
-                    }
+                    // Keep standard aspect ratio for better visibility
+                    // Don't reduce height even for fewer races per column
+                    rn.AspectRatio = EventRaceNode.StandardAspectRatio;
 
                     rn.NeedRefresh += () => { Refresh(); };
                     rn.NeedFullRefresh += () => { Refresh(true); };
@@ -187,36 +217,98 @@ namespace UI.Nodes.Rounds
 
             int racesPerColumn = RoundsNode.RacesPerColumn;
 
-            int columns = (int)Math.Ceiling(races.Count() / (float)racesPerColumn);
+            // Calculate columns correctly - need ceiling division for partial columns
+            int raceCount = races.Count();
+            int columns = (int)Math.Ceiling(raceCount / (float)racesPerColumn);
             if (columns == 0)
                 columns = 1;
 
-            float width = 1.0f / columns;
+            // Fixed pixel width for each column
+            // No longer limited by render target - we've overridden the 4096px limit
+            // Increased to match original size better
+            float fixedColumnPixelWidth = 270f;
 
+            // Store the pixel width for later use in absolute positioning
+            ColumnPixelWidth = fixedColumnPixelWidth;
+
+            // Store column count for width calculation
+            ColumnCount = columns;
+
+            // Debug info to verify column calculation
+            Console.WriteLine($"[EventRoundNode] Round {Round.RoundNumber}: {raceCount} races, {racesPerColumn} per column = {columns} columns (Math.Ceiling({raceCount}/{racesPerColumn}))");
+
+            // Verify: 56 races / 3 per column = 18.67, Math.Ceiling = 19 columns
+            if (raceCount == 56 && racesPerColumn == 3)
+            {
+                Console.WriteLine($"[EventRoundNode] Special case: Round 3 with 56 races should have 19 columns: {columns}");
+            }
+
+            // Position races uniformly within contentContainer
+            // IMPORTANT: We use uniform relative positioning here (1.0f / columns)
+            // The AspectRatio set by RoundsNode will stretch the entire round to the correct pixel width
+            // This ensures mouse coordinates match visual positions
             int column = 0;
+            int raceIndex = 0;
+            int totalRacesPositioned = 0;
 
-            List<EventRaceNode> current = new List<EventRaceNode>();
             foreach (EventRaceNode rn in RaceNodes.OrderBy(rn => rn.Race.RaceNumber))
             {
-                current.Add(rn);
-                if (current.Count == racesPerColumn)
+                int row = raceIndex % racesPerColumn;
+
+                // Use uniform column widths in relative space
+                // The round's AspectRatio will handle the actual pixel stretching
+                // Use double precision for more accurate calculations
+                double columnWidthDouble = 1.0 / columns;
+                double leftPosDouble = column * columnWidthDouble;
+
+                float columnWidth = (float)columnWidthDouble;
+                float leftPos = (float)leftPosDouble;
+
+                // Calculate vertical position within contentContainer
+                float rowHeight = 1.0f / racesPerColumn;
+                float topPos = row * rowHeight;
+
+                // Set the race node's relative bounds within contentContainer
+                rn.RelativeBounds = new RectangleF(leftPos, topPos, columnWidth, rowHeight);
+                rn.Alignment = RectangleAlignment.TopLeft;
+
+                // Keep the AspectRatio that was already set (StandardAspectRatio)
+                // Don't override it here as it was set correctly in line 169
+
+                totalRacesPositioned++;
+                raceIndex++;
+                if ((raceIndex % racesPerColumn) == 0)
                 {
-                    float leftAlign = column * width;
-                    MakeColumns(current, racesPerColumn, leftAlign, width);
                     column++;
-                    current.Clear();
                 }
             }
 
-            if (current.Any())
+            // Debug: Verify all races were positioned
+            if (Round.RoundNumber == 3)
             {
-                float leftAlign = column * width;
-                MakeColumns(current, racesPerColumn, leftAlign, width);
+                Console.WriteLine($"[EventRoundNode] Round 3: Positioned {totalRacesPositioned} races across {column + (raceIndex % racesPerColumn > 0 ? 1 : 0)} columns");
+                Console.WriteLine($"[EventRoundNode] Last column index: {column}, races in last column: {raceIndex % racesPerColumn}");
+                Console.WriteLine($"[EventRoundNode] Column width: {1.0f/columns:F6} (1/{columns})");
+
+                // Show the last few races to verify they exist
+                var lastRaces = RaceNodes.OrderBy(rn => rn.Race.RaceNumber).TakeLast(3).Select(rn => rn.Race.RaceNumber);
+                Console.WriteLine($"[EventRoundNode] Last 3 race numbers: {string.Join(", ", lastRaces)}");
+
+                // Show the bounds of the last races
+                var lastRaceNodes = RaceNodes.OrderBy(rn => rn.Race.RaceNumber).TakeLast(2);
+                foreach (var raceNode in lastRaceNodes)
+                {
+                    var bounds = raceNode.RelativeBounds;
+                    Console.WriteLine($"[EventRoundNode] Race {raceNode.Race.RaceNumber} RelativeBounds: X={bounds.X:F6} Y={bounds.Y:F6} W={bounds.Width:F6} H={bounds.Height:F6}");
+                    Console.WriteLine($"[EventRoundNode]   Right edge at: {bounds.X + bounds.Width:F6} (should be <= 1.0)");
+                }
             }
 
-            AspectRatio = 0.4f * columns;
-
             SetHeading(RaceStringFormatter.Instance.RoundToString(Round));
+
+            // Keep heading with standard relative positioning
+            // The parent heading container already has proper bounds set in constructor
+
             UpdateButtons();
             RequestLayout();
         }

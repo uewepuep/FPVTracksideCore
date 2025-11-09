@@ -1222,6 +1222,16 @@ namespace RaceLib
 
             if (race != null)
             {
+                Logger.RaceLog.Log(this, $"Resetting race with ID: {race.ID}, Race Number: {race.RaceNumber}, Round Number: {race.RoundNumber}");
+
+                // Ensure the race being reset becomes the current race
+                // This prevents issues where the wrong race ID is sent to timing systems
+                if (CurrentRace != race)
+                {
+                    Logger.RaceLog.Log(this, $"Setting race as current after reset");
+                    CurrentRace = race;
+                }
+
                 using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
                 {
                     race.ResetRace(db);
@@ -2218,21 +2228,32 @@ namespace RaceLib
         {
             try
             {
-                Logger.RaceLog.Log(this, "Processing race marshal data for pilot: " + marshalData.PilotName);
+                Logger.RaceLog.Log(this, $"Processing race marshal data for pilot: {marshalData.PilotName}, race_id: {marshalData.RaceID}");
+
+                if (CurrentRace != null)
+                {
+                    Logger.RaceLog.Log(this, $"Current race ID: {CurrentRace.ID}, Race Number: {CurrentRace.RaceNumber}, Round Number: {CurrentRace.RoundNumber}");
+                }
 
                 // Find the race
                 Race race = null;
                 if (CurrentRace?.ID == marshalData.RaceID)
                 {
                     race = CurrentRace;
+                    Logger.RaceLog.Log(this, "Marshal data matches current race");
                 }
                 else
                 {
+                    Logger.RaceLog.Log(this, $"Marshal race_id {marshalData.RaceID} does not match current race, searching for race...");
                     race = GetRaceByRaceId(marshalData.RaceID);
                     if (race == null)
                     {
-                        Logger.RaceLog.Log(this, "Could not find race with ID: " + marshalData.RaceID);
+                        Logger.RaceLog.Log(this, $"ERROR: Could not find race with ID: {marshalData.RaceID}. Available race IDs: {string.Join(", ", GetRaces().Select(r => r.ID))}");
                         return;
+                    }
+                    else
+                    {
+                        Logger.RaceLog.Log(this, $"Found race with ID: {marshalData.RaceID}, Race Number: {race.RaceNumber}, Round Number: {race.RoundNumber}");
                     }
                 }
 

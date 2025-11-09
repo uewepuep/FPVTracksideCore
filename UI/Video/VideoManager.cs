@@ -541,13 +541,10 @@ namespace UI.Video
 
         public IEnumerable<FrameSource> GetFrameSources()
         {
-            foreach (VideoConfig vs in VideoConfigs)
+            // Return all managed frame sources (including cloned sources for replay)
+            lock (frameSources)
             {
-                FrameSource source = GetFrameSource(vs);
-                if (source != null)
-                {
-                    yield return source;
-                }
+                return frameSources.ToList();
             }
         }
 
@@ -559,31 +556,18 @@ namespace UI.Video
                 FrameSource existing = frameSources.FirstOrDefault(dsss => dsss.VideoConfig == vs);
                 if (existing != null)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Found existing source by object reference {existing.GetType().Name} (Instance: {existing.GetHashCode()}) for device: {vs.DeviceName}");
                     return existing;
                 }
-                
+
                 // Fall back to device name match (for FPV monitor to share with race channels)
-                Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Looking for device name match, target: '{vs.DeviceName}', existing sources: {frameSources.Count}");
-                foreach (var source in frameSources)
-                {
-                    Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Comparing '{vs.DeviceName}' with '{source.VideoConfig.DeviceName}'");
-                }
                 existing = frameSources.FirstOrDefault(dsss => dsss.VideoConfig.DeviceName == vs.DeviceName);
                 if (existing != null)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Found existing source by device name {existing.GetType().Name} (Instance: {existing.GetHashCode()}) for device: {vs.DeviceName}");
                     return existing;
                 }
-                Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: No device name match found for '{vs.DeviceName}'");
-                
+
                 // Create new frame source if not found
-                Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Creating new source for device: {vs.DeviceName}");
                 FrameSource newSource = CreateFrameSource(vs);
-                if (newSource != null)
-                {
-                    Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource: Created new source {newSource.GetType().Name} (Instance: {newSource.GetHashCode()}) for device: {vs.DeviceName}");
-                }
                 return newSource;
             }
         }
@@ -755,55 +739,99 @@ namespace UI.Video
 
         public IEnumerable<ChannelVideoInfo> CreateChannelVideoInfos(IEnumerable<VideoConfig> videoSources)
         {
-            Tools.Logger.VideoLog.LogCall(this, $"CreateChannelVideoInfos called with {videoSources?.Count() ?? 0} video sources");
-            
             List<ChannelVideoInfo> channelVideoInfos = new List<ChannelVideoInfo>();
+
             foreach (VideoConfig videoConfig in videoSources)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"Processing VideoConfig: {videoConfig.DeviceName}, VideoBounds count: {videoConfig.VideoBounds?.Length ?? 0}");
-                
-                foreach (VideoBounds videoBounds in videoConfig.VideoBounds)
+                // Check if this is a video file with multiple bounds (replay scenario)
+                bool isVideoFile = !string.IsNullOrEmpty(videoConfig.FilePath) &&
+                                   !videoConfig.FilePath.EndsWith(".jpg") &&
+                                   !videoConfig.FilePath.EndsWith(".png");
+                bool hasMultipleBounds = videoConfig.VideoBounds != null && videoConfig.VideoBounds.Length > 1;
+
+                if (isVideoFile && hasMultipleBounds)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"Processing VideoBounds: SourceType={videoBounds.SourceType}, Channel={videoBounds.GetChannel()?.ToString() ?? "null"}");
-                    
+                    // For video files with multiple bounds (replay), create separate sources for each channel
+                    // to prevent flickering caused by buffer competition
+                    Tools.Logger.VideoLog.LogCall(this, $"Creating separate sources for video file replay: {videoConfig.FilePath} with {videoConfig.VideoBounds.Length} bounds");
+
+                    foreach (VideoBounds videoBounds in videoConfig.VideoBounds)
+                    {
+                        // Clone the config but with only this specific bounds
+                        VideoConfig clonedConfig = videoConfig.Clone();
+                        clonedConfig.VideoBounds = new VideoBounds[] { videoBounds };
+
+                        FrameSource source = null;
+                        try
+                        {
+                            source = CreateFrameSource(clonedConfig);
+                        }
+                        catch (System.Runtime.InteropServices.COMException e)
+                        {
+                            Logger.VideoLog.LogException(this, e);
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.VideoLog.LogException(this, e);
+                        }
+
+                        if (source != null)
+                        {
+                            Channel channel = videoBounds.GetChannel();
+                            if (channel == null)
+                            {
+                                channel = Channel.None;
+                            }
+
+                            ChannelVideoInfo cvi = new ChannelVideoInfo(videoBounds, channel, source);
+                            channelVideoInfos.Add(cvi);
+
+                            // Add to frame sources list for management
+                            lock (frameSources)
+                            {
+                                if (!frameSources.Contains(source))
+                                {
+                                    frameSources.Add(source);
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Normal case - single source for all bounds
                     FrameSource source = null;
                     try
                     {
                         source = GetFrameSource(videoConfig);
-                        Tools.Logger.VideoLog.LogCall(this, $"GetFrameSource returned: {source?.GetType()?.Name ?? "null"} (Instance: {source?.GetHashCode()})");
                     }
                     catch (System.Runtime.InteropServices.COMException e)
                     {
                         // Failed to load the camera..
                         Logger.VideoLog.LogException(this, e);
-                        Tools.Logger.VideoLog.LogCall(this, $"COM Exception getting frame source: {e.Message}");
                     }
                     catch (Exception e)
                     {
                         Logger.VideoLog.LogException(this, e);
-                        Tools.Logger.VideoLog.LogCall(this, $"Exception getting frame source: {e.Message}");
                     }
-                    
+
                     if (source != null)
                     {
-                        Channel channel = videoBounds.GetChannel();
-                        if (channel == null)
+                        foreach (VideoBounds videoBounds in videoConfig.VideoBounds)
                         {
-                            channel = Channel.None;
-                        }
+                            Channel channel = videoBounds.GetChannel();
+                            if (channel == null)
+                            {
+                                channel = Channel.None;
+                            }
 
-                        ChannelVideoInfo cvi = new ChannelVideoInfo(videoBounds, channel, source);
-                        channelVideoInfos.Add(cvi);
-                        Tools.Logger.VideoLog.LogCall(this, $"Created ChannelVideoInfo: Channel={channel}, FrameSource={source.GetType().Name} (Instance: {source.GetHashCode()})");
-                    }
-                    else
-                    {
-                        Tools.Logger.VideoLog.LogCall(this, "No frame source - skipping ChannelVideoInfo creation");
+                            ChannelVideoInfo cvi = new ChannelVideoInfo(videoBounds, channel, source);
+                            channelVideoInfos.Add(cvi);
+                        }
                     }
                 }
             }
 
-            Tools.Logger.VideoLog.LogCall(this, $"CreateChannelVideoInfos completed - returning {channelVideoInfos.Count} ChannelVideoInfos");
             return channelVideoInfos;
         }
 
@@ -922,19 +950,60 @@ namespace UI.Video
 
                     if (videoInfo != null)
                     {
-                        // Resolve the relative path to an absolute path for file existence check
-                        string absoluteVideoPath = Path.GetFullPath(videoInfo.FilePath);
-                        bool videoFileExists = File.Exists(absoluteVideoPath);
-                        Tools.Logger.VideoLog.LogCall(this, $"Video file exists: {videoFileExists} - {videoInfo.FilePath} (resolved to: {absoluteVideoPath})");
-                        
+                        var videoConfig = videoInfo.GetVideoConfig();
+
+                        // Resolve the path if it's relative
+                        if (!Path.IsPathRooted(videoConfig.FilePath))
+                        {
+                            // First check if the file exists in the same directory as the recordinfo.xml
+                            string videoFileName = Path.GetFileName(videoConfig.FilePath);
+                            string localPath = Path.Combine(raceDirectory.FullName, videoFileName);
+
+                            if (File.Exists(localPath))
+                            {
+                                // Use the local file if it exists
+                                videoConfig.FilePath = localPath;
+                                Tools.Logger.VideoLog.LogCall(this, $"Found video file in race directory: {videoConfig.FilePath}");
+                            }
+                            else
+                            {
+                                // Try to resolve the relative path
+                                // The FilePath in the XML is relative to the base storage location
+                                // On macOS: Application Support/FPVTrackside/
+                                // On Windows: The events directory parent
+                                string baseDirectory = Path.GetDirectoryName(EventDirectory.FullName);
+                                if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+                                {
+                                    // On macOS, EventDirectory is Application Support/FPVTrackside/events/
+                                    // We need to go up one level to get to Application Support/FPVTrackside/
+                                    baseDirectory = Path.GetDirectoryName(baseDirectory);
+                                }
+                                videoConfig.FilePath = Path.Combine(baseDirectory, videoConfig.FilePath);
+                                Tools.Logger.VideoLog.LogCall(this, $"Resolved relative path to: {videoConfig.FilePath}");
+                            }
+                        }
+
+                        // Double-check that the file exists at the resolved path
+                        bool videoFileExists = File.Exists(videoConfig.FilePath);
+                        Tools.Logger.VideoLog.LogCall(this, $"Video file exists: {videoFileExists} - {videoConfig.FilePath}");
+
                         if (videoFileExists)
                         {
-                            Tools.Logger.VideoLog.LogCall(this, $"Yielding video config for: {videoInfo.FilePath}");
-                            yield return videoInfo.GetVideoConfig();
+                            // Check if the file has a minimum size (1KB) to avoid loading corrupted/empty files
+                            FileInfo videoFileInfo = new FileInfo(videoConfig.FilePath);
+                            if (videoFileInfo.Length < 1024) // Less than 1KB is definitely corrupted/empty
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"Video file too small ({videoFileInfo.Length} bytes), skipping: {videoConfig.FilePath}");
+                            }
+                            else
+                            {
+                                Tools.Logger.VideoLog.LogCall(this, $"Yielding video config for: {videoConfig.FilePath} (size: {videoFileInfo.Length} bytes)");
+                                yield return videoConfig;
+                            }
                         }
                         else
                         {
-                            Tools.Logger.VideoLog.LogCall(this, $"Video file not found: {videoInfo.FilePath} (resolved to: {absoluteVideoPath})");
+                            Tools.Logger.VideoLog.LogCall(this, $"Video file not found: {videoConfig.FilePath}");
                         }
                     }
                 }

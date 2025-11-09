@@ -269,6 +269,15 @@ namespace ImageServer
             c.Pauseable = Pauseable;
             c.RecordVideoForReplays = RecordVideoForReplays;
             c.FrameWork = FrameWork;
+            c.FlipMirrored = FlipMirrored;
+            c.VideoBounds = VideoBounds;
+            c.FrameTimes = FrameTimes;
+            c.DeviceLatency = DeviceLatency;
+            c.AudioDevice = AudioDevice;
+            c.HardwareDecodeAcceleration = HardwareDecodeAcceleration;
+            c.RecordResolution = RecordResolution;
+            c.RecordFrameRate = RecordFrameRate;
+            c.AnyUSBPort = AnyUSBPort;
             return c;
         }
 
@@ -478,7 +487,11 @@ namespace ImageServer
         public VideoConfig GetVideoConfig()
         {
             VideoConfig videoConfig = new VideoConfig();
+
+            // The FilePath will be resolved later in VideoManager where we have access to the proper base directory
+            // For now, just pass it through as-is
             videoConfig.FilePath = FilePath;
+
             videoConfig.ChannelCoveragePercent = ChannelCoveragePercent;
             videoConfig.FrameTimes = FrameTimes;
             videoConfig.VideoBounds = ChannelBounds;
@@ -486,6 +499,13 @@ namespace ImageServer
             videoConfig.Pauseable = true;  // Allow ffmpeg cameras to be paused when not visible
             videoConfig.DeviceLatency = DeviceLatency;
             videoConfig.MaintainAspectRatio = true;  // Force correct aspect ratio for replay videos
+
+            // Set the DeviceName to the filename for better logging
+            if (!string.IsNullOrEmpty(FilePath))
+            {
+                videoConfig.DeviceName = System.IO.Path.GetFileName(FilePath);
+            }
+
             return videoConfig;
         }
     }

@@ -136,6 +136,9 @@ namespace UI.Nodes
                 bool shouldEnable = hasReplay && !finalising;
                 
                 Tools.Logger.VideoLog.LogCall(this, $"Race ended - HasReplay: {hasReplay}, Finalising: {finalising}, Enabling replay button: {shouldEnable}");
+
+                // Always make the replay button visible after a race ends
+                replayButton.Visible = true;
                 replayButton.Enabled = shouldEnable;
                 
                 // If we don't have a replay yet but recording isn't finalizing, 
@@ -152,6 +155,7 @@ namespace UI.Nodes
                             // Update UI on main thread
                             if (race.Ended && !VideoManager.Finalising)
                             {
+                                replayButton.Visible = true;
                                 replayButton.Enabled = true;
                             }
                         }

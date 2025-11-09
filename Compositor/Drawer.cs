@@ -58,7 +58,8 @@ namespace Composition
             cleanup = new List<IDisposable>();
             preProcessForced = new Queue<IPreProcessable>();
             preProcessOptional = new Queue<IPreProcessable>();
-            PreProcessLimit = TimeSpan.FromMilliseconds(1000 / 120.0);
+            // Increased from 8.33ms to 50ms to ensure all videos in multi-video grids get processed
+            PreProcessLimit = TimeSpan.FromMilliseconds(50);
             CanMultiThread = true;
 
             Offset = Point.Zero;

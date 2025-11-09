@@ -383,7 +383,8 @@ namespace FfmpegMediaPlatform
             rgbaBuffer = new byte[bufSize];
             rgbaHandle = GCHandle.Alloc(rgbaBuffer, GCHandleType.Pinned);
             rgbaPtr = rgbaHandle.AddrOfPinnedObject();
-            rawTextures = new XBuffer<RawTexture>(5, FrameWidth, FrameHeight);
+            // Increased buffer from 5 to 10 to reduce frame drops in multi-video grids
+            rawTextures = new XBuffer<RawTexture>(10, FrameWidth, FrameHeight);
 
             run = true;
             readerThread = new Thread(ReadLoop) { Name = "libav-replay" };
@@ -500,7 +501,14 @@ namespace FfmpegMediaPlatform
                     // {
                     //     // Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: About to call av_read_frame, loop {loopCount}");
                     // }
-                    
+
+                    // Safety check before reading frames
+                    if (fmt == null || pkt == null)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: fmt or pkt is null, exiting read loop");
+                        break;
+                    }
+
                     int readResult = ffmpeg.av_read_frame(fmt, pkt);
                     // if (loopCount < 10 || loopCount % 300 == 0) // Log read result
                     // {
@@ -557,6 +565,14 @@ namespace FfmpegMediaPlatform
                         continue;
                     }
 
+                    // Check that codec context is valid before sending packet
+                    if (codecCtx == null)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: codecCtx is null, skipping packet send");
+                        ffmpeg.av_packet_unref(pkt);
+                        continue;
+                    }
+
                     // Send packet to decoder
                     int sendResult = ffmpeg.avcodec_send_packet(codecCtx, pkt);
                     ffmpeg.av_packet_unref(pkt); // Always unref packet after sending
@@ -578,6 +594,14 @@ namespace FfmpegMediaPlatform
                     // Try to receive frames (may need multiple packets before frames are available)
                     int frameCount = 0;
                     int receiveResult;
+
+                    // Check that codec context and frame are still valid before using them
+                    if (codecCtx == null || frame == null)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: codecCtx or frame is null, skipping frame receive");
+                        break;
+                    }
+
                     while ((receiveResult = ffmpeg.avcodec_receive_frame(codecCtx, frame)) == 0)
                     {
                         frameCount++;
@@ -694,9 +718,10 @@ namespace FfmpegMediaPlatform
                                 }
                                 else
                                 {
-                                    // Reset timing baseline every 5 seconds to prevent accumulating drift
+                                    // Reset timing baseline every 60 seconds to prevent accumulating drift
+                                    // Increased from 5s to 60s to reduce synchronization issues in multi-video grids
                                     var timeSinceLastReset = DateTime.UtcNow - playbackStartTime;
-                                    if (timeSinceLastReset.TotalSeconds > 5.0)
+                                    if (timeSinceLastReset.TotalSeconds > 60.0)
                                     {
                                         playbackStartTime = DateTime.UtcNow;
                                         playbackStartMediaTime = mediaTime;
@@ -865,22 +890,41 @@ namespace FfmpegMediaPlatform
 
         public override void CleanUp()
         {
+            Tools.Logger.VideoLog.LogCall(this, "CleanUp() - BEGIN");
+
+            // First, signal the thread to stop
             run = false;
+
+            // Wait for reader thread to finish before cleaning up resources
+            if (readerThread != null && readerThread.IsAlive)
+            {
+                Tools.Logger.VideoLog.LogCall(this, "CleanUp: Waiting for reader thread to stop...");
+                if (!readerThread.Join(3000)) // Wait up to 3 seconds
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "CleanUp: WARNING - Reader thread did not stop within 3 seconds");
+                }
+                else
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "CleanUp: Reader thread stopped successfully");
+                }
+            }
             readerThread = null;
 
+            // Now it's safe to clean up FFmpeg resources
             if (sws != null) { ffmpeg.sws_freeContext(sws); sws = null; }
             if (frame != null) { ffmpeg.av_frame_unref(frame); ffmpeg.av_free(frame); frame = null; }
             if (pkt != null) { ffmpeg.av_packet_unref(pkt); ffmpeg.av_free(pkt); pkt = null; }
-            if (codecCtx != null) 
-            { 
+            if (codecCtx != null)
+            {
                 var codecCtxPtr = codecCtx;
-                ffmpeg.avcodec_free_context(&codecCtxPtr); 
-                codecCtx = null; 
+                ffmpeg.avcodec_free_context(&codecCtxPtr);
+                codecCtx = null;
             }
             // avformat_close_input requires pointer-to-pointer; skip explicit close to avoid build issues
             fmt = null;
             if (rgbaHandle.IsAllocated) rgbaHandle.Free();
 
+            Tools.Logger.VideoLog.LogCall(this, "CleanUp() - COMPLETE");
             base.CleanUp();
         }
 

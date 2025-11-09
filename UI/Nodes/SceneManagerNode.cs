@@ -718,16 +718,66 @@ namespace UI.Nodes
 
         public void UnFullScreen()
         {
+            Tools.Logger.UI.LogCall(this, $"UnFullScreen called - fullscreenNode type: {fullscreenNode?.GetType().Name}");
+
             lock (fullScreenContainer)
             {
                 if (fullscreenNode != null && fullscreenNodeParent != null)
                 {
+                    // Check if we're closing a fullscreen video from replay mode
+                    // We need to check the parent, not the main ChannelsGridNode
+                    bool isReplayFullscreen = false;
+
+                    // Check if the parent of the fullscreen node is a ChannelsGridNode in replay mode
+                    if (fullscreenNodeParent is ChannelsGridNode parentGrid && parentGrid.Replay)
+                    {
+                        isReplayFullscreen = true;
+                        Tools.Logger.UI.LogCall(this, $"UnFullScreen: Parent is replay ChannelsGridNode, will restore all videos");
+                    }
+                    // Also check if it's a channel node from a replay grid
+                    else if (fullscreenNode is ChannelNodeBase channelNode)
+                    {
+                        // Walk up the parent chain to find a ChannelsGridNode
+                        Node current = fullscreenNodeParent;
+                        while (current != null)
+                        {
+                            if (current is ChannelsGridNode grid && grid.Replay)
+                            {
+                                isReplayFullscreen = true;
+                                Tools.Logger.UI.LogCall(this, $"UnFullScreen: Found replay ChannelsGridNode in parent chain for {channelNode.Pilot?.Name}");
+                                break;
+                            }
+                            current = current.Parent;
+                        }
+                    }
+
                     fullscreenNode.Remove();
                     fullscreenNodeParent.AddChild(fullscreenNode);
+
+                    Node savedParent = fullscreenNodeParent; // Save this before clearing
 
                     fullscreenNode = null;
                     fullscreenNodeParent = null;
                     SetScene(preFullScreenScene);
+
+                    // If we were in replay mode, restore all videos
+                    if (isReplayFullscreen)
+                    {
+                        Tools.Logger.UI.LogCall(this, "UnFullScreen: Restoring all videos in replay mode");
+
+                        // Find the ChannelsGridNode to call IncreaseChannelVisiblity on
+                        Node current = savedParent;
+                        while (current != null)
+                        {
+                            if (current is ChannelsGridNode grid)
+                            {
+                                Tools.Logger.UI.LogCall(this, $"UnFullScreen: Calling IncreaseChannelVisiblity on replay grid");
+                                grid.IncreaseChannelVisiblity();
+                                break;
+                            }
+                            current = current.Parent;
+                        }
+                    }
                 }
             }
         }

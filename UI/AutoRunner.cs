@@ -106,6 +106,7 @@ namespace UI
             RaceManager.OnRaceChanged += RaceManager_OnRaceChanged;
             RaceManager.OnRaceCreated += RaceManager_OnRaceCreated;
             RaceManager.OnRaceEnd += OnRaceEnd;
+            RaceManager.OnRaceReset += OnRaceReset;
 
             lastUpdate = DateTime.Now;
 
@@ -118,6 +119,7 @@ namespace UI
             RaceManager.OnRaceChanged -= RaceManager_OnRaceChanged;
             RaceManager.OnRaceCreated -= RaceManager_OnRaceCreated;
             RaceManager.OnRaceEnd -= OnRaceEnd;
+            RaceManager.OnRaceReset -= OnRaceReset;
             SceneManager.OnSceneChange -= SceneManager_OnSceneChange;
         }
 
@@ -432,6 +434,17 @@ namespace UI
         private void OnRaceEnd(Race race)
         {
             SetState(States.WaitingResults);
+        }
+
+        private void OnRaceReset(Race race)
+        {
+            // When a race is reset, cancel the auto-advancement timer
+            // This prevents the AutoRunner from moving to the next race
+            if (State == States.WaitingResults)
+            {
+                Logger.AutoRunner.Log(this, "Race reset detected, cancelling WaitingResults state");
+                SetState(States.None);
+            }
         }
 
         public void TogglePause()

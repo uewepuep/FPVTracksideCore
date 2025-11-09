@@ -220,7 +220,7 @@ namespace ImageServer
             RawTexture frame;
 
             bool result = false;
-            // Maybe update the texture
+
             if (rawTextures.ReadOne(out frame, drawFrameCount))
             {
                 // Log more frequently for video files, less for other sources
@@ -232,7 +232,7 @@ namespace ImageServer
                 DebugTimer.DebugStartTime("UpdateTexture");
 
                 result = frame.UpdateTexture(texture);
-                
+
                 // Enhanced logging for video files to track texture update success
                 if ((isVideoFile && drawFrameCount % 10 == 0) || (!isVideoFile && drawFrameCount % 120 == 0))
                 {
@@ -243,7 +243,7 @@ namespace ImageServer
                 if (result)
                 {
                     texture2D = texture;
-                    
+
                     // For video file sources, force texture invalidation after seek operations to ensure UI refresh
                     if (isVideoFile)
                     {
@@ -262,7 +262,7 @@ namespace ImageServer
                     {
                         t.Dispose();
                     }
-                    // Texture is probably corrupt. 
+                    // Texture is probably corrupt.
                     textures.Clear();
                 }
                 DebugTimer.DebugEndTime("UpdateTexture");

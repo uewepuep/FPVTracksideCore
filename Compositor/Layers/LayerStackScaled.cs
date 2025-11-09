@@ -24,6 +24,13 @@ namespace Composition.Layers
             drawer = new Drawer(GraphicsDevice);
         }
 
+        public new void Update(GameTime gameTime)
+        {
+            // Set the resolution scale BEFORE input processing to ensure mouse coordinates are correctly transformed
+            InputEventFactory.ResolutionScale = Scale;
+            base.Update(gameTime);
+        }
+
         public override void Dispose()
         {
             drawer?.Dispose();
@@ -46,8 +53,6 @@ namespace Composition.Layers
 
         public override void Draw()
         {
-            InputEventFactory.ResolutionScale = Scale;
-
             if (Scale == 1)
             {
                 base.Draw();

@@ -364,31 +364,29 @@ namespace FfmpegMediaPlatform
 
         private string BuildRecordingCommand(string outputPath, int frameWidth, int frameHeight, float frameRate)
         {
-            // FFmpeg command to read RGBA frames from stdin preserving source timing
-            // Use wallclock timestamps to ensure recording framerate matches source exactly
-            
-            int gop = Math.Max(1, (int)Math.Round(frameRate * 0.1f)); // 0.1s GOP at the configured/measured fps
-            
+            // FFmpeg command to read RGBA frames from stdin with real-time PTS based on wallclock
+            // This allows variable frame rate recording that matches actual frame arrival times
+
+            int gop = Math.Max(1, (int)Math.Round(frameRate * 2)); // 2 second GOP for better seeking
+
             string ffmpegArgs = $"-f rawvideo " +                          // Input format: raw video
-                               $"-pix_fmt rgba " +                         // Pixel format: RGBA  
+                               $"-pix_fmt rgba " +                         // Pixel format: RGBA
                                $"-s {frameWidth}x{frameHeight} " +         // Frame size
-                               $"-use_wallclock_as_timestamps 1 " +       // Use wallclock time for PTS (critical for timing accuracy)
-                               $"-fflags +genpts " +                       // Generate presentation timestamps
+                               $"-use_wallclock_as_timestamps 1 " +       // Use wallclock time for PTS (real-time timestamps)
                                $"-i pipe:0 " +                             // Input from stdin
                                $"-c:v libx264 " +                          // H264 codec
                                $"-preset medium " +                        // Balanced preset for quality
                                $"-crf 18 " +                               // Higher quality
-                               $"-g {gop} -keyint_min {gop} " +            // Tighter keyframe interval to improve seeking
-                               $"-force_key_frames \"expr:gte(t,n_forced*0.1)\" " + // Keyframe at least every 0.1s
+                               $"-g {gop} " +                              // GOP size for seeking
                                $"-pix_fmt yuv420p " +                      // Output pixel format
-                               $"-fps_mode passthrough " +                 // Preserve original frame timing (VFR)
+                               $"-vsync passthrough " +                    // Preserve frame timestamps exactly as received
                                $"-video_track_timescale 90000 " +          // Standard video timescale for precise timing
                                $"-avoid_negative_ts make_zero " +          // Handle timing issues
                                $"-movflags +faststart " +                  // Optimize for streaming
                                $"-y " +                                    // Overwrite output file
                                $"\"{outputPath}\"";
 
-            Tools.Logger.VideoLog.LogCall(this, $"RGBA Recording ffmpeg command (preserving source timing - no framerate forcing): {ffmpegArgs}");
+            Tools.Logger.VideoLog.LogCall(this, $"RGBA Recording ffmpeg command (real-time PTS from wallclock, VFR-capable): {ffmpegArgs}");
             return ffmpegArgs;
         }
 

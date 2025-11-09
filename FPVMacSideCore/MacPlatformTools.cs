@@ -29,7 +29,7 @@ namespace FPVMacsideCore
         {
             get
             {
-                return true;
+                return IsApplicationActive();
             }
         }
 
@@ -419,6 +419,40 @@ namespace FPVMacsideCore
         private bool IsMainThread()
         {
             return objc_msgSend(objc_getClass("NSThread"), sel_registerName("isMainThread")) == (IntPtr)1;
+        }
+
+        private bool IsApplicationActive()
+        {
+            try
+            {
+                // Get NSApplication.sharedApplication
+                var nsAppClass = objc_getClass("NSApplication");
+                if (nsAppClass == IntPtr.Zero)
+                {
+                    // If we can't get NSApplication, assume we're not focused (safer default)
+                    return false;
+                }
+
+                var sharedApplicationSelector = sel_registerName("sharedApplication");
+                var nsApp = objc_msgSend(nsAppClass, sharedApplicationSelector);
+                if (nsApp == IntPtr.Zero)
+                {
+                    return false;
+                }
+
+                // Check if the application is active
+                var isActiveSelector = sel_registerName("isActive");
+                var isActive = objc_msgSend(nsApp, isActiveSelector);
+
+                // objc_msgSend returns 1 (YES) for true, 0 (NO) for false
+                return isActive == (IntPtr)1;
+            }
+            catch (Exception ex)
+            {
+                Logger.UI.LogException(this, ex);
+                // If we can't determine focus state, assume we're not focused (safer default)
+                return false;
+            }
         }
 
         #region macOS Native Interop
