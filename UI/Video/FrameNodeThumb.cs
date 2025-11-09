@@ -52,11 +52,17 @@ namespace UI.Video
         {
             lock (renderTargetLock)
             {
-                renderTarget?.Dispose();
-                renderTarget = null;
+                if (renderTarget != null)
+                {
+                    CompositorLayer.CleanUp(renderTarget);
+                    renderTarget = null;
+                }
 
-                drawer?.Dispose();
-                drawer = null;
+                if (drawer != null)
+                {
+                    CompositorLayer.CleanUp(drawer);
+                    drawer = null;
+                }
 
                 colorData = null;
             }
