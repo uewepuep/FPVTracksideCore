@@ -26,6 +26,7 @@ namespace UI.Nodes.Rounds
         public IEnumerable<EventResultNode> EventResultNodes { get { return Children.OfType<EventResultNode>(); } }
         public IEnumerable<StageNode> ResultStageNodes { get { return EventResultNodes.Select(e => e.StageNode).Distinct(); } }
         public IEnumerable<StageNode> FormatStageNodes { get { return Children.OfType<StageNode>().Distinct(); } }
+        public IEnumerable<StageNode> AllStageNodes { get { return ResultStageNodes.Union(FormatStageNodes); } }
 
         public EventManager EventManager { get; private set; }
         public RoundManager RoundManager { get { return EventManager.RoundManager; } }
@@ -596,11 +597,22 @@ namespace UI.Nodes.Rounds
             if (dropped == null)
                 return base.CanDrop(mouseInputEvent, node);
 
-            Node found = FindDragTarget(mouseInputEvent.Position.X);
             Point location;
-            if (found == null)
+
+            if (FindDragTarget(mouseInputEvent.Position.X, out Node found, out Sides side))
             {
-                StageNode stageNode = ResultStageNodes.FirstOrDefault(s => s.Contains(mouseInputEvent.Position));
+                if (side == Sides.Left)
+                {
+                    location = found.Bounds.Location;
+                }
+                else
+                {
+                    location = new Point(found.Bounds.Right, found.Bounds.Y);
+                }
+            }
+            else
+            {
+                StageNode stageNode = AllStageNodes.FirstOrDefault(s => s.Contains(mouseInputEvent.Position));
                 if (stageNode == null)
                 {
                     found = Children.OrderBy(r => r.Bounds.X).LastOrDefault();
@@ -619,10 +631,6 @@ namespace UI.Nodes.Rounds
                 {
                     location = Bounds.Location;
                 }
-            }
-            else
-            {
-                location = found.Bounds.Location;
             }
 
             Rectangle output = new Rectangle(location, dropped.Bounds.Size);
@@ -668,21 +676,35 @@ namespace UI.Nodes.Rounds
             return base.OnDrop(finalInputEvent, node);
         }
 
-        public Node FindDragTarget(float positionX)
+        public enum Sides
         {
+            Left,
+            Right,
+        }
+
+        public bool FindDragTarget(float positionX, out Node found, out Sides side)
+        {
+            side = Sides.Left;
+
             foreach (Node ern in Children)
             {
-                if (ern.Bounds.Center.X > positionX)
+                if (positionX > ern.Bounds.X && positionX < ern.Bounds.Right)
                 {
-                    return ern;
+                    found = ern;
+
+                    if (positionX > ern.Bounds.Center.X)
+                        side = Sides.Right;
+
+                    return true;
                 }
             }
-            return null;
+            found = null;
+            return false;
         }
 
         public void OrderByDrop(EventRoundNode dropped, float positionX)
         {
-            Node found = FindDragTarget(positionX);
+            FindDragTarget(positionX, out Node found, out Sides side);
 
             const int inc = 100;
             int order = inc;
@@ -691,17 +713,30 @@ namespace UI.Nodes.Rounds
                 if (node == dropped)
                     continue;
 
+                if (side == Sides.Right)
+                {
+                    EventRoundNode ern = node as EventRoundNode;
+                    if (ern != null)
+                    {
+                        ern.Round.Order = order;
+                        order += inc;
+                    }
+                }
+
                 if (node == found)
                 {
                     dropped.Round.Order = order;
                     order += inc;
                 }
 
-                EventRoundNode ern = node as EventRoundNode;
-                if (ern != null)
+                if (side == Sides.Left)
                 {
-                    ern.Round.Order = order;
-                    order += inc;
+                    EventRoundNode ern = node as EventRoundNode;
+                    if (ern != null)
+                    {
+                        ern.Round.Order = order;
+                        order += inc;
+                    }
                 }
             }
 
