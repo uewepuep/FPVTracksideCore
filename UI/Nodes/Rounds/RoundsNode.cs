@@ -32,6 +32,7 @@ namespace UI.Nodes.Rounds
         public ISync Syncer { get; private set; }
 
         private bool needsRefresh;
+        private bool needsScrollToEnd;
 
         public ScrollerNode Scroller { get; private set; }
 
@@ -70,7 +71,7 @@ namespace UI.Nodes.Rounds
             EventManager.RaceManager.OnLapsRecalculated += UpdateRace;
             EventManager.RaceManager.OnRacePilotsSet += UpdateRace;
             EventManager.RaceManager.OnRaceRemoved += Refresh;
-            EventManager.RaceManager.OnRaceCreated += Refresh;
+            EventManager.RaceManager.OnRaceCreated += OnRaceCreated;
             EventManager.ResultManager.RaceResultsChanged += Refresh;
             EventManager.OnPilotRefresh += Refresh;
         }
@@ -91,7 +92,7 @@ namespace UI.Nodes.Rounds
             EventManager.RaceManager.OnLapsRecalculated -= UpdateRace;
             EventManager.RaceManager.OnRacePilotsSet -= UpdateRace;
             EventManager.RaceManager.OnRaceRemoved -= Refresh;
-            EventManager.RaceManager.OnRaceCreated -= Refresh;
+            EventManager.RaceManager.OnRaceCreated -= OnRaceCreated;
             EventManager.OnPilotRefresh -= Refresh;
 
             if (Syncer != null)
@@ -153,6 +154,21 @@ namespace UI.Nodes.Rounds
         {
             Refresh();
             Scroller.ScrollToEnd(scrollTime);
+        }
+
+        private void OnRaceCreated(Race race)
+        {
+            // Check if the race was added to the last round of its type
+            if (race != null && race.Round != null)
+            {
+                Round lastRound = EventManager.RoundManager.GetLastRound(race.Round.EventType, race.Round.RoundType);
+                if (lastRound == race.Round)
+                {
+                    // Race was added to the last round, set flag to scroll after layout
+                    needsScrollToEnd = true;
+                }
+            }
+            Refresh();
         }
 
         private void RaceManager_OnPilotAdded(PilotChannel pc)
@@ -579,6 +595,13 @@ namespace UI.Nodes.Rounds
             Scroller.ContentSizePixels = totalContentWidth;
 
             Scroller.Layout(BoundsF);
+
+            // Handle auto-scroll after layout is complete
+            if (needsScrollToEnd)
+            {
+                needsScrollToEnd = false;
+                Scroller.ScrollToEnd(TimeSpan.FromSeconds(1.0));
+            }
 
             base.Layout(parentBounds);
         }

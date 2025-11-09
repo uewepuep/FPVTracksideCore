@@ -226,7 +226,7 @@ namespace UI.Nodes.Rounds
             // Fixed pixel width for each column
             // No longer limited by render target - we've overridden the 4096px limit
             // Increased to match original size better
-            float fixedColumnPixelWidth = 270f;
+            float fixedColumnPixelWidth = 280f;
 
             // Store the pixel width for later use in absolute positioning
             ColumnPixelWidth = fixedColumnPixelWidth;
