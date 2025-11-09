@@ -79,6 +79,7 @@ namespace Tools
 
             thread = new Thread(Do);
             thread.Name = name;
+            thread.IsBackground = true; // Allow app to exit even if work queue has pending items
             Name = name;
             thread.Start();
 

@@ -107,6 +107,7 @@ namespace Composition.Input
 
             pollingThread = new Thread(PollInputs);
             pollingThread.Name = "InputEventFactory";
+            pollingThread.IsBackground = true; // Allow app to exit even if polling inputs
             pollingThread.Priority = ThreadPriority.BelowNormal;
 
             if (platformTools.HasFeature(PlatformFeature.Windows))

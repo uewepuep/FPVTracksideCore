@@ -155,6 +155,7 @@ namespace Composition
             {
                 background = new Thread(Background);
                 background.Name = "LayerStackGame Background Draw";
+                background.IsBackground = true; // Allow app to exit even if rendering is in progress
                 background.Start();
             }
             runBackground = platformTools.ThreadedDrawing;
@@ -166,7 +167,11 @@ namespace Composition
             {
                 runBackground = false;
                 drawSet.Set();
-                background.Join();
+                // Add timeout for faster shutdown
+                if (!background.Join(100))
+                {
+                    Tools.Logger.UI.Log("LayerStackGameBackgroundThread", "Background thread did not exit in 100ms");
+                }
             }
 
             base.Dispose(disposing);

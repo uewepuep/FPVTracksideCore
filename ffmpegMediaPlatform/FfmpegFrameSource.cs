@@ -15,6 +15,9 @@ namespace FfmpegMediaPlatform
 {
     public abstract class FfmpegFrameSource : TextureFrameSource, ICaptureFrameSource
     {
+        // FAST EXIT: Global flag to enable immediate termination on application exit
+        public static bool ImmediateTerminationOnExit { get; set; } = false;
+
         protected int width;
         protected int height;
 
@@ -268,13 +271,20 @@ namespace FfmpegMediaPlatform
 
         public override void Dispose()
         {
-            Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Disposing frame source for '{VideoConfig.DeviceName}'");
-            
-            // Stop recording worker task
+            Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Disposing frame source for '{VideoConfig.DeviceName}' (Immediate={ImmediateTerminationOnExit})");
+
+            // FAST EXIT: Check for immediate termination mode
+            int taskWaitTime = ImmediateTerminationOnExit ? 10 : 100; // Ultra-fast exit when terminating
+            int processWaitTime = ImmediateTerminationOnExit ? 5 : 50; // Nearly instant for app exit
+
+            // Stop recording worker task with minimal wait
             try
             {
                 recordingCancellationSource?.Cancel();
-                recordingWorkerTask?.Wait(TimeSpan.FromSeconds(5));
+                if (!ImmediateTerminationOnExit) // Skip wait entirely in immediate mode
+                {
+                    recordingWorkerTask?.Wait(taskWaitTime);
+                }
                 recordingCancellationSource?.Dispose();
                 recordingSemaphore?.Dispose();
             }
@@ -282,15 +292,18 @@ namespace FfmpegMediaPlatform
             {
                 Tools.Logger.VideoLog.LogCall(this, $"Error stopping recording worker task: {ex.Message}");
             }
-            
+
             // Stop and dispose RGBA recorder
             rgbaRecorderManager?.Dispose();
-            
-            // PERFORMANCE: Stop parallel processing
+
+            // PERFORMANCE: Stop parallel processing with minimal wait
             frameProcessingCancellation?.Cancel();
             try
             {
-                frameProcessingTask?.Wait(1000); // Wait up to 1 second for clean shutdown
+                if (!ImmediateTerminationOnExit) // Skip wait entirely in immediate mode
+                {
+                    frameProcessingTask?.Wait(processWaitTime);
+                }
             }
             catch (Exception ex)
             {
@@ -313,9 +326,14 @@ namespace FfmpegMediaPlatform
                 {
                     if (!process.HasExited)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "FFMPEG Process still running, killing immediately");
+                        Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Process still running, killing immediately (Immediate={ImmediateTerminationOnExit})");
                         process.Kill();
-                        process.WaitForExit(1000); // Shorter wait in dispose
+
+                        // No wait at all in immediate termination mode
+                        if (!ImmediateTerminationOnExit)
+                        {
+                            process.WaitForExit(100); // Only wait if not in immediate mode
+                        }
                     }
                     else
                     {
@@ -367,10 +385,10 @@ namespace FfmpegMediaPlatform
                 
                 Tools.Logger.VideoLog.LogCall(this, $"FFMPEG (Windows) Killed {killedCount} ffmpeg processes for camera cleanup");
 
-                // Small delay to ensure processes are fully terminated (reduced from 200ms to 50ms for faster restarts)
+                // Minimal delay for process cleanup (reduced to 10ms for instant exit)
                 if (killedCount > 0)
                 {
-                    System.Threading.Thread.Sleep(50);
+                    System.Threading.Thread.Sleep(10);
                 }
             }
             catch (Exception ex)
@@ -519,6 +537,7 @@ namespace FfmpegMediaPlatform
 
                 thread = new Thread(Run);
                 thread.Name = "ffmpeg - " + VideoConfig.DeviceName;
+                thread.IsBackground = true; // Allow app to exit even if ffmpeg is still reading
                 thread.Start();
 
                 // PERFORMANCE: Start parallel frame processing task
@@ -587,14 +606,18 @@ namespace FfmpegMediaPlatform
         {
             try
             {
-                // Wait for reading thread to finish
+                // Wait for reading thread to finish with minimal delay
                 if (thread != null && thread.IsAlive)
                 {
-                    Tools.Logger.VideoLog.LogCall(this, "FFMPEG Waiting for reading thread to finish");
-                    // Shorter wait (1 second instead of 3) for faster camera restarts
-                    if (!thread.Join(1000))
+                    // Skip wait entirely in immediate termination mode
+                    if (!ImmediateTerminationOnExit)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "FFMPEG Reading thread didn't finish in time, continuing with cleanup");
+                        Tools.Logger.VideoLog.LogCall(this, "FFMPEG Waiting for reading thread to finish");
+                        // Much shorter wait (100ms) for instant application exit
+                        if (!thread.Join(100))
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, "FFMPEG Reading thread didn't finish in time, continuing with cleanup");
+                        }
                     }
                     else
                     {
@@ -622,7 +645,14 @@ namespace FfmpegMediaPlatform
                     bool isRecordingMP4 = Recording && !string.IsNullOrEmpty(recordingFilename) && recordingFilename.EndsWith(".mp4");
                     bool isRecordingMKV = Recording && !string.IsNullOrEmpty(recordingFilename) && recordingFilename.EndsWith(".mkv");
                     
-                    if (isRecordingWMV || isRecordingMP4 || isRecordingMKV)
+                    // Skip graceful shutdown entirely in immediate termination mode
+                    if (ImmediateTerminationOnExit)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, "FFMPEG Immediate termination mode - killing process instantly");
+                        process.Kill();
+                        // No wait at all for immediate exit
+                    }
+                    else if (isRecordingWMV || isRecordingMP4 || isRecordingMKV)
                     {
                         string format = isRecordingWMV ? "WMV" : (isRecordingMP4 ? "MP4" : "MKV");
                         Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Graceful shutdown for {format} recording (sending SIGINT)");
@@ -646,13 +676,13 @@ namespace FfmpegMediaPlatform
                                 killProcess.Start();
                                 killProcess.WaitForExit();
                             }
-                            
-                            // Wait for graceful shutdown
-                            if (!process.WaitForExit(5000))
+
+                            // Wait for graceful shutdown with shorter timeout for responsiveness
+                            if (!process.WaitForExit(500))
                             {
                                 Tools.Logger.VideoLog.LogCall(this, "FFMPEG Graceful shutdown timeout, forcing kill");
                                 process.Kill();
-                                process.WaitForExit(3000);
+                                process.WaitForExit(100);
                             }
                             else
                             {
@@ -665,7 +695,7 @@ namespace FfmpegMediaPlatform
                             try
                             {
                                 process.Kill();
-                                process.WaitForExit(3000);
+                                process.WaitForExit(100);
                             }
                             catch (Exception killEx)
                             {
@@ -679,9 +709,8 @@ namespace FfmpegMediaPlatform
                         try
                         {
                             process.Kill();
-                            // Shorter wait for non-recording scenarios (1 second instead of 3)
-                            // This speeds up camera restarts significantly on Windows
-                            if (!process.WaitForExit(1000))
+                            // Much shorter wait for immediate exit responsiveness
+                            if (!process.WaitForExit(100))
                             {
                                 Tools.Logger.VideoLog.LogCall(this, "FFMPEG Process didn't exit after kill - this is unusual");
                             }

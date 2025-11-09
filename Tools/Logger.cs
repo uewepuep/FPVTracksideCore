@@ -165,6 +165,7 @@ namespace Tools
             runWriteThread = true;
             writeThread = new Thread(AutoFlush);
             writeThread.Name = "Log " + logName;
+            writeThread.IsBackground = true; // Allow app to exit even if logger is still flushing
             writeThread.Start();
         }
 

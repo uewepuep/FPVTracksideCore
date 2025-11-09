@@ -15,6 +15,9 @@ namespace FfmpegMediaPlatform
     /// </summary>
     public class RgbaRecorderManager : IDisposable
     {
+        // FAST EXIT: Use parent class flag for immediate termination
+        private static bool ImmediateTerminationOnExit => FfmpegFrameSource.ImmediateTerminationOnExit;
+
         private readonly FfmpegMediaFramework ffmpegMediaFramework;
         private Process recordingProcess;
         private bool isRecording;
@@ -219,7 +222,7 @@ namespace FfmpegMediaPlatform
         /// </summary>
         /// <param name="timeoutMs">Timeout in milliseconds to wait for graceful shutdown</param>
         /// <returns>True if stopped successfully</returns>
-        public bool StopRecording(int timeoutMs = 10000)
+        public bool StopRecording(int timeoutMs = 500)
         {
             return StopRecordingAsync(timeoutMs).GetAwaiter().GetResult();
         }
@@ -229,7 +232,7 @@ namespace FfmpegMediaPlatform
         /// </summary>
         /// <param name="timeoutMs">Timeout in milliseconds to wait for graceful shutdown</param>
         /// <returns>True if stopped successfully</returns>
-        private async Task<bool> StopRecordingAsync(int timeoutMs = 10000)
+        private async Task<bool> StopRecordingAsync(int timeoutMs = 500)
         {
             // Check if recording is in progress outside the lock
             bool wasRecording;
@@ -286,18 +289,29 @@ namespace FfmpegMediaPlatform
                         Tools.Logger.VideoLog.LogCall(this, $"Could not close stdin to FFmpeg: {ex.Message}");
                     }
 
-                    // Wait for graceful exit
-                    if (processToStop.WaitForExit(timeoutMs))
+                    // Skip graceful wait in immediate termination mode
+                    if (ImmediateTerminationOnExit)
                     {
-                        success = processToStop.ExitCode == 0;
-                        Tools.Logger.VideoLog.LogCall(this, $"RGBA recording stopped gracefully - Exit code: {processToStop.ExitCode}");
+                        Tools.Logger.VideoLog.LogCall(this, "Immediate termination mode - killing recording process instantly");
+                        processToStop.Kill();
+                        // No wait needed for immediate exit
+                        success = false; // Can't guarantee file integrity in immediate mode
                     }
                     else
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "RGBA recording did not stop gracefully, force killing");
-                        processToStop.Kill();
-                        processToStop.WaitForExit(5000);
-                        success = false;
+                        // Wait for graceful exit
+                        if (processToStop.WaitForExit(timeoutMs))
+                        {
+                            success = processToStop.ExitCode == 0;
+                            Tools.Logger.VideoLog.LogCall(this, $"RGBA recording stopped gracefully - Exit code: {processToStop.ExitCode}");
+                        }
+                        else
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, "RGBA recording did not stop gracefully, force killing");
+                            processToStop.Kill();
+                            processToStop.WaitForExit(100); // Reduced from 5000ms for faster exit
+                            success = false;
+                        }
                     }
                 }
                 else
@@ -545,11 +559,13 @@ namespace FfmpegMediaPlatform
         {
             if (isRecording)
             {
-                StopRecording();
+                // Use shorter timeout in immediate termination mode
+                int timeout = ImmediateTerminationOnExit ? 50 : 500;
+                StopRecording(timeout);
             }
-            
+
             CleanupRecordingProcess();
-            
+
             // PERFORMANCE: Dispose async components
             frameWritingCancellation?.Dispose();
             frameQueueSemaphore?.Dispose();
