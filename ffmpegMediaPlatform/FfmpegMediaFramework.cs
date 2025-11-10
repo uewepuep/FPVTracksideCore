@@ -26,6 +26,8 @@ namespace FfmpegMediaPlatform
         private bool avfoundation;
         private bool dshow;
 
+        public bool NeedsInstall { get; private set; }
+
         public FfmpegMediaFramework()
         {
             // Use local ffmpeg binaries from ./ffmpeg directory on Mac
@@ -106,23 +108,6 @@ namespace FfmpegMediaPlatform
                 }
                 else
                 {
-                    // Stupid github wont allow > 100mb file, so it's zipped.
-                    string localZipFile = "ffmpeg.zip";
-                    try
-                    {
-                        if (File.Exists(localZipFile))
-                        {
-                            Tools.Logger.VideoLog.LogDebugCall(this, $"Decompressing {localZipFile}");
-                            System.IO.Compression.ZipFile.ExtractToDirectory(localZipFile, ".");
-                            File.Delete(localZipFile);
-                        }
-                    }
-                    catch (Exception ex) 
-                    {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"Failed to Decompress {localZipFile} {ex.Message}");
-                    }
-
-
                     // Fallback to looking for ffmpeg in current directory or PATH
                     execName = "ffmpeg";
 
@@ -180,7 +165,18 @@ namespace FfmpegMediaPlatform
                         }
                     };
 
-                    process.Start();
+                    try
+                    {
+                        process.Start();
+                    }
+                    catch (Exception e)
+                    {
+                        if (e.Message.Contains("cannot find") && dshow)
+                            NeedsInstall = true;
+                        else
+                            throw e;
+                    }
+
                     process.BeginOutputReadLine();
                     process.BeginErrorReadLine();
                     process.WaitForExit();
@@ -521,6 +517,27 @@ namespace FfmpegMediaPlatform
             catch (Exception ex)
             {
                 Console.WriteLine($"Error during cleanup: {ex.Message}");
+            }
+        }
+
+        public void Install()
+        {
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+            {
+                ProcessStartInfo shell = new ProcessStartInfo()
+                {
+                    Arguments = "install ffmpeg",
+                    FileName = "winget",
+                    CreateNoWindow = false,
+                    UseShellExecute = true
+                };
+
+                Process wingetinstall = Process.Start(shell);
+                wingetinstall.WaitForExit();
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
         }
     }

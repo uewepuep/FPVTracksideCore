@@ -20,6 +20,9 @@ namespace ImageServer
         Mode PickMode(IEnumerable<Mode> modes);
 
         IEnumerable<string> GetFileExtensions();
+
+        bool NeedsInstall { get; }
+        void Install(); 
     }
 
     public static class VideoFrameWorks

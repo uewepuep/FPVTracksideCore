@@ -40,10 +40,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="ffmpeg" >
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="ffmpeg.zip">
+    <None Update="ffmpeg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="ffmpeg\ffmpeg-arm">

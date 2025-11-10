@@ -152,7 +152,31 @@ namespace UI.Video
                         }
                     }
                 }
+
+                IEnumerable<FrameWork> needInstall = VideoManager.GetNeedsInstall();
+                if (needInstall.Any())
+                {
+                    mouseMenu.AddBlank();
+                    MouseMenu install = mouseMenu.AddSubmenu("Install");
+
+                    foreach (FrameWork toInstall in needInstall)
+                    {
+                        FrameWork local = toInstall;
+                        install.AddItem("Install " + local, () => { Install(local); });
+                    }
+                }
+
                 mouseMenu.Show(addButton);
+            });
+        }
+
+        private void Install(FrameWork f)
+        {
+            PopupLayer pl = GetLayer<PopupLayer>();
+            pl.PopupConfirmation("This will attempt to install " + f + ". You may need to accept T&C's in the console window that will appear.", () => 
+            { 
+                VideoManager.Install(f);
+                pl.PopupMessage("Please restart FPVTrackside for the installation of " + f + " to take effect.");
             });
         }
 

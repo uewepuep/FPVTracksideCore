@@ -113,6 +113,20 @@ namespace UI.Video
             return VideoFrameWorks.Available.FirstOrDefault(f => f.FrameWork == frameWork);
         }
 
+        public IEnumerable<FrameWork> GetNeedsInstall()
+        {
+            return VideoFrameWorks.Available.Where(f => f.NeedsInstall).Select(f => f.FrameWork);
+        }
+
+        public void Install(FrameWork frameWork)
+        {
+            VideoFrameWork videoFrameWork = GetFramework(frameWork);
+            if (videoFrameWork != null)
+            {
+                videoFrameWork.Install();
+            }
+        }
+
         public void LoadCreateDevices(FrameSourcesDelegate frameSources)
         {
             LoadDevices();
