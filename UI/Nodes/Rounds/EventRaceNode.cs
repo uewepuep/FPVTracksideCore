@@ -666,6 +666,7 @@ namespace UI.Nodes.Rounds
                     }
                 }
             }
+            EventManager ev = EventRaceNode.EventManager;
 
             using (IDatabase db = DatabaseFactory.Open(EventRaceNode.EventManager.EventId))
             {
@@ -679,6 +680,8 @@ namespace UI.Nodes.Rounds
                         EventRaceNode.SyncSheetChange();
                         prin.EventRaceNode.SyncSheetChange();
                         EventRaceNode.Refresh();
+
+                        ev.RefreshIfIsCurrent(EventRaceNode.Race, oldRace);
                         return true;
                     }
 
@@ -688,6 +691,8 @@ namespace UI.Nodes.Rounds
                         EventRaceNode.SyncSheetChange();
                         prin.EventRaceNode.SyncSheetChange();
                         EventRaceNode.Refresh();
+
+                        ev.RefreshIfIsCurrent(EventRaceNode.Race, oldRace);
                         return true;
                     }
                 }
@@ -707,6 +712,7 @@ namespace UI.Nodes.Rounds
                         EventRaceNode.Refresh();
                     }
 
+                    ev.RefreshIfIsCurrent(EventRaceNode.Race);
                     return true;
                 }
             }

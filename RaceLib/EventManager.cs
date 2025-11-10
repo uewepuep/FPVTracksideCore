@@ -752,5 +752,13 @@ namespace RaceLib
                 db.Update(Event);
             }
         }
+
+        public void RefreshIfIsCurrent(params Race[] races)
+        {
+            if (races.Contains(RaceManager.CurrentRace))
+            {
+                OnPilotRefresh?.Invoke();
+            }
+        }
     }
 }
