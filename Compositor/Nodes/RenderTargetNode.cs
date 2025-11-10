@@ -48,6 +48,14 @@ namespace Composition.Nodes
         private bool hasLayedOut;
         private Rectangle lastLayoutBounds;
 
+        protected virtual Size MaxRenderTargetSize
+        {
+            get
+            {
+                return new Size(4096, 4096);
+            }
+        }
+
         public ScrollerNode Scroller { get; private set; }
         public Point ScrollOffset
         {
@@ -296,8 +304,9 @@ namespace Composition.Nodes
 
                         Size maxSize = Size;
 
-                        maxSize.Width = Math.Min(4096, maxSize.Width);
-                        maxSize.Height = Math.Min(4096, maxSize.Height);
+                        Size limits = MaxRenderTargetSize;
+                        maxSize.Width = Math.Min(limits.Width, maxSize.Width);
+                        maxSize.Height = Math.Min(limits.Height, maxSize.Height);
 
                         bool isAnimating = false;
                         if (Parent != null && Parent.IsAnimating())
