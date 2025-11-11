@@ -267,13 +267,12 @@ namespace UI.Nodes
         public VideoManager VideoManager { get; private set; }
         public VideoConfig VideoConfig { get; private set; }
 
-        private TextNode recordingIcon;
+        private ImageNode recordingIcon;
 
         public VideoSystemStatusNode(VideoManager videoManager, VideoConfig videoConfig)
             : base(@"img/video.png")
         {
-            recordingIcon = new TextNode("●", Color.Red);
-            recordingIcon.RelativeBounds = new RectangleF(0.0f, 0.3f, 0.8f, 0.8f);
+            recordingIcon = new ImageNode(@"img/recording.png");
             icon.AddChild(recordingIcon);
 
             VideoManager = videoManager;
