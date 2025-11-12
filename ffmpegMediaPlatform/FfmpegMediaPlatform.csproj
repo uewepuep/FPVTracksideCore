@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <!-- Native FFmpeg libraries for macOS -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
+  <ItemGroup>
     <!-- Always copy macOS libraries for all macOS builds (ARM64 compatible) -->
     <None Include="ffmpeg-libs\macos\*.dylib">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <!-- Native FFmpeg libraries for Windows -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-windows' OR '$(TargetFramework)' == 'net6.0-windows' OR '$(TargetFramework)' == 'net60-windows'">
+  <ItemGroup>
     <!-- Always copy Windows libraries when building for Windows target framework -->
     <None Include="ffmpeg-libs\windows\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
