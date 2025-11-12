@@ -240,7 +240,15 @@ namespace Tools
             }
         }
 
-        public void LogDebug(params object[] targets)
+        public void LogStatic(params object[] targets)
+        {
+            if (!Enabled)
+                return;
+
+            Log(null, string.Join(", ", targets), LogType.Notice);
+        }
+
+        public void LogDebugStatic(params object[] targets)
         {
             LogDebugCall(null, targets);
         }
@@ -248,7 +256,7 @@ namespace Tools
         public void LogDebugCall(object caller, params object[] targets)
         {
 #if DEBUG
-            //LogCall(caller, targets);
+            LogCall(caller, targets);
 #endif  
         }
 
@@ -261,6 +269,15 @@ namespace Tools
             Log(caller, stackTrace.ToString(), string.Join(", ", targets), LogType.Error);
         }
 
+        public void LogException(Exception exception)
+        {
+            LogException(null, null, exception);
+        }
+
+        public void LogException(string message, Exception exception)
+        {
+            LogException(null, message, exception);
+        }
 
         public void LogException(object caller, string message, Exception exception)
         {

@@ -65,7 +65,7 @@ namespace FfmpegMediaPlatform
                 {
                     Tools.Logger.VideoLog.LogDebugCall(this, $"Binary directory: {binaryDir}");
                     Tools.Logger.VideoLog.LogDebugCall(this, $"Current working directory: {Directory.GetCurrentDirectory()}");
-                    Tools.Logger.VideoLog.LogDebug(this, $"Target HLS path: {hlsOutputPath}");
+                    Tools.Logger.VideoLog.LogDebugStatic(this, $"Target HLS path: {hlsOutputPath}");
                     
                     if (Directory.Exists(hlsOutputPath))
                     {
@@ -81,7 +81,7 @@ namespace FfmpegMediaPlatform
                     File.Delete(testFile);
                     Tools.Logger.VideoLog.LogDebugCall(this, "HLS directory write test passed");
                     
-                    Tools.Logger.VideoLog.LogDebug(this, $"HLS Live Frame Source initialized - HTTP port: {httpPort}, HLS path: {hlsOutputPath}");
+                    Tools.Logger.VideoLog.LogDebugStatic(this, $"HLS Live Frame Source initialized - HTTP port: {httpPort}, HLS path: {hlsOutputPath}");
                 }
                 catch (Exception ex)
                 {

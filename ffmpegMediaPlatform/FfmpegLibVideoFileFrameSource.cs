@@ -45,7 +45,7 @@ namespace FfmpegMediaPlatform
             }
             catch (Exception ex)
             {
-                Tools.Logger.VideoLog.LogDebug($"FFmpeg.AutoGen initialization failed: {ex.Message}");
+                Tools.Logger.VideoLog.LogException($"FFmpeg.AutoGen initialization failed", ex);
                 // Don't throw here - let the instance constructor handle it
             }
         }
@@ -301,7 +301,7 @@ namespace FfmpegMediaPlatform
             }
             catch (Exception funcTest)
             {
-                Tools.Logger.VideoLog.LogDebugCall(this, $"FFmpeg function call test failed: {funcTest.Message}");
+                Tools.Logger.VideoLog.LogException(this, $"FFmpeg function call test failed", funcTest);
                 throw new NotSupportedException($"FFmpeg native library functions not working: {funcTest.Message}", funcTest);
             }
             
@@ -312,7 +312,7 @@ namespace FfmpegMediaPlatform
             }
             catch (Exception logEx)
             {
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Warning: Could not set FFmpeg log level: {logEx.Message}");
+                Tools.Logger.VideoLog.LogException(this, $"Warning: Could not set FFmpeg log level", logEx);
                 // Continue without setting log level - this is not critical
             }
             string path = VideoConfig.FilePath;

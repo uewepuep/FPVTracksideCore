@@ -669,7 +669,7 @@ namespace FfmpegMediaPlatform
                         }
                         catch (Exception ex)
                         {
-                            Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Error during graceful shutdown: {ex.Message}, falling back to kill");
+                            Tools.Logger.VideoLog.LogException(this, $"FFMPEG Error during graceful shutdown falling back to kill", ex);
                             try
                             {
                                 process.Kill();
@@ -677,7 +677,7 @@ namespace FfmpegMediaPlatform
                             }
                             catch (Exception killEx)
                             {
-                                Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Error killing process: {killEx.Message}");
+                                Tools.Logger.VideoLog.LogException(this, $"FFMPEG Error killing process", killEx);
                             }
                         }
                     }

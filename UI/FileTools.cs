@@ -45,7 +45,7 @@ namespace UI
             catch (Exception e)
             {
                 Console.WriteLine($"ExportCSV: Exception: {e.Message}");
-                Tools.Logger.UI.LogException(null, e);
+                Tools.Logger.UI.LogException(e);
                 popupLayer.PopupMessage(e.Message);
             }
             return false;
@@ -68,7 +68,7 @@ namespace UI
             catch (Exception e)
             {
                 popupLayer.PopupMessage(e.Message);
-                Tools.Logger.UI.LogException(null, e);
+                Tools.Logger.UI.LogException(e);
             }
             return false;
         }

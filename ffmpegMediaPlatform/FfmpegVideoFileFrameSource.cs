@@ -1090,7 +1090,7 @@ namespace FfmpegMediaPlatform
                         }
                         catch (Exception killEx)
                         {
-                            Tools.Logger.VideoLog.LogDebugCall(this, $"Process kill exception: {killEx.Message}");
+                            Tools.Logger.VideoLog.LogException(this, $"Process kill exception" , killEx);
                         }
                     }
                     else
@@ -1106,7 +1106,7 @@ namespace FfmpegMediaPlatform
                     }
                     catch (Exception disposeEx)
                     {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"Process dispose exception: {disposeEx.Message}");
+                        Tools.Logger.VideoLog.LogException(this, $"Process dispose exception", disposeEx);
                     }
                     
                     process = null; // Set to null after disposal
