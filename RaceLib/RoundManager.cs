@@ -209,9 +209,17 @@ namespace RaceLib
 
         public void GenerateRoundFromType(Round round, StageTypes stageType)
         {
+            bool needsStage = false;
+
+            if (stageType != StageTypes.Default && round.Stage == null)
+                needsStage = true;
+
+            if (round.Stage != null && round.Stage.StageType != stageType)
+                needsStage = true;
+
             Stage stage = null;
             // Don't create a stage if default
-            if (stageType != StageTypes.Default && round.Stage == null)
+            if (needsStage)
             {
                 using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
                 {

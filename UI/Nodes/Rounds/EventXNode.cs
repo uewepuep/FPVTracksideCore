@@ -239,7 +239,6 @@ namespace UI.Nodes.Rounds
         {
 
             MouseMenu sheets = format.AddSubmenu("From Spreadsheet");
-            //add format
             if (EventManager.RoundManager.SheetFormatManager.Sheets.Any())
             {
                 foreach (SheetFormatManager.SheetFile sheet in EventManager.RoundManager.SheetFormatManager.Sheets)

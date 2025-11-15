@@ -29,7 +29,12 @@ namespace RaceLib.Format
 
             Pilot[] alreadyPlaced = preExisting.GetPilots().ToArray();
 
-            IEnumerable<Race> lastRoundRaces = EventManager.RaceManager.GetRaces(plan.CallingRound);
+            IEnumerable<Race> lastRoundRaces = [];
+            
+            if (plan.CallingRound != null && plan.CallingRound.Stage == Stage)
+            {
+                lastRoundRaces = EventManager.RaceManager.GetRaces(plan.CallingRound);
+            }
 
             int winnerRacePilots = lastRoundRaces.Where(r => r.Bracket != Brackets.Losers).GetPilots().Count();
             int loserRacePilots = lastRoundRaces.Where(r => r.Bracket == Brackets.Losers).GetPilots().Count();
@@ -42,8 +47,17 @@ namespace RaceLib.Format
             int totalLoserSpots = loserWinnerSpots + newLoserSpots;
             List<Race> newRaces = new List<Race>();
 
-            // Make the winners/losers lists.
-            MakeWinnersLosers(lastRoundRaces, ref winners, ref losers);
+            if (lastRoundRaces.Any())
+            {
+                // Make the winners/losers lists.
+                MakeWinnersLosers(lastRoundRaces, ref winners, ref losers);
+            }
+            else
+            {
+                winners = plan.Pilots.ToList();
+                totalWinnerSpots = winners.Count;
+            }
+                
 
             if (totalLoserSpots + totalWinnerSpots < plan.Channels.Length)
             {
