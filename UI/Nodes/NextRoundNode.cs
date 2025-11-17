@@ -113,7 +113,7 @@ namespace UI.Nodes
         {
             if (Round != null && Round.Stage != null)
             {
-                eventManager.RoundManager.GenerateRoundFromType(Round, Round.Stage.StageType);
+                eventManager.RoundManager.GenerateStageRound(Round, Round.Stage.StageType, new Pilot[0]);
             }
         }
     }

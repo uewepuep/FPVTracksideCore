@@ -448,5 +448,40 @@ namespace RaceLib
         {
             return string.Join(" ", pilots.Select(p => p.Phonetic));
         }
+
+        public static IEnumerable<Pilot> Seed(this IEnumerable<Pilot> orderedPilots, int channelCount)
+        {
+            List<Pilot> pilots = orderedPilots.ToList();
+            int racesCount = (int)(Math.Ceiling(pilots.Count / (float)channelCount));
+
+            List<Pilot>[] races = new List<Pilot>[racesCount];
+            for (int i = 0; i < racesCount; i++)
+            {
+                races[i] = new List<Pilot>();
+            }
+
+            int currentRace = 0;
+            foreach (Pilot pilot in orderedPilots)
+            {
+                races[currentRace].Add(pilot);
+                currentRace = (currentRace + 1) % racesCount;
+            }
+
+            foreach (List<Pilot> race in races)
+            {
+                while (race.Count < channelCount)
+                {
+                    race.Add(null);
+                }
+            }
+
+            foreach (List<Pilot> race in races)
+            {
+                foreach (Pilot pilot in race)
+                {
+                    yield return pilot;
+                }
+            }
+        }
     }
 }

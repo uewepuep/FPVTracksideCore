@@ -53,7 +53,9 @@ namespace RaceLib
             if (race.Round.Stage != null)
             {
                 RoundFormat roundFormat = GetRoundFormat(race.Round.Stage);
-                GenerateRound(race.Round, roundFormat);
+                RoundPlan roundPlan = new RoundPlan(EventManager, race.Round, race.Round.Stage);
+
+                GenerateNewRound(race.Round, roundFormat, roundPlan);
             }
         }
 
@@ -184,37 +186,35 @@ namespace RaceLib
 
             switch (roundPlan.PilotSeeding)
             {
-                case RoundPlan.PilotOrderingEnum.MinimisePreviouslyFlown:
+                case PilotOrdering.MinimisePreviouslyFlown:
                 default:
                     roundFormat = new AutoFormat(EventManager);
                 break;
-                case RoundPlan.PilotOrderingEnum.Ordered:
+                case PilotOrdering.Ordered:
                     roundFormat = new TopFormat(EventManager);
                     break;
-                case RoundPlan.PilotOrderingEnum.Seeded:
+                case PilotOrdering.Seeded:
                     roundFormat = new SeededFormat(EventManager);
                     break;
             }
 
-            return Generate(roundFormat, newRound, roundPlan);
+            return GenerateFillRound(newRound, roundFormat, roundPlan);
         }
 
-        public IEnumerable<Race> GenerateRound(Round callingRound, RoundFormat roundFormat)
+        public IEnumerable<Race> GenerateNewRound(Round callingRound, RoundFormat roundFormat, RoundPlan roundPlan)
         {
             Round newRound = GetCreateRound(callingRound.RoundNumber + 1, callingRound.EventType, roundFormat.Stage);
-
-            RoundPlan roundPlan = new RoundPlan(EventManager, callingRound, null);
-            return Generate(roundFormat, newRound, roundPlan);
+            return GenerateFillRound(newRound, roundFormat, roundPlan);
         }
 
-        public void GenerateRoundFromType(Round round, StageTypes stageType)
+        public void GenerateStageRound(Round callingRound, StageTypes stageType, IEnumerable<Pilot> orderedPilots)
         {
             bool needsStage = false;
 
-            if (stageType != StageTypes.Default && round.Stage == null)
+            if (stageType != StageTypes.Default && callingRound.Stage == null)
                 needsStage = true;
 
-            if (round.Stage != null && round.Stage.StageType != stageType)
+            if (callingRound.Stage != null && callingRound.Stage.StageType != stageType)
                 needsStage = true;
 
             Stage stage = null;
@@ -233,27 +233,29 @@ namespace RaceLib
             }
             else
             {
-                stage = round.Stage;
+                stage = callingRound.Stage;
             }
 
             if (stage != null)
             {
+                RoundPlan roundPlan = new RoundPlan(EventManager, callingRound, null, orderedPilots.ToArray());
+
                 // If we're filling the current round that's empty
-                if (!EventManager.RaceManager.GetRaces(round).Any())
+                if (EventManager.RoundManager.IsEmpty(callingRound))
                 {
                     using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
                     {
-                        round.Stage = stage;
-                        db.Update(round);
+                        callingRound.Stage = stage;
+                        db.Update(callingRound);
                     }
 
-                    AutoFormat format = new AutoFormat(EventManager);
-                    Generate(format, round, new RoundPlan(EventManager, null, null));
+                    RoundFormat roundFormat = GetRoundFormat(stage);
+                    GenerateFillRound(callingRound, roundFormat, roundPlan);
                 }
                 else
                 {
                     RoundFormat roundFormat = GetRoundFormat(stage);
-                    GenerateRound(round, roundFormat);
+                    GenerateNewRound(callingRound, roundFormat, roundPlan);
                 }
             }
         }
@@ -268,7 +270,7 @@ namespace RaceLib
             roundPlan.Pilots = pilots.ToArray();
             roundPlan.NumberOfRaces = (int)Math.Ceiling((float)roundPlan.Pilots.Length / EventManager.GetMaxPilotsPerRace());
 
-            return Generate(roundFormat, newRound, roundPlan);
+            return GenerateFillRound(newRound, roundFormat, roundPlan);
         }
 
         public IEnumerable<Race> GenerateTopX(Round callingRound, IEnumerable<Pilot> pilots)
@@ -281,10 +283,10 @@ namespace RaceLib
             roundPlan.Pilots = pilots.ToArray();
             roundPlan.NumberOfRaces = (int)Math.Ceiling((float)roundPlan.Pilots.Length / EventManager.GetMaxPilotsPerRace());
 
-            return Generate(roundFormat, newRound, roundPlan);
+            return GenerateFillRound(newRound, roundFormat, roundPlan);
         }
 
-        public IEnumerable<Race> Generate(RoundFormat roundFormat, Round newRound, RoundPlan roundPlan)
+        public IEnumerable<Race> GenerateFillRound(Round newRound, RoundFormat roundFormat, RoundPlan roundPlan)
         {
             try
             {
@@ -540,7 +542,7 @@ namespace RaceLib
             RoundPlan plan = new RoundPlan(EventManager, callingRound, null);
             plan.NumberOfRaces = (int)Math.Ceiling(plan.Pilots.Count() / (float)EventManager.Channels.GetChannelGroups().Count());
 
-            Generate(roundFormat, newRound, plan);
+            GenerateFillRound(newRound, roundFormat, plan);
         }
 
         public void DeleteRounds()

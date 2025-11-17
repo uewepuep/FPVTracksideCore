@@ -250,7 +250,7 @@ namespace UI.Nodes.Rounds
             if (!hasRace)
             {
                 MouseMenu addFormat = mm.AddSubmenu("Set Format");
-                AddFormatMenu(addFormat);
+                AddFormatMenu(addFormat, EventManager.Event.Pilots);
             }
 
             if (hasRace)

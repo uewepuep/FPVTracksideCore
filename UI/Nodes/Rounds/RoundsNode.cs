@@ -204,7 +204,7 @@ namespace UI.Nodes.Rounds
             eventXNode.CustomRound += GenerateCustomRound;
             eventXNode.ChangeChannels += GenerateChangeChannels;
             eventXNode.Finals += GenerateFinal;
-            eventXNode.AddRoundFromType += GenerateRoundFromType;
+            eventXNode.AddStage += GenerateRoundStage;
             eventXNode.AddSheetFormatRound += AddSheetFormatRound;
             eventXNode.SumPoints += ToggleSumPoints;
             eventXNode.Times += ToggleTimePoints;
@@ -430,9 +430,9 @@ namespace UI.Nodes.Rounds
             Scroller.ScrollToEnd(scrollTime);
         }
 
-        private void GenerateRoundFromType(Round round, StageTypes stageType)
+        private void GenerateRoundStage(Round round, StageTypes stageType, IEnumerable<Pilot> orderedPilots)
         {
-            RoundManager.GenerateRoundFromType(round, stageType);
+            RoundManager.GenerateStageRound(round, stageType, orderedPilots);
             Refresh();
         }
 
@@ -521,7 +521,7 @@ namespace UI.Nodes.Rounds
             if (!RoundManager.DoesRoundHaveAllPilots(round))
             {
                 AutoFormat format = new AutoFormat(EventManager);
-                RoundManager.Generate(format, round, new RoundPlan(EventManager, null, null));
+                RoundManager.GenerateFillRound(round, format, new RoundPlan(EventManager, null, null));
             }
         }
 

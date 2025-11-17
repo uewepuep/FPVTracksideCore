@@ -690,7 +690,7 @@ namespace UI.Nodes
             string name = propertyNode.PropertyInfo.Name;
             if (name == "ChannelChange")
             {
-                if (obj.PilotSeeding == RoundPlan.PilotOrderingEnum.MinimisePreviouslyFlown)
+                if (obj.PilotSeeding == PilotOrdering.MinimisePreviouslyFlown)
                 {
                     propertyNode.Visible = true;
                 }

@@ -37,7 +37,7 @@ namespace UI.Nodes.Rounds
         public event RoundDelegate Finals;
         public event RoundDelegate Clone;
         public event RoundDelegate AddSheetFormatRound;
-        public event Action<Round, StageTypes> AddRoundFromType;
+        public event Action<Round, StageTypes, IEnumerable<Pilot>> AddStage;
 
         public event RoundDelegate RemoveRound;
         public event RoundDelegate SumPoints;
@@ -191,15 +191,16 @@ namespace UI.Nodes.Rounds
 
             if (!IsRoundInStage())
             {
-                if (GetOrderedPilots().Any())
+                Pilot[] pilots = GetOrderedPilots().ToArray();
+                if (EventManager.RoundManager.IsEmpty(Round))
                 {
-                    MouseMenu format = rootMenu.AddSubmenu("Add Format");
-                    AddFormatMenu(format);
+                    MouseMenu format = rootMenu.AddSubmenu("Set Format");
+                    AddFormatMenu(format, pilots);
                 }
                 else
                 {
-                    MouseMenu format = rootMenu.AddSubmenu("Set Format");
-                    AddFormatMenu(format);
+                    MouseMenu format = rootMenu.AddSubmenu("Add Format");
+                    AddFormatMenu(format, pilots);
                 }
             }
 
@@ -235,10 +236,9 @@ namespace UI.Nodes.Rounds
             }
         }
 
-        protected void AddFormatMenu(MouseMenu format)
+        protected void AddFormatMenu(MouseMenu menu, IEnumerable<Pilot> orderedPilots)
         {
-
-            MouseMenu sheets = format.AddSubmenu("From Spreadsheet");
+            MouseMenu sheets = menu.AddSubmenu("From Spreadsheet");
             if (EventManager.RoundManager.SheetFormatManager.Sheets.Any())
             {
                 foreach (SheetFormatManager.SheetFile sheet in EventManager.RoundManager.SheetFormatManager.Sheets)
@@ -246,18 +246,18 @@ namespace UI.Nodes.Rounds
                     string name = sheet.Name + " (" + sheet.Pilots + " pilots)";
 
                     var sheet2 = sheet;
-                    sheets.AddItem(name, () => { SheetFormat(sheet2); });
+                    sheets.AddItem(name, () => { SheetFormat(sheet2, orderedPilots); });
                 }
             }
 
-            format.AddBlank();
+            menu.AddBlank();
 
             foreach (StageTypes stageType in Enum.GetValues<StageTypes>().Except([StageTypes.Default]))
             {
                 string name = stageType.ToString().CamelCaseToHuman();
                 StageTypes local = stageType;
 
-                format.AddItem(name, () => { AddRoundFromType?.Invoke(Round, local); });
+                menu.AddItem(name, () => { AddStage?.Invoke(Round, local, orderedPilots); });
             }
         }
 
@@ -270,7 +270,7 @@ namespace UI.Nodes.Rounds
 
                 if (stage.GeneratesRounds)
                 {
-                    addRound.AddItem("Continue " + stage.Name, AddStageRound);
+                    addRound.AddItem("Continue " + stage.Name, ContinueStageRound);
                     addRound.AddBlank();
                 }
             }
@@ -289,7 +289,7 @@ namespace UI.Nodes.Rounds
             addRound.AddItem("Custom Round", () => { CustomRound?.Invoke(Round, stage); });
         }
 
-        private void AddStageRound()
+        private void ContinueStageRound()
         {
             if (Round.Stage == null)
                 return; 
@@ -300,11 +300,11 @@ namespace UI.Nodes.Rounds
             }
             else 
             {
-                AddRoundFromType(Round, Round.Stage.StageType);
+                AddStage(Round, Round.Stage.StageType, GetOrderedPilots().ToArray());
             }
         }
 
-        private void SheetFormat(SheetFormatManager.SheetFile sheet)
+        private void SheetFormat(SheetFormatManager.SheetFile sheet, IEnumerable<Pilot> orderedPilots)
         {
             LoadingLayer ll = GetLayer<LoadingLayer>();
             ll.WorkQueue.Enqueue("Loading format", () =>
@@ -326,7 +326,7 @@ namespace UI.Nodes.Rounds
                         db.Update(Round);
                     }
                 }
-                EventManager.RoundManager.SheetFormatManager.LoadSheet(stage, GetOrderedPilots().ToArray(), true);
+                EventManager.RoundManager.SheetFormatManager.LoadSheet(stage, orderedPilots.ToArray(), true);
             });
         }
 
@@ -359,7 +359,7 @@ namespace UI.Nodes.Rounds
 
         public virtual IEnumerable<Pilot> GetOrderedPilots()
         {
-            return new Pilot[0];
+            return EventManager.Event.Pilots;
         }
     }
 }

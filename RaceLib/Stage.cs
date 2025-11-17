@@ -118,4 +118,43 @@ namespace RaceLib
             }
         }
     }
+
+    public class PointSummary
+    {
+        public bool RoundPositionRollover { get; set; }
+
+        public bool DropWorstRound { get; set; }
+
+        public PointSummary()
+        {
+            RoundPositionRollover = false;
+            DropWorstRound = true;
+        }
+
+        public PointSummary(PointsSettings pointsSettings)
+        {
+            RoundPositionRollover = pointsSettings.RoundPositionRollover;
+            DropWorstRound = pointsSettings.DropWorstRound;
+        }
+    }
+
+    public class TimeSummary
+    {
+        public enum TimeSummaryTypes
+        {
+            PB,
+            EventLap,
+            RaceTime
+        }
+
+        public bool IncludeAllRounds { get; set; }
+
+        public TimeSummaryTypes TimeSummaryType { get; set; }
+
+        public TimeSummary()
+        {
+            TimeSummaryType = TimeSummaryTypes.PB;
+            IncludeAllRounds = false;
+        }
+    }
 }
