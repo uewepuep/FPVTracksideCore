@@ -669,6 +669,17 @@ namespace RaceLib
             OnStageChanged?.Invoke();
         }
 
+        public void RemoveStage(Round round)
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                round.Stage = null;
+                db.Update(round);
+            }
+
+            OnStageChanged?.Invoke();
+        }
+
         public void DeleteStageAndContents(Stage stage)
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))

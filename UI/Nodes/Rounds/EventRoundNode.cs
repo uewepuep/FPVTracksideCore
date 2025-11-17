@@ -279,10 +279,21 @@ namespace UI.Nodes.Rounds
             if (Round.Stage != null)
             {
                 mm.AddItem("Edit Stage", EditStage);
-            }
 
-            if (Round.Stage != null)
-            {
+                mm.AddItem("Remove Round from Stage", () =>
+                {
+                    PopupLayer pl = GetLayer<PopupLayer>();
+                    pl.PopupConfirmation("Remove from Stage?", () =>
+                    {
+                        LoadingLayer ll = GetLayer<LoadingLayer>();
+                        ll.WorkQueue.Enqueue("Deleting stage", () =>
+                        {
+                            EventManager.RoundManager.RemoveStage(Round);
+                            Refresh();
+                        });
+                    });
+                });
+
                 mm.AddItem("Delete Stage and contents", () =>
                 {
                     PopupLayer pl = GetLayer<PopupLayer>();
