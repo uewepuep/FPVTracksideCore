@@ -6,7 +6,7 @@
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>false</TieredCompilation>
     <ImplicitUsings>true</ImplicitUsings>
-    <Version>2.71.0.695</Version>
+    <Version>2.71.1.739</Version>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
