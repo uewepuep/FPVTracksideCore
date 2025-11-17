@@ -184,8 +184,11 @@ namespace FfmpegMediaPlatform
                 }
                 else
                 {
-                    // Prefer the shorter to avoid UI overrun
-                    length = TimeSpan.FromSeconds(Math.Min(length.TotalSeconds, containerDuration.TotalSeconds));
+                    // Use XML duration (from actual frames) instead of container duration
+                    // Container may include padding frames added for decoder buffering
+                    // Progress bar should match real content, not padding
+                    Tools.Logger.VideoLog.LogCall(this, $"[DIAG-PLAYBACK] Video duration: XML={length.TotalSeconds:F3}s, Container={containerDuration.TotalSeconds:F3}s, Using XML (real content)");
+                    // Keep length as is (from XML)
                 }
             }
         }
@@ -214,9 +217,32 @@ namespace FfmpegMediaPlatform
                 try
                 {
                     if (ffmpeg.avformat_find_stream_info(localFmt, null) < 0) return TimeSpan.Zero;
+
+                    double containerDuration = 0;
                     if (localFmt->duration > 0)
                     {
-                        return TimeSpan.FromSeconds(localFmt->duration / (double)ffmpeg.AV_TIME_BASE);
+                        containerDuration = localFmt->duration / (double)ffmpeg.AV_TIME_BASE;
+                        Tools.Logger.VideoLog.LogCall(this, $"[DIAG-PLAYBACK] ProbeFileDuration: {Path.GetFileName(path)} - Container duration={containerDuration:F6}s");
+                    }
+
+                    // Also check video stream duration
+                    for (int i = 0; i < (int)localFmt->nb_streams; i++)
+                    {
+                        if (localFmt->streams[i]->codecpar->codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO)
+                        {
+                            var stream = localFmt->streams[i];
+                            if (stream->duration > 0)
+                            {
+                                double streamDuration = stream->duration * stream->time_base.num / (double)stream->time_base.den;
+                                Tools.Logger.VideoLog.LogCall(this, $"[DIAG-PLAYBACK] ProbeFileDuration: Stream duration={streamDuration:F6}s (timebase={stream->time_base.num}/{stream->time_base.den})");
+                            }
+                            break;
+                        }
+                    }
+
+                    if (containerDuration > 0)
+                    {
+                        return TimeSpan.FromSeconds(containerDuration);
                     }
                 }
                 finally
@@ -440,14 +466,12 @@ namespace FfmpegMediaPlatform
             long startPts = st->start_time;
             double tb = st->time_base.num / (double)st->time_base.den;
             
-            // Start from the actual video start time, not 0
+            // Start from the beginning (0.0s)
+            // Removed 1.0s offset - LibavRecorderManager now ensures frames start at PTS=0
             if (mediaTime == TimeSpan.Zero)
             {
-                // Try to start from a position where frames actually exist
-                // Use a small offset to get past any initial silence/empty frames
-                var videoStartOffset = TimeSpan.FromSeconds(1.0); 
-                SetPosition(videoStartOffset);
-                // Tools.Logger.VideoLog.LogCall(this, $"ReadLoop: Starting playback from offset {videoStartOffset.TotalSeconds:F2}s to find actual frames");
+                SetPosition(TimeSpan.Zero);
+                Tools.Logger.VideoLog.LogCall(this, $"[DIAG-PLAYBACK] ReadLoop: Starting playback from 0.0s");
             }
             
             // Main processing loop - handle seeking dynamically
@@ -523,10 +547,54 @@ namespace FfmpegMediaPlatform
                     
                     if (readResult < 0)
                     {
-                        // if (loopCount % 300 == 0)
-                        // {
-                        //     Tools.Logger.VideoLog.LogCall(this, "ReadLoop: End of file reached");
-                        // }
+                        // EOF detected - flush decoder to get remaining buffered frames
+                        Tools.Logger.VideoLog.LogCall(this, $"[DIAG-PLAYBACK] ReadLoop EOF detected, flushing decoder buffer");
+
+                        // Send null packet to flush decoder
+                        int flushedFrames = 0;
+                        ffmpeg.avcodec_send_packet(codecCtx, null);
+
+                        // Receive all remaining frames from decoder
+                        while (run && !seekRequested)
+                        {
+                            int decodeRet = ffmpeg.avcodec_receive_frame(codecCtx, frame);
+                            if (decodeRet == ffmpeg.AVERROR_EOF || decodeRet == ffmpeg.AVERROR(ffmpeg.EAGAIN))
+                            {
+                                break;
+                            }
+                            else if (decodeRet < 0)
+                            {
+                                break;
+                            }
+
+                            // Process the flushed frame
+                            flushedFrames++;
+
+                            // Update mediaTime from flushed frame PTS
+                            long localPts = frame->best_effort_timestamp;
+                            if (localPts == ffmpeg.AV_NOPTS_VALUE) localPts = frame->pts;
+                            if (localPts != ffmpeg.AV_NOPTS_VALUE)
+                            {
+                                double sec = (localPts - startPts) * tb;
+                                mediaTime = TimeSpan.FromSeconds(Math.Max(0, sec));
+                            }
+
+                            // Process and display the flushed frame
+                            TimeSpan flushedFrameTime = TimeSpan.FromSeconds(Math.Max(0, (localPts - startPts) * tb));
+                            ProcessCurrentFrame(frame, flushedFrameTime);
+
+                            // Give time for frame to be displayed before processing next one
+                            // This ensures the UI can render each flushed frame
+                            Thread.Sleep(16); // ~60fps
+
+                            ffmpeg.av_frame_unref(frame);
+                        }
+
+                        double gapSeconds = length.TotalSeconds - mediaTime.TotalSeconds;
+                        double gapPercentage = (gapSeconds / length.TotalSeconds) * 100.0;
+                        Tools.Logger.VideoLog.LogCall(this, $"[DIAG-PLAYBACK] Decoder flushed {flushedFrames} frames, final mediaTime={mediaTime.TotalSeconds:F6}s, length={length.TotalSeconds:F6}s, gap={gapSeconds:F6}s ({gapPercentage:F2}% of total)");
+
+                        // No additional pause - the 16ms sleeps during flush should be enough (15 frames × 16ms = 240ms total)
 
                         // End of file - seek back to start and continue if playing
                         if (isPlaying && !seekRequested)

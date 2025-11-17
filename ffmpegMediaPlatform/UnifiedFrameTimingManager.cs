@@ -54,9 +54,8 @@ namespace FfmpegMediaPlatform
                 // Use the longer duration to account for buffered frames at the end
                 var finalDuration = xmlDuration > fallbackDuration ? xmlDuration : fallbackDuration;
                 
-                Tools.Logger.VideoLog.LogCall(typeof(UnifiedFrameTimingManager), 
-                    $"Unified duration calculation: XML={xmlDuration.TotalSeconds:F3}s, Fallback={fallbackDuration.TotalSeconds:F3}s, Using={finalDuration.TotalSeconds:F3}s " +
-                    $"(first: {firstFrame.Time:HH:mm:ss.fff}, last: {lastFrame.Time:HH:mm:ss.fff})");
+                Tools.Logger.VideoLog.LogCall(typeof(UnifiedFrameTimingManager),
+                    $"[DIAG-PLAYBACK] Unified duration calculation: XML={xmlDuration.TotalSeconds:F3}s, Fallback={fallbackDuration.TotalSeconds:F3}s, Using={finalDuration.TotalSeconds:F3}s");
                 
                 return finalDuration;
             }

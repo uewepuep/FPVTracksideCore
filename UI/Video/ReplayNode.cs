@@ -386,12 +386,11 @@ namespace UI.Video
                                 // Use unified duration calculation for consistency across platforms
                                 var xmlDuration = UnifiedFrameTimingManager.CalculateVideoDuration(
                                     captureSource.FrameTimes, frameSource.Length);
-                                
-                                // For playback timeline, prefer the shorter of XML and container-based Length
-                                // to avoid progress bar extending beyond actual playable content
-                                var playbackDuration = TimeSpan.FromSeconds(Math.Min(xmlDuration.TotalSeconds, frameSource.Length.TotalSeconds));
-                                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Timeline: XML={xmlDuration.TotalSeconds:F3}s, Length={frameSource.Length.TotalSeconds:F3}s, Using(min)={playbackDuration.TotalSeconds:F3}s for {frameSource.GetType().Name}");
-                                maxEndDuration = TimeSpan.FromSeconds(Math.Max(maxEndDuration.TotalSeconds, playbackDuration.TotalSeconds));
+
+                                // Use xmlDuration directly (which already uses Math.Max internally)
+                                // This ensures progress bar matches actual video length
+                                Tools.Logger.VideoLog.LogCall(this, $"PROGRESSBAR Timeline: XML/Length={xmlDuration.TotalSeconds:F3}s for {frameSource.GetType().Name}");
+                                maxEndDuration = TimeSpan.FromSeconds(Math.Max(maxEndDuration.TotalSeconds, xmlDuration.TotalSeconds));
                             }
                             else
                             {

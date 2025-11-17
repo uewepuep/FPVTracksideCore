@@ -31,12 +31,17 @@ namespace FfmpegMediaPlatform
         // Frame timing collection for .recordinfo.xml
         private List<FrameTime> frameTimes;
         private DateTime recordingStartTime;
+        private DateTime firstFrameTime; // Actual time of first frame for PTS offset
         private int frameWidth;
         private int frameHeight;
         private float frameRate;
         private int recordingFrameCounter;
+        private int totalPacketsWritten; // Track total packets for debugging
         private DateTime lastFrameWriteTime;
+        private DateTime lastFrameCaptureTime; // Store last frame time for padding
+        private byte[] lastFrameData; // Store last frame for padding
         private AVRational timeBase;
+        private long lastPacketPts; // Track last packet PTS
 
         // PERFORMANCE: Async frame writing to prevent blocking
         private readonly System.Collections.Concurrent.ConcurrentQueue<(byte[] rgbaData, DateTime captureTime, int frameNumber)> frameQueue;
@@ -96,7 +101,10 @@ namespace FfmpegMediaPlatform
                     // Reset frame timing collection
                     frameTimes.Clear();
                     recordingStartTime = UnifiedFrameTimingManager.InitializeRecordingStartTime();
+                    firstFrameTime = DateTime.MinValue; // Will be set on first WriteFrame call
                     recordingFrameCounter = 0;
+                    totalPacketsWritten = 0;
+                    lastPacketPts = 0;
                     lastFrameWriteTime = DateTime.MinValue;
 
                     // Reset async components
@@ -118,7 +126,7 @@ namespace FfmpegMediaPlatform
                     // Start async frame writing task
                     frameWritingTask = Task.Run(() => FrameWritingLoop(frameWritingCancellation.Token));
 
-                    Tools.Logger.VideoLog.LogCall(this, $"LibAV recording started successfully - Output: {outputPath}");
+                    Tools.Logger.VideoLog.LogCall(this, $"[DIAG] Recording started - File: {outputPath}");
                     RecordingStarted?.Invoke(outputPath);
 
                     return true;
@@ -234,9 +242,9 @@ namespace FfmpegMediaPlatform
                 codecContext->pix_fmt = AVPixelFormat.AV_PIX_FMT_YUV420P;
 
                 // Time base: 1/90000 for precise timing (standard for H.264)
+                // Note: Hardware encoders may override this
                 timeBase = new AVRational { num = 1, den = 90000 };
                 codecContext->time_base = timeBase;
-                videoStream->time_base = timeBase;
 
                 // Frame rate
                 codecContext->framerate = new AVRational { num = (int)(frameRate * 1000), den = 1000 };
@@ -259,6 +267,17 @@ namespace FfmpegMediaPlatform
                     Tools.Logger.VideoLog.LogCall(this, $"Failed to open codec: {openRet}");
                     return false;
                 }
+
+                // Log actual timebase after codec open (hardware encoders may change it)
+                Tools.Logger.VideoLog.LogCall(this, $"[DIAG] Codec timebase after open: {codecContext->time_base.num}/{codecContext->time_base.den}");
+
+                // Update our local timebase to match what codec actually uses
+                timeBase = codecContext->time_base;
+
+                // Set stream timebase to match codec timebase for proper rescaling
+                videoStream->time_base = codecContext->time_base;
+
+                Tools.Logger.VideoLog.LogCall(this, $"[DIAG] Stream timebase set to: {videoStream->time_base.num}/{videoStream->time_base.den}");
 
                 // Copy codec parameters to stream
                 ffmpeg.avcodec_parameters_from_context(videoStream->codecpar, codecContext);
@@ -314,12 +333,33 @@ namespace FfmpegMediaPlatform
                     formatContext->pb = ioContext;
                 }
 
-                // Write header
-                int headerRet = ffmpeg.avformat_write_header(formatContext, null);
+                // Write header with Matroska-specific options for proper indexing
+                AVDictionary* options = null;
+                // Force writing cues (index) for all frames - ensures seeking works to end of file
+                ffmpeg.av_dict_set(&options, "reserve_index_space", "100000", 0);
+                ffmpeg.av_dict_set(&options, "cluster_size_limit", "2097152", 0); // 2MB clusters
+                ffmpeg.av_dict_set(&options, "cluster_time_limit", "1000", 0); // 1 second max cluster time
+
+                int headerRet = ffmpeg.avformat_write_header(formatContext, &options);
                 if (headerRet < 0)
                 {
                     Tools.Logger.VideoLog.LogCall(this, $"Failed to write header: {headerRet}");
                     return false;
+                }
+                if (options != null)
+                {
+                    ffmpeg.av_dict_free(&options);
+                }
+                Tools.Logger.VideoLog.LogCall(this, $"[DIAG] Header written with Matroska indexing options");
+
+                // CRITICAL: Check stream timebase AFTER write_header (it may have changed!)
+                Tools.Logger.VideoLog.LogCall(this, $"[DIAG] Stream timebase AFTER write_header: {videoStream->time_base.num}/{videoStream->time_base.den}");
+
+                // If stream timebase changed, we need to use the new one for packet writes
+                if (videoStream->time_base.num != timeBase.num || videoStream->time_base.den != timeBase.den)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"[DIAG] WARNING: Stream timebase changed from {timeBase.num}/{timeBase.den} to {videoStream->time_base.num}/{videoStream->time_base.den}");
+                    Tools.Logger.VideoLog.LogCall(this, $"[DIAG] Will need to rescale packets from {timeBase.num}/{timeBase.den} to {videoStream->time_base.num}/{videoStream->time_base.den}");
                 }
 
                 Tools.Logger.VideoLog.LogCall(this, "FFmpeg encoder initialized successfully");
@@ -346,12 +386,19 @@ namespace FfmpegMediaPlatform
 
                 try
                 {
+                    // Set first frame time on the very first frame
+                    if (firstFrameTime == DateTime.MinValue)
+                    {
+                        firstFrameTime = captureTime;
+                        Tools.Logger.VideoLog.LogCall(this, $"[DIAG] First frame captured at {firstFrameTime:HH:mm:ss.fff}");
+                    }
+
                     // Track actual frame timing
                     if (recordingFrameCounter % 100 == 0)
                     {
                         double intervalMs = lastFrameWriteTime != DateTime.MinValue ? (captureTime - lastFrameWriteTime).TotalMilliseconds : 0;
                         double actualFps = intervalMs > 0 ? (1000.0 / intervalMs) * 100 : 0;
-                        double totalSeconds = (captureTime - recordingStartTime).TotalSeconds;
+                        double totalSeconds = (captureTime - firstFrameTime).TotalSeconds;
                         double avgFps = recordingFrameCounter > 0 ? recordingFrameCounter / totalSeconds : 0;
 
                         Tools.Logger.VideoLog.LogCall(this, $"LIBAV RECORDING: Frame {recordingFrameCounter}, Recent: {actualFps:F3}fps, Average: {avgFps:F3}fps, PerFrame: {intervalMs/100:F2}ms");
@@ -363,9 +410,19 @@ namespace FfmpegMediaPlatform
                     frameQueueSemaphore.Release();
 
                     // Collect frame timing for XML
+                    // Use recordingStartTime for Time field (absolute DateTime for lap marker alignment)
+                    // But calculate Seconds from firstFrameTime (matches video PTS starting at 0)
                     recordingFrameCounter++;
-                    var frameTime = UnifiedFrameTimingManager.CreateFrameTime(
-                        recordingFrameCounter, captureTime, recordingStartTime);
+
+                    var timeSinceRecordingStart = captureTime - recordingStartTime;
+                    var timeSinceFirstFrame = captureTime - firstFrameTime;
+
+                    var frameTime = new FrameTime
+                    {
+                        Frame = recordingFrameCounter,
+                        Time = captureTime,  // Absolute time for lap marker conversion
+                        Seconds = timeSinceFirstFrame.TotalSeconds  // Relative to first frame (matches video PTS)
+                    };
                     frameTimes.Add(frameTime);
 
                     return true;
@@ -409,13 +466,32 @@ namespace FfmpegMediaPlatform
             }
             catch (OperationCanceledException)
             {
-                Tools.Logger.VideoLog.LogCall(this, "LibAV frame writing loop cancelled");
+                Tools.Logger.VideoLog.LogCall(this, $"LibAV frame writing loop cancelled - {frameQueue.Count} frames still in queue");
             }
             catch (Exception ex)
             {
                 Tools.Logger.VideoLog.LogException(this, ex);
                 Tools.Logger.VideoLog.LogCall(this, $"Error in LibAV frame writing loop: {ex.Message}");
             }
+
+            // CRITICAL FIX: Process all remaining queued frames after cancellation
+            // This ensures no frames are lost when StopRecording() is called
+            int remainingFrames = 0;
+            while (frameQueue.TryDequeue(out var frameData))
+            {
+                if (IsEncoderReady())
+                {
+                    EncodeFrame(frameData.rgbaData, frameData.captureTime);
+                    remainingFrames++;
+                }
+            }
+
+            if (remainingFrames > 0)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"[DIAG] Processed {remainingFrames} remaining queued frames after cancellation");
+            }
+
+            Tools.Logger.VideoLog.LogCall(this, $"[DIAG] FrameWritingLoop complete - total frames encoded: {recordingFrameCounter}");
         }
 
         /// <summary>
@@ -425,9 +501,16 @@ namespace FfmpegMediaPlatform
         {
             try
             {
-                // Calculate PTS from capture time relative to recording start
-                var timeSinceStart = captureTime - recordingStartTime;
-                long pts = (long)(timeSinceStart.TotalSeconds * timeBase.den / timeBase.num);
+                // Calculate PTS from capture time relative to FIRST FRAME
+                // firstFrameTime is set in WriteFrame() before frames are queued
+                var timeSinceFirstFrame = captureTime - firstFrameTime;
+                long pts = (long)(timeSinceFirstFrame.TotalSeconds * timeBase.den / timeBase.num);
+
+                // Log PTS for debugging timing issues (first 3 frames and every 100 frames)
+                if (recordingFrameCounter <= 3 || recordingFrameCounter % 100 == 0)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"[DIAG] EncodeFrame #{recordingFrameCounter}, TimeSinceFirst={timeSinceFirstFrame.TotalSeconds:F6}s, PTS={pts}");
+                }
 
                 // Convert RGBA to YUV420P
                 fixed (byte* rgbaPtr = rgbaData)
@@ -444,13 +527,18 @@ namespace FfmpegMediaPlatform
 
                 // Send frame to encoder
                 int sendRet = ffmpeg.avcodec_send_frame(codecContext, yuvFrame);
-                if (sendRet < 0)
+                if (sendRet == ffmpeg.AVERROR(ffmpeg.EAGAIN))
                 {
-                    Tools.Logger.VideoLog.LogCall(this, $"Error sending frame to encoder: {sendRet}");
+                    // Encoder buffer full - need to receive packets first
+                    Tools.Logger.VideoLog.LogCall(this, $"[DIAG] Encoder buffer full (EAGAIN) at frame {recordingFrameCounter}");
+                }
+                else if (sendRet < 0)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"[DIAG] ERROR sending frame {recordingFrameCounter} to encoder: {sendRet}");
                     return;
                 }
 
-                // Receive encoded packets
+                // Receive encoded packets (IMPORTANT: Always try to receive, even after EAGAIN)
                 while (true)
                 {
                     int receiveRet = ffmpeg.avcodec_receive_packet(codecContext, packet);
@@ -464,9 +552,29 @@ namespace FfmpegMediaPlatform
                         break;
                     }
 
-                    // Rescale packet timestamps to stream timebase
+                    // Rescale packet PTS from codec timebase (1/90000) to stream timebase (1/1000)
                     ffmpeg.av_packet_rescale_ts(packet, codecContext->time_base, videoStream->time_base);
                     packet->stream_index = videoStream->index;
+
+                    // Track last packet PTS (after rescaling)
+                    lastPacketPts = packet->pts;
+                    totalPacketsWritten++;
+
+                    // Log packet details periodically and for last 10 packets
+                    if (totalPacketsWritten % 100 == 0 || totalPacketsWritten <= 3)
+                    {
+                        // Convert PTS ticks to seconds: ticks * timebase = ticks * (num/den)
+                        // With timebase 1/90000: ticks / 90000 = seconds
+                        double ptsSeconds = packet->pts * ((double)videoStream->time_base.num / videoStream->time_base.den);
+                        Tools.Logger.VideoLog.LogCall(this, $"[DIAG] WrittenPacket #{totalPacketsWritten}: PTS={packet->pts} ticks, timebase={videoStream->time_base.num}/{videoStream->time_base.den} = {ptsSeconds:F6}s");
+                    }
+
+                    // Store for last packet logging
+                    if (totalPacketsWritten > recordingFrameCounter - 10)
+                    {
+                        double ptsSeconds = packet->pts * ((double)videoStream->time_base.num / videoStream->time_base.den);
+                        Tools.Logger.VideoLog.LogCall(this, $"[DIAG] WrittenPacket(end) #{totalPacketsWritten}: PTS={ptsSeconds:F6}s");
+                    }
 
                     // Write packet to output
                     int writeRet = ffmpeg.av_interleaved_write_frame(formatContext, packet);
@@ -476,6 +584,16 @@ namespace FfmpegMediaPlatform
                     }
 
                     ffmpeg.av_packet_unref(packet);
+                }
+
+                // If send failed with EAGAIN, retry after receiving packets
+                if (sendRet == ffmpeg.AVERROR(ffmpeg.EAGAIN))
+                {
+                    sendRet = ffmpeg.avcodec_send_frame(codecContext, yuvFrame);
+                    if (sendRet < 0 && sendRet != ffmpeg.AVERROR(ffmpeg.EAGAIN))
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"Error on retry sending frame to encoder: {sendRet}");
+                    }
                 }
             }
             catch (Exception ex)
@@ -514,20 +632,25 @@ namespace FfmpegMediaPlatform
 
             try
             {
-                Tools.Logger.VideoLog.LogCall(this, "Stopping LibAV recording");
+                Tools.Logger.VideoLog.LogCall(this, $"[DIAG] StopRecording called - File: {currentOutputPath}, Frames: {recordingFrameCounter}, QueuedFrames: {frameQueue.Count}");
 
-                // Wait for async frame writing to complete
+                // Wait for async frame writing to complete - use longer timeout to ensure all frames are encoded
                 if (taskToWait != null)
                 {
                     try
                     {
-                        await taskToWait.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs / 2));
+                        // Wait longer to ensure all queued frames are processed
+                        await taskToWait.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs * 2));
+                        Tools.Logger.VideoLog.LogCall(this, "Frame writing task completed successfully");
                     }
                     catch (TimeoutException)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, "Frame writing task did not complete in time");
+                        Tools.Logger.VideoLog.LogCall(this, $"Frame writing task did not complete in time - {frameQueue.Count} frames still in queue");
                     }
                 }
+
+                // Wait for encoder to finish processing all queued frames
+                await Task.Delay(200);
 
                 bool success = false;
                 string outputPath = currentOutputPath;
@@ -541,7 +664,7 @@ namespace FfmpegMediaPlatform
                     var fileInfo = new FileInfo(outputPath);
                     if (fileInfo.Length > 0)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"LibAV recording completed - File size: {fileInfo.Length} bytes");
+                        Tools.Logger.VideoLog.LogCall(this, $"[DIAG] Recording complete - File: {outputPath}, Size: {fileInfo.Length} bytes");
                         success = true;
                     }
                     else
@@ -599,8 +722,32 @@ namespace FfmpegMediaPlatform
                     // Write trailer
                     if (formatContext != null)
                     {
+                        // Set stream duration explicitly before writing trailer
+                        // This ensures MKV has correct duration metadata for seeking
+                        if (videoStream != null && lastPacketPts > 0)
+                        {
+                            videoStream->duration = lastPacketPts;
+                            Tools.Logger.VideoLog.LogCall(this, $"[DIAG] Set stream duration to {lastPacketPts} ticks ({lastPacketPts/1000.0:F3}s)");
+                        }
+
+                        // Ensure all data is flushed before writing trailer
+                        if (formatContext->pb != null)
+                        {
+                            ffmpeg.avio_flush(formatContext->pb);
+                            Tools.Logger.VideoLog.LogCall(this, $"[DIAG] Flushed IO context before trailer");
+                        }
+
+                        Tools.Logger.VideoLog.LogCall(this, $"[DIAG] Writing trailer to file...");
                         int trailerRet = ffmpeg.av_write_trailer(formatContext);
-                        Tools.Logger.VideoLog.LogCall(this, $"Write trailer result: {trailerRet}");
+                        Tools.Logger.VideoLog.LogCall(this, $"[DIAG] Trailer written, result: {trailerRet} (0=success)");
+
+                        // Final flush after trailer
+                        if (formatContext->pb != null)
+                        {
+                            ffmpeg.avio_flush(formatContext->pb);
+                            Tools.Logger.VideoLog.LogCall(this, $"[DIAG] Final flush after trailer");
+                        }
+
                         return trailerRet >= 0;
                     }
                 }
@@ -622,27 +769,65 @@ namespace FfmpegMediaPlatform
             {
                 if (codecContext == null) return;
 
-                // Send null frame to signal end of stream
-                ffmpeg.avcodec_send_frame(codecContext, null);
+                Tools.Logger.VideoLog.LogCall(this, $"[DIAG] FlushEncoder START - Total frames sent to encoder: {recordingFrameCounter}");
 
-                // Receive all remaining packets
+                // Send null frame to signal end of stream
+                int sendRet = ffmpeg.avcodec_send_frame(codecContext, null);
+                Tools.Logger.VideoLog.LogCall(this, $"[DIAG] FlushEncoder - Sent null frame, result: {sendRet}");
+
+                // Receive all remaining packets - keep trying even after EAGAIN
+                int flushedPackets = 0;
+                int eagainCount = 0;
                 while (true)
                 {
                     int receiveRet = ffmpeg.avcodec_receive_packet(codecContext, packet);
-                    if (receiveRet == ffmpeg.AVERROR_EOF || receiveRet == ffmpeg.AVERROR(ffmpeg.EAGAIN))
+                    if (receiveRet == ffmpeg.AVERROR_EOF)
                     {
+                        Tools.Logger.VideoLog.LogCall(this, $"[DIAG] FlushEncoder EOF - Flushed {flushedPackets} packets after {eagainCount} EAGAIN attempts");
                         break;
+                    }
+                    else if (receiveRet == ffmpeg.AVERROR(ffmpeg.EAGAIN))
+                    {
+                        eagainCount++;
+                        if (eagainCount > 10)
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"[DIAG] FlushEncoder stopping after {eagainCount} EAGAIN attempts, {flushedPackets} packets flushed");
+                            break;
+                        }
+                        // Try again - encoder might have more packets after processing
+                        continue;
                     }
                     else if (receiveRet < 0)
                     {
+                        Tools.Logger.VideoLog.LogCall(this, $"[DIAG] FlushEncoder ERROR receiving packet: {receiveRet}");
                         break;
                     }
 
+                    // Reset EAGAIN counter when we successfully receive a packet
+                    eagainCount = 0;
+
+                    // Rescale packet PTS from codec timebase to stream timebase
                     ffmpeg.av_packet_rescale_ts(packet, codecContext->time_base, videoStream->time_base);
                     packet->stream_index = videoStream->index;
+
+                    // Track last packet PTS (after rescaling)
+                    lastPacketPts = packet->pts;
+
+                    // Log PTS of flushed packets
+                    if (flushedPackets < 10)
+                    {
+                        double ptsSeconds = packet->pts * ((double)videoStream->time_base.num / videoStream->time_base.den);
+                        Tools.Logger.VideoLog.LogCall(this, $"[DIAG] FlushedPacket #{flushedPackets}, PTS={packet->pts} ticks, timebase={videoStream->time_base.num}/{videoStream->time_base.den} = {ptsSeconds:F6}s");
+                    }
+
                     ffmpeg.av_interleaved_write_frame(formatContext, packet);
                     ffmpeg.av_packet_unref(packet);
+                    flushedPackets++;
+                    totalPacketsWritten++;
                 }
+
+                double lastPacketSeconds = lastPacketPts * ((double)videoStream->time_base.num / videoStream->time_base.den);
+                Tools.Logger.VideoLog.LogCall(this, $"[DIAG] FlushEncoder COMPLETE - Flushed: {flushedPackets}, TotalPackets: {totalPacketsWritten}, LastPTS: {lastPacketPts} ticks = {lastPacketSeconds:F6}s (Expected ~{(recordingFrameCounter/30.0):F2}s for {recordingFrameCounter} frames@30fps)");
             }
             catch (Exception ex)
             {
