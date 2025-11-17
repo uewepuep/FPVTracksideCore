@@ -43,6 +43,24 @@ namespace UI.Nodes.Rounds
 
         public RoundsNode RoundsNode { get; private set; }
 
+        protected override Size MaxRenderTargetSize
+        {
+            get
+            {
+                // Calculate required size dynamically based on number of races
+                // No artificial caps - let the GPU handle its own limits
+                int racesPerColumn = RoundsNode?.RacesPerColumn ?? 3;
+                int raceCount = RaceNodes?.Count() ?? 0;
+                int columns = raceCount > 0 ? (int)Math.Ceiling(raceCount / (float)racesPerColumn) : 1;
+
+                // Estimate width needed per column
+                int estimatedWidthPerColumn = 600;
+                int requiredWidth = columns * estimatedWidthPerColumn;
+
+                return new Size(requiredWidth, 4096);
+            }
+        }
+
         public EventRoundNode(RoundsNode roundsNode, Round round)
             : base(roundsNode.EventManager, round)
         {
