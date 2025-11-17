@@ -86,13 +86,13 @@ namespace FfmpegMediaPlatform
         private int framesDroppedForRealtime = 0;
         
         // Frame recording queue for async processing
-        private readonly System.Collections.Concurrent.ConcurrentQueue<(byte[] frameData, int frameNumber)> recordingQueue = new System.Collections.Concurrent.ConcurrentQueue<(byte[], int)>();
+        private readonly System.Collections.Concurrent.ConcurrentQueue<(byte[] frameData, DateTime captureTime, int frameNumber)> recordingQueue = new System.Collections.Concurrent.ConcurrentQueue<(byte[], DateTime, int)>();
         private readonly System.Threading.SemaphoreSlim recordingSemaphore = new System.Threading.SemaphoreSlim(0);
         private Task recordingWorkerTask;
         private CancellationTokenSource recordingCancellationSource;
         
         // RGBA recording using separate ffmpeg process
-        protected RgbaRecorderManager rgbaRecorderManager;
+        protected LibavRecorderManager rgbaRecorderManager;
 
         public new bool IsVisible { get; set; }
         public FrameTime[] FrameTimes 
@@ -221,7 +221,7 @@ namespace FfmpegMediaPlatform
             recordNextFrameTime = false;
             
             // Initialize RGBA recorder manager
-            rgbaRecorderManager = new RgbaRecorderManager(ffmpegMediaFramework);
+            rgbaRecorderManager = new LibavRecorderManager();
             manualRecording = false;
             finalising = false;
             recordingStartTime = DateTime.MinValue;
@@ -999,7 +999,7 @@ namespace FfmpegMediaPlatform
                         {
                             try
                             {
-                                rgbaRecorderManager?.WriteFrame(frameInfo.frameData, frameInfo.frameNumber);
+                                rgbaRecorderManager?.WriteFrame(frameInfo.frameData, frameInfo.captureTime, frameInfo.frameNumber);
                                 
                                 // Log every 300 frames during recording
                                 if (frameInfo.frameNumber % 300 == 0)
@@ -1034,9 +1034,12 @@ namespace FfmpegMediaPlatform
         /// </summary>
         private void QueueFrameForRecording()
         {
+            // Capture timestamp at the moment frame is queued for recording
+            DateTime captureTime = UnifiedFrameTimingManager.GetHighPrecisionTimestamp();
+
             // PERFORMANCE: Use parallel buffer copy for 4K frames to reduce blocking
             byte[] frameData = new byte[buffer.Length];
-            
+
             // For large 4K frames (>2MB), use parallel copying to improve performance
             if (buffer.Length > 2 * 1024 * 1024) // 2MB threshold for 4K
             {
@@ -1050,14 +1053,14 @@ namespace FfmpegMediaPlatform
                         IntPtr srcPtr = new IntPtr(src);
                         IntPtr dstPtr = new IntPtr(dst);
                         int totalLength = buffer.Length;
-                        
+
                         System.Threading.Tasks.Parallel.For(0, Environment.ProcessorCount, i =>
                         {
                             int chunkSize = totalLength / Environment.ProcessorCount;
                             int start = i * chunkSize;
-                            int length = (i == Environment.ProcessorCount - 1) ? 
+                            int length = (i == Environment.ProcessorCount - 1) ?
                                 totalLength - start : chunkSize;
-                            
+
                             if (length > 0)
                             {
                                 Buffer.MemoryCopy((void*)(srcPtr + start), (void*)(dstPtr + start), length, length);
@@ -1071,9 +1074,9 @@ namespace FfmpegMediaPlatform
                 // For smaller frames, use regular Buffer.BlockCopy (faster than Array.Copy)
                 Buffer.BlockCopy(buffer, 0, frameData, 0, buffer.Length);
             }
-            
-            // Queue the frame for async processing
-            recordingQueue.Enqueue((frameData, (int)FrameProcessNumber));
+
+            // Queue the frame for async processing with capture timestamp
+            recordingQueue.Enqueue((frameData, captureTime, (int)FrameProcessNumber));
             recordingSemaphore.Release(); // Signal worker task
         }
 
