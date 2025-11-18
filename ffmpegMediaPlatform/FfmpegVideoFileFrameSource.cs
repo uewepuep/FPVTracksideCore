@@ -1337,14 +1337,100 @@ namespace FfmpegMediaPlatform
 
         public void NextFrame()
         {
+            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: NextFrame called - currentMediaTime={mediaTime.TotalSeconds:F3}s, FrameTimes.Length={VideoConfig?.FrameTimes?.Length ?? 0}, frameRate={frameRate}");
+
+            // Use actual frame timing data if available for accurate navigation
+            if (VideoConfig != null && VideoConfig.FrameTimes != null && VideoConfig.FrameTimes.Length > 0)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Using XML frame timing data with {VideoConfig.FrameTimes.Length} frames");
+
+                // Find current frame index based on mediaTime
+                DateTime currentAbsoluteTime = StartTime + mediaTime;
+                int currentIndex = -1;
+
+                for (int i = 0; i < VideoConfig.FrameTimes.Length; i++)
+                {
+                    if (VideoConfig.FrameTimes[i].Time >= currentAbsoluteTime)
+                    {
+                        currentIndex = i;
+                        break;
+                    }
+                }
+
+                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Found currentIndex={currentIndex}");
+
+                // Move to next frame
+                if (currentIndex >= 0 && currentIndex < VideoConfig.FrameTimes.Length - 1)
+                {
+                    TimeSpan nextFrameTime = VideoConfig.FrameTimes[currentIndex + 1].Time - StartTime;
+                    Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Moving to next frame index {currentIndex + 1}, time {nextFrameTime.TotalSeconds:F3}s");
+                    SetPosition(nextFrameTime);
+                    return;
+                }
+                else
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Cannot go to next frame, currentIndex={currentIndex}, maxIndex={VideoConfig.FrameTimes.Length - 1}");
+                }
+            }
+            else
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: No XML timing data, using fallback frameRate={frameRate}");
+            }
+
+            // Fallback to estimated frame duration
             TimeSpan frameDuration = TimeSpan.FromSeconds(1.0 / frameRate);
-            SetPosition(mediaTime + frameDuration);
+            var pos = mediaTime + frameDuration;
+            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Fallback - seeking to {pos.TotalSeconds:F3}s (step={frameDuration.TotalMilliseconds:F1}ms)");
+            SetPosition(pos);
         }
 
         public void PrevFrame()
         {
+            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: PrevFrame called - currentMediaTime={mediaTime.TotalSeconds:F3}s, FrameTimes.Length={VideoConfig?.FrameTimes?.Length ?? 0}, frameRate={frameRate}");
+
+            // Use actual frame timing data if available for accurate navigation
+            if (VideoConfig != null && VideoConfig.FrameTimes != null && VideoConfig.FrameTimes.Length > 0)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Using XML frame timing data with {VideoConfig.FrameTimes.Length} frames");
+
+                // Find current frame index based on mediaTime
+                DateTime currentAbsoluteTime = StartTime + mediaTime;
+                int currentIndex = -1;
+
+                for (int i = 0; i < VideoConfig.FrameTimes.Length; i++)
+                {
+                    if (VideoConfig.FrameTimes[i].Time >= currentAbsoluteTime)
+                    {
+                        currentIndex = i;
+                        break;
+                    }
+                }
+
+                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Found currentIndex={currentIndex}");
+
+                // Move to previous frame
+                if (currentIndex > 0)
+                {
+                    TimeSpan prevFrameTime = VideoConfig.FrameTimes[currentIndex - 1].Time - StartTime;
+                    Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Moving to prev frame index {currentIndex - 1}, time {prevFrameTime.TotalSeconds:F3}s");
+                    SetPosition(prevFrameTime);
+                    return;
+                }
+                else
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Cannot go to prev frame, currentIndex={currentIndex}");
+                }
+            }
+            else
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: No XML timing data, using fallback frameRate={frameRate}");
+            }
+
+            // Fallback to estimated frame duration
             TimeSpan frameDuration = TimeSpan.FromSeconds(1.0 / frameRate);
-            SetPosition(mediaTime - frameDuration);
+            var pos = mediaTime - frameDuration;
+            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Fallback - seeking to {pos.TotalSeconds:F3}s (step={frameDuration.TotalMilliseconds:F1}ms)");
+            SetPosition(pos);
         }
 
         public override IEnumerable<Mode> GetModes()

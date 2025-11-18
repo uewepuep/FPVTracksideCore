@@ -81,6 +81,11 @@ namespace FfmpegMediaPlatform
         private readonly object seekLock = new object();
         private bool seekRequested = false;
         private TimeSpan seekTarget = TimeSpan.Zero;
+        private bool seekingToExactFrame = false;
+        private TimeSpan exactSeekTarget = TimeSpan.Zero;
+        private TimeSpan lastSeekTarget = TimeSpan.Zero;
+        private int consecutiveSameTargetSeeks = 0;
+        private bool seekInProgress = false;
 
         public FfmpegLibVideoFileFrameSource(VideoConfig videoConfig) : base(videoConfig)
         {
@@ -466,9 +471,10 @@ namespace FfmpegMediaPlatform
                             seekRequested = false;
                             seekTime = seekTarget;
                             shouldSeek = true;
+                            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: ReadLoop detected seek request to {seekTime.TotalSeconds:F3}s, isPlaying={isPlaying}");
                         }
                     }
-                    
+
                     if (shouldSeek)
                     {
                         // Use the same seeking mechanism on all platforms (Mac approach that works)
@@ -478,20 +484,20 @@ namespace FfmpegMediaPlatform
                         {
                             target += st->start_time;
                         }
-                        
+
                         int seekResult = ffmpeg.av_seek_frame(fmt, videoStreamIndex, target, ffmpeg.AVSEEK_FLAG_BACKWARD);
-                        // if (seekResult < 0)
-                        // {
-                        //     Tools.Logger.VideoLog.LogCallDebugOnly(this, $"ReadLoop: Seek failed with result {seekResult}");
-                        // }
-                        
-                        // Flush decoder buffers to ensure we start clean
+
+                        // Flush decoder buffers
                         ffmpeg.avcodec_flush_buffers(codecCtx);
-                        
-                        // Update media time to reflect the seek position
-                        mediaTime = seekTime;
-                        
-                        // Tools.Logger.VideoLog.LogCallDebugOnly(this, $"ReadLoop: Seek completed to {seekTime.TotalSeconds:F2}s");
+
+                        // Set flag to skip frames until we reach exact target
+                        lock (seekLock)
+                        {
+                            seekingToExactFrame = true;
+                            exactSeekTarget = seekTime;
+                        }
+
+                        Tools.Logger.VideoLog.LogDebugCall(this, $"SEEK: Backward seek to keyframe completed, will decode forward to {seekTime.TotalSeconds:F3}s");
                     }
                     
                     // Read and process frames from current position
@@ -639,41 +645,70 @@ namespace FfmpegMediaPlatform
                         // Use natural frame timing from MKV file - no artificial pacing
                         // The frame timing (frameTime) already contains the correct intervals from the video
                         
-                        // Check if seek is pending
+                        // Check if seek is pending or if we're seeking to exact frame
                         bool seekStillPending = false;
+                        bool skipFrameForExactSeek = false;
+                        bool isTargetFrame = false;
+                        TimeSpan exactTarget = TimeSpan.Zero;
+
                         lock (seekLock)
                         {
                             seekStillPending = seekRequested;
+                            if (seekingToExactFrame)
+                            {
+                                exactTarget = exactSeekTarget;
+                                // Skip this frame if it's before our exact target
+                                if (frameTime < exactTarget)
+                                {
+                                    skipFrameForExactSeek = true;
+                                }
+                                else
+                                {
+                                    // We've reached the target frame - mark it for display
+                                    isTargetFrame = true;
+                                    seekingToExactFrame = false;
+                                    seekInProgress = false; // Clear seek in progress flag
+                                    Tools.Logger.VideoLog.LogDebugCall(this, $"SEEK: Reached exact target at {frameTime.TotalSeconds:F3}s (target was {exactTarget.TotalSeconds:F3}s)");
+                                }
+                            }
                         }
-                        
-                        if (run && !seekStillPending && isPlaying)
+
+                        if (run && !seekStillPending && (isPlaying || isTargetFrame))
                         {
-                            // Update timing (mediaTime from PTS) - only when playing to keep progress bar stopped when paused
+                            // Update timing (mediaTime from PTS)
                             long localPts = frame->best_effort_timestamp;
                             if (localPts == ffmpeg.AV_NOPTS_VALUE) localPts = frame->pts;
                             if (localPts != ffmpeg.AV_NOPTS_VALUE)
                             {
                                 double sec = (localPts - startPts) * tb;
                                 var newMediaTime = TimeSpan.FromSeconds(Math.Max(0, sec));
-                                // if (Math.Abs((newMediaTime - mediaTime).TotalMilliseconds) > 10)
-                                // {
-                                //     Tools.Logger.VideoLog.LogCallDebugOnly(this, $"READLOOP: mediaTime updated from {mediaTime.TotalSeconds:F2}s to {newMediaTime.TotalSeconds:F2}s (isPlaying={isPlaying})");
-                                // }
-                                mediaTime = newMediaTime;
+                                var oldMediaTime = mediaTime;
+
+                                // When paused and at target frame, use the seek target time instead of PTS
+                                // This ensures mediaTime matches what we're trying to seek to, even if video doesn't have exact frame
+                                if (!isPlaying && isTargetFrame)
+                                {
+                                    lock (seekLock)
+                                    {
+                                        mediaTime = exactSeekTarget;
+                                        pausedAtMediaTime = mediaTime; // Update paused position for resume
+                                        Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Paused seek - set mediaTime to exactSeekTarget {mediaTime.TotalSeconds:F3}s (PTS was {newMediaTime.TotalSeconds:F3}s)");
+                                    }
+                                }
+                                else
+                                {
+                                    mediaTime = newMediaTime;
+                                    Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Updated mediaTime from {oldMediaTime.TotalSeconds:F3}s to {mediaTime.TotalSeconds:F3}s (isPlaying={isPlaying}, isTargetFrame={isTargetFrame})");
+                                }
                             }
-                            
-                            // Debug frame timing
-                            // if (loopCount < 10 || loopCount % 60 == 0)
-                            // {
-                            //     Tools.Logger.VideoLog.LogCallDebugOnly(this, $"ReadLoop: Processing frame - frameTime={frameTime.TotalSeconds:F2}s, mediaTime={mediaTime.TotalSeconds:F2}s, expectedInterval={expectedFrameIntervalMs:F1}ms");
-                            // }
-                            
-                            // if (loopCount % 30 == 0) // Log every 30 frames (about 1 second at 30fps)
-                            // {
-                            //     Tools.Logger.VideoLog.LogCallDebugOnly(this, $"ReadLoop: Processing frame at {frameTime.TotalSeconds:F2}s");
-                            // }
-                            ProcessCurrentFrame(frame, frameTime);
-                            
+
+                            // Display frame unless we're skipping to reach target
+                            if (!skipFrameForExactSeek || isTargetFrame)
+                            {
+                                ProcessCurrentFrame(frame, frameTime);
+                                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Displayed frame at {frameTime.TotalSeconds:F3}s, isPlaying={isPlaying}, isTargetFrame={isTargetFrame}");
+                            }
+
                             // Real-time playback timing based on PTS
                             if (!isPlaying)
                             {
@@ -865,19 +900,32 @@ namespace FfmpegMediaPlatform
         public override void CleanUp()
         {
             run = false;
+
+            // CRITICAL: Wait for reader thread to stop before freeing FFmpeg resources
+            if (readerThread != null && readerThread.IsAlive)
+            {
+                if (!readerThread.Join(2000))
+                {
+                    Tools.Logger.VideoLog.LogCall(this, "WARNING: Reader thread did not stop during CleanUp within 2 seconds");
+                }
+            }
             readerThread = null;
 
             if (sws != null) { ffmpeg.sws_freeContext(sws); sws = null; }
             if (frame != null) { ffmpeg.av_frame_unref(frame); ffmpeg.av_free(frame); frame = null; }
             if (pkt != null) { ffmpeg.av_packet_unref(pkt); ffmpeg.av_free(pkt); pkt = null; }
-            if (codecCtx != null) 
-            { 
+            if (codecCtx != null)
+            {
                 var codecCtxPtr = codecCtx;
-                ffmpeg.avcodec_free_context(&codecCtxPtr); 
-                codecCtx = null; 
+                ffmpeg.avcodec_free_context(&codecCtxPtr);
+                codecCtx = null;
             }
-            // avformat_close_input requires pointer-to-pointer; skip explicit close to avoid build issues
-            fmt = null;
+            if (fmt != null)
+            {
+                var fmtPtr = fmt;
+                ffmpeg.avformat_close_input(&fmtPtr);
+                fmt = null;
+            }
             if (rgbaHandle.IsAllocated) rgbaHandle.Free();
 
             base.CleanUp();
@@ -886,7 +934,7 @@ namespace FfmpegMediaPlatform
         public void Play()
         {
             Tools.Logger.VideoLog.LogDebugCall(this, $"Play() called - mediaTime: {mediaTime.TotalSeconds:F2}s, pausedAtMediaTime: {pausedAtMediaTime.TotalSeconds:F2}s");
-            
+
             // Reset playback timing when starting/resuming playback
             // This ensures accurate real-time timing regardless of seeks or pauses
             playbackStartTime = DateTime.MinValue;
@@ -927,24 +975,49 @@ namespace FfmpegMediaPlatform
         public void SetPosition(TimeSpan seekTime)
         {
             if (fmt == null) return;
-            
+
+            // Track if we're repeatedly seeking to the same target
+            if (Math.Abs((seekTime - lastSeekTarget).TotalSeconds) < 0.001)
+            {
+                consecutiveSameTargetSeeks++;
+            }
+            else
+            {
+                consecutiveSameTargetSeeks = 0;
+            }
+            lastSeekTarget = seekTime;
+
+            // LOG WHO IS CALLING SetPosition
+            var stackTrace = new System.Diagnostics.StackTrace(1, true);
+            var callerFrame = stackTrace.GetFrame(0);
+            string caller = callerFrame?.GetMethod()?.Name ?? "Unknown";
+            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: SetPosition({seekTime.TotalSeconds:F3}s) called from {caller}, currentMediaTime={mediaTime.TotalSeconds:F3}s");
+
             // Validate seek time - don't allow negative seeks
             if (seekTime < TimeSpan.Zero)
             {
                 Tools.Logger.VideoLog.LogDebugCall(this, $"SetPosition: Invalid seek time {seekTime.TotalSeconds:F2}s, clamping to 0");
                 seekTime = TimeSpan.Zero;
             }
-            
+
             // Reset playback timing when seeking to ensure accurate real-time playback from new position
             playbackStartTime = DateTime.MinValue;
             playbackStartMediaTime = TimeSpan.Zero;
             Tools.Logger.VideoLog.LogDebugCall(this, $"SetPosition: Reset timing variables for real-time playback after seek to {seekTime.TotalSeconds:F2}s");
-            
+
             // Set the seek request for ReadLoop to handle
             lock (seekLock)
             {
+                // If a seek is already in progress, ignore this request
+                if (seekInProgress && !isPlaying)
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Ignoring seek request - previous seek still in progress");
+                    return;
+                }
+
                 seekTarget = seekTime;
                 seekRequested = true;
+                seekInProgress = true;
             }
             Tools.Logger.VideoLog.LogDebugCall(this, $"SETPOSITION: Requesting seek from {mediaTime.TotalSeconds:F2}s to {seekTime.TotalSeconds:F2}s (State={State})");
             
@@ -965,7 +1038,13 @@ namespace FfmpegMediaPlatform
 
         public void SetPosition(DateTime seekTime)
         {
+            var stackTrace = new System.Diagnostics.StackTrace(1, true);
+            var callerFrame = stackTrace.GetFrame(0);
+            string caller = callerFrame?.GetMethod()?.Name ?? "Unknown";
+
             var offset = seekTime - StartTime;
+            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: SetPosition(DateTime {seekTime:HH:mm:ss.fff}) called from {caller}, StartTime={StartTime:HH:mm:ss.fff}, calculated offset={offset.TotalSeconds:F3}s");
+
             if (offset < TimeSpan.Zero) offset = TimeSpan.Zero;
             if (Length > TimeSpan.Zero && offset > Length) offset = Length;
             SetPosition(offset);
@@ -973,17 +1052,162 @@ namespace FfmpegMediaPlatform
 
         public void PrevFrame()
         {
+            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: PrevFrame called - currentMediaTime={mediaTime.TotalSeconds:F3}s, frameTimesData.Length={frameTimesData?.Length ?? 0}, frameRate={frameRate}");
+
+            // Use actual frame timing data if available for accurate navigation
+            if (frameTimesData != null && frameTimesData.Length > 0)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Using XML frame timing data with {frameTimesData.Length} frames");
+
+                // Find current frame index based on mediaTime - find closest match
+                TimeSpan currentRelativeTime = mediaTime;
+                int currentIndex = -1;
+                double minDiff = double.MaxValue;
+
+                for (int i = 0; i < frameTimesData.Length; i++)
+                {
+                    TimeSpan frameRelTime = frameTimesData[i].Time - startTime;
+                    double diff = Math.Abs((frameRelTime - currentRelativeTime).TotalSeconds);
+
+                    if (diff < minDiff)
+                    {
+                        minDiff = diff;
+                        currentIndex = i;
+                    }
+
+                    // If we're now moving away from the target, we found the closest
+                    if (frameRelTime > currentRelativeTime + TimeSpan.FromSeconds(0.1))
+                    {
+                        break;
+                    }
+                }
+
+                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Found currentIndex={currentIndex}, frameTime={(currentIndex >= 0 ? (frameTimesData[currentIndex].Time - startTime).TotalSeconds : -1):F3}s, diff={minDiff:F3}s");
+
+                // Move to previous frame - find first frame with different timestamp
+                if (currentIndex > 0)
+                {
+                    TimeSpan currentTime = frameTimesData[currentIndex].Time - startTime;
+                    int prevIndex = currentIndex - 1;
+
+                    // If we're stuck (tried to seek to this frame before but couldn't reach it),
+                    // skip over it and try the next one back
+                    if (consecutiveSameTargetSeeks > 2)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Skipping unreachable frame at index {prevIndex}, looking for next previous frame");
+                        prevIndex--;
+                        consecutiveSameTargetSeeks = 0; // Reset counter
+                    }
+
+                    // Skip frames with same timestamp - look for strictly less than
+                    while (prevIndex > 0 && (frameTimesData[prevIndex].Time - startTime) >= currentTime)
+                    {
+                        prevIndex--;
+                    }
+
+                    // If we're at the beginning and still have same timestamp, just use index 0
+                    if (prevIndex == 0 && (frameTimesData[0].Time - startTime) >= currentTime)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Already at first unique timestamp, cannot go back further");
+                        return;
+                    }
+
+                    TimeSpan prevFrameTime = frameTimesData[prevIndex].Time - startTime;
+                    Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Moving to prev frame index {prevIndex}, time {prevFrameTime.TotalSeconds:F3}s (current was {currentTime.TotalSeconds:F3}s, skipped {currentIndex - prevIndex - 1} frames)");
+                    SetPosition(prevFrameTime);
+                    return;
+                }
+                else
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Cannot go to prev frame, currentIndex={currentIndex}");
+                }
+            }
+            else
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: No XML timing data, using fallback frameRate={frameRate}");
+            }
+
+            // Fallback to estimated frame duration
             var step = TimeSpan.FromSeconds(1.0 / Math.Max(1.0, frameRate));
             var pos = mediaTime - step;
             if (pos < TimeSpan.Zero) pos = TimeSpan.Zero;
+            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Fallback - seeking to {pos.TotalSeconds:F3}s (step={step.TotalMilliseconds:F1}ms)");
             SetPosition(pos);
         }
 
         public void NextFrame()
         {
+            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: NextFrame called - currentMediaTime={mediaTime.TotalSeconds:F3}s, frameTimesData.Length={frameTimesData?.Length ?? 0}, frameRate={frameRate}");
+
+            // Use actual frame timing data if available for accurate navigation
+            if (frameTimesData != null && frameTimesData.Length > 0)
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Using XML frame timing data with {frameTimesData.Length} frames");
+
+                // Find current frame index based on mediaTime - find closest match
+                TimeSpan currentRelativeTime = mediaTime;
+                int currentIndex = -1;
+                double minDiff = double.MaxValue;
+
+                for (int i = 0; i < frameTimesData.Length; i++)
+                {
+                    TimeSpan frameRelTime = frameTimesData[i].Time - startTime;
+                    double diff = Math.Abs((frameRelTime - currentRelativeTime).TotalSeconds);
+
+                    if (diff < minDiff)
+                    {
+                        minDiff = diff;
+                        currentIndex = i;
+                    }
+
+                    // If we're now moving away from the target, we found the closest
+                    if (frameRelTime > currentRelativeTime + TimeSpan.FromSeconds(0.1))
+                    {
+                        break;
+                    }
+                }
+
+                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Found currentIndex={currentIndex}, frameTime={(currentIndex >= 0 ? (frameTimesData[currentIndex].Time - startTime).TotalSeconds : -1):F3}s, diff={minDiff:F3}s");
+
+                // Move to next frame - find first frame with different timestamp
+                if (currentIndex >= 0 && currentIndex < frameTimesData.Length - 1)
+                {
+                    TimeSpan currentTime = frameTimesData[currentIndex].Time - startTime;
+                    int nextIndex = currentIndex + 1;
+
+                    // Skip frames with same timestamp - look for strictly greater than
+                    while (nextIndex < frameTimesData.Length - 1 && (frameTimesData[nextIndex].Time - startTime) <= currentTime)
+                    {
+                        nextIndex++;
+                    }
+
+                    // If we reached the end and still have same timestamp
+                    if (nextIndex == frameTimesData.Length - 1 && (frameTimesData[nextIndex].Time - startTime) <= currentTime)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Already at last unique timestamp, cannot go forward");
+                        return;
+                    }
+
+                    TimeSpan nextFrameTime = frameTimesData[nextIndex].Time - startTime;
+                    Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Moving to next frame index {nextIndex}, time {nextFrameTime.TotalSeconds:F3}s (current was {currentTime.TotalSeconds:F3}s, skipped {nextIndex - currentIndex - 1} frames)");
+                    SetPosition(nextFrameTime);
+                    return;
+                }
+                else
+                {
+                    Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Cannot go to next frame, currentIndex={currentIndex}, maxIndex={frameTimesData.Length - 1}");
+                }
+            }
+            else
+            {
+                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: No XML timing data, using fallback frameRate={frameRate}");
+            }
+
+            // Fallback to estimated frame duration
             var step = TimeSpan.FromSeconds(1.0 / Math.Max(1.0, frameRate));
             var pos = mediaTime + step;
             if (Length > TimeSpan.Zero && pos > Length) pos = Length;
+            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Fallback - seeking to {pos.TotalSeconds:F3}s (step={step.TotalMilliseconds:F1}ms)");
             SetPosition(pos);
         }
 
@@ -995,7 +1219,7 @@ namespace FfmpegMediaPlatform
         {
             // Let PTS timing from ReadLoop drive mediaTime naturally
             // No need to override with wall-clock timing
-            
+
             // Call base implementation to get the frame
             bool result = base.UpdateTexture(graphicsDevice, drawFrameId, ref texture);
             
