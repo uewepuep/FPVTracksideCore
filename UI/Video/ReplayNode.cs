@@ -387,23 +387,23 @@ namespace UI.Video
                     }
                     else if (primary != null)
                     {
-                        // When PLAYING: seek ±1 second
+                        // When PLAYING: seek ±0.5 second
                         if (keyMapper.ReplayNextFrame.Match(inputEvent))
                         {
-                            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_KEY: Right (playing) - seek forward 1 second");
-                            Seek(primary.CurrentTime + TimeSpan.FromSeconds(1));
+                            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_KEY: Right (playing) - seek forward 0.5 second");
+                            Seek(primary.CurrentTime + TimeSpan.FromSeconds(0.5));
                         }
                         if (keyMapper.ReplayPrevFrame.Match(inputEvent))
                         {
-                            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_KEY: Left (playing) - seek backward 1 second");
-                            Seek(primary.CurrentTime + TimeSpan.FromSeconds(-1));
+                            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_KEY: Left (playing) - seek backward 0.5 second");
+                            Seek(primary.CurrentTime + TimeSpan.FromSeconds(-0.5));
                         }
                     }
                 }
 
                 if (primary != null)
                 {
-                    // Modifier + Left/Right: Always seek ±1 second (whether paused or playing)
+                    // Modifier + Left/Right: Always seek ±0.5 second (whether paused or playing)
                     bool seekForward = (inputEvent.Key == Keys.Right) &&
                                       (inputEvent.Shift || inputEvent.Alt);
 
@@ -412,13 +412,13 @@ namespace UI.Video
 
                     if (seekForward)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_KEY: Modifier+Right - seeking forward 1 second");
-                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(1));
+                        Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_KEY: Modifier+Right - seeking forward 0.5 second");
+                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(0.5));
                     }
                     else if (seekBackward)
                     {
-                        Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_KEY: Modifier+Left - seeking backward 1 second");
-                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(-1));
+                        Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_KEY: Modifier+Left - seeking backward 0.5 second");
+                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(-0.5));
                     }
                 }
 
