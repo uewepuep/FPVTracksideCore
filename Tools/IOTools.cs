@@ -21,6 +21,12 @@ namespace Tools
         public static string EventStorageLocation { get; set; }
 
         /// <summary>
+        /// Actual events directory path set during app initialization.
+        /// Use this to ensure consistency between event creation and access.
+        /// </summary>
+        public static string EventsDirectoryPath { get; set; }
+
+        /// <summary>
         /// Gets the base directory for user data.
         /// On macOS: If EventStorageLocation is an absolute path, uses it as base directory.
         ///           If path ends with /events/, strips that off since it's just the subfolder.
@@ -29,33 +35,22 @@ namespace Tools
         /// </summary>
         public static DirectoryInfo GetBaseDirectory()
         {
-            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            // Always return WorkingDirectory for app resources (themes, fonts, etc.)
+            // EventStorageLocation only affects where events are stored, not app resources
+            if (WorkingDirectory != null)
             {
-                // On macOS, check if EventStorageLocation is set to an absolute path
-                if (!string.IsNullOrEmpty(EventStorageLocation) && Path.IsPathRooted(EventStorageLocation))
-                {
-                    // Absolute path - use it as base directory
-                    DirectoryInfo dir = new DirectoryInfo(EventStorageLocation);
-
-                    // If user manually added "/events/" to the end, strip it off
-                    // since on macOS this setting controls the base directory for ALL data
-                    if (dir.Name.ToLower() == "events" && dir.Parent != null)
-                    {
-                        return dir.Parent;
-                    }
-
-                    return dir;
-                }
-
-                // On macOS, if WorkingDirectory not set yet, use Application Support directly
-                if (WorkingDirectory == null)
-                {
-                    string appSupport = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
-                    return new DirectoryInfo(System.IO.Path.Combine(appSupport, "FPVTrackside"));
-                }
+                return WorkingDirectory;
             }
 
-            return WorkingDirectory;
+            // Fallback if WorkingDirectory not set yet
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            {
+                string appSupport = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+                return new DirectoryInfo(System.IO.Path.Combine(appSupport, "FPVTrackside"));
+            }
+
+            // On Windows, use current directory
+            return new DirectoryInfo(Directory.GetCurrentDirectory());
         }
 
         public static T[] Read<T>(Profile profile, string filename) where T : new()
@@ -148,6 +143,37 @@ namespace Tools
 
         public static void Write<T>(Profile profile, string filename, params T[] items) where T : new()
         {
+            // Always log ProfileSettings writes
+            if (filename == "ProfileSettings.xml")
+            {
+                var stackTrace = new System.Diagnostics.StackTrace(2, true);
+                var callerFrame = stackTrace.GetFrame(0);
+                string caller = callerFrame?.GetMethod()?.DeclaringType?.Name + "." + callerFrame?.GetMethod()?.Name ?? "Unknown";
+
+                string filePath = System.IO.Path.Combine(profile.GetPath(), filename);
+                string absolutePath = System.IO.Path.GetFullPath(filePath);
+                Console.WriteLine($"========================================");
+                Console.WriteLine($"[IOTools.Write] WRITING ProfileSettings");
+                Console.WriteLine($"[IOTools.Write] File: {absolutePath}");
+                Console.WriteLine($"[IOTools.Write] Called from: {caller}");
+                Console.WriteLine($"[IOTools.Write] Type: {typeof(T).Name}");
+
+                if (items != null && items.Length > 0)
+                {
+                    var item = items[0] as dynamic;
+                    try
+                    {
+                        string eventStorageLoc = item?.EventStorageLocation?.ToString() ?? "null";
+                        Console.WriteLine($"[IOTools.Write] EventStorageLocation: {eventStorageLoc}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[IOTools.Write] Could not read EventStorageLocation: {ex.Message}");
+                    }
+                }
+                Console.WriteLine($"========================================");
+            }
+
             Write(profile.GetPath(), filename, items);
         }
 

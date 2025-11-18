@@ -277,7 +277,35 @@ namespace UI.Nodes.Rounds
                 mm.AddSubmenu("Set Race Bracket", SetBracket, Enum.GetValues(typeof(Brackets)).OfType<Brackets>().ToArray());
                 mm.AddItem("Open Race Folder", () =>
                 {
-                    PlatformTools.OpenFileManager(Path.Combine(IOTools.GetBaseDirectory().FullName, "events", EventManager.EventId.ToString(), Race.ID.ToString()));
+                    // Use the same events directory that was set during database initialization
+                    string eventsDir = IOTools.EventsDirectoryPath;
+                    if (string.IsNullOrEmpty(eventsDir))
+                    {
+                        Tools.Logger.UI.LogCall(this, "Open Race Folder - EventsDirectoryPath not initialized");
+                        return;
+                    }
+
+                    string eventDir = Path.Combine(eventsDir, EventManager.EventId.ToString());
+                    Tools.Logger.UI.LogCall(this, $"Open Race Folder - Using event directory: {eventDir}");
+
+                    if (!Directory.Exists(eventDir))
+                    {
+                        Tools.Logger.UI.LogCall(this, $"Open Race Folder - Event directory does not exist: {eventDir}");
+                        return;
+                    }
+
+                    // Race directories are named with the race GUID
+                    string raceDir = Path.Combine(eventDir, Race.ID.ToString());
+                    Tools.Logger.UI.LogCall(this, $"Open Race Folder - Opening: {raceDir}");
+
+                    if (Directory.Exists(raceDir))
+                    {
+                        PlatformTools.OpenFileManager(raceDir);
+                    }
+                    else
+                    {
+                        Tools.Logger.UI.LogCall(this, $"Open Race Folder - Race directory does not exist: {raceDir}");
+                    }
                 });
                 if (pilot != null)
                 {

@@ -103,11 +103,16 @@ namespace UI
             string eventDirectoryPath;
             if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
             {
-                eventDirectoryPath = Path.Combine(
-                    ApplicationProfileSettings.Instance.EventStorageLocationExpanded,
-                    "events",
-                    eventManager.Event.ID.ToString()
-                );
+                string baseLocation = ApplicationProfileSettings.Instance.EventStorageLocationExpanded;
+                // Only add "events" if it's not already in the path
+                if (baseLocation.TrimEnd('/').EndsWith("events"))
+                {
+                    eventDirectoryPath = Path.Combine(baseLocation, eventManager.Event.ID.ToString());
+                }
+                else
+                {
+                    eventDirectoryPath = Path.Combine(baseLocation, "events", eventManager.Event.ID.ToString());
+                }
             }
             else
             {

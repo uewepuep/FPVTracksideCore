@@ -7,7 +7,7 @@
     <Platforms>x64;AnyCPU</Platforms>
     <StartupObject />
 	  <usewpf>true</usewpf>
-	  <Version>2.1.0.12</Version>
+	  <Version>2.1.0.13</Version>
 	  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
 	  <SelfContained>true</SelfContained>
 	  <EnableWindowsTargeting>true</EnableWindowsTargeting>

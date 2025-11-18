@@ -302,35 +302,22 @@ namespace UI.Nodes
             {
                 openDirectory.AddItem("Open Event Data Directory", () =>
                 {
-                    // On macOS: EventStorageLocation is base directory, events go in /events/ subdirectory
-                    // On Windows: EventStorageLocation is the events directory itself
-                    string eventPath;
-                    if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+                    // Use the events directory path set at startup
+                    if (!string.IsNullOrEmpty(IOTools.EventsDirectoryPath))
                     {
-                        eventPath = Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocationExpanded, "events", eventManager.EventId.ToString());
+                        string eventPath = Path.Combine(IOTools.EventsDirectoryPath, eventManager.EventId.ToString());
+                        PlatformTools.OpenFileManager(eventPath);
                     }
-                    else
-                    {
-                        eventPath = Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocationExpanded, eventManager.EventId.ToString());
-                    }
-                    PlatformTools.OpenFileManager(eventPath);
                 });
             }
 
             openDirectory.AddItem("Open Events Directory", () =>
             {
-                // On macOS: EventStorageLocation is base directory, events go in /events/ subdirectory
-                // On Windows: EventStorageLocation is the events directory itself
-                string eventsPath;
-                if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+                // Use the events directory path set at startup
+                if (!string.IsNullOrEmpty(IOTools.EventsDirectoryPath))
                 {
-                    eventsPath = Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocationExpanded, "events");
+                    PlatformTools.OpenFileManager(IOTools.EventsDirectoryPath);
                 }
-                else
-                {
-                    eventsPath = ApplicationProfileSettings.Instance.EventStorageLocationExpanded;
-                }
-                PlatformTools.OpenFileManager(eventsPath);
             });
 
             openDirectory.AddItem("Open Pilot Profile Image Directory", () =>
@@ -544,18 +531,26 @@ namespace UI.Nodes
         {
             ApplicationProfileSettings profileSettings = ApplicationProfileSettings.Read(Profile);
 
+            Tools.Logger.UI.LogCall(this, $"Settings Editor - Loaded EventStorageLocation: {profileSettings.EventStorageLocation}");
+
             SettingsEditor editor = new SettingsEditor(profileSettings);
             GetLayer<PopupLayer>().Popup(editor);
 
             editor.OnOK += (e) =>
             {
+                Tools.Logger.UI.LogCall(this, $"Settings Editor - Saving EventStorageLocation: {profileSettings.EventStorageLocation}");
                 ApplicationProfileSettings.Write(Profile, profileSettings);
+                ApplicationProfileSettings.Initialize(Profile);
+
+                // Re-read to verify it was saved correctly
+                var verified = ApplicationProfileSettings.Read(Profile);
+                Tools.Logger.UI.LogCall(this, $"Settings Editor - Verified saved value: {verified.EventStorageLocation}");
+                Tools.Logger.UI.LogCall(this, $"Settings Editor - Instance value after init: {ApplicationProfileSettings.Instance.EventStorageLocation}");
+
                 if (hasEvent && Restart != null && editor.NeedsRestart)
                 {
                     GetLayer<PopupLayer>().PopupConfirmation("Changes require restart to take effect. Restart now?", () => { Restart(evennt); });
                 }
-
-                ApplicationProfileSettings.Initialize(Profile);
 
                 ProfileSettingsSaved?.Invoke();
             };

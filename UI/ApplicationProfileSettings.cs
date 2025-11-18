@@ -401,44 +401,30 @@ namespace UI
 
         public static ApplicationProfileSettings Read(Profile profile)
         {
+            string xmlPath = System.IO.Path.Combine(profile.GetPath(), filename);
+            string absolutePath = System.IO.Path.GetFullPath(xmlPath);
+            Tools.Logger.UI.LogCall(typeof(ApplicationProfileSettings), $"SETTINGS READ - File (relative): {xmlPath}");
+            Tools.Logger.UI.LogCall(typeof(ApplicationProfileSettings), $"SETTINGS READ - File (absolute): {absolutePath}");
+
             ApplicationProfileSettings s = null;
             try
             {
                 s = Tools.IOTools.Read<ApplicationProfileSettings>(profile, filename).FirstOrDefault();
+                Tools.Logger.UI.LogCall(typeof(ApplicationProfileSettings), $"SETTINGS READ - EventStorageLocation from XML: {s?.EventStorageLocation ?? "null"}");
                 if (s == null)
                 {
                     s = new ApplicationProfileSettings();
+                    Tools.Logger.UI.LogCall(typeof(ApplicationProfileSettings), $"SETTINGS READ - Using defaults: {s.EventStorageLocation}");
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 s = new ApplicationProfileSettings();
+                Tools.Logger.UI.LogCall(typeof(ApplicationProfileSettings), $"SETTINGS READ - Exception ({ex.Message}), using defaults: {s.EventStorageLocation}");
             }
 
-            // On macOS, convert relative EventStorageLocation to absolute base directory path for clarity
-            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
-            {
-                if (!string.IsNullOrEmpty(s.EventStorageLocation) &&
-                    !System.IO.Path.IsPathRooted(s.EventStorageLocation) &&
-                    !s.EventStorageLocation.StartsWith("~"))  // Already converted
-                {
-                    // It's a relative path - show the base directory (Application Support)
-                    // Not the events subfolder, since this controls ALL data on macOS
-                    s.EventStorageLocation = Tools.IOTools.WorkingDirectory.FullName;
-                }
-
-                // Replace home directory with ~ for shorter display (but only if it's a full path)
-                if (!string.IsNullOrEmpty(s.EventStorageLocation) && System.IO.Path.IsPathRooted(s.EventStorageLocation))
-                {
-                    string homeDir = System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile);
-                    if (s.EventStorageLocation.StartsWith(homeDir))
-                    {
-                        s.EventStorageLocation = "~" + s.EventStorageLocation.Substring(homeDir.Length);
-                    }
-                }
-            }
-
-            Write(profile, s);
+            // Don't modify the loaded value - use it as-is from the XML file
+            // The UI should display exactly what's saved, not transform it
 
             return s;
         }
@@ -450,7 +436,15 @@ namespace UI
 
         public static void Write(Profile profile, ApplicationProfileSettings profileSettings)
         {
+            var stackTrace = new System.Diagnostics.StackTrace(1, true);
+            var callerFrame = stackTrace.GetFrame(0);
+            string caller = callerFrame?.GetMethod()?.Name ?? "Unknown";
+
+            Tools.Logger.UI.LogCall(typeof(ApplicationProfileSettings), $"SETTINGS WRITE called from {caller} - EventStorageLocation value: {profileSettings?.EventStorageLocation}");
+
             Tools.IOTools.Write(profile, filename, profileSettings);
+
+            Tools.Logger.UI.LogCall(typeof(ApplicationProfileSettings), $"SETTINGS WRITE completed - Value saved to XML: {profileSettings?.EventStorageLocation}");
 
             // Update IOTools.EventStorageLocation when settings are written
             if (profileSettings != null)

@@ -46,7 +46,16 @@ namespace UI.Video
             string eventStoragePath;
             if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
             {
-                eventStoragePath = Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocationExpanded, "events");
+                string baseLocation = ApplicationProfileSettings.Instance.EventStorageLocationExpanded;
+                // Only add "events" if it's not already in the path
+                if (baseLocation.TrimEnd('/').EndsWith("events"))
+                {
+                    eventStoragePath = baseLocation;
+                }
+                else
+                {
+                    eventStoragePath = Path.Combine(baseLocation, "events");
+                }
             }
             else
             {

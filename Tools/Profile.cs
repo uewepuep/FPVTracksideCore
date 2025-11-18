@@ -20,6 +20,12 @@ namespace Tools
 
         public string GetPath()
         {
+            // Use absolute path from WorkingDirectory to ensure settings are in user directory, not binary directory
+            if (IOTools.WorkingDirectory != null)
+            {
+                return Path.Combine(IOTools.WorkingDirectory.FullName, dataDir, Name);
+            }
+            // Fallback to relative path if WorkingDirectory not set
             return Path.Combine(dataDir, Name);
         }
 

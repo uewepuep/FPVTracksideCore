@@ -6,7 +6,7 @@
     <ApplicationIcon />
     <Platforms>AnyCPU;x64</Platforms>
     <StartupObject />
-    <Version>2.1.0.12</Version>
+    <Version>2.1.0.13</Version>
 	  <Self-Contained>true</Self-Contained>
   </PropertyGroup>
 
