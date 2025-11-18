@@ -5,7 +5,7 @@
 		<ApplicationIcon />
 		<Platforms>x64</Platforms>
 		<StartupObject />
-		<Version>2.1.0.13</Version>
+		<Version>2.1.0.14</Version>
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
 		

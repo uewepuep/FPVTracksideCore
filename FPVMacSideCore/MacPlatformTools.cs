@@ -121,7 +121,7 @@ namespace FPVMacsideCore
                             newDirectory = WorkingDirectory.CreateSubdirectory(copy);
                         }
 
-                        IOTools.CopyDirectory(oldDirectory, newDirectory, IOTools.Overwrite.IfNewer);
+                        IOTools.CopyDirectory(oldDirectory, newDirectory, IOTools.Overwrite.Never);
                     }
                 }
                 catch (Exception e)
