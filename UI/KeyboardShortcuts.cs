@@ -270,11 +270,11 @@ namespace Composition.Input
             SceneEventStatus = new ShortcutKey(Keys.F6);
 
             ReplayPlayStop = new ShortcutKey(Keys.Space);
-            ReplayNextFrame = new ShortcutKey(Keys.Right, true);
-            ReplayPrevFrame = new ShortcutKey(Keys.Left, true);
+            ReplayNextFrame = new ShortcutKey(Keys.Right);
+            ReplayPrevFrame = new ShortcutKey(Keys.Left);
 
-            ReplayPlus5Seconds = new ShortcutKey(Keys.Right);
-            ReplayMinus5Seconds = new ShortcutKey(Keys.Left);
+            ReplayPlus5Seconds = new ShortcutKey(Keys.Right, false, true); // Shift+Right
+            ReplayMinus5Seconds = new ShortcutKey(Keys.Left, false, true); // Shift+Left
 
             AddLapChannelGroup1 = new ShortcutKey(Keys.D1, false, true);
             AddLapChannelGroup2 = new ShortcutKey(Keys.D2, false, true);

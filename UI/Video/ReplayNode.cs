@@ -3,6 +3,7 @@ using Composition.Input;
 using Composition.Nodes;
 using ImageServer;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using RaceLib;
 using RaceLib.Game;
@@ -351,6 +352,8 @@ namespace UI.Video
         {
             if (inputEvent.ButtonState == ButtonStates.Pressed)
             {
+                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_KEY: Key pressed - Key={inputEvent.Key}, Shift={inputEvent.Shift}, Alt={inputEvent.Alt}");
+
                 if (keyMapper.ReplayPlayStop.Match(inputEvent))
                 {
                     if (SeekNode.PlayButton.Visible)
@@ -363,31 +366,62 @@ namespace UI.Video
                     }
                 }
 
-                if (SeekNode.PlayButton.Visible)
+                bool isPaused = SeekNode.PlayButton.Visible;
+
+                // Left/Right arrow behavior depends on playback state
+                if (keyMapper.ReplayNextFrame.Match(inputEvent) || keyMapper.ReplayPrevFrame.Match(inputEvent))
                 {
-                    if (keyMapper.ReplayNextFrame.Match(inputEvent))
+                    if (isPaused)
                     {
-                        NextFrame();
+                        // When PAUSED: frame-by-frame navigation
+                        if (keyMapper.ReplayNextFrame.Match(inputEvent))
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_KEY: Right (paused) - next frame");
+                            NextFrame();
+                        }
+                        if (keyMapper.ReplayPrevFrame.Match(inputEvent))
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_KEY: Left (paused) - prev frame");
+                            PrevFrame();
+                        }
                     }
-                    if (keyMapper.ReplayPrevFrame.Match(inputEvent))
+                    else if (primary != null)
                     {
-                        PrevFrame();
+                        // When PLAYING: seek ±0.5 second
+                        if (keyMapper.ReplayNextFrame.Match(inputEvent))
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_KEY: Right (playing) - seek forward 0.5 second");
+                            Seek(primary.CurrentTime + TimeSpan.FromSeconds(0.5));
+                        }
+                        if (keyMapper.ReplayPrevFrame.Match(inputEvent))
+                        {
+                            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_KEY: Left (playing) - seek backward 0.5 second");
+                            Seek(primary.CurrentTime + TimeSpan.FromSeconds(-0.5));
+                        }
                     }
                 }
 
                 if (primary != null)
                 {
-                    if (keyMapper.ReplayPlus5Seconds.Match(inputEvent))
-                    {
-                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(5));
-                    }
+                    // Modifier + Left/Right: Always seek ±0.5 second (whether paused or playing)
+                    bool seekForward = (inputEvent.Key == Keys.Right) &&
+                                      (inputEvent.Shift || inputEvent.Alt);
 
-                    if (keyMapper.ReplayMinus5Seconds.Match(inputEvent))
+                    bool seekBackward = (inputEvent.Key == Keys.Left) &&
+                                       (inputEvent.Shift || inputEvent.Alt);
+
+                    if (seekForward)
                     {
-                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(-5));
+                        Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_KEY: Modifier+Right - seeking forward 0.5 second");
+                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(0.5));
+                    }
+                    else if (seekBackward)
+                    {
+                        Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_KEY: Modifier+Left - seeking backward 0.5 second");
+                        Seek(primary.CurrentTime + TimeSpan.FromSeconds(-0.5));
                     }
                 }
-                
+
             }
             return base.OnKeyboardInput(inputEvent);
         }
