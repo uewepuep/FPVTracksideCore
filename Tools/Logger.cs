@@ -184,6 +184,63 @@ namespace Tools
                     fi.MoveTo(fi.FullName + counter);
                 }
             }
+
+            // Clean up old rotated log files if total size exceeds 200MB
+            CleanupOldLogFiles();
+        }
+
+        private void CleanupOldLogFiles()
+        {
+            try
+            {
+                const long maxTotalSizeBytes = 200L * 1024L * 1024L; // 200MB
+
+                FileInfo currentFile = new FileInfo(filename);
+                if (!currentFile.Exists)
+                    return;
+
+                // Get all rotated log files for this logger
+                DirectoryInfo logDir = currentFile.Directory;
+                string baseFileName = currentFile.Name;
+
+                // Find all files that match the pattern (e.g., Log.txt1, Log.txt2, etc.)
+                FileInfo[] rotatedFiles = logDir.GetFiles(baseFileName + "*")
+                    .Where(f => f.Name != baseFileName && f.Name.StartsWith(baseFileName))
+                    .OrderBy(f => f.LastWriteTime) // Oldest first
+                    .ToArray();
+
+                // Calculate total size of all log files including current one
+                long totalSize = currentFile.Length;
+                foreach (var file in rotatedFiles)
+                {
+                    totalSize += file.Length;
+                }
+
+                // If over limit, delete oldest files until under 200MB
+                if (totalSize > maxTotalSizeBytes)
+                {
+                    foreach (var oldFile in rotatedFiles)
+                    {
+                        if (totalSize <= maxTotalSizeBytes)
+                            break;
+
+                        try
+                        {
+                            long fileSize = oldFile.Length;
+                            oldFile.Delete();
+                            totalSize -= fileSize;
+                        }
+                        catch
+                        {
+                            // If we can't delete a file, continue with others
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Don't crash if cleanup fails
+            }
         }
 
         public void Log(object caller, string message, object target = null, LogType type = LogType.Notice)
