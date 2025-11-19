@@ -559,7 +559,9 @@ namespace UI.Nodes.Rounds
 
             Scroller.ViewSizePixels = Bounds.Width;
 
-            Scroller.ContentSizePixels = paddingX;
+            const int extraPaddingForDragAndDropArea = 100;
+
+            Scroller.ContentSizePixels = paddingX + extraPaddingForDragAndDropArea;
             if (EventXNodes.Any())
             {
                 Scroller.ContentSizePixels += EventXNodes.Select(e => e.Bounds.Right).Max() - EventXNodes.Select(e => e.Bounds.X).Min();
