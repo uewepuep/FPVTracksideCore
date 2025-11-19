@@ -144,6 +144,20 @@ namespace UI.Video
                 drawer.Draw(texture2d, sourceBounds, new Rectangle(0, 0, Size.Width, Size.Height), Color.White, 1);
                 drawer.End();
             }
+            catch
+            {
+                if (renderTarget != null)
+                {
+                    renderTarget.Dispose();
+                    renderTarget = null;
+                }
+
+                if (drawer != null)
+                {
+                    drawer.Dispose();
+                    drawer = null;
+                }
+            }
             finally
             {
                 // Drop the render target
