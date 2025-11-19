@@ -361,7 +361,15 @@ namespace UI
             VideosToKeep = 50;
             HTTPServer = false;
 
-            EventStorageLocation = @"events/";
+            // Platform-specific default paths for first install
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            {
+                EventStorageLocation = "~/Documents/FPVTrackside";
+            }
+            else
+            {
+                EventStorageLocation = @"events/";
+            }
 
             VideoStaticDetector = true;
             CrashThreshold = 4;
