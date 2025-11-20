@@ -269,7 +269,7 @@ namespace UI.Nodes
                 }
                 else
                 {
-                    showPosition = race.GetPosition(Pilot, out position, out behindWho, out behind);
+                    showPosition = race.GetTrackPosition(Pilot, out position, out behindWho, out behind);
                 }
 
                 if (showPosition)

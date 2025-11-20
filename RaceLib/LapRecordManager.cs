@@ -207,7 +207,7 @@ namespace RaceLib
                 plr.UpdateBestConsecutiveLaps(consecutive);
             }
 
-            if (EventManager.Event.EventType.HasLapCount())
+            if (EventManager.Event.EventType.HasLapCountLimit())
             {
                 plr.UpdateRaceTime(EventManager.Event.Laps);
             }
@@ -302,7 +302,7 @@ namespace RaceLib
                         plr.UpdateBestConsecutiveLaps(consecutive);
                     }
 
-                    if (EventManager.Event.EventType.HasLapCount())
+                    if (EventManager.Event.EventType.HasLapCountLimit())
                     {
                         plr.UpdateRaceTime(EventManager.Event.Laps);
                     }
@@ -716,7 +716,7 @@ namespace RaceLib
 
         public void UpdateRaceTime(int lapCount)
         {
-            Race[] races = RecordManager.RaceManager.GetRaces(r => r.HasPilot(Pilot) && r.Type.HasLapCount()).ToArray();
+            Race[] races = RecordManager.RaceManager.GetRaces(r => r.HasPilot(Pilot) && r.Type.HasLapCountLimit()).ToArray();
             bestRaceTime = LapRecordManager.GetBestRaceTime(races, Pilot, lapCount).ToArray();
         }
 

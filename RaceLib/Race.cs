@@ -717,85 +717,6 @@ namespace RaceLib
 
             return Start;
         }
-
-        public int GetPosition(Pilot pilot)
-        {
-            int position;
-            Pilot behindWho;
-            TimeSpan behind;
-
-            GetPosition(pilot, out position, out behindWho, out behind);
-            return position;
-        }
-
-        public bool GetPosition(Pilot pilot, out int position, out Pilot behindWho, out TimeSpan behind)
-        {
-            position = PilotChannels.Count;
-            behindWho = null;
-            behind = TimeSpan.Zero;
-            Detection prevDetection = null;
-            Detection latestThisPilotDetection = null;
-
-            if (Detections.Count == 0)
-            {
-                return false;
-            }
-
-            int lastValidSector = int.MaxValue;
-            if (Type == EventTypes.Race)
-            {
-                lastValidSector = Detection.RaceSectorCalculator(TargetLaps, 0);
-            }
-
-            Detection[] detections;
-            lock (Detections)
-            {
-                detections = Detections.Where(d => d.Valid && d.RaceSector <= lastValidSector).OrderByDescending(d => d.RaceSector).ThenBy(d => d.Time).ToArray();
-            }
-
-            List<Pilot> pilotsAhead = new List<Pilot>();
-            foreach (Detection detection in detections)
-            {
-                if (detection.Pilot == pilot)
-                {
-                    latestThisPilotDetection = detection;
-                    break;
-                }
-                else
-                {
-                    if (!pilotsAhead.Contains(detection.Pilot))
-                    {
-                        pilotsAhead.Add(detection.Pilot);
-                    }
-                    behindWho = detection.Pilot;
-                    prevDetection = detection;
-                }
-            }
-
-            position = pilotsAhead.Count + 1;
-
-            if (prevDetection == null || latestThisPilotDetection == null)
-                behind = TimeSpan.Zero;
-            else
-                behind = latestThisPilotDetection.Time - prevDetection.Time;
-
-
-            // If we're both on the same time, its a dead heat and we both share the same position
-            if (behind == TimeSpan.Zero && position > 1 && latestThisPilotDetection != null)
-            {
-                position--;
-            }
-
-            if (Type == EventTypes.AggregateLaps)
-            {
-                behind = TimeSpan.Zero;
-                behindWho = null;
-            }
-
-            return true;
-        }
-
-
         public void ReCalculateLaps(IDatabase db, Pilot pilot)
         {
             int i = 0;
@@ -989,6 +910,97 @@ namespace RaceLib
             }
             Detection detection = Detections.LastOrDefault(d => d.Valid && d.RaceSector <= lastValidSector && d.Pilot == pilot);
             return detection;
+        }
+        public int GetTrackPosition(Pilot pilot)
+        {
+            int position;
+            Pilot behindWho;
+            TimeSpan behind;
+
+            GetTrackPosition(pilot, out position, out behindWho, out behind);
+            return position;
+        }
+        public bool GetTrackPosition(Pilot pilot, out int position, out Pilot behindWho, out TimeSpan behind)
+        {
+            position = PilotChannels.Count;
+            behindWho = null;
+            behind = TimeSpan.Zero;
+            Detection prevDetection = null;
+            Detection latestThisPilotDetection = null;
+
+            if (Detections.Count == 0)
+            {
+                return false;
+            }
+
+            int lastValidSector = int.MaxValue;
+            if (Type == EventTypes.Race)
+            {
+                lastValidSector = Detection.RaceSectorCalculator(TargetLaps, 0);
+            }
+
+            Detection[] detections;
+            lock (Detections)
+            {
+                detections = Detections.Where(d => d.Valid && d.RaceSector <= lastValidSector).OrderByDescending(d => d.RaceSector).ThenBy(d => d.Time).ToArray();
+            }
+
+            List<Pilot> pilotsAhead = new List<Pilot>();
+            foreach (Detection detection in detections)
+            {
+                if (detection.Pilot == pilot)
+                {
+                    latestThisPilotDetection = detection;
+                    break;
+                }
+                else
+                {
+                    if (!pilotsAhead.Contains(detection.Pilot))
+                    {
+                        pilotsAhead.Add(detection.Pilot);
+                    }
+                    behindWho = detection.Pilot;
+                    prevDetection = detection;
+                }
+            }
+
+            position = pilotsAhead.Count + 1;
+
+            if (prevDetection == null || latestThisPilotDetection == null)
+                behind = TimeSpan.Zero;
+            else
+                behind = latestThisPilotDetection.Time - prevDetection.Time;
+
+
+            // If we're both on the same time, its a dead heat and we both share the same position
+            if (behind == TimeSpan.Zero && position > 1 && latestThisPilotDetection != null)
+            {
+                position--;
+            }
+
+            if (Type == EventTypes.AggregateLaps)
+            {
+                behind = TimeSpan.Zero;
+                behindWho = null;
+            }
+
+            return true;
+        }
+
+        public TimeSpan GetBestLapsTime(Pilot pilot, int consecutiveLaps)
+        {
+            IEnumerable<Lap> pilotLaps = GetValidLaps(pilot, false);
+            IEnumerable<Lap> best = pilotLaps.BestConsecutive(consecutiveLaps);
+
+            return best.TotalTime();
+        }
+
+        public IEnumerable<PilotTime> GetBestLapsTimes(int laps)
+        {
+            foreach (Pilot pilot in Pilots)
+            {
+                yield return new PilotTime(pilot, GetBestLapsTime(pilot, laps));
+            }
         }
     }
 }

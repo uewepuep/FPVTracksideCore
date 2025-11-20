@@ -118,7 +118,7 @@ namespace UI.Nodes
 
         private int GetLapsPerRowCount()
         {
-            if (!EventManager.RaceManager.RaceType.HasLapCount())
+            if (!EventManager.RaceManager.RaceType.HasLapCountLimit())
                 return 5;
 
             Race currentRace = EventManager.RaceManager.CurrentRace;

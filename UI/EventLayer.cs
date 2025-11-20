@@ -945,12 +945,24 @@ namespace UI
                 if (workQueueStartStopRace.QueueLength > 0)
                     return false;
 
+                bool failed = false;
+
                 workQueueStartStopRace.Enqueue(() =>
                 {
-                    bool failed = false;
+                    if (!EventManager.RaceManager.PreRaceStart())
+                    {
+                        failed = true;
+                        EventManager.RaceManager.CancelRaceStart(true);
+                    }
+                    ControlButtons.UpdateControlButtons();
+                });
 
-                    // Trigger the sound. The actual race start will happen after it ends
-                    SoundManager.StartRaceIn(EventManager.Event.MaxStartDelay, () =>
+                // Trigger the sound. The actual race start will happen after it ends
+                SoundManager.StartRaceIn(EventManager.Event.MaxStartDelay, () =>
+                {
+                    // Put in the queue so it definitely happens after preRaceStart
+                    // Otherwise if audio is disabled it may happen before.
+                    workQueueStartStopRace.Enqueue(() =>
                     {
                         if (failed)
                             return;
@@ -961,15 +973,6 @@ namespace UI
                         }
                         ControlButtons.UpdateControlButtons();
                     });
-
-                    // Pre race start. Happens first because the sound is playing.
-                    if (!EventManager.RaceManager.PreRaceStart())
-                    {
-                        failed = true;
-                        EventManager.RaceManager.CancelRaceStart(true);
-
-                    }
-                    ControlButtons.UpdateControlButtons();
                 });
             }
             else

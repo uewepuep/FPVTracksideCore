@@ -154,7 +154,7 @@ namespace ExternalData
                 return;
             }
 
-            int position = current.GetPosition(det.Pilot);
+            int position = current.GetTrackPosition(det.Pilot);
 
             bool finished = det.Pilot.HasFinished(eventManager, current);
 

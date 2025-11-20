@@ -481,13 +481,13 @@ namespace RaceLib
 
         public void ClearPoints(Race race)
         {
-            if (ClearPointsNoTrigger(race))
+            if (ClearResultsNoTrigger(race))
             {
                 RaceResultsChanged?.Invoke(race);
             }
         }
 
-        private bool ClearPointsNoTrigger(Race race)
+        private bool ClearResultsNoTrigger(Race race)
         {
             lock (Results)
             {
@@ -516,23 +516,34 @@ namespace RaceLib
             if (!race.Ended)
                 return false;
 
-            if (!race.Round.EventType.HasPoints())
+            if (!race.Round.EventType.HasResult())
                 return false;
 
-            ClearPointsNoTrigger(race);
+            ClearResultsNoTrigger(race);
 
             List<Result> newResults = new List<Result>();
+            PilotTime[] orderedBestLapTimes = race.GetBestLapsTimes(race.TargetLaps).OrderBy(t => t.Time).ToArray();
 
             foreach (Pilot pilot in race.Pilots)
             {
-                int position = race.GetPosition(pilot);
-                int points = GetPoints(position);
+                int position = -1;
+                int points = 0;
                 bool dnfed = false;
 
-                if (DNFed(race, pilot))
+                if (race.Round.EventType.HasPoints())
                 {
-                    points = PointsSettings.DNFPoints;
-                    dnfed = true;
+                    position = race.GetTrackPosition(pilot);
+                    points = GetPoints(position);
+
+                    if (DNFed(race, pilot))
+                    {
+                        points = PointsSettings.DNFPoints;
+                        dnfed = true;
+                    }
+                }
+                else if (race.Round.EventType == EventTypes.TimeTrial)
+                {
+                    position = GetBestLapTimesPosition(orderedBestLapTimes, pilot);
                 }
 
                 Result r = new Result();
@@ -548,7 +559,18 @@ namespace RaceLib
                 Detection lastDetection = race.GetLastDetection(pilot);
                 if (lastDetection != null)
                 {
-                    r.Time = lastDetection.Time - race.Start;
+                    if (race.Round.EventType == EventTypes.TimeTrial)
+                    {
+                        PilotTime pt = orderedBestLapTimes.FirstOrDefault(p => p.Pilot == pilot);
+                        if (pt != null)
+                        {
+                            r.Time = pt.Time;
+                        }
+                    }
+                    else
+                    {
+                        r.Time = lastDetection.Time - race.Start;
+                    }
                     r.LapsFinished = lastDetection.LapNumber;
                 }
                 else
@@ -637,6 +659,20 @@ namespace RaceLib
             RaceResultsChanged?.Invoke(race);
 
             return r;
+        }
+
+        public int GetBestLapTimesPosition(IEnumerable<PilotTime> orderedBestLapTimes, Pilot pilot)
+        {
+            int position = 1;
+            foreach (PilotTime t in orderedBestLapTimes)
+            {
+                if (t.Pilot == pilot)
+                {
+                    return position;
+                }
+                position++;
+            }
+            return position;
         }
 
         public string GetResultText(Race race, Pilot pilot, Channel channel)
@@ -974,6 +1010,23 @@ namespace RaceLib
                 return EventManager.RoundManager.GetCreateRound(startOfFinals.RoundNumber - 1, startOfFinals.EventType);
             }
             return null;
+        }
+    }
+
+    public class PilotTime
+    {
+        public TimeSpan Time { get; set; }
+        public Pilot Pilot { get; set; }
+
+        public PilotTime(Pilot pilot, TimeSpan time)
+        {
+            Pilot = pilot;
+            Time = time;
+        }
+
+        public override string ToString()
+        {
+            return Pilot.ToString() + " " + Time.ToString();
         }
     }
 }

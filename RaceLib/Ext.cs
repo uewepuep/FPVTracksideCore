@@ -130,7 +130,7 @@ namespace RaceLib
             switch (eventType)
             {
                 case EventTypes.Race:
-                case EventTypes.AggregateLaps:
+                case EventTypes.Endurance:
                     return true;
 
                 default:
@@ -138,7 +138,7 @@ namespace RaceLib
             }
         }
 
-        public static bool HasLapCount(this EventTypes eventType)
+        public static bool HasLapCountLimit(this EventTypes eventType)
         {
             switch (eventType)
             {
