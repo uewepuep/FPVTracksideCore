@@ -28,6 +28,16 @@ namespace RaceLib.Format
             return races.GetPilots().Distinct().ToArray();
         }
 
+
+        public virtual void AdjustResults(Race race, IEnumerable<Result> results)
+        {
+        }
+
+        public IEnumerable<Race> GetCallingRoundRaces(RoundPlan plan)
+        {
+            return EventManager.RaceManager.GetRaces(plan.CallingRound);
+        }
+
         public static int HeatCountFromSharedFrequencies(IEnumerable<PilotChannel> pilotChannels)
         {
             Dictionary<Pilot, Channel> dictionary = new Dictionary<Pilot, Channel>();
@@ -73,10 +83,6 @@ namespace RaceLib.Format
             }
 
             return max;
-        }
-
-        public virtual void AdjustResults(Race race, IEnumerable<Result> results)
-        {
         }
     }
 }

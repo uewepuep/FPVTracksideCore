@@ -32,7 +32,7 @@ namespace Timing.ImmersionRC
                         break;
                     case CalibrationValues.WhoopsIndoors:
                         GainAll = "54";
-                        ThresholdAll = "1110";
+                        ThresholdAll = "1220";
                         break;
                 }
             }
