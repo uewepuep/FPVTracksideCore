@@ -307,7 +307,7 @@ namespace UI.Nodes.Rounds
                         ll.WorkQueue.Enqueue("Deleting stage", () =>
                         {
                             EventManager.RoundManager.RemoveStage(Round);
-                            Refresh();
+                            Refresh(true);
                         });
                     });
                 });

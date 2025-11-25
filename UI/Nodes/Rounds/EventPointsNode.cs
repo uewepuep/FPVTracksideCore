@@ -136,7 +136,7 @@ namespace UI.Nodes.Rounds
                     IEnumerable<Race> pilotRaces = races.Where(r => r.HasPilot(p));
                     if (races.Any())
                     {
-                        List<Result> results = EventManager.ResultManager.GetResults(pilotRaces, p, roundPositionRollover).ToList();
+                        List<Result> results = EventManager.ResultManager.GetCreateResults(pilotRaces, p, roundPositionRollover).ToList();
 
                         bool dropWorstRound = false;
                         if (Round.Stage != null && Round.Stage.PointSummary != null)

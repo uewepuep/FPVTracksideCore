@@ -21,13 +21,32 @@ namespace RaceLib.Format
         public StreetLeague(EventManager em, Stage stage) 
             : base(em, stage)
         {
+            if (stage.PointSummary == null)
+            {
+                PointSummary ps = new PointSummary();
+                ps.RoundPositionRollover = false;
+                ps.DropWorstRound = false;
+
+                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                {
+                    stage.PointSummary = ps;
+                    db.Update(stage);
+                }
+            }
         }
 
         public override IEnumerable<Race> GenerateRound(IDatabase db, IEnumerable<Race> preExisting, Round newRound, RoundPlan plan)
         {
             Round lastRound = EventManager.RoundManager.PreviousRound(newRound);
-            IEnumerable<Race> races = EventManager.RaceManager.GetRaces(lastRound);
 
+            // If we're the first round just fill with auto.
+            if (lastRound == null)
+            {
+                AutoFormat autoFormat = new AutoFormat(EventManager, Stage);
+                return autoFormat.GenerateRound(db, preExisting, newRound, plan);
+            }
+
+            IEnumerable<Race> races = EventManager.RaceManager.GetRaces(lastRound);
             List<Race> newRaces = new List<Race>();
             var Pilots = new List<Pilot>();
 
@@ -166,11 +185,17 @@ namespace RaceLib.Format
         public override void AdjustResults(Race race, IEnumerable<Result> results)
         {
             Round round = race.Round;
-
-            var RoundResults = results.Where(r => r.Round == round).OrderBy(r => r.LapsFinished).ThenByDescending(r => r.Time).ToArray();
-            for (int i = 0; i < RoundResults.Count(); i++)
+            
+            // Need to update all results in the round..
+            Result[] roundResults = ResultManager.GetResults(r => r.Round == round).OrderBy(r => r.LapsFinished).ThenByDescending(r => r.Time).ToArray();
+            for (int i = 0; i < roundResults.Count(); i++)
             {
-                RoundResults[i].Points = i + 1;
+                roundResults[i].Points = i + 1;
+            }
+
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                db.Update(roundResults);
             }
         }
 

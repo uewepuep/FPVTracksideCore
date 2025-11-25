@@ -273,7 +273,7 @@ namespace RaceLib
 
             bool rollover = RollOver(endRound);
 
-            return GetResults(races, pilot, rollover);
+            return GetCreateResults(races, pilot, rollover);
         }
 
         public Round GetRollOverRound(Round roundInFinal)
@@ -302,7 +302,7 @@ namespace RaceLib
             return null;
         }
 
-        public IEnumerable<Result> GetResults(IEnumerable<Race> races, Pilot pilot, bool roundPositionRollover, bool recalculate = false)
+        public IEnumerable<Result> GetCreateResults(IEnumerable<Race> races, Pilot pilot, bool roundPositionRollover, bool recalculate = false)
         {
             List<Result> results;
             lock (Results)
@@ -314,26 +314,6 @@ namespace RaceLib
             if (roundPositionRollover && anyFinals)
             {
                 Round rolloverRound = GetRollOverRound(races.Select(r => r.Round).FirstOrDefault());
-                if (rolloverRound != null)
-                {
-                    Result rollOver = GetRollOver(pilot, rolloverRound, recalculate);
-                    if (rollOver != null)
-                    {
-                        results.Insert(0, rollOver);
-                    }
-                }
-            }
-
-            return results;
-        }
-
-        public IEnumerable<Result> GetResults(Round endRound, Pilot pilot, bool roundPositionRollover, bool recalculate = false)
-        {
-            List<Result> results = GetResults(endRound, pilot).ToList();
-
-            if (roundPositionRollover && endRound.StageType == StageTypes.Final)
-            {
-                Round rolloverRound = GetRollOverRound(endRound);
                 if (rolloverRound != null)
                 {
                     Result rollOver = GetRollOver(pilot, rolloverRound, recalculate);
@@ -463,6 +443,14 @@ namespace RaceLib
             }
         }
 
+        public IEnumerable<Result> GetResults(Func<Result, bool> predicate)
+        {
+            lock (Results)
+            {
+                return Results.Where(predicate);
+            }
+        }
+
         public IEnumerable<Result> GetOrderedResults(Race race)
         {
             return GetResults(race).OrderBy(r => r.DNF).ThenBy(r => r.Position);
@@ -580,7 +568,6 @@ namespace RaceLib
 
                 newResults.Add(r);
             }
-
 
             RoundFormat roundFormat = null;
             Stage stage = race.Round.Stage;
@@ -991,7 +978,7 @@ namespace RaceLib
                 if (races.Any())
                 {
                     int points = 0;
-                    IEnumerable<Result> results = GetResults(pilotRaces, p, rollOver);
+                    IEnumerable<Result> results = GetCreateResults(pilotRaces, p, rollOver);
                     if (results.Any())
                     {
                         points = results.Sum(r => r.Points);

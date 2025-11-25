@@ -350,6 +350,8 @@ namespace UI.Nodes.Rounds
 
             foreach (StageNode stageNode1 in FormatStageNodes.ToArray())
             {
+                stageNode1.SetNodes(RoundNodes.Where(rn => rn.Round != null && rn.Round.Stage == stageNode1.Stage));
+
                 if (!stageNode1.Stage.Valid || !stageNode1.HasWrapNodes())
                 {
                     stageNode1.Dispose();
