@@ -284,18 +284,17 @@ namespace UI.Video
                     ChannelsGridNode.FillChannelNodes();
                     ChannelsGridNode.MakeExtrasVisible(true);
 
-                    foreach (PilotChannel pilotChannel in race.PilotChannelsSafe)
+                    ChannelNodeBase[] channelNodes = ChannelsGridNode.AddPilots(race.PilotChannelsSafe);
+                    foreach (ChannelNodeBase cbn in channelNodes)
                     {
-                        ChannelNodeBase cbn = ChannelsGridNode.AddPilot(pilotChannel);
                         cbn.OnCloseClick += () => { Hide(cbn); };
                         cbn.OnCrashedOutClick += () => { Hide(cbn); };
+
+                        cbn.AlwaysSmallPilotProfile = true;
+                        cbn.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
                     }
 
-
                     SeekNode.SetRace(race, minStart, maxEnd);
-
-                    ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
-
                     RequestLayout();
                 });
 
@@ -304,7 +303,6 @@ namespace UI.Video
                 SeekNode.SlowCheck.Visible = true;
                 SeekNode.ShowAll.Visible = false;
                 SeekNode.SlowCheck.Checkbox.Value = false;
-
 
                 return true;
             }
