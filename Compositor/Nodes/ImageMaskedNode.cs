@@ -18,11 +18,15 @@ namespace Composition.Nodes
 
         public float SecondDrawAlpha { get; private set; }
 
+        public bool EnableMask { get; set; }
+
         public ImageMaskedNode(string imageFilename, string maskFilename, float secondDrawAlpha)
             : base(imageFilename)
         {
             SecondDrawAlpha = secondDrawAlpha;
             MaskFilename = maskFilename;
+
+            EnableMask = true;
         }
 
 
@@ -46,7 +50,7 @@ namespace Composition.Nodes
                 LoadImage(id);
             }
 
-            if (MaskTexture == null)
+            if (MaskTexture == null || !EnableMask)
             {
                 base.Draw(id, parentAlpha);
                 return;

@@ -547,14 +547,18 @@ namespace UI.Nodes
                 case PilotProfileOptions.None:
                     pilotInfoContainer.RelativeBounds = new RectangleF(0, 0.03f, 0.4f, 0.185f);
                     PilotProfile.SetAnimatedVisibility(false);
+                    
                     PilotProfile.RepeatVideo = false;
+                    PilotProfile.EnableMask = false;
                     break;
 
                 case PilotProfileOptions.Small:
                     PilotProfile.ProfileImageContainer.RelativeBounds = new RectangleF(0, 0.03f, 0.12f, 0.185f);
                     pilotInfoContainer.RelativeBounds = new RectangleF(PilotProfile.ProfileImageContainer.RelativeBounds.Right, 0.03f, 0.4f, 0.185f);
                     PilotProfile.SetAnimatedVisibility(true);
+                    
                     PilotProfile.RepeatVideo = false;
+                    PilotProfile.EnableMask = false;
                     break;
 
                 case PilotProfileOptions.Large:
@@ -563,6 +567,8 @@ namespace UI.Nodes
 
                     PilotProfile.ProfileImageContainer.RelativeBounds = new RectangleF(0, 0, 1, 1);
                     PilotProfile.RepeatVideo = ApplicationProfileSettings.Instance.PilotProfileRepeatVideo;
+                    
+                    PilotProfile.EnableMask = true;
                     break;
             }
 

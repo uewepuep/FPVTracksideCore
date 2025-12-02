@@ -53,6 +53,28 @@ namespace UI.Nodes
             }
         }
 
+        public bool EnableMask
+        {
+            set
+            {
+                if (PilotPhoto is ImageMaskedNode)
+                {
+                    ImageMaskedNode imageMaskedNode = PilotPhoto as ImageMaskedNode;
+                    if (imageMaskedNode != null)
+                    {
+                        imageMaskedNode.EnableMask = value;
+                    }
+
+                    FileFrameMaskedNode fileFrameMaskedNode = PilotPhoto as FileFrameMaskedNode;
+                    if (fileFrameMaskedNode != null)
+                    {
+                        fileFrameMaskedNode.EnableMask = value;
+                    }
+                }
+
+            }
+        }
+
         public PilotProfileNode(Color channelColour, float pilotAlpha)
         {
             HasProfileImage = false;

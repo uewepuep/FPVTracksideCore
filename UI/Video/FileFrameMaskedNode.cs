@@ -20,6 +20,7 @@ namespace UI.Video
         public Texture2D MaskTexture { get; private set; }
         public Rectangle MaskSourceBounds { get; private set; }
         public float SecondDrawAlpha { get; private set; }
+        public bool EnableMask { get; set; }
 
         public FileFrameMaskedNode(FrameSource s, string maskFilename, float secondDrawAlpha) : base(s)
         {
@@ -47,7 +48,7 @@ namespace UI.Video
                 LoadImage(id);
             }
 
-            if (MaskTexture == null)
+            if (MaskTexture == null || !EnableMask)
             {
                 base.Draw(id, parentAlpha);
                 return;
