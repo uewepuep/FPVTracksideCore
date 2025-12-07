@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Tools;
+using UI.Video;
 
 namespace WindowsPlatform
 {
@@ -61,6 +62,8 @@ namespace WindowsPlatform
         }
 
         public override bool ThreadedDrawing { get { return true; } }
+
+        public override Microsoft.Xna.Framework.Input.Keys[] CutCopyPasteModifierKeys => [Microsoft.Xna.Framework.Input.Keys.LeftControl, Microsoft.Xna.Framework.Input.Keys.RightControl];
 
         public WindowsPlatformTools()
         {

@@ -61,6 +61,9 @@ namespace FPVMacsideCore
 
         public override bool ThreadedDrawing { get { return false; } }
 
+        public override Microsoft.Xna.Framework.Input.Keys[] CutCopyPasteModifierKeys => [Microsoft.Xna.Framework.Input.Keys.LeftWindows, Microsoft.Xna.Framework.Input.Keys.RightWindows];
+
+
         public MacPlatformTools()
         {
             Console.WriteLine("Mac Platform Start");

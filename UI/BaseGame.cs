@@ -135,7 +135,7 @@ namespace UI
         {
             GeneralSettings.Initialise();
 
-            Profile = new Profile(GeneralSettings.Instance.Profile);
+            Profile = new Profile(PlatformTools.WorkingDirectory, GeneralSettings.Instance.Profile);
             ApplicationProfileSettings.Initialize(Profile);
 
             if (!ApplicationProfileSettings.Instance.UseDirectX9)
@@ -279,7 +279,7 @@ namespace UI
         {
             Logger.UI.LogCall(this);
 
-            Profile profile = new Profile(GeneralSettings.Instance.Profile);
+            Profile profile = new Profile(PlatformTools.WorkingDirectory, GeneralSettings.Instance.Profile);
 
             CompositorLayer welcomeLayer = new CompositorLayer(GraphicsDevice);
             WelcomeSetupNode welcomeSetupNode = new WelcomeSetupNode(Banner, profile);
