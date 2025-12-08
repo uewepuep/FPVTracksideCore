@@ -1,6 +1,7 @@
 ﻿using Composition.Layers;
 using Composition.Nodes;
 using Composition.Text;
+using Microsoft.Xna.Framework.Input;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -60,6 +61,8 @@ namespace Composition
         {
             return false;
         }
+
+        public abstract Keys[] CutCopyPasteModifierKeys { get; }
     }
 
     public class LoginDetails

@@ -192,7 +192,7 @@ namespace Composition.Nodes
         {
             try
             {
-                bool control = CompositorLayer.InputEventFactory.AreControlKeysDown();
+                bool control = CompositorLayer.InputEventFactory.AreAnyKeysDown(PlatformTools.CutCopyPasteModifierKeys);
                 if (Text == null)
                     Text = "";
 

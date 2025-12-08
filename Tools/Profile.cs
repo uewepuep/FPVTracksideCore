@@ -13,14 +13,17 @@ namespace Tools
 
         public string Name { get; set; }
 
-        public Profile(string name)
+        public DirectoryInfo WorkingDirectory { get; set; }
+
+        public Profile(DirectoryInfo workingDirectory, string name)
         {
             Name = name;
+            WorkingDirectory = workingDirectory;
         }
 
         public string GetPath()
         {
-            return Path.Combine(dataDir, Name);
+            return Path.Combine(WorkingDirectory.FullName, dataDir, Name);
         }
 
         public override string ToString()
@@ -34,7 +37,7 @@ namespace Tools
 
             foreach (DirectoryInfo directoryInfo in profilesRoot.EnumerateDirectories())
             {
-                yield return new Profile(directoryInfo.Name);
+                yield return new Profile(workingDirectory, directoryInfo.Name);
             }
         }
 
@@ -45,7 +48,7 @@ namespace Tools
             try
             {
                 profilesRoot.CreateSubdirectory(name);
-                return new Profile(name);
+                return new Profile(workingDirectory,name);
             }
 
             catch 
