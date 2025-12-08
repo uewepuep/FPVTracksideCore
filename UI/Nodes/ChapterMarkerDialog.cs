@@ -560,6 +560,7 @@ namespace UI.Nodes
         private TextCheckBoxNode timeTrialAbbreviationCheckbox;
         private TextCheckBoxNode raceAbbreviationCheckbox;
         private TextCheckBoxNode pilotSummaryCheckbox;
+        private TextCheckBoxNode bestSingleLapCheckbox;
         
         // Character count display
         private TextNode characterCountLabel;
@@ -687,9 +688,15 @@ namespace UI.Nodes
 
             // Label for customization section with character count
             characterCountLabel = new TextNode("0/5000", Theme.Current.PilotViewTheme.PilotOverlayText.XNA);
-            characterCountLabel.RelativeBounds = new RectangleF(0, 0, 0.25f, 1);
+            characterCountLabel.RelativeBounds = new RectangleF(0, 0, 0.25f, 0.45f);
             characterCountLabel.Alignment = RectangleAlignment.CenterLeft;
             customizationContainer.AddChild(characterCountLabel);
+
+            // Add Best Single Lap checkbox below character count
+            bestSingleLapCheckbox = new TextCheckBoxNode("Best Single Lap", Theme.Current.PilotViewTheme.PilotOverlayText.XNA, false);
+            bestSingleLapCheckbox.RelativeBounds = new RectangleF(0, 0.55f, 0.25f, 0.45f);
+            bestSingleLapCheckbox.SetRatio(0.7f, 0.05f);
+            customizationContainer.AddChild(bestSingleLapCheckbox);
 
             // Time Trial customization container
             var timeTrialContainer = new Node();
@@ -757,6 +764,7 @@ namespace UI.Nodes
             timeTrialAbbreviationCheckbox.Checkbox.ValueChanged += (value) => GenerateChapterMarkers();
             raceAbbreviationCheckbox.Checkbox.ValueChanged += (value) => GenerateChapterMarkers();
             pilotSummaryCheckbox.Checkbox.ValueChanged += (value) => GenerateChapterMarkers();
+            bestSingleLapCheckbox.Checkbox.ValueChanged += (value) => GenerateChapterMarkers();
 
             // Heat selector dropdown (12-18%) - adjusted for taller customization section
             raceSelector = new ComboBoxNode<RaceDisplayWrapper>("Click to Select First Heat In Stream", 
@@ -1281,42 +1289,66 @@ namespace UI.Nodes
 
         private void GeneratePilotPerformanceLeaderboard()
         {
-            if (!pilotSummaryCheckbox.Value)
+            // Generate PBLaps consecutive laps leaderboard if Pilot Summary is checked (Time Trials only)
+            if (pilotSummaryCheckbox.Value)
+            {
+                var pbLaps = eventManager?.Event?.PBLaps ?? 1;
+                GeneratePilotPerformanceLeaderboardForLapCount(pbLaps, timeTrialsOnly: true);
+            }
+
+            // Generate best single lap leaderboard if Best Single Lap is checked (all races)
+            if (bestSingleLapCheckbox.Value)
+            {
+                GeneratePilotPerformanceLeaderboardForLapCount(1, timeTrialsOnly: false);
+            }
+        }
+
+        private void GeneratePilotPerformanceLeaderboardForLapCount(int lapCount, bool timeTrialsOnly)
+        {
+            // Get races based on filter
+            List<Race> racesToProcess;
+            if (timeTrialsOnly)
+            {
+                racesToProcess = availableRaces.Where(r => r.Type == EventTypes.TimeTrial).ToList();
+            }
+            else
+            {
+                // Include both Time Trials and Races
+                racesToProcess = availableRaces.Where(r => r.Type == EventTypes.TimeTrial || r.Type == EventTypes.Race).ToList();
+            }
+
+            if (!racesToProcess.Any())
                 return;
 
-            // Get all Time Trial races
-            var timeTrialRaces = availableRaces.Where(r => r.Type == EventTypes.TimeTrial).ToList();
-            
-            if (!timeTrialRaces.Any())
-                return;
+            // Dictionary to store each pilot's best performance (including lap number for single lap)
+            var pilotBestTimes = new Dictionary<Pilot, (TimeSpan bestTime, Race bestRace, int lapNumber)>();
 
-            // Dictionary to store each pilot's best performance
-            var pilotBestTimes = new Dictionary<Pilot, (TimeSpan bestTime, Race bestRace)>();
-
-            // Process each Time Trial race to find best times per pilot
-            foreach (var race in timeTrialRaces)
+            // Process each race to find best times per pilot
+            foreach (var race in racesToProcess)
             {
                 // Get all pilots who participated in this race
                 var pilots = race.Pilots.Where(p => p != null).ToList();
-                
+
                 foreach (var pilot in pilots)
                 {
                     // Get all laps for this pilot in this race
                     var allLaps = race.GetValidLaps(pilot, false);
-                    
+
                     if (allLaps == null || !allLaps.Any())
                         continue;
-                    
-                    // Get best consecutive laps (same logic as used in chapter markers)
-                    var bestConsecutiveLaps = allLaps.BestConsecutive(eventManager.Event.Laps);
+
+                    // Get best consecutive laps
+                    var bestConsecutiveLaps = allLaps.BestConsecutive(lapCount);
                     if (bestConsecutiveLaps.Any())
                     {
                         var totalTime = bestConsecutiveLaps.TotalTime();
-                        
+                        // Get the first lap number of the best consecutive sequence
+                        var firstLapNumber = bestConsecutiveLaps.First().Number;
+
                         // Check if this is the pilot's best time so far
                         if (!pilotBestTimes.ContainsKey(pilot) || totalTime < pilotBestTimes[pilot].bestTime)
                         {
-                            pilotBestTimes[pilot] = (totalTime, race);
+                            pilotBestTimes[pilot] = (totalTime, race, firstLapNumber);
                         }
                     }
                 }
@@ -1328,9 +1360,10 @@ namespace UI.Nodes
             if (!sortedPilots.Any())
                 return;
 
-            // Add section header
+            // Add section header with lap count info
+            var lapText = lapCount == 1 ? "Best Single Lap" : $"Best {lapCount} Consecutive Laps";
             var headerText = new TextNode("", Color.White);
-            headerText.Text = "\nPilot Performance Leaderboard:";
+            headerText.Text = $"\nPilot Performance Leaderboard ({lapText}):";
             headerText.Alignment = RectangleAlignment.CenterLeft;
             chapterList.AddChild(headerText);
 
@@ -1346,15 +1379,30 @@ namespace UI.Nodes
                 var pilot = pilotEntry.Key;
                 var bestTime = pilotEntry.Value.bestTime;
                 var bestRace = pilotEntry.Value.bestRace;
+                var lapNumber = pilotEntry.Value.lapNumber;
 
                 // Calculate the time this race appears in the stream
                 var raceOffsetTime = CalculateRaceOffsetTime(bestRace);
-                
+
                 // Format the time as HH:MM:SS (YouTube standard with leading zeros)
                 string timeString = FormatTimeForChapter(raceOffsetTime);
 
-                // Format race name
-                string raceDisplayName = $"Time Trial {bestRace.RoundNumber}-{bestRace.RaceNumber}";
+                // Format race name based on type, include lap number for single lap
+                string raceDisplayName;
+                if (bestRace.Type == EventTypes.TimeTrial)
+                {
+                    raceDisplayName = $"TT {bestRace.RoundNumber}-{bestRace.RaceNumber}";
+                }
+                else
+                {
+                    raceDisplayName = $"R {bestRace.RoundNumber}-{bestRace.RaceNumber}";
+                }
+
+                // Add lap number info for single lap leaderboard
+                if (lapCount == 1)
+                {
+                    raceDisplayName += $"-Lap {lapNumber}";
+                }
 
                 // Create leaderboard entry
                 var entryText = new TextNode("", Color.White);
@@ -1514,7 +1562,7 @@ namespace UI.Nodes
                         var allLaps = race.GetValidLaps(pilot, false);
                         if (allLaps.Any())
                         {
-                            var bestConsecutiveLaps = allLaps.BestConsecutive(eventManager.Event.Laps);
+                            var bestConsecutiveLaps = allLaps.BestConsecutive(eventManager.Event.PBLaps);
                             if (bestConsecutiveLaps.Any())
                             {
                                 totalTime = bestConsecutiveLaps.TotalTime();
@@ -1659,7 +1707,7 @@ namespace UI.Nodes
                     var allLaps = race.GetValidLaps(pilot, false);
                     if (allLaps.Any())
                     {
-                        var bestConsecutiveLaps = allLaps.BestConsecutive(eventManager.Event.Laps);
+                        var bestConsecutiveLaps = allLaps.BestConsecutive(eventManager.Event.PBLaps);
                         if (bestConsecutiveLaps.Any())
                         {
                             raceTime = bestConsecutiveLaps.TotalTime();
