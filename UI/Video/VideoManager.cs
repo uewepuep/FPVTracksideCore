@@ -560,8 +560,19 @@ namespace UI.Video
 
                     if (videoInfo != null)
                     {
-                        if (File.Exists(videoInfo.FilePath))
+                        // Extract just the filename, handling both Windows and Mac path separators
+                        string filename = videoInfo.FilePath;
+                        int lastSlash = Math.Max(filename.LastIndexOf('/'), filename.LastIndexOf('\\'));
+                        if (lastSlash >= 0)
                         {
+                            filename = filename.Substring(lastSlash + 1);
+                        }
+
+                        // The video file should be in the race directory
+                        string resolvedPath = Path.Combine(raceDirectory.FullName, filename);
+                        if (File.Exists(resolvedPath))
+                        {
+                            videoInfo.FilePath = resolvedPath;
                             yield return videoInfo.GetVideoConfig();
                         }
                     }
