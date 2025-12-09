@@ -573,10 +573,39 @@ namespace UI.Nodes
 
         public void OpenCurrentDirectory(params string[] paths)
         {
-            string path = Directory.GetCurrentDirectory();
-            if (paths.Any())
+            string path;
+
+            // Special handling for "events" paths - use the same logic as HTTP service
+            if (paths.Any() && paths[0] == "events")
             {
-                path = Path.Combine(path, Path.Combine(paths));
+                string eventsPath = ApplicationProfileSettings.Instance.EventStorageLocation;
+                if (string.IsNullOrEmpty(eventsPath))
+                {
+                    eventsPath = Path.Combine(IOTools.WorkingDirectory?.FullName ?? "", "events");
+                }
+                else if (!Path.IsPathRooted(eventsPath))
+                {
+                    eventsPath = Path.Combine(IOTools.WorkingDirectory?.FullName ?? "", eventsPath);
+                }
+
+                // Append any additional path components after "events"
+                if (paths.Length > 1)
+                {
+                    path = Path.Combine(eventsPath, Path.Combine(paths.Skip(1).ToArray()));
+                }
+                else
+                {
+                    path = eventsPath;
+                }
+            }
+            else
+            {
+                // Use IOTools.WorkingDirectory instead of Directory.GetCurrentDirectory()
+                path = IOTools.WorkingDirectory?.FullName ?? "";
+                if (paths.Any())
+                {
+                    path = Path.Combine(path, Path.Combine(paths));
+                }
             }
 
             PlatformTools.OpenFileManager(path);
