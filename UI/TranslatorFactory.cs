@@ -14,7 +14,24 @@ namespace UI
     {
         public static IEnumerable<Translator> Load()
         {
-            return Load(new FileInfo("Translations.xlsx"));
+            // Try current directory first, then base directory
+            string filename = "Translations.xlsx";
+            FileInfo file = new FileInfo(filename);
+
+            if (!file.Exists)
+            {
+                // Try base directory
+                string basePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
+                file = new FileInfo(basePath);
+            }
+
+            if (!file.Exists)
+            {
+                // Return empty if file not found
+                return Enumerable.Empty<Translator>();
+            }
+
+            return Load(file);
         }
 
         public static IEnumerable<Translator> Load(FileInfo excelFile, string sheetname = "Sheet1")
