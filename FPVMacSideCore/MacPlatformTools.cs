@@ -98,7 +98,7 @@ namespace FPVMacsideCore
         {
             Console.WriteLine("Source " + oldWorkDir.FullName);
 
-
+            // Copy directories
             string[] toCopy = new string[] { "themes", "img", "bitmapfonts", "httpfiles", "formats", "sounds", "Content" };
             foreach (string copy in toCopy)
             {
@@ -116,6 +116,31 @@ namespace FPVMacsideCore
                         }
 
                         IOTools.CopyDirectory(oldDirectory, newDirectory, IOTools.Overwrite.IfNewer);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logger.AllLog.LogException(this, e);
+                }
+            }
+
+            // Copy individual files (like Translations.xlsx)
+            string[] filesToCopy = new string[] { "Translations.xlsx" };
+            foreach (string fileName in filesToCopy)
+            {
+                try
+                {
+                    FileInfo sourceFile = new FileInfo(Path.Combine(oldWorkDir.FullName, fileName));
+                    FileInfo destFile = new FileInfo(Path.Combine(WorkingDirectory.FullName, fileName));
+
+                    if (sourceFile.Exists)
+                    {
+                        // Copy if destination doesn't exist or source is newer
+                        if (!destFile.Exists || sourceFile.LastWriteTime > destFile.LastWriteTime)
+                        {
+                            sourceFile.CopyTo(destFile.FullName, true);
+                            Console.WriteLine($"Copied {fileName} to working directory");
+                        }
                     }
                 }
                 catch (Exception e)

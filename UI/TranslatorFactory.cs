@@ -14,18 +14,37 @@ namespace UI
     {
         public static IEnumerable<Translator> Load()
         {
-            // Try current directory first, then base directory
             string filename = "Translations.xlsx";
-            FileInfo file = new FileInfo(filename);
+            FileInfo file = null;
 
-            if (!file.Exists)
+            // Try multiple locations
+            string[] searchPaths = new string[]
             {
-                // Try base directory
-                string basePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
-                file = new FileInfo(basePath);
+                // Current directory
+                filename,
+                // Base directory (where executable is)
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename),
+                // Working directory (user data on Mac: ~/Library/Application Support/FPVTrackside)
+                Tools.IOTools.WorkingDirectory != null
+                    ? Path.Combine(Tools.IOTools.WorkingDirectory.FullName, filename)
+                    : null,
+                // Parent of base directory (for .app bundles)
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", filename),
+                // Resources folder in .app bundle
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "Resources", filename),
+            };
+
+            foreach (string path in searchPaths)
+            {
+                if (string.IsNullOrEmpty(path))
+                    continue;
+
+                file = new FileInfo(path);
+                if (file.Exists)
+                    break;
             }
 
-            if (!file.Exists)
+            if (file == null || !file.Exists)
             {
                 // Return empty if file not found
                 return Enumerable.Empty<Translator>();
