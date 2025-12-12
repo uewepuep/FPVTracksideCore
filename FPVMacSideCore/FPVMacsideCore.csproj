@@ -15,7 +15,14 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="AppIcon.icns">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
+    <PackageReference Include="SkiaSharp" Version="2.88.8" />
+    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="2.88.8" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Compositor\Composition.csproj" />

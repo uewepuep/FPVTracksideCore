@@ -128,7 +128,7 @@ namespace FPVMacsideCore
 
         public override ITextRenderer CreateTextRenderer()
         {
-            return new TextRenderBMP();
+            return new TextRenderSkia();
         }
 
         public override void Invoke(Action value)
