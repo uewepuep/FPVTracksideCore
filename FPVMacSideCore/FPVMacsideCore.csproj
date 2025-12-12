@@ -13,6 +13,11 @@
     <Content Include="bitmapfonts\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <!-- Include Translations.xlsx from UI project -->
+    <Content Include="..\UI\Translations.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>Translations.xlsx</Link>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
