@@ -579,6 +579,13 @@ namespace UI.Nodes
             if (paths.Any() && paths[0] == "events")
             {
                 string eventsPath = ApplicationProfileSettings.Instance.EventStorageLocation;
+
+                // Trim off some legacy slashes.
+                if (eventsPath.EndsWith("/") || eventsPath.EndsWith("\\"))
+                {
+                    eventsPath = eventsPath.Substring(0, eventsPath.Length - 1);
+                }
+
                 if (string.IsNullOrEmpty(eventsPath))
                 {
                     eventsPath = Path.Combine(IOTools.WorkingDirectory?.FullName ?? "", "events");

@@ -345,7 +345,7 @@ namespace UI
             VideosToKeep = 50;
             HTTPServer = false;
 
-            EventStorageLocation = @"events/";
+            EventStorageLocation = @"events";
 
             VideoStaticDetector = true;
             CrashThreshold = 4;
