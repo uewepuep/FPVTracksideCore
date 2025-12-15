@@ -210,12 +210,9 @@ namespace Composition.Nodes
                     string input = "";
                     char c = inputEvent.GetChar();
 
-                    if (control)
+                    if (control && inputEvent.Key == Keys.V)
                     {
-                        if (inputEvent.Key == Keys.V)
-                        {
-                            input = PlatformTools.Clipboard.GetText();
-                        }
+                        input = PlatformTools.Clipboard.GetText();
                     }
 
                     if (!string.IsNullOrEmpty(input))

@@ -60,7 +60,6 @@ namespace FfmpegMediaPlatform
                 catch (Exception ex)
                 {
                     Tools.Logger.VideoLog.LogException($"FfmpegGlobalInitializer: Failed to initialize FFmpeg bindings", ex);
-                    throw;
                 }
             }
         }

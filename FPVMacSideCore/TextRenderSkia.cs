@@ -475,12 +475,12 @@ namespace FPVMacsideCore
                         // Check if we're past the midpoint of the character
                         if (adjustedX > (rect.Left + rect.Right) / 2)
                         {
-                            return i + 1;
+                            return i;
                         }
-                        return i;
+                        return i - 1;
                     }
                 }
-                return characterBounds.Count;
+                return characterBounds.Count - 1; // -1 as it's asking for the last char index.
             }
         }
 

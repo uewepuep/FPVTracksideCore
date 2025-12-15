@@ -234,6 +234,8 @@ namespace UI
                 Current = Themes.FirstOrDefault();
             }
 
+            Logger.UI.LogCall(Current, "Theme.Init");
+
             if (Current == null)
             {
                 Logger.UI.Log(null, "No Themes");

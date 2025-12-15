@@ -63,15 +63,10 @@ namespace Composition
             {
                 UnloadContent();
 
-                if (LayerStack != null)
-                {
-                    LayerStack.Dispose();
-                    LayerStack = null;
-                }
+                LayerStack?.Dispose();
+                LayerStack = null;
 
                 Initialize();
-
-                LoadContent();
             });
         }
 
