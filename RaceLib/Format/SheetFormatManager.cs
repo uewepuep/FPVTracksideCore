@@ -191,17 +191,23 @@ namespace RaceLib.Format
                     }
                     else
                     {
-                        offset = 1;
+                        // No existing rounds: do not offset sheet round numbers.
+                        offset = 0;
                     }
                 }
 
                 SheetFile sheetFile = GetSheetFile(stage.SheetFormatFilename);
+                if (sheetFile == null)
+                {
+                    Logger.AllLog.Log(this, $"Sheet file '{stage.SheetFormatFilename}' not found for stage '{stage.Name}'."); 
+                    return; // skip loading this sheet
+                }
                 RoundSheetFormat sheetFormat = new RoundSheetFormat(stage, this, sheetFile.FileInfo, offset);
                 sheetFormat.CreatePilotMap(assignedPilots);
 
                 foreach (Round round in sheetFormat.Rounds)
                 {
-                    IEnumerable<Race> races = RaceManager.GetRaces(r => r.Round == round);
+                    IEnumerable<Race> races = RaceManager.GetRaces(round);
                     foreach (Race race in races.Where(r => r.Ended))
                     {
                         sheetFormat.SetResult(race);
@@ -325,18 +331,26 @@ namespace RaceLib.Format
             pilotMap.Clear();
 
             string[] sheetPilots = null;
+            bool usingFirstRoundSlots = false;
 
             Round round = GetCreateRounds().FirstOrDefault();
 
-            // If we don't have assigned pilots, we're probably continuing...
+            // If we don't have assigned pilots, we're probably generating from first-round sheet slots.
             if (assignedPilots == null || !assignedPilots.Any())
             {
-                assignedPilots = SheetFormatManager.RaceManager.GetRaces(round).OrderBy(r => r.RaceNumber).SelectMany(r => r.Pilots).ToArray();
+                assignedPilots = SheetFormatManager.RaceManager
+                    .GetRaces(round)
+                    .OrderBy(r => r.RaceNumber)
+                    .SelectMany(r => r.Pilots)
+                    .ToArray();
+
                 sheetPilots = SheetFormat.GetFirstRoundPilots().ToArray();
+                usingFirstRoundSlots = true;
             }
             else
-            { 
+            {
                 sheetPilots = SheetFormat.GetPilots().ToArray();
+                usingFirstRoundSlots = false;
             }
 
             if (assignedPilots == null || !assignedPilots.Any())
@@ -355,19 +369,59 @@ namespace RaceLib.Format
                 }
             }
 
+            // Fill remaining sheet slots:
+            // 1) Prefer any unused real pilots from the event.
+            // 2) If still short AND we are filling first-round slots, create fake pilots to exactly fill the deficit.
+            char baseLetter = 'A';
             for (; i < sheetPilots.Length; i++)
             {
-                if (!pilotMap.ContainsKey(sheetPilots[i]))
+                if (pilotMap.ContainsKey(sheetPilots[i]))
+                    continue;
+
+                Pilot nextReal = SheetFormatManager.EventManager.Event.Pilots
+                    .Where(p => !pilotMap.ContainsValue(p)).FirstOrDefault();
+
+                if (nextReal != null)
                 {
-                    Pilot pilot = SheetFormatManager.EventManager.Event.Pilots.Where(p => !pilotMap.ContainsValue(p)).FirstOrDefault();
-                    if (pilot != null)
-                    {
-                        pilotMap.Add(sheetPilots[i], pilot);
-                    }
-                    else
-                    {
-                        break;
-                    }
+                    pilotMap.Add(sheetPilots[i], nextReal);
+                    continue;
+                }
+
+                // Only create fake pilots for the first round
+                if (!usingFirstRoundSlots)
+                {
+                    // Do not create fake pilots for non-first rounds.
+                    break;
+                }
+
+                int missingIndex = i - length; // 0-based within missing region
+                char letter = (char)(baseLetter + (missingIndex % 26));
+                int repeat = missingIndex / 26;
+                string suffix = repeat == 0 ? "" : (repeat + 1).ToString();
+                string fakeName = $"{letter} missing pilot{suffix}";
+
+                Pilot fakePilot = null;
+                try
+                {
+                    fakePilot = new Pilot() { Name = fakeName };
+
+                    // DO NOT add fake pilots to the global Event.Pilots collection.
+                    // Keeping them local prevents placeholders leaking into later rounds.
+                    // This avoids persisted fake pilots and unexpected side-effects.
+                }
+                catch
+                {
+                    fakePilot = null;
+                }
+
+                if (fakePilot != null)
+                {
+                    pilotMap.Add(sheetPilots[i], fakePilot);
+                }
+                else
+                {
+                    // Cannot create more pilots - stop attempting to fill further
+                    break;
                 }
             }
         }
@@ -485,31 +539,140 @@ namespace RaceLib.Format
                 return race;
             }
 
-            List<Tuple<Pilot, Channel>> toSet = new List<Tuple<Pilot, Channel>>();
+            // Build tentative assignments while preferring pilots' last channels.
+            // On duplicates we will move the higher-ranked pilot (lower index = higher rank) to an available candidate channel.
+            var assigned = new Dictionary<Channel, (Pilot pilot, int rankIndex, Channel[] candidates)>();
+            var pilotsProcessed = new HashSet<Pilot>();
 
-            foreach (var pc in srace.PilotChannels)
+            Channel[] GetCandidates(int channelSlot)
             {
-                IEnumerable<Channel> channels = SheetFormatManager.EventManager.GetChannelGroup(pc.ChannelSlot);
-                Pilot pilot = GetPilot(pc.PilotSheetName);
-                if (pilot != null && channels.Any())
-                {
-                    Channel currentChannel = SheetFormatManager.EventManager.GetChannel(pilot);
-                    if (currentChannel != null)
-                    {
-                        Channel channel = channels.FirstOrDefault(r => r.Band.GetBandType() == currentChannel.Band.GetBandType());
-                        if (channel == null)
-                        {
-                            channel = channels.FirstOrDefault();
-                        }
+                return SheetFormatManager.EventManager.GetChannelGroup(channelSlot)?.ToArray() ?? Array.Empty<Channel>();
+            }
 
-                        if (channel != null)
+            var pilotChannels = srace.PilotChannels ?? new SheetPilotChannel[0];
+
+            for (int idx = 0; idx < pilotChannels.Length; idx++)
+            {
+                var pc = pilotChannels[idx];
+                Pilot pilot = GetPilot(pc.PilotSheetName);
+                if (pilot == null)
+                    continue;
+
+                // prevent assigning same pilot twice
+                if (pilotsProcessed.Contains(pilot))
+                    continue;
+                pilotsProcessed.Add(pilot);
+
+                Channel currentChannel = SheetFormatManager.EventManager.GetChannel(pilot);
+                Channel[] candidates = GetCandidates(pc.ChannelSlot);
+                if (!candidates.Any())
+                    continue;
+
+                // preferred channel: try to match band type of current channel first
+                Channel preferred = null;
+                if (currentChannel != null)
+                {
+                    preferred = candidates.FirstOrDefault(c => c.Band.GetBandType() == currentChannel.Band.GetBandType());
+                }
+                if (preferred == null)
+                {
+                    preferred = candidates.FirstOrDefault();
+                }
+                if (preferred == null)
+                    continue;
+
+                if (!assigned.ContainsKey(preferred))
+                {
+                    assigned[preferred] = (pilot, idx, candidates);
+                    continue;
+                }
+
+                var existing = assigned[preferred];
+
+                // Determine which pilot is higher ranked (lower idx)
+                bool currentIsHigherRank = idx < existing.rankIndex;
+                // Per request: move the higher-ranked pilot when duplicates occur
+                if (currentIsHigherRank)
+                {
+                    // Attempt to move current pilot to another available candidate
+                    bool movedCurrent = false;
+                    foreach (var alt in candidates)
+                    {
+                        if (alt == preferred) continue;
+                        if (!assigned.ContainsKey(alt))
                         {
-                            toSet.Add(new Tuple<Pilot, Channel>(pilot, channel));
+                            assigned[alt] = (pilot, idx, candidates);
+                            movedCurrent = true;
+                            break;
+                        }
+                    }
+                    if (!movedCurrent)
+                    {
+                        // couldn't move current; try to move existing instead (as fallback)
+                        bool movedExisting = false;
+                        foreach (var alt in existing.candidates)
+                        {
+                            if (alt == preferred) continue;
+                            if (!assigned.ContainsKey(alt))
+                            {
+                                assigned.Remove(preferred);
+                                assigned[alt] = (existing.pilot, existing.rankIndex, existing.candidates);
+                                assigned[preferred] = (pilot, idx, candidates);
+                                movedExisting = true;
+                                break;
+                            }
+                        }
+                        if (!movedExisting)
+                        {
+                            // neither can be moved - keep existing as-is and skip assigning current
+                            // (this means current gets no channel in this pass)
+                        }
+                    }
+                }
+                else
+                {
+                    // existing pilot is higher ranked -> move existing pilot to an alternative if possible
+                    bool movedExisting = false;
+                    foreach (var alt in existing.candidates)
+                    {
+                        if (alt == preferred) continue;
+                        if (!assigned.ContainsKey(alt))
+                        {
+                            assigned.Remove(preferred);
+                            assigned[alt] = (existing.pilot, existing.rankIndex, existing.candidates);
+                            assigned[preferred] = (pilot, idx, candidates);
+                            movedExisting = true;
+                            break;
+                        }
+                    }
+                    if (!movedExisting)
+                    {
+                        // couldn't move existing; try to move current to another candidate
+                        bool movedCurrent = false;
+                        foreach (var alt in candidates)
+                        {
+                            if (alt == preferred) continue;
+                            if (!assigned.ContainsKey(alt))
+                            {
+                                assigned[alt] = (pilot, idx, candidates);
+                                movedCurrent = true;
+                                break;
+                            }
+                        }
+                        if (!movedCurrent)
+                        {
+                            // neither can be moved - skip current
                         }
                     }
                 }
             }
-            
+
+            var toSet = new List<Tuple<Pilot, Channel>>();
+            foreach (var kvp in assigned)
+            {
+                toSet.Add(new Tuple<Pilot, Channel>(kvp.Value.pilot, kvp.Key));
+            }
+
             bool optimiseChannels = !SheetFormat.LockChannels;
             SheetFormatManager.EventManager.RaceManager.SetRacePilots(race, toSet, optimiseChannels);
 
