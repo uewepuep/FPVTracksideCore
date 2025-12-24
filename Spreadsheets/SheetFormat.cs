@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.IO;
-using System.Drawing;
+using System.Linq;
 
 namespace Spreadsheets
 {
@@ -26,7 +25,7 @@ namespace Spreadsheets
         public bool CreateBrackets { get; private set; }
 
         public SheetFormat(string filename)
-            :this(new FileInfo(filename))
+            : this(new FileInfo(filename))
         {
         }
         public SheetFormat(FileInfo file)
@@ -300,7 +299,7 @@ namespace Spreadsheets
 
         public void GetSize(out int rows, out int columns)
         {
-            rows = 0; 
+            rows = 0;
             columns = 0;
 
             int i = 1;
@@ -479,7 +478,7 @@ namespace Spreadsheets
         public object Value { get; set; }
 
         public SheetResult(string pilotSheetName, string pilotTracksideName, int channel, object value)
-            :base(pilotSheetName, channel)
+            : base(pilotSheetName, channel)
         {
             PilotTracksideName = pilotTracksideName;
             Value = value;
