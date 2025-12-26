@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Timers;
 using Spreadsheets;
 using Tools;
 
@@ -19,6 +20,11 @@ namespace RaceLib.Format
         private List<RoundSheetFormat> roundSheetFormats;
 
         private List<SheetFile> sheets;
+
+        // timers used to debounce generation per RoundSheetFormat
+        private Dictionary<RoundSheetFormat, Timer> generationTimers = new Dictionary<RoundSheetFormat, Timer>();
+        private readonly object timersLock = new object();
+        private const double GenerationDebounceMs = 1000; // 1 second debounce
 
         public IEnumerable<SheetFile> Sheets
         {
@@ -84,6 +90,14 @@ namespace RaceLib.Format
                     format.Dispose();
                 }
                 roundSheetFormats.Clear();
+            }
+            lock (timersLock)
+            {
+                foreach (var t in generationTimers.Values)
+                {
+                    try { t.Stop(); t.Dispose(); } catch { }
+                }
+                generationTimers.Clear();
             }
         }
 
@@ -215,7 +229,8 @@ namespace RaceLib.Format
 
                 if (generate)
                 {
-                    sheetFormat.GenerateRounds();
+                    // schedule generation via debounce to avoid speculative/partial state problems
+                    ScheduleGenerate(sheetFormat);
                 }
 
                 lock (roundSheetFormats)
@@ -225,6 +240,7 @@ namespace RaceLib.Format
             }
         }
 
+        // Centralized entry for race result changes (called by RoundManager)
         public void OnRaceResultChange(Race race)
         {
             var formats = roundSheetFormatsSafe;
@@ -232,8 +248,61 @@ namespace RaceLib.Format
             {
                 if (format.HasRound(race.Round))
                 {
+                    // Always update sheet results immediately
                     format.SetResult(race);
-                    format.GenerateRounds();
+
+                    // Sync race -> swap pilots in sheet columns if needed
+                    format.SyncRace(race);
+
+                    // Debounce generation for this sheet format
+                    ScheduleGenerate(format);
+                }
+            }
+        }
+
+        // Schedule (or restart) a timer to call GenerateRounds for the given RoundSheetFormat.
+        private void ScheduleGenerate(RoundSheetFormat format)
+        {
+            lock (timersLock)
+            {
+                if (generationTimers.TryGetValue(format, out Timer existing))
+                {
+                    // restart timer
+                    try { existing.Stop(); existing.Start(); }
+                    catch { }
+                }
+                else
+                {
+                    Timer t = new Timer(GenerationDebounceMs) { AutoReset = false };
+                    t.Elapsed += (s, e) =>
+                    {
+                        try
+                        {
+                            // final check: generate only when previous round is complete and has results.
+                            try
+                            {
+                                format.GenerateRounds();
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Generation.LogException(this, ex);
+                            }
+                        }
+                        finally
+                        {
+                            // dispose timer
+                            lock (timersLock)
+                            {
+                                if (generationTimers.TryGetValue(format, out Timer tt))
+                                {
+                                    try { tt.Stop(); tt.Dispose(); } catch { }
+                                    generationTimers.Remove(format);
+                                }
+                            }
+                        }
+                    };
+                    generationTimers[format] = t;
+                    try { t.Start(); } catch { }
                 }
             }
         }
@@ -258,6 +327,7 @@ namespace RaceLib.Format
         }
     }
 
+    // RoundSheetFormat class remains unchanged besides relying on its GenerateRounds() to be safe.
     public class RoundSheetFormat : IDisposable
     {
         private Dictionary<string, Pilot> pilotMap;
@@ -491,16 +561,50 @@ namespace RaceLib.Format
 
         public void GenerateRounds()
         {
+            // Only generate a sheet round when:
+            // - it's the first sheet round (initial population allowed), OR
+            // - the previous sheet round has finished AND results exist for every race in that previous round.
+            // This prevents speculative generation of later rounds before results are available.
             Round[] rounds = GetCreateRounds().ToArray();
 
-            foreach (Round round in rounds)
+            for (int i = 0; i < rounds.Length; i++)
             {
+                Round round = rounds[i];
                 var races = SheetFormatManager.RaceManager.GetRaces(round);
-                if (!races.All(r => r.Ended) || !races.Any())
+
+                if (i == 0)
                 {
-                    GenerateRound(round);
+                    // First sheet round: keep existing behavior (generate if empty or incomplete)
+                    if (!races.Any() || !races.All(r => r.Ended))
+                    {
+                        GenerateRound(round);
+                    }
+                    continue;
+                }
+
+                // For subsequent rounds, ensure previous sheet round has finished and has results
+                Round prev = rounds[i - 1];
+                var prevRaces = SheetFormatManager.RaceManager.GetRaces(prev);
+
+                bool prevHasRaces = prevRaces.Any();
+                bool prevAllEnded = prevHasRaces && prevRaces.All(r => r.Ended);
+                bool prevAllHaveResults = prevHasRaces && prevRaces.All(r => SheetFormatManager.EventManager.ResultManager.GetResults(r).Any());
+
+                if (prevAllEnded && prevAllHaveResults)
+                {
+                    // Only generate current round if it's missing races or incomplete
+                    if (!races.Any() || !races.All(r => r.Ended))
+                    {
+                        GenerateRound(round);
+                    }
+                }
+                else
+                {
+                    // previous round not completed with results -> skip generating this round
+                    continue;
                 }
             }
+
             OnGenerate?.Invoke();
         }
 

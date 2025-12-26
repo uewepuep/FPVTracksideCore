@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Tools;
 
 namespace Spreadsheets
 {
@@ -217,8 +218,14 @@ namespace Spreadsheets
 
                     if (hasData)
                     {
-                        yield return new SheetRace(eventType, round, raceNumber, sheetPilotChannels);
-                        raceNumber++;
+                        // Only yield a race when at least one pilot in the block is recognized.
+                        if (sheetPilotChannels.Any())
+                        {
+                            yield return new SheetRace(eventType, round, raceNumber, sheetPilotChannels);
+                            raceNumber++;
+                        }
+
+                        // Advance to next block regardless so loop terminates properly.
                         raceStartIndex += Channels;
                     }
                 }
@@ -245,7 +252,7 @@ namespace Spreadsheets
                 for (int i = 0; i < Channels; i++)
                 {
                     string sheetName = sheet.GetText(raceRowStart + i, nameColumn);
-                    SheetResult sr = unfound.FirstOrDefault(r => r.PilotSheetName == sheetName);
+                    SheetResult sr = unfound.FirstOrDefault(r => string.Equals(r.PilotSheetName?.Trim(), sheetName?.Trim(), StringComparison.OrdinalIgnoreCase));
                     if (sr != null)
                     {
                         sheet.SetValue(raceRowStart + i, resultColumn, sr.Value);
@@ -257,13 +264,22 @@ namespace Spreadsheets
                     }
                 }
 
-                // Go through any missing results and try to add them in order. It'll probably work..
+                // Go through any missing results and try to add them in order. Prefer finishing position, not ChannelSlot.
                 for (int i = 0; i < Channels && unfound.Any(); i++)
                 {
                     string value = sheet.GetText(raceRowStart + i, resultColumn);
                     if (string.IsNullOrEmpty(value))
                     {
-                        SheetResult sr = unfound.OrderBy(r => r.ChannelSlot).FirstOrDefault();
+                        SheetResult sr = unfound
+                            .OrderBy(r =>
+                            {
+                                if (r.Value == null) return int.MaxValue;
+                                int v;
+                                if (int.TryParse(r.Value.ToString(), out v)) return v;
+                                return int.MaxValue;
+                            })
+                            .FirstOrDefault();
+
                         if (sr != null)
                         {
                             sheet.SetValue(raceRowStart + i, nameColumn, sr.PilotSheetName);
@@ -271,6 +287,17 @@ namespace Spreadsheets
                             unfound.Remove(sr);
                         }
                     }
+                }
+
+                if (unfound.Any())
+                {
+                    // Diagnostic: log any remaining unmatched results to help debugging.
+                    try
+                    {
+                        string names = string.Join(", ", unfound.Select(u => (u.PilotSheetName ?? "<null>") + ":" + (u.Value ?? "<null>")));
+                        Logger.Generation.Log(this, $"Unmatched sheet results for {eventType} R{round} race {race}: {names}");
+                    }
+                    catch { }
                 }
 
                 sheet.Calculate();

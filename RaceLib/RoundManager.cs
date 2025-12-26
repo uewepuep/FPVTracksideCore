@@ -47,16 +47,28 @@ namespace RaceLib
         {
             if (SheetFormatManager != null)
             {
+                // Let the sheet manager handle sheet-backed stages.
                 SheetFormatManager.OnRaceResultChange(race);
             }
 
-            if (race.Round.Stage != null)
-            {
-                RoundFormat roundFormat = GetRoundFormat(race.Round.Stage);
-                RoundPlan roundPlan = new RoundPlan(EventManager, race.Round, race.Round.Stage);
+            // If round or stage null -> nothing to generate.
+            if (race.Round == null || race.Round.Stage == null)
+                return;
 
-                GenerateNewRound(race.Round, roundFormat, roundPlan);
+            // If this stage is sheet-backed, do not let RoundManager generate the next round.
+            // SheetFormatManager owns generation for sheet formats (it has debouncing / correctness checks).
+            if (race.Round.Stage.HasSheetFormat)
+            {
+                // debug log if desired
+                Logger.Generation.Log(this, $"RoundManager: skipping automatic generation for sheet-backed stage '{race.Round.Stage}'");
+                return;
             }
+
+            // Non-sheet stages: existing behaviour (generate next round when any result changes)
+            RoundFormat roundFormat = GetRoundFormat(race.Round.Stage);
+            RoundPlan roundPlan = new RoundPlan(EventManager, race.Round, race.Round.Stage);
+
+            GenerateNewRound(race.Round, roundFormat, roundPlan);
         }
 
         public Round NextRound(Round round)
