@@ -197,6 +197,11 @@ namespace RaceLib.Format
                 }
 
                 SheetFile sheetFile = GetSheetFile(stage.SheetFormatFilename);
+                if (sheetFile == null)
+                {
+                    Logger.AllLog.Log(this, $"Sheet file '{stage.SheetFormatFilename}' not found for stage '{stage.Name}'."); 
+                    return; // skip loading this sheet
+                }
                 RoundSheetFormat sheetFormat = new RoundSheetFormat(stage, this, sheetFile.FileInfo, offset);
                 sheetFormat.CreatePilotMap(assignedPilots);
 
