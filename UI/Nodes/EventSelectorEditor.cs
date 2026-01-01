@@ -1,5 +1,6 @@
 ﻿using Composition;
 using Composition.Input;
+using Composition.Layers;
 using Composition.Nodes;
 using ExternalData;
 using Microsoft.Xna.Framework;
@@ -11,13 +12,17 @@ using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Tools;
 
 namespace UI.Nodes
 {
+
     public class EventEditor : ObjectEditorNode<SimpleEvent>
     {
+        public static string dateFormat = "d MMM";
+
         public EventEditor(Event eventa) 
             :this(new SimpleEvent[] { new SimpleEvent(eventa) }, false, false)
         { 
@@ -265,6 +270,29 @@ namespace UI.Nodes
 
         private void Clone(MouseInputEvent mie)
         {
+            PopupLayer ppl = GetLayer<PopupLayer>();
+            if (ppl == null)
+                return;
+
+            string newEventName = Selected.Name;
+            try
+            {
+                newEventName = Regex.Replace(newEventName, @"\([A-z0-9 ]*\)", "");
+            }
+            catch
+            {
+                newEventName = "Cloned Event";
+            }
+
+            newEventName = newEventName + " (" + DateTime.Now.ToString(dateFormat) + ")";
+
+            TextPopupNode textPopupNode = new TextPopupNode("Clone Event", "Event Name", newEventName);
+            textPopupNode.OnOK += Clone;
+            ppl.Popup(textPopupNode);
+        }
+
+        private void Clone(string newName)
+        {
             if (Selected != null)
             {
                 Event loaded = null;
@@ -275,7 +303,7 @@ namespace UI.Nodes
                 }
                 if (loaded != null)
                 {
-                    Event newEvent = loaded.Clone();
+                    Event newEvent = loaded.Clone(newName);
                     using (IDatabase db = DatabaseFactory.Open(newEvent.ID))
                     {
                         db.Insert(newEvent);
@@ -362,7 +390,38 @@ namespace UI.Nodes
 
         protected override void AddOnClick(MouseInputEvent mie)
         {
+            PopupLayer ppl = GetLayer<PopupLayer>();
+            if (ppl == null)
+                return;
+
+            string name = "New Event (" + DateTime.Now.ToString(dateFormat) + ")";
+
+            TextPopupNode textPopupNode = new TextPopupNode("New Event", "Event Name", name);
+            textPopupNode.OnOK += CreateNewEvent;
+            ppl.Popup(textPopupNode);
+        }
+
+        private void CreateNewEvent(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                PopupLayer ppl = GetLayer<PopupLayer>();
+                if (ppl == null)
+                    return;
+
+                ppl.PopupMessage("Cannot create event with empty name");
+
+                return;
+            }
+
             Event eve = CreateNewEvent();
+            eve.Name = name;
+
+            using (IDatabase db = DatabaseFactory.Open(Guid.Empty))
+            {
+                db.Update(eve); 
+            }
+
             AddNew(new SimpleEvent(eve));
         }
 

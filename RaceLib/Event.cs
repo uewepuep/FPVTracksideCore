@@ -117,8 +117,6 @@ namespace RaceLib
 
         public Sector[] Sectors { get; set; }
 
-        private static string dateFormat = "d MMM";
-
         public DateTime[] Flags { get; set; }
 
         public string GameTypeName { get; set; }
@@ -141,7 +139,7 @@ namespace RaceLib
             EventType = EventTypes.Race;
             PackLimit = 0;
             Start = DateTime.Today;
-            Name = "New Event (" + Start.ToString(dateFormat) + ")";
+            Name = "New Event";
             MinStartDelay = TimeSpan.FromSeconds(0.5f);
             MaxStartDelay = TimeSpan.FromSeconds(5);
 
@@ -154,7 +152,7 @@ namespace RaceLib
             TimeZone = RaceLib.TimeZone.GetIanaTimeZoneLocal();
         }
 
-        public Event Clone()
+        public Event Clone(string name)
         {
             Event newEvent = new Event();
             newEvent.ID = Guid.NewGuid();
@@ -172,20 +170,11 @@ namespace RaceLib
             newEvent.RaceLength = this.RaceLength;
             newEvent.EventType = this.EventType;
 
-            newEvent.Name = this.Name;
+            newEvent.Name = name;
             newEvent.Start = DateTime.Today;
             newEvent.End = DateTime.Today + TimeSpan.FromDays(1);
             newEvent.TimeZone = TimeZone;
-            try
-            {
-                newEvent.Name = Regex.Replace(newEvent.Name, @"\([A-z0-9 ]*\)", "");
-            }
-            catch
-            {
-            }
-
-            newEvent.Name = newEvent.Name + " (" +  Start.ToString(dateFormat) + ")";
-
+            
             newEvent.PilotChannels = this.PilotChannels.Select(pc => pc.Clone()).ToList();
             newEvent.Channels = this.Channels.ToArray();
 
