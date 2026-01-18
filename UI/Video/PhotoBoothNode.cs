@@ -446,7 +446,8 @@ namespace UI.Video
         {
             try
             {
-                existingPhoto?.Delete();
+                if (newPhoto.FullName != existingPhoto.FullName)
+                    existingPhoto?.Delete();
 
                 FileInfo newFileName = new FileInfo(newPhoto.FullName.Replace("_temp", ""));
                 if (newFileName.Exists)

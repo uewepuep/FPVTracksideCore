@@ -358,20 +358,23 @@ namespace ImageServer
 
             VideoConfig other = obj as VideoConfig;
 
-            if (!string.IsNullOrEmpty(other.FilePath) && other.FilePath == FilePath)
-                return true;
+            if (other.FrameWork != FrameWork)
+                return false;
 
-            if (!string.IsNullOrEmpty(other.DirectShowPath) && other.DirectShowPath == DirectShowPath)
-                return true;
+            if (!string.IsNullOrEmpty(other.FilePath) && other.FilePath != FilePath)
+                return false;
 
-            if (!string.IsNullOrEmpty(other.MediaFoundationPath) && other.MediaFoundationPath == MediaFoundationPath)
-                return true;
+            if (!string.IsNullOrEmpty(other.DirectShowPath) && other.DirectShowPath != DirectShowPath)
+                return false;
+
+            if (!string.IsNullOrEmpty(other.MediaFoundationPath) && other.MediaFoundationPath != MediaFoundationPath)
+                return false;
 
             // Compare device names for camera/capture devices
-            if (!string.IsNullOrEmpty(other.DeviceName) && other.DeviceName == DeviceName)
-                return true;
+            if (!string.IsNullOrEmpty(other.DeviceName) && other.DeviceName != DeviceName)
+                return false;
 
-            return false;
+            return true;
         }
 
         public override int GetHashCode()

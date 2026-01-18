@@ -174,6 +174,29 @@ namespace Tools
 
             Color[] data = new Color[texture.Width * texture.Height];
             texture.GetData(data);
+            Texture2D newTexture = new Texture2D(texture.GraphicsDevice, texture.Width, texture.Height, false, texture.Format);
+            newTexture.SetData(data);
+            return newTexture;
+        }
+
+        public static Texture2D CloneBGRtoRGB(this Texture2D texture)
+        {
+            if (texture == null)
+                return null;
+
+            Color[] data = new Color[texture.Width * texture.Height];
+            texture.GetData(data);
+
+            if (texture.Format == SurfaceFormat.Bgr32)
+            {
+                for (int i = 0; i < data.Length; i++)
+                {
+                    byte r = data[i].R;
+                    data[i].R = data[i].B;
+                    data[i].B = r;
+                }
+            }
+
             Texture2D newTexture = new Texture2D(texture.GraphicsDevice, texture.Width, texture.Height);
             newTexture.SetData(data);
             return newTexture;
@@ -245,7 +268,7 @@ namespace Tools
             if (mirrored)
                 src = src.Mirror(texture.Width);
 
-            using (cloned = Clone(texture))
+            using (cloned = CloneBGRtoRGB(texture))
             {
                 using (FileStream fs = new FileStream(filename, FileMode.CreateNew))
                 {

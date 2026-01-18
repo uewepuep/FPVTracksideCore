@@ -99,8 +99,8 @@ namespace ImageServer
                 if (toRemove.Contains(videoConfig))
                     continue;
 
-                IEnumerable<VideoConfig> notCurrent = sources.Where(r => r != videoConfig);
-                IEnumerable<VideoConfig> fromAnotherFramework = GetMatch(videoConfig, notCurrent);
+                IEnumerable<VideoConfig> notCurrentFramework = sources.Where(r => r.FrameWork != videoConfig.FrameWork);
+                IEnumerable<VideoConfig> fromAnotherFramework = GetMatch(videoConfig, notCurrentFramework);
                 if (fromAnotherFramework.Any())
                 {
                     foreach (VideoConfig another in fromAnotherFramework)
