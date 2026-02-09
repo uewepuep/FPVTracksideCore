@@ -33,6 +33,8 @@ namespace DB
         public bool PracticePilot { get; set; }
 
         public string PhotoPath { get; set; }
+        public bool VideoFlipped { get; set; }
+        public bool VideoMirrored { get; set; }
 
         public Pilot() { }
 

@@ -195,6 +195,19 @@ namespace UI.Nodes
 
                         source.BounceRepeat = ApplicationProfileSettings.Instance.PilotProfileBoomerangRepeat;
 
+                        if (Pilot != null)
+                        {
+                            FlipMirroreds flipMirrored = FlipMirroreds.None;
+                            if (Pilot.VideoFlipped && Pilot.VideoMirrored)
+                                flipMirrored = FlipMirroreds.FlippedAndMirrored;
+                            else if (Pilot.VideoFlipped)
+                                flipMirrored = FlipMirroreds.Flipped;
+                            else if (Pilot.VideoMirrored)
+                                flipMirrored = FlipMirroreds.Mirrored;
+
+                            source.VideoConfig.FlipMirrored = flipMirrored;
+                        }
+
                         if (string.IsNullOrEmpty(maskFilename))
                         {
                             videoPlayer = new FileFrameNode(source);

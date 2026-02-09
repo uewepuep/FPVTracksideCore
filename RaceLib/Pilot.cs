@@ -67,6 +67,12 @@ namespace RaceLib
         public string PhotoPath { get; set; }
 
         [Category("Advanced")]
+        public bool VideoFlipped { get; set; }
+       
+        [Category("Advanced")]
+        public bool VideoMirrored { get; set; }
+
+        [Category("Advanced")]
 
         public int MultiGP_ID
         {
