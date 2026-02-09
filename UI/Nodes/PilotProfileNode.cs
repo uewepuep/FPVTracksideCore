@@ -25,6 +25,10 @@ namespace UI.Nodes
 
         public TextNode TextNode { get; set; }
 
+        private bool needsLoadAttempt;
+        private string filename;
+        private bool showText;
+
         public bool HasProfileImage { get; private set; }
 
         public AnimatedRelativeNode ProfileImageContainer;
@@ -103,17 +107,34 @@ namespace UI.Nodes
         public void SetPilot(Pilot pilot, string filename = "", bool showText = true)
         {
             Pilot = pilot;
+            this.showText = showText;
+            this.filename = filename;
+            needsLoadAttempt = true;
+        }
 
+        public override void Layout(RectangleF parentBounds)
+        {
+            if (needsLoadAttempt)
+            {
+                LoadProfile();
+                needsLoadAttempt = false;
+            }
+
+            base.Layout(parentBounds);
+        }
+
+        private void LoadProfile()
+        {
             insideOutBorderRelativeNode.ClearDisposeChildren();
 
-            if (pilot != null)
+            if (Pilot != null)
             {
                 if (showText)
-                    TextNode.Text = PickAThing(pilot);
+                    TextNode.Text = PickAThing(Pilot);
 
-                if (string.IsNullOrEmpty(filename) && !string.IsNullOrEmpty(pilot.PhotoPath))
+                if (string.IsNullOrEmpty(filename) && !string.IsNullOrEmpty(Pilot.PhotoPath))
                 {
-                    filename = pilot.PhotoPath;
+                    filename = Pilot.PhotoPath;
                 }
 
                 if (string.IsNullOrEmpty(filename))
@@ -131,12 +152,13 @@ namespace UI.Nodes
                 PilotPhoto = null;
                 TextNode.Text = "";
             }
-
-            RequestLayout();
         }
 
         private bool LoadFile(string filename)
         {
+            if (CompositorLayer == null)
+                return false;
+
             try
             {
                 PilotPhoto?.Dispose();

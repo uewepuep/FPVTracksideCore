@@ -179,7 +179,7 @@ namespace Tools
             return newTexture;
         }
 
-        public static Texture2D CloneBGRtoRGB(this Texture2D texture)
+        public static Texture2D CloneBGRtoRGB(this Texture2D texture, bool flip, bool mirror)
         {
             if (texture == null)
                 return null;
@@ -187,18 +187,35 @@ namespace Tools
             Color[] data = new Color[texture.Width * texture.Height];
             texture.GetData(data);
 
-            if (texture.Format == SurfaceFormat.Bgr32)
+            int maxHeightIndex = texture.Height - 1;
+            int maxWidthIndex = texture.Width - 1;
+
+            Color[] newData = new Color[data.Length];
+            for (int i = 0; i < texture.Height; i++)
             {
-                for (int i = 0; i < data.Length; i++)
+                int y = flip ? maxHeightIndex - i: i;
+                for (int j = 0; j < texture.Width; j++)
                 {
-                    byte r = data[i].R;
-                    data[i].R = data[i].B;
-                    data[i].B = r;
+                    int x = mirror ? maxWidthIndex - j: j;
+
+                    int index = y * texture.Width + x;
+                    int outex = i * texture.Width + j;
+
+                    Color pixel = data[index];
+
+                    if (texture.Format == SurfaceFormat.Bgr32)
+                    {
+                        byte r = pixel.R;
+                        pixel.R = pixel.B;
+                        pixel.B = r;
+                    }
+
+                    newData[outex] = pixel;
                 }
             }
 
             Texture2D newTexture = new Texture2D(texture.GraphicsDevice, texture.Width, texture.Height);
-            newTexture.SetData(data);
+            newTexture.SetData(newData);
             return newTexture;
         }
 
@@ -257,18 +274,9 @@ namespace Tools
             if (File.Exists(filename))
                 File.Delete(filename);
 
-            Rectangle src = new Rectangle(0, 0, texture.Width, texture.Height);
-            Rectangle dest = new Rectangle(0, 0, texture.Width, texture.Height);
-
             Texture2D cloned;
 
-            if (flipped)
-                src = src.Flip(texture.Height);
-
-            if (mirrored)
-                src = src.Mirror(texture.Width);
-
-            using (cloned = CloneBGRtoRGB(texture))
+            using (cloned = CloneBGRtoRGB(texture, flipped, mirrored))
             {
                 using (FileStream fs = new FileStream(filename, FileMode.CreateNew))
                 {
