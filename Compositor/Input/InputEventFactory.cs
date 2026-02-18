@@ -379,27 +379,34 @@ namespace Composition.Input
         {
             if (OnMouseInputEvent != null)
             {
-                TouchCollection touchCollection = SafeGetTouchState();
-
-                if (!touchCollection.Any())
+                try
                 {
-                    firstTouch = true;
-                    return;
-                }
+                    TouchCollection touchCollection = SafeGetTouchState();
 
-                int fingersTouchingScreen = touchCollection.Count;
-                switch (fingersTouchingScreen)
+                    if (!touchCollection.Any())
+                    {
+                        firstTouch = true;
+                        return;
+                    }
+
+                    int fingersTouchingScreen = touchCollection.Count;
+                    switch (fingersTouchingScreen)
+                    {
+                        case 1:
+                            SingleTouch(touchCollection.FirstOrDefault());
+                            break;
+
+                        case 2:
+                            DraggingToScroll(touchCollection);
+                            break;
+                    }
+
+                    firstTouch = false;
+                }
+                catch (Exception e)
                 {
-                    case 1:
-                        SingleTouch(touchCollection.FirstOrDefault());
-                        break;
-
-                    case 2:
-                        DraggingToScroll(touchCollection);
-                        break;
+                    Logger.Input.LogException(this, e);
                 }
-
-                firstTouch = false;
             }
         }
 

@@ -457,7 +457,7 @@ namespace Tools
 
         public void Log(Exception ex)
         {
-            LogItem logItem = new LogItem("Crash", "", ex.Message, ex, LogType.Exception, logVersion);
+            LogItem logItem = new LogItem("Crash", null, ex.Message, ex, LogType.Exception, logVersion);
 
             using (StreamWriter stream = new StreamWriter(file.FullName, true))
             {
