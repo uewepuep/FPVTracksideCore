@@ -12,6 +12,15 @@ namespace UI
 {
     public class TranslatorFactory
     {
+        public static IEnumerable<string> TranslatorNames()
+        {
+            foreach (Translator translator in Load())
+            {
+                yield return translator.Language;
+            }
+        }
+
+
         public static IEnumerable<Translator> Load()
         {
             string filename = "Translations.xlsx";

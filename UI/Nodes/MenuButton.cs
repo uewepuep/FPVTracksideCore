@@ -520,7 +520,7 @@ namespace UI.Nodes
             editor.OnOK += (e) =>
             {
                 ApplicationProfileSettings.Write(Profile, profileSettings);
-                if (hasEvent && Restart != null && editor.NeedsRestart)
+                if (Restart != null && editor.NeedsRestart)
                 {
                     GetLayer<PopupLayer>().PopupConfirmation("Changes require restart to take effect. Restart now?", () => { Restart(evennt); });
                 }

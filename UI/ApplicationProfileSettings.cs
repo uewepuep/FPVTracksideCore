@@ -22,6 +22,10 @@ namespace UI
             PositionAndPB,
             Channel
         }
+        
+        [Category("General")]
+        [NeedsRestart]
+        public string Language { get; set; }
 
         [Category("General")]
         [DisplayName("Show Welcome Screen")]
@@ -272,9 +276,6 @@ namespace UI
         [Category("Pilot Profile")]
         [NeedsRestart]
         public float PilotProfileMaskAlpha { get; set; }
-
-        [Browsable(false)]
-        public string Language { get; set; }
 
         public ApplicationProfileSettings()
         {

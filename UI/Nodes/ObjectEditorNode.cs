@@ -462,6 +462,11 @@ namespace UI.Nodes
                 return new ComPortPropertyNode<ApplicationProfileSettings>(obj, pi, ButtonBackground, TextColor, ButtonHover);
             }
 
+            if (pi.Name == "Language")
+            {
+                return new LanguagePropertyNode(obj, pi, ButtonBackground, TextColor, ButtonHover);
+            }
+
             return base.CreatePropertyNode(obj, pi);
         }
 
@@ -481,6 +486,15 @@ namespace UI.Nodes
                 base.ShowMouseMenu();
             }
         }
+        private class LanguagePropertyNode : ListPropertyNode<ApplicationProfileSettings>
+        {
+            public LanguagePropertyNode(ApplicationProfileSettings obj, PropertyInfo pi, Color textBackground, Color textColor, Color hover)
+                : base(obj, pi, textBackground, textColor, hover)
+            {
+                SetOptions(TranslatorFactory.TranslatorNames());
+            }
+        }
+
     }
 
     class KeyboardShortcutsEditor : ObjectEditorNode<KeyboardShortcuts>
