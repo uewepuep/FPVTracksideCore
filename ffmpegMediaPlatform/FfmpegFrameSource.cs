@@ -49,7 +49,7 @@ namespace FfmpegMediaPlatform
         protected byte[] buffer;
 
         protected Thread thread;
-        protected bool run;
+        protected volatile bool run;
         protected bool inited;
         
         // PERFORMANCE: Frame queue for parallel processing

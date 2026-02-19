@@ -14,7 +14,7 @@ namespace ExternalData
 
         public bool Connected { get; private set; }
 
-        private bool connecting;
+        private volatile bool connecting;
 
 
         private string host;

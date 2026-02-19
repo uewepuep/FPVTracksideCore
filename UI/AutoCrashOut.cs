@@ -18,7 +18,7 @@ namespace UI
         private Dictionary<Channel, bool> channelHasMotion;
 
         private Thread thread;
-        private bool run;
+        private volatile bool run;
 
         private EventManager eventManager;
         private ChannelsGridNode channelsGridNode;
@@ -49,6 +49,7 @@ namespace UI
 
         public void Dispose()
         {
+            eventManager.RaceManager.OnRaceChanged -= RaceManager_OnRaceChanged;
             eventManager.RaceManager.OnRaceStart -= RaceManager_OnRaceStart;
 
             run = false;

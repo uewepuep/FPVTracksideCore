@@ -54,7 +54,11 @@ namespace RaceLib
             }
 
             // Loop
-            Spline.AddPoint(trackElements.First().GetFlightPath().First());
+            Vector3 loopPoint = trackElements.First().GetFlightPath().FirstOrDefault();
+            if (loopPoint != default)
+            {
+                Spline.AddPoint(loopPoint);
+            }
 
             Spline.ComputeTangents();
 

@@ -27,7 +27,7 @@ namespace Timing.ImmersionRC
         public event System.Action OnDataReceived;
         public event System.Action OnDataSent;
 
-        private bool runPolling;
+        private volatile bool runPolling;
 
         private DateTime detectionStart;
 

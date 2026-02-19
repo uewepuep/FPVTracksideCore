@@ -13,7 +13,7 @@ namespace ImageServer
     public abstract class TextureFrameSource : FrameSource
     {
         protected Thread imageProcessor;
-        protected bool processImages;
+        protected volatile bool processImages;
         private AutoResetEvent mutex;
 
         // Arrays for copying the data.

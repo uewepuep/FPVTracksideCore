@@ -19,7 +19,7 @@ namespace Composition.Layers
         public int FrameRate { get; set; }
 
         private Thread drawThread;
-        private bool draw;
+        private volatile bool draw;
 
         public LayerStackDoubleBuffered(GraphicsDevice graphicsDevice, LayerStackGame game, PlatformTools textRenderer)
             : base(graphicsDevice, game, textRenderer)

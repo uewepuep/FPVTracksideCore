@@ -17,7 +17,7 @@ namespace Timing
 
         public bool Connected { get; private set; }
 
-        private bool running;
+        private volatile bool running;
         private List<int> frequencies;
         private List<Thread> threads;
 

@@ -44,9 +44,11 @@ namespace UI.Video
             lastFrames.Enqueue(new TimeMotionContainer() { Motion = next, Time = DateTime.Now });
 
             // remove old lastframes
-            while (lastFrames.FirstOrDefault() != null && DateTime.Now - lastFrames.FirstOrDefault().Time > QueueLength)
+            TimeMotionContainer oldest = lastFrames.FirstOrDefault();
+            while (oldest != null && DateTime.Now - oldest.Time > QueueLength)
             {
                 lastFrames.Dequeue();
+                oldest = lastFrames.FirstOrDefault();
             }
         }
 

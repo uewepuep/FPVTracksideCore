@@ -46,9 +46,14 @@ namespace RaceLib.Format
                 return autoFormat.GenerateRound(db, preExisting, newRound, plan);
             }
 
-            IEnumerable<Race> races = EventManager.RaceManager.GetRaces(lastRound);
+            Race[] races = EventManager.RaceManager.GetRaces(lastRound).ToArray();
             List<Race> newRaces = new List<Race>();
             var Pilots = new List<Pilot>();
+
+            if (!races.Any())
+            {
+                return newRaces;
+            }
 
             foreach (Race race in races)
             {
@@ -85,9 +90,12 @@ namespace RaceLib.Format
                 for (int i = (group.Count - 1); i > -1; i--)
                 {
                     var pilot = pilotPoints.ElementAt(group[i]).pilot;
-                    var lastRace = races.First(e => e.Pilots.Contains(pilot));
-                    var lastChannel = lastRace.PilotChannels.First(e => e.Pilot == pilot);
-                    var currentChannel = r.PilotChannels.First(e => e.Channel == lastChannel.Channel);
+                    var lastRace = races.FirstOrDefault(e => e.Pilots.Contains(pilot));
+                    if (lastRace == null) continue;
+                    var lastChannel = lastRace.PilotChannels.FirstOrDefault(e => e.Pilot == pilot);
+                    if (lastChannel == null) continue;
+                    var currentChannel = r.PilotChannels.FirstOrDefault(e => e.Channel == lastChannel.Channel);
+                    if (currentChannel == null) continue;
                     if (currentChannel.Pilot == null)
                     {
                         currentChannel.Pilot = pilot;

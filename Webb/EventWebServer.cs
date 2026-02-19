@@ -26,7 +26,8 @@ namespace Webb
         private IRaceControl raceControl;
 
         private Thread thread;
-        public bool Running { get; private set; }
+        private volatile bool running;
+        public bool Running => running;
 
         private HttpListener listener;
 
@@ -67,7 +68,7 @@ namespace Webb
         {
             try
             {
-                Running = true;
+                running = true;
 
                 if (thread != null)
                 {
@@ -402,7 +403,7 @@ namespace Webb
 
         public bool Stop()
         {
-            Running = false;
+            running = false;
             listener?.Abort();
             thread?.Join();
 

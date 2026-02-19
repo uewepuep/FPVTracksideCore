@@ -409,7 +409,7 @@ namespace UI.Nodes
                 if (laps.Any())
                 {
                     if (laps.Length != lapNodes.Where(ln => ln != null).Where(ln => ln.Visible).Count() ||
-                                        laps.FirstOrDefault() != lapNodes.First().Lap)
+                                        laps.FirstOrDefault() != lapNodes.FirstOrDefault()?.Lap)
                     {
                         RefreshData(laps);
                     }

@@ -35,7 +35,7 @@ namespace FfmpegMediaPlatform
         private Thread httpServerThread;
         private string hlsOutputPath;
         private int httpPort;
-        private bool httpServerRunning;
+        private volatile bool httpServerRunning;
         private readonly object httpServerLock = new object();
 
         public string HlsStreamUrl => HlsEnabled ? $"http://localhost:{httpPort}/hls/stream.m3u8" : "HLS Disabled";

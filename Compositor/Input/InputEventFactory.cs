@@ -158,7 +158,7 @@ namespace Composition.Input
                 catch (Exception ex)
                 {
                     Tools.Logger.CrashLogger.Log(ex);
-                    throw ex;
+                    throw;
                 }
             }
         }

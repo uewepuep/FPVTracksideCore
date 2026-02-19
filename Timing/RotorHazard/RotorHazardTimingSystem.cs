@@ -371,10 +371,11 @@ namespace Timing.RotorHazard
                     }
                     else
                     {
-                        IEnumerable<ServerTimeSample> ordered = serverTimeSamples.OrderBy(x => x.Response);
-                        IEnumerable<double> orderedSeconds = ordered.Select(x => x.Differential.TotalSeconds);
+                        double[] orderedSeconds = serverTimeSamples.OrderBy(x => x.Response)
+                                                                    .Select(x => x.Differential.TotalSeconds)
+                                                                    .ToArray();
 
-                        double median = orderedSeconds.Skip(orderedSeconds.Count() / 2).First();
+                        double median = orderedSeconds.Skip(orderedSeconds.Length / 2).First();
 
                         serverDifferential = TimeSpan.FromSeconds(median);
                         Logger.TimingLog.Log(this, "Server Differential " + serverDifferential.TotalSeconds + " Epoch " + serverEpoch);

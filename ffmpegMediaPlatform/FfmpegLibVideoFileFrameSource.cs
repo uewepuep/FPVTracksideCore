@@ -58,7 +58,7 @@ namespace FfmpegMediaPlatform
         private int videoStreamIndex = -1;
 
         private Thread readerThread;
-        private bool run;
+        private volatile bool  run;
         private byte[] rgbaBuffer;
         private GCHandle rgbaHandle;
         private IntPtr rgbaPtr;

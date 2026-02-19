@@ -44,7 +44,7 @@ namespace UI.Video
         public bool MaintainConnections { get; set; }
 
         private Thread videoDeviceManagerThread;
-        private bool runWorker;
+        private volatile bool runWorker;
         private List<Action> todo;
 
         private List<ICaptureFrameSource> recording;

@@ -126,7 +126,7 @@ namespace Composition
     {
 
         private Thread background;
-        private bool runBackground;
+        private volatile bool runBackground;
 
         private AutoResetEvent backgroundSet;
         private AutoResetEvent drawSet;
@@ -183,7 +183,7 @@ namespace Composition
             catch (Exception ex) 
             {
                 Tools.Logger.CrashLogger.Log(ex);
-                throw ex;
+                throw;
             }
         }
 

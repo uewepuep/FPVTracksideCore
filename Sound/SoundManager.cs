@@ -43,7 +43,7 @@ namespace Sound
 
         private Race lastAnnounced;
         private bool announceConnection;
-        private bool initialised;
+        private volatile bool initialised;
 
         public static SoundManager Instance { get; private set; }
 

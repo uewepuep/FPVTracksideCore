@@ -52,7 +52,7 @@ namespace Tools
         public event System.Action OnCompleteLast;
         public event Action<WorkItem, Exception> OnError;
 
-        private bool disposing;
+        private volatile bool disposing;
         private AutoResetEvent mutex;
         private Thread thread;
         private bool doingOne;

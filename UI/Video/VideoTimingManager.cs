@@ -15,7 +15,7 @@ namespace UI.Video
         private TimingSystemManager timingSystemManager;
         private ChannelsGridNode channelsGridNode;
 
-        private bool run;
+        private volatile bool run;
         private Thread thread;
 
         public VideoTimingManager(TimingSystemManager timingSystemManager, ChannelsGridNode channelsGridNode)

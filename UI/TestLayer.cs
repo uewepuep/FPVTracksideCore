@@ -29,7 +29,7 @@ namespace UI
 
         private Thread testThread;
         private System.Action test;
-        private bool runTest;
+        private volatile bool runTest;
 
         private TextNode frameRateNode;
 
