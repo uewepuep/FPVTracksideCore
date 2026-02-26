@@ -27,6 +27,7 @@ namespace Tools
         public static T[] Read<T>(string directory, string filename, IEnumerable<KeyValuePair<string, string>> replacements) where T : new()
         {
             FileInfo file = new FileInfo(Path.Combine(WorkingDirectory.FullName, directory, filename));
+            FileInfo backup = new FileInfo(file.FullName + ".bak");
 
             bool deleteAfterReading = false;
 
@@ -35,8 +36,34 @@ namespace Tools
                 return (T[])Activator.CreateInstance(typeof(T[]), 0);
             }
 
-            T[] os = null;
+            T[] os = ReadFile<T>(file, replacements);
 
+            if (os != null)
+            {
+                try { file.CopyTo(backup.FullName, overwrite: true); } catch { }
+                if (deleteAfterReading)
+                {
+                    file.Delete();
+                }
+                return os;
+            }
+
+            if (backup.Exists)
+            {
+                Logger.Input.Log("IOTools", "Read failed for " + filename + ", restoring from backup");
+                os = ReadFile<T>(backup, replacements);
+                if (os != null)
+                {
+                    try { backup.CopyTo(file.FullName, overwrite: true); } catch { }
+                    return os;
+                }
+            }
+
+            throw new FormatException();
+        }
+
+        private static T[] ReadFile<T>(FileInfo file, IEnumerable<KeyValuePair<string, string>> replacements) where T : new()
+        {
             string contents = null;
 
             for (int i = 0; i < 5; i++)
@@ -61,39 +88,38 @@ namespace Tools
             }
 
             if (contents == null)
+                return null;
+
+            try
             {
-                throw new FormatException();
-            }
+                string ext = file.Extension.ToLower();
+                if (ext == ".bak")
+                    ext = Path.GetExtension(Path.GetFileNameWithoutExtension(file.FullName)).ToLower();
 
-            if (file.Extension.ToLower() == ".json")
-            {
-
-                JsonSerializerSettings settings = new JsonSerializerSettings();
-                settings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-                settings.Formatting = Formatting.Indented;
-
-                os = JsonConvert.DeserializeObject<T[]>(contents, settings);
-            }
-
-            if (file.Extension.ToLower() == ".xml")
-            {
-                XmlSerializer serializer = new XmlSerializer(typeof(T[]));
-                using (TextReader reader = new StringReader(contents))
+                if (ext == ".json")
                 {
-                    os = (T[])serializer.Deserialize(reader);
+                    JsonSerializerSettings settings = new JsonSerializerSettings();
+                    settings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+                    settings.Formatting = Formatting.Indented;
+
+                    return JsonConvert.DeserializeObject<T[]>(contents, settings);
+                }
+
+                if (ext == ".xml")
+                {
+                    XmlSerializer serializer = new XmlSerializer(typeof(T[]));
+                    using (TextReader reader = new StringReader(contents))
+                    {
+                        return (T[])serializer.Deserialize(reader);
+                    }
                 }
             }
-
-            if (os != null)
+            catch (Exception e)
             {
-                if (deleteAfterReading)
-                {
-                    file.Delete();
-                }
-                return os;
+                Logger.Input.LogException("IOToolsRead", e);
             }
 
-            throw new FormatException();
+            return null;
         }
 
         public static T ReadSingle<T>(string directory, string filename) where T : new()

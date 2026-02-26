@@ -122,20 +122,32 @@ namespace ExternalData
 
         private delegate IEnumerable<string> stringReturner();
 
+        private static bool IsValidOBSName(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s))
+                return false;
+            foreach (char c in s)
+            {
+                if (c < 32 && c != '\t')
+                    return false;
+            }
+            return true;
+        }
+
         private void callBackIenumerable(stringReturner input, Action<string[]> callback)
         {
             workQueue?.Enqueue(() =>
             {
                 try
                 {
-                    string[] strings = input().ToArray();
-                   
+                    string[] strings = input().Where(IsValidOBSName).Select(s => s.Trim()).ToArray();
+
                     Logger.OBS.Log(this, "", strings);
 
                     callback(strings);
                     Activity?.Invoke(true);
                 }
-                catch (Exception ex) 
+                catch (Exception ex)
                 {
                     Logger.OBS.LogException(this, ex);
                     Activity?.Invoke(false);
