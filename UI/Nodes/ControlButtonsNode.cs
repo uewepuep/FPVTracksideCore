@@ -163,10 +163,14 @@ namespace UI.Nodes
                 StartButton.Visible = false;
                 StopButton.Visible = false;
                 PasteClipboard.Visible = false;
-                CopyResultsClipboard.Visible = false;
                 ResetButton.Visible = false;
                 ClearButton.Visible = false;
                 ResumeButton.Visible = false;
+
+                if (!tracksideMultiNode.IsOnReplay)
+                {
+                    CopyResultsClipboard.Visible = false;
+                }
             }
             ClearButton.Visible = showingAnyPilots && !inRaceOrPreRace;
 
