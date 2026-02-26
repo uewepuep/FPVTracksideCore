@@ -27,7 +27,7 @@ namespace UI.Nodes
             MouseMenu mouseMenu = new MouseMenu(this);
             mouseMenu.LeftToRight = false;
 
-            foreach (Translator translator in translators)
+            foreach (string name in TranslatorFactory.TranslatorNames().OrderBy(s => s))
             {
                 mouseMenu.AddItem(name, () => { OnLanguageSet(name); });
             }
