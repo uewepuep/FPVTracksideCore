@@ -420,6 +420,13 @@ namespace UI.Video
                     }
                 }
 
+                if (inputEvent.Key == Keys.C)
+                {
+                    if (CompositorLayer?.InputEventFactory.AreControlKeysDown() == true)
+                    {
+                        PlatformTools.Clipboard.SetText(EventManager.GetResultsText(ApplicationProfileSettings.Instance.Units).ToTSV());
+                    }
+                }
             }
             return base.OnKeyboardInput(inputEvent);
         }
