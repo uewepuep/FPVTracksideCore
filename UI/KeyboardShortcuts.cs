@@ -57,6 +57,8 @@ namespace Composition.Input
         public ShortcutKey NextRace { get; set; }
         [Category("Race Control")]
         public ShortcutKey PrevRace { get; set; }
+        [Category("Race Control")]
+        public ShortcutKey ClearRace { get; set; }
 
         [Category("Laps")]
         public ShortcutKey AddLapChannelGroup1 { get; set; }
@@ -328,6 +330,8 @@ namespace Composition.Input
             OBSPauseNotifications = new ShortcutKey(Keys.B, true, true, true);
 
             Flag = new ShortcutKey(Keys.F, true, false, false);
+
+            ClearRace = new ShortcutKey(Keys.C, false, true, false);
         }
 
 

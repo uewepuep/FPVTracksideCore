@@ -1272,6 +1272,11 @@ namespace UI
                     SoundManager.PlaySound(SoundKey.Flag);
                 }
 
+                if (KeyMapper.ClearRace.Match(inputEvent))
+                {
+                    Clear();
+                }
+
                 if (race != null)
                 {
                     int channelGroupId = 0;
@@ -1354,13 +1359,6 @@ namespace UI
                             if (ControlButtons.CopyResultsClipboard.Visible)
                             {
                                 PlatformTools.Clipboard.SetText(EventManager.GetResultsText(ApplicationProfileSettings.Instance.Units).ToTSV());
-                            }
-                        }
-                        else
-                        {
-                            if (ControlButtons.ClearButton.Visible)
-                            {
-                                Clear();
                             }
                         }
                         return true;

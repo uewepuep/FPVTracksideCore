@@ -94,7 +94,7 @@ namespace Composition.Nodes
                 ITextRenderer textRenderer = this.textRenderer;
                 if (textRenderer == null)
                 {
-                    this.textRenderer = textRenderer = CompositorLayer.LayerStack.PlatformTools.CreateTextRenderer();
+                    this.textRenderer = textRenderer = CompositorLayer?.LayerStack.PlatformTools.CreateTextRenderer();
                 }
 
                 bool isAnimatingSize = IsAnimatingSize();
