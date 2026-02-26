@@ -292,6 +292,11 @@ namespace UI.Nodes
                     WorkSet workSet = new WorkSet();
                     eventManager.UnloadRaces(workSet, ll.WorkQueue);
                     eventManager.LoadRaces(workSet, ll.WorkQueue);
+
+                    ll.WorkQueue.Enqueue(workSet, "Refreshing UI", () =>
+                    {
+                        DataDeleted?.Invoke();
+                    });
                 });
             }
             root.AddBlank();

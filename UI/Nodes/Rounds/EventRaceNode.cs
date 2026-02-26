@@ -396,6 +396,7 @@ namespace UI.Nodes.Rounds
                 }
 
                 mm.Show(mouseInputEvent);
+                return true;
             }
 
             bool clicked = false;
