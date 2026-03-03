@@ -645,6 +645,7 @@ namespace UI
             if (sponsor != null)
             {
                 sponsor.SoundManager = SoundManager;
+                sponsor.RaceManager = EventManager.RaceManager;
             }
 
             if (SoundManager != null)

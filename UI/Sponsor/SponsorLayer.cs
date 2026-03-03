@@ -1,4 +1,5 @@
 ﻿using Composition;
+using Composition.Input;
 using Composition.Layers;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
@@ -19,12 +20,14 @@ namespace UI.Sponsor
     public class SponsorLayer : CompositorLayer
     {
         private DateTime triggered;
-        private int triggerCount;
 
         private TimeSpan fadeIn;
 
         public List<SponsorMedia> SponsorMedias { get; private set; }
         public SoundManager SoundManager { get; internal set; }
+        public RaceManager RaceManager { get; internal set; }
+
+        private DateTime lastInputTime;
 
         private ColorNode background;
 
@@ -36,6 +39,10 @@ namespace UI.Sponsor
         private SponsorNode sponsorNode;
 
         private Action afterTrigger;
+
+        public bool ScreensaverMode { get; private set; }
+
+        private Queue<SponsorMedia> screensaverQueue;
 
         public TimeSpan TriggerPeriod { get; private set; }
 
@@ -60,6 +67,7 @@ namespace UI.Sponsor
             Visible = false;
             random = new Random(DateTime.Now.Millisecond);
             triggered = DateTime.Now;
+            lastInputTime = DateTime.Now;
         }
 
         public void Load()
@@ -73,71 +81,119 @@ namespace UI.Sponsor
 
             SponsorMedias.Clear();
 
-            foreach (Patreon patreon in patreons)
+            SponsorMedias.Add(new SponsorMedia()
             {
-                if (patreon.Active && patreon.Amount > 0)
-                {
-                    SponsorMedias.Add(new SponsorMedia()
-                    {
-                        Filename = patreon.ThumbFilename,
-                        Name = patreon.Name,
-                        Text = "The next race is brought to you by " + patreon.Name + "; supporting FPVTrackside on Patreon since " + patreon.StartDate.ToString("MMMM") + " " + patreon.StartDate.Year,
-                        DurationSeconds = 10,
-                        Weight = patreon.Amount,
-                        AdType = AdType.Patreon,
-                        Since = "Since " + patreon.StartDate.ToString("MMMM") + " " + patreon.StartDate.Year
-                    });
-                }
-            }
-
-            //SponsorMedias.Add(new SponsorMedia()
-            //{
-            //    Filename = "sponsor/media/tmotor.jpg",
-            //    Text = "The next race is brought to you by; The T-Motor Flame 180AHV",
-            //    DurationSeconds = 6
-            //});
+                Filename = "img/logo.png",
+                Text = "FPVTrackside is looking for sponsors. Join the patreon as at the sponsor level to have your message here. fpvtrackside.com"
+            });
         }
 
         public void TriggerMaybe(Action afterTrigger)
         {
             if (DateTime.Now > triggered + TriggerPeriod)
             {
+                Logger.UI.LogCall(this, "triggered after", DateTime.Now - triggered);
                 this.afterTrigger = afterTrigger;
                 Trigger();
             }
             else
             {
+                Logger.UI.LogCall(this, "skipped, next in", triggered + TriggerPeriod - DateTime.Now);
                 afterTrigger?.Invoke();
             }
         }
 
-        public void Trigger()
+        private Queue<SponsorMedia> BuildShuffledQueue()
         {
-            int sumWeights = SponsorMedias.Select(s => s.Weight).Sum();
-
-            int result = random.Next(sumWeights);
-
-            SponsorMedia chosen = null;
-
-            int currentWeight = 0;
+            List<SponsorMedia> pool = new List<SponsorMedia>();
             foreach (SponsorMedia sponsor in SponsorMedias)
             {
-                if (currentWeight <= result && currentWeight + sponsor.Weight > result)
-                {
-                    chosen = sponsor;
-                    break;
-                }
-                currentWeight += sponsor.Weight;
+                for (int i = 0; i < sponsor.Weight; i++)
+                    pool.Add(sponsor);
             }
 
-            if (chosen == null)
+            for (int i = pool.Count - 1; i > 0; i--)
             {
-                afterTrigger?.Invoke();
-                return;
+                int j = random.Next(i + 1);
+                SponsorMedia temp = pool[i];
+                pool[i] = pool[j];
+                pool[j] = temp;
             }
+
+            return new Queue<SponsorMedia>(pool);
+        }
+
+        public void StartScreensaver()
+        {
+            Logger.UI.LogCall(this);
+            afterTrigger = null;
+            ScreensaverMode = true;
+            screensaverQueue = BuildShuffledQueue();
+            Trigger();
+        }
+
+        public void StopScreensaver()
+        {
+            if (!ScreensaverMode)
+                return;
+            Logger.UI.LogCall(this);
+            ScreensaverMode = false;
+            screensaverQueue = null;
+            afterTrigger = null;
+            lastInputTime = DateTime.Now;
+            Close();
+        }
+
+        public void Trigger()
+        {
+            SponsorMedia chosen = null;
+
+            if (ScreensaverMode && screensaverQueue != null)
+            {
+                if (screensaverQueue.Count == 0)
+                {
+                    Logger.UI.LogCall(this, "screensaver queue complete");
+                    StopScreensaver();
+                    return;
+                }
+
+                chosen = screensaverQueue.Dequeue();
+            }
+            else
+            {
+                int sumWeights = SponsorMedias.Select(s => s.Weight).Sum();
+
+                if (sumWeights == 0)
+                {
+                    Logger.UI.LogCall(this, "no sponsors available");
+                    afterTrigger?.Invoke();
+                    return;
+                }
+
+                int result = random.Next(sumWeights);
+
+                int currentWeight = 0;
+                foreach (SponsorMedia sponsor in SponsorMedias)
+                {
+                    if (currentWeight <= result && currentWeight + sponsor.Weight > result)
+                    {
+                        chosen = sponsor;
+                        break;
+                    }
+                    currentWeight += sponsor.Weight;
+                }
+
+                if (chosen == null)
+                {
+                    Logger.UI.LogCall(this, "no sponsor chosen");
+                    afterTrigger?.Invoke();
+                    return;
+                }
+            }
+
+            Logger.UI.LogCall(this, chosen.Name, "screensaver", ScreensaverMode);
 
             triggered = DateTime.Now;
-            triggerCount++;
             Root.Alpha = 0.001f;
             Visible = true;
 
@@ -146,7 +202,7 @@ namespace UI.Sponsor
             sponsorNode = new SponsorNode(SoundManager, chosen);
             Root.AddChild(sponsorNode);
 
-            TimeSpan duration = TimeSpan.FromSeconds(chosen.DurationSeconds);
+            TimeSpan duration = TimeSpan.FromSeconds(Math.Max(1, chosen.DurationSeconds));
 
             End = DateTime.Now + duration;
 
@@ -155,17 +211,45 @@ namespace UI.Sponsor
 
         private void OnClick(Composition.Input.MouseInputEvent mie)
         {
-            Close();
+            if (ScreensaverMode)
+                Trigger();
+            else
+                Close();
         }
 
         public void Close()
         {
+            Logger.UI.LogCall(this);
             Visible = false;
             sponsorNode?.Dispose();
 
             SoundManager.Instance.StopSound();
 
             this.afterTrigger?.Invoke();
+        }
+
+        protected override void OnUpdate(GameTime gameTime)
+        {
+            bool isOverTime = DateTime.Now - lastInputTime > TimeSpan.FromMinutes(ApplicationProfileSettings.Instance.ScreensaverIdleMinutes);
+
+            bool noRaceRunning = RaceManager == null || (!RaceManager.RaceRunning && !RaceManager.PreRaceStartDelay);
+
+            if (ScreensaverMode && !noRaceRunning)
+            {
+                StopScreensaver();
+            }
+
+            if (!ScreensaverMode &&
+                noRaceRunning &&
+                ApplicationProfileSettings.Instance.SponsoredByMessages &&
+                SponsorMedias.Count > 0 &&
+                ApplicationProfileSettings.Instance.ScreensaverIdleMinutes > 0 && isOverTime)
+            {
+                lastInputTime = DateTime.Now;
+                StartScreensaver();
+            }
+
+            base.OnUpdate(gameTime);
         }
 
         protected override void OnDraw()
@@ -181,14 +265,30 @@ namespace UI.Sponsor
 
             int remaining = (int)Math.Ceiling((End - now).TotalSeconds);
 
-            endButton.Text = "Skip (" + remaining + ")";
+            endButton.Text = ScreensaverMode ? "Next" : "Skip (" + remaining + ")";
 
             if (now > End)
             {
-                Close();
+                if (ScreensaverMode)
+                    Trigger();
+                else
+                    Close();
             }
 
             base.OnDraw();
+        }
+
+        public override bool OnMouseInput(MouseInputEvent inputEvent)
+        {
+            lastInputTime = DateTime.Now;
+
+            if (ScreensaverMode && inputEvent.EventType == MouseInputEvent.EventTypes.Button)
+            {
+                StopScreensaver();
+                return true;
+            }
+
+            return base.OnMouseInput(inputEvent);
         }
     }
 }

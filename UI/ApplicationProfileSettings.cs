@@ -39,6 +39,10 @@ namespace UI
         public bool SponsoredByMessages { get; set; }
 
         [Category("General")]
+        [DisplayName("Sponsor screensaver idle time (minutes, 0 = disabled)")]
+        public int ScreensaverIdleMinutes { get; set; }
+
+        [Category("General")]
         [NeedsRestart]
         public int ShownDecimalPlaces { get; set; }
 
@@ -339,6 +343,7 @@ namespace UI
             InverseResolutionScalePercent = 100;
             AutoSync = true;
             SponsoredByMessages = true;
+            ScreensaverIdleMinutes = 5;
 
             FrameRateLimit = 60;
             VSync = true;

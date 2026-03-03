@@ -29,7 +29,7 @@ namespace UI.Sponsor
         {
             Filename = "";
             Text = "";
-            DurationSeconds = 5;
+            DurationSeconds = 10;
             Weight = 1;
             Since = "";
             Name = "";
