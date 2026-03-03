@@ -1,4 +1,4 @@
-﻿using Composition;
+using Composition;
 using Composition.Input;
 using Composition.Layers;
 using Composition.Nodes;
@@ -23,7 +23,7 @@ namespace UI.Sponsor
 
         private TimeSpan fadeIn;
 
-        public List<SponsorMedia> SponsorMedias { get; private set; }
+        public List<RaceLib.Sponsor> Sponsors { get; private set; }
         public SoundManager SoundManager { get; internal set; }
         public RaceManager RaceManager { get; internal set; }
 
@@ -42,11 +42,11 @@ namespace UI.Sponsor
 
         public bool ScreensaverMode { get; private set; }
 
-        private Queue<SponsorMedia> screensaverQueue;
+        private Queue<RaceLib.Sponsor> screensaverQueue;
 
         public TimeSpan TriggerPeriod { get; private set; }
 
-        public SponsorLayer(GraphicsDevice device) 
+        public SponsorLayer(GraphicsDevice device)
             : base(device)
         {
             endButton = new TextButtonNode("", Theme.Current.Button.XNA, Theme.Current.Hover.XNA, Theme.Current.TextMain.XNA);
@@ -56,7 +56,7 @@ namespace UI.Sponsor
             TriggerPeriod = TimeSpan.FromHours(1);
 
             fadeIn = TimeSpan.FromSeconds(1);
-            SponsorMedias = new List<SponsorMedia>();
+            Sponsors = new List<RaceLib.Sponsor>();
 
             background = new ColorNode(Color.FromNonPremultiplied(4, 4, 4, 200));
             Root.AddChild(background);
@@ -72,20 +72,24 @@ namespace UI.Sponsor
 
         public void Load()
         {
-            Patreon[] patreons;
+            RaceLib.Sponsor[] webSponsors;
 
             using (IDatabase db = DatabaseFactory.Open(Guid.Empty))
             {
-                patreons = db.All<Patreon>().Where(p => p.Active).ToArray();
+                webSponsors = db.All<RaceLib.Sponsor>().Where(s => s.Active).ToArray();
             }
 
-            SponsorMedias.Clear();
+            Sponsors.Clear();
 
-            SponsorMedias.Add(new SponsorMedia()
+            Sponsors.Add(new RaceLib.Sponsor()
             {
                 Filename = "img/logo.png",
-                Text = "FPVTrackside is looking for sponsors. Join the patreon as at the sponsor level to have your message here. fpvtrackside.com"
+                Text = "FPVTrackside is looking for sponsors. Join the patreon as at the sponsor level to have your message here. fpvtrackside.com",
+                AdType = AdType.Image,
+                Weight = 1
             });
+
+            Sponsors.AddRange(webSponsors);
         }
 
         public void TriggerMaybe(Action afterTrigger)
@@ -103,10 +107,10 @@ namespace UI.Sponsor
             }
         }
 
-        private Queue<SponsorMedia> BuildShuffledQueue()
+        private Queue<RaceLib.Sponsor> BuildShuffledQueue()
         {
-            List<SponsorMedia> pool = new List<SponsorMedia>();
-            foreach (SponsorMedia sponsor in SponsorMedias)
+            List<RaceLib.Sponsor> pool = new List<RaceLib.Sponsor>();
+            foreach (RaceLib.Sponsor sponsor in Sponsors)
             {
                 for (int i = 0; i < sponsor.Weight; i++)
                     pool.Add(sponsor);
@@ -115,12 +119,12 @@ namespace UI.Sponsor
             for (int i = pool.Count - 1; i > 0; i--)
             {
                 int j = random.Next(i + 1);
-                SponsorMedia temp = pool[i];
+                RaceLib.Sponsor temp = pool[i];
                 pool[i] = pool[j];
                 pool[j] = temp;
             }
 
-            return new Queue<SponsorMedia>(pool);
+            return new Queue<RaceLib.Sponsor>(pool);
         }
 
         public void StartScreensaver()
@@ -146,7 +150,7 @@ namespace UI.Sponsor
 
         public void Trigger()
         {
-            SponsorMedia chosen = null;
+            RaceLib.Sponsor chosen = null;
 
             if (ScreensaverMode && screensaverQueue != null)
             {
@@ -161,7 +165,7 @@ namespace UI.Sponsor
             }
             else
             {
-                int sumWeights = SponsorMedias.Select(s => s.Weight).Sum();
+                int sumWeights = Sponsors.Select(s => s.Weight).Sum();
 
                 if (sumWeights == 0)
                 {
@@ -173,7 +177,7 @@ namespace UI.Sponsor
                 int result = random.Next(sumWeights);
 
                 int currentWeight = 0;
-                foreach (SponsorMedia sponsor in SponsorMedias)
+                foreach (RaceLib.Sponsor sponsor in Sponsors)
                 {
                     if (currentWeight <= result && currentWeight + sponsor.Weight > result)
                     {
@@ -242,7 +246,7 @@ namespace UI.Sponsor
             if (!ScreensaverMode &&
                 noRaceRunning &&
                 ApplicationProfileSettings.Instance.SponsoredByMessages &&
-                SponsorMedias.Count > 0 &&
+                Sponsors.Count > 0 &&
                 ApplicationProfileSettings.Instance.ScreensaverIdleMinutes > 0 && isOverTime)
             {
                 lastInputTime = DateTime.Now;

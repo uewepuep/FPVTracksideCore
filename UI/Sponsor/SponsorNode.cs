@@ -1,7 +1,8 @@
-﻿using Composition;
+using Composition;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using RaceLib;
 using Sound;
 using System;
 using System.Collections.Generic;
@@ -16,28 +17,28 @@ namespace UI.Sponsor
 {
     public class SponsorNode : Node
     {
-        public SponsorMedia SponsorMedia { get; private set; }
+        public RaceLib.Sponsor Sponsor { get; private set; }
 
-        public SponsorNode(SoundManager soundManager, SponsorMedia media)
+        public SponsorNode(SoundManager soundManager, RaceLib.Sponsor sponsor)
         {
-            SponsorMedia = media;
+            Sponsor = sponsor;
 
             RelativeBounds = new RectangleF(0.05f, 0.05f, 0.9f, 0.9f);
 
-            switch (media.AdType)
+            switch (sponsor.AdType)
             {
                 case AdType.Video:
                     break;
 
                 case AdType.Image:
-                    ImageNode imageNode = new ImageNode(media.Filename);
+                    ImageNode imageNode = new ImageNode(sponsor.Filename);
                     AddChild(imageNode);
                     break;
 
                 case AdType.Patreon:
 
                     PatreonNode patreonNode = new PatreonNode();
-                    patreonNode.SetPatreon(media.Name, media.Since, media.Filename);
+                    patreonNode.SetPatreon(sponsor.Name, sponsor.Since, sponsor.Filename);
                     patreonNode.Scale(0.7f, 1);
 
                     BorderPanelNode borderPanelNode = new BorderPanelNode();
@@ -48,9 +49,9 @@ namespace UI.Sponsor
                     break;
             }
 
-            if (!string.IsNullOrEmpty(media.Text))
+            if (!string.IsNullOrEmpty(sponsor.Text))
             {
-                soundManager.SponsorRead(media.Text, TimeSpan.FromSeconds(SponsorMedia.DurationSeconds));
+                soundManager.SponsorRead(sponsor.Text, TimeSpan.FromSeconds(sponsor.DurationSeconds));
             }
         }
     }
