@@ -33,15 +33,7 @@ namespace UI
 
         [Category("General")]
         public RaceLib.Units Units { get; set; }
-
-        [Category("General")]
-        [DisplayName("'Sponsored By' messages.")]
-        public bool SponsoredByMessages { get; set; }
-
-        [Category("General")]
-        [DisplayName("Sponsor screensaver idle time (minutes, 0 = disabled)")]
-        public int ScreensaverIdleMinutes { get; set; }
-
+        
         [Category("General")]
         [NeedsRestart]
         public int ShownDecimalPlaces { get; set; }
@@ -280,6 +272,14 @@ namespace UI
         [Category("Pilot Profile")]
         [NeedsRestart]
         public float PilotProfileMaskAlpha { get; set; }
+
+        [Category("Sponsorship")]
+        [DisplayName("'Sponsored By' messages between races")]
+        public bool SponsoredByMessages { get; set; }
+
+        [Category("Sponsorship")]
+        [DisplayName("Sponsor screensaver idle time (minutes, 0 = disabled)")]
+        public int ScreensaverIdleMinutes { get; set; }
 
         public ApplicationProfileSettings()
         {
