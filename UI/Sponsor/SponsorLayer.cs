@@ -80,15 +80,6 @@ namespace UI.Sponsor
             }
 
             Sponsors.Clear();
-
-            Sponsors.Add(new RaceLib.Sponsor()
-            {
-                Filename = "img/logo.png",
-                Text = "FPVTrackside is looking for sponsors. Join the patreon as at the sponsor level to have your message here. fpvtrackside.com",
-                AdType = AdType.Image,
-                Weight = 1
-            });
-
             Sponsors.AddRange(webSponsors);
         }
 
@@ -204,7 +195,7 @@ namespace UI.Sponsor
             sponsorNode?.Dispose();
 
             sponsorNode = new SponsorNode(SoundManager, chosen);
-            Root.AddChild(sponsorNode);
+            background.AddChild(sponsorNode);
 
             TimeSpan duration = TimeSpan.FromSeconds(Math.Max(1, chosen.DurationSeconds));
 
@@ -282,9 +273,19 @@ namespace UI.Sponsor
             base.OnDraw();
         }
 
-        public override bool OnMouseInput(MouseInputEvent inputEvent)
+        public override bool OnKeyboardInput(KeyboardInputEvent inputEvent)
         {
             lastInputTime = DateTime.Now;
+
+            return base.OnKeyboardInput(inputEvent);
+        }
+
+        public override bool OnMouseInput(MouseInputEvent inputEvent)
+        {
+            if (inputEvent.EventType == MouseInputEvent.EventTypes.Button)
+            {
+                lastInputTime = DateTime.Now;
+            }
 
             if (ScreensaverMode && inputEvent.EventType == MouseInputEvent.EventTypes.Button)
             {

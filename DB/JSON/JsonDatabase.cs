@@ -22,6 +22,7 @@ namespace DB.JSON
         
         public JsonCollection<Pilot> Pilots { get; private set; }
         public JsonCollection<Patreon> Patreons { get; private set; }
+        public JsonCollection<Sponsor> Sponsors { get; private set; }
         public JsonCollection<Club> Clubs { get; private set; }
         public ChannelCollection Channels { get; private set; }
 
@@ -41,6 +42,7 @@ namespace DB.JSON
             DataDirectory = dataDirectory;
             Events = new EventCollection(DataDirectory);
             Patreons = new JsonCollection<Patreon>(DataDirectory);
+            Sponsors = new JsonCollection<Sponsor>(DataDirectory);
             Clubs = new JsonCollection<Club>(DataDirectory);
             Channels = new ChannelCollection();
 
@@ -89,6 +91,9 @@ namespace DB.JSON
         {
             if (typeof(T) == typeof(RaceLib.Patreon))
                 return new ConvertedCollection<RaceLib.Patreon, Patreon>(Patreons, null) as IDatabaseCollection<T>;
+            
+            if (typeof(T) == typeof(RaceLib.Sponsor))
+                return new ConvertedCollection<RaceLib.Sponsor, Sponsor>(Sponsors, null) as IDatabaseCollection<T>;
 
             if (typeof(T) == typeof(RaceLib.Event))
                 return new ConvertedCollection<RaceLib.Event, Event>(Events, this) as IDatabaseCollection<T>;
