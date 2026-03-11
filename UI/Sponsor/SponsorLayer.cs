@@ -67,7 +67,7 @@ namespace UI.Sponsor
             Visible = false;
             random = new Random(DateTime.Now.Millisecond);
             triggered = DateTime.Now;
-            lastInputTime = DateTime.Now;
+            lastInputTime = DateTime.Now + TimeSpan.FromMinutes(ApplicationProfileSettings.Instance.ScreensaverIdleMinutes);
         }
 
         public void Load()
@@ -282,10 +282,7 @@ namespace UI.Sponsor
 
         public override bool OnMouseInput(MouseInputEvent inputEvent)
         {
-            if (inputEvent.EventType == MouseInputEvent.EventTypes.Button)
-            {
-                lastInputTime = DateTime.Now;
-            }
+            lastInputTime = DateTime.Now;
 
             if (ScreensaverMode && inputEvent.EventType == MouseInputEvent.EventTypes.Button)
             {

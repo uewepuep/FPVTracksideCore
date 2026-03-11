@@ -342,7 +342,7 @@ namespace UI
 
             InverseResolutionScalePercent = 100;
             AutoSync = true;
-            SponsoredByMessages = true;
+            SponsoredByMessages = false;
             ScreensaverIdleMinutes = 5;
 
             FrameRateLimit = 60;
