@@ -258,6 +258,7 @@ namespace RaceLib
         public int Laps { get; set; }
 
         [Category("Race Rules")]
+        [DisplayName("PB Laps / Highlight Laps")]
         public int PBLaps { get; set; }
 
         [Category("Race Rules")]

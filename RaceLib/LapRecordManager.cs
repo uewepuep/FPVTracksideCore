@@ -355,31 +355,27 @@ namespace RaceLib
             return false;
         }
 
-        public bool IsRecordLap(Lap lap, out bool overalBest)
+        public bool IsRecord(Lap lap, int lapCount, out bool overalBest)
         {
-            int lapCount = 1;
-            overalBest = false;
-
             Lap[] laps;
             if (overallBest.TryGetValue(lapCount, out laps))
             {
-                if (laps[0].ID == lap.ID)
+                if (laps.Any(l => l.ID == lap.ID))
                 {
                     overalBest = true;
                     return true;
                 }
             }
 
+            overalBest = false;
+
             PilotLapRecord plr = GetPilotLapRecord(lap.Pilot);
             if (plr != null)
             {
                 laps = plr.GetBestConsecutiveLaps(lapCount);
-                if (laps.Any())
+                if (laps.Any(l => l.ID == lap.ID))
                 {
-                    if (laps[0].ID == lap.ID)
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
 

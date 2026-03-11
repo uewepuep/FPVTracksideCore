@@ -202,8 +202,9 @@ namespace UI.Nodes
                         
                         lapNode.SetLap(lap);
 
-                        bool overalBest;
-                        if (EventManager.LapRecordManager.IsRecordLap(lap, out overalBest))
+                        int pbLaps = EventManager.Event.PBLaps;
+
+                        if (EventManager.LapRecordManager.IsRecord(lap, pbLaps, out bool overalBest))
                         {
                             if (overalBest)
                             {

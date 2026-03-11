@@ -607,6 +607,8 @@ namespace UI.Nodes
                 {
                     Lap best = laps.OrderBy(l => l.Length).First();
 
+                    Lap[] pbLaps = laps.BestConsecutive(EventManager.Event.PBLaps).ToArray();
+
                     if (race.Type == EventTypes.TimeTrial)
                     {
                         laps = laps.BestConsecutive(EventManager.Event.Laps).ToArray();
@@ -642,7 +644,14 @@ namespace UI.Nodes
                         raceSummary1.Text += preText + " in " + totalTime.ToStringRaceTime() + " - ";
                     }
 
-                    raceSummary1.Text += "Fastest lap " + best.Length.ToStringRaceTime();
+                    if (EventManager.Event.PBLaps == 1 || EventManager.Event.Laps == EventManager.Event.PBLaps)
+                    {
+                        raceSummary1.Text += "Fastest lap " + best.Length.ToStringRaceTime();
+                    }
+                    else
+                    {
+                        raceSummary1.Text += EventManager.Event.PBLaps + " laps in " + pbLaps.TotalTime().ToStringRaceTime();
+                    }
 
                     if (EventManager.SpeedRecordManager.DistanceManager.HasDistance)
                     {

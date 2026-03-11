@@ -413,6 +413,7 @@ namespace UI
                 topBar.UpdateDetails();
                 pilotList.RebuildList();
                 ControlButtons.UpdateControlButtons();
+                EventManager.LapRecordManager.UpdateAll();
             };
         }
 
