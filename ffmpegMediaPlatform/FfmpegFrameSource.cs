@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -52,12 +51,6 @@ namespace FfmpegMediaPlatform
         protected volatile bool run;
         protected bool inited;
         
-        // PERFORMANCE: Frame queue for parallel processing
-        private readonly System.Collections.Concurrent.ConcurrentQueue<(byte[] data, DateTime timestamp, long frameNumber)> frameProcessingQueue;
-        private readonly System.Threading.SemaphoreSlim frameProcessingSemaphore;
-        private Task frameProcessingTask;
-        private readonly CancellationTokenSource frameProcessingCancellation;
-
         // Recording implementation
         protected string recordingFilename;
         private List<FrameTime> frameTimes;
@@ -74,19 +67,13 @@ namespace FfmpegMediaPlatform
         
         // REAL-TIME: Smart frame dropping for immediate responsiveness
         // This solves the "1-second delay when moving hand in front of camera" problem by:
-        // 1. Dropping first 15 frames on startup to reach real-time quickly 
+        // 1. Dropping first 5 frames on startup to reach real-time quickly
         // 2. Dynamically dropping frames when display processing falls behind
         // 3. NEVER dropping recording frames - only display frames are dropped
-        private const int STARTUP_FRAMES_TO_DROP = 15; // Skip first 15 frames to get to real-time quickly
+        private const int STARTUP_FRAMES_TO_DROP = 5; // Skip first 5 frames to get to real-time quickly
         private const double MAX_DISPLAY_LATENCY_MS = 500; // Drop frames if more than 500ms behind
         private readonly Queue<DateTime> displayFrameTimestamps = new Queue<DateTime>();
         private int framesDroppedForRealtime = 0;
-        
-        // Frame recording queue for async processing
-        private readonly System.Collections.Concurrent.ConcurrentQueue<(byte[] frameData, DateTime captureTime, int frameNumber)> recordingQueue = new System.Collections.Concurrent.ConcurrentQueue<(byte[], DateTime, int)>();
-        private readonly System.Threading.SemaphoreSlim recordingSemaphore = new System.Threading.SemaphoreSlim(0);
-        private Task recordingWorkerTask;
-        private CancellationTokenSource recordingCancellationSource;
         
         // RGBA recording using separate ffmpeg process
         protected LibavRecorderManager rgbaRecorderManager;
@@ -223,11 +210,6 @@ namespace FfmpegMediaPlatform
             recordingStartTime = DateTime.MinValue;
             frameCount = 0;
             
-            // PERFORMANCE: Initialize frame processing queue
-            frameProcessingQueue = new System.Collections.Concurrent.ConcurrentQueue<(byte[], DateTime, long)>();
-            frameProcessingSemaphore = new System.Threading.SemaphoreSlim(0);
-            frameProcessingCancellation = new CancellationTokenSource();
-
             // Set surface format - both platforms output RGBA from ffmpeg
             SurfaceFormat = SurfaceFormat.Color; // RGBA format for consistent color channels across platforms
 
@@ -275,36 +257,10 @@ namespace FfmpegMediaPlatform
         public override void Dispose()
         {
             Tools.Logger.VideoLog.LogCall(this, $"FFMPEG Disposing frame source for '{VideoConfig.DeviceName}'");
-            
-            // Stop recording worker task
-            try
-            {
-                recordingCancellationSource?.Cancel();
-                recordingWorkerTask?.Wait(TimeSpan.FromSeconds(5));
-                recordingCancellationSource?.Dispose();
-                recordingSemaphore?.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Tools.Logger.VideoLog.LogException(this, "Error stopping recording worker task", ex);
-            }
-            
+
             // Stop and dispose RGBA recorder
             rgbaRecorderManager?.Dispose();
-            
-            // PERFORMANCE: Stop parallel processing
-            frameProcessingCancellation?.Cancel();
-            try
-            {
-                frameProcessingTask?.Wait(1000); // Wait up to 1 second for clean shutdown
-            }
-            catch (Exception ex)
-            {
-                Tools.Logger.VideoLog.LogException(this, $"Exception waiting for frame processing task", ex);
-            }
-            frameProcessingCancellation?.Dispose();
-            frameProcessingSemaphore?.Dispose();
-            
+
             Stop();
             
             // Kill ALL ffmpeg processes that might be using this camera - aggressive cleanup (Windows only)
@@ -388,10 +344,7 @@ namespace FfmpegMediaPlatform
         public override bool Start()
         {
             Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Starting frame source for '{VideoConfig.DeviceName}' at {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height}@{VideoConfig.VideoMode.FrameRate}fps");
-            
-            // PERFORMANCE: Early hardware decoder warmup to reduce 1-second delay
-            Task.Run(() => WarmupHardwareDecoder());
-            
+
             // Ensure we're completely stopped before starting
             if (run)
             {
@@ -521,15 +474,9 @@ namespace FfmpegMediaPlatform
                 run = true;
                 Connected = true;
 
-                // Start recording worker task for async frame processing
-                StartRecordingWorkerTask();
-
                 thread = new Thread(Run);
                 thread.Name = "ffmpeg - " + VideoConfig.DeviceName;
                 thread.Start();
-
-                // PERFORMANCE: Start parallel frame processing task
-                frameProcessingTask = Task.Run(async () => await FrameProcessingLoop(frameProcessingCancellation.Token));
 
                 process.BeginErrorReadLine();
 
@@ -802,27 +749,9 @@ namespace FfmpegMediaPlatform
                         {
                             Tools.Logger.VideoLog.LogDebugCall(this, $"CAMERA LOOP: Complete frame read: {totalBytesRead} bytes, frame {FrameProcessNumber}");
                         }
-                        
-                        // PERFORMANCE: Queue frame for parallel processing to avoid blocking camera read
-                        DateTime frameTimestamp = DateTime.UtcNow;
-                        byte[] frameDataCopy = new byte[buffer.Length];
-                        
-                        // Use fast buffer copy for the queue
-                        if (buffer.Length > 2 * 1024 * 1024) // 2MB threshold for 4K
-                        {
-                            Buffer.BlockCopy(buffer, 0, frameDataCopy, 0, buffer.Length);
-                        }
-                        else
-                        {
-                            Buffer.BlockCopy(buffer, 0, frameDataCopy, 0, buffer.Length);
-                        }
-                        
-                        frameProcessingQueue.Enqueue((frameDataCopy, frameTimestamp, FrameProcessNumber + 1));
-                        frameProcessingSemaphore.Release();
-                        
-                        // Also call direct processing for immediate display responsiveness
+
                         ProcessCameraFrame();
-                        
+
                         consecutiveErrors = 0; // Reset error counter on successful frame
                     }
                     else if (totalBytesRead > 0)
@@ -865,197 +794,14 @@ namespace FfmpegMediaPlatform
         }
 
         /// <summary>
-        /// PERFORMANCE: Warm up hardware decoder to reduce initial startup delay
-        /// </summary>
-        private void WarmupHardwareDecoder()
-        {
-            try
-            {
-                // Small delay to avoid interfering with main initialization
-                Task.Delay(100).Wait();
-                
-                // Only warmup for hardware accelerated sources
-                if (VideoConfig.HardwareDecodeAcceleration || 
-                    VideoConfig.VideoMode?.Format == "h264" || 
-                    VideoConfig.VideoMode?.Format == "mjpeg")
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, "PERFORMANCE: Pre-warming hardware decoder for faster startup");
-                    
-                    // Platform-specific hardware decoder initialization
-                    if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
-                    {
-                        // macOS VideoToolbox warmup
-                        var warmupArgs = "-f avfoundation -list_devices true -i \"\"";
-                        try
-                        {
-                            var warmupOutput = ffmpegMediaFramework.GetFfmpegText(warmupArgs, null);
-                            Tools.Logger.VideoLog.LogDebugCall(this, "VideoToolbox warmed up");
-                        }
-                        catch
-                        {
-                            // Warmup failed, not critical
-                        }
-                    }
-                    else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
-                    {
-                        // Windows hardware decoder warmup (NVDEC/DXVA2)
-                        var warmupArgs = "-f dshow -list_devices true -i dummy";
-                        try
-                        {
-                            var warmupOutput = ffmpegMediaFramework.GetFfmpegText(warmupArgs, null);
-                            Tools.Logger.VideoLog.LogDebugCall(this, "Windows hardware decoder warmed up");
-                        }
-                        catch
-                        {
-                            // Warmup failed, not critical
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Hardware warmup is optional, don't fail startup if it doesn't work
-                Tools.Logger.VideoLog.LogException(this, "Hardware decoder warmup failed (non-critical)", ex);
-            }
-        }
-
-        /// <summary>
-        /// PERFORMANCE: Parallel frame processing loop for heavy operations
-        /// </summary>
-        private async Task FrameProcessingLoop(CancellationToken cancellationToken)
-        {
-            try
-            {
-                while (!cancellationToken.IsCancellationRequested && run)
-                {
-                    // Wait for a frame to be available
-                    await frameProcessingSemaphore.WaitAsync(cancellationToken);
-                    
-                    if (frameProcessingQueue.TryDequeue(out var frameData))
-                    {
-                        // Process heavy operations in parallel (future extensions)
-                        // Currently this just ensures the queue doesn't grow unbounded
-                        // In the future, we could add:
-                        // - Frame preprocessing
-                        // - Quality analysis
-                        // - Motion detection
-                        // - Other CPU-intensive operations
-                        
-                        await Task.Yield(); // Yield control to prevent blocking
-                    }
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // Expected when stopping
-            }
-            catch (Exception ex)
-            {
-                Tools.Logger.VideoLog.LogException(this, ex);
-            }
-        }
-
-        /// <summary>
-        /// Start the recording worker task for async frame processing
-        /// </summary>
-        private void StartRecordingWorkerTask()
-        {
-            recordingCancellationSource = new CancellationTokenSource();
-            recordingWorkerTask = Task.Run(async () =>
-            {
-                var cancellationToken = recordingCancellationSource.Token;
-                
-                while (!cancellationToken.IsCancellationRequested)
-                {
-                    try
-                    {
-                        // Wait for frames to be queued
-                        await recordingSemaphore.WaitAsync(cancellationToken);
-                        
-                        // Process all queued frames
-                        while (recordingQueue.TryDequeue(out var frameInfo))
-                        {
-                            try
-                            {
-                                rgbaRecorderManager?.WriteFrame(frameInfo.frameData, frameInfo.captureTime, frameInfo.frameNumber);
-                                
-                                // Log every 300 frames during recording
-                                if (frameInfo.frameNumber % 300 == 0)
-                                {
-                                    string platform = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ? "Windows" : "Mac";
-                                    Tools.Logger.VideoLog.LogDebugCall(this, $"ASYNC RECORDING [{platform}]: Frame {frameInfo.frameNumber} written to recording");
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                Tools.Logger.VideoLog.LogException(this, ex);
-                                Tools.Logger.VideoLog.LogDebugCall(this, $"ASYNC RECORDING: Error writing frame {frameInfo.frameNumber}");
-                            }
-                        }
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        break; // Expected when cancellation is requested
-                    }
-                    catch (Exception ex)
-                    {
-                        Tools.Logger.VideoLog.LogException(this, ex);
-                    }
-                }
-                
-                Tools.Logger.VideoLog.LogDebugCall(this, "Recording worker task completed");
-            }, recordingCancellationSource.Token);
-        }
-
-        /// <summary>
-        /// RECORDING: Queue frame for async recording (never dropped)
+        /// RECORDING: Hand frame directly to the LibavRecorderManager async queue.
+        /// No intermediate copy needed here — WriteFrame rents a pooled buffer internally
+        /// and returns it to the pool after encoding completes.
         /// </summary>
         private void QueueFrameForRecording()
         {
-            // Capture timestamp at the moment frame is queued for recording
             DateTime captureTime = UnifiedFrameTimingManager.GetHighPrecisionTimestamp();
-
-            // PERFORMANCE: Use parallel buffer copy for 4K frames to reduce blocking
-            byte[] frameData = new byte[buffer.Length];
-
-            // For large 4K frames (>2MB), use parallel copying to improve performance
-            if (buffer.Length > 2 * 1024 * 1024) // 2MB threshold for 4K
-            {
-                // Use unsafe parallel copy for maximum performance on large buffers
-                unsafe
-                {
-                    fixed (byte* src = buffer)
-                    fixed (byte* dst = frameData)
-                    {
-                        // Store pointers in local variables to avoid capture issues
-                        IntPtr srcPtr = new IntPtr(src);
-                        IntPtr dstPtr = new IntPtr(dst);
-                        int totalLength = buffer.Length;
-
-                        System.Threading.Tasks.Parallel.For(0, Environment.ProcessorCount, i =>
-                        {
-                            int chunkSize = totalLength / Environment.ProcessorCount;
-                            int start = i * chunkSize;
-                            int length = (i == Environment.ProcessorCount - 1) ?
-                                totalLength - start : chunkSize;
-
-                            if (length > 0)
-                            {
-                                Buffer.MemoryCopy((void*)(srcPtr + start), (void*)(dstPtr + start), length, length);
-                            }
-                        });
-                    }
-                }
-            }
-            else
-            {
-                // For smaller frames, use regular Buffer.BlockCopy (faster than Array.Copy)
-                Buffer.BlockCopy(buffer, 0, frameData, 0, buffer.Length);
-            }
-
-            // Queue the frame for async processing with capture timestamp
-            recordingQueue.Enqueue((frameData, captureTime, (int)FrameProcessNumber));
-            recordingSemaphore.Release(); // Signal worker task
+            rgbaRecorderManager?.WriteFrame(buffer, captureTime, (int)FrameProcessNumber);
         }
 
         /// <summary>

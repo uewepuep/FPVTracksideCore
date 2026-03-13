@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -371,8 +372,14 @@ namespace FfmpegMediaPlatform
                         lastFrameWriteTime = captureTime;
                     }
 
-                    // Queue frame for async writing
-                    frameQueue.Enqueue((rgbaData, captureTime, frameNumber));
+                    // Rent a pooled buffer and copy the frame data. The encoding worker returns
+                    // the buffer to the pool after EncodeFrame completes, so the caller's buffer
+                    // is safe to reuse immediately after this method returns.
+                    // Buffer.BlockCopy is SIMD-vectorised — do not replace with Parallel.For.
+                    byte[] pooledBuffer = ArrayPool<byte>.Shared.Rent(rgbaData.Length);
+                    Buffer.BlockCopy(rgbaData, 0, pooledBuffer, 0, rgbaData.Length);
+
+                    frameQueue.Enqueue((pooledBuffer, captureTime, frameNumber));
                     frameQueueSemaphore.Release();
 
                     // Collect frame timing for XML
@@ -413,9 +420,17 @@ namespace FfmpegMediaPlatform
 
                     if (frameQueue.TryDequeue(out var frameData))
                     {
-                        if (IsEncoderReady())
+                        try
                         {
-                            EncodeFrame(frameData.rgbaData, frameData.captureTime);
+                            if (IsEncoderReady())
+                            {
+                                EncodeFrame(frameData.rgbaData, frameData.captureTime);
+                            }
+                        }
+                        finally
+                        {
+                            // Return pooled buffer rented in WriteFrame
+                            ArrayPool<byte>.Shared.Return(frameData.rgbaData);
                         }
                     }
                 }
