@@ -1,8 +1,9 @@
-﻿using Composition.Input;
+using Composition.Input;
 using Composition.Layers;
 using Composition.Nodes;
 using ExternalData;
 using Microsoft.Xna.Framework;
+using Timing.Velocidrone;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using RaceLib;
@@ -346,6 +347,36 @@ namespace UI
                 }
             };
 
+            // Velocidrone gate display: show gate on pilot screens when Velocidrone timer is in use
+            var vdTiming = EventManager.RaceManager.TimingSystemManager.TimingSystems.OfType<VelocidroneTimingSystem>().FirstOrDefault();
+            if (vdTiming != null)
+            {
+                vdTiming.OnGatePassed += (frequency, gate, lap, timeSec) =>
+                {
+                    var race = EventManager.RaceManager.CurrentRace;
+                    if (race == null) return;
+                    var pc = race.GetPilotChannel(frequency);
+                    if (pc?.Pilot == null) return;
+                    var channelNode = ChannelsGridNode.GetChannelNode(pc.Pilot);
+                    if (channelNode != null)
+                    {
+                        void UpdateGate()
+                        {
+                            channelNode.SetVelocidroneGate(gate, lap);
+                            RequestRedraw();
+                        }
+                        if (PlatformTools != null)
+                            PlatformTools.Invoke(UpdateGate);
+                        else
+                            UpdateGate();
+                    }
+                };
+                Tools.Logger.TimingLog.Log(this, "Velocidrone gate display enabled", Tools.Logger.LogType.Notice);
+            }
+
+            EventManager.RaceManager.OnRaceEnd += ClearVelocidroneGateDisplays;
+            EventManager.RaceManager.OnRaceChanged += (r) => ClearVelocidroneGateDisplays(r);
+
             RequestRedraw();
 
             ControlButtons.UpdateControlButtons();
@@ -381,6 +412,12 @@ namespace UI
             int limit = EventManager.Event.PackLimit;
 
             Popuper.PopupCombinedMessage(pilot.Name + " has hit the pack limit of " + limit);
+        }
+
+        private void ClearVelocidroneGateDisplays(Race race)
+        {
+            foreach (var cn in ChannelsGridNode.ChannelNodes)
+                cn.ClearVelocidroneGate();
         }
 
         protected virtual MenuButton CreateMenuButton()

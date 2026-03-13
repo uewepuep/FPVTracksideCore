@@ -35,8 +35,6 @@ namespace DB
         public bool PracticePilot { get; set; }
 
         public string PhotoPath { get; set; }
-        public string TeamName { get; set; }
-        public string TeamLogoPath { get; set; }
         public bool VideoFlipped { get; set; }
         public bool VideoMirrored { get; set; }
 

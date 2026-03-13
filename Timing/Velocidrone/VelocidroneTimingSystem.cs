@@ -16,6 +16,9 @@ namespace Timing.Velocidrone
         public event DetectionEventDelegate OnDetectionEvent;
         public event MarshallEventDelegate OnMarshallEvent;
 
+        /// <summary>Fired for every racedata update with gate info. Use for UI display. (frequency, gate, lap, timeFromStartSec)</summary>
+        public event Action<int, int, int, double> OnGatePassed;
+
         public VelocidroneSettings Settings { get; private set; }
         TimingSystemSettings ITimingSystem.Settings { get => Settings; set => Settings = value as VelocidroneSettings; }
 
@@ -191,43 +194,62 @@ namespace Timing.Velocidrone
 
         private void HandleRacedata(JObject obj)
         {
-            var racedata = obj["racedata"] as JObject;
-            if (racedata == null) return;
+            var racedataToken = obj["racedata"];
+            if (racedataToken == null) return;
 
-            // racedata is an object: keys are pilot names, values are {uid, lap, time, gate, finished}
-            foreach (var kv in racedata.Properties())
+            // racedata can be object (keys=pilot names) or array of {uid, lap, time, gate, finished}
+            if (racedataToken is JObject racedataObj)
             {
-                var pilotData = kv.Value as JObject;
-                if (pilotData == null) continue;
-
-                var uid = pilotData["uid"]?.ToString();
-                if (string.IsNullOrEmpty(uid)) continue;
-
-                int frequency;
-                int newLap;
-                lock (_mappingLock)
+                foreach (var kv in racedataObj.Properties())
                 {
-                    if (!_uidToFrequency.TryGetValue(uid, out frequency))
-                        continue; // Not in our race - expected for spectating pilots
-
-                    newLap = pilotData["lap"]?.Value<int>() ?? 0;
-                    var finished = pilotData["finished"]?.Value<bool>() ?? false;
-
-                    // Only fire when lap number increases (new lap completion) or pilot finished
-                    _lastLapByUid.TryGetValue(uid, out int lastLap);
-                    if (newLap <= lastLap && !finished)
-                        continue;
-
-                    _lastLapByUid[uid] = newLap;
+                    if (kv.Value is JObject pilotData)
+                        ProcessRacedataPilot(pilotData);
                 }
-
-                var timeSec = pilotData["time"]?.Value<double>() ?? 0;
-                var detectionTime = _raceStartTime.AddSeconds(timeSec);
-
-                if (!_detecting) continue;
-
-                OnDetectionEvent?.Invoke(this, frequency, detectionTime, 0);
             }
+            else if (racedataToken is JArray racedataArr)
+            {
+                foreach (var item in racedataArr)
+                {
+                    if (item is JObject pilotData)
+                        ProcessRacedataPilot(pilotData);
+                }
+            }
+        }
+
+        private void ProcessRacedataPilot(JObject pilotData)
+        {
+            var uid = pilotData["uid"]?.ToString();
+            if (string.IsNullOrEmpty(uid)) return;
+
+            var timeSec = pilotData["time"]?.Value<double>() ?? 0.0;
+            int frequency;
+            int newLap;
+            lock (_mappingLock)
+            {
+                if (!_uidToFrequency.TryGetValue(uid, out frequency))
+                    return; // Not in our race - expected for spectating pilots
+
+                newLap = pilotData["lap"]?.Value<int>() ?? 0;
+                var finished = pilotData["finished"]?.Value<bool>() ?? false;
+
+                // Gate display: try "gate" or "Gate" (JSON casing varies)
+                var gate = pilotData["gate"]?.Value<int>() ?? pilotData["Gate"]?.Value<int>() ?? 0;
+                if (OnGatePassed != null && _detecting)
+                    OnGatePassed.Invoke(frequency, gate, newLap, timeSec);
+
+                // Lap detection: only fire when lap number increases (new lap completion) or pilot finished
+                _lastLapByUid.TryGetValue(uid, out int lastLap);
+                if (newLap <= lastLap && !finished)
+                    return;
+
+                _lastLapByUid[uid] = newLap;
+            }
+
+            var detectionTime = _raceStartTime.AddSeconds(timeSec);
+
+            if (!_detecting) return;
+
+            OnDetectionEvent?.Invoke(this, frequency, detectionTime, 0);
         }
 
         private void HandleRacestatus(JObject obj)

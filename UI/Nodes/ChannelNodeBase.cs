@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -54,6 +54,7 @@ namespace UI.Nodes
         
         private TextNode rssiNode;
         private TextNode sensitivityNode;
+        private TextNode velocidroneGateNode;
 
         public EventManager EventManager { get; private set; }
 
@@ -253,6 +254,21 @@ namespace UI.Nodes
             gamePoints.Points = EventManager.GameManager.GetCurrentGamePoints(Channel);
         }
 
+        /// <summary>Show Velocidrone gate info on this pilot's channel. Only visible when Velocidrone timer is in use.</summary>
+        public void SetVelocidroneGate(int gate, int lap)
+        {
+            if (velocidroneGateNode == null) return;
+            velocidroneGateNode.Text = $"Gate {gate}";
+            velocidroneGateNode.Visible = true;
+        }
+
+        /// <summary>Hide Velocidrone gate display (e.g. when race ends).</summary>
+        public void ClearVelocidroneGate()
+        {
+            if (velocidroneGateNode != null)
+                velocidroneGateNode.Visible = false;
+        }
+
         public void SetCrashedOutType(CrashState type)
         {
             if (CrashedOutType == type)
@@ -327,6 +343,13 @@ namespace UI.Nodes
             channelInfo.Alignment = RectangleAlignment.TopRight;
             channelInfo.Style.Border = true;
             DisplayNode.AddChild(channelInfo);
+
+            velocidroneGateNode = new TextNode("", Theme.Current.PilotViewTheme.PilotOverlayText.XNA);
+            velocidroneGateNode.RelativeBounds = new RectangleF(0.02f, 0.22f, 0.35f, 0.04f);
+            velocidroneGateNode.Alignment = RectangleAlignment.TopLeft;
+            velocidroneGateNode.Style.Border = true;
+            velocidroneGateNode.Visible = false;
+            AddChild(velocidroneGateNode);
 
             CloseButton = new CloseNode();
             CloseButton.Visible = false;
