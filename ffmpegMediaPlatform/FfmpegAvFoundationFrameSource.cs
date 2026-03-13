@@ -18,18 +18,17 @@ namespace FfmpegMediaPlatform
 
         public override IEnumerable<Mode> GetModes()
         {
-            Tools.Logger.VideoLog.LogDebugCall(this, $"GetModes() called - querying actual camera capabilities for '{VideoConfig.DeviceName}'");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"GetModes() called for '{VideoConfig.DeviceName}'");
             List<Mode> supportedModes = new List<Mode>();
-            
+
             try
             {
                 // Use invalid resolution to trigger ffmpeg to output supported modes
                 string testArgs = $"-f avfoundation -framerate 30 -video_size 1234x5678 -i \"{VideoConfig.DeviceName}\"";
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Querying supported modes with command: ffmpeg {testArgs}");
-                
-                var output = ffmpegMediaFramework.GetFfmpegText(testArgs, l => 
-                    l.Contains("Supported modes:") || 
-                    l.Contains("@[") || 
+
+                var output = ffmpegMediaFramework.GetFfmpegText(testArgs, l =>
+                    l.Contains("Supported modes:") ||
+                    l.Contains("@[") ||
                     l.Contains("Selected video size") ||
                     l.Contains("Error opening"));
                 
@@ -38,8 +37,6 @@ namespace FfmpegMediaPlatform
                 
                 foreach (string line in output)
                 {
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFmpeg output: {line}");
-                    
                     if (line.Contains("Supported modes:"))
                     {
                         foundSupportedModes = true;
@@ -73,27 +70,13 @@ namespace FfmpegMediaPlatform
                                     Format = "uyvy422"
                                 };
                                 supportedModes.Add(mode);
-                                Tools.Logger.VideoLog.LogDebugCall(this, $"✓ PARSED MODE: {width}x{height}@{frameRate}fps (Index {index})");
                                 index++;
                             }
                         }
                     }
                 }
                 
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Camera capability detection complete: {supportedModes.Count} supported modes found");
-                
-                if (supportedModes.Count == 0)
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, "WARNING: No supported modes detected for camera!");
-                }
-                else
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"Final supported modes for '{VideoConfig.DeviceName}':");
-                    foreach (var mode in supportedModes.OrderBy(m => m.Width * m.Height).ThenBy(m => m.FrameRate))
-                    {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"  - {mode.Width}x{mode.Height}@{mode.FrameRate}fps");
-                    }
-                }
+                Tools.Logger.VideoLog.LogDebugCall(this, $"GetModes() complete: {supportedModes.Count} modes for '{VideoConfig.DeviceName}'");
             }
             catch (Exception ex)
             {
@@ -159,7 +142,7 @@ namespace FfmpegMediaPlatform
                                 $"-probesize 32 " +
                                 $"-analyzeduration 0 " +
                                 $"-an " +
-                                $"-filter_complex \"[0:v]{videoFilter}split=2[out1][out2];[out1]format=rgba[outpipe];[out2]null[outnull]\" " +
+                                $"-filter_complex \"[0:v]{videoFilter}format=rgba[outpipe]\" " +
                                 $"-map \"[outpipe]\" -f rawvideo pipe:1";
 
                 Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG macOS Live Mode (filters: {videoFilter}): {ffmpegArgs}");

@@ -188,9 +188,8 @@ namespace FfmpegMediaPlatform
 
         private void RestartForRecording()
         {
-            // No longer needed - RGBA recording uses separate ffmpeg process
-            // Live stream continues unchanged
-            Tools.Logger.VideoLog.LogDebugCall(this, "RestartForRecording called - no action needed with RGBA recording");
+            // Recording runs as a separate ffmpeg process — the live stream continues unchanged.
+            Tools.Logger.VideoLog.LogDebugCall(this, "RestartForRecording: no action needed");
         }
 
         public FfmpegFrameSource(FfmpegMediaFramework ffmpegMediaFramework, VideoConfig videoConfig)
@@ -366,16 +365,9 @@ namespace FfmpegMediaPlatform
             process.StartInfo = processStartInfo;
             process.ErrorDataReceived += (s, e) =>
             {
-                // Filter out spammy HLS logs to reduce noise
                 if (e.Data != null)
                 {
                     bool shouldLog = true;
-                    
-                    // Skip HLS file creation/writing logs
-                    if (e.Data.Contains("Opening") && e.Data.Contains("trackside_hls"))
-                        shouldLog = false;
-                    if (e.Data.Contains("hls @") && e.Data.Contains("stream"))
-                        shouldLog = false;
                         
                     // Only log frame progress every 10 seconds (at time ending in 0)
                     if (e.Data.Contains("frame=") && e.Data.Contains("fps=") && e.Data.Contains("time="))
@@ -671,6 +663,19 @@ namespace FfmpegMediaPlatform
                 else
                 {
                     Tools.Logger.VideoLog.LogDebugCall(this, "FFMPEG No process to stop");
+                }
+
+                if (process != null)
+                {
+                    try
+                    {
+                        process.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        Tools.Logger.VideoLog.LogException(this, "FFMPEG Error disposing process", ex);
+                    }
+                    process = null;
                 }
             }
             catch (Exception ex)
@@ -1009,15 +1014,14 @@ namespace FfmpegMediaPlatform
         }
 
         /// <summary>
-        /// GAME LOOP: Process frame for display only - called by game engine when it needs frames
-        /// This is now decoupled from camera timing and recording
+        /// Called by the game engine each frame to process the latest image for display.
+        /// Decoupled from camera timing and recording.
         /// </summary>
         protected override void ProcessImage()
         {
-            // Legacy frame timing collection - only for non-RGBA recording sources
-            if (recordNextFrameTime && !VideoConfig.FilePath.Contains("hls"))
+            if (recordNextFrameTime)
             {
-                // For non-RGBA recording sources, maintain legacy behavior
+                // Collect frame timing when not actively recording via the recorder manager
                 if (!Recording || !rgbaRecorderManager.IsRecording)
                 {
                     if (frameTimes == null)
@@ -1044,7 +1048,7 @@ namespace FfmpegMediaPlatform
                     // Log frame timing only every 120 frames during recording
                     if (frameCount % 120 == 0)
                     {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"GAME LOOP: Legacy recorded frame {FrameProcessNumber} at {frameTime:HH:mm:ss.fff}, offset: {(frameTime - recordingStartTime).TotalSeconds:F3}s");
+                        Tools.Logger.VideoLog.LogDebugCall(this, $"Frame {FrameProcessNumber} at {frameTime:HH:mm:ss.fff}, offset: {(frameTime - recordingStartTime).TotalSeconds:F3}s");
                     }
                 }
                 
@@ -1052,7 +1056,6 @@ namespace FfmpegMediaPlatform
             }
             else if (recordNextFrameTime)
             {
-                // Reset the flag for HLS composite sources
                 recordNextFrameTime = false;
             }
             
