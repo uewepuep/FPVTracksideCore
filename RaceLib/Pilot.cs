@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -48,6 +48,10 @@ namespace RaceLib
         [Category("Name")]
         public string DiscordID { get; set; }
 
+        [Category("Advanced")]
+        [DisplayName("Velocidrone UID")]
+        public string VelocidroneUID { get; set; }
+
         [Category("Profile")]
         public string Aircraft { get; set; }
         
@@ -65,6 +69,14 @@ namespace RaceLib
 
         [Category("Advanced")]
         public string PhotoPath { get; set; }
+
+        [Category("Team")]
+        [DisplayName("Team Name")]
+        public string TeamName { get; set; }
+
+        [Category("Team")]
+        [DisplayName("Team Logo Path")]
+        public string TeamLogoPath { get; set; }
 
         [Category("Advanced")]
         public bool VideoFlipped { get; set; }

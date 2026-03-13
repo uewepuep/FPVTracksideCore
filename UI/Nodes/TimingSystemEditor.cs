@@ -1,4 +1,4 @@
-﻿using Composition.Input;
+using Composition.Input;
 using Composition.Layers;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using Timing;
 using Timing.ImmersionRC;
 using Timing.RotorHazard;
+using Timing.Velocidrone;
 using Tools;
 
 namespace UI.Nodes
@@ -38,6 +39,10 @@ namespace UI.Nodes
                     if (timingSystemSetting is LapRFSettingsEthernet)
                     {
                         yield return ((LapRFSettingsEthernet)timingSystemSetting).HostName;
+                    }
+                    if (timingSystemSetting is VelocidroneSettings)
+                    {
+                        yield return ((VelocidroneSettings)timingSystemSetting).HostName;
                     }
                 }
             }
@@ -71,10 +76,11 @@ namespace UI.Nodes
 
                     int lapRFPort = (new LapRFSettingsEthernet()).Port;
                     int rhPort = (new RotorHazardSettings()).Port;
+                    int vdPort = (new VelocidroneSettings()).Port;
 
 
                     MouseMenu mouseMenu = new MouseMenu(ScanButton);
-                    foreach(SubnetScanner.OpenPortsStruct openPort in ss.AliveWithOpenPorts(lapRFPort, rhPort))
+                    foreach(SubnetScanner.OpenPortsStruct openPort in ss.AliveWithOpenPorts(lapRFPort, rhPort, vdPort))
                     {
                         foreach (int port in openPort.Ports)
                         {
@@ -99,6 +105,16 @@ namespace UI.Nodes
                                     AddNew(rotorhazard);
                                 });
                             }
+
+                            if (port == vdPort)
+                            {
+                                mouseMenu.AddItem("Add Velocidrone - " + copy, () => 
+                                {
+                                    var velocidrone = new VelocidroneSettings();
+                                    velocidrone.HostName = copy.ToString();
+                                    AddNew(velocidrone);
+                                });
+                            }
                         }
                     }
 
@@ -117,6 +133,7 @@ namespace UI.Nodes
             mouseMenu.AddItem("LapRF 8-way", () => { AddNew(new Timing.ImmersionRC.LapRFSettingsEthernet()); });
             mouseMenu.AddItem("LapRF Puck", () => { AddNew(new Timing.ImmersionRC.LapRFSettingsUSB()); });
             mouseMenu.AddItem("RotorHazard 4.0+", () => { AddNew(new Timing.RotorHazard.RotorHazardSettings()); });
+            mouseMenu.AddItem("Velocidrone", () => { AddNew(new VelocidroneSettings()); });
             mouseMenu.AddItem("Chorus32 (alpha)", () => { AddNew(new Timing.Chorus.ChorusSettings()); });
             //mouseMenu.AddItem("Video Color (Alpha)", () => { AddNew(new VideoTimingSettings()); });
             mouseMenu.AddItem("Dummy", () => { AddNew(new DummySettings()); });

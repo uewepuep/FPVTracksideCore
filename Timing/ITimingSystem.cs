@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -9,6 +9,7 @@ using System.Xml.Serialization;
 using Timing.Chorus;
 using Timing.ImmersionRC;
 using Timing.RotorHazard;
+using Timing.Velocidrone;
 using Tools;
 
 namespace Timing
@@ -23,6 +24,7 @@ namespace Timing
         Delta5,
         RotorHazard,
         Chorus,
+        Velocidrone,
         Manual,
         Other,
     }
@@ -40,6 +42,8 @@ namespace Timing
 
         public Color Color { get; set; }
 
+        /// <summary>Optional simulator pilot identifier (e.g. Velocidrone uid) for pilot mapping.</summary>
+        public string SimulatorPilotId { get; set; }
 
         public ListeningFrequency(string band, int channel, int frequency, float sensitivityFactor, Color color)
             :this("", Guid.Empty, band, channel, frequency, sensitivityFactor, color)
@@ -157,6 +161,7 @@ namespace Timing
     [XmlInclude(typeof(VideoTimingSettings))]
     [XmlInclude(typeof(RotorHazardSettings))]
     [XmlInclude(typeof(ChorusSettings))]
+    [XmlInclude(typeof(Velocidrone.VelocidroneSettings))]
     public class TimingSystemSettings
     {
         [Category("System Settings")]

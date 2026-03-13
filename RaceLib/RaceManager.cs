@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using RaceLib.Format;
 using System;
 using System.Collections.Generic;
@@ -831,6 +831,7 @@ namespace RaceLib
                     if (pilotChannel != null)
                     {
                         listeningFrequency = new ListeningFrequency(pilotChannel.PilotName, pilotChannel.Pilot.ID, eventChannel.Band.ToString(), eventChannel.Number, eventChannel.Frequency, pilotChannel.Pilot.TimingSensitivityPercent / 100.0f, color);
+                        listeningFrequency.SimulatorPilotId = pilotChannel.Pilot.VelocidroneUID;
                     }
                     else
                     {
@@ -850,7 +851,12 @@ namespace RaceLib
                 }
                 else
                 {
-                    frequencies = race.PilotChannelsSafe.Select(pc => new ListeningFrequency(pc.PilotName, pc.Pilot.ID, pc.Channel.Band.ToString(), pc.Channel.Number, pc.Channel.Frequency, pc.Pilot.TimingSensitivityPercent / 100.0f, EventManager.GetRaceChannelColor(race, pc.Channel))).ToList();
+                    frequencies = race.PilotChannelsSafe.Select(pc =>
+                    {
+                        var lf = new ListeningFrequency(pc.PilotName, pc.Pilot.ID, pc.Channel.Band.ToString(), pc.Channel.Number, pc.Channel.Frequency, pc.Pilot.TimingSensitivityPercent / 100.0f, EventManager.GetRaceChannelColor(race, pc.Channel));
+                        lf.SimulatorPilotId = pc.Pilot.VelocidroneUID;
+                        return lf;
+                    }).ToList();
                 }
 
                 Logger.RaceLog.LogCall(this, race, "Frequencies dynamically assigned to receivers");

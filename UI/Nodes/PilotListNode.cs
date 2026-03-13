@@ -1,4 +1,4 @@
-﻿using Composition;
+using Composition;
 using Composition.Input;
 using Composition.Layers;
 using Composition.Nodes;
@@ -8,6 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Timing;
+using Timing.Velocidrone;
 using Tools;
 
 namespace UI.Nodes
@@ -276,6 +278,11 @@ namespace UI.Nodes
                 RebuildList();
             });
 
+            importMenu.AddItem("Import from Velocidrone", () =>
+            {
+                ImportFromVelocidrone(mouseInputEvent);
+            });
+
 
 #if DEBUG
             importMenu.AddItem("Import Debug Pilots", () =>
@@ -393,6 +400,145 @@ namespace UI.Nodes
 
             EditPilots(newPilots, null);
             RebuildList();
+        }
+
+        private void ImportFromVelocidrone(MouseInputEvent mouseInputEvent)
+        {
+            var vdTiming = eventManager.RaceManager.TimingSystemManager.TimingSystems
+                .OfType<VelocidroneTimingSystem>()
+                .FirstOrDefault();
+
+            if (vdTiming != null && vdTiming.Connected)
+            {
+                ImportFromVelocidroneUsingConnection(vdTiming);
+                return;
+            }
+
+            string defaultAddress = GetVelocidroneDefaultAddress();
+            var popup = new TextPopupNode("Import from Velocidrone", "Address (e.g. 192.168.1.100)", defaultAddress);
+            popup.OnOK += (address) =>
+            {
+                ParseAddress(address, out string host, out int port);
+                ImportFromVelocidroneUsingFetcher(host, port);
+            };
+            GetLayer<PopupLayer>()?.Popup(popup);
+        }
+
+        private void ImportFromVelocidroneUsingConnection(VelocidroneTimingSystem vdTiming)
+        {
+            var loadingLayer = GetLayer<LoadingLayer>();
+            if (loadingLayer == null)
+            {
+                GetLayer<PopupLayer>()?.PopupMessage("Unable to show loading");
+                return;
+            }
+            loadingLayer.WorkQueue.Enqueue("Importing from Velocidrone", () =>
+            {
+                var pilotInfos = vdTiming.RequestPilotList();
+                var listNode = this;
+                listNode.PlatformTools?.Invoke(() =>
+                {
+                    if (pilotInfos == null || pilotInfos.Count == 0)
+                    {
+                        listNode.GetLayer<PopupLayer>()?.PopupMessage("No pilots received. Ensure: 1) Velocidrone is in a multiplayer lobby, 2) You are race manager (host). Check the Timing log for received message keys.");
+                        return;
+                    }
+                    var newPilots = listNode.ImportFromVelocidronePilots(pilotInfos);
+                    listNode.EditPilotChannels(newPilots, null);
+                    listNode.RebuildList();
+                    listNode.GetLayer<PopupLayer>()?.PopupMessage($"Imported {newPilots.Count()} pilots from Velocidrone.");
+                });
+            });
+        }
+
+        private void ImportFromVelocidroneUsingFetcher(string host, int port)
+        {
+            var loadingLayer = GetLayer<LoadingLayer>();
+            if (loadingLayer == null)
+            {
+                GetLayer<PopupLayer>()?.PopupMessage("Unable to show loading");
+                return;
+            }
+            loadingLayer.WorkQueue.Enqueue("Importing from Velocidrone", () =>
+            {
+                var pilotInfos = VelocidronePilotFetcher.FetchPilots(host, port);
+                var listNode = this;
+                listNode.PlatformTools?.Invoke(() =>
+                {
+                    if (pilotInfos == null || pilotInfos.Count == 0)
+                    {
+                        listNode.GetLayer<PopupLayer>()?.PopupMessage("Could not connect or no pilots received. If Velocidrone timing is connected, it will be used automatically. Otherwise ensure: 1) Velocidrone is running, 2) Websocket enabled, 3) Correct IP (use 192.168.x.x not 127.0.0.1).");
+                        return;
+                    }
+                    var newPilots = listNode.ImportFromVelocidronePilots(pilotInfos);
+                    listNode.EditPilotChannels(newPilots, null);
+                    listNode.RebuildList();
+                    listNode.GetLayer<PopupLayer>()?.PopupMessage($"Imported {newPilots.Count()} pilots from Velocidrone.");
+                });
+            });
+        }
+
+        private static void ParseAddress(string address, out string host, out int port)
+        {
+            host = "localhost";
+            port = VelocidroneProtocol.DefaultPort;
+            if (string.IsNullOrWhiteSpace(address)) return;
+            var parts = address.Trim().Split(new[] { ':', ',' }, StringSplitOptions.RemoveEmptyEntries);
+            host = parts[0].Trim();
+            if (parts.Length > 1 && int.TryParse(parts[1].Trim(), out int p) && p > 0)
+                port = p;
+        }
+
+        private string GetVelocidroneDefaultAddress()
+        {
+            var settings = TimingSystemSettings.Read(eventManager.Profile);
+            var vd = settings?.OfType<VelocidroneSettings>().FirstOrDefault();
+            return vd != null ? vd.HostName + ":" + vd.Port : "";
+        }
+
+        private IEnumerable<PilotChannel> ImportFromVelocidronePilots(IEnumerable<VelocidronePilotFetcher.PilotInfo> pilotInfos)
+        {
+            var newPilots = new List<PilotChannel>();
+            int channelIndex = 0;
+
+            using (var db = DatabaseFactory.Open(eventManager.EventId))
+            {
+                foreach (var info in pilotInfos)
+                {
+                    if (string.IsNullOrEmpty(info.Name)) continue;
+
+                    Pilot p = eventManager.GetCreatePilot(info.Name);
+                    p.VelocidroneUID = info.Uid;
+                    db.Upsert(p);
+
+                    if (newPilots.Any(pc => pc.Pilot.Name == p.Name)) continue;
+
+                    Channel channel;
+                    var existingPc = eventManager.GetPilotChannel(p);
+                    if (existingPc != null)
+                    {
+                        channel = existingPc.Channel;
+                    }
+                    else
+                    {
+                        var channelGroup = eventManager.Channels.GetChannelGroup(channelIndex);
+                        channel = channelGroup?.FirstOrDefault();
+                        channelIndex = (channelIndex + 1) % eventManager.GetMaxPilotsPerRace();
+                    }
+
+                    if (channel != null)
+                    {
+                        var pc = new PilotChannel(p, channel);
+                        newPilots.Add(pc);
+                        if (existingPc == null)
+                        {
+                            eventManager.AddPilot(pc);
+                        }
+                    }
+                }
+            }
+
+            return newPilots;
         }
 
         private void EditPilots(IEnumerable<Pilot> pilots, Pilot selected)

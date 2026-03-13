@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -22,6 +22,8 @@ namespace DB
 
         public string DiscordID { get; set; }
 
+        public string VelocidroneUID { get; set; }
+
         public string Aircraft { get; set; }
 
         public string CatchPhrase { get; set; }
@@ -33,6 +35,8 @@ namespace DB
         public bool PracticePilot { get; set; }
 
         public string PhotoPath { get; set; }
+        public string TeamName { get; set; }
+        public string TeamLogoPath { get; set; }
         public bool VideoFlipped { get; set; }
         public bool VideoMirrored { get; set; }
 
