@@ -1,0 +1,66 @@
+﻿        <profile version="458752" 
+             storageformat="1" 
+             name="Video" 
+             description=""> 
+                   <streamconfig majortype="{73647561-0000-0010-8000-00AA00389B71}" 
+                   streamnumber="1" 
+                   streamname="Audio Stream" 
+                   inputname="Audio" 
+                   bitrate="128040" 
+                   bufferwindow="-1" 
+                   reliabletransport="0" 
+                   decodercomplexity="" 
+                   rfc1766langid="en-au" > 
+             <wmmediatype subtype="{00000161-0000-0010-8000-00AA00389B71}"  
+                   bfixedsizesamples="1" 
+                   btemporalcompression="0" 
+                   lsamplesize="2973"> 
+           <waveformatex wFormatTag="353" 
+                         nChannels="2" 
+                         nSamplesPerSec="44100" 
+                         nAvgBytesPerSec="16005" 
+                         nBlockAlign="2973" 
+                         wBitsPerSample="16" 
+                         codecdata="008800000F00E95C0000"/> 
+            </wmmediatype>
+            </streamconfig>
+                   <streamconfig majortype="{73646976-0000-0010-8000-00AA00389B71}"
+                   streamnumber="2" 
+                   streamname="Video Stream" 
+                   inputname="Video" 
+                   bitrate="$bitrate" 
+                   bufferwindow="20000" 
+                   reliabletransport="0" 
+                   decodercomplexity="" 
+                   rfc1766langid="en-au" > 
+                     <videomediaprops maxkeyframespacing="30000000" 
+                                     quality="0"/> 
+             <wmmediatype subtype="{31435657-0000-0010-8000-00AA00389B71}"  
+                   bfixedsizesamples="0" 
+                   btemporalcompression="1" 
+                   lsamplesize="0"> 
+       <videoinfoheader dwbitrate="$bitrate" 
+                        dwbiterrorrate="0" 
+                        avgtimeperframe="$avgtimeperframe"> 
+        <rcsource left="0" 
+                  top="0" 
+                  right="$width" 
+                  bottom="$height"/> 
+        <rctarget left="0" 
+                  top="0" 
+                  right="$width" 
+                  bottom="$height"/> 
+            <bitmapinfoheader biwidth="$width" 
+                              biheight="$height" 
+                              biplanes="1" 
+                              bibitcount="24" 
+                              bicompression="WVC1" 
+                              bisizeimage="0" 
+                              bixpelspermeter="0" 
+                              biypelspermeter="0" 
+                              biclrused="0" 
+                              biclrimportant="0"/> 
+       </videoinfoheader>
+            </wmmediatype>
+            </streamconfig>
+    </profile> 

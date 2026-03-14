@@ -20,6 +20,7 @@ using Tools;
 using WindowsPlatform;
 using System.Windows.Forms;
 using System.Drawing;
+using WindowsMediaPlatform;
 
 namespace FPVTracksideCore
 {
@@ -27,10 +28,13 @@ namespace FPVTracksideCore
     public class FPVTracksideCoreGame :
         UI.BaseGame
     {
+
+        private WindowsMediaPlatformTools windowsPlatformTools;
+
         public FPVTracksideCoreGame()
-            : base(new WindowsPlatformTools())
+                 : base(new WindowsMediaPlatformTools())
         {
-            WindowsPlatformTools windowsPlatformTools = PlatformTools as WindowsPlatformTools;
+            windowsPlatformTools = PlatformTools as WindowsMediaPlatformTools;
 
             System.Reflection.Assembly assembly = System.Reflection.Assembly.GetAssembly(typeof(FPVTracksideCoreGame));
             using (Stream resourceStream = assembly.GetManifestResourceStream("FPVTracksideCore.Icon.ico"))
@@ -49,7 +53,6 @@ namespace FPVTracksideCore
 
         protected override void LoadContent()
         {
-
             DirectoryInfo eventDir = new DirectoryInfo(ApplicationProfileSettings.Instance.EventStorageLocation);
             DatabaseFactory.Init(new DB.DatabaseFactory(Data, eventDir));
 
@@ -63,6 +66,9 @@ namespace FPVTracksideCore
             }
 
             base.LoadContent();
+
+            loadingLayer.WorkQueue.Enqueue("Initialising Mediafoundation and DirectShow", () => { VideoFrameWorks.Available.AddRange(windowsPlatformTools.InitWindowsNativeVideoFrameworks(GraphicsDevice)); });
+            loadingLayer.WorkQueue.Enqueue("Initialising ffmpeg", () => { VideoFrameWorks.Available.Add(new FfmpegMediaPlatform.FfmpegMediaFramework()); });
         }
 
     }

@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+		<OutputType>Library</OutputType>
+		<TargetFramework>net9.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+		<ApplicationIcon />
+		<Platforms>x64</Platforms>
+		<Version>2.73.1.751</Version>
+	  <usewpf>true</usewpf>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="wmvHQ.prx" />
+  </ItemGroup>
+
+	<ItemGroup>
+    <EmbeddedResource Include="wmvHQ.prx" />
+  </ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.4.1" />
+	</ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WindowsPlatform\WindowsPlatform.csproj" />
+    <ProjectReference Include="..\DirectShow.Net\DirectShowLib-2008.csproj" />
+    <ProjectReference Include="..\MediaFoundation\MediaFoundation.csproj" />
+    <ProjectReference Include="..\WindowsMediaLibV1-1\WindowsMediaLib-2005.csproj" />
+  </ItemGroup>
+
+</Project>

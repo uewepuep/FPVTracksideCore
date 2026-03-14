@@ -39,6 +39,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DB", "DB\DB.csproj", "{4432
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FfmpegMediaPlatform", "ffmpegMediaPlatform\FfmpegMediaPlatform.csproj", "{312966DE-7E94-494C-A7E6-42ED28E073A8}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowsMediaPlatform", "WindowsMediaPlatform\WindowsMediaPlatform.csproj", "{42E407AD-3E93-4A10-80F3-92537533D428}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectShowLib-2008", "DirectShow.Net\DirectShowLib-2008.csproj", "{CE009BFA-5EF6-4153-B2A1-2FA79698A9AE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaFoundation", "MediaFoundation\MediaFoundation.csproj", "{B78C0F3B-071A-4FD2-829D-7A67E0F7BD1C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsMediaLib-2005", "WindowsMediaLibV1-1\WindowsMediaLib-2005.csproj", "{7EA4160F-3BBD-47C9-A38C-4053B64B24A8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -115,6 +123,22 @@ Global
 		{312966DE-7E94-494C-A7E6-42ED28E073A8}.Debug|x64.Build.0 = Debug|x64
 		{312966DE-7E94-494C-A7E6-42ED28E073A8}.Release|x64.ActiveCfg = Release|x64
 		{312966DE-7E94-494C-A7E6-42ED28E073A8}.Release|x64.Build.0 = Release|x64
+		{42E407AD-3E93-4A10-80F3-92537533D428}.Debug|x64.ActiveCfg = Debug|x64
+		{42E407AD-3E93-4A10-80F3-92537533D428}.Debug|x64.Build.0 = Debug|x64
+		{42E407AD-3E93-4A10-80F3-92537533D428}.Release|x64.ActiveCfg = Release|x64
+		{42E407AD-3E93-4A10-80F3-92537533D428}.Release|x64.Build.0 = Release|x64
+		{CE009BFA-5EF6-4153-B2A1-2FA79698A9AE}.Debug|x64.ActiveCfg = Debug|x64
+		{CE009BFA-5EF6-4153-B2A1-2FA79698A9AE}.Debug|x64.Build.0 = Debug|x64
+		{CE009BFA-5EF6-4153-B2A1-2FA79698A9AE}.Release|x64.ActiveCfg = Release|x64
+		{CE009BFA-5EF6-4153-B2A1-2FA79698A9AE}.Release|x64.Build.0 = Release|x64
+		{B78C0F3B-071A-4FD2-829D-7A67E0F7BD1C}.Debug|x64.ActiveCfg = Debug|x64
+		{B78C0F3B-071A-4FD2-829D-7A67E0F7BD1C}.Debug|x64.Build.0 = Debug|x64
+		{B78C0F3B-071A-4FD2-829D-7A67E0F7BD1C}.Release|x64.ActiveCfg = Release|x64
+		{B78C0F3B-071A-4FD2-829D-7A67E0F7BD1C}.Release|x64.Build.0 = Release|x64
+		{7EA4160F-3BBD-47C9-A38C-4053B64B24A8}.Debug|x64.ActiveCfg = Debug|x64
+		{7EA4160F-3BBD-47C9-A38C-4053B64B24A8}.Debug|x64.Build.0 = Debug|x64
+		{7EA4160F-3BBD-47C9-A38C-4053B64B24A8}.Release|x64.ActiveCfg = Release|x64
+		{7EA4160F-3BBD-47C9-A38C-4053B64B24A8}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
