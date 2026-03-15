@@ -345,11 +345,11 @@ namespace UI.Nodes
             DisplayNode.AddChild(channelInfo);
 
             velocidroneGateNode = new TextNode("", Theme.Current.PilotViewTheme.PilotOverlayText.XNA);
-            velocidroneGateNode.RelativeBounds = new RectangleF(0.02f, 0.22f, 0.35f, 0.04f);
+            velocidroneGateNode.RelativeBounds = new RectangleF(0.02f, 0.02f, 0.35f, 0.12f);
             velocidroneGateNode.Alignment = RectangleAlignment.TopLeft;
             velocidroneGateNode.Style.Border = true;
             velocidroneGateNode.Visible = false;
-            AddChild(velocidroneGateNode);
+            DisplayNode.AddChild(velocidroneGateNode);
 
             CloseButton = new CloseNode();
             CloseButton.Visible = false;
