@@ -54,6 +54,7 @@ namespace UI.Nodes
         
         private TextNode rssiNode;
         private TextNode sensitivityNode;
+        private Node velocidroneGateContainer;
         private TextNode velocidroneGateNode;
 
         public EventManager EventManager { get; private set; }
@@ -257,16 +258,16 @@ namespace UI.Nodes
         /// <summary>Show Velocidrone gate info on this pilot's channel. Only visible when Velocidrone timer is in use.</summary>
         public void SetVelocidroneGate(int gate, int lap)
         {
-            if (velocidroneGateNode == null) return;
+            if (velocidroneGateNode == null || velocidroneGateContainer == null) return;
             velocidroneGateNode.Text = $"Gate {gate}";
-            velocidroneGateNode.Visible = true;
+            velocidroneGateContainer.Visible = true;
         }
 
         /// <summary>Hide Velocidrone gate display (e.g. when race ends).</summary>
         public void ClearVelocidroneGate()
         {
-            if (velocidroneGateNode != null)
-                velocidroneGateNode.Visible = false;
+            if (velocidroneGateContainer != null)
+                velocidroneGateContainer.Visible = false;
         }
 
         public void SetCrashedOutType(CrashState type)
@@ -345,11 +346,14 @@ namespace UI.Nodes
             DisplayNode.AddChild(channelInfo);
 
             velocidroneGateNode = new TextNode("", Theme.Current.PilotViewTheme.PilotOverlayText.XNA);
-            velocidroneGateNode.RelativeBounds = new RectangleF(0.02f, 0.02f, 0.2f, 0.06f);
-            velocidroneGateNode.Alignment = RectangleAlignment.TopLeft;
+            velocidroneGateNode.RelativeBounds = new RectangleF(0.05f, 0.1f, 0.9f, 0.8f);
+            velocidroneGateNode.Alignment = RectangleAlignment.CenterLeft;
             velocidroneGateNode.Style.Border = true;
-            velocidroneGateNode.Visible = false;
-            DisplayNode.AddChild(velocidroneGateNode);
+
+            velocidroneGateContainer = new ColorNode(new Color(0, 0, 0, 100));
+            velocidroneGateContainer.RelativeBounds = new RectangleF(0.02f, 0.22f, 0.16f, 0.05f);
+            velocidroneGateContainer.Visible = false;
+            velocidroneGateContainer.AddChild(velocidroneGateNode);
 
             CloseButton = new CloseNode();
             CloseButton.Visible = false;
@@ -442,6 +446,8 @@ namespace UI.Nodes
             crashedOut.KeepAspectRatio = false;
             crashedOut.Visible = false;
             DisplayNode.AddChild(crashedOut);
+
+            DisplayNode.AddChild(velocidroneGateContainer);
 
             if (Theme.Current.Shadows)
                 AddChild(new ShadowNode());
