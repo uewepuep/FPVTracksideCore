@@ -277,19 +277,8 @@ namespace FfmpegMediaPlatform
         public override bool Start()
         {
             Tools.Logger.VideoLog.LogDebugCall(this, "PLAYBACK ENGINE: ffmpeg LIB (in-process libav)");
-            // Ensure native dylibs are resolved (Homebrew path on macOS)
             FfmpegNativeLoader.EnsureRegistered();
-            
-            // Debug: Check which FFmpeg functions are available
-            Tools.Logger.VideoLog.LogDebugCall(this, $"FFmpeg function availability check:");
-            Tools.Logger.VideoLog.LogDebugCall(this, $"  av_log_set_level: {(ffmpeg.av_log_set_level != null ? "OK" : "NULL")}");
-            Tools.Logger.VideoLog.LogDebugCall(this, $"  avformat_open_input: {(ffmpeg.avformat_open_input != null ? "OK" : "NULL")}");
-            Tools.Logger.VideoLog.LogDebugCall(this, $"  avformat_find_stream_info: {(ffmpeg.avformat_find_stream_info != null ? "OK" : "NULL")}");
-            Tools.Logger.VideoLog.LogDebugCall(this, $"  avcodec_find_decoder: {(ffmpeg.avcodec_find_decoder != null ? "OK" : "NULL")}");
-            Tools.Logger.VideoLog.LogDebugCall(this, $"  avcodec_alloc_context3: {(ffmpeg.avcodec_alloc_context3 != null ? "OK" : "NULL")}");
-            Tools.Logger.VideoLog.LogDebugCall(this, $"  avcodec_parameters_to_context: {(ffmpeg.avcodec_parameters_to_context != null ? "OK" : "NULL")}");
-            Tools.Logger.VideoLog.LogDebugCall(this, $"  avcodec_open2: {(ffmpeg.avcodec_open2 != null ? "OK" : "NULL")}");
-            
+
             // Check if critical functions are available
             if (ffmpeg.avformat_open_input == null || ffmpeg.avformat_find_stream_info == null || 
                 ffmpeg.avcodec_find_decoder == null || ffmpeg.avcodec_alloc_context3 == null)
@@ -297,16 +286,9 @@ namespace FfmpegMediaPlatform
                 throw new NotSupportedException("Critical FFmpeg functions not available - native libraries may be incompatible");
             }
             
-            // Test if FFmpeg functions actually work (not just exist)
-            try
-            {
-                // Test a simple function call to see if bindings work
-                var testVersion = ffmpeg.avformat_version();
-                Tools.Logger.VideoLog.LogDebugCall(this, $"FFmpeg avformat_version test: {testVersion} (SUCCESS)");
-            }
+            try { ffmpeg.avformat_version(); }
             catch (Exception funcTest)
             {
-                Tools.Logger.VideoLog.LogException(this, $"FFmpeg function call test failed", funcTest);
                 throw new NotSupportedException($"FFmpeg native library functions not working: {funcTest.Message}", funcTest);
             }
             
@@ -394,7 +376,6 @@ namespace FfmpegMediaPlatform
             readerThread.Start();
 
             mediaTime = TimeSpan.Zero;
-            Tools.Logger.VideoLog.LogDebugCall(this, $"INIT: mediaTime reset to {mediaTime.TotalSeconds:F2}s");
             wallClockStartUtc = DateTime.UtcNow;
             isAtEnd = false;
             
@@ -691,22 +672,18 @@ namespace FfmpegMediaPlatform
                                     lock (seekLock)
                                     {
                                         mediaTime = exactSeekTarget;
-                                        pausedAtMediaTime = mediaTime; // Update paused position for resume
-                                        Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Paused seek - set mediaTime to exactSeekTarget {mediaTime.TotalSeconds:F3}s (PTS was {newMediaTime.TotalSeconds:F3}s)");
+                                        pausedAtMediaTime = mediaTime;
                                     }
                                 }
                                 else
                                 {
                                     mediaTime = newMediaTime;
-                                    Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Updated mediaTime from {oldMediaTime.TotalSeconds:F3}s to {mediaTime.TotalSeconds:F3}s (isPlaying={isPlaying}, isTargetFrame={isTargetFrame})");
                                 }
                             }
 
-                            // Display frame unless we're skipping to reach target
                             if (!skipFrameForExactSeek || isTargetFrame)
                             {
                                 ProcessCurrentFrame(frame, frameTime);
-                                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG: Displayed frame at {frameTime.TotalSeconds:F3}s, isPlaying={isPlaying}, isTargetFrame={isTargetFrame}");
                             }
 
                             // Real-time playback timing based on PTS
@@ -734,7 +711,6 @@ namespace FfmpegMediaPlatform
                                     {
                                         playbackStartTime = DateTime.UtcNow;
                                         playbackStartMediaTime = mediaTime;
-                                        Tools.Logger.VideoLog.LogDebugCall(this, $"Timing baseline reset to prevent drift - mediaTime: {mediaTime.TotalSeconds:F3}s");
                                     }
                                 }
                                 
@@ -871,29 +847,10 @@ namespace FfmpegMediaPlatform
 
         public override bool Stop()
         {
-            Tools.Logger.VideoLog.LogDebugCall(this, "FfmpegLibVideoFileFrameSource.Stop() - BEGIN");
-            
             run = false;
             isPlaying = false;
-            
-            // Stop the reader thread and wait for it to complete
-            if (readerThread != null && readerThread.IsAlive)
-            {
-                Tools.Logger.VideoLog.LogDebugCall(this, "Waiting for reader thread to stop...");
-                if (!readerThread.Join(10000))
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, "WARNING: Reader thread did not stop within 2 seconds");
-                }
-                else
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, "Reader thread stopped successfully");
-                }
-            }
-            
-            // Additional wait to ensure frame processing stops
+            readerThread?.Join(10000);
             System.Threading.Thread.Sleep(100);
-            
-            Tools.Logger.VideoLog.LogDebugCall(this, "FfmpegLibVideoFileFrameSource.Stop() - SUCCESS");
             return base.Stop();
         }
 
@@ -933,31 +890,21 @@ namespace FfmpegMediaPlatform
 
         public void Play()
         {
-            Tools.Logger.VideoLog.LogDebugCall(this, $"Play() called - mediaTime: {mediaTime.TotalSeconds:F2}s, pausedAtMediaTime: {pausedAtMediaTime.TotalSeconds:F2}s");
-
-            // Reset playback timing when starting/resuming playback
-            // This ensures accurate real-time timing regardless of seeks or pauses
             playbackStartTime = DateTime.MinValue;
             playbackStartMediaTime = TimeSpan.Zero;
-            Tools.Logger.VideoLog.LogDebugCall(this, $"Play() reset timing variables for real-time playback");
-            
-            // If resuming from pause, restore the exact paused position
+
             if (State == States.Paused && pausedAtMediaTime != TimeSpan.Zero)
             {
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Resuming from pause - restoring mediaTime from {mediaTime.TotalSeconds:F2}s to {pausedAtMediaTime.TotalSeconds:F2}s");
                 mediaTime = pausedAtMediaTime;
-                // Seek to the exact paused position in the video stream
                 lock (seekLock)
                 {
                     seekTarget = pausedAtMediaTime;
                     seekRequested = true;
                 }
             }
-            
+
             isPlaying = true;
-            // Set the proper state in the base class
             base.Start();
-            Tools.Logger.VideoLog.LogDebugCall(this, $"Play() completed - mediaTime: {mediaTime.TotalSeconds:F2}s, isPlaying: {isPlaying}");
         }
 
         public override bool Pause()

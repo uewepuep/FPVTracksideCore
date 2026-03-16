@@ -199,9 +199,6 @@ namespace FfmpegMediaPlatform
             string fileName = Path.GetFileName(filePath);
             
             Tools.Logger.VideoLog.LogDebugCall(this, $"Video file playback: {fileName}");
-            Tools.Logger.VideoLog.LogDebugCall(this, $"File exists: {File.Exists(filePath)}");
-            Tools.Logger.VideoLog.LogDebugCall(this, $"File size: {new FileInfo(filePath).Length} bytes");
-            Tools.Logger.VideoLog.LogDebugCall(this, $"Is WMV: {isWMV}");
 
             // Build FFmpeg command for video file playback with interactive seeking support
             // Use proper settings for smooth video file playback
@@ -220,20 +217,12 @@ namespace FfmpegMediaPlatform
                                $"-pix_fmt rgba " +
                                $"-f rawvideo pipe:1";
 
-            // Add special handling for WMV files if needed
-            if (isWMV)
-            {
-                Tools.Logger.VideoLog.LogDebugCall(this, "WMV file detected - using standard FFmpeg WMV support");
-                // FFmpeg handles WMV files well across platforms, no special parameters needed
-            }
-
             Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Video File Playback ({fileName}): {ffmpegArgs}");
             return ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
         }
 
         public override bool Start()
         {
-            Tools.Logger.VideoLog.LogDebugCall(this, $"FfmpegVideoFileFrameSource.Start() called, current state: {State}");
             Tools.Logger.VideoLog.LogDebugCall(this, "PLAYBACK ENGINE: ffmpeg BINARY (external process)");
             
             // This is normal playback, not a seek operation
@@ -245,27 +234,14 @@ namespace FfmpegMediaPlatform
             // Try to get video file information first
             if (GetVideoFileInfo())
             {
-                // If we successfully got video info, initialize with the correct dimensions
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Video file info obtained: {VideoConfig.VideoMode?.Width}x{VideoConfig.VideoMode?.Height} @ {VideoConfig.VideoMode?.FrameRate}fps");
-                
-                // Initialize frame processing with the correct dimensions from the video file
                 if (VideoConfig.VideoMode != null)
                 {
-                    // Override the dimensions with the actual video file dimensions
                     width = VideoConfig.VideoMode.Width;
                     height = VideoConfig.VideoMode.Height;
-                    
-                    // Recalculate buffer size with correct dimensions
-                    buffer = new byte[width * height * 4];  // RGBA = 4 bytes per pixel
+                    buffer = new byte[width * height * 4];
                     rawTextures = new XBuffer<RawTexture>(5, width, height);
-                    
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"Video file buffer initialized: {width}x{height}, buffer size: {buffer.Length} bytes");
                     inited = true;
                 }
-            }
-            else
-            {
-                Tools.Logger.VideoLog.LogDebugCall(this, "Could not get video file info, will use default dimensions");
             }
             
             // Always try to start, even if we couldn't get file info
@@ -307,56 +283,25 @@ namespace FfmpegMediaPlatform
 
         private void InitializePlaybackState()
         {
-            // Reset playback state
             startTime = DateTime.MinValue;
             mediaTime = TimeSpan.Zero;
             isAtEnd = false;
-            FrameProcessNumber = 0; // Reset frame counter for proper timeline calculation
-            
-            Tools.Logger.VideoLog.LogDebugCall(this, "Video file playback state initialized");
+            FrameProcessNumber = 0;
         }
 
         private void VideoFileErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
             if (e.Data != null)
             {
-                string prefix = isSeekOperation ? "SEEK: FFMPEG" : "FFMPEG Video File";
-                Tools.Logger.VideoLog.LogDebugCall(this, $"{prefix}: {e.Data}");
-                
-                // Initialize immediately when we see any FFmpeg output for video files
                 if (!inited && (e.Data.Contains("frame=") || e.Data.Contains("Stream") || e.Data.Contains("Duration") || e.Data.Contains("Input")))
                 {
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"{prefix}: Video file playback detected - initializing frame processing");
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"{prefix}: FFmpeg output that triggered init: {e.Data}");
-                    
                     InitializeFrameProcessing();
-                    
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"{prefix}: Frame processing initialized - inited: {inited}, width: {width}, height: {height}");
                 }
-                
-                // Special handling for WMV files
-                bool isWMV = VideoConfig.FilePath?.EndsWith(".wmv", StringComparison.OrdinalIgnoreCase) ?? false;
-                if (isWMV)
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"{prefix}: WMV file processing: {e.Data}");
-                    
-                    // Check for WMV-specific issues
-                    if (e.Data.Contains("Invalid data found") || e.Data.Contains("Error while decoding"))
-                    {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"{prefix}: WMV decoding issue detected: {e.Data}");
-                    }
-                    
-                    // Check for successful WMV processing
-                    if (e.Data.Contains("Stream") && e.Data.Contains("Video"))
-                    {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"{prefix}: WMV video stream detected: {e.Data}");
-                    }
-                }
-                
-                // Log any errors or warnings
+
                 if (e.Data.Contains("error") || e.Data.Contains("Error") || e.Data.Contains("warning") || e.Data.Contains("Warning"))
                 {
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"{prefix}: Error/Warning: {e.Data}");
+                    string prefix = isSeekOperation ? "SEEK: FFMPEG" : "FFMPEG Video File";
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"{prefix}: {e.Data}");
                 }
             }
         }
@@ -364,22 +309,7 @@ namespace FfmpegMediaPlatform
         protected override void ProcessImage()
         {
             if (!inited)
-            {
-                // Log every 60 frames to avoid spam but still track the issue
-                if (FrameProcessNumber % 60 == 0)
-                {
-                    string prefix = isSeekOperation ? "SEEK" : "NORMAL";  
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"{prefix}: Video file frame processing: Not initialized yet (frame {FrameProcessNumber})");
-                }
                 return;
-            }
-
-            // Log first few frames and then every 120 frames to track processing
-            if (FrameProcessNumber < 10 || FrameProcessNumber % 120 == 0)
-            {
-                string prefix = isSeekOperation ? "SEEK" : "NORMAL";
-                Tools.Logger.VideoLog.LogDebugCall(this, $"{prefix}: Processing video frame {FrameProcessNumber}, mediaTime: {mediaTime.TotalSeconds:F3}s");
-            }
 
             // Call base implementation for frame processing first
             base.ProcessImage();
@@ -489,52 +419,20 @@ namespace FfmpegMediaPlatform
                     ffprobePath = ffmpegMediaFramework.ExecName.Replace("ffmpeg", "ffprobe");
                 }
                 
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Looking for FFprobe at: {ffprobePath}");
-                Tools.Logger.VideoLog.LogDebugCall(this, $"FFmpeg framework exec name: {ffmpegMediaFramework.ExecName}");
-                
-                // Check if ffprobe exists
                 if (!File.Exists(ffprobePath))
                 {
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFprobe not found at: {ffprobePath}");
-                    
-                    // Try alternative paths
                     string altPath1 = Path.Combine(Path.GetDirectoryName(ffmpegMediaFramework.ExecName), "ffprobe");
                     string altPath2 = Path.Combine(Path.GetDirectoryName(ffmpegMediaFramework.ExecName), "ffprobe.exe");
-                    
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"Trying alternative path 1: {altPath1}");
+
                     if (File.Exists(altPath1))
-                    {
                         ffprobePath = altPath1;
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"Found FFprobe at alternative path: {altPath1}");
-                    }
+                    else if (File.Exists(altPath2))
+                        ffprobePath = altPath2;
                     else
-                    {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"Trying alternative path 2: {altPath2}");
-                        if (File.Exists(altPath2))
-                        {
-                            ffprobePath = altPath2;
-                            Tools.Logger.VideoLog.LogDebugCall(this, $"Found FFprobe at alternative path: {altPath2}");
-                        }
-                        else
-                        {
-                            Tools.Logger.VideoLog.LogDebugCall(this, "FFprobe not found at any expected location - will use XML data if available");
-                            // Check if we already have valid data from XML file
-                            if (length > TimeSpan.Zero)
-                            {
-                                Tools.Logger.VideoLog.LogDebugCall(this, $"Using XML-derived duration: {length.TotalSeconds:F3}s (no ffprobe)");
-                                return true; // We have valid XML data, no need for defaults
-                            }
-                            return false; // Fall back to defaults only if no XML data
-                        }
-                    }
-                }
-                else
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFprobe found at: {ffprobePath}");
+                        return length > TimeSpan.Zero;
                 }
 
                 string ffprobeArgs = $"-v quiet -print_format json -show_format -show_streams \"{filePath}\"";
-                Tools.Logger.VideoLog.LogDebugCall(this, $"FFprobe command: {ffprobePath} {ffprobeArgs}");
 
                 ProcessStartInfo processStartInfo = new ProcessStartInfo()
                 {
@@ -550,85 +448,19 @@ namespace FfmpegMediaPlatform
                 {
                     process.StartInfo = processStartInfo;
                     process.Start();
-                    
+
                     string output = process.StandardOutput.ReadToEnd();
                     string error = process.StandardError.ReadToEnd();
                     process.WaitForExit();
 
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFprobe completed with exit code: {process.ExitCode}");
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFprobe output length: {output?.Length ?? 0} chars");
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFprobe error output: '{error}'");
-                    
                     if (process.ExitCode == 0 && !string.IsNullOrEmpty(output))
                     {
-                        // Parse JSON output to get video information
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"FFprobe JSON output (first 800 chars): {output.Substring(0, Math.Min(800, output.Length))}");
-                        if (output.Length > 800)
-                        {
-                            Tools.Logger.VideoLog.LogDebugCall(this, $"FFprobe JSON output (chars 800-1600): {output.Substring(800, Math.Min(800, output.Length - 800))}");
-                            if (output.Length > 1600)
-                            {
-                                Tools.Logger.VideoLog.LogDebugCall(this, $"FFprobe JSON output (last 400 chars): ...{output.Substring(Math.Max(0, output.Length - 400))}");
-                            }
-                        }
-                        
-                        // Log the complete JSON in chunks for debugging duration parsing issues
-                        int chunkSize = 500;
-                        for (int i = 0; i < output.Length; i += chunkSize)
-                        {
-                            int remainingLength = Math.Min(chunkSize, output.Length - i);
-                            string chunk = output.Substring(i, remainingLength);
-                            Tools.Logger.VideoLog.LogDebugCall(this, $"FFprobe JSON chunk {i / chunkSize + 1}: {chunk}");
-                        }
-                        
-                        // Look for duration field specifically before parsing
-                        if (output.Contains("duration"))
-                        {
-                            Tools.Logger.VideoLog.LogDebugCall(this, "Duration field found in JSON output");
-                            
-                            // Extract just the lines containing duration for focused debugging
-                            var lines = output.Split('\n');
-                            foreach (var line in lines.Where(l => l.Contains("duration")))
-                            {
-                                Tools.Logger.VideoLog.LogDebugCall(this, $"Duration line: {line.Trim()}");
-                            }
-                        }
-                        else
-                        {
-                            Tools.Logger.VideoLog.LogDebugCall(this, "No duration field found in JSON output - this explains the parsing failure");
-                        }
-                        
                         ParseVideoInfo(output);
                         return true;
                     }
                     else
                     {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"FFprobe failed for {fileName} (exit code: {process.ExitCode})");
-                        
-                        // Log detailed error information
-                        if (!string.IsNullOrEmpty(error))
-                        {
-                            Tools.Logger.VideoLog.LogDebugCall(this, $"FFprobe stderr: {error}");
-                        }
-                        else
-                        {
-                            Tools.Logger.VideoLog.LogDebugCall(this, "FFprobe stderr was empty");
-                        }
-                        
-                        if (string.IsNullOrEmpty(output))
-                        {
-                            Tools.Logger.VideoLog.LogDebugCall(this, "FFprobe stdout was empty - no video info available");
-                        }
-                        else
-                        {
-                            Tools.Logger.VideoLog.LogDebugCall(this, $"FFprobe stdout (failed): {output}");
-                        }
-                        
-                        // Log additional diagnostic information
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"File size: {new FileInfo(filePath).Length} bytes");
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"File extension: {Path.GetExtension(filePath)}");
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"FFprobe path used: {ffprobePath}");
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"FFprobe args used: {ffprobeArgs}");
+                        Tools.Logger.VideoLog.LogDebugCall(this, $"FFprobe failed for {fileName} (exit code: {process.ExitCode}): {error}");
                     }
                 }
             }
@@ -637,16 +469,8 @@ namespace FfmpegMediaPlatform
                 Tools.Logger.VideoLog.LogException(this, ex);
             }
 
-            // Fallback: use default values if we can't get file info and have no XML data
-            if (length > TimeSpan.Zero)
-            {
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Keeping XML-derived duration: {length.TotalSeconds:F3}s (no ffprobe available)");
-            }
-            else
-            {
-                Tools.Logger.VideoLog.LogDebugCall(this, "Using default video file properties - no ffprobe and no XML data");
-                length = TimeSpan.FromMinutes(5); // Default 5 minutes only if no XML data
-            }
+            if (length == TimeSpan.Zero)
+                length = TimeSpan.FromMinutes(5);
             
             if (VideoConfig.VideoMode == null)
             {
@@ -668,169 +492,52 @@ namespace FfmpegMediaPlatform
         {
             try
             {
-                Tools.Logger.VideoLog.LogDebugCall(this, "Parsing video file information from FFprobe output");
-                
-                // Simple JSON parsing for duration and frame rate
-                // Look for duration in format section - try multiple patterns
-                var durationMatch = Regex.Match(jsonOutput, @"""duration"":\s*""([^""]+)""");
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Primary duration regex match: {durationMatch.Success}");
-                
-                // Let's also try to find any occurrence of "duration" in the JSON to debug
-                var allDurationMatches = Regex.Matches(jsonOutput, @"""duration""[^,}]*");
-                Tools.Logger.VideoLog.LogDebugCall(this, $"All duration-related JSON entries found: {allDurationMatches.Count}");
-                foreach (Match match in allDurationMatches)
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"Duration entry: {match.Value}");
-                }
-                
-                // Test the exact pattern we expect based on the logs
-                var testMatch = Regex.Match(jsonOutput, @"""duration"":\s*""([0-9.]+)""");
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Test duration regex match: {testMatch.Success}");
-                if (testMatch.Success)
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"Test duration value: '{testMatch.Groups[1].Value}'");
-                }
-                
-                // We'll compute parsedLength locally to avoid overriding an already-determined XML-based length
                 TimeSpan parsedLength = TimeSpan.Zero;
 
-                if (durationMatch.Success)
-                {
-                    string durationStr = durationMatch.Groups[1].Value;
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"Duration string found: '{durationStr}'");
-                    if (double.TryParse(durationStr, out double durationSeconds))
-                    {
-                        parsedLength = TimeSpan.FromSeconds(durationSeconds);
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"Video duration parsed successfully (ffprobe): {parsedLength}");
-                    }
-                    else
-                    {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"Failed to parse duration: '{durationStr}'");
-                    }
-                }
-                else if (testMatch.Success)
-                {
-                    // Use the test pattern if the primary one failed
-                    string durationStr = testMatch.Groups[1].Value;
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"Duration string found via test pattern: '{durationStr}'");
-                    if (double.TryParse(durationStr, out double durationSeconds))
-                    {
-                        parsedLength = TimeSpan.FromSeconds(durationSeconds);
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"Video duration parsed successfully via test pattern (ffprobe): {parsedLength}");
-                    }
-                    else
-                    {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"Failed to parse duration from test pattern: '{durationStr}'");
-                    }
-                }
-                else
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, "⚠ No duration found in FFprobe output using primary regex");
-                    
-                    // Try alternative patterns that might exist in the JSON
-                    var altDurationMatch1 = Regex.Match(jsonOutput, @"""duration"":\s*([0-9.]+)");
-                    var altDurationMatch2 = Regex.Match(jsonOutput, @"""duration"":\s*([0-9.]+),");
-                    
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"Alternative duration pattern 1 (no quotes): {altDurationMatch1.Success}");
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"Alternative duration pattern 2 (with comma): {altDurationMatch2.Success}");
-                    
-                    if (altDurationMatch1.Success)
-                    {
-                        string durationStr = altDurationMatch1.Groups[1].Value;
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"Alternative duration string found: '{durationStr}'");
-                        if (double.TryParse(durationStr, out double durationSeconds))
-                        {
-                            parsedLength = TimeSpan.FromSeconds(durationSeconds);
-                            Tools.Logger.VideoLog.LogDebugCall(this, $"Video duration parsed from alternative pattern (ffprobe): {parsedLength}");
-                        }
-                        else
-                        {
-                            Tools.Logger.VideoLog.LogDebugCall(this, $"Failed to parse alternative duration string: '{durationStr}'");
-                        }
-                    }
-                    else
-                    {
-                        Tools.Logger.VideoLog.LogDebugCall(this, "No duration found in any pattern - video length will be unknown");
-                        
-                        // Try one more attempt to find any duration-like values for debugging
-                        var debugMatches = Regex.Matches(jsonOutput, @"""[^""]*duration[^""]*"":\s*[^,}]+");
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"Debug: Found {debugMatches.Count} duration-like entries");
-                        foreach (Match match in debugMatches.Cast<Match>().Take(5))
-                        {
-                            Tools.Logger.VideoLog.LogDebugCall(this, $"Debug duration entry: {match.Value}");
-                        }
-                    }
-                }
-                
-                // Apply parsedLength conservatively: if we already have a non-zero length (e.g., from XML timing),
-                // do not extend it. Only set if length is zero or parsedLength is shorter.
-                if (parsedLength > TimeSpan.Zero)
-                {
-                    if (length == TimeSpan.Zero || parsedLength < length)
-                    {
-                        length = parsedLength;
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"FINAL LENGTH SET (from ffprobe, conservative): {length}");
-                    }
-                    else
-                    {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"Keeping existing length {length} (XML-derived) over longer ffprobe {parsedLength}");
-                    }
-                }
-                
-                // Look for frame rate in streams section
+                var durationMatch = Regex.Match(jsonOutput, @"""duration"":\s*""([^""]+)""");
+                if (!durationMatch.Success)
+                    durationMatch = Regex.Match(jsonOutput, @"""duration"":\s*""([0-9.]+)""");
+                if (!durationMatch.Success)
+                    durationMatch = Regex.Match(jsonOutput, @"""duration"":\s*([0-9.]+)");
+
+                if (durationMatch.Success && double.TryParse(durationMatch.Groups[1].Value, out double durationSeconds))
+                    parsedLength = TimeSpan.FromSeconds(durationSeconds);
+
+                if (parsedLength > TimeSpan.Zero && (length == TimeSpan.Zero || parsedLength < length))
+                    length = parsedLength;
+
                 var frameRateMatch = Regex.Match(jsonOutput, @"""r_frame_rate"":\s*""([^""]+)""");
-                Tools.Logger.VideoLog.LogDebugCall(this, $"FFprobe frame rate regex match: {frameRateMatch.Success}");
                 if (frameRateMatch.Success)
                 {
-                    string frameRateStr = frameRateMatch.Groups[1].Value;
-                    // Parse frame rate like "30/1" or "30000/1001"
-                    var parts = frameRateStr.Split('/');
-                    if (parts.Length == 2 && 
-                        double.TryParse(parts[0], out double num) && 
-                        double.TryParse(parts[1], out double den) && 
+                    var parts = frameRateMatch.Groups[1].Value.Split('/');
+                    if (parts.Length == 2 &&
+                        double.TryParse(parts[0], out double num) &&
+                        double.TryParse(parts[1], out double den) &&
                         den > 0)
                     {
                         frameRate = num / den;
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"✓ FFprobe detected frame rate: {frameRate} fps (from r_frame_rate: {frameRateStr})");
                     }
                 }
-                else
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, "⚠ FFprobe did NOT find r_frame_rate in JSON - will use default 30fps");
-                }
-                
-                // Look for video dimensions
+
                 var widthMatch = Regex.Match(jsonOutput, @"""width"":\s*(\d+)");
                 var heightMatch = Regex.Match(jsonOutput, @"""height"":\s*(\d+)");
                 if (widthMatch.Success && heightMatch.Success)
                 {
                     int width = int.Parse(widthMatch.Groups[1].Value);
                     int height = int.Parse(heightMatch.Groups[1].Value);
-                    
+
                     if (VideoConfig.VideoMode == null)
-                    {
-                        VideoConfig.VideoMode = new Mode
-                        {
-                            Width = width,
-                            Height = height,
-                            FrameRate = (float)frameRate,
-                            FrameWork = FrameWork.FFmpeg
-                        };
-                    }
+                        VideoConfig.VideoMode = new Mode { Width = width, Height = height, FrameRate = (float)frameRate, FrameWork = FrameWork.FFmpeg };
                     else
                     {
                         VideoConfig.VideoMode.Width = width;
                         VideoConfig.VideoMode.Height = height;
                         VideoConfig.VideoMode.FrameRate = (float)frameRate;
                     }
-                    
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"Video dimensions: {width}x{height}");
                 }
-                
-                // Update start time for proper playback timing
+
                 startTime = DateTime.Now;
-                
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Video file info parsed successfully: {VideoConfig.VideoMode?.Width}x{VideoConfig.VideoMode?.Height}@{frameRate}fps, duration: {length}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"Video info: {VideoConfig.VideoMode?.Width}x{VideoConfig.VideoMode?.Height}@{frameRate}fps, duration: {length}");
             }
             catch (Exception ex)
             {
@@ -840,81 +547,22 @@ namespace FfmpegMediaPlatform
 
         public void Play()
         {
-            Tools.Logger.VideoLog.LogDebugCall(this, $"Play() called, current state: {State}, mediaTime: {mediaTime}");
-            
-            if (State == States.Paused)
-            {
-                // When paused, we stopped the FFmpeg process, so we need to restart from current position
-                Tools.Logger.VideoLog.LogDebugCall(this, "Resuming from pause by restarting video from current position");
+            if (State != States.Running)
                 RestartWithSeek(mediaTime);
-            }
-            else if (State == States.Stopped)
-            {
-                // If stopped, restart from current position
-                Tools.Logger.VideoLog.LogDebugCall(this, "Video stopped, restarting from current position");
-                RestartWithSeek(mediaTime);
-            }
-            else if (State == States.Running)
-            {
-                Tools.Logger.VideoLog.LogDebugCall(this, "Video is already playing");
-            }
-            else
-            {
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Play() called from unexpected state: {State}");
-                // Try to start from current position anyway
-                RestartWithSeek(mediaTime);
-            }
         }
 
         public override bool Pause()
         {
-            Tools.Logger.VideoLog.LogDebugCall(this, $"Pause() called, current state: {State}");
-            
             if (State == States.Running)
             {
                 try
                 {
-                    Tools.Logger.VideoLog.LogDebugCall(this, "Pausing video playback by stopping FFmpeg process");
-                    
-                    // For video file playback, we can't easily pause FFmpeg, so we stop it instead
-                    // The current mediaTime position is preserved so Play() can resume from there
-                    
-                    // Stop the FFmpeg process immediately and synchronously
                     if (process != null && !process.HasExited)
                     {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"Killing FFmpeg process {process.Id} for pause");
-                        try
-                        {
-                            process.Kill();
-                            // Give it a time to exit gracefully, but don't wait too long
-                            if (process.WaitForExit(10000))
-                            {
-                                Tools.Logger.VideoLog.LogDebugCall(this, "FFmpeg process stopped successfully for pause");
-                            }
-                            else
-                            {
-                                Tools.Logger.VideoLog.LogDebugCall(this, "FFmpeg process didn't exit quickly, but continuing with pause");
-                            }
-                        }
-                        catch (Exception killEx)
-                        {
-                            Tools.Logger.VideoLog.LogException(this, killEx);
-                            Tools.Logger.VideoLog.LogDebugCall(this, "Error killing FFmpeg process during pause, but continuing");
-                        }
+                        try { process.Kill(); process.WaitForExit(10000); }
+                        catch (Exception killEx) { Tools.Logger.VideoLog.LogException(this, killEx); }
                     }
-                    else if (process != null)
-                    {
-                        Tools.Logger.VideoLog.LogDebugCall(this, "FFmpeg process already exited");
-                    }
-                    else
-                    {
-                        Tools.Logger.VideoLog.LogDebugCall(this, "No FFmpeg process to kill");
-                    }
-                    
-                    // Set state to paused 
-                    bool result = base.Pause();
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"Pause completed, state now: {State}");
-                    return result;
+                    return base.Pause();
                 }
                 catch (Exception ex)
                 {
@@ -922,11 +570,7 @@ namespace FfmpegMediaPlatform
                     return false;
                 }
             }
-            else
-            {
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Cannot pause from state: {State}");
-                return false;
-            }
+            return false;
         }
         
         public override bool Stop()
@@ -993,21 +637,12 @@ namespace FfmpegMediaPlatform
         
         public override bool Unpause()
         {
-            Tools.Logger.VideoLog.LogDebugCall(this, $"Unpause() called, current state: {State}");
-            
             if (State == States.Paused)
             {
                 try
                 {
-                    Tools.Logger.VideoLog.LogDebugCall(this, "Unpausing by restarting video from current position");
-                    
-                    // Since we stopped the FFmpeg process in Pause(), we need to restart it from the current position
-                    // The mediaTime should be preserved from when we paused
                     RestartWithSeek(mediaTime);
-                    
-                    bool result = base.Unpause();
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"Unpause completed, state now: {State}");
-                    return result;
+                    return base.Unpause();
                 }
                 catch (Exception ex)
                 {
@@ -1015,139 +650,55 @@ namespace FfmpegMediaPlatform
                     return false;
                 }
             }
-            else
-            {
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Cannot unpause from state: {State}");
-                return false;
-            }
+            return false;
         }
 
         public void SetPosition(TimeSpan timeSpan)
         {
-            if (timeSpan < TimeSpan.Zero)
-                timeSpan = TimeSpan.Zero;
-            
-            if (length > TimeSpan.Zero && timeSpan > length)
-                timeSpan = length;
+            if (timeSpan < TimeSpan.Zero) timeSpan = TimeSpan.Zero;
+            if (length > TimeSpan.Zero && timeSpan > length) timeSpan = length;
 
-            Tools.Logger.VideoLog.LogDebugCall(this, $"Setting video position to: {timeSpan}");
-            
-            // Update the start time to maintain correct media time
             startTime = DateTime.Now - timeSpan;
             mediaTime = timeSpan;
             isAtEnd = false;
-            
-            // Use efficient seeking without restarting FFmpeg
             SeekToPosition(timeSpan);
         }
 
         private void SeekToPosition(TimeSpan seekTime)
         {
-            try
-            {
-                // For video files, always restart FFmpeg with the new position for accurate seeking
-                // This is much more reliable than trying to skip frames
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Seeking to {seekTime.TotalSeconds:F1}s - restarting FFmpeg");
-                RestartWithSeek(seekTime);
-            }
-            catch (Exception ex)
-            {
-                Tools.Logger.VideoLog.LogException(this, ex);
-                Tools.Logger.VideoLog.LogDebugCall(this, "Seek failed, falling back to restart seek");
-                RestartWithSeek(seekTime);
-            }
+            try { RestartWithSeek(seekTime); }
+            catch (Exception ex) { Tools.Logger.VideoLog.LogException(this, ex); }
         }
 
         private void RestartWithSeek(TimeSpan seekTime)
         {
             try
             {
-                // Get filename for logging
-                string fileName = Path.GetFileName(VideoConfig.FilePath);
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Restarting video playback ({fileName}) with seek to: {seekTime}");
-                
-                // For seeking, immediately kill the current process synchronously - no graceful shutdown needed
                 if (process != null)
                 {
+                    run = false;
                     if (!process.HasExited)
                     {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"Immediately killing FFmpeg process for seek (PID: {process.Id})");
-                        
-                        // Force kill the process immediately and wait for it to exit
-                        run = false;
-                        try
-                        {
-                            process.Kill();
-                            // Wait for the process to actually exit (synchronous)
-                            if (process.WaitForExit(10000))
-                            {
-                                Tools.Logger.VideoLog.LogDebugCall(this, $"FFmpeg process killed and exited successfully for seek");
-                            }
-                            else
-                            {
-                                Tools.Logger.VideoLog.LogDebugCall(this, $"FFmpeg process didn't exit quickly after kill, but continuing");
-                            }
-                        }
-                        catch (Exception killEx)
-                        {
-                            Tools.Logger.VideoLog.LogException(this, $"Process kill exception" , killEx);
-                        }
+                        try { process.Kill(); process.WaitForExit(10000); }
+                        catch (Exception killEx) { Tools.Logger.VideoLog.LogException(this, killEx); }
                     }
-                    else
-                    {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"Process was already exited (Exit Code: {process.ExitCode})");
-                    }
-                    
-                    // Dispose the process immediately
-                    try
-                    {
-                        process.Dispose();
-                        Tools.Logger.VideoLog.LogDebugCall(this, "Process disposed successfully for seek");
-                    }
-                    catch (Exception disposeEx)
-                    {
-                        Tools.Logger.VideoLog.LogException(this, $"Process dispose exception", disposeEx);
-                    }
-                    
-                    process = null; // Set to null after disposal
+                    try { process.Dispose(); } catch { }
+                    process = null;
                 }
-                else
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"No existing process to kill (process was null)");
-                }
-                
-                // Ensure the reading thread has stopped before starting new process
+
                 if (thread != null && thread.IsAlive)
                 {
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"Reading thread still alive, waiting for it to finish");
-                    run = false; // Make sure the thread loop will exit
-                    
-                    if (!thread.Join(10000)) // Wait up to 2 seconds for thread to finish
-                    {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"Reading thread didn't finish in 2 seconds, proceeding anyway");
-                    }
-                    else
-                    {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"Reading thread finished successfully");
-                    }
+                    run = false;
+                    thread.Join(10000);
                     thread = null;
                 }
-                else
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"Reading thread was already stopped or null");
-                }
-                
-                // Brief pause to ensure process cleanup completes before starting new process
-                // This prevents resource conflicts that can cause flickering
-                Tools.Logger.VideoLog.LogDebugCall(this, $"Waiting 100ms for process cleanup to complete");
-                System.Threading.Thread.Sleep(100); // Increased from 50ms to 100ms for more reliable cleanup
-                
+
+                System.Threading.Thread.Sleep(100);
                 StartSeekProcess(seekTime);
             }
             catch (Exception ex)
             {
                 Tools.Logger.VideoLog.LogException(this, ex);
-                Tools.Logger.VideoLog.LogDebugCall(this, "Error during seek restart");
             }
         }
         
@@ -1184,10 +735,7 @@ namespace FfmpegMediaPlatform
                 // Tools.Logger.VideoLog.LogCallDebugOnly(this, $"SEEK: Original file path: {filePath}");
                 
                 if (!Path.IsPathRooted(filePath))
-                {
                     filePath = Path.GetFullPath(filePath);
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"SEEK: Converted to absolute path: {filePath}");
-                }
                 
                 // Verify file exists before attempting to start FFmpeg
                 if (!File.Exists(filePath))
@@ -1245,12 +793,7 @@ namespace FfmpegMediaPlatform
                         try
                         {
                             process.EnableRaisingEvents = true;
-                            process.Exited += (s, e) =>
-                            {
-                                Tools.Logger.VideoLog.LogDebugCall(this, $"SEEK: Process exited - clamping mediaTime to length {length.TotalSeconds:F3}s");
-                                mediaTime = length;
-                                isAtEnd = true;
-                            };
+                            process.Exited += (s, e) => { mediaTime = length; isAtEnd = true; };
                         }
                         catch { }
                         
@@ -1288,7 +831,6 @@ namespace FfmpegMediaPlatform
             catch (Exception ex)
             {
                 Tools.Logger.VideoLog.LogException(this, ex);
-                Tools.Logger.VideoLog.LogDebugCall(this, "Error during seek restart");
             }
         }
 
@@ -1337,100 +879,40 @@ namespace FfmpegMediaPlatform
 
         public void NextFrame()
         {
-            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: NextFrame called - currentMediaTime={mediaTime.TotalSeconds:F3}s, FrameTimes.Length={VideoConfig?.FrameTimes?.Length ?? 0}, frameRate={frameRate}");
-
-            // Use actual frame timing data if available for accurate navigation
-            if (VideoConfig != null && VideoConfig.FrameTimes != null && VideoConfig.FrameTimes.Length > 0)
+            if (VideoConfig?.FrameTimes != null && VideoConfig.FrameTimes.Length > 0)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Using XML frame timing data with {VideoConfig.FrameTimes.Length} frames");
-
-                // Find current frame index based on mediaTime
                 DateTime currentAbsoluteTime = StartTime + mediaTime;
                 int currentIndex = -1;
-
                 for (int i = 0; i < VideoConfig.FrameTimes.Length; i++)
                 {
-                    if (VideoConfig.FrameTimes[i].Time >= currentAbsoluteTime)
-                    {
-                        currentIndex = i;
-                        break;
-                    }
+                    if (VideoConfig.FrameTimes[i].Time >= currentAbsoluteTime) { currentIndex = i; break; }
                 }
-
-                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Found currentIndex={currentIndex}");
-
-                // Move to next frame
                 if (currentIndex >= 0 && currentIndex < VideoConfig.FrameTimes.Length - 1)
                 {
-                    TimeSpan nextFrameTime = VideoConfig.FrameTimes[currentIndex + 1].Time - StartTime;
-                    Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Moving to next frame index {currentIndex + 1}, time {nextFrameTime.TotalSeconds:F3}s");
-                    SetPosition(nextFrameTime);
+                    SetPosition(VideoConfig.FrameTimes[currentIndex + 1].Time - StartTime);
                     return;
                 }
-                else
-                {
-                    Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Cannot go to next frame, currentIndex={currentIndex}, maxIndex={VideoConfig.FrameTimes.Length - 1}");
-                }
             }
-            else
-            {
-                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: No XML timing data, using fallback frameRate={frameRate}");
-            }
-
-            // Fallback to estimated frame duration
-            TimeSpan frameDuration = TimeSpan.FromSeconds(1.0 / frameRate);
-            var pos = mediaTime + frameDuration;
-            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Fallback - seeking to {pos.TotalSeconds:F3}s (step={frameDuration.TotalMilliseconds:F1}ms)");
-            SetPosition(pos);
+            SetPosition(mediaTime + TimeSpan.FromSeconds(1.0 / frameRate));
         }
 
         public void PrevFrame()
         {
-            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: PrevFrame called - currentMediaTime={mediaTime.TotalSeconds:F3}s, FrameTimes.Length={VideoConfig?.FrameTimes?.Length ?? 0}, frameRate={frameRate}");
-
-            // Use actual frame timing data if available for accurate navigation
-            if (VideoConfig != null && VideoConfig.FrameTimes != null && VideoConfig.FrameTimes.Length > 0)
+            if (VideoConfig?.FrameTimes != null && VideoConfig.FrameTimes.Length > 0)
             {
-                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Using XML frame timing data with {VideoConfig.FrameTimes.Length} frames");
-
-                // Find current frame index based on mediaTime
                 DateTime currentAbsoluteTime = StartTime + mediaTime;
                 int currentIndex = -1;
-
                 for (int i = 0; i < VideoConfig.FrameTimes.Length; i++)
                 {
-                    if (VideoConfig.FrameTimes[i].Time >= currentAbsoluteTime)
-                    {
-                        currentIndex = i;
-                        break;
-                    }
+                    if (VideoConfig.FrameTimes[i].Time >= currentAbsoluteTime) { currentIndex = i; break; }
                 }
-
-                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Found currentIndex={currentIndex}");
-
-                // Move to previous frame
                 if (currentIndex > 0)
                 {
-                    TimeSpan prevFrameTime = VideoConfig.FrameTimes[currentIndex - 1].Time - StartTime;
-                    Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Moving to prev frame index {currentIndex - 1}, time {prevFrameTime.TotalSeconds:F3}s");
-                    SetPosition(prevFrameTime);
+                    SetPosition(VideoConfig.FrameTimes[currentIndex - 1].Time - StartTime);
                     return;
                 }
-                else
-                {
-                    Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Cannot go to prev frame, currentIndex={currentIndex}");
-                }
             }
-            else
-            {
-                Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: No XML timing data, using fallback frameRate={frameRate}");
-            }
-
-            // Fallback to estimated frame duration
-            TimeSpan frameDuration = TimeSpan.FromSeconds(1.0 / frameRate);
-            var pos = mediaTime - frameDuration;
-            Tools.Logger.VideoLog.LogCall(this, $"SEEK_DEBUG_EXT: Fallback - seeking to {pos.TotalSeconds:F3}s (step={frameDuration.TotalMilliseconds:F1}ms)");
-            SetPosition(pos);
+            SetPosition(mediaTime - TimeSpan.FromSeconds(1.0 / frameRate));
         }
 
         public override IEnumerable<Mode> GetModes()
@@ -1461,10 +943,6 @@ namespace FfmpegMediaPlatform
 
         public void FixOrientation()
         {
-            // Method to fix upside down video if needed
-            Tools.Logger.VideoLog.LogDebugCall(this, "Fixing video orientation (upside down)");
-            
-            // Restart with transpose filter
             string filePath = VideoConfig.FilePath;
             if (!Path.IsPathRooted(filePath))
             {
@@ -1482,8 +960,6 @@ namespace FfmpegMediaPlatform
                                $"-pix_fmt rgba " +
                                $"-f rawvideo pipe:1";
 
-            Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Video File with orientation fix: {ffmpegArgs}");
-            
             // Restart the process with orientation fix
             Stop();
             Thread.Sleep(500);

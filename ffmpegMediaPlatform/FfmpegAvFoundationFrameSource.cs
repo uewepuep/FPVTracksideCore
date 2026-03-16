@@ -106,6 +106,7 @@ namespace FfmpegMediaPlatform
 
                 // Use hardware-accelerated H.264 encoding for recording - let camera use its natural framerate
                 ffmpegArgs = $"-f avfoundation " +
+                                $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                                 $"-pixel_format uyvy422 " +
                                 $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
                                 $"-i \"{name}\" " +
@@ -127,6 +128,7 @@ namespace FfmpegMediaPlatform
                 // Live mode: Use dual stream approach like recording mode but only output RGBA pipe
                 // PERFORMANCE: Enhanced low-delay flags for 4K video to reduce 1-second startup delay
                 ffmpegArgs = $"-f avfoundation " +
+                                $"-framerate {VideoConfig.VideoMode.FrameRate} " +
                                 $"-pixel_format uyvy422 " +
                                 $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
                                 $"-i \"{name}\" " +
@@ -142,8 +144,8 @@ namespace FfmpegMediaPlatform
                                 $"-probesize 32 " +
                                 $"-analyzeduration 0 " +
                                 $"-an " +
-                                $"-filter_complex \"[0:v]{videoFilter}format=rgba[outpipe]\" " +
-                                $"-map \"[outpipe]\" -f rawvideo pipe:1";
+                                $"-vf \"{videoFilter}format=rgba\" " +
+                                $"-f rawvideo pipe:1";
 
                 Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG macOS Live Mode (filters: {videoFilter}): {ffmpegArgs}");
             }

@@ -78,6 +78,7 @@ namespace FfmpegMediaPlatform
         // RGBA recording using separate ffmpeg process
         protected LibavRecorderManager rgbaRecorderManager;
 
+
         public FrameTime[] FrameTimes 
         {
             get
@@ -171,7 +172,7 @@ namespace FfmpegMediaPlatform
             // Use the dimensions from VideoConfig since ffmpeg is successfully processing
             width = VideoConfig.VideoMode?.Width ?? 640;
             height = VideoConfig.VideoMode?.Height ?? 480;
-            
+
             buffer = new byte[width * height * 4];  // RGBA = 4 bytes per pixel
             rawTextures = new XBuffer<RawTexture>(5, width, height);
 
@@ -345,7 +346,7 @@ namespace FfmpegMediaPlatform
             Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Starting frame source for '{VideoConfig.DeviceName}' at {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height}@{VideoConfig.VideoMode.FrameRate}fps");
 
             // Ensure we're completely stopped before starting
-            if (run)
+            if (run || process != null)
             {
                 Tools.Logger.VideoLog.LogDebugCall(this, "FFMPEG Frame source already running, stopping first");
                 Stop();
@@ -989,12 +990,10 @@ namespace FfmpegMediaPlatform
                         }
                     }
                     
-                    // Convert byte[] to IntPtr for SetData call
                     System.Runtime.InteropServices.GCHandle handle = System.Runtime.InteropServices.GCHandle.Alloc(buffer, System.Runtime.InteropServices.GCHandleType.Pinned);
                     try
                     {
-                        IntPtr bufferPtr = handle.AddrOfPinnedObject();
-                        frame.SetData(bufferPtr, SampleTime, FrameProcessNumber);
+                        frame.SetData(handle.AddrOfPinnedObject(), SampleTime, FrameProcessNumber);
                     }
                     finally
                     {
