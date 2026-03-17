@@ -8,14 +8,13 @@ using Tools;
 
 namespace WindowsMediaPlatform.MediaFoundation
 {
-    // Extends MediaFoundationCaptureFrameSource by feeding raw NV12 directly to the
-    // IMFSinkWriter with MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, so the sink writer
-    // drives the hardware H264 encoder (NVENC, Quick Sync, AMF) internally and handles
-    // all async MFT complexity itself.
-    // Falls back to the base (software) StartRecording if no hardware path is available.
-    public class MediaFoundationCaptureFrameSourceDX : MediaFoundationCaptureFrameSource
+    // Extends MediaFoundationCaptureFrameSource with hardware H264 encoding.
+    // Feeds raw NV12 directly to the IMFSinkWriter with MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS,
+    // so the sink writer drives NVENC/Quick Sync/AMF internally and handles async MFT complexity.
+    // Falls back to the base (software) StartRecording if hardware setup fails.
+    public class MediaFoundationCaptureFrameSourceHW : MediaFoundationCaptureFrameSource
     {
-        public MediaFoundationCaptureFrameSourceDX(VideoConfig videoConfig)
+        public MediaFoundationCaptureFrameSourceHW(VideoConfig videoConfig)
             : base(videoConfig)
         {
         }
