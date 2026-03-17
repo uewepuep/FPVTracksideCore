@@ -265,7 +265,7 @@ namespace FfmpegMediaPlatform
                                 $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
                                 $"{inputFormatArgs}" +
                                 $"{decoderCodec}" +
-                                $"-rtbufsize 2M " +
+                                $"-rtbufsize 512M " +
                                 $"-i video=\"{name}\" " +
                                 $"-fflags nobuffer+fastseek+flush_packets " +
                                 $"-flags low_delay " +
