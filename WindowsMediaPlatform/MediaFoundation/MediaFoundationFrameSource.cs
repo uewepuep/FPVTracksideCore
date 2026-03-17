@@ -36,6 +36,7 @@ namespace WindowsMediaPlatform.MediaFoundation
         public override SurfaceFormat FrameFormat => SurfaceFormat.Bgr32;
 
         public bool AutomaticVideoConversion { get; set; }
+        public bool CanUseDecoderProcessor { get; set; }
 
         public MediaFoundationFrameSource(VideoConfig videoConfig)
             : base(videoConfig)
@@ -125,7 +126,7 @@ namespace WindowsMediaPlatform.MediaFoundation
             return base.Stop();
         }
 
-        public HResult OnReadSample(HResult hrStatus, int dwStreamIndex, MF_SOURCE_READER_FLAG dwStreamFlags, long timestep, IMFSample sample)
+        public virtual HResult OnReadSample(HResult hrStatus, int dwStreamIndex, MF_SOURCE_READER_FLAG dwStreamFlags, long timestep, IMFSample sample)
         {
             HResult hr = hrStatus;
 
@@ -274,7 +275,7 @@ namespace WindowsMediaPlatform.MediaFoundation
             return HResult.S_OK;
         }
 
-        protected HResult CreateReader(IMFMediaSource pSource)
+        protected virtual HResult CreateReader(IMFMediaSource pSource)
         {
             HResult hr = HResult.S_OK;
             IMFAttributes pAttributes = null;
@@ -327,7 +328,7 @@ namespace WindowsMediaPlatform.MediaFoundation
             return HResult.E_FAIL;
         }
 
-        protected HResult SetupReader()
+        protected virtual HResult SetupReader()
         {
             HResult hr = HResult.S_OK;
             IMFAttributes pAttributes = null;

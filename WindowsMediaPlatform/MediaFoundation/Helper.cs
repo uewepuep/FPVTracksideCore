@@ -131,6 +131,31 @@ namespace WindowsMediaPlatform.MediaFoundation
             MFError.ThrowExceptionForHR(hr);
         }
 
+        // Attempts to retrieve the underlying D3D11 texture from a D3D11-backed MF buffer.
+        // Returns false (and nulls out the texture) if the buffer is not DXGI-backed.
+        // Caller MUST call texture.Dispose() when done.
+        public static bool TryGetD3DTexture(IMFMediaBuffer buffer, out SharpDX.Direct3D11.Texture2D texture, out int subresourceIndex)
+        {
+            texture = null;
+            subresourceIndex = 0;
+
+            IMFDXGIBuffer dxgiBuffer = buffer as IMFDXGIBuffer;
+            if (dxgiBuffer == null)
+                return false;
+
+            IntPtr texPtr;
+            HResult hr = dxgiBuffer.GetResource(typeof(SharpDX.Direct3D11.Texture2D).GUID, out texPtr);
+            if (Failed(hr) || texPtr == IntPtr.Zero)
+                return false;
+
+            dxgiBuffer.GetSubresourceIndex(out subresourceIndex);
+
+            // SharpDX constructor AddRefs, so release the ref we got from GetResource
+            texture = new SharpDX.Direct3D11.Texture2D(texPtr);
+            Marshal.Release(texPtr);
+            return true;
+        }
+
         // EntryPoint must be provided since we are naming the alternate
         // version MFCreateDXGISurfaceBuffer2 to separate it from the original
         [DllImport("mfplat.dll", ExactSpelling = true, EntryPoint = "MFCreateDXGISurfaceBuffer")]

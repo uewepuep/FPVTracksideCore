@@ -25,11 +25,20 @@ namespace WindowsMediaPlatform.MediaFoundation
             }
         }
 
+        // Used by the zero-copy D3D display path to track which frame is in this texture
+        public long FrameProcessCount { get; set; }
+        public long FrameSampleTime { get; set; }
 
         private MethodInfo getTextureMethod;
 
         public Texture2DDX(GraphicsDevice graphicsDevice, int width, int height)
             : base(graphicsDevice, width, height)
+        {
+            getTextureMethod = GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).FirstOrDefault(mi => mi.Name == "GetTexture");
+        }
+
+        public Texture2DDX(GraphicsDevice graphicsDevice, int width, int height, SurfaceFormat surfaceFormat)
+            : base(graphicsDevice, width, height, false, surfaceFormat)
         {
             getTextureMethod = GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).FirstOrDefault(mi => mi.Name == "GetTexture");
         }

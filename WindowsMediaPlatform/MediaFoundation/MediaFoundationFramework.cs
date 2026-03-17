@@ -37,6 +37,10 @@ namespace WindowsMediaPlatform.MediaFoundation
             {
                 return new MediaFoundationCaptureFrameSource(videoConfig);
             }
+            else if (GraphicsDevice != null)
+            {
+                return new MediaFoundationFrameSourceDX(videoConfig, GraphicsDevice);
+            }
             else
             {
                 return new MediaFoundationDeviceFrameSource(videoConfig);
