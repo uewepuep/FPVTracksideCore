@@ -20,12 +20,12 @@ namespace WindowsMediaPlatform.MediaFoundation
 {
     public class MediaFoundationCaptureFrameSource : MediaFoundationDeviceFrameSource, ICaptureFrameSource
     {
-        private IMFSinkWriter writer;
-        private int sink_stream;
+        protected IMFSinkWriter writer;
+        protected int sink_stream;
 
-        private MediaFoundationTransform encoder;
+        protected MediaFoundationTransform encoder;
 
-        public string Filename { get; private set; }
+        public string Filename { get; protected set; }
 
         public FrameTime[] FrameTimes
         {
@@ -40,21 +40,21 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         public bool RecordNextFrameTime { get; set; }
 
-        private List<FrameTime> frameTimes;
+        protected List<FrameTime> frameTimes;
 
-        private int receivedFrameCount;
+        protected int receivedFrameCount;
 
-        private TimeSpan receivedDuration;
-        private TimeSpan recordingTargetLength;
+        protected TimeSpan receivedDuration;
+        protected TimeSpan recordingTargetLength;
 
-        private bool flushing;
+        protected bool flushing;
 
-        private TimeSpan firstSampleTime;
+        protected TimeSpan firstSampleTime;
 
-        private object writerLocker;
-        private bool hasBegun;
+        protected object writerLocker;
+        protected bool hasBegun;
 
-        private IMFMediaType encoderOutputType;
+        protected IMFMediaType encoderOutputType;
 
         public enum FileFormats
         {
@@ -64,7 +64,7 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         public FileFormats FileFormat { get; set; }
 
-        private bool passthroughCompressed;
+        protected bool passthroughCompressed;
 
         public bool ManualRecording { get; set; }
 
@@ -85,7 +85,7 @@ namespace WindowsMediaPlatform.MediaFoundation
             passthroughCompressed = false;
         }
 
-        public void StartRecording(string filename)
+        public virtual void StartRecording(string filename)
         {
             IMFMediaType format = null;
             try
@@ -161,6 +161,8 @@ namespace WindowsMediaPlatform.MediaFoundation
 
                         hr = writer.SetInputMediaType(sink_stream, format, null);
                         MFError.ThrowExceptionForHR(hr);
+
+                        MFHelper.LogSinkWriterTransforms(this, writer, sink_stream);
 
                         Recording = true;
                         RecordNextFrameTime = true;
@@ -280,7 +282,7 @@ namespace WindowsMediaPlatform.MediaFoundation
             return hr;
         }
 
-        private TimeSpan CalculateSampleTime(IMFSample sample)
+        protected TimeSpan CalculateSampleTime(IMFSample sample)
         {
             receivedFrameCount++;
 
@@ -334,7 +336,7 @@ namespace WindowsMediaPlatform.MediaFoundation
             base.ProcessImage();
         }
 
-        private HResult WriteSample(IMFSample sample)
+        protected HResult WriteSample(IMFSample sample)
         {
             HResult hr = HResult.S_OK;
 
@@ -425,7 +427,7 @@ namespace WindowsMediaPlatform.MediaFoundation
             return hr;
         }
 
-        private void CreateEncoder()
+        protected virtual void CreateEncoder()
         {
             int height = VideoConfig.RecordResolution;
             int width = GetWidth(encoderOutputType, height);

@@ -2,6 +2,7 @@
 using ImageServer;
 using MediaFoundation;
 using MediaFoundation.Misc;
+using MediaFoundation.ReadWrite;
 using MediaFoundation.Transform;
 using Microsoft.Xna.Framework.Graphics;
 using SharpDX.MediaFoundation;
@@ -20,6 +21,34 @@ namespace WindowsMediaPlatform.MediaFoundation
         public static bool Succeeded(HResult hr) { return COMBase.Succeeded(hr); }
         public static bool Failed(HResult hr) { return COMBase.Failed(hr); }
         public static void SafeRelease(object o) { COMBase.SafeRelease(o); }
+
+        public static void LogSinkWriterTransforms(object caller, IMFSinkWriter writer, int streamIndex)
+        {
+            IMFSinkWriterEx writerEx = writer as IMFSinkWriterEx;
+            if (writerEx == null)
+                return;
+
+            for (int i = 0; ; i++)
+            {
+                IMFTransform transform;
+                Guid category;
+                HResult hr = writerEx.GetTransformForStream(streamIndex, i, out category, out transform);
+                if (Failed(hr))
+                    break;
+
+                IMFAttributes attribs;
+                if (Succeeded(transform.GetAttributes(out attribs)))
+                {
+                    string name;
+                    MFExtern.MFGetAttributeString(attribs, MFAttributesClsid.MFT_FRIENDLY_NAME_Attribute, out name);
+                    if (name != null)
+                        Tools.Logger.VideoLog.Log(caller, "Sink writer transform: " + name);
+                    SafeRelease(attribs);
+                }
+
+                SafeRelease(transform);
+            }
+        }
 
 
         public static FrameSource.Directions GetDirection(Guid subtype)
