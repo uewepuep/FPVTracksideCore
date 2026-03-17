@@ -35,7 +35,10 @@ namespace WindowsMediaPlatform.MediaFoundation
             }
             else if (videoConfig.RecordVideoForReplays || videoConfig.HasPhotoBooth)
             {
-                return new MediaFoundationCaptureFrameSourceHW(videoConfig);
+                if (GraphicsDevice != null)
+                    return new MediaFoundationCaptureFrameSourceDX(videoConfig, GraphicsDevice);
+                else
+                    return new MediaFoundationCaptureFrameSourceHW(videoConfig);
             }
             else if (GraphicsDevice != null)
             {

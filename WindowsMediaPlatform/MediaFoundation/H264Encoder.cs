@@ -169,7 +169,7 @@ namespace WindowsMediaPlatform.MediaFoundation
             }
         }
 
-        private static int GetBitRate(int width, int height, int frameRate)
+        public static int GetBitRate(int width, int height, int frameRate)
         {
             int goodBitrate = 12000000;
             int goodPixelCount = 1280 * 720 * 30;

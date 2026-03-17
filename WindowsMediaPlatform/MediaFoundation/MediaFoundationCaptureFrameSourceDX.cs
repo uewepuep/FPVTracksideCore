@@ -1,30 +1,43 @@
 using ImageServer;
 using MediaFoundation;
-using MediaFoundation.Alt;
 using MediaFoundation.Misc;
-using MediaFoundation.ReadWrite;
 using Microsoft.Xna.Framework.Graphics;
 using SharpDX;
 using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
+using SharpDX.MediaFoundation;
 using System;
 using Tools;
 
 namespace WindowsMediaPlatform.MediaFoundation
 {
-    // Extends MediaFoundationDeviceFrameSource with a D3D11 display path that skips
-    // the SetData upload on the render side.
+    // Extends MediaFoundationCaptureFrameSourceHW with a D3D11 display path.
     //
-    // Frames travel: CPU (MF decode + AVP colour-convert) → UpdateSubresource → GPU (D3D11 texture).
-    // AVP gives us RGB32 in system memory; UpdateSubresource pushes that directly into
-    // a pre-allocated D3D11 texture pool without an intermediate byte[] allocation.
-    // The render side reads pool textures directly — no SetData upload.
-    public class MediaFoundationFrameSourceDX : MediaFoundationDeviceFrameSource, IMFSourceReaderCallback2
+    // The source reader is created with MF_SOURCE_READER_D3D_MANAGER so that
+    // hardware decoders (DXVA) can deliver D3D-backed NV12 surfaces directly
+    // into the NVENC sink writer — zero CPU involvement on the recording path.
+    //
+    // For display, colorProcessor colour-converts NV12/YUY2 → RGB32 in system
+    // memory (same as the base class), but the result is pushed via
+    // UpdateSubresource into a pre-allocated D3D11 texture pool instead of
+    // going through Texture2D.SetData.  The render side reads pool textures
+    // directly, eliminating the SetData staging-buffer upload.
+    //
+    // Frame path (display):
+    //   DXVA/camera → colorProcessor (CPU VP) → UpdateSubresource → Texture2DDX pool → render
+    // Frame path (recording):
+    //   DXVA/camera → D3D NV12 sample → IMFSinkWriter → NVENC (zero-copy)
+    public class MediaFoundationCaptureFrameSourceDX : MediaFoundationCaptureFrameSourceHW
     {
+        // {ec822da2-e1e9-4b29-a0d8-563c719f5269}
+        private static readonly Guid MF_SOURCE_READER_D3D_MANAGER =
+            new Guid("ec822da2-e1e9-4b29-a0d8-563c719f5269");
+
         private readonly Microsoft.Xna.Framework.Graphics.GraphicsDevice graphicsDevice;
+        private DXGIDeviceManager dxgiManager;
         private XBuffer<Texture2DDX> dxTextures;
 
-        public MediaFoundationFrameSourceDX(VideoConfig videoConfig, Microsoft.Xna.Framework.Graphics.GraphicsDevice graphicsDevice)
+        public MediaFoundationCaptureFrameSourceDX(VideoConfig videoConfig, Microsoft.Xna.Framework.Graphics.GraphicsDevice graphicsDevice)
             : base(videoConfig)
         {
             this.graphicsDevice = graphicsDevice;
@@ -33,9 +46,12 @@ namespace WindowsMediaPlatform.MediaFoundation
             // UpdateSubresource safely while the render thread uses the same context.
             DeviceMultithread mt = graphicsDevice.GetSharpDXDevice().QueryInterface<DeviceMultithread>();
             mt.SetMultithreadProtected(true);
+
+            dxgiManager = new DXGIDeviceManager();
+            dxgiManager.ResetDevice(graphicsDevice.GetSharpDXDevice());
         }
 
-        // --- Reader creation: AVP only, no D3D manager ---
+        // --- Reader creation: same as base but with D3D manager ---
 
         protected override HResult CreateReader(IMFMediaSource pSource)
         {
@@ -44,19 +60,22 @@ namespace WindowsMediaPlatform.MediaFoundation
 
             try
             {
-                hr = MFExtern.MFCreateAttributes(out pAttributes, 4);
+                hr = MFExtern.MFCreateAttributes(out pAttributes, 5);
                 MFError.ThrowExceptionForHR(hr);
 
                 hr = pAttributes.SetUINT32(MFAttributesClsid.MF_SOURCE_READER_ENABLE_VIDEO_PROCESSING, 0);
                 MFError.ThrowExceptionForHR(hr);
 
+                hr = pAttributes.SetUINT32(MFAttributesClsid.MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, 1);
+                MFError.ThrowExceptionForHR(hr);
+
                 hr = pAttributes.SetUINT32(MFAttributesClsid.MF_SOURCE_READER_DISABLE_DXVA, 0);
                 MFError.ThrowExceptionForHR(hr);
 
-                // AVP inserts a software Video Processor MFT that colour-converts the
-                // decoder's native YUV to the RGB32 we request in system memory.
-                // No D3D manager needed — the output lands in a plain IMFMediaBuffer.
-                hr = pAttributes.SetUINT32(MFAttributesClsid.MF_SOURCE_READER_ENABLE_ADVANCED_VIDEO_PROCESSING, 1);
+                // Pass the D3D device manager so hardware decoders (DXVA) can output
+                // D3D-backed NV12 surfaces.  These are fed directly to NVENC in WriteSample,
+                // keeping the recording path entirely on the GPU.
+                hr = pAttributes.SetUnknown(MF_SOURCE_READER_D3D_MANAGER, dxgiManager);
                 MFError.ThrowExceptionForHR(hr);
 
                 if (ASync)
@@ -82,97 +101,33 @@ namespace WindowsMediaPlatform.MediaFoundation
             return HResult.E_FAIL;
         }
 
-        // --- Reader setup: ask for RGB32 output, allocate the D3D texture pool ---
+        // --- Reader setup: allocate D3D texture pool after base wires colorProcessor ---
+        // base.SetupReader() calls SetupTransforms() which does:
+        //   colorProcessor = new ColorProcessor(outputType, RGB32);
+        //   colorProcessor.Output = ProcessRGBSample;   ← virtual dispatch → our override
+        // So we just need to allocate dxTextures here; the routing is automatic.
 
         protected override HResult SetupReader()
         {
-            HResult hr;
-            IMFMediaType currentType = null;
-            IMFMediaType outputType = null;
+            HResult hr = base.SetupReader();
+            if (!MFHelper.Succeeded(hr))
+                return hr;
 
-            try
-            {
-                readerAsync = (IMFSourceReaderAsync)reader;
+            Texture2DDX[] pool = new Texture2DDX[5];
+            for (int i = 0; i < pool.Length; i++)
+                pool[i] = new Texture2DDX(graphicsDevice, FrameWidth, FrameHeight, FrameFormat);
 
-                // Tell the reader we want RGB32 output. AVP inserts the Video Processor MFT
-                // which colour-converts YUV→RGB32 in system memory.
-                AutomaticVideoConversion = true;
-                hr = SetupTransforms(out currentType, out outputType);
-                MFError.ThrowExceptionForHR(hr);
+            dxTextures = new XBuffer<Texture2DDX>(pool);
 
-                Guid currentSubType;
-                hr = currentType.GetGUID(MFAttributesClsid.MF_MT_SUBTYPE, out currentSubType);
-                MFError.ThrowExceptionForHR(hr);
+            Logger.VideoLog.Log(this, VideoConfig.DeviceName, "DX capture path  Width: " + FrameWidth + " Height: " + FrameHeight);
 
-                int w, h;
-                hr = MFExtern.MFGetAttributeSize(outputType, MFAttributesClsid.MF_MT_FRAME_SIZE, out w, out h);
-                MFError.ThrowExceptionForHR(hr);
-
-                // Determine scanline order from the output stride attribute.
-                // Positive stride = bottom-up (GDI/MF convention); negative = top-down.
-                int stride = MFExtern.MFGetAttributeUINT32(outputType, MFAttributesClsid.MF_MT_DEFAULT_STRIDE, 0);
-                Direction = (stride < 0) ? Directions.TopDown : Directions.BottomUp;
-
-                string format = MFHelper.GetFormat(currentSubType);
-                Logger.VideoLog.Log(this, VideoConfig.DeviceName, "D3D path  Width: " + w + " Height: " + h + " Format: " + format + " Direction: " + Direction);
-
-                // Pre-allocate a pool of D3D11-backed XNA textures that match MF's output
-                // format (SurfaceFormat.Bgr32 = DXGI_FORMAT_B8G8R8X8_UNORM).
-                Texture2DDX[] pool = new Texture2DDX[5];
-                for (int i = 0; i < pool.Length; i++)
-                    pool[i] = new Texture2DDX(graphicsDevice, w, h, FrameFormat);
-
-                dxTextures = new XBuffer<Texture2DDX>(pool);
-
-                return HResult.S_OK;
-            }
-            catch (Exception e)
-            {
-                Logger.VideoLog.LogException(this, e);
-                Logger.VideoLog.Log(this, "Type: ", MFDump.DumpAttribs(outputType));
-            }
-            finally
-            {
-                MFHelper.SafeRelease(currentType);
-                MFHelper.SafeRelease(outputType);
-            }
-
-            return HResult.E_FAIL;
-        }
-
-        // --- IMFSourceReaderCallback2: required when using AVP in async mode ---
-
-        public HResult OnTransformChange()
-        {
             return HResult.S_OK;
         }
 
-        public HResult OnStreamError(int dwStreamIndex, HResult hrStatus)
-        {
-            Logger.VideoLog.Log(this, "OnStreamError", "stream=" + dwStreamIndex + " hr=" + hrStatus);
-            return HResult.S_OK;
-        }
-
-        // --- Async callback: log status so we can diagnose pipeline failures ---
-
-        public override HResult OnReadSample(HResult hrStatus, int dwStreamIndex, MF_SOURCE_READER_FLAG dwStreamFlags, long timestep, IMFSample sample)
-        {
-            if (MFHelper.Failed(hrStatus))
-            {
-                Logger.VideoLog.Log(this, "OnReadSample failed", "hr=" + hrStatus + " flags=" + dwStreamFlags);
-            }
-            else if (sample == null)
-            {
-                Logger.VideoLog.Log(this, "OnReadSample no sample", "flags=" + dwStreamFlags);
-            }
-
-            return base.OnReadSample(hrStatus, dwStreamIndex, dwStreamFlags, timestep, sample);
-        }
-
-        // --- Frame processing: UpdateSubresource with locked buffer pointer ---
-        // AVP gives us RGB32 in system memory. We lock the IMFMediaBuffer to get the
-        // raw IntPtr and call UpdateSubresource directly — no byte[] intermediate,
-        // one DMA transfer straight into the pooled D3D11 texture.
+        // --- Frame processing: UpdateSubresource from CPU RGB32 into D3D texture pool ---
+        // colorProcessor outputs RGB32 in system memory and calls this via its Output delegate.
+        // We lock the buffer to get the raw pointer and call UpdateSubresource directly —
+        // no byte[] intermediate, one DMA transfer straight into the pooled D3D11 texture.
 
         protected override HResult ProcessRGBSample(IMFSample sample)
         {
@@ -258,8 +213,9 @@ namespace WindowsMediaPlatform.MediaFoundation
             base.CleanUp();
 
             oldDxTextures?.Dispose();
+
+            dxgiManager?.Dispose();
+            dxgiManager = null;
         }
-
-
     }
 }
