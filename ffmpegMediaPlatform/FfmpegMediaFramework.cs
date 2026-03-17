@@ -233,9 +233,16 @@ namespace FfmpegMediaPlatform
             }
             else
             {
-                // Live camera capture via ffmpeg process with HLS composite
-                Tools.Logger.VideoLog.LogDebugCall(this, $"PLAYBACK PATH: Live capture via ffmpeg (HLS composite) → {vc.DeviceName}");
-                return new FfmpegHlsCompositeFrameSource(this, vc);
+                if (dshow)
+                {
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"PLAYBACK PATH: Live capture via ffmpeg (dshow) → {vc.DeviceName}");
+                    return new FfmpegDshowFrameSource(this, vc);
+                }
+                else
+                {
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"PLAYBACK PATH: Live capture via ffmpeg (avfoundation) → {vc.DeviceName}");
+                    return new FfmpegAvFoundationFrameSource(this, vc);
+                }
             }
         }
 

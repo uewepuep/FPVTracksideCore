@@ -19,27 +19,14 @@ namespace FfmpegMediaPlatform
 
         public override IEnumerable<Mode> GetModes()
         {
-            Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG GetModes() called - querying actual camera capabilities for '{VideoConfig.DeviceName}'");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG GetModes() called for '{VideoConfig.DeviceName}'");
             List<Mode> supportedModes = new List<Mode>();
-            
+
             try
             {
                 string ffmpegListCommand = "-list_options true -f dshow -i video=\"" + VideoConfig.DeviceName + "\"";
-                Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG COMMAND (list camera modes): ffmpeg {ffmpegListCommand}");
-                
-                // Get all FFmpeg output lines for debugging
-                IEnumerable<string> allLines = ffmpegMediaFramework.GetFfmpegText(ffmpegListCommand, null);
-                Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG DEBUG: All output lines count: {allLines.Count()}");
-                foreach (string line in allLines)
-                {
-                    if (line.Contains("vcodec=") || line.Contains("pixel_format="))
-                    {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG DEBUG: Found format line: {line}");
-                    }
-                }
-                
+
                 IEnumerable<string> modes = ffmpegMediaFramework.GetFfmpegText(ffmpegListCommand, l => l.Contains("pixel_format") || l.Contains("vcodec="));
-                Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG DEBUG: Filtered modes count: {modes.Count()}");
 
                 int index = 0;
                 var parsedModes = new List<(string format, int width, int height, float fps, int priority)>();
@@ -47,8 +34,6 @@ namespace FfmpegMediaPlatform
                 // Parse all modes and assign priorities
                 foreach (string format in modes)
                 {
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG OUTPUT: {format}");
-                    
                     // Try vcodec first (preferred formats like h264, mjpeg)
                     string videoFormat = ffmpegMediaFramework.GetValue(format, "vcodec");
                     int priority = 1; // Default priority for vcodec formats
@@ -81,18 +66,11 @@ namespace FfmpegMediaPlatform
                     float minFps = 0, maxFps = 0;
                     var fpsMatches = System.Text.RegularExpressions.Regex.Matches(format, @"fps=([\d.]+)");
                     
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG DEBUG: Found {fpsMatches.Count} fps matches in: {format}");
-                    for (int i = 0; i < fpsMatches.Count; i++)
-                    {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG DEBUG: Match {i}: {fpsMatches[i].Groups[1].Value}");
-                    }
-                    
                     if (fpsMatches.Count >= 2)
                     {
                         // New format with min and max fps (e.g., "min s=1920x1080 fps=25 max s=1920x1080 fps=60.0002")
                         float.TryParse(fpsMatches[0].Groups[1].Value, out minFps);
                         float.TryParse(fpsMatches[1].Groups[1].Value, out maxFps);
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG DEBUG: Parsed minFps={minFps}, maxFps={maxFps}");
                     }
                     else if (fpsMatches.Count == 1)
                     {
@@ -137,13 +115,11 @@ namespace FfmpegMediaPlatform
                         
                         // Always add the min and max fps
                         supportedFrameRates.Add(minFps);
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG DEBUG: Added minFps: {minFps}");
                         if (maxFps > minFps)
                         {
                             supportedFrameRates.Add(maxFps);
-                            Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG DEBUG: Added maxFps: {maxFps}");
                         }
-                        
+
                         // Add common frame rates within the range
                         var commonRates = new float[] { 24, 25, 29.97f, 30, 50, 59.94f, 60 };
                         foreach (var rate in commonRates)
@@ -151,19 +127,16 @@ namespace FfmpegMediaPlatform
                             if (rate > minFps && rate < maxFps)
                             {
                                 supportedFrameRates.Add(rate);
-                                Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG DEBUG: Added common rate: {rate}");
                             }
                         }
-                        
+
                         // Remove duplicates and sort
                         supportedFrameRates = supportedFrameRates.Distinct().OrderBy(f => f).ToList();
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG DEBUG: Final supported frame rates: [{string.Join(", ", supportedFrameRates)}]");
-                        
+
                         // Add all supported frame rates as separate modes
                         foreach (var fps in supportedFrameRates)
                         {
                             parsedModes.Add((videoFormat, width, height, fps, priority));
-                            Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG ✓ PARSED MODE: {width}x{height}@{fps}fps ({videoFormat}) (Priority {priority}) [Range: {minFps}-{maxFps}]");
                         }
                     }
                 }
@@ -180,24 +153,10 @@ namespace FfmpegMediaPlatform
                 {
                     var videoMode = new Mode { Format = mode.format, Width = mode.width, Height = mode.height, FrameRate = mode.fps, FrameWork = FrameWork.FFmpeg, Index = index };
                     supportedModes.Add(videoMode);
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG ✓ ADDED MODE: {mode.width}x{mode.height}@{mode.fps}fps ({mode.format}) (Index {index}, Priority {mode.priority})");
                     index++;
                 }
-                
-                Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Camera capability detection complete: {supportedModes.Count} supported modes found");
-                
-                if (supportedModes.Count == 0)
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, "FFMPEG WARNING: No supported modes detected for camera!");
-                }
-                else
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Final supported modes for '{VideoConfig.DeviceName}':");
-                    foreach (var mode in supportedModes.OrderBy(m => m.Width * m.Height).ThenBy(m => m.FrameRate))
-                    {
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG   - {mode.Width}x{mode.Height}@{mode.FrameRate}fps");
-                    }
-                }
+
+                Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG GetModes() complete: {supportedModes.Count} modes for '{VideoConfig.DeviceName}'");
             }
             catch (Exception ex)
             {
@@ -306,7 +265,7 @@ namespace FfmpegMediaPlatform
                                 $"-video_size {VideoConfig.VideoMode.Width}x{VideoConfig.VideoMode.Height} " +
                                 $"{inputFormatArgs}" +
                                 $"{decoderCodec}" +
-                                $"-rtbufsize 2M " +
+                                $"-rtbufsize 512M " +
                                 $"-i video=\"{name}\" " +
                                 $"-fflags nobuffer+fastseek+flush_packets " +
                                 $"-flags low_delay " +
@@ -320,7 +279,7 @@ namespace FfmpegMediaPlatform
                                 $"-probesize 32 " +
                                 $"-analyzeduration 0 " +
                                 $"-an " +
-                                $"-filter_complex \"[0:v]{filterPrefix}{videoFilter}split=2[out1][out2];[out1]format=rgba[outpipe];[out2]null[outnull]\" " +
+                                $"-filter_complex \"[0:v]{filterPrefix}{videoFilter}format=rgba[outpipe]\" " +
                                 $"-map \"[outpipe]\" -f rawvideo pipe:1";
 
                 Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Windows Live Mode ({format}, filters: {videoFilter}) HW Accel: {VideoConfig.HardwareDecodeAcceleration}: {ffmpegArgs}");

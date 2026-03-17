@@ -53,13 +53,14 @@ namespace WindowsMediaPlatform.MediaFoundation
         {
 
             List<IMFMediaType> mediaTypes = new List<IMFMediaType>();
-            for (int i = 0; reader != null; i++)
+            if (reader == null)
+                return mediaTypes.ToArray();
+
+            for (int i = 0; ; i++)
             {
                 IMFMediaType pType = GetNativeMediaType(i);
                 if (pType == null)
-                {
                     break;
-                }
                 mediaTypes.Add(pType);
             }
 

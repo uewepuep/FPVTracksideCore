@@ -289,7 +289,6 @@ namespace WindowsMediaPlatform.DirectShow
                     FrameProcessNumber++;
 
                     long sampleTicks = (long)(sampleTime * 10000000);
-                    sampleTime = sampleTicks;
 
                     frame.SetData(buffer, sampleTicks, FrameProcessNumber);
                     rawTextures.WriteOne(frame);

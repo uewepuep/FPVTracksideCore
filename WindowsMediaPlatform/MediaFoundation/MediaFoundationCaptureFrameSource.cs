@@ -220,7 +220,7 @@ namespace WindowsMediaPlatform.MediaFoundation
                     }
                 }
 
-                encoder.Dispose();
+                encoder?.Dispose();
                 encoder = null;
             }
             catch (Exception e)
