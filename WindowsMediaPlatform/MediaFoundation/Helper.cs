@@ -141,6 +141,29 @@ namespace WindowsMediaPlatform.MediaFoundation
             return hr;
         }
 
+        // Locks an MF media buffer, calls UpdateSubresource to DMA the RGB32 pixels directly
+        // into a pooled D3D11 texture, then unlocks.  Avoids the staging-buffer round-trip
+        // that Texture2D.SetData incurs.
+        public static void UpdateSubresource(Microsoft.Xna.Framework.Graphics.GraphicsDevice graphicsDevice, IMFMediaBuffer buffer, Texture2DDX destTexture, int frameWidth)
+        {
+            IntPtr dataPtr;
+            int maxLength;
+            int currentLength;
+
+            HResult hr = buffer.Lock(out dataPtr, out maxLength, out currentLength);
+            MFError.ThrowExceptionForHR(hr);
+            try
+            {
+                int rowPitch = frameWidth * 4; // BGRA/BGRX = 4 bytes per pixel
+                var dataBox = new SharpDX.DataBox(dataPtr, rowPitch, 0);
+                graphicsDevice.GetSharpDXDevice().ImmediateContext.UpdateSubresource(dataBox, destTexture.SharpDXTexture2D, 0);
+            }
+            finally
+            {
+                buffer.Unlock();
+            }
+        }
+
         public static void CreateD3DSample(Texture2D texture, out IMFMediaBuffer buffer)
         {
             FieldInfo type = texture.GetType().GetField("_texture", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);

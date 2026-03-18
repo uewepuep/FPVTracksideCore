@@ -176,7 +176,7 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         protected override HResult ProcessRGBSample(IMFSample sample)
         {
-            var currentDxTextures = dxTextures;
+            XBuffer<Texture2DDX> currentDxTextures = dxTextures;
             if (currentDxTextures == null)
                 return base.ProcessRGBSample(sample);
 
@@ -202,18 +202,7 @@ namespace WindowsMediaPlatform.MediaFoundation
                     int maxLength;
                     int currentLength;
 
-                    hr = buffer.Lock(out dataPtr, out maxLength, out currentLength);
-                    MFError.ThrowExceptionForHR(hr);
-                    try
-                    {
-                        int rowPitch = FrameWidth * 4; // BGRA/BGRX = 4 bytes per pixel
-                        var dataBox = new DataBox(dataPtr, rowPitch, 0);
-                        graphicsDevice.GetSharpDXDevice().ImmediateContext.UpdateSubresource(dataBox, destTexture.SharpDXTexture2D, 0);
-                    }
-                    finally
-                    {
-                        buffer.Unlock();
-                    }
+                    MFHelper.UpdateSubresource(graphicsDevice, buffer, destTexture, FrameWidth);
 
                     destTexture.FrameProcessCount = FrameProcessNumber;
                     destTexture.FrameSampleTime = sampleTime;
@@ -233,7 +222,7 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         public override bool UpdateTexture(Microsoft.Xna.Framework.Graphics.GraphicsDevice gd, int drawFrameCount, ref Microsoft.Xna.Framework.Graphics.Texture2D texture2D)
         {
-            var currentDxTextures = dxTextures;
+            XBuffer<Texture2DDX> currentDxTextures = dxTextures;
             if (currentDxTextures == null)
                 return base.UpdateTexture(gd, drawFrameCount, ref texture2D);
 
@@ -252,7 +241,7 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         public override void CleanUp()
         {
-            var oldDxTextures = dxTextures;
+            XBuffer<Texture2DDX> oldDxTextures = dxTextures;
             dxTextures = null;
 
             base.CleanUp();
