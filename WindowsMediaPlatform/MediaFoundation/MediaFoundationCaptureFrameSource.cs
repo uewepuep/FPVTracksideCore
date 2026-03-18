@@ -252,6 +252,9 @@ namespace WindowsMediaPlatform.MediaFoundation
                 encoder = null;
             }
 
+            MFHelper.SafeRelease(encoderOutputType);
+            encoderOutputType = null;
+
             base.CleanUp();
         }
 

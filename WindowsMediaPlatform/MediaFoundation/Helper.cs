@@ -16,8 +16,12 @@ using System.Threading.Tasks;
 
 namespace WindowsMediaPlatform.MediaFoundation
 {
-    public class MFHelper 
+    public class MFHelper
     {
+        // {ec822da2-e1e9-4b29-a0d8-563c719f5269}
+        public static readonly Guid MF_SOURCE_READER_D3D_MANAGER =
+            new Guid("ec822da2-e1e9-4b29-a0d8-563c719f5269");
+
         public static bool Succeeded(HResult hr) { return COMBase.Succeeded(hr); }
         public static bool Failed(HResult hr) { return COMBase.Failed(hr); }
         public static void SafeRelease(object o) { COMBase.SafeRelease(o); }
