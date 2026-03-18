@@ -2,6 +2,7 @@ using ImageServer;
 using MediaFoundation;
 using MediaFoundation.Misc;
 using Microsoft.Xna.Framework.Graphics;
+using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.MediaFoundation;
 using System;
