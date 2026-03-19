@@ -114,7 +114,7 @@ namespace WindowsMediaPlatform.MediaFoundation
 
             int index = 0;
 
-            foreach (Guid st in MediaFoundationCaptureFrameSource.RecordingSubTypes())
+            foreach (Guid st in MFSinkWriterRecorder.RecordingSubTypes())
             {
                 if (st == subTypeId)
                 {
