@@ -49,7 +49,7 @@ namespace UI.Sponsor
                     break;
             }
 
-            if (!string.IsNullOrEmpty(sponsor.Text))
+            if (soundManager!= null && !string.IsNullOrEmpty(sponsor.Text))
             {
                 soundManager.SponsorRead(sponsor.Text, TimeSpan.FromSeconds(sponsor.DurationSeconds));
             }
