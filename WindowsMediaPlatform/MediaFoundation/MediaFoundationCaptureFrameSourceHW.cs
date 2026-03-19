@@ -3,7 +3,6 @@ using MediaFoundation;
 using MediaFoundation.Alt;
 using MediaFoundation.Misc;
 using MediaFoundation.ReadWrite;
-using SharpDX;
 using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.MediaFoundation;
@@ -15,31 +14,27 @@ namespace WindowsMediaPlatform.MediaFoundation
 {
     // Extends MediaFoundationCaptureFrameSource with hardware H264 encoding.
     // Feeds raw NV12 directly to the IMFSinkWriter with MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS,
-    // so the sink writer drives NVENC/Quick Sync/AMF internally and handles async MFT complexity.
+    // so the sink writer drives NVENC/Quick Sync/AMF internally.
     // Falls back to the base (software) StartRecording if hardware setup fails.
     //
-    // When constructed with a GraphicsDevice, also activates a D3D11 display path:
-    //   DXVA/camera → colorProcessor (CPU VP) → UpdateSubresource → Texture2DDX pool → render
-    //   DXVA/camera → D3D NV12 sample → IMFSinkWriter → NVENC (zero-copy recording)
-    // The DX display methods (ProcessRGBSample, UpdateTexture, CleanUp for dxTextures) are
-    // inherited from MediaFoundationDeviceFrameSource.
+    // Display path is inherited from MediaFoundationDeviceFrameSource:
+    //   DXVA decode → D3D NV12 → D3D11VideoProcessor (GPU blit) → Texture2DDX pool → render
+    // Recording path:
+    //   D3D NV12 sample → IMFSinkWriter → NVENC (zero-copy GPU→GPU)
     public class MediaFoundationCaptureFrameSourceHW : MediaFoundationCaptureFrameSource
     {
-        private DXGIDeviceManager dxgiManager;
-
         public MediaFoundationCaptureFrameSourceHW(VideoConfig videoConfig)
             : base(videoConfig)
         {
         }
 
-        // DX constructor: enables D3D11 display path + D3D manager for zero-copy recording.
+        // DX constructor: sets graphicsDevice + D3D manager so the inherited CreateReader/SetupReader
+        // activate the unified GPU display path (D3D11VideoProcessor) and NVENC recording.
         public MediaFoundationCaptureFrameSourceHW(VideoConfig videoConfig, Microsoft.Xna.Framework.Graphics.GraphicsDevice graphicsDevice)
             : base(videoConfig)
         {
             this.graphicsDevice = graphicsDevice;
 
-            // Enable D3D11 multithread protection so the MF callback thread can call
-            // UpdateSubresource safely while the render thread uses the same context.
             DeviceMultithread mt = graphicsDevice.GetSharpDXDevice().QueryInterface<DeviceMultithread>();
             mt.SetMultithreadProtected(true);
 
@@ -47,68 +42,10 @@ namespace WindowsMediaPlatform.MediaFoundation
             dxgiManager.ResetDevice(graphicsDevice.GetSharpDXDevice());
         }
 
-        // --- Reader creation: same as base but with D3D manager for hardware decode ---
-        // Falls back to the base (non-DX) CreateReader when graphicsDevice is null.
-
-        protected override HResult CreateReader(IMFMediaSource pSource)
-        {
-            if (graphicsDevice == null)
-                return base.CreateReader(pSource);
-
-            HResult hr;
-            IMFAttributes pAttributes = null;
-
-            try
-            {
-                hr = MFExtern.MFCreateAttributes(out pAttributes, 5);
-                MFError.ThrowExceptionForHR(hr);
-
-                hr = pAttributes.SetUINT32(MFAttributesClsid.MF_SOURCE_READER_ENABLE_VIDEO_PROCESSING, 0);
-                MFError.ThrowExceptionForHR(hr);
-
-                hr = pAttributes.SetUINT32(MFAttributesClsid.MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, 1);
-                MFError.ThrowExceptionForHR(hr);
-
-                hr = pAttributes.SetUINT32(MFAttributesClsid.MF_SOURCE_READER_DISABLE_DXVA, 0);
-                MFError.ThrowExceptionForHR(hr);
-
-                // Pass the D3D device manager so hardware decoders (DXVA) can output
-                // D3D-backed NV12 surfaces.  These are fed directly to NVENC in WriteSample,
-                // keeping the recording path entirely on the GPU.
-                hr = pAttributes.SetUnknown(MFHelper.MF_SOURCE_READER_D3D_MANAGER, dxgiManager);
-                MFError.ThrowExceptionForHR(hr);
-
-                if (ASync)
-                {
-                    hr = pAttributes.SetUnknown(MFAttributesClsid.MF_SOURCE_READER_ASYNC_CALLBACK, this);
-                    MFError.ThrowExceptionForHR(hr);
-                }
-
-                hr = MFExtern.MFCreateSourceReaderFromMediaSource(pSource, pAttributes, out reader);
-                MFError.ThrowExceptionForHR(hr);
-
-                return SetupReader();
-            }
-            catch (Exception e)
-            {
-                Logger.VideoLog.LogException(this, e);
-            }
-            finally
-            {
-                MFHelper.SafeRelease(pAttributes);
-            }
-
-            return HResult.E_FAIL;
-        }
-
-        // --- Reader setup: allocate D3D texture pool after SetupTransforms wires colorProcessor ---
-        // Does NOT call base.SetupReader() — skips rawTextures allocation.
-        // Falls back to base chain when graphicsDevice is null.
-        //
-        // AutomaticVideoConversion stays false so SetupTransforms creates colorProcessor
-        // (NV12/YUV → RGB32 in system memory via CPU VP). colorProcessor.Output is set
-        // to ProcessRGBSample via virtual dispatch → DeviceFrameSource.ProcessRGBSample
-        // which calls UpdateSubresource into the dxTextures pool.
+        // --- Reader setup: same as DeviceFrameSource but outputType must not be released ---
+        // CaptureFrameSource.SetupTransforms stores outputType as encoderOutputType, which
+        // must stay alive until StartRecording. Cannot call base.SetupReader() because it
+        // releases outputType in its finally block.
 
         protected override HResult SetupReader()
         {
@@ -123,7 +60,6 @@ namespace WindowsMediaPlatform.MediaFoundation
             {
                 readerAsync = (IMFSourceReaderAsync)reader;
 
-                // AutomaticVideoConversion remains false — SetupTransforms creates colorProcessor.
                 hr = SetupTransforms(out currentType, out outputType);
                 MFError.ThrowExceptionForHR(hr);
 
@@ -150,12 +86,16 @@ namespace WindowsMediaPlatform.MediaFoundation
 
                 dxTextures = new XBuffer<Texture2DDX>(pool);
 
+                d3d11VideoProcessor = new D3D11VideoProcessor(graphicsDevice.GetSharpDXDevice(), FrameWidth, FrameHeight);
+                SetupStagingTexture(outputSubType);
+
+                Logger.VideoLog.Log(this, VideoConfig.DeviceName, "SetupReader complete");
                 return HResult.S_OK;
             }
             catch (Exception e)
             {
                 Logger.VideoLog.LogException(this, e);
-                Logger.VideoLog.Log(this, "Type: ", MFDump.DumpAttribs(outputType));
+                Logger.VideoLog.Log(this, "SetupReader failed", MFDump.DumpAttribs(outputType));
             }
             finally
             {
@@ -281,11 +221,11 @@ namespace WindowsMediaPlatform.MediaFoundation
             }
         }
 
-        // --- Frame delivery: write NV12 directly to sink writer ---
+        // --- Frame delivery: display via inherited D3D11VideoProcessor, record via NVENC ---
 
         protected override HResult ProcessUncompressed(IMFSample sample)
         {
-            // Call base for display side (colorProcessor, NotifyReceivedFrame).
+            // Base handles display: D3D11VideoProcessor GPU blit (or colorProcessor fallback).
             // encoder is null so the base recording path is skipped.
             HResult hr = base.ProcessUncompressed(sample);
 
@@ -297,16 +237,6 @@ namespace WindowsMediaPlatform.MediaFoundation
             }
 
             return hr;
-        }
-
-        // --- Cleanup ---
-
-        public override void CleanUp()
-        {
-            dxgiManager?.Dispose();
-            dxgiManager = null;
-
-            base.CleanUp();
         }
     }
 }

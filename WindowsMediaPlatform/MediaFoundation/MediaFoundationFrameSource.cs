@@ -130,6 +130,11 @@ namespace WindowsMediaPlatform.MediaFoundation
         {
             HResult hr = hrStatus;
 
+            if (MFHelper.Failed(hrStatus) || sample == null)
+            {
+                Logger.VideoLog.Log(this, "OnReadSample", "hrStatus=" + hrStatus + " flags=" + dwStreamFlags + " sampleNull=" + (sample == null));
+            }
+
             if (sample != null)
             {
                 hr = ProcessRaw(sample);

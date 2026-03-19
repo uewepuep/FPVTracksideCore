@@ -7,6 +7,8 @@ using Microsoft.VisualBasic.Logging;
 using SharpDX;
 using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
+using SharpDX.DXGI;
+using SharpDX.MediaFoundation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,27 +19,56 @@ using Tools;
 namespace WindowsMediaPlatform.MediaFoundation
 {
     // Implements camera device enumeration and setup via MediaFoundation.
-    // When constructed with a GraphicsDevice, activates a D3D11 display path:
-    //   CPU (MF decode + AVP colour-convert) → UpdateSubresource → GPU (D3D11 texture pool)
+    // When constructed with a GraphicsDevice, activates a unified D3D11 display path:
+    //   DXVA decode → D3D NV12 surface → D3D11VideoProcessor (GPU blit) → D3D11 texture pool
+    // Non-D3D buffers fall back to colorProcessor → UpdateSubresource.
     // Without a GraphicsDevice, falls back to the rawTextures + SetData upload path.
-    public class MediaFoundationDeviceFrameSource : MediaFoundationFrameSource, IHasModes, IMFSourceReaderCallback2
+    public class MediaFoundationDeviceFrameSource : MediaFoundationFrameSource, IHasModes
     {
         private Mode[] modes;
 
         private MFDevice device;
 
-        // Set by the DX constructor; also settable by subclasses (CaptureFrameSourceHW).
+        // Set by the DX constructor; also accessible by subclasses (CaptureFrameSourceHW).
         protected Microsoft.Xna.Framework.Graphics.GraphicsDevice graphicsDevice;
+
+        // Shared D3D device manager — gives MF decoders access to the XNA D3D11 device
+        // so DXVA can output D3D-backed NV12 surfaces.
+        protected DXGIDeviceManager dxgiManager;
+
+        // GPU colour converter: NV12 D3D → BGRA D3D, no CPU involvement.
+        protected D3D11VideoProcessor d3d11VideoProcessor;
 
         // Pool of D3D11-backed textures; null when graphicsDevice is null.
         protected XBuffer<Texture2DDX> dxTextures;
+
+        // CPU NV12/YUY2 buffer pool — image processor thread copies raw bytes here,
+        // render thread does all GPU work (UpdateSubresource + VP blit) in UpdateTexture.
+        private XBuffer<YUVBuffer> yuvPool;
+        private Format stagingFormat;
+        private int lastVPBlitDrawFrame = -1;
+
+        // Single D3D11 staging texture — written and read on the render thread only.
+        private SharpDX.Direct3D11.Texture2D stagingInputTexture;
+
+        // Plain CPU byte buffer for one NV12/YUY2 frame plus per-frame metadata.
+        // Sized for max(NV12, YUY2) = width * height * 2 bytes.
+        private sealed class YUVBuffer
+        {
+            public readonly byte[] Data;
+            public int Stride;
+            public long FrameProcessCount;
+            public long SampleTime;
+
+            public YUVBuffer(int width, int height) { Data = new byte[width * height * 2]; }
+        }
 
         public MediaFoundationDeviceFrameSource(VideoConfig videoConfig)
             : base(videoConfig)
         {
         }
 
-        // DX constructor: enables UpdateSubresource display path and D3D11 multithread protection.
+        // DX constructor: enables unified D3D11 display path.
         public MediaFoundationDeviceFrameSource(VideoConfig videoConfig, Microsoft.Xna.Framework.Graphics.GraphicsDevice graphicsDevice)
             : base(videoConfig)
         {
@@ -45,6 +76,9 @@ namespace WindowsMediaPlatform.MediaFoundation
 
             DeviceMultithread mt = graphicsDevice.GetSharpDXDevice().QueryInterface<DeviceMultithread>();
             mt.SetMultithreadProtected(true);
+
+            dxgiManager = new DXGIDeviceManager();
+            dxgiManager.ResetDevice(graphicsDevice.GetSharpDXDevice());
         }
 
         public override void Dispose()
@@ -230,8 +264,10 @@ namespace WindowsMediaPlatform.MediaFoundation
             return base.SetupTransforms(out sourceMediaType, out outputMediaType);
         }
 
-        // --- Reader creation: AVP only, no D3D manager ---
-        // Falls back to the base (non-DX) path when graphicsDevice is null.
+        // --- Reader creation: D3D manager for DXVA, no AVP ---
+        // DXVA decode outputs D3D-backed NV12 surfaces; D3D11VideoProcessor handles
+        // colour conversion on the GPU. Falls back to the base (non-DX) path when
+        // graphicsDevice is null.
 
         protected override HResult CreateReader(IMFMediaSource pSource)
         {
@@ -252,10 +288,7 @@ namespace WindowsMediaPlatform.MediaFoundation
                 hr = pAttributes.SetUINT32(MFAttributesClsid.MF_SOURCE_READER_DISABLE_DXVA, 0);
                 MFError.ThrowExceptionForHR(hr);
 
-                // AVP inserts a software Video Processor MFT that colour-converts the
-                // decoder's native YUV to the RGB32 we request in system memory.
-                // No D3D manager needed — the output lands in a plain IMFMediaBuffer.
-                hr = pAttributes.SetUINT32(MFAttributesClsid.MF_SOURCE_READER_ENABLE_ADVANCED_VIDEO_PROCESSING, 1);
+                hr = pAttributes.SetUINT32(MFAttributesClsid.MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, 1);
                 MFError.ThrowExceptionForHR(hr);
 
                 if (ASync)
@@ -281,8 +314,9 @@ namespace WindowsMediaPlatform.MediaFoundation
             return HResult.E_FAIL;
         }
 
-        // --- Reader setup: ask for RGB32 output via AVP, allocate the D3D texture pool ---
+        // --- Reader setup: NV12 output, D3D texture pool, D3D11VideoProcessor ---
         // Does NOT call base.SetupReader() — skips rawTextures allocation.
+        // colorProcessor is kept as fallback for non-D3D buffers.
         // Falls back to base when graphicsDevice is null.
 
         protected override HResult SetupReader()
@@ -298,9 +332,8 @@ namespace WindowsMediaPlatform.MediaFoundation
             {
                 readerAsync = (IMFSourceReaderAsync)reader;
 
-                // Tell the reader we want RGB32 output. AVP inserts the Video Processor MFT
-                // which colour-converts YUV→RGB32 in system memory.
-                AutomaticVideoConversion = true;
+                // AutomaticVideoConversion stays false — SetupTransforms creates colorProcessor
+                // as a fallback for non-D3D buffers. Primary path uses D3D11VideoProcessor.
                 hr = SetupTransforms(out currentType, out outputType);
                 MFError.ThrowExceptionForHR(hr);
 
@@ -308,23 +341,32 @@ namespace WindowsMediaPlatform.MediaFoundation
                 hr = currentType.GetGUID(MFAttributesClsid.MF_MT_SUBTYPE, out currentSubType);
                 MFError.ThrowExceptionForHR(hr);
 
-                int w, h;
-                hr = MFExtern.MFGetAttributeSize(outputType, MFAttributesClsid.MF_MT_FRAME_SIZE, out w, out h);
+                Guid outputSubType;
+                hr = outputType.GetGUID(MFAttributesClsid.MF_MT_SUBTYPE, out outputSubType);
                 MFError.ThrowExceptionForHR(hr);
 
-                // Determine scanline order from the output stride attribute.
                 int stride = MFExtern.MFGetAttributeUINT32(outputType, MFAttributesClsid.MF_MT_DEFAULT_STRIDE, 0);
-                Direction = (stride < 0) ? Directions.TopDown : Directions.BottomUp;
+                if (stride != 0)
+                    Direction = (stride < 0) ? Directions.TopDown : Directions.BottomUp;
+                else
+                    Direction = MFHelper.GetDirection(outputSubType);
 
                 string format = MFHelper.GetFormat(currentSubType);
-                Logger.VideoLog.Log(this, VideoConfig.DeviceName, "D3D path  Width: " + w + " Height: " + h + " Format: " + format + " Direction: " + Direction);
+                Logger.VideoLog.Log(this, VideoConfig.DeviceName, "D3D path  Width: " + FrameWidth + " Height: " + FrameHeight + " Format: " + format);
 
                 // Pre-allocate a pool of D3D11-backed XNA textures.
                 Texture2DDX[] pool = new Texture2DDX[5];
                 for (int i = 0; i < pool.Length; i++)
-                    pool[i] = new Texture2DDX(graphicsDevice, w, h, FrameFormat);
+                    pool[i] = new Texture2DDX(graphicsDevice, FrameWidth, FrameHeight, FrameFormat);
 
                 dxTextures = new XBuffer<Texture2DDX>(pool);
+
+                d3d11VideoProcessor = new D3D11VideoProcessor(graphicsDevice.GetSharpDXDevice(), FrameWidth, FrameHeight);
+                SetupStagingTexture(outputSubType);
+
+                // Allocate rawTextures so the colorProcessor fallback path (base.ProcessRGBSample /
+                // base.UpdateTexture) has a CPU buffer pool to work with.
+                rawTextures = new XBuffer<RawTexture>(5, FrameWidth, FrameHeight);
 
                 return HResult.S_OK;
             }
@@ -342,17 +384,88 @@ namespace WindowsMediaPlatform.MediaFoundation
             return HResult.E_FAIL;
         }
 
-        // --- IMFSourceReaderCallback2: required when using AVP in async mode ---
+        // --- Frame processing: D3D11VideoProcessor GPU blit, with colorProcessor fallback ---
+        // If DXVA delivered a D3D-backed NV12 surface, VideoProcessorBlt converts it to
+        // BGRA directly on the GPU into the dxTextures pool — no CPU readback.
+        // Non-D3D buffers (software decode, exotic formats) fall back to colorProcessor.
 
-        public HResult OnTransformChange()
+        protected override HResult ProcessUncompressed(IMFSample sample)
         {
-            return HResult.S_OK;
-        }
+            D3D11VideoProcessor currentVP = d3d11VideoProcessor;
+            XBuffer<Texture2DDX> currentDxTextures = dxTextures;
 
-        public HResult OnStreamError(int dwStreamIndex, HResult hrStatus)
-        {
-            Logger.VideoLog.Log(this, "OnStreamError", "stream=" + dwStreamIndex + " hr=" + hrStatus);
-            return HResult.S_OK;
+            if (currentVP != null && currentDxTextures != null)
+            {
+                IMFMediaBuffer buffer = null;
+                try
+                {
+                    HResult hr = sample.GetBufferByIndex(0, out buffer);
+                    if (MFHelper.Succeeded(hr))
+                    {
+                        SharpDX.Direct3D11.Texture2D inputTex;
+                        int subresource;
+                        if (MFHelper.TryGetD3DTexture(buffer, out inputTex, out subresource))
+                        {
+                            Texture2DDX destTexture;
+                            if (currentDxTextures.GetWritable(out destTexture))
+                            {
+                                long sampleTime;
+                                sample.GetSampleTime(out sampleTime);
+                                if (sampleTime != SampleTime)
+                                {
+                                    SampleTime = sampleTime;
+                                    FrameProcessNumber++;
+                                }
+
+                                currentVP.Process(inputTex, subresource, destTexture.SharpDXTexture2D);
+
+                                destTexture.FrameProcessCount = FrameProcessNumber;
+                                destTexture.FrameSampleTime = sampleTime;
+                                currentDxTextures.WriteOne(destTexture);
+                            }
+
+                            inputTex.Dispose();
+                            NotifyReceivedFrame();
+                            return HResult.S_OK;
+                        }
+
+                        // System memory NV12/YUY2: copy raw bytes to CPU pool.
+                        // All GPU work (UpdateSubresource + VP blit) is deferred to UpdateTexture
+                        // on the render thread to avoid any cross-thread ImmediateContext issues.
+                        XBuffer<YUVBuffer> currentYuvPool = yuvPool;
+                        if (currentYuvPool != null)
+                        {
+                            YUVBuffer yuv;
+                            if (currentYuvPool.GetWritable(out yuv))
+                            {
+                                long sampleTime;
+                                sample.GetSampleTime(out sampleTime);
+                                if (sampleTime != SampleTime)
+                                {
+                                    SampleTime = sampleTime;
+                                    FrameProcessNumber++;
+                                }
+
+                                CopyToYUVBuffer(buffer, yuv);
+                                yuv.FrameProcessCount = FrameProcessNumber;
+                                yuv.SampleTime = sampleTime;
+                                currentYuvPool.WriteOne(yuv);
+                            }
+
+                            NotifyReceivedFrame();
+                            return HResult.S_OK;
+                        }
+                    }
+                }
+                finally
+                {
+                    if (buffer != null)
+                        MFHelper.SafeRelease(buffer);
+                }
+            }
+
+            // RGB or unsupported format — fall back to colorProcessor.
+            return base.ProcessUncompressed(sample);
         }
 
         // --- Frame processing: UpdateSubresource with locked buffer pointer ---
@@ -363,6 +476,12 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         protected override HResult ProcessRGBSample(IMFSample sample)
         {
+            // Only use the dxTextures path when the VP staging path is active.
+            // When falling back to colorProcessor (no staging pool), use the base rawTextures/SetData
+            // path so the GPU upload happens on the render thread, not the image processor thread.
+            if (yuvPool == null)
+                return base.ProcessRGBSample(sample);
+
             XBuffer<Texture2DDX> currentDxTextures = dxTextures;
             if (currentDxTextures == null)
                 return base.ProcessRGBSample(sample);
@@ -401,13 +520,46 @@ namespace WindowsMediaPlatform.MediaFoundation
             return HResult.S_OK;
         }
 
-        // --- UpdateTexture: return pooled D3D texture directly — no SetData upload ---
+        // --- UpdateTexture: VP blit on render thread, then hand pooled texture to draw calls ---
+        // Called once per draw call (up to 9x per render frame for the 3x3 grid).
+        // The VP blit (staging → dxTextures) only runs on the first call per render frame,
+        // identified by drawFrameCount. Subsequent calls for the same frame get the cached texture.
 
         public override bool UpdateTexture(Microsoft.Xna.Framework.Graphics.GraphicsDevice gd, int drawFrameCount, ref Microsoft.Xna.Framework.Graphics.Texture2D texture2D)
         {
+            XBuffer<YUVBuffer> currentYuvPool = yuvPool;
+            if (currentYuvPool == null)
+                return base.UpdateTexture(gd, drawFrameCount, ref texture2D);
+
             XBuffer<Texture2DDX> currentDxTextures = dxTextures;
             if (currentDxTextures == null)
                 return base.UpdateTexture(gd, drawFrameCount, ref texture2D);
+
+            // All GPU work runs once per render frame on the render thread — first draw call only.
+            if (drawFrameCount != lastVPBlitDrawFrame)
+            {
+                YUVBuffer yuv;
+                if (currentYuvPool.ReadOne(out yuv, drawFrameCount) && yuv != null)
+                {
+                    Texture2DDX destTexture;
+                    if (currentDxTextures.GetWritable(out destTexture))
+                    {
+                        try
+                        {
+                            UploadToStaging(yuv);
+                            d3d11VideoProcessor.Process(stagingInputTexture, 0, destTexture.SharpDXTexture2D);
+                            destTexture.FrameProcessCount = yuv.FrameProcessCount;
+                            destTexture.FrameSampleTime = yuv.SampleTime;
+                            currentDxTextures.WriteOne(destTexture);
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.VideoLog.LogException(this, e);
+                        }
+                    }
+                }
+                lastVPBlitDrawFrame = drawFrameCount;
+            }
 
             Texture2DDX frame;
             if (currentDxTextures.ReadOne(out frame, drawFrameCount))
@@ -416,20 +568,121 @@ namespace WindowsMediaPlatform.MediaFoundation
                 return true;
             }
 
-            // No new frame; keep showing the last one.
+            // No frame yet; keep showing the last one.
             return texture2D != null;
+        }
+
+        // --- Staging texture: CPU→GPU upload for NV12/YUY2 (USB cameras) ---
+
+        protected void SetupStagingTexture(Guid outputSubType)
+        {
+            Format fmt;
+            if (outputSubType == MFMediaType.NV12)
+                fmt = Format.NV12;
+            else if (outputSubType == MFMediaType.YUY2)
+                fmt = Format.YUY2;
+            else
+                return;
+
+            stagingFormat = fmt;
+
+            // Single D3D11 staging texture — only ever touched on the render thread.
+            stagingInputTexture = new SharpDX.Direct3D11.Texture2D(
+                graphicsDevice.GetSharpDXDevice(),
+                new SharpDX.Direct3D11.Texture2DDescription
+                {
+                    Width = FrameWidth,
+                    Height = FrameHeight,
+                    MipLevels = 1,
+                    ArraySize = 1,
+                    Format = fmt,
+                    SampleDescription = new SampleDescription(1, 0),
+                    Usage = SharpDX.Direct3D11.ResourceUsage.Default,
+                    BindFlags = SharpDX.Direct3D11.BindFlags.Decoder,
+                    CpuAccessFlags = SharpDX.Direct3D11.CpuAccessFlags.None,
+                    OptionFlags = SharpDX.Direct3D11.ResourceOptionFlags.None
+                });
+
+            // CPU buffer pool — image processor thread writes here, render thread reads.
+            yuvPool = new XBuffer<YUVBuffer>(5, FrameWidth, FrameHeight);
+
+            Logger.VideoLog.Log(this, VideoConfig.DeviceName, "Created " + fmt + " staging texture + CPU YUV pool");
+        }
+
+        // Called from the image processor thread — copies raw bytes into a CPU YUVBuffer.
+        private void CopyToYUVBuffer(IMFMediaBuffer buffer, YUVBuffer yuv)
+        {
+            IMF2DBuffer buf2D = buffer as IMF2DBuffer;
+            if (buf2D != null)
+            {
+                IntPtr scanline0;
+                int stride;
+                buf2D.Lock2D(out scanline0, out stride);
+                try
+                {
+                    int yBytes = stride * FrameHeight;
+                    int uvBytes = stagingFormat == Format.NV12 ? stride * (FrameHeight / 2) : 0;
+                    System.Runtime.InteropServices.Marshal.Copy(scanline0, yuv.Data, 0, yBytes + uvBytes);
+                    yuv.Stride = stride;
+                }
+                finally { buf2D.Unlock2D(); }
+            }
+            else
+            {
+                IntPtr dataPtr;
+                int maxLen, curLen;
+                buffer.Lock(out dataPtr, out maxLen, out curLen);
+                try
+                {
+                    int stride = stagingFormat == Format.NV12 ? FrameWidth : FrameWidth * 2;
+                    int copyBytes = Math.Min(curLen, yuv.Data.Length);
+                    System.Runtime.InteropServices.Marshal.Copy(dataPtr, yuv.Data, 0, copyBytes);
+                    yuv.Stride = stride;
+                }
+                finally { buffer.Unlock(); }
+            }
+        }
+
+        // Called from the render thread — uploads CPU bytes to the D3D11 staging texture.
+        private void UploadToStaging(YUVBuffer yuv)
+        {
+            var context = graphicsDevice.GetSharpDXDevice().ImmediateContext;
+            var handle = System.Runtime.InteropServices.GCHandle.Alloc(yuv.Data, System.Runtime.InteropServices.GCHandleType.Pinned);
+            try
+            {
+                IntPtr ptr = handle.AddrOfPinnedObject();
+                context.UpdateSubresource(new SharpDX.DataBox(ptr, yuv.Stride, 0), stagingInputTexture, 0);
+                if (stagingFormat == Format.NV12)
+                {
+                    IntPtr uvPtr = IntPtr.Add(ptr, yuv.Stride * FrameHeight);
+                    context.UpdateSubresource(new SharpDX.DataBox(uvPtr, yuv.Stride, 0), stagingInputTexture, 1);
+                }
+            }
+            finally { handle.Free(); }
         }
 
         // --- Cleanup ---
 
         public override void CleanUp()
         {
+            D3D11VideoProcessor oldVP = d3d11VideoProcessor;
+            d3d11VideoProcessor = null;
+
             XBuffer<Texture2DDX> oldDxTextures = dxTextures;
             dxTextures = null;
 
+            XBuffer<YUVBuffer> oldYuvPool = yuvPool;
+            yuvPool = null;
+
+            SharpDX.Direct3D11.Texture2D oldStaging = stagingInputTexture;
+            stagingInputTexture = null;
+
             base.CleanUp();
 
+            oldVP?.Dispose();
             oldDxTextures?.Dispose();
+            oldYuvPool?.Dispose();
+            oldStaging?.Dispose();
         }
     }
 }
