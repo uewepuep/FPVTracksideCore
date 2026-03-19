@@ -17,14 +17,9 @@ namespace WindowsMediaPlatform.MediaFoundation
     // Feeds raw NV12 directly to the IMFSinkWriter with MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS,
     // so the sink writer drives NVENC/Quick Sync/AMF internally and handles async MFT complexity.
     // Falls back to the base (software) StartRecording if hardware setup fails.
-    //
-    // When constructed with a GraphicsDevice, also activates a D3D11 display path:
-    //   DXVA/camera → colorProcessor (CPU VP) → UpdateSubresource → Texture2DDX pool → render
-    //   DXVA/camera → D3D NV12 sample → IMFSinkWriter → NVENC (zero-copy recording)
-    // The DX display methods (ProcessRGBSample, UpdateTexture, CleanUp for dxTextures) are
-    // inherited from MediaFoundationDeviceFrameSource.
     public class MediaFoundationCaptureFrameSourceHW : MediaFoundationCaptureFrameSource
     {
+        private Microsoft.Xna.Framework.Graphics.GraphicsDevice graphicsDevice;
         private DXGIDeviceManager dxgiManager;
 
         public MediaFoundationCaptureFrameSourceHW(VideoConfig videoConfig)
@@ -96,72 +91,6 @@ namespace WindowsMediaPlatform.MediaFoundation
             finally
             {
                 MFHelper.SafeRelease(pAttributes);
-            }
-
-            return HResult.E_FAIL;
-        }
-
-        // --- Reader setup: allocate D3D texture pool after SetupTransforms wires colorProcessor ---
-        // Does NOT call base.SetupReader() — skips rawTextures allocation.
-        // Falls back to base chain when graphicsDevice is null.
-        //
-        // AutomaticVideoConversion stays false so SetupTransforms creates colorProcessor
-        // (NV12/YUV → RGB32 in system memory via CPU VP). colorProcessor.Output is set
-        // to ProcessRGBSample via virtual dispatch → DeviceFrameSource.ProcessRGBSample
-        // which calls UpdateSubresource into the dxTextures pool.
-
-        protected override HResult SetupReader()
-        {
-            if (graphicsDevice == null)
-                return base.SetupReader();
-
-            HResult hr;
-            IMFMediaType currentType = null;
-            IMFMediaType outputType = null;
-
-            try
-            {
-                readerAsync = (IMFSourceReaderAsync)reader;
-
-                // AutomaticVideoConversion remains false — SetupTransforms creates colorProcessor.
-                hr = SetupTransforms(out currentType, out outputType);
-                MFError.ThrowExceptionForHR(hr);
-
-                Guid currentSubType;
-                hr = currentType.GetGUID(MFAttributesClsid.MF_MT_SUBTYPE, out currentSubType);
-                MFError.ThrowExceptionForHR(hr);
-
-                Guid outputSubType;
-                hr = outputType.GetGUID(MFAttributesClsid.MF_MT_SUBTYPE, out outputSubType);
-                MFError.ThrowExceptionForHR(hr);
-
-                int stride = MFExtern.MFGetAttributeUINT32(outputType, MFAttributesClsid.MF_MT_DEFAULT_STRIDE, 0);
-                if (stride != 0)
-                    Direction = (stride < 0) ? Directions.TopDown : Directions.BottomUp;
-                else
-                    Direction = MFHelper.GetDirection(outputSubType);
-
-                string format = MFHelper.GetFormat(currentSubType);
-                Logger.VideoLog.Log(this, VideoConfig.DeviceName, "DX capture path  Width: " + FrameWidth + " Height: " + FrameHeight + " Format: " + format);
-
-                Texture2DDX[] pool = new Texture2DDX[5];
-                for (int i = 0; i < pool.Length; i++)
-                    pool[i] = new Texture2DDX(graphicsDevice, FrameWidth, FrameHeight, FrameFormat);
-
-                dxTextures = new XBuffer<Texture2DDX>(pool);
-
-                return HResult.S_OK;
-            }
-            catch (Exception e)
-            {
-                Logger.VideoLog.LogException(this, e);
-                Logger.VideoLog.Log(this, "Type: ", MFDump.DumpAttribs(outputType));
-            }
-            finally
-            {
-                MFHelper.SafeRelease(currentType);
-                // outputType is intentionally not released — CaptureFrameSource.SetupTransforms
-                // assigns it to encoderOutputType, which must remain alive until StartRecording.
             }
 
             return HResult.E_FAIL;

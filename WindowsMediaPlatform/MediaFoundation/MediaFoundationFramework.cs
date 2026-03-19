@@ -39,7 +39,7 @@ namespace WindowsMediaPlatform.MediaFoundation
             }
             else
             {
-                return new MediaFoundationDeviceFrameSource(videoConfig, GraphicsDevice);
+                return new MediaFoundationDeviceFrameSource(videoConfig);
             }
         }
 
