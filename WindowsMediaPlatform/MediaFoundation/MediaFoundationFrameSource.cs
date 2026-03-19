@@ -205,6 +205,11 @@ namespace WindowsMediaPlatform.MediaFoundation
             return hr;
         }
 
+        protected override ImageServer.FrameTextureSample CreateTextureSample(Microsoft.Xna.Framework.Graphics.GraphicsDevice graphicsDevice)
+        {
+            return new FrameTextureSampleDX(graphicsDevice, FrameWidth, FrameHeight, FrameFormat);
+        }
+
         protected override void ProcessImage()
         {
             if (colorProcessor != null)

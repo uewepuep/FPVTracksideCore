@@ -173,6 +173,11 @@ namespace ImageServer
             OnFrame(SampleTime, FrameProcessNumber);
         }
 
+        protected virtual FrameTextureSample CreateTextureSample(GraphicsDevice graphicsDevice)
+        {
+            return new FrameTextureSample(graphicsDevice, FrameWidth, FrameHeight, SurfaceFormat);
+        }
+
         public override bool UpdateTexture(GraphicsDevice graphicsDevice, int drawFrameCount, ref Texture2D texture2D)
         {
             if (rawTextures == null || textures == null)
@@ -191,7 +196,7 @@ namespace ImageServer
             {
                 if (!textures.TryGetValue(graphicsDevice, out texture))
                 {
-                    texture = new FrameTextureSample(graphicsDevice, FrameWidth, FrameHeight, SurfaceFormat);
+                    texture = CreateTextureSample(graphicsDevice);
                     textures.Add(graphicsDevice, texture);
                 }
                 texture2D = texture;

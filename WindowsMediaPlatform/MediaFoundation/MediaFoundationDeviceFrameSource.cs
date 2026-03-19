@@ -1,4 +1,4 @@
-﻿using ImageServer;
+using ImageServer;
 using MediaFoundation;
 using MediaFoundation.Alt;
 using MediaFoundation.Misc;
