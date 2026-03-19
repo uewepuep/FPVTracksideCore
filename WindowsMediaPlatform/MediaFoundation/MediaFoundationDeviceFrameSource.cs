@@ -149,6 +149,8 @@ namespace WindowsMediaPlatform.MediaFoundation
             IMFMediaSource pSource = null;
             object o = null;
 
+            Logger.VideoLog.Log(this, "SetDevice", device.Name + " Path: " + device.Path);
+
             lock (this)
             {
                 try
@@ -160,17 +162,29 @@ namespace WindowsMediaPlatform.MediaFoundation
                     {
                         // Create the media source for the device.
                         hr = pActivate.ActivateObject(typeof(IMFMediaSource).GUID, out o);
+                        if (MFHelper.Failed(hr))
+                        {
+                            Logger.VideoLog.Log(this, "ActivateObject failed", "hr=0x" + ((int)hr).ToString("X8") + " device=" + device.Name);
+                        }
                     }
 
                     if (MFHelper.Succeeded(hr))
                     {
                         pSource = (IMFMediaSource)o;
                     }
-                    
+
                     if (MFHelper.Succeeded(hr))
                     {
                         hr = CreateReader(pSource);
-                        modes = GetModesFromDevice().ToArray();
+                        if (MFHelper.Failed(hr))
+                        {
+                            Logger.VideoLog.Log(this, "CreateReader failed", "hr=0x" + ((int)hr).ToString("X8") + " device=" + device.Name);
+                        }
+                        else
+                        {
+                            modes = GetModesFromDevice().ToArray();
+                            Logger.VideoLog.Log(this, "GetModesFromDevice", device.Name + " modes=" + modes.Length);
+                        }
                     }
                     Connected = true;
 
@@ -184,7 +198,7 @@ namespace WindowsMediaPlatform.MediaFoundation
                             // NOTE: The source reader shuts down the media source
                             // by default, but we might not have gotten that far.
                         }
-                        CleanUp(); 
+                        CleanUp();
                     }
                 }
                 finally

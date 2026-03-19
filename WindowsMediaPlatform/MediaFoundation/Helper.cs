@@ -418,7 +418,8 @@ namespace WindowsMediaPlatform.MediaFoundation
         }
 
         /// <summary>
-        /// Returns a unique identifier for a device
+        /// Returns a unique identifier for a device. Falls back to "name:FriendlyName" for
+        /// virtual cameras that don't have a PnP symbolic link attribute.
         /// </summary>
         public string Path
         {
@@ -432,6 +433,13 @@ namespace WindowsMediaPlatform.MediaFoundation
                         out m_SymbolicName,
                         out iSize
                         );
+
+                    // Virtual cameras (e.g. OBS Virtual Camera) may not have a symbolic link.
+                    // Fall back to a name-based identifier so they can still be matched.
+                    if (COMBase.Failed(hr) || string.IsNullOrEmpty(m_SymbolicName))
+                    {
+                        m_SymbolicName = "name:" + Name;
+                    }
                 }
 
                 return m_SymbolicName;

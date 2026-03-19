@@ -1,6 +1,7 @@
 ﻿using ImageServer;
 using Microsoft.Xna.Framework.Graphics;
 using SharpDX.Direct3D9;
+using WindowsMediaPlatform.DirectShow;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,13 +30,19 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         public FrameSource CreateFrameSource(VideoConfig videoConfig)
         {
+            bool isDSOnly = string.IsNullOrEmpty(videoConfig.MediaFoundationPath) && !string.IsNullOrEmpty(videoConfig.DirectShowPath);
+
             if (!string.IsNullOrEmpty(videoConfig.FilePath))
             {
                 return new MediaFoundationFileFrameSource(videoConfig);
             }
+            else if (isDSOnly)
+            {
+                return new MediaFoundationDSCaptureFrameSource(videoConfig);
+            }
             else if (videoConfig.RecordVideoForReplays || videoConfig.HasPhotoBooth)
             {
-                return new MediaFoundationCaptureFrameSourceHW(videoConfig, GraphicsDevice);
+                return new MediaFoundationCaptureFrameSource(videoConfig, GraphicsDevice);
             }
             else
             {
@@ -58,13 +65,30 @@ namespace WindowsMediaPlatform.MediaFoundation
         public IEnumerable<VideoConfig> GetVideoConfigs()
         {
             List<VideoConfig> configs = new List<VideoConfig>();
+            HashSet<string> mfNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             foreach (MFDevice mf in MFHelper.VideoCaptureDevices)
             {
+                Tools.Logger.VideoLog.Log(this, "MF device found", mf.Name + " Path: " + mf.Path);
                 VideoConfig videoConfig = new VideoConfig() { DeviceName = mf.Name, MediaFoundationPath = mf.Path, FrameWork = FrameWork.MediaFoundation };
                 configs.Add(videoConfig);
-
+                mfNames.Add(mf.Name);
                 mf.Dispose();
             }
+
+            // DS-only virtual cameras (e.g. OBS Virtual Camera) not visible to MFEnumDeviceSources.
+            // Captured via DirectShow, recorded via IMFSinkWriter + NVENC.
+            foreach (DirectShowLib.DsDevice ds in DirectShowHelper.VideoCaptureDevices)
+            {
+                if (!mfNames.Contains(ds.Name))
+                {
+                    Tools.Logger.VideoLog.Log(this, "DS-only device added to MF", ds.Name + " Path: " + ds.DevicePath);
+                    VideoConfig videoConfig = new VideoConfig() { DeviceName = ds.Name, DirectShowPath = ds.DevicePath, FrameWork = FrameWork.MediaFoundation };
+                    configs.Add(videoConfig);
+                }
+                ds.Dispose();
+            }
+
             return configs;
         }
 

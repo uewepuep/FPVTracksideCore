@@ -1,20 +1,16 @@
-﻿using ImageServer;
+using ImageServer;
 using MediaFoundation;
+using MediaFoundation.Alt;
 using MediaFoundation.Misc;
 using MediaFoundation.ReadWrite;
 using MediaFoundation.Transform;
-using Microsoft.VisualBasic.Logging;
+using SharpDX.Direct3D11;
+using SharpDX.MediaFoundation;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Xml.Linq;
 using Tools;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace WindowsMediaPlatform.MediaFoundation
 {
@@ -24,6 +20,9 @@ namespace WindowsMediaPlatform.MediaFoundation
         protected int sink_stream;
 
         protected MediaFoundationTransform encoder;
+
+        private Microsoft.Xna.Framework.Graphics.GraphicsDevice graphicsDevice;
+        private DXGIDeviceManager dxgiManager;
 
         public string Filename { get; protected set; }
 
@@ -76,7 +75,7 @@ namespace WindowsMediaPlatform.MediaFoundation
             }
         }
 
-        public MediaFoundationCaptureFrameSource(VideoConfig videoConfig) 
+        public MediaFoundationCaptureFrameSource(VideoConfig videoConfig)
             : base(videoConfig)
         {
             FileFormat = FileFormats.mp4;
@@ -85,7 +84,187 @@ namespace WindowsMediaPlatform.MediaFoundation
             passthroughCompressed = false;
         }
 
+        public MediaFoundationCaptureFrameSource(VideoConfig videoConfig, Microsoft.Xna.Framework.Graphics.GraphicsDevice graphicsDevice)
+            : this(videoConfig)
+        {
+            this.graphicsDevice = graphicsDevice;
+
+            // Enable D3D11 multithread protection so the MF callback thread can call
+            // UpdateSubresource safely while the render thread uses the same context.
+            SharpDX.Direct3D.DeviceMultithread mt = graphicsDevice.GetSharpDXDevice().QueryInterface<SharpDX.Direct3D.DeviceMultithread>();
+            mt.SetMultithreadProtected(true);
+
+            dxgiManager = new DXGIDeviceManager();
+            dxgiManager.ResetDevice(graphicsDevice.GetSharpDXDevice());
+        }
+
+        // --- Reader creation: with D3D manager when available for hardware decode ---
+
+        protected override HResult CreateReader(IMFMediaSource pSource)
+        {
+            if (graphicsDevice == null)
+                return base.CreateReader(pSource);
+
+            HResult hr;
+            IMFAttributes pAttributes = null;
+
+            try
+            {
+                hr = MFExtern.MFCreateAttributes(out pAttributes, 5);
+                MFError.ThrowExceptionForHR(hr);
+
+                hr = pAttributes.SetUINT32(MFAttributesClsid.MF_SOURCE_READER_ENABLE_VIDEO_PROCESSING, 0);
+                MFError.ThrowExceptionForHR(hr);
+
+                hr = pAttributes.SetUINT32(MFAttributesClsid.MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, 1);
+                MFError.ThrowExceptionForHR(hr);
+
+                hr = pAttributes.SetUINT32(MFAttributesClsid.MF_SOURCE_READER_DISABLE_DXVA, 0);
+                MFError.ThrowExceptionForHR(hr);
+
+                // Pass the D3D device manager so hardware decoders (DXVA) can output
+                // D3D-backed NV12 surfaces.  These are fed directly to NVENC in WriteSample,
+                // keeping the recording path entirely on the GPU.
+                hr = pAttributes.SetUnknown(MFHelper.MF_SOURCE_READER_D3D_MANAGER, dxgiManager);
+                MFError.ThrowExceptionForHR(hr);
+
+                if (ASync)
+                {
+                    hr = pAttributes.SetUnknown(MFAttributesClsid.MF_SOURCE_READER_ASYNC_CALLBACK, this);
+                    MFError.ThrowExceptionForHR(hr);
+                }
+
+                hr = MFExtern.MFCreateSourceReaderFromMediaSource(pSource, pAttributes, out reader);
+                MFError.ThrowExceptionForHR(hr);
+
+                return SetupReader();
+            }
+            catch (Exception e)
+            {
+                Logger.VideoLog.LogException(this, e);
+            }
+            finally
+            {
+                MFHelper.SafeRelease(pAttributes);
+            }
+
+            return HResult.E_FAIL;
+        }
+
+        // --- Recording setup: tries NVENC first, falls back to software ---
+
         public virtual void StartRecording(string filename)
+        {
+            // Passthrough (camera already outputs H264) and no encoder type go straight to software.
+            if (encoderOutputType == null || passthroughCompressed)
+            {
+                StartRecordingSoftware(filename);
+                return;
+            }
+
+            IMFMediaType h264Type = null;
+            IMFAttributes attributes = null;
+
+            try
+            {
+                Logger.VideoLog.LogCall(this);
+
+                Filename = filename + "." + FileFormat.ToString().ToLower();
+                hasBegun = false;
+
+                if (Recording)
+                    StopRecording();
+
+                flushing = false;
+                receivedDuration = TimeSpan.Zero;
+                recordingTargetLength = TimeSpan.Zero;
+                firstSampleTime = TimeSpan.Zero;
+                receivedFrameCount = 0;
+
+                if (File.Exists(Filename))
+                    File.Delete(Filename);
+
+                HResult hr;
+
+                lock (writerLocker)
+                {
+                    int targetHeight = VideoConfig.RecordResolution;
+                    int targetWidth = GetWidth(encoderOutputType, targetHeight);
+                    int frameRate = VideoConfig.RecordFrameRate;
+
+                    // Build the H264 output type that the sink writer will produce.
+                    hr = MFExtern.MFCreateMediaType(out h264Type);
+                    MFError.ThrowExceptionForHR(hr);
+
+                    hr = h264Type.SetGUID(MFAttributesClsid.MF_MT_MAJOR_TYPE, MFMediaType.Video);
+                    MFError.ThrowExceptionForHR(hr);
+
+                    hr = h264Type.SetGUID(MFAttributesClsid.MF_MT_SUBTYPE, MFMediaType.H264);
+                    MFError.ThrowExceptionForHR(hr);
+
+                    hr = MFExtern.MFSetAttributeSize(h264Type, MFAttributesClsid.MF_MT_FRAME_SIZE, targetWidth, targetHeight);
+                    MFError.ThrowExceptionForHR(hr);
+
+                    hr = MFExtern.MFSetAttributeRatio(h264Type, MFAttributesClsid.MF_MT_FRAME_RATE, frameRate, 1);
+                    MFError.ThrowExceptionForHR(hr);
+
+                    hr = h264Type.SetUINT32(MFAttributesClsid.MF_MT_INTERLACE_MODE, 2); // Progressive
+                    MFError.ThrowExceptionForHR(hr);
+
+                    MFHelper.CopyAttribute(encoderOutputType, h264Type, MFAttributesClsid.MF_MT_PIXEL_ASPECT_RATIO);
+
+                    int bitRate = H264Encoder.GetBitRate(targetWidth, targetHeight, frameRate);
+                    hr = h264Type.SetUINT32(MFAttributesClsid.MF_MT_AVG_BITRATE, bitRate);
+                    MFError.ThrowExceptionForHR(hr);
+
+                    hr = h264Type.SetUINT32(MFAttributesClsid.MF_MT_MPEG2_PROFILE, 77); // Main
+                    MFError.ThrowExceptionForHR(hr);
+
+                    // Create sink writer. Hardware transforms enabled so it picks up NVENC/QSV/AMF.
+                    hr = MFExtern.MFCreateAttributes(out attributes, 2);
+                    MFError.ThrowExceptionForHR(hr);
+
+                    hr = attributes.SetUINT32(MFAttributesClsid.MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, 1);
+                    MFError.ThrowExceptionForHR(hr);
+
+                    hr = attributes.SetUINT32(MFAttributesClsid.MF_LOW_LATENCY, 1);
+                    MFError.ThrowExceptionForHR(hr);
+
+                    hr = MFExtern.MFCreateSinkWriterFromURL(Filename, null, attributes, out writer);
+                    MFError.ThrowExceptionForHR(hr);
+
+                    hr = writer.AddStream(h264Type, out sink_stream);
+                    MFError.ThrowExceptionForHR(hr);
+
+                    // Feed raw NV12 — the sink writer inserts the hardware encoder internally.
+                    hr = writer.SetInputMediaType(sink_stream, encoderOutputType, null);
+                    MFError.ThrowExceptionForHR(hr);
+
+                    MFHelper.LogSinkWriterTransforms(this, writer, sink_stream);
+
+                    Recording = true;
+                    RecordNextFrameTime = true;
+                    lock (frameTimes)
+                    {
+                        frameTimes.Clear();
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.VideoLog.LogException(this, e);
+                Logger.VideoLog.Log(this, "Hardware recording setup failed, falling back to software");
+                StopRecording();
+                StartRecordingSoftware(filename);
+            }
+            finally
+            {
+                MFHelper.SafeRelease(h264Type);
+                MFHelper.SafeRelease(attributes);
+            }
+        }
+
+        private void StartRecordingSoftware(string filename)
         {
             IMFMediaType format = null;
             try
@@ -149,7 +328,7 @@ namespace WindowsMediaPlatform.MediaFoundation
 
                         hr = attributes.SetUINT32(MFAttributesClsid.MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, 1);
                         MFError.ThrowExceptionForHR(hr);
-                        
+
                         hr = attributes.SetUINT32(MFAttributesClsid.MF_LOW_LATENCY, 1);
                         MFError.ThrowExceptionForHR(hr);
 
@@ -241,6 +420,9 @@ namespace WindowsMediaPlatform.MediaFoundation
         {
             Logger.VideoLog.LogCall(this);
 
+            dxgiManager?.Dispose();
+            dxgiManager = null;
+
             if (Recording)
             {
                 StopRecording();
@@ -275,13 +457,22 @@ namespace WindowsMediaPlatform.MediaFoundation
         protected override HResult ProcessUncompressed(IMFSample sample)
         {
             HResult hr = base.ProcessUncompressed(sample);
-            if ((Recording || flushing) && MFHelper.Succeeded(hr) && encoder != null)
+
+            if ((Recording || flushing) && MFHelper.Succeeded(hr))
             {
                 TimeSpan newSampleTime = CalculateSampleTime(sample);
                 sample.SetSampleTime(newSampleTime.Ticks);
 
-                encoder.ProcessInput(sample);
+                if (writer != null)
+                {
+                    WriteSample(sample);
+                }
+                else if (encoder != null)
+                {
+                    encoder.ProcessInput(sample);
+                }
             }
+
             return hr;
         }
 
@@ -294,7 +485,6 @@ namespace WindowsMediaPlatform.MediaFoundation
             if (receivedFrameCount == 1)
             {
                 firstSampleTime = sampleTime;
-                //Logger.VideoLog.Log(this, "first Sample Time: " + firstSampleTime);
             }
 
             receivedDuration = sampleTime - firstSampleTime;
@@ -313,8 +503,6 @@ namespace WindowsMediaPlatform.MediaFoundation
 
             long dur;
             sample.GetSampleDuration(out dur);
-
-            //Logger.VideoLog.Log(this, "Sample Time: " + sampleTime + " New Sample Time: " + newSampleTime + " dur: " + dur);
 
             return newSampleTime;
         }
@@ -355,7 +543,7 @@ namespace WindowsMediaPlatform.MediaFoundation
                     }
 
                     TimeSpan sampleTime = sample.GetSampleTime();
-                    
+
                     hr = writer.WriteSample(0, sample);
                     MFError.ThrowExceptionForHR(hr);
 
@@ -375,7 +563,6 @@ namespace WindowsMediaPlatform.MediaFoundation
         {
             int frameWidth, frameHeight;
 
-            // Get the frame size.
             HResult hr = MFExtern.MFGetAttributeSize(outputMediaType, MFAttributesClsid.MF_MT_FRAME_SIZE, out frameWidth, out frameHeight);
             MFError.ThrowExceptionForHR(hr);
 
@@ -406,12 +593,10 @@ namespace WindowsMediaPlatform.MediaFoundation
             int height = VideoConfig.RecordResolution;
             if (decoderProcessor != null)
             {
-                // Get the actual current Type
                 Guid subType;
                 hr = sourceMediaType.GetGUID(MFAttributesClsid.MF_MT_SUBTYPE, out subType);
                 MFError.ThrowExceptionForHR(hr);
-                
-                // get the size
+
                 int frameWidth, frameHeight;
                 hr = MFExtern.MFGetAttributeSize(outputMediaType, MFAttributesClsid.MF_MT_FRAME_SIZE, out frameWidth, out frameHeight);
                 MFError.ThrowExceptionForHR(hr);
