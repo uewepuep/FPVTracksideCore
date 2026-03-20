@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Tools;
 
@@ -164,109 +165,91 @@ namespace RaceLib
             }
         }
 
+        private const int RetryCount = 3;
+        private const int RetryDelayMs = 200;
+
+        private bool TryWithRetry<T>(Func<bool> operation, T t) where T : BaseObject
+        {
+            for (int attempt = 0; attempt < RetryCount; attempt++)
+            {
+                try
+                {
+                    if (operation())
+                        return true;
+                }
+                catch (Exception ex)
+                {
+                    Logger.RaceLog.Log(this, "Database operation attempt " + (attempt + 1) + " failed for " + typeof(T) + ": " + ex.Message, Logger.LogType.Error);
+                }
+
+                if (attempt < RetryCount - 1)
+                    Thread.Sleep(RetryDelayMs);
+            }
+
+            Log(t);
+            return false;
+        }
+
+        private bool TryWithRetry<T>(Func<bool> operation, IEnumerable<T> t) where T : BaseObject
+        {
+            for (int attempt = 0; attempt < RetryCount; attempt++)
+            {
+                try
+                {
+                    if (operation())
+                        return true;
+                }
+                catch (Exception ex)
+                {
+                    Logger.RaceLog.Log(this, "Database operation attempt " + (attempt + 1) + " failed for " + typeof(T) + "[]: " + ex.Message, Logger.LogType.Error);
+                }
+
+                if (attempt < RetryCount - 1)
+                    Thread.Sleep(RetryDelayMs);
+            }
+
+            Log(t);
+            return false;
+        }
+
         public bool Delete<T>(T t) where T : BaseObject, new()
         {
-            if (database.Delete(t))
-            {
-                return true;
-            }
-            else
-            {
-                Log(t);
-                return false;
-            }
+            return TryWithRetry(() => database.Delete(t), t);
         }
 
         public bool Delete<T>(IEnumerable<T> t) where T : BaseObject, new()
         {
-            if (database.Delete(t))
-            {
-                return true;
-            }
-            else
-            {
-                Log(t);
-                return false;
-            }
+            return TryWithRetry(() => database.Delete(t), t);
         }
-
 
         public bool Insert<T>(T t) where T : BaseObject, new()
         {
-            if (database.Insert(t))
-            {
-                return true;
-            }
-            else
-            {
-                Log(t);
-                return false;
-            }
+            return TryWithRetry(() => database.Insert(t), t);
         }
 
         public bool Insert<T>(IEnumerable<T> t) where T : BaseObject, new()
         {
-            if (database.Insert(t))
-            {
-                return true;
-            }
-            else
-            {
-                Log(t);
-                return false;
-            }
+            return TryWithRetry(() => database.Insert(t), t);
         }
 
         public bool Update<T>(T t) where T : BaseObject, new()
         {
-            if (database.Update(t))
-            {
-                return true;
-            }
-            else
-            {
-                Log(t);
-                return false;
-            }
+            return TryWithRetry(() => database.Update(t), t);
         }
 
         public bool Update<T>(IEnumerable<T> t) where T : BaseObject, new()
         {
-            if (database.Update(t))
-            {
-                return true;
-            }
-            else
-            {
-                Log(t);
-                return false;
-            }
+            return TryWithRetry(() => database.Update(t), t);
         }
 
         public bool Upsert<T>(T t) where T : BaseObject, new()
         {
-            if (database.Upsert(t))
-            {
-                return true;
-            }
-            else
-            {
-                Log(t);
-                return false;
-            }
+            return TryWithRetry(() => database.Upsert(t), t);
         }
 
         public bool Upsert<T>(IEnumerable<T> t) where T : BaseObject, new()
         {
-            if (database.Upsert(t))
-            {
-                return true;
-            }
-            else
-            {
-                Log(t);
-                return false;
-            }
+            return TryWithRetry(() => database.Upsert(t), t);
         }
     }
 }
