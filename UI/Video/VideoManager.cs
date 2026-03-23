@@ -943,40 +943,59 @@ namespace UI.Video
                 try
                 {
                     List<Mode> modes = new List<Mode>();
-                    IHasModes frameSource = GetFrameSource(vs) as IHasModes;
-                    if (frameSource != null && !forceAll)
+
+                    // RTMP sources have a static mode list — skip the forceAll loop which would
+                    // try DirectShow/MediaFoundation against a URL they can't handle.
+                    if (vs.IsRTMP)
                     {
-                        modes.AddRange(frameSource.GetModes());
+                        VideoFrameWork ffmpeg = VideoFrameWorks.GetFramework(FrameWork.FFmpeg);
+                        if (ffmpeg != null)
+                        {
+                            FrameSource source = ffmpeg.CreateFrameSource(vs);
+                            if (source != null)
+                            {
+                                modes.AddRange(source.GetModes());
+                                source.Dispose();
+                            }
+                        }
                     }
                     else
                     {
-                        // Clear the video mode so it's not a problem getting new modes if the current one doesnt work?
-                        VideoConfig clone = vs.Clone();
-                        clone.VideoMode = new Mode();
-
-                        foreach (VideoFrameWork frameWork in VideoFrameWorks.Available)
+                        IHasModes frameSource = GetFrameSource(vs) as IHasModes;
+                        if (frameSource != null && !forceAll)
                         {
-                            FrameSource source = null;
-                            try
-                            {
-                                // Create a temporary instance just to get the modes...
-                                source = frameWork.CreateFrameSource(clone);
-                                if (source == null)
-                                    break;
+                            modes.AddRange(frameSource.GetModes());
+                        }
+                        else
+                        {
+                            // Clear the video mode so it's not a problem getting new modes if the current one doesnt work?
+                            VideoConfig clone = vs.Clone();
+                            clone.VideoMode = new Mode();
 
-                                modes.AddRange(source.GetModes());
-                                if (source.RebootRequired)
+                            foreach (VideoFrameWork frameWork in VideoFrameWorks.Available)
+                            {
+                                FrameSource source = null;
+                                try
                                 {
-                                    result.RebootRequired = true;
+                                    // Create a temporary instance just to get the modes...
+                                    source = frameWork.CreateFrameSource(clone);
+                                    if (source == null)
+                                        break;
+
+                                    modes.AddRange(source.GetModes());
+                                    if (source.RebootRequired)
+                                    {
+                                        result.RebootRequired = true;
+                                    }
                                 }
-                            }
-                            catch (Exception ex)
-                            {
-                                Logger.VideoLog.LogException(this, ex);
-                            }
-                            finally
-                            {
-                                source?.Dispose();
+                                catch (Exception ex)
+                                {
+                                    Logger.VideoLog.LogException(this, ex);
+                                }
+                                finally
+                                {
+                                    source?.Dispose();
+                                }
                             }
                         }
                     }

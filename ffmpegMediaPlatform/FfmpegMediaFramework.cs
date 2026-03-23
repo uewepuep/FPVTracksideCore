@@ -198,6 +198,13 @@ namespace FfmpegMediaPlatform
 
         public FrameSource CreateFrameSource(VideoConfig vc)
         {
+            // Check for RTMP stream (listen or connect)
+            if (vc.IsRTMP)
+            {
+                Tools.Logger.VideoLog.LogDebugCall(this, $"PLAYBACK PATH: RTMP stream → {vc.URL}");
+                return new FfmpegRtmpFrameSource(this, vc);
+            }
+
             // Check if this is a video file playback (has FilePath) or camera capture
             if (!string.IsNullOrEmpty(vc.FilePath))
             {
@@ -255,8 +262,8 @@ namespace FfmpegMediaPlatform
 
                 IEnumerable<string> responseText = GetFfmpegText(listDevicesCommand);
                
-                string[] deviceList = responseText.Where(l => l.Contains("[dshow @") && l.Contains("(video)")).ToArray();
-                string[] alternativeNames = responseText.Where(l => l.Contains("[dshow @") && l.Contains("Alternative name")).ToArray();
+                string[] deviceList = responseText.Where(l => l.Contains("(video)") && l.Contains("\"")).ToArray();
+                string[] alternativeNames = responseText.Where(l => l.Contains("Alternative name") && l.Contains("\"")).ToArray();
                 for (int i = 0; i < deviceList.Length && i < alternativeNames.Length; i++)
                 {
                     string deviceLine = deviceList[i];

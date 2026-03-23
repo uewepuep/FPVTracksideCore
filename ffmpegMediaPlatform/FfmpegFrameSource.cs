@@ -263,12 +263,6 @@ namespace FfmpegMediaPlatform
 
             Stop();
             
-            // Kill ALL ffmpeg processes that might be using this camera - aggressive cleanup (Windows only)
-            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
-            {
-                KillAllFfmpegProcessesForCamera();
-            }
-            
             if (process != null)
             {
                 try
@@ -294,51 +288,6 @@ namespace FfmpegMediaPlatform
             }
             
             base.Dispose();
-        }
-
-        private void KillAllFfmpegProcessesForCamera()
-        {
-            try
-            {
-                Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG (Windows) Killing ALL ffmpeg processes to ensure camera '{VideoConfig.DeviceName}' is freed");
-                
-                var ffmpegProcesses = System.Diagnostics.Process.GetProcessesByName("ffmpeg");
-                int killedCount = 0;
-                
-                foreach (var proc in ffmpegProcesses)
-                {
-                    try
-                    {
-                        proc.Kill();
-                        //if (!proc.HasExited)
-                        //{
-                        //    //Tools.Logger.VideoLog.LogCallDebugOnly(this, $"FFMPEG (Windows) Killing ffmpeg process {proc.Id}");
-                        //    proc.Kill();
-                        //    killedCount++;
-                        //}
-                    }
-                    catch (Exception ex)
-                    {
-                        Tools.Logger.VideoLog.LogException(this, "FFMPEG (Windows) Error killing process {proc.Id}", ex);
-                    }
-                    finally
-                    {
-                        proc.Dispose();
-                    }
-                }
-                
-                Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG (Windows) Killed {killedCount} ffmpeg processes for camera cleanup");
-
-                // Small delay to ensure processes are fully terminated (reduced from 200ms to 50ms for faster restarts)
-                if (killedCount > 0)
-                {
-                    System.Threading.Thread.Sleep(50);
-                }
-            }
-            catch (Exception ex)
-            {
-                Tools.Logger.VideoLog.LogException(this, "FFMPEG (Windows) Error in aggressive cleanup", ex);
-            }
         }
 
         public override bool Start()
@@ -464,6 +413,8 @@ namespace FfmpegMediaPlatform
 
             if (process.Start())
             {
+                Tools.ProcessJobObject.Instance?.AddProcess(process);
+
                 run = true;
                 Connected = true;
 
@@ -687,7 +638,7 @@ namespace FfmpegMediaPlatform
 
         protected abstract ProcessStartInfo GetProcessStartInfo();
 
-        protected void Run()
+        protected virtual void Run()
         {
             Tools.Logger.VideoLog.LogDebugCall(this, "Camera reading thread started");
             bool loggedInit = false;

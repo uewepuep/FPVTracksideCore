@@ -85,9 +85,11 @@ namespace ImageServer
         [System.ComponentModel.Browsable(false)]
         public string ffmpegId { get; set; }
 
+        [Category("Device")]
+        public string URL { get; set; }
 
         [System.ComponentModel.Browsable(false)]
-        public string URL { get; set; }
+        public bool IsRTMP => !string.IsNullOrEmpty(URL) && URL.StartsWith("rtmp://", StringComparison.OrdinalIgnoreCase);
 
         [Category("Device")]
         public Mode VideoMode { get; set; }
