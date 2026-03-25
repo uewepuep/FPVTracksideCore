@@ -442,6 +442,18 @@ namespace UI.Nodes
             return channelNodeBase;
         }
 
+        private void OnChannelQRPilotDetected(Channel channel, string pilotName)
+        {
+            Pilot pilot = EventManager.Event.Pilots.FirstOrDefault(p => p.Name.Equals(pilotName, StringComparison.OrdinalIgnoreCase));
+            if (pilot != null)
+            {
+                if (!EventManager.RaceManager.HasPilot(pilot))
+                {
+                    EventManager.RaceManager.AddPilot(channel, pilot);
+                }
+            }
+        }
+
         public void OnRaceManagerAddPilot(PilotChannel pilotChannel)
         {
             ChannelNodeBase[] ps = AddPilots(pilotChannel);
@@ -524,6 +536,7 @@ namespace UI.Nodes
                     channelNode.Init();
                     channelNode.FrameNode.RelativeSourceBounds = ci.ScaledRelativeSourceBounds;
                     channelNode.FrameNode.SetAspectRatio(withLaps);
+                    channelNode.OnQRPilotDetected += OnChannelQRPilotDetected;
                     AutoCrashOut?.AddChannelNode(channelNode);
 
                     channelNodeBase = channelNode;

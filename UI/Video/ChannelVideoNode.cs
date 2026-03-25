@@ -19,6 +19,9 @@ namespace UI.Video
     {
         public FrameNodeThumb FrameNode { get; private set; }
         private FrameSource source;
+        private QRScanner qrScanner;
+
+        public event Action<Channel, string> OnQRPilotDetected;
 
         public ChannelVideoNode(EventManager eventManager, Channel channel, FrameSource source, Color channelColor)
             : base(eventManager, channel, channelColor)
@@ -34,9 +37,32 @@ namespace UI.Video
             return FrameNode;
         }
 
+        public override void Dispose()
+        {
+            qrScanner?.Dispose();
+            qrScanner = null;
+            base.Dispose();
+        }
+
+        public override void Update(GameTime gameTime)
+        {
+            base.Update(gameTime);
+
+            if (qrScanner != null && Pilot == null && !EventManager.RaceManager.RaceRunning && EventManager.RaceManager.CurrentRace != null)
+            {
+                qrScanner.Update(gameTime);
+            }
+        }
+
         public override void Init()
         {
             base.Init();
+
+            if (ApplicationProfileSettings.Instance.QRPilotScan)
+            {
+                qrScanner = new QRScanner(FrameNode);
+                qrScanner.OnTextDetected += (string name) => { OnQRPilotDetected?.Invoke(Channel, name); };
+            }
 
             if (LapsNode != null)
             {

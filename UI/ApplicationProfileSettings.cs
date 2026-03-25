@@ -281,6 +281,14 @@ namespace UI
         [DisplayName("Sponsor screensaver idle time (minutes, 0 = disabled)")]
         public int ScreensaverIdleMinutes { get; set; }
 
+        [Category("QR Pilot Scan")]
+        [DisplayName("Enable QR pilot scan")]
+        public bool QRPilotScan { get; set; }
+
+        [Category("QR Pilot Scan")]
+        [DisplayName("QR scan frequency (seconds, lower = faster detection but higher CPU usage)")]
+        public float QRPilotScanFrequencySeconds { get; set; }
+
         public ApplicationProfileSettings()
         {
             Theme = "FPVTrackside";
@@ -366,6 +374,8 @@ namespace UI
             ShowDownPilotLapTimes = true;
             PilotProfileMask = true;
             PilotProfileMaskAlpha = 0.6f;
+            QRPilotScan = false;
+            QRPilotScanFrequencySeconds = 0.1f;
         }
 
         protected const string filename = "ProfileSettings.xml";
