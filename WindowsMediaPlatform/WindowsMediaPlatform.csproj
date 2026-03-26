@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
 		<ApplicationIcon />
 		<Platforms>x64</Platforms>
-		<Version>2.73.1.751</Version>
+		<Version>2.74.0.770</Version>
 	  <usewpf>true</usewpf>
   </PropertyGroup>
 
