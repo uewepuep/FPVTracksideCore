@@ -1434,6 +1434,9 @@ namespace UI
 
         private void OnTabChange(string tab, Node s)
         {
+            if (ControlButtons == null)
+                return;
+
             ControlButtons.UpdateControlButtons(); 
             if (ApplicationProfileSettings.Instance.AutoHideShowPilotList)
             {
