@@ -48,7 +48,7 @@ namespace UI.Video
         {
             base.Update(gameTime);
 
-            if (qrScanner != null && Pilot == null && !EventManager.RaceManager.RaceRunning && EventManager.RaceManager.CurrentRace != null)
+            if (qrScanner != null && Pilot == null && !EventManager.RaceManager.RaceRunning)
             {
                 qrScanner.Update(gameTime);
             }

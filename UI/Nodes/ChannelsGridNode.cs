@@ -5,6 +5,7 @@ using ImageServer;
 using Microsoft.Xna.Framework;
 using OfficeOpenXml.Style;
 using RaceLib;
+using Sound;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -449,9 +450,12 @@ namespace UI.Nodes
             {
                 if (!EventManager.RaceManager.HasPilot(pilot))
                 {
+                    SoundManager.Instance.QRCheckedIn(pilot, channel);
                     EventManager.RaceManager.AddPilot(channel, pilot);
+                    return;
                 }
             }
+            SoundManager.Instance.QRCheckedInNotAPilot();
         }
 
         public void OnRaceManagerAddPilot(PilotChannel pilotChannel)

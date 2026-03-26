@@ -89,7 +89,12 @@ namespace UI.Video
                 drawer.GraphicsDevice.SetRenderTarget(renderTarget);
                 drawer.GraphicsDevice.Clear(Color.Black);
                 drawer.Begin();
-                drawer.Draw(scanTexture, new Rectangle(0, 0, scanTexture.Width, scanTexture.Height), new Rectangle(0, 0, ScanWidth, ScanHeight), Color.White, 1);
+                
+                float cropFraction = ApplicationProfileSettings.Instance.QRPilotScanCentreCropFraction;
+                Rectangle cropRect = new Rectangle((int)(scanTexture.Width * (1 - cropFraction) / 2), (int)(scanTexture.Height * (1 - cropFraction) / 2),
+                                                   (int)(scanTexture.Width * cropFraction), (int)(scanTexture.Height * cropFraction));
+                
+                drawer.Draw(scanTexture, cropRect, new Rectangle(0, 0, ScanWidth, ScanHeight), Color.White, 1);
                 drawer.End();
             }
             catch

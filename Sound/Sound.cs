@@ -87,7 +87,10 @@ namespace Sound
         Custom4,
         Custom5,
 
-        Flag
+        Flag,
+
+        CheckedIn,
+        InvalidQR
     }
 
 

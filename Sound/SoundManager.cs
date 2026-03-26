@@ -288,6 +288,9 @@ namespace Sound
                     new Sound() { Key = SoundKey.EmergencyStop, TextToSpeech = "Emergency Stop, PILOTS LAND NOW!", Category = Sound.SoundCategories.Announcements },
                     new Sound() { Key = SoundKey.Flag, TextToSpeech = "Flagged", Category = Sound.SoundCategories.Announcements },
 
+                    new Sound() { Key = SoundKey.CheckedIn, TextToSpeech = "{pilot} checked in on {channel}", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.InvalidQR, TextToSpeech = "Invalid QR scanned", Category = Sound.SoundCategories.Announcements },
+
                     new Sound() { Key = SoundKey.GamePoint, TextToSpeech = "BEEP", Filename = @"sounds/detection.wav", Category = Sound.SoundCategories.Detection },
                     new Sound() { Key = SoundKey.GamePointsRemaining, TextToSpeech = "{pilots} {points} points remaining",Category = Sound.SoundCategories.Announcements },
                     new Sound() { Key = SoundKey.GameWins, TextToSpeech = "{pilots} has {points} and WINS THE GAME!", Category = Sound.SoundCategories.Announcements },
@@ -387,7 +390,6 @@ namespace Sound
 
         private void OnRaceChanged(Race race)
         {
-            StopSound();
             if (race != null && eventManager.RaceManager.CanRunRace)
             {
                 AnnounceRace(race);
@@ -1078,6 +1080,19 @@ namespace Sound
         {
             StopSound();
             PlaySound(SoundKey.EmergencyStop);
+        }
+
+        public void QRCheckedIn(Pilot pilot, Channel channel)
+        {
+            SpeechParameters soundParameters = new SpeechParameters();
+            soundParameters.Add(SpeechParameters.Types.pilot, pilot.Phonetic);
+            soundParameters.Add(SpeechParameters.Types.channel, channel.UIDisplayName);
+            PlaySound(SoundKey.CheckedIn, soundParameters);
+        }
+
+        public void QRCheckedInNotAPilot()
+        {
+            PlaySound(SoundKey.InvalidQR);
         }
     }
 

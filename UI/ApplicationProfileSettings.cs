@@ -289,6 +289,10 @@ namespace UI
         [DisplayName("QR scan frequency (seconds, lower = faster detection but higher CPU usage)")]
         public float QRPilotScanFrequencySeconds { get; set; }
 
+        [Category("QR Pilot Scan")]
+        [DisplayName("QR scan centre crop fraction (0.5 = scan centre 50% of image)")]
+        public float QRPilotScanCentreCropFraction { get; set; }
+
         public ApplicationProfileSettings()
         {
             Theme = "FPVTrackside";
@@ -376,6 +380,7 @@ namespace UI
             PilotProfileMaskAlpha = 0.6f;
             QRPilotScan = false;
             QRPilotScanFrequencySeconds = 0.1f;
+            QRPilotScanCentreCropFraction = 0.5f;
         }
 
         protected const string filename = "ProfileSettings.xml";
