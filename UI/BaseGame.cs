@@ -33,6 +33,7 @@ namespace UI
         protected LoadingLayer loadingLayer;
 
         private Mutex mutex;
+        private bool mutexAcquired;
 
         private bool hasEverShownEventSelector;
 
@@ -120,11 +121,20 @@ namespace UI
             Logger.UI.Log(this, this.ToString(), "Dispose");
 
             Background.Dispose();
-            
-            base.Dispose(disposing);
+
+            try
+            {
+                base.Dispose(disposing);
+            }
+            catch (Exception ex)
+            {
+                // MonoGame bug: Effect.Dispose can throw NullReferenceException during GraphicsDevice cleanup
+                Logger.UI.LogException(this, ex);
+            }
+
             Tools.Logger.CleanUp();
 
-            if (alreadyRunning == null)
+            if (mutexAcquired)
             {
                 mutex.ReleaseMutex();
                 mutex.Dispose();
@@ -191,7 +201,8 @@ namespace UI
             bool waitingOnMutex;
             try
             {
-                waitingOnMutex = !mutex.WaitOne(TimeSpan.Zero);
+                mutexAcquired = mutex.WaitOne(TimeSpan.Zero);
+                waitingOnMutex = !mutexAcquired;
             }
             catch
             {
