@@ -25,8 +25,6 @@ namespace FfmpegMediaPlatform
         private bool reversed;
         private bool isAtEnd;
         private TimeSpan mediaTime;
-        private int currentFrameIndex;
-        private long totalFrames;
         private bool isSeekOperation;
         private int seekStabilizationFrames;
         private string currentSeekArgs; // Temporary storage for seek FFmpeg arguments
@@ -138,8 +136,6 @@ namespace FfmpegMediaPlatform
             reversed = false;
             isAtEnd = false;
             mediaTime = TimeSpan.Zero;
-            currentFrameIndex = 0;
-            totalFrames = 0;
             
             // Load frame times from .recordinfo.xml file if it exists
             LoadFrameTimesFromRecordInfo();

@@ -30,8 +30,6 @@ namespace Composition.Layers
             }
         }
 
-        private MenuLayer menuLayer;
-
         public Color PopupBackground { get; set; }
         public Color PopupButtonBackground { get; set; }
         public Color PopupHover { get; set; }
@@ -60,7 +58,7 @@ namespace Composition.Layers
         {
             if (ActiveNode != null)
             {
-                bool result = ActiveNode.OnMouseInput(inputEvent);
+                ActiveNode.OnMouseInput(inputEvent);
             
                 // No input events go to lower layers.
                 return true;
@@ -72,7 +70,7 @@ namespace Composition.Layers
         {
             if (background.ChildCount != 0)
             {
-                bool result = base.OnKeyboardInput(inputEvent);
+                base.OnKeyboardInput(inputEvent);
 
                 // No input events go to lower layers.
                 return true;

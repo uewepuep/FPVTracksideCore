@@ -505,8 +505,6 @@ namespace UI.Nodes
         private DateTime lastXFrame;
         private int frameCount;
         private TimeSpan frameMeasurementPeriod;
-        private List<TextNode> debugText;
-
         public FrameRateStatusNode()
             : base(@"img/frames.png")
         {

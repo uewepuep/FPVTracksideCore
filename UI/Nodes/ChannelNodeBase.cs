@@ -97,8 +97,6 @@ namespace UI.Nodes
 
         public CrashState CrashedOutType { get; private set; }
 
-        public event Action<Channel, Pilot> OnCrashedOut;
-
         public bool Finished { get { return resultContainer.Visible; } }
            
         private ColorNode crashedOut;
