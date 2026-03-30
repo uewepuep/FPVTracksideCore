@@ -14,7 +14,7 @@ namespace Composition.Nodes
             }
             set
             {
-                SetFilename(FileName);
+                SetFilename(null);
                 color = value;
                 dirty = true;
             }

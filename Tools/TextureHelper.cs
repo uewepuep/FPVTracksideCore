@@ -293,7 +293,7 @@ namespace Tools
             }
         }
 
-        public static Texture2D GetEmbeddedTexture(GraphicsDevice graphics, System.Reflection.Assembly assembly, string name)
+        public static Texture2D GetEmbeddedTexture(GraphicsDevice graphics, System.Reflection.Assembly assembly, string name, bool preMultiply = true)
         {
             try
             {
@@ -302,6 +302,10 @@ namespace Tools
                     if (resourceStream != null)
                     {
                         Texture2D t = Texture2D.FromStream(graphics, resourceStream);
+
+                        if (preMultiply)
+                            PreMultiplyAlpha(t);
+
                         return t;
                     }
                     return null;
