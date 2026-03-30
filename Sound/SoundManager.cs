@@ -215,10 +215,18 @@ namespace Sound
                 sounds = new Dictionary<SoundKey, Sound>();
                 try
                 {
-                    Sounds = IOTools.Read<Sound>(Profile, filename);
+                    Sound[] loaded = IOTools.Read<Sound>(Profile, filename);
+                    if (loaded != null)
+                    {
+                        foreach (Sound s in loaded)
+                        {
+                            AddSound(s);
+                        }
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Logger.SoundLog.LogException(this, ex);
                 }
 
                 Sound[] defaultSounds = new Sound[]

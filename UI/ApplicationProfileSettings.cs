@@ -393,23 +393,23 @@ namespace UI
 
         public static ApplicationProfileSettings Read(Profile profile)
         {
-            ApplicationProfileSettings s = null;
             try
             {
-                s = Tools.IOTools.Read<ApplicationProfileSettings>(profile, filename).FirstOrDefault();
+                ApplicationProfileSettings s = Tools.IOTools.Read<ApplicationProfileSettings>(profile, filename).FirstOrDefault();
                 if (s == null)
                 {
                     s = new ApplicationProfileSettings();
                 }
+
+                Write(profile, s);
+
+                return s;
             }
-            catch
+            catch (Exception ex)
             {
-                s = new ApplicationProfileSettings();
+                Logger.UI.LogException(typeof(ApplicationProfileSettings), ex);
+                return new ApplicationProfileSettings();
             }
-
-            Write(profile, s);
-
-            return s;
         }
 
         public static void Write()

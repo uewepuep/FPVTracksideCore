@@ -183,8 +183,9 @@ namespace Timing
 
                 return s;
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.TimingLog.LogException(typeof(TimingSystemSettings), ex);
                 return new TimingSystemSettings[] { };
             }
         }
