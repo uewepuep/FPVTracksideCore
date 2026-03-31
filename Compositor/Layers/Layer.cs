@@ -65,7 +65,7 @@ namespace Composition.Layers
 
         protected virtual void OnUpdate(GameTime gameTime) { }
         
-        public void Draw()
+        public virtual void Draw()
         {
             if (Visible)
             {
