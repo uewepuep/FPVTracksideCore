@@ -124,6 +124,12 @@ namespace UI
             videoManager = VideoManagerFactory.CreateVideoManager();
             videoManager.AutoPause = true;
 
+            VideoEventManager videoEventManager = EventManager as VideoEventManager;
+            if (videoEventManager != null)
+            {
+                videoEventManager.VideoManager = videoManager;
+            }
+
             SoundManager = new SoundManager(EventManager, eventManager.Profile);
             SoundManager.MuteTTS = !ApplicationProfileSettings.Instance.TextToSpeech;
             SoundManager.SillyNameChance = ApplicationProfileSettings.Instance.SillyNameChance;

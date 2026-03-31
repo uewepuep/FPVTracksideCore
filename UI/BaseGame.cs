@@ -353,7 +353,7 @@ namespace UI
             loadingLayer.BlockOnLoading = true;
 
             BackgroundLayer backgroundLayer = LayerStack.GetLayer<BackgroundLayer>();
-            EventManager eventManager = new EventManager(profile);
+            EventManager eventManager = new VideoEventManager(profile);
 
             WorkSet startEventWorkSet = new WorkSet();
             startEventWorkSet.OnError += ErrorLoadingEvent;

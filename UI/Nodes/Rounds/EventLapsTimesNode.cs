@@ -195,6 +195,14 @@ namespace UI.Nodes.Rounds
                     {
                         eventManager.RaceManager.SetRace(race);
                     });
+
+                    if (eventManager.HasReplay(race))
+                    {
+                        mouseMenu.AddItem("Jump to Replay", () =>
+                        {
+                            eventManager.JumpToReplay(race, Laps.FirstOrDefault());
+                        });
+                    }
                 }
             }
 

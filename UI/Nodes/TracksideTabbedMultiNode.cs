@@ -76,6 +76,7 @@ namespace UI.Nodes
             eventManager.RaceManager.OnRaceEnd += UpdateReplayButton;
             eventManager.RaceManager.TimingSystemManager.OnInitialise += UpdateRSSIVisible;
             videoManager.OnFinishedFinalizing += VideoManager_OnFinishedFinalizing;
+            eventManager.OnJumpToReplay += ShowReplay;
         }
 
         public override void Dispose()
@@ -83,6 +84,7 @@ namespace UI.Nodes
             eventManager.RaceManager.OnRaceChanged -= UpdateReplayButton;
             eventManager.RaceManager.OnRaceEnd -= UpdateReplayButton;
             eventManager.RaceManager.TimingSystemManager.OnInitialise -= UpdateRSSIVisible;
+            eventManager.OnJumpToReplay -= ShowReplay;
 
             base.Dispose();
         }
@@ -100,7 +102,7 @@ namespace UI.Nodes
         {
             AddTab("Rounds", rounds, ShowRounds);
             liveButton = AddTab("Live", sceneManagerNode, ShowLive);
-            replayButton = AddTab("Replay", ReplayNode, ShowReplay);
+            replayButton = AddTab("Replay", ReplayNode, (mie) => { ShowReplay(); });
 
             AddTab("Lap Records", LapRecordsSummaryNode, ShowTopLaps);
             AddTab("Lap Count", LapCountSummaryNode, ShowLaps);
@@ -327,11 +329,24 @@ namespace UI.Nodes
             Show(sceneManagerNode);
         }
 
-        public void ShowReplay(MouseInputEvent mie)
+        public void ShowReplay(Race race, Lap lap = null)
+        {
+            if (!eventManager.RaceManager.RaceRunning)
+            {
+                if (eventManager.RaceManager.CurrentRace != race)
+                {
+                    eventManager.RaceManager.SetRace(race);
+                }
+
+                Show(ReplayNode);
+                ReplayNode.ReplayRace(race, lap);
+            }
+        }
+
+        public void ShowReplay()
         {
             Race current = eventManager.RaceManager.CurrentRace;
-            Show(ReplayNode);
-            ReplayNode.ReplayRace(current);
+            ShowReplay(current);
         }
 
         public override void Show(Node node)

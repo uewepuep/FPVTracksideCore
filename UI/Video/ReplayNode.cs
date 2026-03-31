@@ -32,6 +32,7 @@ namespace UI.Video
 
         private IPlaybackFrameSource primary;
         private Race race;
+        private DateTime? seekOnStart;
 
         private DateTime minStart;
         private DateTime maxEnd;
@@ -231,7 +232,7 @@ namespace UI.Video
             race = null;
         }
 
-        public bool ReplayRace(Race race)
+        public bool ReplayRace(Race race, Lap lap = null)
         {
             try
             {
@@ -239,6 +240,14 @@ namespace UI.Video
                 SeekNode.ClearFlags();
 
                 this.race = race;
+                if (lap != null)
+                {
+                    seekOnStart = lap.Start + TimeSpan.FromSeconds(-1);
+                }
+                else
+                {
+                    seekOnStart = null;
+                }
 
                 PlaybackVideoManager = VideoManagerFactory.CreateVideoManager();
                 PlaybackVideoManager.OnStart += PlaybackVideoManager_OnStart;
@@ -322,6 +331,13 @@ namespace UI.Video
                 primary = (IPlaybackFrameSource)obj;
             }
             PlaybackVideoManager.OnStart -= PlaybackVideoManager_OnStart;
+
+            if (seekOnStart != null)
+            {
+                Seek(seekOnStart.Value);
+                Stop();
+                seekOnStart = null;
+            }
         }
 
         private void Hide(ChannelNodeBase cbn)

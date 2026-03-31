@@ -185,6 +185,11 @@ namespace UI.Nodes.Rounds
                     mm.AddItem("Open Race", () => { EventManager.RaceManager.SetRace(Race); });
                 }
 
+                if (!EventManager.RaceManager.RaceRunning && EventManager.HasReplay(Race))
+                {
+                    mm.AddItem("Open Race Replay", () => { EventManager.JumpToReplay(Race); });
+                }
+
                 if (Race != null)
                 {
                     if (Race.Ended)
