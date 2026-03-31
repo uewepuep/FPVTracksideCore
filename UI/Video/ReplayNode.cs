@@ -242,7 +242,7 @@ namespace UI.Video
                 this.race = race;
                 if (lap != null)
                 {
-                    seekOnStart = lap.Start + TimeSpan.FromSeconds(-1);
+                    seekOnStart = lap.Start;
                 }
                 else
                 {
@@ -296,6 +296,7 @@ namespace UI.Video
                     ChannelNodeBase[] channelNodes = ChannelsGridNode.AddPilots(race.PilotChannelsSafe);
                     foreach (ChannelNodeBase cbn in channelNodes)
                     {
+                        cbn.LapsNode.OnSeekToLap = (l) => { Seek(l.Start); };
                         cbn.OnCloseClick += () => { Hide(cbn); };
                         cbn.OnCrashedOutClick += () => { Hide(cbn); };
 

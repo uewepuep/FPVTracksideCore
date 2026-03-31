@@ -392,23 +392,34 @@ namespace UI.Nodes
 
         public void ShowVideoSettings()
         {
-            videoManager?.StopDevices();
+            LoadingLayer ll = GetLayer<LoadingLayer>();
+            if (ll == null)
+                return;
 
-            VideoSourceEditor editor = VideoSourceEditor.GetVideoSourceEditor(eventManager, Profile);
-            GetLayer<PopupLayer>().Popup(editor);
-
-            editor.OnOK += (e) =>
+            WorkSet workSet = new WorkSet();
+            ll.WorkQueue.Enqueue(workSet, "Stopping Devices", () =>
             {
-                List<VideoConfig> sources = editor.Objects.ToList();
-                VideoManager.WriteDeviceConfig(Profile, sources);
+                videoManager?.StopDevices();
+            });
 
-                VideoSettingsExited?.Invoke(true);
-            };
-
-            editor.OnCancel += (e) =>
+            ll.WorkQueue.Enqueue(workSet, "Loading Settings", () =>
             {
-                VideoSettingsExited?.Invoke(false);
-            };
+                VideoSourceEditor editor = VideoSourceEditor.GetVideoSourceEditor(eventManager, Profile);
+                GetLayer<PopupLayer>().Popup(editor);
+
+                editor.OnOK += (e) =>
+                {
+                    List<VideoConfig> sources = editor.Objects.ToList();
+                    VideoManager.WriteDeviceConfig(Profile, sources);
+
+                    VideoSettingsExited?.Invoke(true);
+                };
+
+                editor.OnCancel += (e) =>
+                {
+                    VideoSettingsExited?.Invoke(false);
+                };
+            });
         }
 
         public void ShowPointsSettings()
