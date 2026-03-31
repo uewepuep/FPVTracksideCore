@@ -41,7 +41,7 @@ namespace UI.Sponsor
                     patreonNode.SetPatreon(sponsor.Name, sponsor.Since, sponsor.Filename);
                     patreonNode.Scale(0.7f, 1);
 
-                    BorderPanelNode borderPanelNode = new BorderPanelNode();
+                    BorderPanelNode borderPanelNode = new BorderPanelShadowNode();
                     borderPanelNode.Scale(1, 0.4f);
                     borderPanelNode.AddChild(patreonNode);
 

@@ -134,7 +134,7 @@ namespace Composition.Layers
 
         public PopupBackgroundNode() 
         {
-            backgroundNode = new ColorNode(Color.FromNonPremultiplied(8, 8, 8, 128));
+            backgroundNode = new ColorNode(Color.FromNonPremultiplied(96, 96, 96, 128));
         }
 
         public override void Dispose()

@@ -46,6 +46,8 @@ namespace Composition.Nodes
             {
                 OK();
             };
+
+            AddChild(new ShadowNode());
         }
 
 

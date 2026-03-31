@@ -42,6 +42,8 @@ namespace UI.Nodes
 
                 EventManager.RaceManager.OnPilotAdded += RaceManager_OnPilotAdded;
             }
+
+            AddChild(new ShadowNode());
         }
 
         public override void Dispose()

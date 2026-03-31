@@ -72,6 +72,8 @@ namespace UI.Nodes.Rounds
             }
         }
 
+        private ShadowNode shadow;
+
         public EventXNode(EventManager ev, Round round)
         {
             Scroller.Enabled = false;
@@ -114,6 +116,8 @@ namespace UI.Nodes.Rounds
             contentContainer.RelativeBounds = new RectangleF(0, subHeading.RelativeBounds.Bottom, 1, 1 - subHeading.RelativeBounds.Bottom);
             panel.Inner.AddChild(contentContainer);
             UpdateButtons();
+
+            shadow = new ShadowNode();
         }
 
         public virtual bool IsRoundInStage()
@@ -360,6 +364,24 @@ namespace UI.Nodes.Rounds
         public virtual IEnumerable<Pilot> GetOrderedPilots()
         {
             return EventManager.Event.Pilots;
+        }
+
+        public override void Layout(RectangleF parentBounds)
+        {
+            base.Layout(parentBounds);
+            shadow.Layout(BoundsF);
+        }
+
+        public override void Draw(Drawer id, float parentAlpha)
+        {
+            base.Draw(id, parentAlpha);
+            shadow.Draw(id, parentAlpha);
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+            shadow?.Dispose();
         }
     }
 }

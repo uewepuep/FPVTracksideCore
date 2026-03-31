@@ -579,6 +579,7 @@ namespace UI.Nodes
         public KeybindNode(Action<ShortcutKey> onFinished)
             : this("Press a new key combination", Theme.Current.Editor.Foreground.XNA, Theme.Current.Editor.Text.XNA, onFinished)
         {
+            AddChild(new ShadowNode());
         }
 
         public KeybindNode(string message, Color background, Color text, Action<ShortcutKey> onFinished)

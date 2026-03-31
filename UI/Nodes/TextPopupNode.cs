@@ -101,6 +101,7 @@ namespace Composition.Nodes
             ok.Text = Translator.Get("Button.Add", "Add");
 
             OnOK += AddPilotNode_OnOK;
+            AddChild(new ShadowNode());
         }
 
         private void AddPilotNode_OnOK(string obj)
