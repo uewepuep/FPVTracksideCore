@@ -28,6 +28,8 @@ namespace UI
 {
     public class BaseGame : LayerStackGameBackgroundThread
     {
+        protected virtual string DefaultTheme => "FPVTrackside";
+
         protected EventLayer eventLayer;
 
         protected LoadingLayer loadingLayer;
@@ -37,7 +39,7 @@ namespace UI
 
         private bool hasEverShownEventSelector;
 
-        public Texture2D Banner { get; private set; }
+        public Texture2D Banner { get; protected set; }
 
         public WorkQueue Background { get; private set; }
 
@@ -286,7 +288,7 @@ namespace UI
             return new EventSelectorEditor(Banner, Profile);
         }
 
-        public void ShowWelcomeSetup()
+        public virtual void ShowWelcomeSetup()
         {
             Logger.UI.LogCall(this);
 
@@ -376,7 +378,7 @@ namespace UI
 
             loadingLayer.WorkQueue.Enqueue(startEventWorkSet, "Loading Theme", () =>
             {
-                Theme.Initialise(GraphicsDevice, PlatformTools.WorkingDirectory, "FPVTrackside");
+                Theme.Initialise(GraphicsDevice, PlatformTools.WorkingDirectory, DefaultTheme);
 
                 if (backgroundLayer != null)
                 {

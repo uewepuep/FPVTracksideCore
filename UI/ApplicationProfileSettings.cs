@@ -295,8 +295,6 @@ namespace UI
 
         public ApplicationProfileSettings()
         {
-            Theme = "FPVTrackside";
-
             AlignChannels = RectangleAlignment.Center;
 
             ReOrderDelaySeconds = 3;

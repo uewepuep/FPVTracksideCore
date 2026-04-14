@@ -25,9 +25,14 @@ namespace UI.Nodes
         private MenuButton menuButton;
         private Profile profile;
 
-        public WelcomeSetupNode(Texture2D logo, Profile profile)
+        public WelcomeSetupNode(Texture2D logo, Profile profile, string productName = "")
         {
             this.profile = profile;
+
+            if (string.IsNullOrEmpty(productName))
+            {
+                productName = Process.GetCurrentProcess().ProcessName;
+            }
 
             Scale(0.5f, 0.9f);
 
@@ -71,7 +76,7 @@ namespace UI.Nodes
             currentY = welcome.RelativeBounds.Bottom;
             currentY += padding;
 
-            TextNode p1 = new TextNode("Thank you for using FPVTrackside!\n" +
+            TextNode p1 = new TextNode("Thank you for using " + productName +  "!\n" +
                 "First thing we want you to be aware of us our online manual.\n" +
                 "It goes through a lot of the setup and explains some of the terminology we use.", Theme.Current.TextMain.XNA);
             p1.Alignment = RectangleAlignment.CenterLeft;
