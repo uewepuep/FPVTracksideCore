@@ -3,9 +3,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net9.0-windows</TargetFramework>
-    <ApplicationIcon />
     <Platforms>x64;AnyCPU</Platforms>
-    <StartupObject />
     <Version>2.74.1.777</Version>
 	  <usewpf>true</usewpf>
   </PropertyGroup>

@@ -3,15 +3,11 @@
     <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net9.0</TargetFramework>
-    <ApplicationIcon />
     <Platforms>AnyCPU;x64</Platforms>
-    <StartupObject />
     <Version>2.74.1.777</Version>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
-  
+
   <ItemGroup>
     <PackageReference Include="EPPlus" Version="5.8.7" />
   </ItemGroup>

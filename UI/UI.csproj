@@ -3,16 +3,12 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net9.0</TargetFramework>
-    <ApplicationIcon />
     <Platforms>AnyCPU;x64</Platforms>
-    <StartupObject />
     <Version>2.74.1.777</Version>
 	  <Self-Contained>true</Self-Contained>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
-  
+
   <ItemGroup>
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1">
 		  <PrivateAssets>all</PrivateAssets>

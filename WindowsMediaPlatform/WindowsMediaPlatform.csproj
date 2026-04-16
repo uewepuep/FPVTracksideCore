@@ -6,7 +6,6 @@
 		<TargetFramework>net9.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-		<ApplicationIcon />
 		<Platforms>x64</Platforms>
 		<Version>2.74.1.777</Version>
 	  <usewpf>true</usewpf>
