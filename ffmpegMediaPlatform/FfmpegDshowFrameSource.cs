@@ -257,7 +257,9 @@ namespace FfmpegMediaPlatform
 
                 // PERFORMANCE: Enhanced low-delay flags for 4K video to reduce 1-second startup delay
                 // Note: When using CUVID decoder, filters must handle CUDA frames or upload/download from GPU
-                string filterPrefix = (hwaccelArgs.Contains("cuda") && decoderCodec != "") ? "hwdownload,format=nv12," : "";
+                // mjpeg_cuvid produces NV12 frames tagged with bogus colorspace metadata (csp:gbr prim:reserved trc:reserved),
+                // which swscaler refuses to convert to rgba. setparams overrides the metadata to a valid colorspace.
+                string filterPrefix = (hwaccelArgs.Contains("cuda") && decoderCodec != "") ? "hwdownload,format=nv12,setparams=colorspace=bt709:color_primaries=bt709:color_trc=bt709," : "";
 
                 ffmpegArgs = $"-f dshow " +
                                 $"{hwaccelArgs}" +
