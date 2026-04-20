@@ -312,6 +312,11 @@ namespace UI.Nodes.Rounds
                     });
                 });
 
+                mm.AddItemConfirm("Delete Stage", () =>
+                {
+                    EventManager.RoundManager.DeleteStage(Round.Stage);
+                });
+
                 mm.AddItem("Delete Stage and contents", () =>
                 {
                     PopupLayer pl = GetLayer<PopupLayer>();
