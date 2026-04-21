@@ -669,13 +669,15 @@ namespace RaceLib
 
         public void DeleteStage(IDatabase db, Stage stage)
         {
+            if (stage == null)
+                return;
+
             Round[] rounds = GetStageRounds(stage).ToArray();
             foreach (Round r in rounds)
             {
                 r.Stage = null;
                 db.Update(r);
             }
-
             stage.Valid = false;
             db.Update(stage);
             OnStageChanged?.Invoke();
