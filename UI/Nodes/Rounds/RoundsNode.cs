@@ -395,9 +395,8 @@ namespace UI.Nodes.Rounds
 
         private void AddSumPoints(Round callingRound)
         {
-            EventManager.RoundManager.DeleteStage(callingRound.Stage);
-
             bool isNew = callingRound.Stage == null;
+            if (!isNew) EventManager.RoundManager.DeleteStage(callingRound.Stage);
             EventManager.RoundManager.AddSumPoints(callingRound);
             if (isNew) EditStageName(callingRound);
             Refresh();
@@ -406,10 +405,8 @@ namespace UI.Nodes.Rounds
 
         private void AddTimeSummary(Round callingRound, TimeSummary.TimeSummaryTypes type)
         {
-            EventManager.RoundManager.DeleteStage(callingRound.Stage);
-
-
             bool isNew = callingRound.Stage == null;
+            if (!isNew) EventManager.RoundManager.DeleteStage(callingRound.Stage);
             EventManager.RoundManager.AddTimeSummary(callingRound, type);
             if (isNew) EditStageName(callingRound);
             Refresh();
@@ -418,10 +415,8 @@ namespace UI.Nodes.Rounds
 
         public void AddPackCount(Round callingRound)
         {
-            EventManager.RoundManager.DeleteStage(callingRound.Stage);
-
-
             bool isNew = callingRound.Stage == null;
+            if (!isNew) EventManager.RoundManager.DeleteStage(callingRound.Stage);
             EventManager.RoundManager.AddPackCount(callingRound);
             if (isNew) EditStageName(callingRound);
             Refresh();
@@ -429,10 +424,8 @@ namespace UI.Nodes.Rounds
 
         private void AddLapCount(Round callingRound)
         {
-            EventManager.RoundManager.DeleteStage(callingRound.Stage);
-
-
             bool isNew = callingRound.Stage == null;
+            if (!isNew) EventManager.RoundManager.DeleteStage(callingRound.Stage);
             EventManager.RoundManager.AddLapCount(callingRound);
             if (isNew) EditStageName(callingRound);
             Refresh();
