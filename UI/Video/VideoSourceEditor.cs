@@ -439,7 +439,7 @@ namespace UI.Video
                 CheckVisible(propertyNode, Selected);
             }
 
-            if (newChange.PropertyInfo.Name == "VideoMode" || newChange.PropertyInfo.Name == "Flipped" || newChange.PropertyInfo.Name == "RecordVideoForReplays")
+            if (newChange.PropertyInfo.Name == "VideoMode" || newChange.PropertyInfo.Name == "FlipMirrored" || newChange.PropertyInfo.Name == "RecordVideoForReplays")
             {
                 RepairVideoPreview();
             }

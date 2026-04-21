@@ -322,10 +322,20 @@ namespace ImageServer
             c.ChannelCoveragePercent = ChannelCoveragePercent;
             c.DeviceName = DeviceName;
             c.FilePath = FilePath;
+            c.ffmpegId = ffmpegId;
+            c.URL = URL;
+            c.AnyUSBPort = AnyUSBPort;
             c.VideoMode = VideoMode;
+            c.FlipMirrored = FlipMirrored;
             c.Pauseable = Pauseable;
+            c.Splits = Splits;
             c.RecordVideoForReplays = RecordVideoForReplays;
-            c.FrameWork = FrameWork;
+            c.RecordResolution = RecordResolution;
+            c.RecordFrameRate = RecordFrameRate;
+            c.DeviceLatency = DeviceLatency;
+            c.AudioDevice = AudioDevice;
+            c.HardwareDecodeAcceleration = HardwareDecodeAcceleration;
+            c.VideoBounds = VideoBounds.Select(vb => vb.Clone()).ToArray();
             return c;
         }
 
