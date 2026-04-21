@@ -189,15 +189,11 @@ namespace UI.Nodes.Rounds
                 MouseMenu mm = new MouseMenu(this);
 
                 mm.AddItem("Edit Stage", EditStage);
-                mm.AddItemConfirm("Delete Stage", DeleteStage);
+                mm.AddItemConfirm("Delete Stage", () => { EventManager.RoundManager.DeleteStage(Stage); });
 
                 mm.Show(mouseInputEvent);
             }
             return base.OnMouseInput(mouseInputEvent);
-        }
-        public void DeleteStage()
-        {
-            EventManager.RoundManager.DeleteStage(Stage);
         }
 
         public void EditStage()

@@ -206,10 +206,10 @@ namespace UI.Nodes.Rounds
             eventXNode.Finals += GenerateFinal;
             eventXNode.AddStage += GenerateRoundStage;
             eventXNode.AddSheetFormatRound += AddSheetFormatRound;
-            eventXNode.SumPoints += ToggleSumPoints;
-            eventXNode.Times += ToggleTimePoints;
-            eventXNode.LapCounts += ToggleLapCount;
-            eventXNode.PackCount += TogglePackCount;
+            eventXNode.SumPoints += AddSumPoints;
+            eventXNode.Times += AddTimeSummary;
+            eventXNode.LapCounts += AddLapCount;
+            eventXNode.PackCount += AddPackCount;
             eventXNode.Clone += CloneRound;
             eventXNode.AddEmptyRound += AddEmptyRound;
             eventXNode.NeedsFormatLayout += RequestLayout;
@@ -267,7 +267,7 @@ namespace UI.Nodes.Rounds
                     if (esn == null)
                     {
                         esn = new EventPointsNode(this, EventManager, round);
-                        esn.RemoveRound += ToggleSumPoints;
+                        esn.RemoveRound += RemoveResultStage;
                         HookUp(esn);
                         AddChild(esn);
                     }
@@ -283,7 +283,7 @@ namespace UI.Nodes.Rounds
                     if (esn == null)
                     {
                         esn = new EventLapsTimesNode(this, EventManager, round);
-                        esn.RemoveRound += ToggleTimePoints;
+                        esn.RemoveRound += RemoveResultStage;
                         HookUp(esn);
                         AddChild(esn);
                     }
@@ -299,7 +299,7 @@ namespace UI.Nodes.Rounds
                     if (esn == null)
                     {
                         esn = new EventPackCountNode(this, EventManager, round);
-                        esn.RemoveRound += TogglePackCount;
+                        esn.RemoveRound += RemoveResultStage;
                         HookUp(esn);
                         AddChild(esn);
                     }
@@ -315,7 +315,7 @@ namespace UI.Nodes.Rounds
                     if (esn == null)
                     {
                         esn = new EventLapCountsNode(this, EventManager, round);
-                        esn.RemoveRound += ToggleLapCount;
+                        esn.RemoveRound += RemoveResultStage;
                         HookUp(esn);
                         AddChild(esn);
                     }
@@ -327,14 +327,13 @@ namespace UI.Nodes.Rounds
                 }
                 else
                 {
-                    StageNode stageNode = Children.OfType<StageNode>().FirstOrDefault(s => s.Stage == stage);
-                    if (stageNode == null)
+                    using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
                     {
-                        stageNode = new StageNode(this, EventManager, stage);
-                        AddChild(stageNode);
+                        stage.TimeSummary = new TimeSummary();
+                        db.Update(stage);
                     }
-
-                    stageNode.SetNodes(RoundNodes.Where(rn => rn.Round.Stage == stage));
+                    Refresh();
+                    return;
                 }
             }
 
@@ -385,50 +384,58 @@ namespace UI.Nodes.Rounds
             Scroller.ScrollToEnd(scrollTime);
         }
 
-        private void ToggleSumPoints(Round callingRound)
+        private void RemoveResultStage(Round callingRound)
         {
-            if (EventManager.RoundManager.ToggleSumPoints(callingRound))
+            if (callingRound.Stage != null)
             {
-                EditStageName(callingRound);
+                EventManager.RoundManager.DeleteStage(callingRound.Stage);
             }
             Refresh();
+        }
 
+        private void AddSumPoints(Round callingRound)
+        {
+            EventManager.RoundManager.DeleteStage(callingRound.Stage);
+
+            bool isNew = callingRound.Stage == null;
+            EventManager.RoundManager.AddSumPoints(callingRound);
+            if (isNew) EditStageName(callingRound);
+            Refresh();
             Scroller.ScrollToEnd(scrollTime);
         }
 
-        private void ToggleTimePoints(Round callingRound)
+        private void AddTimeSummary(Round callingRound, TimeSummary.TimeSummaryTypes type)
         {
-            ToggleTimePoints(callingRound, TimeSummary.TimeSummaryTypes.PB);
-        }
+            EventManager.RoundManager.DeleteStage(callingRound.Stage);
 
-        private void ToggleTimePoints(Round callingRound, TimeSummary.TimeSummaryTypes type)
-        {
-            if (EventManager.RoundManager.ToggleTimePoints(callingRound, type))
-            {
-                EditStageName(callingRound);
-            }
+
+            bool isNew = callingRound.Stage == null;
+            EventManager.RoundManager.AddTimeSummary(callingRound, type);
+            if (isNew) EditStageName(callingRound);
             Refresh();
-
             Scroller.ScrollToEnd(scrollTime);
         }
 
-        public void TogglePackCount(Round callingRound)
+        public void AddPackCount(Round callingRound)
         {
-            if (EventManager.RoundManager.TogglePackCount(callingRound))
-            {
-                EditStageName(callingRound);
-            }
+            EventManager.RoundManager.DeleteStage(callingRound.Stage);
+
+
+            bool isNew = callingRound.Stage == null;
+            EventManager.RoundManager.AddPackCount(callingRound);
+            if (isNew) EditStageName(callingRound);
             Refresh();
         }
 
-        private void ToggleLapCount(Round callingRound)
+        private void AddLapCount(Round callingRound)
         {
-            if (EventManager.RoundManager.ToggleLapCount(callingRound))
-            {
-                EditStageName(callingRound);
-            }
-            Refresh();
+            EventManager.RoundManager.DeleteStage(callingRound.Stage);
 
+
+            bool isNew = callingRound.Stage == null;
+            EventManager.RoundManager.AddLapCount(callingRound);
+            if (isNew) EditStageName(callingRound);
+            Refresh();
             Scroller.ScrollToEnd(scrollTime);
         }
 

@@ -794,81 +794,63 @@ namespace RaceLib
             yield return lastRound;
         }
 
-        public bool ToggleSumPoints(Round round)
+        public void AddSumPoints(Round round)
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
                 if (round.Stage == null)
-                {
                     round.Stage = CreateStage(db, round);
-                    round.Stage.PointSummary = new PointSummary(ResultManager.PointsSettings);
-                    db.Update(round.Stage);
-                    return true;
-                }
-                else
-                {
-                    DeleteStage(db, round.Stage);
-                    return false;
-                }
+
+                round.Stage.PointSummary = new PointSummary(ResultManager.PointsSettings);
+                round.Stage.TimeSummary = null;
+                round.Stage.LapCountAfterRound = false;
+                round.Stage.PackCountAfterRound = false;
+                db.Update(round.Stage);
             }
         }
 
-        public bool ToggleTimePoints(Round round, TimeSummary.TimeSummaryTypes type)
+        public void AddTimeSummary(Round round, TimeSummary.TimeSummaryTypes type)
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
                 if (round.Stage == null)
-                {
                     round.Stage = CreateStage(db, round);
-                    round.Stage.TimeSummary = new TimeSummary() { TimeSummaryType = type };
-                    db.Update(round.Stage);
-                    return true;
-                }
-                else
-                {
-                    DeleteStage(db, round.Stage);
-                    return false;
-                }
+
+                round.Stage.PointSummary = null;
+                round.Stage.TimeSummary = new TimeSummary() { TimeSummaryType = type };
+                round.Stage.LapCountAfterRound = false;
+                round.Stage.PackCountAfterRound = false;
+                db.Update(round.Stage);
             }
         }
 
-        public bool ToggleLapCount(Round round)
+        public void AddLapCount(Round round)
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
                 if (round.Stage == null)
-                {
                     round.Stage = CreateStage(db, round);
-                    round.Stage.LapCountAfterRound = !round.Stage.LapCountAfterRound;
 
-                    db.Update(round.Stage);
-                    return true;
-                }
-                else
-                {
-                    DeleteStage(db, round.Stage);
-                    return false;
-                }
+                round.Stage.PointSummary = null;
+                round.Stage.TimeSummary = null;
+                round.Stage.LapCountAfterRound = true;
+                round.Stage.PackCountAfterRound = false;
+                db.Update(round.Stage);
             }
         }
 
-        public bool TogglePackCount(Round round)
+        public void AddPackCount(Round round)
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
                 if (round.Stage == null)
-                {
                     round.Stage = CreateStage(db, round);
-                    round.Stage.PackCountAfterRound = !round.Stage.PackCountAfterRound;
 
-                    db.Update(round.Stage);
-                    return true;
-                }
-                else
-                {
-                    DeleteStage(db, round.Stage);
-                    return false;
-                }
+                round.Stage.PointSummary = null;
+                round.Stage.TimeSummary = null;
+                round.Stage.LapCountAfterRound = false;
+                round.Stage.PackCountAfterRound = true;
+                db.Update(round.Stage);
             }
         }
 

@@ -101,6 +101,11 @@ namespace Composition.Input
             }
         }
 
+        public MouseMenu AddEnumSubmenu<T>(string text, Action<T> action) where T : Enum
+        {
+            return AddSubmenu<T>(text, action, (T[])Enum.GetValues(typeof(T)));
+        }
+
         public MouseMenu AddSubmenu<T>(string text, Action<T> action, params T[] values)
         {
             MouseMenu mouseMenu = new MouseMenu(MenuLayer);

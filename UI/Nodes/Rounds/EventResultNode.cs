@@ -102,5 +102,10 @@ namespace UI.Nodes.Rounds
 
         public abstract bool HasResult();
 
+        public override bool IsRoundInStage()
+        {
+            return Stage != null;
+        }
+
     }
 }

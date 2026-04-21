@@ -220,9 +220,9 @@ namespace UI.Nodes.Rounds
                 }
             }
 
-            if ((canSum || canAddTimes || canAddLapCount) && !IsRoundInStage())
+            if (canSum || canAddTimes || canAddLapCount)
             {
-                MouseMenu results = rootMenu.AddSubmenu("Add Results Stage");
+                MouseMenu results =  IsRoundInStage() ? rootMenu.AddSubmenu("Set Results Stage") : rootMenu.AddSubmenu("Add Results Stage");
                 if (canSum)
                     results.AddItem("Points Stage", () => { SumPoints?.Invoke(Round); });
 
