@@ -1,0 +1,13 @@
+<Project>
+  <Target Name="SetVersionFromGit" BeforeTargets="GenerateAssemblyInfo">
+    <Exec Command="git -C &quot;$(MSBuildProjectDirectory)&quot; rev-list --count master" ConsoleToMSBuild="true" IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="GitCommitCount" />
+    </Exec>
+    <PropertyGroup Condition="'$(GitCommitCount)' != ''">
+      <VersionBase>$([System.Text.RegularExpressions.Regex]::Replace($(Version), '\.\d+$', ''))</VersionBase>
+      <Version>$(VersionBase).$(GitCommitCount)</Version>
+      <AssemblyVersion>$(Version)</AssemblyVersion>
+      <FileVersion>$(Version)</FileVersion>
+    </PropertyGroup>
+  </Target>
+</Project>
