@@ -49,6 +49,9 @@ namespace UI.Video
         {
             get
             {
+                Race race = this.race;
+                SeekNode SeekNode = this.SeekNode;
+
                 if (race == null || SeekNode == null)
                     return DateTime.Now;
 
@@ -60,6 +63,9 @@ namespace UI.Video
         {
             get
             {
+                Race race = this.race;
+                SeekNode SeekNode = this.SeekNode;
+
                 if (race == null || SeekNode == null) 
                     return TimeSpan.Zero;
 
@@ -71,6 +77,9 @@ namespace UI.Video
         {
             get
             {
+                Race race = this.race;
+                SeekNode SeekNode = this.SeekNode;
+
                 if (race == null || SeekNode == null)
                     return TimeSpan.Zero;
 
