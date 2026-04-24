@@ -455,6 +455,21 @@ namespace FfmpegMediaPlatform
             return false;
         }
 
+        public override bool Pause()
+        {
+            if (Recording) return false;
+            Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Pausing frame source for '{VideoConfig.DeviceName}'");
+            run = false;
+            StopAsync(); // synchronous — ensures clean state before Unpause can call Start()
+            return base.Pause();
+        }
+
+        public override bool Unpause()
+        {
+            Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Unpausing frame source for '{VideoConfig.DeviceName}'");
+            return Start();
+        }
+
         public override bool Stop()
         {
             Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Stopping frame source for '{VideoConfig.DeviceName}'");
