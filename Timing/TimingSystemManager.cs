@@ -193,6 +193,9 @@ namespace Timing
                 else if (settings is ChorusSettings)
                     timingSystem = new ChorusTiming();
 
+                else if (settings is Timing.Aruco.ArucoTimingSettings)
+                    timingSystem = new Timing.Aruco.ArucoTimingSystem();
+
                 if (timingSystem != null)
                 {
                     timingSystem.Settings = settings;
