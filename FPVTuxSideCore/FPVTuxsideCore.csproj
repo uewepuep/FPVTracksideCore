@@ -16,6 +16,9 @@
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.8" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="icon.png" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Compositor\Composition.csproj" />
     <ProjectReference Include="..\ImageServer\ImageServer.csproj" />
     <ProjectReference Include="..\UI\UI.csproj" />

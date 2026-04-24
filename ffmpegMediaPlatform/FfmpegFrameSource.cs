@@ -317,6 +317,9 @@ namespace FfmpegMediaPlatform
                 {
                     bool shouldLog = true;
                         
+                    if (e.Data.Contains("unable to decode APP fields") || e.Data.Contains("Last message repeated"))
+                        shouldLog = false;
+
                     // Only log frame progress every 10 seconds (at time ending in 0)
                     if (e.Data.Contains("frame=") && e.Data.Contains("fps=") && e.Data.Contains("time="))
                     {
