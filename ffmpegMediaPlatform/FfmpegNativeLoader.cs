@@ -18,7 +18,10 @@ namespace FfmpegMediaPlatform
         {
             GetBundledLibraryPath(),                   // bundled libraries first
             "/opt/homebrew/Cellar/ffmpeg/7.1.1_3/lib", // user-provided versioned path
-            "/opt/homebrew/opt/ffmpeg/lib"             // stable symlink
+            "/opt/homebrew/opt/ffmpeg/lib",            // stable symlink
+            "/usr/lib64",                              // Fedora/RHEL
+            "/usr/lib/x86_64-linux-gnu",               // Debian/Ubuntu
+            "/usr/lib"                                 // generic fallback
         };
 
         private static string GetBundledLibraryPath()
@@ -59,6 +62,12 @@ namespace FfmpegMediaPlatform
             {
                 var path = Path.Combine(appDirectory, "ffmpeg-libs", "windows");
                 Tools.Logger.VideoLog.LogDebugStatic($"FfmpegNativeLoader.GetBundledLibraryPath: Windows path: {path}");
+                return path;
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                var path = Path.Combine(appDirectory, "ffmpeg-libs", "linux");
+                Tools.Logger.VideoLog.LogDebugStatic($"FfmpegNativeLoader.GetBundledLibraryPath: Linux path: {path}");
                 return path;
             }
 
@@ -218,26 +227,19 @@ namespace FfmpegMediaPlatform
                     throw new NotSupportedException($"FFmpeg initialization failed. The libraries may be incompatible or dependencies are missing: {ex.Message}", ex);
                 }
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                Tools.Logger.VideoLog.LogDebugStatic($"FfmpegNativeLoader.EnsureRegistered: Bundled path not found or doesn't exist");
-                Tools.Logger.VideoLog.LogDebugStatic($"FfmpegNativeLoader.EnsureRegistered: bundledPath = {bundledPath}");
-                Tools.Logger.VideoLog.LogDebugStatic($"FfmpegNativeLoader.EnsureRegistered: Directory.Exists = {(bundledPath != null ? Directory.Exists(bundledPath) : "bundledPath is null")}");
-                
-                // Fallback to system paths for Mac
-                Tools.Logger.VideoLog.LogDebugStatic("FfmpegNativeLoader.EnsureRegistered: Trying system paths...");
-                foreach (var root in rootCandidates.Skip(1)) // Skip the bundled path
+                Tools.Logger.VideoLog.LogDebugStatic($"FfmpegNativeLoader.EnsureRegistered: Bundled path not found, trying system paths...");
+
+                foreach (var root in rootCandidates.Skip(1))
                 {
+                    if (root == null) continue;
                     Tools.Logger.VideoLog.LogDebugStatic($"FfmpegNativeLoader.EnsureRegistered: Checking system path: {root}");
                     if (Directory.Exists(root))
                     {
                         ffmpeg.RootPath = root;
                         Tools.Logger.VideoLog.LogStatic($"FFmpeg native libraries loaded from system path: {root}");
                         break;
-                    }
-                    else
-                    {
-                        Tools.Logger.VideoLog.LogDebugStatic($"FfmpegNativeLoader.EnsureRegistered: System path does not exist: {root}");
                     }
                 }
             }

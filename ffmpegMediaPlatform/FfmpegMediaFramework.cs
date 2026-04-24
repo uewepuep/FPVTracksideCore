@@ -25,6 +25,7 @@ namespace FfmpegMediaPlatform
 
         private bool avfoundation;
         private bool dshow;
+        private bool v4l2;
 
         public bool NeedsInstall { get; private set; }
 
@@ -93,6 +94,11 @@ namespace FfmpegMediaPlatform
                     execName = "ffmpeg"; // fallback to PATH
                     Tools.Logger.VideoLog.LogDebugCall(this, "Local and Homebrew ffmpeg not found, using system PATH ffmpeg");
                 }
+            }
+            else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux))
+            {
+                v4l2 = true;
+                execName = "ffmpeg";
             }
             else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
             {
@@ -245,6 +251,11 @@ namespace FfmpegMediaPlatform
                     Tools.Logger.VideoLog.LogDebugCall(this, $"PLAYBACK PATH: Live capture via ffmpeg (dshow) → {vc.DeviceName}");
                     return new FfmpegDshowFrameSource(this, vc);
                 }
+                else if (v4l2)
+                {
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"PLAYBACK PATH: Live capture via ffmpeg (v4l2) → {vc.DeviceName}");
+                    return new FfmpegV4L2FrameSource(this, vc);
+                }
                 else
                 {
                     Tools.Logger.VideoLog.LogDebugCall(this, $"PLAYBACK PATH: Live capture via ffmpeg (avfoundation) → {vc.DeviceName}");
@@ -288,6 +299,30 @@ namespace FfmpegMediaPlatform
                     }
                     string name = splits[1];
                     yield return new VideoConfig { FrameWork = FrameWork.FFmpeg, DeviceName = name, ffmpegId = dshowPath };
+                }
+            }
+
+            if (v4l2)
+            {
+                foreach (string device in Directory.GetFiles("/dev", "video*").OrderBy(d => d))
+                {
+                    // Skip metadata/auxiliary interfaces (index > 0 within a device)
+                    string sysBase = device.Replace("/dev/", "/sys/class/video4linux/");
+                    string indexFile = sysBase + "/index";
+                    if (File.Exists(indexFile) && File.ReadAllText(indexFile).Trim() != "0")
+                        continue;
+
+                    var formatLines = GetFfmpegText($"-f v4l2 -list_formats all -i \"{device}\"", l =>
+                        l.Contains("Compressed") || l.Contains("Raw"));
+
+                    if (!formatLines.Any())
+                        continue;
+
+                    string nameFile = sysBase + "/name";
+                    string friendlyName = File.Exists(nameFile) ? File.ReadAllText(nameFile).Trim() : device;
+
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG V4L2 found device: {device} ({friendlyName})");
+                    yield return new VideoConfig { FrameWork = FrameWork.FFmpeg, DeviceName = friendlyName, ffmpegId = device };
                 }
             }
 

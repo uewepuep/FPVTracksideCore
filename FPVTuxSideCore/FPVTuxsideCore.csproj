@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <TieredCompilation>false</TieredCompilation>
+    <ImplicitUsings>true</ImplicitUsings>
+    <Version>2.74.2.785</Version>
+    <Platforms>AnyCPU;x64</Platforms>
+    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
+    <PackageReference Include="SkiaSharp" Version="2.88.8" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.8" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Compositor\Composition.csproj" />
+    <ProjectReference Include="..\ImageServer\ImageServer.csproj" />
+    <ProjectReference Include="..\UI\UI.csproj" />
+    <ProjectReference Include="..\ffmpegMediaPlatform\FfmpegMediaPlatform.csproj" />
+    <ProjectReference Include="..\DB\DB.csproj" />
+  </ItemGroup>
+</Project>

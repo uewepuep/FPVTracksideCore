@@ -128,11 +128,9 @@ namespace FfmpegMediaPlatform
             // Use measured frame rate if available, otherwise fall back to configured rate
             float recordingFrameRate = frameRateMeasured ? measuredFrameRate : (VideoConfig.VideoMode?.FrameRate ?? 30.0f);
             
-            // Debug logging to track frame rate on different platforms
-            string platform = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ? "Windows" : "Mac";
             string rateSource = frameRateMeasured ? "MEASURED" : "CONFIGURED";
-            Tools.Logger.VideoLog.LogDebugCall(this, $"RECORDING START [{platform}]: Using {rateSource} frame rate: {recordingFrameRate:F1}fps for recording");
-            Tools.Logger.VideoLog.LogDebugCall(this, $"RECORDING START [{platform}]: VideoConfig details - Width: {VideoConfig.VideoMode?.Width}, Height: {VideoConfig.VideoMode?.Height}, ConfiguredRate: {VideoConfig.VideoMode?.FrameRate}fps, MeasuredRate: {measuredFrameRate:F1}fps");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"RECORDING START: Using {rateSource} frame rate: {recordingFrameRate:F1}fps for recording");
+            Tools.Logger.VideoLog.LogDebugCall(this, $"RECORDING START: VideoConfig details - Width: {VideoConfig.VideoMode?.Width}, Height: {VideoConfig.VideoMode?.Height}, ConfiguredRate: {VideoConfig.VideoMode?.FrameRate}fps, MeasuredRate: {measuredFrameRate:F1}fps");
             
             bool started = rgbaRecorderManager.StartRecording(filename, width, height, recordingFrameRate, this);
             if (!started)
@@ -822,8 +820,7 @@ namespace FfmpegMediaPlatform
                     double actualFps = actualInterval > 0 ? 1000.0 / actualInterval : 0;
                     double configuredFps = VideoConfig.VideoMode?.FrameRate ?? 30.0f;
                     
-                    string platform = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ? "Windows" : "Mac";
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"FRAME TIMING [{platform}]: Frame {FrameProcessNumber} - Configured: {configuredFps:F1}fps, Actual: {actualFps:F2}fps (some frames dropped for real-time)");
+                    Tools.Logger.VideoLog.LogDebugCall(this, $"FRAME TIMING: Frame {FrameProcessNumber} - Configured: {configuredFps:F1}fps, Actual: {actualFps:F2}fps (some frames dropped for real-time)");
                 }
                 lastFrameTime = currentFrameTime;
             }
@@ -843,9 +840,8 @@ namespace FfmpegMediaPlatform
                 double actualFps = actualInterval > 0 ? 1000.0 / actualInterval : 0;
                 double configuredFps = VideoConfig.VideoMode?.FrameRate ?? 30.0f;
                 
-                string platform = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ? "Windows" : "Mac";
-                Tools.Logger.VideoLog.LogDebugCall(this, $"CAMERA TIMING [{platform}]: Frame {FrameProcessNumber} - Configured: {configuredFps:F1}fps, Actual: {actualFps:F2}fps, Real-time optimized");
-                
+                Tools.Logger.VideoLog.LogDebugCall(this, $"CAMERA TIMING: Frame {FrameProcessNumber} - Configured: {configuredFps:F1}fps, Actual: {actualFps:F2}fps, Real-time optimized");
+
                 // Update measured frame rate with higher precision after initial stabilization
                 if (FrameProcessNumber >= 180 && actualFps > 0) // Wait longer for more accurate measurement (6 seconds)
                 {
@@ -854,18 +850,18 @@ namespace FfmpegMediaPlatform
                     {
                         measuredFrameRate = (float)actualFps;
                         frameRateMeasured = true;
-                        Tools.Logger.VideoLog.LogDebugCall(this, $"CAMERA MEASUREMENT [{platform}]: Initial measured frame rate: {measuredFrameRate:F3}fps (after {FrameProcessNumber} frames)");
+                        Tools.Logger.VideoLog.LogDebugCall(this, $"CAMERA MEASUREMENT: Initial measured frame rate: {measuredFrameRate:F3}fps (after {FrameProcessNumber} frames)");
                     }
                     else
                     {
                         // Use exponential smoothing for ongoing measurement refinement
                         float alpha = 0.1f; // Smoothing factor
                         measuredFrameRate = alpha * (float)actualFps + (1 - alpha) * measuredFrameRate;
-                        
+
                         // Log every 300 frames (10 seconds) to show ongoing refinement
                         if (FrameProcessNumber % 300 == 0)
                         {
-                            Tools.Logger.VideoLog.LogDebugCall(this, $"CAMERA MEASUREMENT [{platform}]: Refined measured frame rate: {measuredFrameRate:F3}fps (frame {FrameProcessNumber})");
+                            Tools.Logger.VideoLog.LogDebugCall(this, $"CAMERA MEASUREMENT: Refined measured frame rate: {measuredFrameRate:F3}fps (frame {FrameProcessNumber})");
                         }
                     }
                 }
