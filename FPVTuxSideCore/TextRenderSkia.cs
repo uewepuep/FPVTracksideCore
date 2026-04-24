@@ -26,6 +26,7 @@ namespace FPVTuxsideCore
         public bool CanCreateTextures { get; set; }
 
         private const float pixelToPnt = 80 / 100.0f;
+        private const float lineHeightMultiplier = 1.2f;
 
         private Texture2D texture;
 
@@ -40,6 +41,9 @@ namespace FPVTuxsideCore
         private float offsetY;
 
         private List<SKRect> characterBounds;
+
+        private SKTypeface cachedTypeface;
+        private string cachedTypefaceText;
 
         public TextRenderSkia()
         {
@@ -104,7 +108,7 @@ namespace FPVTuxsideCore
             {
                 characterBounds.Clear();
 
-                using (var paint = CreatePaint(style, FontPoint))
+                using (SKPaint paint = CreatePaint(style, FontPoint))
                 {
                     // Measure the text
                     SKRect bounds = new SKRect();
@@ -112,14 +116,14 @@ namespace FPVTuxsideCore
 
                     // Handle multi-line text
                     string[] textLines = text.Split('\n');
-                    float totalHeight = textLines.Length * FontPoint * 1.2f;
+                    float totalHeight = textLines.Length * FontPoint * lineHeightMultiplier;
                     float maxWidth = 0;
 
                     foreach (string line in textLines)
                     {
                         SKRect lineBounds = new SKRect();
                         paint.MeasureText(line, ref lineBounds);
-                        maxWidth = Math.Max(maxWidth, lineBounds.Width);
+                        maxWidth = Math.Max(maxWidth, lineBounds.Right);
                     }
 
                     // Check if we need to scale down to fit width
@@ -130,7 +134,7 @@ namespace FPVTuxsideCore
                     }
 
                     // Re-measure with potentially adjusted font size
-                    using (var adjustedPaint = CreatePaint(style, FontPoint))
+                    using (SKPaint adjustedPaint = CreatePaint(style, FontPoint))
                     {
                         maxWidth = 0;
                         totalHeight = 0;
@@ -140,7 +144,7 @@ namespace FPVTuxsideCore
                         {
                             SKRect lineBounds = new SKRect();
                             adjustedPaint.MeasureText(line, ref lineBounds);
-                            maxWidth = Math.Max(maxWidth, lineBounds.Width);
+                            maxWidth = Math.Max(maxWidth, lineBounds.Right);
 
                             // Calculate character bounds for hit testing
                             float x = 0;
@@ -153,7 +157,7 @@ namespace FPVTuxsideCore
                             // Add newline character bounds
                             characterBounds.Add(new SKRect(x, y, x, y + FontPoint));
 
-                            y += FontPoint * 1.2f;
+                            y += FontPoint * lineHeightMultiplier;
                         }
                         totalHeight = y;
 
@@ -188,12 +192,9 @@ namespace FPVTuxsideCore
             }
         }
 
-        private SKTypeface cachedTypeface;
-        private string cachedTypefaceText;
-
         private SKPaint CreatePaint(Style style, float fontSize)
         {
-            var paint = new SKPaint
+            SKPaint paint = new SKPaint
             {
                 TextSize = fontSize,
                 IsAntialias = true,
@@ -221,7 +222,7 @@ namespace FPVTuxsideCore
                 return cachedTypeface;
             }
 
-            var fontManager = SKFontManager.Default;
+            SKFontManager fontManager = SKFontManager.Default;
 
             // Find a character that needs CJK support
             char testChar = 'A';
@@ -264,7 +265,7 @@ namespace FPVTuxsideCore
 
                 foreach (string fontFamily in fontFamilies)
                 {
-                    var testTypeface = SKTypeface.FromFamilyName(fontFamily);
+                    SKTypeface testTypeface = SKTypeface.FromFamilyName(fontFamily);
                     if (testTypeface != null && CanRenderText(testTypeface, text))
                     {
                         typeface = testTypeface;
@@ -318,17 +319,17 @@ namespace FPVTuxsideCore
                 rawWidth = newTextSize.Width;
                 rawHeight = newTextSize.Height;
 
-                using (var surface = SKSurface.Create(new SKImageInfo(rawWidth, rawHeight, SKColorType.Rgba8888, SKAlphaType.Premul)))
+                using (SKSurface surface = SKSurface.Create(new SKImageInfo(rawWidth, rawHeight, SKColorType.Rgba8888, SKAlphaType.Premul)))
                 {
-                    var canvas = surface.Canvas;
+                    SKCanvas canvas = surface.Canvas;
                     canvas.Clear(SKColors.Transparent);
 
-                    using (var paint = CreatePaint(style, FontPoint))
+                    using (SKPaint paint = CreatePaint(style, FontPoint))
                     {
                         // Draw border/shadow if enabled
                         if (style.Border)
                         {
-                            using (var borderPaint = CreatePaint(style, FontPoint))
+                            using (SKPaint borderPaint = CreatePaint(style, FontPoint))
                             {
                                 borderPaint.Color = new SKColor(0, 0, 0, 64);
                                 borderPaint.IsStroke = true;
@@ -339,7 +340,7 @@ namespace FPVTuxsideCore
                                 foreach (string line in lines)
                                 {
                                     canvas.DrawText(line, 0, y, borderPaint);
-                                    y += FontPoint * 1.2f;
+                                    y += FontPoint * lineHeightMultiplier;
                                 }
                             }
                         }
@@ -350,21 +351,16 @@ namespace FPVTuxsideCore
                         foreach (string line in textLines)
                         {
                             canvas.DrawText(line, 0, yPos, paint);
-                            yPos += FontPoint * 1.2f;
+                            yPos += FontPoint * lineHeightMultiplier;
                         }
                     }
 
                     // Get pixels
-                    using (var image = surface.Snapshot())
-                    using (var data = image.Encode(SKEncodedImageFormat.Png, 100))
+                    SKPixmap pixmap = surface.PeekPixels();
+                    if (pixmap != null)
                     {
-                        // Get raw pixel data directly
-                        var pixmap = surface.PeekPixels();
-                        if (pixmap != null)
-                        {
-                            rawPixels = new byte[rawWidth * rawHeight * 4];
-                            System.Runtime.InteropServices.Marshal.Copy(pixmap.GetPixels(), rawPixels, 0, rawPixels.Length);
-                        }
+                        rawPixels = new byte[rawWidth * rawHeight * 4];
+                        System.Runtime.InteropServices.Marshal.Copy(pixmap.GetPixels(), rawPixels, 0, rawPixels.Length);
                     }
                 }
             }
@@ -536,7 +532,7 @@ namespace FPVTuxsideCore
         {
             if (texture != null)
             {
-                using (var stream = System.IO.File.Create(filename + ".png"))
+                using (System.IO.Stream stream = System.IO.File.Create(filename + ".png"))
                 {
                     texture.SaveAsPng(stream, texture.Width, texture.Height);
                 }
