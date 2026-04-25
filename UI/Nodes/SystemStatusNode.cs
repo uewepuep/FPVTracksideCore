@@ -302,9 +302,13 @@ namespace UI.Nodes
             base.StatusUpdate();
             bool connected, recording;
             int height;
-            if (VideoManager.GetStatus(VideoConfig, out connected, out recording, out height))
+            float fps;
+            if (VideoManager.GetStatus(VideoConfig, out connected, out recording, out height, out fps))
             {
-                SetStatus(height + "p", connected);
+                string[] statuses = fps > 0
+                    ? new string[] { height + "p", (int)Math.Ceiling(fps) + " FPS" }
+                    : new string[] { height + "p" };
+                SetStatus(statuses.GetFromCurrentTime(updateEverySeconds), connected);
                 recordingIcon.Visible = recording;
             }
             else
@@ -508,7 +512,7 @@ namespace UI.Nodes
         public FrameRateStatusNode()
             : base(@"img/frames.png")
         {
-            Name = "FPS";
+            Name = "Draw";
             frameMeasurementPeriod = TimeSpan.FromSeconds(1);
             frameCount = 0;
 
@@ -522,7 +526,7 @@ namespace UI.Nodes
             if (now - frameMeasurementPeriod > lastXFrame)
             {
                 int frameRate = (int)(frameCount / (now - lastXFrame).TotalSeconds);
-                SetStatus(frameRate.ToString(), frameRate > 20);
+                SetStatus(frameRate.ToString() + " FPS", frameRate > 20);
                 lastXFrame = now;
                 frameCount = 0;
             }

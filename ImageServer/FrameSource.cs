@@ -38,6 +38,12 @@ namespace ImageServer
         public long FrameProcessNumber { get; set; }
         public long SampleTime { get; set; }
 
+        public float MeasuredFps => (DateTime.UtcNow - lastFrameTime).TotalSeconds < 2.0 ? measuredFps : 0f;
+        private float measuredFps;
+        private DateTime fpsWindowStart = DateTime.MinValue;
+        private DateTime lastFrameTime = DateTime.MinValue;
+        private int fpsWindowCount;
+
         public virtual VideoConfig VideoConfig { get; private set; }
 
         public virtual bool Connected { get; protected set; }
@@ -107,6 +113,19 @@ namespace ImageServer
 
         public void OnFrame(long sampleTime, long processNumber)
         {
+            var now = DateTime.UtcNow;
+            lastFrameTime = now;
+            if (fpsWindowStart == DateTime.MinValue)
+                fpsWindowStart = now;
+            fpsWindowCount++;
+            double elapsed = (now - fpsWindowStart).TotalSeconds;
+            if (elapsed >= 1.0)
+            {
+                measuredFps = (float)(fpsWindowCount / elapsed);
+                fpsWindowStart = now;
+                fpsWindowCount = 0;
+            }
+
             OnFrameEvent?.Invoke(sampleTime, processNumber);
         }
     }

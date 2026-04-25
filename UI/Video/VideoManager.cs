@@ -260,11 +260,12 @@ namespace UI.Video
             }
         }
 
-        public bool GetStatus(VideoConfig videoConfig, out bool connected, out bool recording, out int height)
+        public bool GetStatus(VideoConfig videoConfig, out bool connected, out bool recording, out int height, out float fps)
         {
             connected = false;
             recording = false;
             height = 0;
+            fps = 0;
 
             FrameSource frameSource = GetFrameSource(videoConfig);
             if (frameSource != null)
@@ -272,6 +273,7 @@ namespace UI.Video
                 connected = frameSource.Connected;
                 recording = frameSource.Recording;
                 height = frameSource.FrameHeight;
+                fps = frameSource.MeasuredFps;
                 return true;
             }
 
