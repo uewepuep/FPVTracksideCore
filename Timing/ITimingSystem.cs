@@ -157,6 +157,7 @@ namespace Timing
     [XmlInclude(typeof(VideoTimingSettings))]
     [XmlInclude(typeof(RotorHazardSettings))]
     [XmlInclude(typeof(ChorusSettings))]
+    [XmlInclude(typeof(Timing.Aruco.ArucoTimingSettings))]
     public class TimingSystemSettings
     {
         [Category("System Settings")]

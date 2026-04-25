@@ -13,12 +13,27 @@
 		  <PrivateAssets>all</PrivateAssets>
 	  </PackageReference>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="OpenCvSharp4" Version="4.11.0.20250507" />
+    <!-- Windows-only: native DLLs for OpenCvSharp. On macOS/Linux install OpenCV via system
+         package manager (e.g. `brew install opencv`) so OpenCvSharp can load libOpenCvSharpExtern. -->
+    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.11.0.20250507" Condition="'$(OS)' == 'Windows_NT'" />
     <PackageReference Include="SocketIOClient" Version="3.0.8" />
     <PackageReference Include="System.IO.Ports" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Tools\Tools.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Aruco\README.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Aruco\README.txt</Link>
+    </None>
+    <None Include="Aruco\camera_calibration.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Aruco\camera_calibration.json</Link>
+    </None>
   </ItemGroup>
 
 </Project>

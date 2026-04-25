@@ -4,6 +4,7 @@
 *.swo
 *.swp
 *.txt
+!Timing/Aruco/README.txt
 *.user
 /.vs/
 **/bin/*

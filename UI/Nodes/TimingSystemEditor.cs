@@ -119,6 +119,14 @@ namespace UI.Nodes
             mouseMenu.AddItem("RotorHazard 4.0+", () => { AddNew(new Timing.RotorHazard.RotorHazardSettings()); });
             mouseMenu.AddItem("Chorus32 (alpha)", () => { AddNew(new Timing.Chorus.ChorusSettings()); });
             //mouseMenu.AddItem("Video Color (Alpha)", () => { AddNew(new VideoTimingSettings()); });
+            mouseMenu.AddItem("ArUco (Marker)", () =>
+            {
+                var a = new Timing.Aruco.ArucoTimingSettings();
+                if (Objects.OfType<Timing.Aruco.ArucoTimingSettings>()
+                           .Any(x => x.Role == TimingSystemRole.Primary))
+                    a.Role = TimingSystemRole.Split;
+                AddNew(a);
+            });
             mouseMenu.AddItem("Dummy", () => { AddNew(new DummySettings()); });
 
             mouseMenu.Show(addButton);
@@ -126,11 +134,37 @@ namespace UI.Nodes
 
         protected override IEnumerable<PropertyInfo> GetPropertyInfos(TimingSystemSettings obj)
         {
-            // Just a little hack to make all the "receiver" setting appear last. 
+            // Just a little hack to make all the "receiver" setting appear last.
             List<PropertyInfo> lapRFBaseSettings = new List<PropertyInfo>();
+
+            bool isArucoSplit =
+                obj is Timing.Aruco.ArucoTimingSettings &&
+                obj.Role == TimingSystemRole.Split;
+
+            // Find the reference ArUco instance — Primary if present, otherwise the lowest-index
+            // Split. The reference keeps ALL its settings editable; every other Split only
+            // exposes MarkerIds because it inherits shared parameters from the reference.
+            var arucoInstances = Objects.OfType<Timing.Aruco.ArucoTimingSettings>().ToList();
+            var arucoPrimary = arucoInstances.FirstOrDefault(x => x.Role == TimingSystemRole.Primary);
+            var arucoReference = arucoPrimary
+                ?? arucoInstances.FirstOrDefault(x => x.Role == TimingSystemRole.Split);
+            bool isArucoReference = ReferenceEquals(obj, arucoReference);
+
+            // Role is locked to Split only when a real Primary already exists elsewhere.
+            bool lockRoleForArucoSplit = isArucoSplit && arucoPrimary != null;
 
             foreach (var pi in base.GetPropertyInfos(obj))
             {
+                if (lockRoleForArucoSplit && pi.Name == "Role")
+                    continue;
+
+                // Non-reference Split ArUco: hide all ArUco-specific properties except MarkerIds.
+                // Thresholds/detector parameters are inherited from the reference at runtime.
+                if (isArucoSplit && !isArucoReference &&
+                    pi.DeclaringType == typeof(Timing.Aruco.ArucoTimingSettings) &&
+                    pi.Name != "MarkerIds")
+                    continue;
+
                 if (pi.ReflectedType == typeof(Timing.ImmersionRC.LapRFSettings))
                 {
                     lapRFBaseSettings.Add(pi);
