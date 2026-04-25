@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using OpenCvSharp;
 using OpenCvSharp.Aruco;
+using Tools;
 
 namespace Timing.Aruco
 {
@@ -86,10 +87,11 @@ namespace Timing.Aruco
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 // If calibration fails we want detection to continue without undistort,
                 // not take down the whole Process thread.
+                Logger.TimingLog.LogException(this, ex);
                 DisposeMaps();
             }
         }
@@ -115,7 +117,7 @@ namespace Timing.Aruco
                 if (mode == ArucoDetectMode.Original || mode == ArucoDetectMode.Hybrid)
                 {
                     try { DetectInto(gray, results, DetectionSource.Original); }
-                    catch { /* keep going; Corrected pass may still succeed */ }
+                    catch (Exception ex) { /* keep going; Corrected pass may still succeed */ Logger.TimingLog.LogException(this, ex); }
                 }
 
                 bool canCorrect = HasCalibration && mapWidth == width && mapHeight == height;
@@ -179,7 +181,7 @@ namespace Timing.Aruco
                             }
                         }
                     }
-                    catch { /* undistort pipeline failed; return whatever Original found */ }
+                    catch (Exception ex) { /* undistort pipeline failed; return whatever Original found */ Logger.TimingLog.LogException(this, ex); }
                 }
             }
 
