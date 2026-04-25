@@ -5,6 +5,13 @@ namespace FPVTuxsideCore
 {
     public class TuxClipboard : IClipboard
     {
+        private readonly bool useX11;
+
+        public TuxClipboard()
+        {
+            useX11 = !TuxPlatformTools.IsCommandAvailable("wl-paste");
+        }
+
         public string[] GetLines()
         {
             return GetText().Split('\n');
@@ -12,9 +19,22 @@ namespace FPVTuxsideCore
 
         public string GetText()
         {
-            return RunAndRead("wl-paste", "--no-newline")
-                ?? RunAndRead("xclip", "-selection clipboard -o")
-                ?? "";
+            if (useX11)
+                return RunAndRead("xclip", "-selection clipboard -o") ?? "";
+            return RunAndRead("wl-paste", "--no-newline") ?? "";
+        }
+
+        public void SetLines(IEnumerable<string> items)
+        {
+            SetText(string.Join("\r\n", items));
+        }
+
+        public void SetText(string text)
+        {
+            if (useX11)
+                RunAndWrite("xclip", "-selection clipboard", text);
+            else
+                RunAndWrite("wl-copy", null, text);
         }
 
         private static string RunAndRead(string cmd, string args)
@@ -37,18 +57,7 @@ namespace FPVTuxsideCore
             }
         }
 
-        public void SetLines(IEnumerable<string> items)
-        {
-            SetText(string.Join("\r\n", items));
-        }
-
-        public void SetText(string text)
-        {
-            if (!RunAndWrite("wl-copy", null, text))
-                RunAndWrite("xclip", "-selection clipboard", text);
-        }
-
-        private static bool RunAndWrite(string cmd, string args, string text)
+        private static void RunAndWrite(string cmd, string args, string text)
         {
             try
             {
@@ -61,12 +70,8 @@ namespace FPVTuxsideCore
                 proc.StandardInput.Write(text);
                 proc.StandardInput.Close();
                 proc.WaitForExit();
-                return proc.ExitCode == 0;
             }
-            catch
-            {
-                return false;
-            }
+            catch { }
         }
     }
 }

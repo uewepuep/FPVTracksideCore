@@ -7,9 +7,12 @@ using Tools;
 
 namespace FPVTuxsideCore
 {
+    public enum DialogBackend { Kdialog, Zenity }
+
     public class TuxPlatformTools : PlatformTools
     {
         private TuxClipboard tuxClipboard;
+        private DialogBackend dialogBackend;
 
         public override IClipboard Clipboard => tuxClipboard;
 
@@ -64,6 +67,33 @@ namespace FPVTuxsideCore
 
             todo = new List<Action>();
             tuxClipboard = new TuxClipboard();
+            dialogBackend = DetectDialogBackend();
+        }
+
+        private static DialogBackend DetectDialogBackend()
+        {
+            if (IsCommandAvailable("kdialog"))
+                return DialogBackend.Kdialog;
+            return DialogBackend.Zenity;
+        }
+
+        internal static bool IsCommandAvailable(string command)
+        {
+            try
+            {
+                var psi = new ProcessStartInfo("which", command)
+                {
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false
+                };
+                using var proc = Process.Start(psi);
+                proc.WaitForExit();
+                return proc.ExitCode == 0;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private void CopyToHomeDir(DirectoryInfo oldWorkDir)
@@ -145,20 +175,25 @@ namespace FPVTuxsideCore
         {
             try
             {
-                string filter = BuildKdialogFilter(fileExtension);
-                string args = $"--getopenfilename . \"{filter}\"";
-                if (!string.IsNullOrEmpty(title))
-                    args = $"--title \"{title}\" " + args;
-
-                var psi = new ProcessStartInfo("kdialog", args)
+                string cmd, args;
+                if (dialogBackend == DialogBackend.Kdialog)
                 {
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false
-                };
-                using var proc = Process.Start(psi);
-                string result = proc.StandardOutput.ReadToEnd().Trim();
-                proc.WaitForExit();
-                return proc.ExitCode == 0 ? result : null;
+                    string filter = BuildKdialogFilter(fileExtension);
+                    args = $"--getopenfilename . \"{filter}\"";
+                    if (!string.IsNullOrEmpty(title))
+                        args = $"--title \"{title}\" " + args;
+                    cmd = "kdialog";
+                }
+                else
+                {
+                    string filter = BuildZenityFilter(fileExtension);
+                    args = $"--file-selection {filter}";
+                    if (!string.IsNullOrEmpty(title))
+                        args = $"--title \"{title}\" " + args;
+                    cmd = "zenity";
+                }
+
+                return RunDialog(cmd, args);
             }
             catch (Exception ex)
             {
@@ -171,20 +206,25 @@ namespace FPVTuxsideCore
         {
             try
             {
-                string filter = BuildKdialogFilter(fileExtension);
-                string args = $"--getsavefilename . \"{filter}\"";
-                if (!string.IsNullOrEmpty(title))
-                    args = $"--title \"{title}\" " + args;
-
-                var psi = new ProcessStartInfo("kdialog", args)
+                string cmd, args;
+                if (dialogBackend == DialogBackend.Kdialog)
                 {
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false
-                };
-                using var proc = Process.Start(psi);
-                string result = proc.StandardOutput.ReadToEnd().Trim();
-                proc.WaitForExit();
-                return proc.ExitCode == 0 ? result : null;
+                    string filter = BuildKdialogFilter(fileExtension);
+                    args = $"--getsavefilename . \"{filter}\"";
+                    if (!string.IsNullOrEmpty(title))
+                        args = $"--title \"{title}\" " + args;
+                    cmd = "kdialog";
+                }
+                else
+                {
+                    string filter = BuildZenityFilter(fileExtension);
+                    args = $"--file-selection --save --confirm-overwrite {filter}";
+                    if (!string.IsNullOrEmpty(title))
+                        args = $"--title \"{title}\" " + args;
+                    cmd = "zenity";
+                }
+
+                return RunDialog(cmd, args);
             }
             catch (Exception ex)
             {
@@ -193,7 +233,20 @@ namespace FPVTuxsideCore
             }
         }
 
-        private string BuildKdialogFilter(string fileExtension)
+        private static string RunDialog(string cmd, string args)
+        {
+            var psi = new ProcessStartInfo(cmd, args)
+            {
+                RedirectStandardOutput = true,
+                UseShellExecute = false
+            };
+            using var proc = Process.Start(psi);
+            string result = proc.StandardOutput.ReadToEnd().Trim();
+            proc.WaitForExit();
+            return proc.ExitCode == 0 ? result : null;
+        }
+
+        private static string BuildKdialogFilter(string fileExtension)
         {
             if (string.IsNullOrEmpty(fileExtension))
                 return "*";
@@ -201,6 +254,15 @@ namespace FPVTuxsideCore
             // Input format: "CSV|*.csv" → kdialog wants "*.csv"
             var parts = fileExtension.Split('|');
             return parts.Length > 1 ? parts[1] : parts[0];
+        }
+
+        private static string BuildZenityFilter(string fileExtension)
+        {
+            if (string.IsNullOrEmpty(fileExtension))
+                return "";
+
+            // Input format: "CSV|*.csv" → zenity wants --file-filter="CSV | *.csv"
+            return $"--file-filter=\"{fileExtension.Replace("|", " |")}\"";
         }
 
         public override void ShowNewWindow(Node node) { }

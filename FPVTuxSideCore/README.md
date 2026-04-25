@@ -80,8 +80,9 @@ sudo pacman -S espeak-ng
 
 ## File Dialogs
 
-Uses `kdialog` (KDE). If running a non-KDE desktop, install it or replace with `zenity`/`yad`.
+Uses `kdialog` on KDE, `zenity` on GNOME/everything else. Install whichever matches your desktop.
 
+**KDE:**
 ```
 # Fedora
 sudo dnf install kdialog
@@ -92,6 +93,19 @@ sudo apt install kdialog
 # Arch
 sudo pacman -S kdialog
 ```
+
+**GNOME / other:**
+```
+# Fedora
+sudo dnf install zenity
+
+# Ubuntu/Debian
+sudo apt install zenity
+
+# Arch
+sudo pacman -S zenity
+```
+
 
 ## Webcam / Video Capture
 
