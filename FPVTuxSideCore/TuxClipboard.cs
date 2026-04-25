@@ -12,9 +12,16 @@ namespace FPVTuxsideCore
 
         public string GetText()
         {
+            return RunAndRead("wl-paste", "--no-newline")
+                ?? RunAndRead("xclip", "-selection clipboard -o")
+                ?? "";
+        }
+
+        private static string RunAndRead(string cmd, string args)
+        {
             try
             {
-                var psi = new ProcessStartInfo("xclip", "-selection clipboard -o")
+                var psi = new ProcessStartInfo(cmd, args)
                 {
                     RedirectStandardOutput = true,
                     UseShellExecute = false
@@ -22,11 +29,11 @@ namespace FPVTuxsideCore
                 using var proc = Process.Start(psi);
                 string text = proc.StandardOutput.ReadToEnd();
                 proc.WaitForExit();
-                return text ?? "";
+                return proc.ExitCode == 0 ? text : null;
             }
             catch
             {
-                return "";
+                return null;
             }
         }
 
@@ -37,9 +44,15 @@ namespace FPVTuxsideCore
 
         public void SetText(string text)
         {
+            if (!RunAndWrite("wl-copy", null, text))
+                RunAndWrite("xclip", "-selection clipboard", text);
+        }
+
+        private static bool RunAndWrite(string cmd, string args, string text)
+        {
             try
             {
-                var psi = new ProcessStartInfo("xclip", "-selection clipboard")
+                var psi = new ProcessStartInfo(cmd, args ?? "")
                 {
                     RedirectStandardInput = true,
                     UseShellExecute = false
@@ -48,8 +61,12 @@ namespace FPVTuxsideCore
                 proc.StandardInput.Write(text);
                 proc.StandardInput.Close();
                 proc.WaitForExit();
+                return proc.ExitCode == 0;
             }
-            catch { }
+            catch
+            {
+                return false;
+            }
         }
     }
 }
