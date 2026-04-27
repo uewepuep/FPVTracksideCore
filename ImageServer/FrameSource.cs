@@ -17,6 +17,19 @@ namespace ImageServer
 
         public event FrameDelegate OnFrameEvent;
 
+        /// <summary>
+        /// Managed-buffer overlay hook: FfmpegFrameSource path.
+        /// Invoked after the BGRA byte[] is filled and before both recording and display.
+        /// </summary>
+        public static Action<FrameSource, byte[]> BeforeFrameDispatch;
+
+        /// <summary>
+        /// Unmanaged-buffer overlay hook: MediaFoundation / DirectShow path.
+        /// Invoked after the device locks the sample buffer (BGRA/BGR32 IntPtr) and before
+        /// the data is copied to RawTexture / passed on to the recorder.
+        /// </summary>
+        public static Action<FrameSource, IntPtr, int> BeforeFrameDispatchPtr;
+
         public enum States
         {
             Stopped,

@@ -901,7 +901,11 @@ namespace FfmpegMediaPlatform
         protected virtual void ProcessCameraFrame()
         {
             FrameProcessNumber++;
-            
+
+            // OVERLAY HOOK: allow subscribers (e.g. ArUco overlay) to burn visuals into the raw
+            // BGRA buffer before it reaches both the recorder and the display.
+            ImageServer.FrameSource.BeforeFrameDispatch?.Invoke(this, buffer);
+
             // REAL-TIME OPTIMIZATION: Recording runs async, display processes immediately for minimum latency
             // Recording gets every frame for accurate capture, regardless of display frame dropping
             bool isRecording = Recording && rgbaRecorderManager.IsRecording;

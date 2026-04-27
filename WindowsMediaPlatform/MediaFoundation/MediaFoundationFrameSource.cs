@@ -250,6 +250,10 @@ namespace WindowsMediaPlatform.MediaFoundation
                             hr = buffer.Lock(out intPtr, out length, out current);
                             MFError.ThrowExceptionForHR(hr);
 
+                            // Overlay hook: mutate the sample buffer in place so both the
+                            // display copy below and the sink writer recording see the overlay.
+                            ImageServer.FrameSource.BeforeFrameDispatchPtr?.Invoke(this, intPtr, length);
+
                             frame.SetData(intPtr, sampleTime, FrameProcessNumber);
 
                             hr = buffer.Unlock();
