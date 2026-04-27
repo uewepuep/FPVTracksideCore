@@ -1,17 +1,6 @@
 # FPVTuxside — Linux Dependencies
 
-## Runtime: .NET 9
-
-```
-# Fedora
-sudo dnf install dotnet-runtime-9.0
-
-# Ubuntu/Debian
-sudo apt install dotnet-runtime-9.0
-
-# Arch
-sudo pacman -S dotnet-runtime-9
-```
+The .NET runtime is bundled — no separate install needed.
 
 ## FFmpeg
 

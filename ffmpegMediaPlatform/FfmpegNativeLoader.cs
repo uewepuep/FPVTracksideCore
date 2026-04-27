@@ -38,9 +38,11 @@ namespace FfmpegMediaPlatform
             }
             else
             {
-                // On Mac/Linux, keep original behavior using assembly location
-                appDirectory = Path.GetDirectoryName(assemblyLocation);
-                Tools.Logger.VideoLog.LogDebugStatic($"FfmpegNativeLoader.GetBundledLibraryPath: Mac/Linux - Using assembly directory: {appDirectory}");
+                // Assembly.Location is empty in single-file apps, fall back to AppContext.BaseDirectory
+                appDirectory = string.IsNullOrEmpty(assemblyLocation)
+                    ? AppContext.BaseDirectory
+                    : Path.GetDirectoryName(assemblyLocation);
+                Tools.Logger.VideoLog.LogDebugStatic($"FfmpegNativeLoader.GetBundledLibraryPath: Mac/Linux - Using directory: {appDirectory}");
             }
 
             Tools.Logger.VideoLog.LogDebugStatic($"FfmpegNativeLoader.GetBundledLibraryPath: Assembly location: {assemblyLocation}");
