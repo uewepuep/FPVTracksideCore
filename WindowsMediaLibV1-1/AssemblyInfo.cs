@@ -32,7 +32,6 @@ using System.Security.Permissions;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: Guid("FA40A71D-13EA-4890-B916-FD76A57D4BAE")]
-[assembly: AssemblyVersion("1.1.0.*")]
 #if DEBUG
 [assembly: AssemblyProduct("Debug Version")]
 #else
