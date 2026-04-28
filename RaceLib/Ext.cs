@@ -449,6 +449,16 @@ namespace RaceLib
             return string.Join(" ", pilots.Select(p => p.Phonetic));
         }
 
+        public static string NamesRaw(this Pilot[] pilots)
+        {
+            return string.Join(", ", pilots.Select(p => p.NameRaw));
+        }
+
+        public static string NamesRawNoComma(this Pilot[] pilots)
+        {
+            return string.Join(" ", pilots.Select(p => p.NameRaw));
+        }
+
         public static IEnumerable<Pilot> Seed(this IEnumerable<Pilot> orderedPilots, int channelCount)
         {
             List<Pilot> pilots = orderedPilots.ToList();

@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using RaceLib;
+using Sound;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -149,6 +150,10 @@ namespace UI
 
             Profile = new Profile(PlatformTools.WorkingDirectory, GeneralSettings.Instance.Profile);
             ApplicationProfileSettings.Initialize(Profile);
+
+            // ShownDecimalPlaces is [NeedsRestart], so a single startup-time copy
+            // into SpeechParameters is enough for every TTS call site.
+            SpeechParameters.DecimalPlaces = ApplicationProfileSettings.Instance.ShownDecimalPlaces;
 
             if (!ApplicationProfileSettings.Instance.UseDirectX9)
             {

@@ -202,38 +202,76 @@ namespace UI.Nodes
                 { "{pilots}", "Pilots"},
                 { "{s}", "Will be an 's' if {count} isn't '1'. Helps you say '2 laps', not '2 lap' and '1 lap' not '1 laps'."},
 
+                { "{pilot_raw}", "Pilot name without surrounding quotes (use for non-English readings)"},
+                { "{pilots_raw}", "Multiple pilot names without quotes (Unicode-preserving)"},
+                { "{pos_raw}", "Race position as a plain integer (1, 2, 3..)"},
+                { "{time_raw}", "{time} as whole seconds (rounded integer)"},
+                { "{time_min_raw}", "{time} minutes component"},
+                { "{time_sec_raw}", "{time} seconds component (0-59)"},
+                { "{time_ms_raw}", "{time} fractional-second digits (count = ShownDecimalPlaces setting)"},
+                { "{laptime_raw}", "{laptime} as whole seconds (rounded integer)"},
+                { "{laptime_min_raw}", "{laptime} minutes component"},
+                { "{laptime_sec_raw}", "{laptime} seconds component (0-59)"},
+                { "{laptime_ms_raw}", "{laptime} fractional-second digits"},
+                { "{lapstime_raw}", "{lapstime} as whole seconds (rounded integer)"},
+                { "{lapstime_min_raw}", "{lapstime} minutes component"},
+                { "{lapstime_sec_raw}", "{lapstime} seconds component (0-59)"},
+                { "{lapstime_ms_raw}", "{lapstime} fractional-second digits"},
+                { "{racetime_raw}", "{racetime} as whole seconds (rounded integer)"},
+                { "{racetime_min_raw}", "{racetime} minutes component"},
+                { "{racetime_sec_raw}", "{racetime} seconds component (0-59)"},
+                { "{racetime_ms_raw}", "{racetime} fractional-second digits"},
             };
 
             variables = new Node();
             centralDock.Bottom.AddChild(variables);
-            centralDock.Bottom.SetFixedSize(350);
+            // 450 keeps both the alias panel and the property editor (centralDock.Center)
+            // comfortably sized at default 1080p / SoundEditor 0.8x0.9 scale:
+            //   centralDock.Bottom (variables) ≈ 450 px  (was effective ~140 in original)
+            //   centralDock.Center (properties) ≈ 392 px  (was effective ~295 in original)
+            // 700 was too aggressive — it left the property editor only ~142 px.
+            centralDock.Bottom.SetFixedSize(450);
 
             TextNode s = new TextNode("Variables", TextColor);
             s.Style.Bold = true;
+            s.OverrideHeight = 14;
+            s.RelativeBounds = new RectangleF(0, 0, 1, 0.05f);
             variables.AddChild(s);
+
+            // Scrollable list keeps each row at a readable fixed pixel height
+            // and adds a scrollbar when the alias set exceeds the visible area.
+            ListNode<Node> aliasList = new ListNode<Node>(Theme.Current.ScrollBar.XNA);
+            aliasList.RelativeBounds = new RectangleF(0, s.RelativeBounds.Bottom, 1, 1 - s.RelativeBounds.Bottom);
+            // 14 px body + 4 px padding.
+            aliasList.ItemHeight = 18;
+            aliasList.ItemPadding = 2;
+            variables.AddChild(aliasList);
 
             foreach (var kvp in instructions)
             {
                 TextNode variable = new TextNode(kvp.Key, TextColor);
+                variable.OverrideHeight = 14;
                 variable.Alignment = RectangleAlignment.CenterRight;
-                variable.RelativeBounds = new RectangleF(0, 0, 0.1f, 1);
+                // Widened to fit longer aliases like {laptime_min_raw}.
+                variable.RelativeBounds = new RectangleF(0, 0, 0.18f, 1);
                 TextNode instruction = new TextNode(kvp.Value, TextColor);
+                instruction.OverrideHeight = 14;
                 instruction.Alignment = RectangleAlignment.CenterLeft;
-                instruction.RelativeBounds = new RectangleF(0.15f, 0, 0.85f, 1);
+                instruction.RelativeBounds = new RectangleF(0.20f, 0, 0.80f, 1);
                 instruction.Style.Italic = true;
 
                 Node row = new Node();
                 row.AddChild(variable, instruction);
 
-                variables.AddChild(row);
+                aliasList.AddChild(row);
             }
 
-            AlignVertically(0.01f, variables.Children);
-
-            float height = 0.4f;
-            objectProperties.AddSize(0, -height);
-            variables.RelativeBounds = new RectangleF(objectProperties.RelativeBounds.X, objectProperties.RelativeBounds.Bottom, objectProperties.RelativeBounds.Width, height);
-            variables.Scale(0.9f, 0.9f);
+            // Variables fills the entire Bottom dock cell. The previous code wasted
+            // 60% of it via Y=0.6 / Height=0.4, and also shrank objectProperties via
+            // AddSize even though it lives in centralDock.Center (a different dock
+            // cell) — that AddSize was a no-op for variables and just stole space
+            // from the property editor for nothing. Both issues are removed here.
+            variables.RelativeBounds = new RectangleF(0, 0, 1, 1);
         }
 
         protected override string ItemToGroupString(Sound.Sound item)
