@@ -36,27 +36,6 @@ namespace RaceLib
             }
         }
 
-        private string nameRaw;
-        /// <summary>
-        /// Unicode-preserving counterpart of <see cref="Phonetic"/>. Strips only
-        /// punctuation/symbols (kept: any Unicode letter or number plus space) so
-        /// non-Latin pilot names — Japanese, Chinese, Korean, Cyrillic, etc. —
-        /// pass through verbatim. Used as the source for the {pilot_raw} TTS
-        /// placeholder; never blanks out a non-ASCII display name.
-        /// </summary>
-        [XmlIgnore]
-        [Browsable(false)]
-        public string NameRaw
-        {
-            get
-            {
-                if (nameRaw == null && Name != null)
-                {
-                    AutoPhonetic(Name);
-                }
-                return nameRaw;
-            }
-        }
 
         [Category("Name")]
         public string FirstName { get; set; }
@@ -117,15 +96,8 @@ namespace RaceLib
 
         private void AutoPhonetic(string name)
         {
-            // Phonetic keeps the original ASCII-only behaviour: best effort
-            // pronounceable form for Latin-only TTS voices.
-            string ascii = System.Text.RegularExpressions.Regex.Replace(name, "[^a-zA-Z0-9 ]", " ", System.Text.RegularExpressions.RegexOptions.Compiled);
-            phonetic = ascii.Trim();
-
-            // NameRaw preserves any Unicode letter/number so non-ASCII display
-            // names survive (Japanese, Chinese, Cyrillic, …).
-            string raw = System.Text.RegularExpressions.Regex.Replace(name, @"[^\p{L}\p{N} ]", " ", System.Text.RegularExpressions.RegexOptions.Compiled);
-            nameRaw = raw.Trim();
+            // \p{L} = any Unicode letter, \p{N} = any Unicode number — preserves non-Latin names (Japanese, Cyrillic, etc.)
+            phonetic = System.Text.RegularExpressions.Regex.Replace(name, @"[^\p{L}\p{N} ]", " ").Trim();
         }
 
         public Pilot()

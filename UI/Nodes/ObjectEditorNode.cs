@@ -202,8 +202,6 @@ namespace UI.Nodes
                 { "{pilots}", "Pilots"},
                 { "{s}", "Will be an 's' if {count} isn't '1'. Helps you say '2 laps', not '2 lap' and '1 lap' not '1 laps'."},
 
-                { "{pilot_raw}", "Pilot name without surrounding quotes (use for non-English readings)"},
-                { "{pilots_raw}", "Multiple pilot names without quotes (Unicode-preserving)"},
                 { "{pos_raw}", "Race position as a plain integer (1, 2, 3..)"},
                 { "{time_raw}", "{time} as whole seconds (rounded integer)"},
                 { "{time_min_raw}", "{time} minutes component"},

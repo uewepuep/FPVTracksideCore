@@ -362,8 +362,7 @@ namespace Sound
         private void GameManager_OnCapture(Pilot[] pilots, Captured obj)
         {
             SpeechParameters parameters = new SpeechParameters();
-            parameters.Add(SpeechParameters.Types.pilots, pilots.PhoneticNoComma());
-            parameters.Add(SpeechParameters.Types.pilots_raw, pilots.NamesRawNoComma());
+            parameters.Add(SpeechParameters.Types.pilots, pilots.Phonetic(Translator.ListSeparator));
             parameters.Add(SpeechParameters.Types.count, obj.TimingSystemIndex + 1);
 
             PlaySound(SoundKey.GameCaptured, parameters);
@@ -372,8 +371,7 @@ namespace Sound
         private void OnGamePointsRemaining(Pilot[] pilots, Team team, int pointsRemaining)
         {
             SpeechParameters parameters = new SpeechParameters();
-            parameters.Add(SpeechParameters.Types.pilots, pilots.PhoneticNoComma());
-            parameters.Add(SpeechParameters.Types.pilots_raw, pilots.NamesRawNoComma());
+            parameters.Add(SpeechParameters.Types.pilots, pilots.Phonetic(Translator.ListSeparator));
             parameters.Add(SpeechParameters.Types.points, pointsRemaining);
 
             PlaySound(SoundKey.GamePointsRemaining, parameters);
@@ -385,8 +383,7 @@ namespace Sound
 
             SpeechParameters parameters = new SpeechParameters();
             parameters.Priority = 10000;
-            parameters.Add(SpeechParameters.Types.pilots, pilots.PhoneticNoComma());
-            parameters.Add(SpeechParameters.Types.pilots_raw, pilots.NamesRawNoComma());
+            parameters.Add(SpeechParameters.Types.pilots, pilots.Phonetic(Translator.ListSeparator));
             parameters.Add(SpeechParameters.Types.points, points);
             PlaySound(SoundKey.GameWins, parameters);
         }
@@ -509,8 +506,7 @@ namespace Sound
             SpeechParameters pilotChannelParameters = new SpeechParameters();
             pilotChannelParameters.Priority = 1000;
             pilotChannelParameters.SecondsExpiry = 5;
-            pilotChannelParameters.Add(SpeechParameters.Types.pilots, nextRace.Pilots.Phonetic());
-            pilotChannelParameters.Add(SpeechParameters.Types.pilots_raw, nextRace.Pilots.NamesRaw());
+            pilotChannelParameters.Add(SpeechParameters.Types.pilots, nextRace.Pilots.Phonetic(Translator.ListSeparator));
 
             PlaySoundBlocking(SoundKey.InTheHole,  pilotChannelParameters);
         }

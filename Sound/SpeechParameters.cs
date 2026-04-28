@@ -1,4 +1,5 @@
-﻿using RaceLib;
+﻿using Composition;
+using RaceLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,8 +36,6 @@ namespace Sound
             points,
 
             pos_raw,
-            pilot_raw,
-            pilots_raw,
             time_raw,
             laptime_raw,
             lapstime_raw,
@@ -119,30 +118,11 @@ namespace Sound
                 return;
             }
 
-            if (type == Types.pilot)
+            if (type == Types.pilot && value is Pilot pilot)
             {
-                // When the caller passes the Pilot itself, source pilot from
-                // Phonetic (ASCII-only, original behaviour) and pilot_raw from
-                // NameRaw (Unicode-preserving, supports Japanese et al.).
-                // Strings keep the legacy fallback so old call sites stay valid.
-                if (value is Pilot pilot)
-                {
-                    parameters[Types.pilot_raw] = pilot.NameRaw;
-                    value = pilot.Phonetic;
-                }
-                else
-                {
-                    parameters[Types.pilot_raw] = value.ToString();
-                }
+                value = pilot.Phonetic;
             }
 
-            if (type == Types.pilots)
-            {
-                // Fallback so {pilots_raw} resolves even when callers only pass
-                // the formatted phonetic string. SoundManager overrides this
-                // immediately after with the Unicode-preserving variant.
-                parameters[Types.pilots_raw] = value.ToString();
-            }
 
             if (type == Types.position && value is int)
             {
@@ -313,7 +293,7 @@ namespace Sound
             parameters.AddRaceTime(Types.lapstime, time);
             parameters.AddRaceTime(Types.racetime, time);
             parameters.Add(Types.pilot, pilotNames.Random());
-            parameters.Add(Types.pilots, string.Join(", ", pilotNames.Randomise().Take(4)));
+            parameters.Add(Types.pilots, string.Join(Translator.ListSeparator, pilotNames.Randomise().Take(4)));
             parameters.Add(Types.position, channel);
             parameters.Add(Types.round, round);
             parameters.Add(Types.race, race);
