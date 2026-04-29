@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Tools;
 using Composition;
 using RaceLib.Game;
@@ -96,6 +97,18 @@ namespace Sound
         private WorkQueue backgroundQueue;
         private bool backgroundQueueStopping;
 
+        private CancellationTokenSource startCountdownCts;
+
+        private static readonly (int seconds, SoundKey key)[] StartCountdownSchedule =
+        {
+            (8, SoundKey.StartRaceIn8),
+            (5, SoundKey.StartRaceIn5),
+            (4, SoundKey.StartRaceIn4),
+            (3, SoundKey.StartRaceIn3),
+            (2, SoundKey.StartRaceIn2),
+            (1, SoundKey.StartRaceIn1),
+        };
+
         public SoundManager(EventManager eventManager, Profile profile)
         {
             this.eventManager = eventManager;
@@ -120,6 +133,7 @@ namespace Sound
             if (em != null)
             {
                 em.RaceManager.OnRaceStart += RaceManager_OnRaceStart;
+                em.RaceManager.OnRaceStartScheduled += RaceManager_OnRaceStartScheduled;
                 em.RaceManager.OnRaceEnd += RaceOver;
                 em.RaceManager.OnLapDetected += Lap;
                 em.RaceManager.OnSplitDetection += Sector;
@@ -145,6 +159,9 @@ namespace Sound
         {
             StopSound();
 
+            startCountdownCts?.Dispose();
+            startCountdownCts = null;
+
             backgroundQueue?.Dispose();
             backgroundQueue = null;
 
@@ -152,6 +169,7 @@ namespace Sound
             if (em != null)
             {
                 em.RaceManager.OnRaceStart -= RaceManager_OnRaceStart;
+                em.RaceManager.OnRaceStartScheduled -= RaceManager_OnRaceStartScheduled;
                 em.RaceManager.OnRaceEnd -= RaceOver;
                 em.RaceManager.OnLapDetected -= Lap;
                 em.RaceManager.OnSplitDetection -= Sector;
@@ -232,6 +250,12 @@ namespace Sound
                 Sound[] defaultSounds = new Sound[]
                 {
                     new Sound() { Key = SoundKey.StartRaceIn, TextToSpeech = "Arm your quads. Starting on the tone in less than {time}", Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.StartRaceIn8, TextToSpeech = "8 seconds", Enabled = false, Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.StartRaceIn5, TextToSpeech = "5", Enabled = false, Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.StartRaceIn4, TextToSpeech = "4", Enabled = false, Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.StartRaceIn3, TextToSpeech = "3", Enabled = false, Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.StartRaceIn2, TextToSpeech = "2", Enabled = false, Category = Sound.SoundCategories.Race },
+                    new Sound() { Key = SoundKey.StartRaceIn1, TextToSpeech = "1", Enabled = false, Category = Sound.SoundCategories.Race },
                     new Sound() { Key = SoundKey.RaceStart, TextToSpeech = "Go", Filename = @"sounds/tone.wav", Category = Sound.SoundCategories.Race },
                     new Sound() { Key = SoundKey.RaceOver, TextToSpeech = "Race over", Category = Sound.SoundCategories.Race },
                     new Sound() { Key = SoundKey.RaceResumed, TextToSpeech = "Race Resumed", Category = Sound.SoundCategories.Race },
@@ -393,6 +417,34 @@ namespace Sound
             if (!eventManager.RaceManager.StaggeredStart)
             {
                 Start();
+            }
+        }
+
+        private void RaceManager_OnRaceStartScheduled(Race race, DateTime startTime)
+        {
+            startCountdownCts?.Cancel();
+            startCountdownCts?.Dispose();
+            startCountdownCts = new CancellationTokenSource();
+            CancellationToken token = startCountdownCts.Token;
+
+            foreach ((int seconds, SoundKey key) in StartCountdownSchedule)
+            {
+                DateTime fireAt = startTime - TimeSpan.FromSeconds(seconds);
+                TimeSpan delay = fireAt - DateTime.Now;
+                if (delay <= TimeSpan.Zero)
+                    continue;
+
+                SoundKey capturedKey = key;
+                Task.Delay(delay, token).ContinueWith(t =>
+                {
+                    if (t.IsCanceled)
+                        return;
+
+                    SpeechParameters parameters = new SpeechParameters();
+                    parameters.Priority = 9500;
+                    parameters.SecondsExpiry = 1;
+                    PlaySound(capturedKey, parameters);
+                }, TaskScheduler.Default);
             }
         }
 
@@ -661,6 +713,7 @@ namespace Sound
         public void StopSound()
         {
             backgroundQueueStopping = true;
+            startCountdownCts?.Cancel();
             speechManager?.StopSpeech();
         }
 

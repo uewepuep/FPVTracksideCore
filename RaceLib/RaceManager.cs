@@ -31,6 +31,7 @@ namespace RaceLib
         public event Race.OnRaceEvent OnRaceCreated;
         public event Race.OnRaceEvent OnRaceStart;
         public event Race.OnRaceEvent OnRacePreStart;
+        public event Action<Race, DateTime> OnRaceStartScheduled;
         public event Race.OnRaceEvent OnRaceChanged;
         public event Race.OnRaceEvent OnRaceResumed;
         public event Race.OnRaceEvent OnRacePilotsSet;
@@ -746,6 +747,8 @@ namespace RaceLib
                     return false;
                 }
             }
+
+            OnRaceStartScheduled?.Invoke(currentRace, startTime);
 
             while (PreRaceStartDelay && DateTime.Now < startTime)
             {
