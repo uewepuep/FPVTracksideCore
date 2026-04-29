@@ -97,7 +97,16 @@ namespace RaceLib
         private void AutoPhonetic(string name)
         {
             // \p{L} = any Unicode letter, \p{N} = any Unicode number — preserves non-Latin names (Japanese, Cyrillic, etc.)
-            phonetic = System.Text.RegularExpressions.Regex.Replace(name, @"[^\p{L}\p{N} ]", " ").Trim();
+            string cleaned = System.Text.RegularExpressions.Regex.Replace(name, @"[^\p{L}\p{N} ]", " ").Trim();
+            // quotes group multi-word names so TTS doesn't blend them into the surrounding sentence
+            if (cleaned.Contains(' '))
+            {
+                phonetic = "'" + cleaned + "'";
+            }
+            else
+            {
+                phonetic = cleaned;
+            }
         }
 
         public Pilot()
