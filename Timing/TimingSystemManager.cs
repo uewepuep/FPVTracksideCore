@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using Timing.Aruco;
 using Timing.Chorus;
 using Timing.ImmersionRC;
 using Timing.RotorHazard;
@@ -79,7 +80,6 @@ namespace Timing
 
         public int SplitsPerLap { get { return SplitSystems.Length + 1; } }
 
-        public bool HasVideoTiming { get { return TimingSystems.OfType<VideoTimingSystem>().Any(); } }
         public bool HasDummyTiming { get { return TimingSystems.All(r => r is DummyTimingSystem) && ConnectedCount > 0; } }
 
         public int TimingSystemCount { get { return TimingSystems.Count(); } }
@@ -184,17 +184,14 @@ namespace Timing
                 else if (settings is DummySettings)
                     timingSystem = new DummyTimingSystem();
 
-                else if (settings is VideoTimingSettings)
-                    timingSystem = new VideoTimingSystem();
-
                 else if (settings is RotorHazardSettings)
                     timingSystem = new RotorHazardTimingSystem();
 
                 else if (settings is ChorusSettings)
                     timingSystem = new ChorusTiming();
 
-                else if (settings is Timing.Aruco.ArucoTimingSettings)
-                    timingSystem = new Timing.Aruco.ArucoTimingSystem();
+                else if (settings is ArucoTimingSettings)
+                    timingSystem = new ArucoTimingSystem();
 
                 if (timingSystem != null)
                 {

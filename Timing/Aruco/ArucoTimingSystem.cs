@@ -1,10 +1,28 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using OpenCvSharp;
 
 namespace Timing.Aruco
 {
     public class ArucoTimingSystem : ITimingSystem
     {
+        public static bool IsNativeAvailable()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return true;
+
+            try
+            {
+                Cv2.GetVersionString();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public TimingSystemType Type => TimingSystemType.Other;
         public bool Connected => true;
         public int MaxPilots => 32;

@@ -154,7 +154,6 @@ namespace Timing
     [XmlInclude(typeof(LapRFSettings))]
     [XmlInclude(typeof(LapRFSettingsUSB))]
     [XmlInclude(typeof(LapRFSettingsEthernet))]
-    [XmlInclude(typeof(VideoTimingSettings))]
     [XmlInclude(typeof(RotorHazardSettings))]
     [XmlInclude(typeof(ChorusSettings))]
     [XmlInclude(typeof(Timing.Aruco.ArucoTimingSettings))]

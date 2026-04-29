@@ -117,16 +117,13 @@ namespace UI.Nodes
             mouseMenu.AddItem("LapRF 8-way", () => { AddNew(new Timing.ImmersionRC.LapRFSettingsEthernet()); });
             mouseMenu.AddItem("LapRF Puck", () => { AddNew(new Timing.ImmersionRC.LapRFSettingsUSB()); });
             mouseMenu.AddItem("RotorHazard 4.0+", () => { AddNew(new Timing.RotorHazard.RotorHazardSettings()); });
-            mouseMenu.AddItem("Chorus32 (alpha)", () => { AddNew(new Timing.Chorus.ChorusSettings()); });
-            //mouseMenu.AddItem("Video Color (Alpha)", () => { AddNew(new VideoTimingSettings()); });
-            mouseMenu.AddItem("ArUco (Marker)", () =>
-            {
-                var a = new Timing.Aruco.ArucoTimingSettings();
-                if (Objects.OfType<Timing.Aruco.ArucoTimingSettings>()
-                           .Any(x => x.Role == TimingSystemRole.Primary))
-                    a.Role = TimingSystemRole.Split;
-                AddNew(a);
-            });
+            mouseMenu.AddItem("Chorus32", () => { AddNew(new Timing.Chorus.ChorusSettings()); });
+            
+            if (Timing.Aruco.ArucoTimingSystem.IsNativeAvailable())
+                mouseMenu.AddItem("ArUco (Video Marker)", () => { AddNew(new Timing.Aruco.ArucoTimingSettings()); });
+            else
+                mouseMenu.AddDisabledItem("ArUco (Video Marker) [needs OpenCV installed]");
+
             mouseMenu.AddItem("Dummy", () => { AddNew(new DummySettings()); });
 
             mouseMenu.Show(addButton);

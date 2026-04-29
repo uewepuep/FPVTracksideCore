@@ -65,7 +65,6 @@ namespace UI.Nodes
 
         public AutoCrashOut AutoCrashOut { get; private set; }
 
-        private VideoTimingManager videoTimingManager;
         private UI.Video.ArucoTimingManager arucoTimingManager;
 
         private List<ChannelVideoInfo> channelInfos;
@@ -139,7 +138,6 @@ namespace UI.Nodes
             channelCreationLock = new object();
             channelInfos = new List<ChannelVideoInfo>();
 
-            videoTimingManager = new VideoTimingManager(eventManager.RaceManager.TimingSystemManager, this);
             arucoTimingManager = new UI.Video.ArucoTimingManager(eventManager.RaceManager.TimingSystemManager, this);
 
             EventManager = eventManager;
@@ -182,9 +180,9 @@ namespace UI.Nodes
             EventManager.RaceManager.OnRaceEnd -= RaceManager_OnRaceEnd;
             EventManager.RaceManager.OnRaceChanged -= RaceManager_OnRaceChanged;
             EventManager.OnPilotRefresh -= Refresh;
-
-            videoTimingManager?.Dispose();
             AutoCrashOut?.Dispose();
+
+            arucoTimingManager?.Dispose();
             base.Dispose();
         }
 
