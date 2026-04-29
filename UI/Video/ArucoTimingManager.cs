@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -138,6 +139,11 @@ namespace UI.Video
                 var sizedNodes = new HashSet<ChannelVideoNode>();
                 long lastFrame = -1;
 
+                // Detection FPS publishing for the optional overlay readout. Recomputed every ~1s
+                // from the iteration count; the overlay reads the latest value via ArucoFrameOverlay.
+                var fpsSw = Stopwatch.StartNew();
+                int fpsIter = 0;
+
                 while (run)
                 {
                     var systems = timingSystemManager.TimingSystems
@@ -194,20 +200,6 @@ namespace UI.Video
 
                     DateTime captureTime = DateTime.Now;
 
-                    // Detector parameters are shared: take the widest (most tolerant) setting
-                    // across all ArucoTimingSystem instances so one detection pass serves all.
-                    ArucoDetectMode sharedMode = ArucoDetectMode.Original;
-                    double sharedEcRate = 0.0;
-                    int sharedHybridDist = 0;
-                    foreach (var sys in systems)
-                    {
-                        var s = sys.ArucoSettings;
-                        if (s == null) continue;
-                        if ((int)s.DetectMode > (int)sharedMode) sharedMode = s.DetectMode;
-                        if (s.ErrorCorrectionRate > sharedEcRate) sharedEcRate = s.ErrorCorrectionRate;
-                        if (s.HybridDistanceThreshold > sharedHybridDist) sharedHybridDist = s.HybridDistanceThreshold;
-                    }
-
                     // Reference settings: Primary's if one exists, otherwise the first Split.
                     // All other instances inherit shared thresholds from the reference so the
                     // per-instance UI can stay limited to MarkerIds.
@@ -220,12 +212,21 @@ namespace UI.Video
                             .Select(sys => sys.ArucoSettings)
                             .FirstOrDefault();
 
+                    // Detector parameters are shared from the reference (Primary). Splits do not
+                    // expose DetectMode in their UI, so their stored value (default Hybrid) must
+                    // not influence the single detection pass — otherwise changing the Primary's
+                    // mode away from Hybrid would have no effect.
+                    ArucoDetectMode sharedMode = primarySettings?.DetectMode ?? ArucoDetectMode.Original;
+                    double sharedEcRate = primarySettings?.ErrorCorrectionRate ?? 0.0;
+                    int sharedHybridDist = primarySettings?.HybridDistanceThreshold ?? 0;
+
                     // Overlay display flags track the Primary's settings.
                     if (primarySettings != null)
                     {
                         ArucoFrameOverlay.ShowBox = primarySettings.ShowMarkerBox;
                         ArucoFrameOverlay.ShowId = primarySettings.ShowMarkerId;
                         ArucoFrameOverlay.ShowSizePercent = primarySettings.ShowMarkerSizePercent;
+                        ArucoFrameOverlay.ShowFps = primarySettings.ShowFps;
                     }
                     bool multiThread = primarySettings?.UseMultiThreadDetection ?? true;
 
@@ -343,6 +344,14 @@ namespace UI.Video
                             sys.ReportMarkerCount(cvn.Channel.Frequency, matching, (int)maxArea, captureTime,
                                 effective.MarkerThreshold, effective.FlickerLengthMs);
                         }
+                    }
+
+                    fpsIter++;
+                    if (fpsSw.ElapsedMilliseconds >= 1000)
+                    {
+                        ArucoFrameOverlay.DetectionFps = (float)(fpsIter * 1000.0 / fpsSw.Elapsed.TotalMilliseconds);
+                        fpsIter = 0;
+                        fpsSw.Restart();
                     }
                 }
             }

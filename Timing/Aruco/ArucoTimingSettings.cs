@@ -81,6 +81,11 @@ namespace Timing.Aruco
         [Description("Draw the marker area as a percentage of the detection frame.")]
         public bool ShowMarkerSizePercent { get; set; }
 
+        [Category("Overlay")]
+        [DisplayName("Show Detection FPS")]
+        [Description("Draw the ArUco detection thread's iterations-per-second on each channel's overlay.")]
+        public bool ShowFps { get; set; }
+
         public ArucoTimingSettings()
         {
             MarkerIds = "0";
@@ -94,6 +99,7 @@ namespace Timing.Aruco
             ShowMarkerBox = true;
             ShowMarkerId = true;
             ShowMarkerSizePercent = true;
+            ShowFps = false;
         }
 
         public override string ToString()
