@@ -14,6 +14,12 @@ namespace Sound
     {
         None,
         StartRaceIn,
+        StartRaceIn8,
+        StartRaceIn5,
+        StartRaceIn4,
+        StartRaceIn3,
+        StartRaceIn2,
+        StartRaceIn1,
         RaceStart,
         RaceOver,
         RaceResumed,
