@@ -422,11 +422,14 @@ namespace Sound
 
         private void RaceManager_OnRaceStartScheduled(Race race, DateTime startTime)
         {
-            startCountdownCts?.Cancel();
-            startCountdownCts?.Dispose();
+            // Swap in the new CTS before cancelling the old one — StopSound can be called
+            // from another thread at any time, so the field must never point to a disposed object.
+            CancellationTokenSource oldCts = startCountdownCts;
             startCountdownCts = new CancellationTokenSource();
-            CancellationToken token = startCountdownCts.Token;
+            oldCts?.Cancel();
+            oldCts?.Dispose();
 
+            CancellationToken token = startCountdownCts.Token;
             foreach ((int seconds, SoundKey key) in StartCountdownSchedule)
             {
                 DateTime fireAt = startTime - TimeSpan.FromSeconds(seconds);
