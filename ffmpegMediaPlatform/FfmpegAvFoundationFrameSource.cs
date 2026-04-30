@@ -119,7 +119,7 @@ namespace FfmpegMediaPlatform
                                 $"-an " +
                                 $"-filter_complex \"[0:v]{videoFilter}split=2[out1][out2];[out1]format=rgba[outpipe];[out2]format=yuv420p[outfile]\" " +
                                 $"-map \"[outpipe]\" -f rawvideo pipe:1 " +
-                                $"-map \"[outfile]\" -c:v h264_videotoolbox -preset ultrafast -tune zerolatency -b:v 5M -f matroska -avoid_negative_ts make_zero \"{recordingPath}\"";
+                                $"-map \"[outfile]\" -c:v {(VideoConfig.HardwareAcceleration ? "h264_videotoolbox" : "libx264")} -preset ultrafast -tune zerolatency -b:v 5M -f matroska -avoid_negative_ts make_zero \"{recordingPath}\"";
 
                 Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG macOS Recording Mode (filters: {videoFilter}): {ffmpegArgs}");
             }

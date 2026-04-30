@@ -13,7 +13,7 @@ namespace WindowsMediaPlatform.MediaFoundation
     {
         private AutoTransform resizer;
 
-        public H264Encoder(IMFMediaType inputType, int width, int height, int frameRate) 
+        public H264Encoder(IMFMediaType inputType, int width, int height, int frameRate, bool hardwareAcceleration = true) 
             : base()
         {
             IMFMediaType encoderOutput = null;
@@ -92,7 +92,7 @@ namespace WindowsMediaPlatform.MediaFoundation
 
                 if (inputWidth != width || inputHeight != height || actualFrameRate != frameRate)
                 {
-                    resizer = new AutoTransform(encoderInput, width, height, frameRate);
+                    resizer = new AutoTransform(encoderInput, width, height, frameRate, hardwareAcceleration);
                     resizer.Output = base.ProcessInput;
 
                     hr = MFExtern.MFSetAttributeSize(encoderInput, MFAttributesClsid.MF_MT_FRAME_SIZE, width, height);

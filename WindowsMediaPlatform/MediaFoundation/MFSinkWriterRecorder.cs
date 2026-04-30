@@ -563,7 +563,7 @@ namespace WindowsMediaPlatform.MediaFoundation
                 HResult hr = MFExtern.MFCreateAttributes(out attributes, 2);
                 if (MFHelper.Failed(hr)) { sinkWriter = null; return hr; }
 
-                hr = attributes.SetUINT32(MFAttributesClsid.MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, 1);
+                hr = attributes.SetUINT32(MFAttributesClsid.MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, videoConfig.HardwareAcceleration ? 1 : 0);
                 if (MFHelper.Failed(hr)) { sinkWriter = null; return hr; }
 
                 hr = attributes.SetUINT32(MFAttributesClsid.MF_LOW_LATENCY, 1);
@@ -635,7 +635,7 @@ namespace WindowsMediaPlatform.MediaFoundation
                     encoder = new WMVEncoder(inputType, width, height, frameRate);
                     break;
                 case FileFormats.mp4:
-                    encoder = new H264Encoder(inputType, width, height, frameRate);
+                    encoder = new H264Encoder(inputType, width, height, frameRate, videoConfig.HardwareAcceleration);
                     break;
             }
 

@@ -132,7 +132,7 @@ namespace FfmpegMediaPlatform
             Tools.Logger.VideoLog.LogDebugCall(this, $"RECORDING START: Using {rateSource} frame rate: {recordingFrameRate:F1}fps for recording");
             Tools.Logger.VideoLog.LogDebugCall(this, $"RECORDING START: VideoConfig details - Width: {VideoConfig.VideoMode?.Width}, Height: {VideoConfig.VideoMode?.Height}, ConfiguredRate: {VideoConfig.VideoMode?.FrameRate}fps, MeasuredRate: {measuredFrameRate:F1}fps");
             
-            bool started = rgbaRecorderManager.StartRecording(filename, width, height, recordingFrameRate, this);
+            bool started = rgbaRecorderManager.StartRecording(filename, width, height, recordingFrameRate, this, VideoConfig.HardwareAcceleration);
             if (!started)
             {
                 Tools.Logger.VideoLog.LogCall(this, $"Failed to start RGBA recording to {filename}");

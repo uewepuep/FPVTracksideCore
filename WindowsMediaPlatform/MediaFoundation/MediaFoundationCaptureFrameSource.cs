@@ -36,6 +36,9 @@ namespace WindowsMediaPlatform.MediaFoundation
         public MediaFoundationCaptureFrameSource(VideoConfig videoConfig, Microsoft.Xna.Framework.Graphics.GraphicsDevice graphicsDevice)
             : this(videoConfig)
         {
+            if (!videoConfig.HardwareAcceleration)
+                return;
+
             this.graphicsDevice = graphicsDevice;
 
             // Enable D3D11 multithread protection so the MF callback thread can call
@@ -51,7 +54,7 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         protected override HResult CreateReader(IMFMediaSource pSource)
         {
-            if (graphicsDevice == null)
+            if (graphicsDevice == null || !VideoConfig.HardwareAcceleration)
                 return base.CreateReader(pSource);
 
             HResult hr;

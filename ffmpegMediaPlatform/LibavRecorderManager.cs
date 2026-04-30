@@ -70,7 +70,7 @@ namespace FfmpegMediaPlatform
         /// <summary>
         /// Start recording RGBA frames to an MP4 file using FFmpeg.AutoGen
         /// </summary>
-        public bool StartRecording(string outputPath, int frameWidth, int frameHeight, float frameRate, ICaptureFrameSource captureFrameSource = null)
+        public bool StartRecording(string outputPath, int frameWidth, int frameHeight, float frameRate, ICaptureFrameSource captureFrameSource = null, bool hardwareAcceleration = true)
         {
             if (disposed)
             {
@@ -115,7 +115,7 @@ namespace FfmpegMediaPlatform
                     frameQueueSemaphore = new System.Threading.SemaphoreSlim(0);
 
                     // Initialize FFmpeg encoder
-                    if (!InitializeEncoder(outputPath, frameWidth, frameHeight, frameRate))
+                    if (!InitializeEncoder(outputPath, frameWidth, frameHeight, frameRate, hardwareAcceleration))
                     {
                         Tools.Logger.VideoLog.LogCall(this, "Failed to initialize FFmpeg encoder");
                         return false;
@@ -144,7 +144,7 @@ namespace FfmpegMediaPlatform
         /// <summary>
         /// Initialize FFmpeg encoder with direct PTS control
         /// </summary>
-        private unsafe bool InitializeEncoder(string outputPath, int width, int height, float frameRate)
+        private unsafe bool InitializeEncoder(string outputPath, int width, int height, float frameRate, bool hardwareAcceleration = true)
         {
             try
             {
@@ -163,7 +163,7 @@ namespace FfmpegMediaPlatform
                 string encoderName = null;
 
                 // Try hardware encoders based on platform
-                if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+                if (hardwareAcceleration && System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
                 {
                     // macOS: Try VideoToolbox (Apple hardware encoder)
                     codec = ffmpeg.avcodec_find_encoder_by_name("h264_videotoolbox");
@@ -172,7 +172,7 @@ namespace FfmpegMediaPlatform
                         encoderName = "h264_videotoolbox (macOS VideoToolbox - GPU accelerated)";
                     }
                 }
-                else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+                else if (hardwareAcceleration && System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
                 {
                     // Windows: Try NVIDIA NVENC first (most common GPU), then Intel QSV, then AMD AMF
                     string[] windowsEncoders = new[]

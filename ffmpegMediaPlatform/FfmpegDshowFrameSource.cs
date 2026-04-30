@@ -12,9 +12,49 @@ namespace FfmpegMediaPlatform
 {
     public class FfmpegDshowFrameSource : FfmpegFrameSource
     {
+        private bool hwAccelFailed;
+
+        private static bool IsCompressedFormat(string format)
+        {
+            if (string.IsNullOrEmpty(format))
+                return false;
+            string f = format.ToLower();
+            return f == "h264" || f == "h265" || f == "hevc" || f == "mjpeg";
+        }
+
         public FfmpegDshowFrameSource(FfmpegMediaFramework ffmpegMediaFramework, VideoConfig videoConfig)
             : base(ffmpegMediaFramework, videoConfig)
         {
+        }
+
+        public override bool Start()
+        {
+            bool result = base.Start();
+            if (result && process != null && VideoConfig.HardwareAcceleration && IsCompressedFormat(VideoConfig.VideoMode?.Format) && !hwAccelFailed)
+            {
+                process.ErrorDataReceived += DetectHardwareAccelError;
+            }
+            return result;
+        }
+
+        private void DetectHardwareAccelError(object sender, DataReceivedEventArgs e)
+        {
+            if (e.Data == null || inited || hwAccelFailed)
+                return;
+
+            string line = e.Data;
+            bool isCudaLine = line.IndexOf("cuda", StringComparison.OrdinalIgnoreCase) >= 0
+                           || line.IndexOf("cuvid", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool isError = line.IndexOf("error", StringComparison.OrdinalIgnoreCase) >= 0
+                        || line.IndexOf("failed", StringComparison.OrdinalIgnoreCase) >= 0
+                        || line.IndexOf("not found", StringComparison.OrdinalIgnoreCase) >= 0;
+
+            if (isCudaLine && isError)
+            {
+                hwAccelFailed = true;
+                Tools.Logger.VideoLog.LogCall(this, "Hardware acceleration failed, falling back to software decode");
+                Task.Run(() => { Stop(); Start(); });
+            }
         }
 
         public override IEnumerable<Mode> GetModes()
@@ -217,7 +257,7 @@ namespace FfmpegMediaPlatform
                                 $"-an " +
                                 $"-filter_complex \"[0:v]{videoFilter}split=2[out1][out2];[out1]format=rgba[outpipe];[out2]format=yuv420p[outfile]\" " +
                                 $"-map \"[outpipe]\" -f rawvideo pipe:1 " +
-                                $"-map \"[outfile]\" -c:v h264_nvenc -preset llhp -tune zerolatency -b:v 5M -f matroska -avoid_negative_ts make_zero \"{recordingPath}\"";
+                                $"-map \"[outfile]\" -c:v {(VideoConfig.HardwareAcceleration ? "h264_nvenc -preset llhp" : "libx264 -preset ultrafast")} -tune zerolatency -b:v 5M -f matroska -avoid_negative_ts make_zero \"{recordingPath}\"";
 
                 Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Windows Recording Mode ({format}, filters: {videoFilter}): {ffmpegArgs}");
             }
@@ -227,10 +267,8 @@ namespace FfmpegMediaPlatform
                 string hwaccelArgs = "";
                 string decoderCodec = "";
 
-                if (VideoConfig.HardwareDecodeAcceleration && VideoConfig.IsCompressedVideoFormat)
+                if (VideoConfig.HardwareAcceleration && IsCompressedFormat(VideoConfig.VideoMode?.Format) && !hwAccelFailed)
                 {
-                    // For H264/MJPEG from capture cards, use CUVID decoder for NVIDIA GPUs
-                    // This provides better performance than generic hwaccel for compressed streams
                     if (format == "h264")
                     {
                         decoderCodec = "-c:v h264_cuvid ";
@@ -245,14 +283,9 @@ namespace FfmpegMediaPlatform
                     }
                     else
                     {
-                        // Fallback to generic hardware acceleration for other formats
                         hwaccelArgs = "-hwaccel cuda ";
                         Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Hardware decode: Using generic CUDA hwaccel for {format}");
                     }
-                }
-                else if (VideoConfig.HardwareDecodeAcceleration && !VideoConfig.IsCompressedVideoFormat)
-                {
-                    Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Hardware decode acceleration skipped for uncompressed format: {VideoConfig.VideoMode?.Format}");
                 }
 
                 // PERFORMANCE: Enhanced low-delay flags for 4K video to reduce 1-second startup delay
@@ -284,7 +317,7 @@ namespace FfmpegMediaPlatform
                                 $"-filter_complex \"[0:v]{filterPrefix}{videoFilter}format=rgba[outpipe]\" " +
                                 $"-map \"[outpipe]\" -f rawvideo pipe:1";
 
-                Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Windows Live Mode ({format}, filters: {videoFilter}) HW Accel: {VideoConfig.HardwareDecodeAcceleration}: {ffmpegArgs}");
+                Tools.Logger.VideoLog.LogDebugCall(this, $"FFMPEG Windows Live Mode ({format}, filters: {videoFilter}) HW Accel: {VideoConfig.HardwareAcceleration}: {ffmpegArgs}");
             }
             return ffmpegMediaFramework.GetProcessStartInfo(ffmpegArgs);
         }

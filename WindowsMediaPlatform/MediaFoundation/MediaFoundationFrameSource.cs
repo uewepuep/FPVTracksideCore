@@ -300,10 +300,10 @@ namespace WindowsMediaPlatform.MediaFoundation
                 hr = pAttributes.SetUINT32(MFAttributesClsid.MF_SOURCE_READER_ENABLE_VIDEO_PROCESSING, 0);
                 MFError.ThrowExceptionForHR(hr);
 
-                hr = pAttributes.SetUINT32(MFAttributesClsid.MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, 1);
+                hr = pAttributes.SetUINT32(MFAttributesClsid.MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, VideoConfig.HardwareAcceleration ? 1 : 0);
                 MFError.ThrowExceptionForHR(hr);
 
-                hr = pAttributes.SetUINT32(MFAttributesClsid.MF_SOURCE_READER_DISABLE_DXVA, 0);
+                hr = pAttributes.SetUINT32(MFAttributesClsid.MF_SOURCE_READER_DISABLE_DXVA, VideoConfig.HardwareAcceleration ? 0 : 1);
                 MFError.ThrowExceptionForHR(hr);
 
                 if (AutomaticVideoConversion)
@@ -415,7 +415,7 @@ namespace WindowsMediaPlatform.MediaFoundation
 
             if (DecoderProcessor.SupportedInputTypes().Contains(subType))
             {
-                decoderProcessor = new DecoderProcessor(sourceMediaType, MFMediaType.NV12);
+                decoderProcessor = new DecoderProcessor(sourceMediaType, MFMediaType.NV12, VideoConfig.HardwareAcceleration);
                 outputMediaType = decoderProcessor.DestinationType;
                 decoderProcessor.Output = ProcessUncompressed;
             }
@@ -448,7 +448,7 @@ namespace WindowsMediaPlatform.MediaFoundation
             }
             else
             {
-                colorProcessor = new ColorProcessor(outputMediaType, MFMediaType.RGB32);
+                colorProcessor = new ColorProcessor(outputMediaType, MFMediaType.RGB32, VideoConfig.HardwareAcceleration);
                 colorProcessor.Output = ProcessRGBSample;
 
                 height = colorProcessor.Height;
