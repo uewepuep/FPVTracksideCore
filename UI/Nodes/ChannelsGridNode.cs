@@ -359,7 +359,7 @@ namespace UI.Nodes
             {
                 case ReOrderTypes.None:
                 default:
-                    output = input;
+                    output = input.OfType<ChannelNodeBase>();
                     break;
                 case ReOrderTypes.ChannelOrder:
                     // Order by channel
