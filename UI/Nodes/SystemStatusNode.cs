@@ -141,23 +141,25 @@ namespace UI.Nodes
 
             icon = new ImageNode(iconFilename);
             icon.Alignment = RectangleAlignment.CenterLeft;
-            icon.RelativeBounds = new RectangleF(0, 0, 0.5f, 1f);
+            icon.RelativeBounds = new RectangleF(0, 0, 0.45f, 1f);
             icon.Scale(0.7f);
             AddChild(icon);
 
-            float textLeft = 0.4f;
+            float left = icon.RelativeBounds.Right - 0.05f;
+
+            Node container = new Node();
+            container.RelativeBounds = new RectangleF(left, 0.0f, 1 - left, 1);
+            AddChild(container);
 
             name = new TextNode("", tint);
-            name.RelativeBounds = new RectangleF(textLeft, 0.0f, 1 - textLeft, 0.5f);
             name.Alignment = RectangleAlignment.CenterRight;
-            name.OverrideHeight = 14;
-            AddChild(name);
+            container.AddChild(name);
 
             status = new TextNode("", tint);
-            status.RelativeBounds = new RectangleF(textLeft, name.RelativeBounds.Bottom, 1 - textLeft, 0.5f);
             status.Alignment = RectangleAlignment.CenterRight;
-            status.OverrideHeight = name.OverrideHeight;
-            AddChild(status);
+            container.AddChild(status);
+
+            AlignVertically(0.0f, name, status);
         }
 
         public void OnDataRecv()
@@ -306,7 +308,7 @@ namespace UI.Nodes
             if (VideoManager.GetStatus(VideoConfig, out connected, out recording, out height, out fps))
             {
                 string[] statuses = fps > 0
-                    ? new string[] { height + "p", (int)Math.Ceiling(fps) + " FPS" }
+                    ? new string[] { height + "p", (int)Math.Ceiling(fps) + "Hz" }
                     : new string[] { height + "p" };
                 SetStatus(statuses.GetFromCurrentTime(updateEverySeconds), connected);
                 recordingIcon.Visible = recording;
@@ -526,7 +528,7 @@ namespace UI.Nodes
             if (now - frameMeasurementPeriod > lastXFrame)
             {
                 int frameRate = (int)(frameCount / (now - lastXFrame).TotalSeconds);
-                SetStatus(frameRate.ToString() + " FPS", frameRate > 20);
+                SetStatus(frameRate.ToString() + "Hz", frameRate > 20);
                 lastXFrame = now;
                 frameCount = 0;
             }

@@ -333,11 +333,11 @@ namespace UI
             MenuButton.OBSRemoteConfigSaved += ReloadOBSRemoteControl;
             MenuButton.AutoRunnerConfigsSaved += ReloadAutoRunnerConfig;
 
-            float width = 0.9f;
+            float width = 0.95f;
 
             systemStatusNode = new SystemStatusNode();
             systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager);
-            systemStatusNode.RelativeBounds = new RectangleF((1 - width) / 2, MenuButton.RelativeBounds.Bottom + 0.01f, 0.9f, 1);
+            systemStatusNode.RelativeBounds = new RectangleF((1 - width) / 2, MenuButton.RelativeBounds.Bottom + 0.01f, width, 1);
             rightSideColor.AddChild(systemStatusNode);
 
             ChannelsGridNode.OnChannelNodeCloseClick += (ChannelNodeBase cn) =>
