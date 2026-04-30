@@ -6,7 +6,7 @@
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>false</TieredCompilation>
     <ImplicitUsings>true</ImplicitUsings>
-    <Version>2.74.2.785</Version>
+    <Version>2.74.3.808</Version>
     <Platforms>AnyCPU;x64</Platforms>
     <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
   </PropertyGroup>
