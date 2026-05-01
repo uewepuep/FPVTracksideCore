@@ -137,7 +137,8 @@ namespace Timing.Aruco
 
             if (captureTime >= state.FlickerEndTime)
             {
-                OnDetectionEvent?.Invoke(this, frequency, captureTime, state.LastPeak);
+                DateTime detectionTime = captureTime.AddMilliseconds(-flickerLengthMs);
+                OnDetectionEvent?.Invoke(this, frequency, detectionTime, state.LastPeak);
                 state.InGate = false;
                 state.FlickerEndTime = DateTime.MinValue;
             }
