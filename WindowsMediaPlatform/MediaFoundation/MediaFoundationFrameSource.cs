@@ -109,16 +109,20 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         public override bool Start()
         {
+            bool result = base.Start();
+
             if (reader != null)
             {
-                // Ask for the first sample.
+                // Ask for the first sample — must be after base.Start() so that
+                // mutex and State=Running are set before OnReadSample can fire.
                 HResult hr = ReadASync();
                 if (MFHelper.Succeeded(hr))
                 {
                     Connected = true;
                 }
             }
-            return base.Start();
+
+            return result;
         }
 
         public override bool Stop()

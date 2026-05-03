@@ -305,13 +305,22 @@ namespace UI.Nodes
             bool connected, recording;
             int height;
             float fps;
-            if (VideoManager.GetStatus(VideoConfig, out connected, out recording, out height, out fps))
+            FrameSource.States state;
+            
+            if (VideoManager.GetStatus(VideoConfig, out connected, out recording, out height, out fps, out state))
             {
-                string[] statuses = fps > 0
-                    ? new string[] { height + "p", (int)Math.Ceiling(fps) + "Hz" }
-                    : new string[] { height + "p" };
-                SetStatus(statuses.GetFromCurrentTime(updateEverySeconds), connected);
-                recordingIcon.Visible = recording;
+                if (state == FrameSource.States.Paused)
+                {
+                    SetStatus("RDY", true);
+                }
+                else
+                {
+                    string[] statuses = fps > 0
+                                        ? new string[] { height + "p", (int)Math.Ceiling(fps) + "Hz" }
+                                        : new string[] { height + "p" };
+                    SetStatus(statuses.GetFromCurrentTime(updateEverySeconds), connected);
+                    recordingIcon.Visible = recording;
+                }
             }
             else
             {

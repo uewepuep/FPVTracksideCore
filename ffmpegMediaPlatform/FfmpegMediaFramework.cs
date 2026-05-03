@@ -171,9 +171,11 @@ namespace FfmpegMediaPlatform
                         }
                     };
 
+                    bool started = false;
                     try
                     {
                         process.Start();
+                        started = true;
                     }
                     catch (Exception e)
                     {
@@ -182,6 +184,9 @@ namespace FfmpegMediaPlatform
                         else
                             throw e;
                     }
+
+                    if (!started)
+                        return output;
 
                     process.BeginOutputReadLine();
                     process.BeginErrorReadLine();

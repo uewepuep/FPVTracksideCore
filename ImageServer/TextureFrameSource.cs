@@ -58,7 +58,11 @@ namespace ImageServer
 
         public bool StopProcessing()
         {
-            if (!processImages)
+            // Check both flag AND thread — if a previous Join timed out, imageProcessor
+            // is still non-null even though processImages is false. Returning early in
+            // that case would let CleanUp dispose resources the thread is still using,
+            // and let Start() spin up a second imageProcessor thread alongside the stuck one.
+            if (!processImages && imageProcessor == null)
                 return true;
 
             //Stop processing frames.
@@ -72,7 +76,7 @@ namespace ImageServer
 
             if (imageProcessor != null)
             {
-                if (!imageProcessor.Join(10000))
+                if (!imageProcessor.Join(1000))
                 {
                     return false;
                 }
