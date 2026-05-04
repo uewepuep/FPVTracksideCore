@@ -351,7 +351,7 @@ namespace UI.Nodes
             velocidroneGateNode.Style.Border = true;
 
             velocidroneGateContainer = new ColorNode(new Color(0, 0, 0, 100));
-            velocidroneGateContainer.RelativeBounds = new RectangleF(0.02f, 0.22f, 0.16f, 0.05f);
+            velocidroneGateContainer.RelativeBounds = new RectangleF(0f, 0.22f, 0.18f, 0.05f);
             velocidroneGateContainer.Visible = false;
             velocidroneGateContainer.AddChild(velocidroneGateNode);
 
