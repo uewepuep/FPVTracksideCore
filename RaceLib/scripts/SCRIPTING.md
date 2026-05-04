@@ -54,16 +54,31 @@ options.max_per_race  -- int, maximum pilots per race (number of channels)
 
 ## Return Format
 
-Return a table of races. Each race is a table of pilot IDs (strings) or pilot objects.
+Return a table of race objects. Each race can be a flat list of pilot IDs, or a table with optional fields:
 
 ```lua
+-- Simple flat list
 return {
-    { pilots[1].id, pilots[2].id, pilots[3].id },  -- race 1
-    { pilots[4].id, pilots[5].id, pilots[6].id },  -- race 2
+    { pilots[1].id, pilots[2].id, pilots[3].id },
+    { pilots[4].id, pilots[5].id, pilots[6].id },
+}
+
+-- With bracket and target laps
+return {
+    { bracket="Losers",  target_laps=3, pilots={ pilots[1].id, pilots[2].id } },
+    { bracket="Winners", target_laps=5, pilots={ pilots[3].id, pilots[4].id } },
 }
 ```
 
-Pilots not included in any race are silently ignored. Channel assignment is handled automatically by the app, preserving each pilot's previous channel where possible.
+Both formats can be mixed freely. Pilots not included in any race are silently ignored. Channel assignment is handled automatically by the app, preserving each pilot's previous channel where possible.
+
+### Race object fields
+
+```lua
+race.bracket      -- string, optional. "None", "Winners", "Losers", "A", "B", "C" ... (default "None")
+race.target_laps  -- int, optional. Override the lap count for this specific race.
+race.pilots       -- table of pilot IDs. If omitted, the array part of the race table is used.
+```
 
 ---
 
@@ -116,8 +131,30 @@ Number of laps the pilot completed in their most recent race.
 local laps = get_laps_finished(pilot.id)
 ```
 
+### `has_any_results()`
+Returns `true` if any race in the calling round has ended. Useful to distinguish a first-ever generation (no results yet) from a mid-round regeneration.
+```lua
+if has_any_results() then
+    pilots = pilots_with_results(pilots)
+end
+```
+
+### `has_result(pilot_id)`
+Returns `true` if the pilot has a completed race in the calling round.
+```lua
+if has_result(pilot.id) then
+    -- pilot has actually flown this round
+end
+```
+
+### `pilots_with_results(pilots)`
+Returns a filtered copy of the pilots list containing only those with a completed race in the calling round. Useful at the start of a generate function to skip pilots who haven't flown yet.
+```lua
+pilots = pilots_with_results(pilots)
+```
+
 ### `top_half(pilot_id)`
-Returns `true` if the pilot finished in the top half of their race last round.
+Returns `true` if the pilot finished in the top half of their race last round, or if their race has not ended yet (pilot has not lost). Returns `false` if their race ended and they finished in the bottom half.
 ```lua
 if top_half(pilot.id) then
     table.insert(a_final, pilot.id)

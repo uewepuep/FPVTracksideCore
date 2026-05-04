@@ -36,7 +36,21 @@ namespace RaceLib.Format
 
             FlownMap flownMap = new FlownMap(RaceManager.Races);
             Race[] lastRoundRaces = RaceManager.Races.Where(r => r.Round == plan.CallingRound).ToArray();
-            Dictionary<string, Pilot> pilotLookup = plan.Pilots.ToDictionary(p => p.ID.ToString());
+
+            Pilot[] pilots = plan.Pilots;
+            if (lastRoundRaces.Any())
+            {
+                List<Pilot> ordered = new List<Pilot>();
+                IEnumerable<Race> endedRaces = lastRoundRaces.Where(r => r.Ended).OrderBy(r => r.End);
+                IEnumerable<Race> unEndedRaces = lastRoundRaces.Where(r => !r.Ended).OrderBy(r => r.RaceNumber);
+
+                ordered.AddRange(endedRaces.GetPilots());
+                ordered.AddRange(unEndedRaces.GetPilots());
+
+                pilots = ordered.ToArray();
+            }
+
+            Dictionary<string, Pilot> pilotLookup = pilots.ToDictionary(p => p.ID.ToString());
             Dictionary<string, Channel> channelLookup = plan.Channels.ToDictionary(c => c.ID.ToString());
 
             RegisterHelpers(lua, pilotLookup, channelLookup, flownMap, plan, lastRoundRaces);
@@ -58,7 +72,7 @@ namespace RaceLib.Format
                 return preExisting;
             }
 
-            Table pilotTable = BuildPilotTable(lua, plan.Pilots);
+            Table pilotTable = BuildPilotTable(lua, pilots);
             Table channelTable = BuildChannelTable(lua, plan.Channels);
             Table optionsTable = BuildOptionsTable(lua, plan);
 
@@ -149,11 +163,52 @@ namespace RaceLib.Format
                     return DynValue.False;
 
                 Race race = lastRoundRaces.FirstOrDefault(r => r.HasPilot(pilot));
-                if (race == null)
-                    return DynValue.False;
+                if (race == null || !race.Ended)
+                    return DynValue.True;
 
                 int position = EventManager.ResultManager.GetPosition(race, pilot);
                 return DynValue.NewBoolean(position > 0 && position <= race.PilotCount / 2);
+            });
+
+            // has_any_results() -> true if any race in the calling round has ended
+            lua.Globals["has_any_results"] = DynValue.NewCallback((ctx, args) =>
+            {
+                return DynValue.NewBoolean(lastRoundRaces.Any(r => r.Ended));
+            });
+
+            // has_result(pilot_id) -> true if the pilot has a completed race in the calling round
+            lua.Globals["has_result"] = DynValue.NewCallback((ctx, args) =>
+            {
+                string id = args[0].CastToString();
+                if (id == null || !pilotLookup.TryGetValue(id, out Pilot pilot))
+                    return DynValue.False;
+
+                return DynValue.NewBoolean(lastRoundRaces.Any(r => r.HasPilot(pilot) && r.Ended));
+            });
+
+            // pilots_with_results(pilots) -> filtered copy of the list containing only pilots with a completed race in the calling round
+            lua.Globals["pilots_with_results"] = DynValue.NewCallback((ctx, args) =>
+            {
+                if (args[0].Type != DataType.Table)
+                    return args[0];
+
+                Table input = args[0].Table;
+                Table result = new Table(lua);
+                int outIdx = 1;
+                for (int i = 1; i <= input.Length; i++)
+                {
+                    DynValue entry = input.Get(i);
+                    string pilotId = entry.Type == DataType.Table
+                        ? entry.Table.Get("id").CastToString()
+                        : entry.CastToString();
+
+                    if (pilotId != null && pilotLookup.TryGetValue(pilotId, out Pilot pilot)
+                        && lastRoundRaces.Any(r => r.HasPilot(pilot) && r.Ended))
+                    {
+                        result[outIdx++] = entry;
+                    }
+                }
+                return DynValue.NewTable(result);
             });
 
             // get_points(pilot_id) -> total points up to and including the calling round
@@ -277,7 +332,7 @@ namespace RaceLib.Format
                     return DynValue.NewTable(table);
 
                 int i = 1;
-                foreach (Pilot other in flownMap.UnflownPilots(pilot, plan.Pilots))
+                foreach (Pilot other in flownMap.UnflownPilots(pilot, pilotLookup.Values))
                 {
                     Table p = new Table(lua);
                     p["id"] = other.ID.ToString();
@@ -386,22 +441,22 @@ namespace RaceLib.Format
         private Table BuildOptionsTable(Script lua, RoundPlan plan)
         {
             Table table = new Table(lua);
-            table["heat_count"] = (double)plan.NumberOfRaces;
-            table["max_per_heat"] = (double)plan.Channels.Length;
+            table["race_count"] = (double)plan.NumberOfRaces;
+            table["max_per_race"] = (double)plan.Channels.Length;
             return table;
         }
 
         private IEnumerable<Race> BuildRaces(IDatabase db, IEnumerable<Race> preExisting, Round newRound, RoundPlan plan,
             Table racesTable, Dictionary<string, Pilot> pilotLookup, Race[] lastRoundRaces)
         {
-            int heatCount = racesTable.Length;
+            int raceCount = racesTable.Length;
 
             List<Race> races = new List<Race>();
             races.AddRange(preExisting.OrderBy(r => r.RaceOrder));
 
-            while (races.Count < heatCount)
+            while (races.Count < raceCount)
                 races.Add(new Race(EventManager.Event));
-            while (races.Count > heatCount)
+            while (races.Count > raceCount)
                 races.Remove(races.Last());
 
             for (int i = 0; i < races.Count; i++)
@@ -410,19 +465,38 @@ namespace RaceLib.Format
                 races[i].Round = newRound;
             }
 
-            for (int h = 1; h <= heatCount; h++)
+            for (int h = 1; h <= raceCount; h++)
             {
-                DynValue heatDyn = racesTable.Get(h);
-                if (heatDyn.Type != DataType.Table) continue;
+                DynValue raceDyn = racesTable.Get(h);
+                if (raceDyn.Type != DataType.Table) continue;
 
                 Race race = races[h - 1];
-                Table heatPilots = heatDyn.Table;
+                Table raceTable = raceDyn.Table;
 
-                for (int p = 1; p <= heatPilots.Length; p++)
+                // Read optional bracket
+                DynValue bracketDyn = raceTable.Get("bracket");
+                if (bracketDyn.Type == DataType.String && Enum.TryParse(bracketDyn.String, true, out Brackets bracket))
+                    race.Bracket = bracket;
+
+                // Read optional target_laps
+                DynValue lapsDyn = raceTable.Get("target_laps");
+                if (lapsDyn.Type == DataType.Number)
+                    race.TargetLaps = (int)lapsDyn.Number;
+
+                // Pilots are either in a "pilots" sub-table or in the array part of the race table
+                DynValue pilotsDyn = raceTable.Get("pilots");
+                Table pilotList = pilotsDyn.Type == DataType.Table ? pilotsDyn.Table : raceTable;
+
+                Pilot[] existingPilots = race.Pilots;
+                List<Pilot> assignedPilots = new List<Pilot>();
+
+                for (int p = 1; p <= pilotList.Length; p++)
                 {
-                    string pilotId = heatPilots.Get(p).CastToString();
+                    string pilotId = pilotList.Get(p).CastToString();
                     if (pilotId == null || !pilotLookup.TryGetValue(pilotId, out Pilot pilot))
+                    {
                         continue;
+                    }
 
                     BandType bandType = BandType.Analogue;
                     Channel prevChannel = pilot.GetChannelInRound(lastRoundRaces, plan.CallingRound);
@@ -435,7 +509,18 @@ namespace RaceLib.Format
                           ?? plan.Channels.FirstOrDefault(c => race.IsFrequencyFree(c));
 
                     if (channel != null)
+                    {
                         race.SetPilot(db, channel, pilot);
+                        assignedPilots.Add(pilot);
+                    }
+                }
+
+                foreach (Pilot toRemove in existingPilots)
+                {
+                    if (!assignedPilots.Contains(toRemove))
+                    {
+                        race.RemovePilot(db, toRemove);
+                    }
                 }
             }
 

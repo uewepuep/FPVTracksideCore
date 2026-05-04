@@ -219,7 +219,9 @@ namespace UI.Nodes.Rounds
         private void AddScriptFormatRound(Round round)
         {
             if (round.Stage == null) return;
-            GenerateRound(round, round.Stage, RoundPlan.ChannelChangeEnum.Change);
+            IEnumerable<Pilot> pilots = EventManager.Event.Pilots;
+            RoundManager.GenerateStageRound(round, round.Stage.StageType, pilots);
+            Refresh();
         }
 
         private void AddSheetFormatRound(Round round)
@@ -334,13 +336,23 @@ namespace UI.Nodes.Rounds
                 }
                 else
                 {
-                    using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                    StageNode stageNode = Children.OfType<StageNode>().FirstOrDefault(s => s.Stage == stage);
+                    if (stageNode == null)
                     {
-                        stage.TimeSummary = new TimeSummary();
-                        db.Update(stage);
+                        stageNode = new StageNode(this, EventManager, stage);
+                        AddChild(stageNode);
                     }
-                    Refresh();
-                    return;
+
+                    
+                    IEnumerable<EventRoundNode> stageRoundNodes = RoundNodes.Where(rn => rn.Round.Stage == stage);
+
+
+
+                    if (stageRoundNodes.Count() != stageNode.EventRoundNodes.Length)
+                    {
+                        stageNode.SetNodes(stageRoundNodes);
+                        Refresh();
+                    }
                 }
             }
 
