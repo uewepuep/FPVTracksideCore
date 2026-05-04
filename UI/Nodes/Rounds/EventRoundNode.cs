@@ -188,6 +188,10 @@ namespace UI.Nodes.Rounds
                     rn.NeedFullRefresh += () => { Refresh(true); };
                     contentContainer.AddChild(rn);
                 }
+                else
+                {
+                    rn.Race = race;
+                }
 
                 // Sync the in memory round objects..
                 race.Round = Round;
