@@ -16,6 +16,7 @@ namespace RaceLib
         public RaceManager RaceManager { get { return EventManager.RaceManager; } }
         public ResultManager ResultManager { get { return EventManager.ResultManager; } }
         public SheetFormatManager SheetFormatManager { get; set; }
+        public LuaFormatManager LuaFormatManager { get; set; }
 
         public event Action OnRoundAdded;
         public event Action OnRoundRemoved;
@@ -38,6 +39,7 @@ namespace RaceLib
         {
             EventManager = eventManager;
             SheetFormatManager = new SheetFormatManager(this);
+            LuaFormatManager = new LuaFormatManager();
             RaceManager.OnRaceEnd += OnRaceResultsChange;
             RaceManager.OnRaceReset += OnRaceResultsChange;
             ResultManager.RaceResultsChanged += OnRaceResultsChange;
@@ -480,6 +482,15 @@ namespace RaceLib
 
         public RoundFormat GetRoundFormat(Stage stage)
         {
+            if (stage.HasScriptFormat)
+            {
+                LuaFormatManager.ScriptFile scriptFile = LuaFormatManager?.GetScriptFile(stage.ScriptFormatFilename);
+                if (scriptFile != null)
+                    return new LuaRoundFormat(EventManager, stage, scriptFile);
+
+                Logger.AllLog.Log(this, $"Script '{stage.ScriptFormatFilename}' not found for stage '{stage.Name}'.");
+            }
+
             switch (stage.StageType)
             {
                 case StageTypes.DoubleElimination:
@@ -488,10 +499,10 @@ namespace RaceLib
                 case StageTypes.Final:
                     return new FinalFormat(EventManager, stage);
 
-                case StageTypes.StreetLeague: 
+                case StageTypes.StreetLeague:
                     return new StreetLeague(EventManager, stage);
 
-                case StageTypes.ChaseTheAce: 
+                case StageTypes.ChaseTheAce:
                     return new ChaseTheAce(EventManager, stage);
 
                 case StageTypes.Default:

@@ -206,6 +206,7 @@ namespace UI.Nodes.Rounds
             eventXNode.Finals += GenerateFinal;
             eventXNode.AddStage += GenerateRoundStage;
             eventXNode.AddSheetFormatRound += AddSheetFormatRound;
+            eventXNode.AddScriptFormatRound += AddScriptFormatRound;
             eventXNode.SumPoints += AddSumPoints;
             eventXNode.Times += AddTimeSummary;
             eventXNode.LapCounts += AddLapCount;
@@ -213,6 +214,12 @@ namespace UI.Nodes.Rounds
             eventXNode.Clone += CloneRound;
             eventXNode.AddEmptyRound += AddEmptyRound;
             eventXNode.NeedsFormatLayout += RequestLayout;
+        }
+
+        private void AddScriptFormatRound(Round round)
+        {
+            if (round.Stage == null) return;
+            GenerateRound(round, round.Stage, RoundPlan.ChannelChangeEnum.Change);
         }
 
         private void AddSheetFormatRound(Round round)

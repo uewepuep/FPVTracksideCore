@@ -5,6 +5,8 @@ using Microsoft.Xna.Framework;
 using RaceLib;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -189,6 +191,8 @@ namespace UI.Nodes.Rounds
                 MouseMenu mm = new MouseMenu(this);
 
                 mm.AddItem("Edit Stage", EditStage);
+                if (Stage.HasScriptFormat)
+                    mm.AddItem("Edit Script", EditScript);
                 mm.AddItemConfirm("Delete Stage", () => { EventManager.RoundManager.DeleteStage(Stage); });
 
                 mm.Show(mouseInputEvent);
@@ -211,6 +215,19 @@ namespace UI.Nodes.Rounds
                     RoundsNode.Refresh();
                 }
             };
+        }
+
+        public void EditScript()
+        {
+            string path = Path.GetFullPath(Path.Combine("scripts", Stage.ScriptFormatFilename));
+            try
+            {
+                Process.Start(new ProcessStartInfo { FileName = "code", Arguments = path, UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Logger.AllLog.LogException(this, ex);
+            }
         }
 
         public void Refresh()

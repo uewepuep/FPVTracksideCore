@@ -37,6 +37,7 @@ namespace UI.Nodes.Rounds
         public event RoundDelegate Finals;
         public event RoundDelegate Clone;
         public event RoundDelegate AddSheetFormatRound;
+        public event RoundDelegate AddScriptFormatRound;
         public event Action<Round, StageTypes, IEnumerable<Pilot>> AddStage;
 
         public event RoundDelegate RemoveRound;
@@ -254,6 +255,14 @@ namespace UI.Nodes.Rounds
                 }
             }
 
+            MouseMenu scripts = menu.AddSubmenu("From Script");
+            foreach (RaceLib.Format.LuaFormatManager.ScriptFile script in EventManager.RoundManager.LuaFormatManager.GetScriptFiles())
+            {
+                var script2 = script;
+                string scriptName = string.IsNullOrEmpty(script.Description) ? script.Name : script.Name + " — " + script.Description;
+                scripts.AddItem(scriptName, () => { ScriptFormat(script2, orderedPilots); });
+            }
+
             menu.AddBlank();
 
             foreach (StageTypes stageType in Enum.GetValues<StageTypes>().Except([StageTypes.Default]))
@@ -331,6 +340,31 @@ namespace UI.Nodes.Rounds
                     }
                 }
                 EventManager.RoundManager.SheetFormatManager.LoadSheet(stage, orderedPilots.ToArray(), true);
+            });
+        }
+
+        private void ScriptFormat(RaceLib.Format.LuaFormatManager.ScriptFile script, IEnumerable<Pilot> orderedPilots)
+        {
+            LoadingLayer ll = GetLayer<LoadingLayer>();
+            ll.WorkQueue.Enqueue("Loading script", () =>
+            {
+                Stage stage = new Stage();
+                stage.ID = Guid.NewGuid();
+                stage.Name = script.Name;
+                stage.ScriptFormatFilename = script.FileInfo.Name;
+
+                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                {
+                    db.Insert(stage);
+
+                    if (!EventManager.RaceManager.GetRaces(Round).Any())
+                    {
+                        Round.Stage = stage;
+                        db.Update(Round);
+                    }
+                }
+
+                AddScriptFormatRound?.Invoke(Round);
             });
         }
 

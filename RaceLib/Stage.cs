@@ -53,13 +53,32 @@ namespace RaceLib
             }
         }
 
+        [Category("Advanced")]
+        public string ScriptFormatFilename { get; set; }
+
+        [Category("Advanced")]
+        public bool HasScriptFormat
+        {
+            get
+            {
+                return !string.IsNullOrEmpty(ScriptFormatFilename);
+            }
+            set
+            {
+                if (value == false)
+                {
+                    ScriptFormatFilename = null;
+                }
+            }
+        }
+
         public bool GeneratesRounds
         {
             get
             {
                 if (StageType == StageTypes.Default || StageType == StageTypes.Final)
                 {
-                    return HasSheetFormat;
+                    return HasSheetFormat || HasScriptFormat;
                 }
 
                 return true;
