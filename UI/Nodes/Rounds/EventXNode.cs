@@ -356,12 +356,8 @@ namespace UI.Nodes.Rounds
                 using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
                 {
                     db.Insert(stage);
-
-                    if (!EventManager.RaceManager.GetRaces(Round).Any())
-                    {
-                        Round.Stage = stage;
-                        db.Update(Round);
-                    }
+                    Round.Stage = stage;
+                    db.Update(Round);
                 }
 
                 AddScriptFormatRound?.Invoke(Round);
