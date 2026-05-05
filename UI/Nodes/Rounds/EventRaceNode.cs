@@ -34,6 +34,8 @@ namespace UI.Nodes.Rounds
 
         public const float StandardAspectRatio = 1.4f;
 
+        private TextNode startTimeNode;
+
         public EventRaceNode(EventManager eventManager, Race race)
         {
             AspectRatio = StandardAspectRatio;
@@ -118,14 +120,11 @@ namespace UI.Nodes.Rounds
                 }
                 heading.Scale(0.98f, 1);
 
-                if (Race.Started)
-                {
-                    TextNode time = new TextNode(Race.Start.ToShortTimeString(), Theme.Current.Rounds.Text.XNA);
-                    time.RelativeBounds = new RectangleF(0.55f, 0.30f, 0.4f, 0.4f);
-                    time.Alignment = RectangleAlignment.CenterRight;
-                    time.Alpha = 0.5f;
-                    heading.AddChild(time);
-                }
+                startTimeNode = new TextNode("", Theme.Current.Rounds.Text.XNA);
+                startTimeNode.RelativeBounds = new RectangleF(0.55f, 0.30f, 0.4f, 0.4f);
+                startTimeNode.Alignment = RectangleAlignment.CenterRight;
+                startTimeNode.Alpha = 0.5f;
+                heading.AddChild(startTimeNode);
             }
         }
 
@@ -254,7 +253,7 @@ namespace UI.Nodes.Rounds
                         PlatformTools.Clipboard.SetText(textResults);
                     });
 
-                    mm.AddItemConfirm("Reset Race", () => { EventManager.RaceManager.ResetRace(Race); });
+                    mm.AddItemConfirm("Reset Race", () => { EventManager.RaceManager.ResetRace(Race); Refresh(); });
                 }
                 else
                 {
@@ -546,6 +545,14 @@ namespace UI.Nodes.Rounds
         public void Refresh(bool full = false)
         {
             heading.TextNode.Text = Race.RaceName;
+            if (Race.Started)
+            {
+                startTimeNode.Text = Race.Start.ToShortTimeString();
+            }
+            else
+            {
+                startTimeNode.Text = " ";
+            }
 
             if (full)
             {

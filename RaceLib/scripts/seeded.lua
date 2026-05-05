@@ -1,14 +1,15 @@
 name = "Seeded"
 description = "Fastest pilots seeded across races by qualifying lap time."
 
-function generate(pilots, channels, options)
+function generate(round, pilots, channels, options)
+
     local max = options.max_per_race
 
     -- Sort slowest-first so the serpentine puts the fastest pilot in the
     -- final slot of race 1 and the second-fastest in the final slot of race 2,
     -- spreading speed evenly across the field.
     local sorted = sort_by(pilots, function(p)
-        local t = get_best_consecutive_laps_event(p.id, 1)
+        local t = get_best_consecutive_laps(p.id, 1)
         -- pilots with no qualifying time go last (slowest)
         if t == 0 then return 999999 end
         return t

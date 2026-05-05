@@ -292,8 +292,6 @@ namespace UI.Nodes.Rounds
             }
 
             mm.AddItem("Edit Round", EditRound);
-
-
             if (Round.Stage != null)
             {
                 mm.AddItem("Edit Stage", EditStage);

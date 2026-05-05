@@ -1,12 +1,14 @@
 name = "Points Grouped"
 description = "Pilots sorted by points. Lowest scorers race together, highest scorers race together."
 
-function generate(pilots, channels, options)
+function generate(round, pilots, channels, options)
     local max = options.max_per_race
 
     -- Sort ascending: lowest points races in the earliest groups
     local sorted = sort_by(pilots, function(p)
-        return get_points(p.id)
+        local total = 0
+        for _, r in ipairs(get_results(p.id)) do total = total + r.points end
+        return total
     end)
 
     local races = {}

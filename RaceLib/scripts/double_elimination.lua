@@ -1,7 +1,7 @@
 name = "Double Elimination"
 description = "Winners bracket and Losers bracket. Lose twice and you're out."
 
-function generate(pilots, channels, options)
+function generate(round, pilots, channels, options)
     local max         = options.max_per_race
     local total       = #pilots
     local any_results = has_any_results()
@@ -61,7 +61,7 @@ function generate(pilots, channels, options)
         for i = 1, n_races do buckets[i] = {} end
 
         local sorted = sort_by(pilot_ids, function(id)
-            return get_best_consecutive_laps_stage(id, 1)
+            return get_best_consecutive_laps(id, 1)
         end)
 
         for i, id in ipairs(sorted) do

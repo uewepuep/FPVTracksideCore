@@ -75,11 +75,11 @@ namespace RaceLib.Format
             Table pilotTable = BuildPilotTable(lua, pilots);
             Table channelTable = BuildChannelTable(lua, plan.Channels);
             Table optionsTable = BuildOptionsTable(lua, plan);
-
+            Table roundTable = BuildRoundTable(lua, newRound);
             DynValue result;
             try
             {
-                result = lua.Call(generateFn, pilotTable, channelTable, optionsTable);
+                result = lua.Call(generateFn, roundTable, pilotTable, channelTable, optionsTable);
             }
             catch (InterpreterException ex)
             {
@@ -87,13 +87,26 @@ namespace RaceLib.Format
                 return preExisting;
             }
 
+            if (result.Type == DataType.Nil || result.Type == DataType.Void)
+                return preExisting;
+
             if (result.Type != DataType.Table)
             {
                 Logger.AllLog.Log(this, $"Script '{scriptFile.Name}' generate() must return a table of races.");
                 return preExisting;
             }
 
+            ApplyRoundTable(roundTable, newRound);
+
             return BuildRaces(db, preExisting, newRound, plan, result.Table, pilotLookup, lastRoundRaces);
+        }
+
+        private Race[] GetRacesForRoundNumber(int roundNumber, RoundPlan plan)
+        {
+            EventTypes eventType = plan.CallingRound?.EventType ?? EventTypes.Race;
+            Round round = EventManager.RoundManager.GetRound(roundNumber, eventType);
+            if (round == null) return Array.Empty<Race>();
+            return RaceManager.GetRaces(round);
         }
 
         private void RegisterHelpers(Script lua, Dictionary<string, Pilot> pilotLookup, Dictionary<string, Channel> channelLookup, FlownMap flownMap, RoundPlan plan, Race[] lastRoundRaces)
@@ -137,14 +150,19 @@ namespace RaceLib.Format
                 return DynValue.NewTable(result);
             });
 
-            // get_last_channel(pilot_id) -> {id, name, band} or nil
+            // get_last_channel(pilot_id[, round_number]) -> {id, name, band} or nil
             lua.Globals["get_last_channel"] = DynValue.NewCallback((ctx, args) =>
             {
                 string id = args[0].CastToString();
                 if (id == null || !pilotLookup.TryGetValue(id, out Pilot pilot))
                     return DynValue.Nil;
 
-                Channel channel = pilot.GetChannelInRound(lastRoundRaces, plan.CallingRound);
+                Race[] races = args[1].Type == DataType.Number
+                    ? GetRacesForRoundNumber((int)args[1].Number, plan)
+                    : lastRoundRaces;
+                Round round = races.FirstOrDefault()?.Round ?? plan.CallingRound;
+
+                Channel channel = pilot.GetChannelInRound(races, round);
                 if (channel == null)
                     return DynValue.Nil;
 
@@ -155,14 +173,18 @@ namespace RaceLib.Format
                 return DynValue.NewTable(c);
             });
 
-            // top_half(pilot_id) -> true if pilot finished in the top half of their heat last round
+            // top_half(pilot_id[, round_number]) -> true if pilot finished in the top half of their race in the given round
             lua.Globals["top_half"] = DynValue.NewCallback((ctx, args) =>
             {
                 string id = args[0].CastToString();
                 if (id == null || !pilotLookup.TryGetValue(id, out Pilot pilot))
                     return DynValue.False;
 
-                Race race = lastRoundRaces.FirstOrDefault(r => r.HasPilot(pilot));
+                Race[] races = args[1].Type == DataType.Number
+                    ? GetRacesForRoundNumber((int)args[1].Number, plan)
+                    : lastRoundRaces;
+
+                Race race = races.FirstOrDefault(r => r.HasPilot(pilot));
                 if (race == null || !race.Ended)
                     return DynValue.True;
 
@@ -170,27 +192,46 @@ namespace RaceLib.Format
                 return DynValue.NewBoolean(position > 0 && position <= race.PilotCount / 2);
             });
 
-            // has_any_results() -> true if any race in the calling round has ended
+            // has_any_results([round_number]) -> true if any race in the given round has ended
             lua.Globals["has_any_results"] = DynValue.NewCallback((ctx, args) =>
             {
-                return DynValue.NewBoolean(lastRoundRaces.Any(r => r.Ended));
+                Race[] races = args[0].Type == DataType.Number
+                    ? GetRacesForRoundNumber((int)args[0].Number, plan)
+                    : lastRoundRaces;
+                return DynValue.NewBoolean(races.Any(r => r.Ended));
             });
 
-            // has_result(pilot_id) -> true if the pilot has a completed race in the calling round
+            // all_results_in([round_number]) -> true if all races in the given round have ended
+            lua.Globals["all_results_in"] = DynValue.NewCallback((ctx, args) =>
+            {
+                Race[] races = args[0].Type == DataType.Number
+                    ? GetRacesForRoundNumber((int)args[0].Number, plan)
+                    : lastRoundRaces;
+                return DynValue.NewBoolean(races.Any() && races.All(r => r.Ended));
+            });
+
+            // has_result(pilot_id[, round_number]) -> true if the pilot has a completed race in the given round
             lua.Globals["has_result"] = DynValue.NewCallback((ctx, args) =>
             {
                 string id = args[0].CastToString();
                 if (id == null || !pilotLookup.TryGetValue(id, out Pilot pilot))
                     return DynValue.False;
 
-                return DynValue.NewBoolean(lastRoundRaces.Any(r => r.HasPilot(pilot) && r.Ended));
+                Race[] races = args[1].Type == DataType.Number
+                    ? GetRacesForRoundNumber((int)args[1].Number, plan)
+                    : lastRoundRaces;
+                return DynValue.NewBoolean(races.Any(r => r.HasPilot(pilot) && r.Ended));
             });
 
-            // pilots_with_results(pilots) -> filtered copy of the list containing only pilots with a completed race in the calling round
+            // pilots_with_results(pilots[, round_number]) -> filtered copy of the list containing only pilots with a completed race in the given round
             lua.Globals["pilots_with_results"] = DynValue.NewCallback((ctx, args) =>
             {
                 if (args[0].Type != DataType.Table)
                     return args[0];
+
+                Race[] races = args[1].Type == DataType.Number
+                    ? GetRacesForRoundNumber((int)args[1].Number, plan)
+                    : lastRoundRaces;
 
                 Table input = args[0].Table;
                 Table result = new Table(lua);
@@ -203,7 +244,7 @@ namespace RaceLib.Format
                         : entry.CastToString();
 
                     if (pilotId != null && pilotLookup.TryGetValue(pilotId, out Pilot pilot)
-                        && lastRoundRaces.Any(r => r.HasPilot(pilot) && r.Ended))
+                        && races.Any(r => r.HasPilot(pilot) && r.Ended))
                     {
                         result[outIdx++] = entry;
                     }
@@ -211,28 +252,37 @@ namespace RaceLib.Format
                 return DynValue.NewTable(result);
             });
 
-            // get_points(pilot_id) -> total points up to and including the calling round
-            lua.Globals["get_points"] = DynValue.NewCallback((ctx, args) =>
-            {
-                string id = args[0].CastToString();
-                if (id == null || !pilotLookup.TryGetValue(id, out Pilot pilot))
-                    return DynValue.NewNumber(0);
-
-                int points = EventManager.ResultManager.GetPointsTotal(plan.CallingRound, pilot);
-                return DynValue.NewNumber(points);
-            });
-
-            // get_positions(pilot_id) -> list of positions, one per result up to the calling round
-            lua.Globals["get_positions"] = DynValue.NewCallback((ctx, args) =>
+            // get_results(pilot_id [, start_round [, end_round]]) -> list of result objects up to the previous round
+            lua.Globals["get_results"] = DynValue.NewCallback((ctx, args) =>
             {
                 string id = args[0].CastToString();
                 Table table = new Table(lua);
                 if (id == null || !pilotLookup.TryGetValue(id, out Pilot pilot))
                     return DynValue.NewTable(table);
 
+                int? startRound = args[1].Type == DataType.Number ? (int?)args[1].Number : null;
+                int? endRoundNumber = args[2].Type == DataType.Number ? (int?)args[2].Number : null;
+
+                EventTypes eventType = plan.CallingRound?.EventType ?? EventTypes.Race;
+                Round endRound = endRoundNumber.HasValue
+                    ? EventManager.RoundManager.GetRound(endRoundNumber.Value, eventType)
+                    : plan.CallingRound;
+
                 int i = 1;
-                foreach (Result result in EventManager.ResultManager.GetResults(plan.CallingRound, pilot))
-                    table[i++] = DynValue.NewNumber(result.Position);
+                foreach (Result result in EventManager.ResultManager.GetResults(endRound, pilot))
+                {
+                    if (startRound.HasValue && (result.Round?.RoundNumber ?? 0) < startRound.Value)
+                        continue;
+
+                    Table r = new Table(lua);
+                    r["points"]   = (double)result.Points;
+                    r["position"] = (double)result.Position;
+                    r["laps"]     = (double)result.LapsFinished;
+                    r["dnf"]      = result.DNF;
+                    r["round"]    = (double)(result.Round?.RoundNumber ?? 0);
+                    r["time"]     = result.Time.TotalSeconds;
+                    table[i++] = DynValue.NewTable(r);
+                }
 
                 return DynValue.NewTable(table);
             });
@@ -273,55 +323,30 @@ namespace RaceLib.Format
                 return DynValue.NewTable(result);
             });
 
-            // get_best_consecutive_laps_stage(pilot_id, lap_count) -> best consecutive X lap time in seconds within the current stage, or 0 if no data
-            lua.Globals["get_best_consecutive_laps_stage"] = DynValue.NewCallback((ctx, args) =>
+            // get_best_consecutive_laps(pilot_id, lap_count [, start_round [, end_round]]) -> best consecutive X lap time in seconds, or 0 if no data
+            lua.Globals["get_best_consecutive_laps"] = DynValue.NewCallback((ctx, args) =>
             {
                 string id = args[0].CastToString();
                 int lapCount = (int)(args[1].CastToNumber() ?? 1);
                 if (id == null || !pilotLookup.TryGetValue(id, out Pilot pilot))
                     return DynValue.NewNumber(0);
 
-                Stage stage = plan.CallingRound?.Stage;
-                IEnumerable<Race> stageRaces = stage != null
-                    ? RaceManager.Races.Where(r => r.Round?.Stage == stage)
-                    : Enumerable.Empty<Race>();
+                int? startRound = args[2].Type == DataType.Number ? (int?)args[2].Number : null;
+                int? endRound   = args[3].Type == DataType.Number ? (int?)args[3].Number : null;
 
-                IEnumerable<Lap> best = stageRaces
+                IEnumerable<Race> races = RaceManager.Races;
+                if (startRound.HasValue)
+                    races = races.Where(r => (r.Round?.RoundNumber ?? 0) >= startRound.Value);
+                if (endRound.HasValue)
+                    races = races.Where(r => (r.Round?.RoundNumber ?? 0) <= endRound.Value);
+
+                IEnumerable<Lap> best = races
                     .SelectMany(r => r.GetValidLaps(pilot, false))
                     .BestConsecutive(lapCount);
 
                 return DynValue.NewNumber(best.Any() ? best.TotalTime().TotalSeconds : 0);
             });
 
-            // get_best_consecutive_laps_event(pilot_id, lap_count) -> best consecutive X lap time in seconds across the whole event, or 0 if no data
-            lua.Globals["get_best_consecutive_laps_event"] = DynValue.NewCallback((ctx, args) =>
-            {
-                string id = args[0].CastToString();
-                int lapCount = (int)(args[1].CastToNumber() ?? 1);
-                if (id == null || !pilotLookup.TryGetValue(id, out Pilot pilot))
-                    return DynValue.NewNumber(0);
-
-                IEnumerable<Lap> best = RaceManager.Races
-                    .SelectMany(r => r.GetValidLaps(pilot, false))
-                    .BestConsecutive(lapCount);
-
-                return DynValue.NewNumber(best.Any() ? best.TotalTime().TotalSeconds : 0);
-            });
-
-            // get_laps_finished(pilot_id) -> number of laps the pilot completed in their last race
-            lua.Globals["get_laps_finished"] = DynValue.NewCallback((ctx, args) =>
-            {
-                string id = args[0].CastToString();
-                if (id == null || !pilotLookup.TryGetValue(id, out Pilot pilot))
-                    return DynValue.NewNumber(0);
-
-                Race race = lastRoundRaces.FirstOrDefault(r => r.HasPilot(pilot));
-                if (race == null)
-                    return DynValue.NewNumber(0);
-
-                Result result = EventManager.ResultManager.GetResult(race, pilot);
-                return DynValue.NewNumber(result?.LapsFinished ?? 0);
-            });
 
             // get_unflown_pilots(pilot_id) -> list of pilot objects not yet raced against
             lua.Globals["get_unflown_pilots"] = DynValue.NewCallback((ctx, args) =>
@@ -340,6 +365,106 @@ namespace RaceLib.Format
                     table[i++] = DynValue.NewTable(p);
                 }
                 return DynValue.NewTable(table);
+            });
+
+            // map(list, fn) -> new table with fn applied to each item
+            lua.Globals["map"] = DynValue.NewCallback((ctx, args) =>
+            {
+                if (args[0].Type != DataType.Table || args[1].Type != DataType.Function)
+                    return args[0];
+
+                Table input = args[0].Table;
+                DynValue fn = args[1];
+                Table result = new Table(lua);
+                for (int i = 1; i <= input.Length; i++)
+                    result[i] = lua.Call(fn, input.Get(i));
+                return DynValue.NewTable(result);
+            });
+
+            // filter(list, fn) -> table of items where fn(item) is true
+            lua.Globals["filter"] = DynValue.NewCallback((ctx, args) =>
+            {
+                if (args[0].Type != DataType.Table || args[1].Type != DataType.Function)
+                    return args[0];
+
+                Table input = args[0].Table;
+                DynValue fn = args[1];
+                Table result = new Table(lua);
+                int outIdx = 1;
+                for (int i = 1; i <= input.Length; i++)
+                {
+                    DynValue item = input.Get(i);
+                    if (lua.Call(fn, item).CastToBool())
+                        result[outIdx++] = item;
+                }
+                return DynValue.NewTable(result);
+            });
+
+            // sum(list [, fn]) -> total of fn(item) for each item, or items directly if no fn
+            lua.Globals["sum"] = DynValue.NewCallback((ctx, args) =>
+            {
+                if (args[0].Type != DataType.Table) return DynValue.NewNumber(0);
+                Table input = args[0].Table;
+                DynValue fn = args[1];
+                double total = 0;
+                for (int i = 1; i <= input.Length; i++)
+                {
+                    DynValue val = fn.Type == DataType.Function ? lua.Call(fn, input.Get(i)) : input.Get(i);
+                    total += val.CastToNumber() ?? 0;
+                }
+                return DynValue.NewNumber(total);
+            });
+
+            // average(list [, fn]) -> average of fn(item) for each item, or 0 if empty
+            lua.Globals["average"] = DynValue.NewCallback((ctx, args) =>
+            {
+                if (args[0].Type != DataType.Table) return DynValue.NewNumber(0);
+                Table input = args[0].Table;
+                if (input.Length == 0) return DynValue.NewNumber(0);
+                DynValue fn = args[1];
+                double total = 0;
+                for (int i = 1; i <= input.Length; i++)
+                {
+                    DynValue val = fn.Type == DataType.Function ? lua.Call(fn, input.Get(i)) : input.Get(i);
+                    total += val.CastToNumber() ?? 0;
+                }
+                return DynValue.NewNumber(total / input.Length);
+            });
+
+            // min(list [, fn]) -> item with the lowest fn(item) value, or lowest value if no fn
+            lua.Globals["min"] = DynValue.NewCallback((ctx, args) =>
+            {
+                if (args[0].Type != DataType.Table) return DynValue.Nil;
+                Table input = args[0].Table;
+                if (input.Length == 0) return DynValue.Nil;
+                DynValue fn = args[1];
+                DynValue best = input.Get(1);
+                double bestVal = (fn.Type == DataType.Function ? lua.Call(fn, best) : best).CastToNumber() ?? 0;
+                for (int i = 2; i <= input.Length; i++)
+                {
+                    DynValue item = input.Get(i);
+                    double val = (fn.Type == DataType.Function ? lua.Call(fn, item) : item).CastToNumber() ?? 0;
+                    if (val < bestVal) { best = item; bestVal = val; }
+                }
+                return best;
+            });
+
+            // max(list [, fn]) -> item with the highest fn(item) value, or highest value if no fn
+            lua.Globals["max"] = DynValue.NewCallback((ctx, args) =>
+            {
+                if (args[0].Type != DataType.Table) return DynValue.Nil;
+                Table input = args[0].Table;
+                if (input.Length == 0) return DynValue.Nil;
+                DynValue fn = args[1];
+                DynValue best = input.Get(1);
+                double bestVal = (fn.Type == DataType.Function ? lua.Call(fn, best) : best).CastToNumber() ?? 0;
+                for (int i = 2; i <= input.Length; i++)
+                {
+                    DynValue item = input.Get(i);
+                    double val = (fn.Type == DataType.Function ? lua.Call(fn, item) : item).CastToNumber() ?? 0;
+                    if (val > bestVal) { best = item; bestVal = val; }
+                }
+                return best;
             });
 
             // sort_by(list, fn) -> sorted copy of list, fn(item) returns the sort key (number or string)
@@ -400,15 +525,43 @@ namespace RaceLib.Format
                 return DynValue.NewNumber(pilot.CountChannelChanges(RaceManager.Races));
             });
 
-            // get_bracket(pilot_id) -> bracket string from the calling round ("None", "Winners", "Losers", etc.)
+            // get_bracket(pilot_id[, round_number]) -> bracket string from the given round ("None", "Winners", "Losers", etc.)
             lua.Globals["get_bracket"] = DynValue.NewCallback((ctx, args) =>
             {
                 string id = args[0].CastToString();
                 if (id == null || !pilotLookup.TryGetValue(id, out Pilot pilot))
                     return DynValue.NewString(Brackets.None.ToString());
 
-                return DynValue.NewString(lastRoundRaces.GetBracket(pilot).ToString());
+                Race[] races = args[1].Type == DataType.Number
+                    ? GetRacesForRoundNumber((int)args[1].Number, plan)
+                    : lastRoundRaces;
+                return DynValue.NewString(races.GetBracket(pilot).ToString());
             });
+        }
+
+        private Table BuildRoundTable(Script lua, Round round)
+        {
+            Table table = new Table(lua);
+            table["number"] = (double)round.RoundNumber;
+            table["name"] = round.Name ?? "";
+            table["event_type"] = round.EventType.ToString();
+            table["game_type_name"] = round.GameTypeName ?? "";
+            return table;
+        }
+
+        private void ApplyRoundTable(Table table, Round round)
+        {
+            DynValue name = table.Get("name");
+            if (name.Type == DataType.String)
+                round.Name = name.String;
+
+            DynValue eventType = table.Get("event_type");
+            if (eventType.Type == DataType.String && Enum.TryParse(eventType.String, true, out EventTypes et))
+                round.EventType = et;
+
+            DynValue gameTypeName = table.Get("game_type_name");
+            if (gameTypeName.Type == DataType.String)
+                round.GameTypeName = gameTypeName.String;
         }
 
         private Table BuildPilotTable(Script lua, Pilot[] pilots)
@@ -443,6 +596,19 @@ namespace RaceLib.Format
             Table table = new Table(lua);
             table["race_count"] = (double)plan.NumberOfRaces;
             table["max_per_race"] = (double)plan.Channels.Length;
+            table["target_laps"] = (double)EventManager.Event.Laps;
+            table["pb_laps"] = (double)EventManager.Event.PBLaps;
+
+            Stage stage = plan.Stage;
+
+            int startRound = 1;
+            if (stage != null)
+            {
+                Round first = EventManager.RoundManager.GetStageRounds(stage).OrderBy(r => r.RoundNumber).FirstOrDefault();
+                if (first != null) startRound = first.RoundNumber;
+            }
+            table["stage_start_round"] = (double)startRound;
+
             return table;
         }
 
