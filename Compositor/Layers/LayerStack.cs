@@ -89,6 +89,12 @@ namespace Composition.Layers
 
         protected virtual bool OnMouseInputEvent(MouseInputEvent inputEvent)
         {
+            // Drop any in-flight events that arrive after the window is no longer
+            // the active app — InputEventFactory already gates the producer side,
+            // but a focus change between poll and dispatch could still leak one.
+            if (Game != null && !Game.IsActive)
+                return false;
+
             lock (locker)
             {
                 Layer[] layerArray = layerStack;
