@@ -12,11 +12,108 @@ namespace RaceLib.Format
         private readonly LuaFormatManager.ScriptFile scriptFile;
 
         public string ScriptName => scriptFile.Name;
+        public bool HasStandings => scriptFile.HasStandings;
 
         public LuaRoundFormat(EventManager em, Stage stage, LuaFormatManager.ScriptFile scriptFile)
             : base(em, stage)
         {
             this.scriptFile = scriptFile;
+        }
+
+        public LuaStandingsResult GetStandings(Pilot[] stagePilots)
+        {
+            string source;
+            try { source = File.ReadAllText(scriptFile.FileInfo.FullName); }
+            catch (Exception ex) { Logger.AllLog.LogException(this, ex); return null; }
+
+            Script lua = new Script(CoreModules.Preset_SoftSandbox);
+
+            Round lastRound = EventManager.RoundManager.GetStageRounds(Stage).LastOrDefault();
+            Race[] lastRoundRaces = lastRound != null ? RaceManager.GetRaces(lastRound) : Array.Empty<Race>();
+            FlownMap flownMap = new FlownMap(RaceManager.Races);
+
+            Dictionary<string, Pilot> pilotLookup = EventManager.Event.Pilots.ToDictionary(p => p.ID.ToString());
+            Dictionary<string, Channel> channelLookup = EventManager.Channels.ToDictionary(c => c.ID.ToString());
+
+            RoundPlan plan = new RoundPlan(EventManager, lastRound, Stage);
+
+            RegisterHelpers(lua, pilotLookup, channelLookup, flownMap, plan, lastRoundRaces);
+
+            try { lua.DoString(source); }
+            catch (InterpreterException ex)
+            {
+                Logger.AllLog.Log(this, $"Script '{scriptFile.Name}' load error: {ex.DecoratedMessage}");
+                return null;
+            }
+
+            DynValue standingsFn = lua.Globals.Get("standings");
+            if (standingsFn.Type != DataType.Function) return null;
+
+            Table pilotTable = BuildPilotTable(lua, stagePilots);
+
+            Table optionsTable = new Table(lua);
+            optionsTable["target_laps"] = (double)EventManager.Event.Laps;
+            optionsTable["pb_laps"] = (double)EventManager.Event.PBLaps;
+
+            DynValue result;
+            try { result = lua.Call(standingsFn, pilotTable, optionsTable); }
+            catch (InterpreterException ex)
+            {
+                Logger.AllLog.Log(this, $"Script '{scriptFile.Name}' standings() error: {ex.DecoratedMessage}");
+                return null;
+            }
+
+            if (result.Type != DataType.Table) return null;
+            return ParseStandingsResult(result.Table);
+        }
+
+        private LuaStandingsResult ParseStandingsResult(Table t)
+        {
+            var result = new LuaStandingsResult();
+
+            DynValue headingsDyn = t.Get("headings");
+            if (headingsDyn.Type == DataType.Table)
+            {
+                var headings = new List<string>();
+                for (int i = 1; i <= headingsDyn.Table.Length; i++)
+                    headings.Add(headingsDyn.Table.Get(i).CastToString() ?? "");
+                result.Headings = headings.ToArray();
+            }
+
+            DynValue rowsDyn = t.Get("rows");
+            if (rowsDyn.Type == DataType.Table)
+            {
+                var rows = new List<LuaStandingsRow>();
+                for (int i = 1; i <= rowsDyn.Table.Length; i++)
+                {
+                    DynValue rowDyn = rowsDyn.Table.Get(i);
+                    if (rowDyn.Type != DataType.Table) continue;
+
+                    var row = new LuaStandingsRow();
+                    row.Name = rowDyn.Table.Get("name").CastToString() ?? "";
+
+                    DynValue valuesDyn = rowDyn.Table.Get("values");
+                    if (valuesDyn.Type == DataType.Table)
+                    {
+                        var values = new List<string>();
+                        for (int j = 1; j <= valuesDyn.Table.Length; j++)
+                            values.Add(valuesDyn.Table.Get(j).CastToString() ?? "");
+                        row.Values = values.ToArray();
+                    }
+                    else
+                    {
+                        row.Values = Array.Empty<string>();
+                    }
+                    rows.Add(row);
+                }
+                result.Rows = rows.ToArray();
+            }
+            else
+            {
+                result.Rows = Array.Empty<LuaStandingsRow>();
+            }
+
+            return result;
         }
 
         public override IEnumerable<Race> GenerateRound(IDatabase db, IEnumerable<Race> preExisting, Round newRound, RoundPlan plan)

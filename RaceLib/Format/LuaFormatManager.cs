@@ -10,6 +10,7 @@ namespace RaceLib.Format
     public class LuaFormatManager
     {
         private readonly DirectoryInfo directory;
+        private readonly Dictionary<string, bool> standingsCache = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 
         public LuaFormatManager()
             : this(new DirectoryInfo("scripts")) { }
@@ -17,6 +18,14 @@ namespace RaceLib.Format
         public LuaFormatManager(DirectoryInfo directory)
         {
             this.directory = directory;
+        }
+
+        public bool ScriptHasStandings(string filename)
+        {
+            if (standingsCache.TryGetValue(filename, out bool has)) return has;
+            has = GetScriptFile(filename)?.HasStandings ?? false;
+            standingsCache[filename] = has;
+            return has;
         }
 
         public IEnumerable<ScriptFile> GetScriptFiles()
@@ -39,6 +48,7 @@ namespace RaceLib.Format
             public FileInfo FileInfo { get; }
             public string Name { get; private set; }
             public string Description { get; private set; }
+            public bool HasStandings { get; private set; }
 
             public ScriptFile(FileInfo fileInfo)
             {
@@ -52,8 +62,10 @@ namespace RaceLib.Format
                     lua.DoFile(fileInfo.FullName);
                     DynValue nameDyn = lua.Globals.Get("name");
                     DynValue descDyn = lua.Globals.Get("description");
+                    DynValue standingsDyn = lua.Globals.Get("standings");
                     if (nameDyn.Type == DataType.String) Name = nameDyn.String;
                     if (descDyn.Type == DataType.String) Description = descDyn.String;
+                    HasStandings = standingsDyn.Type == DataType.Function;
                 }
                 catch (Exception ex)
                 {

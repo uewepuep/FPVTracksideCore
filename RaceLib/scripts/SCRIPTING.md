@@ -16,9 +16,22 @@ function generate(round, pilots, channels, options)
     -- build and return races
     return { race1, race2 }
 end
+
+function standings(pilots, options)
+    -- optional: define this to show a result card after each race
+    return {
+        headings = { "R1", "R2", "Score" },
+        rows = {
+            { name = "Alice", values = { "10", "8", "18" } },
+            { name = "Bob",   values = {  "8", "9", "17" } },
+        }
+    }
+end
 ```
 
 `generate()` is called every time a new round is generated. It must return a table of races, where each race is a table of pilot IDs.
+
+`standings()` is optional. When defined, a result card is shown and updated after each race. See [Standings Function](#standings-function) below.
 
 ---
 
@@ -337,3 +350,48 @@ Returns how many times this pilot has been assigned a different channel across a
 ```lua
 local changes = count_channel_changes(pilot.id)
 ```
+
+---
+
+## Standings Function
+
+Define `standings(pilots, options)` alongside `generate()` to display a live result card that updates after each race. If omitted, no result card is shown for this stage.
+
+```lua
+function standings(pilots, options)
+    return {
+        headings = { "R1", "R2", "Score" },  -- optional column headers
+        rows = {
+            { name = "Alice", values = { "10", "8", "18" } },
+            { name = "Bob",   values = {  "8", "9", "17" } },
+        }
+    }
+end
+```
+
+### Parameters
+
+- **`pilots`** — list of pilot objects who have raced in this stage so far. Same format as in `generate()`: `pilots[i].id`, `pilots[i].name`.
+- **`options`** — `options.target_laps`, `options.pb_laps`. (No `race_count` or `max_per_race` — those are generation-only.)
+
+### Return value
+
+A table with:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `headings` | table of strings, optional | Column header labels. Omit to show no header row. |
+| `rows` | table of row objects | Ordered list of result rows — first entry is rank 1. |
+
+Each row object:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Pilot display name. |
+| `values` | table of strings | One string per column. The **last value** is the counting score (shown bold). |
+
+Returning `nil` suppresses the display until data is ready.
+
+### Helper functions in `standings()`
+
+All the same helper functions available in `generate()` work here too — `get_results()`, `get_best_consecutive_laps()`, `get_bracket()`, etc. Round offsets are relative to the last round in the stage, so `get_results(pilot.id)` returns all results up to and including the most recent round.
