@@ -41,6 +41,10 @@ namespace FfmpegMediaPlatform
             }
         }
 
+        // ffmpeg pipelines apply VideoConfig.Flipped/Mirrored via vflip/hflip filters so the flip is
+        // baked into both the live RGBA pipe and the recording. Consumers must not re-apply the flip.
+        public override bool AppliesUserFlipMirror => true;
+
         protected FfmpegMediaFramework ffmpegMediaFramework;
 
         protected Process process;

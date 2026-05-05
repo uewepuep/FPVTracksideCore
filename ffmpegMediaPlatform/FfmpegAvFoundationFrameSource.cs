@@ -91,7 +91,9 @@ namespace FfmpegMediaPlatform
             string name = VideoConfig.ffmpegId;
             string ffmpegArgs;
 
-            // Build video filter string for flip/mirror
+            // Build video filter string for flip/mirror.
+            // ffmpeg applies the flip across the full pipeline so recordings bake it in. The render path
+            // skips its own flip via FrameSource.AppliesUserFlipMirror to avoid a double-flip.
             List<string> filters = new List<string>();
             if (VideoConfig.Flipped)
                 filters.Add("vflip");

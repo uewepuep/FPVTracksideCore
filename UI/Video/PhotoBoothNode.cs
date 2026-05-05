@@ -188,12 +188,18 @@ namespace UI.Video
 
             if (File.Exists(filename))
             {
-                // Video is recorded raw, so store the source's flip/mirror state for playback
+                // Video is recorded raw, so store the source's flip/mirror state for playback.
+                // When the source bakes the user's flip/mirror into its frames (ffmpeg pipelines),
+                // the recording is already oriented correctly — playback should not re-apply.
                 FrameSource source = camNode.FrameNode.Source;
                 bool flipped = source.Direction == FrameSource.Directions.TopDown;
-                if (source.VideoConfig.Flipped)
-                    flipped = !flipped;
-                bool mirrored = source.VideoConfig.Mirrored;
+                bool mirrored = false;
+                if (!source.AppliesUserFlipMirror)
+                {
+                    if (source.VideoConfig.Flipped)
+                        flipped = !flipped;
+                    mirrored = source.VideoConfig.Mirrored;
+                }
 
                 ConfirmPictureNode confirmPictureNode = new ConfirmPictureNode(eventManager.EventId, Pilot, Pilot.PhotoPath, filename, flipped, mirrored);
                 confirmPictureNode.OnUseNew += ConfirmPictureNode_OnUseNew;
