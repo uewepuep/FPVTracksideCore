@@ -256,6 +256,32 @@ if not is_first_round() then
 end
 ```
 
+### `get_pilots_in_event()`
+Returns a list of all pilot objects registered in the event.
+```lua
+local everyone = get_pilots_in_event()
+-- everyone[i].id, everyone[i].name
+```
+
+### `get_pilots_in_round([round_offset])`
+Returns a list of pilot objects who were in any race in the given round. Defaults to the previous round.
+```lua
+local last_round_pilots = get_pilots_in_round()
+local two_back = get_pilots_in_round(-2)
+```
+
+### `get_round_info([round_offset])`
+Returns a table of information about the given round, or `nil` if the round does not exist. Defaults to the previous round.
+```lua
+local info = get_round_info()
+-- info.number      -- int,    round number within its event type
+-- info.event_type  -- string, e.g. "Race", "TimeTrial"
+-- info.name        -- string, display name
+-- info.stage_index -- int,    1-based position within the stage
+
+local prev_type = get_round_info(-1).event_type
+```
+
 ### `get_unflown_pilots(pilot_id)`
 Returns a list of pilot objects this pilot has not yet raced against.
 ```lua

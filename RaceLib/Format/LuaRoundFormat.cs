@@ -547,6 +547,65 @@ namespace RaceLib.Format
                     : lastRoundRaces;
                 return DynValue.NewString(races.GetBracket(pilot).ToString());
             });
+
+            // get_pilots_in_event() -> list of all pilot objects registered in the event
+            lua.Globals["get_pilots_in_event"] = DynValue.NewCallback((ctx, args) =>
+            {
+                Table table = new Table(lua);
+                int i = 1;
+                foreach (Pilot pilot in EventManager.Event.Pilots)
+                {
+                    Table p = new Table(lua);
+                    p["id"]   = pilot.ID.ToString();
+                    p["name"] = pilot.Name;
+                    table[i++] = DynValue.NewTable(p);
+                }
+                return DynValue.NewTable(table);
+            });
+
+            // get_pilots_in_round([round_offset]) -> list of pilot objects who raced in the given round
+            lua.Globals["get_pilots_in_round"] = DynValue.NewCallback((ctx, args) =>
+            {
+                Race[] races = args[0].Type == DataType.Number
+                    ? GetRacesForRoundOffset((int)args[0].Number)
+                    : lastRoundRaces;
+
+                Table table = new Table(lua);
+                int i = 1;
+                foreach (Pilot pilot in races.SelectMany(r => r.Pilots).Distinct())
+                {
+                    Table p = new Table(lua);
+                    p["id"]   = pilot.ID.ToString();
+                    p["name"] = pilot.Name;
+                    table[i++] = DynValue.NewTable(p);
+                }
+                return DynValue.NewTable(table);
+            });
+
+            // get_round_info([round_offset]) -> table with info about the given round, or nil if the round does not exist
+            lua.Globals["get_round_info"] = DynValue.NewCallback((ctx, args) =>
+            {
+                Round round = args[0].Type == DataType.Number
+                    ? EventManager.RoundManager.GetRelativeRound(plan.CallingRound, (int)args[0].Number + 1)
+                    : plan.CallingRound;
+
+                if (round == null) return DynValue.Nil;
+
+                int stageIndex = 1;
+                if (plan.Stage != null)
+                {
+                    Round[] stageRounds = EventManager.RoundManager.GetStageRounds(plan.Stage).ToArray();
+                    int idx = Array.IndexOf(stageRounds, round);
+                    stageIndex = idx >= 0 ? idx + 1 : stageRounds.Length + 1;
+                }
+
+                Table info = new Table(lua);
+                info["number"]      = (double)round.RoundNumber;
+                info["event_type"]  = round.EventType.ToString();
+                info["name"]        = round.Name ?? "";
+                info["stage_index"] = (double)stageIndex;
+                return DynValue.NewTable(info);
+            });
         }
 
         private Table BuildRoundTable(Script lua, Round round, RoundPlan plan)
