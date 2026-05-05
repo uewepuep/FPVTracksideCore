@@ -636,9 +636,8 @@ namespace UI.Nodes
             container.RelativeBounds = new RectangleF(0.01f, 0.01f, 0.98f, 0.98f);
             AddChild(container);
 
-            // Create a background
-            var background = new ColorNode(Color.Black);
-            background.Alpha = 0.8f;
+            // Create a background using theme panel color so contents stay readable across themes
+            var background = new ColorNode(Theme.Current.Panel.XNA);
             container.AddChild(background);
 
             // YouTube URL input section (0-6%)
@@ -687,13 +686,13 @@ namespace UI.Nodes
             container.AddChild(customizationContainer);
 
             // Label for customization section with character count
-            characterCountLabel = new TextNode("0/5000", Theme.Current.PilotViewTheme.PilotOverlayText.XNA);
+            characterCountLabel = new TextNode("0/5000", Theme.Current.TextMain.XNA);
             characterCountLabel.RelativeBounds = new RectangleF(0, 0, 0.25f, 0.45f);
             characterCountLabel.Alignment = RectangleAlignment.CenterLeft;
             customizationContainer.AddChild(characterCountLabel);
 
             // Add Best Single Lap checkbox below character count
-            bestSingleLapCheckbox = new TextCheckBoxNode("Best Single Lap", Theme.Current.PilotViewTheme.PilotOverlayText.XNA, false);
+            bestSingleLapCheckbox = new TextCheckBoxNode("Best Single Lap", Theme.Current.TextMain.XNA, false);
             bestSingleLapCheckbox.RelativeBounds = new RectangleF(0, 0.55f, 0.25f, 0.45f);
             bestSingleLapCheckbox.SetRatio(0.7f, 0.05f);
             customizationContainer.AddChild(bestSingleLapCheckbox);
@@ -703,29 +702,29 @@ namespace UI.Nodes
             timeTrialContainer.RelativeBounds = new RectangleF(0.26f, 0, 0.36f, 1);
             customizationContainer.AddChild(timeTrialContainer);
 
-            var timeTrialLabel = new TextNode("TT:", Theme.Current.PilotViewTheme.PilotOverlayText.XNA);
+            var timeTrialLabel = new TextNode("TT:", Theme.Current.TextMain.XNA);
             timeTrialLabel.RelativeBounds = new RectangleF(0, 0, 0.15f, 1);
             timeTrialLabel.Alignment = RectangleAlignment.CenterLeft;
             timeTrialContainer.AddChild(timeTrialLabel);
 
-            timeTrialPilotNamesCheckbox = new TextCheckBoxNode("Pilot", Theme.Current.PilotViewTheme.PilotOverlayText.XNA, true);
+            timeTrialPilotNamesCheckbox = new TextCheckBoxNode("Pilot", Theme.Current.TextMain.XNA, true);
             timeTrialPilotNamesCheckbox.RelativeBounds = new RectangleF(0.17f, 0.1f, 0.35f, 0.35f);
             timeTrialPilotNamesCheckbox.SetRatio(0.7f, 0.05f);
             timeTrialContainer.AddChild(timeTrialPilotNamesCheckbox);
 
-            timeTrialTimesCheckbox = new TextCheckBoxNode("Times", Theme.Current.PilotViewTheme.PilotOverlayText.XNA, true);
+            timeTrialTimesCheckbox = new TextCheckBoxNode("Times", Theme.Current.TextMain.XNA, true);
             timeTrialTimesCheckbox.RelativeBounds = new RectangleF(0.54f, 0.1f, 0.44f, 0.35f);
             timeTrialTimesCheckbox.SetRatio(0.7f, 0.05f);
             timeTrialContainer.AddChild(timeTrialTimesCheckbox);
 
             // Add TT abbreviation checkbox below the existing ones
-            timeTrialAbbreviationCheckbox = new TextCheckBoxNode("Time Trial/TT", Theme.Current.PilotViewTheme.PilotOverlayText.XNA, true);
+            timeTrialAbbreviationCheckbox = new TextCheckBoxNode("Time Trial/TT", Theme.Current.TextMain.XNA, true);
             timeTrialAbbreviationCheckbox.RelativeBounds = new RectangleF(0.17f, 0.55f, 0.35f, 0.35f);
             timeTrialAbbreviationCheckbox.SetRatio(0.7f, 0.05f);
             timeTrialContainer.AddChild(timeTrialAbbreviationCheckbox);
 
             // Add Pilot Summary checkbox below the times checkbox
-            pilotSummaryCheckbox = new TextCheckBoxNode("Pilot Summary", Theme.Current.PilotViewTheme.PilotOverlayText.XNA, true);
+            pilotSummaryCheckbox = new TextCheckBoxNode("Pilot Summary", Theme.Current.TextMain.XNA, true);
             pilotSummaryCheckbox.RelativeBounds = new RectangleF(0.54f, 0.55f, 0.44f, 0.35f);
             pilotSummaryCheckbox.SetRatio(0.7f, 0.05f);
             timeTrialContainer.AddChild(pilotSummaryCheckbox);
@@ -735,23 +734,23 @@ namespace UI.Nodes
             raceContainer.RelativeBounds = new RectangleF(0.63f, 0, 0.36f, 1);
             customizationContainer.AddChild(raceContainer);
 
-            var raceLabel = new TextNode("Race:", Theme.Current.PilotViewTheme.PilotOverlayText.XNA);
+            var raceLabel = new TextNode("Race:", Theme.Current.TextMain.XNA);
             raceLabel.RelativeBounds = new RectangleF(0, 0, 0.25f, 1);
             raceLabel.Alignment = RectangleAlignment.CenterLeft;
             raceContainer.AddChild(raceLabel);
 
-            racePilotNamesCheckbox = new TextCheckBoxNode("Pilot", Theme.Current.PilotViewTheme.PilotOverlayText.XNA, true);
+            racePilotNamesCheckbox = new TextCheckBoxNode("Pilot", Theme.Current.TextMain.XNA, true);
             racePilotNamesCheckbox.RelativeBounds = new RectangleF(0.27f, 0.1f, 0.35f, 0.35f);
             racePilotNamesCheckbox.SetRatio(0.7f, 0.05f);
             raceContainer.AddChild(racePilotNamesCheckbox);
 
-            racePositionsCheckbox = new TextCheckBoxNode("Positions", Theme.Current.PilotViewTheme.PilotOverlayText.XNA, true);
+            racePositionsCheckbox = new TextCheckBoxNode("Positions", Theme.Current.TextMain.XNA, true);
             racePositionsCheckbox.RelativeBounds = new RectangleF(0.64f, 0.1f, 0.35f, 0.35f);
             racePositionsCheckbox.SetRatio(0.7f, 0.05f);
             raceContainer.AddChild(racePositionsCheckbox);
 
             // Add R abbreviation checkbox below the existing ones
-            raceAbbreviationCheckbox = new TextCheckBoxNode("Race/R", Theme.Current.PilotViewTheme.PilotOverlayText.XNA, true);
+            raceAbbreviationCheckbox = new TextCheckBoxNode("Race/R", Theme.Current.TextMain.XNA, true);
             raceAbbreviationCheckbox.RelativeBounds = new RectangleF(0.27f, 0.55f, 0.35f, 0.35f);
             raceAbbreviationCheckbox.SetRatio(0.7f, 0.05f);
             raceContainer.AddChild(raceAbbreviationCheckbox);
@@ -791,7 +790,7 @@ namespace UI.Nodes
             raceListContainer.RelativeBounds = new RectangleF(0, 0.19f, 1, 0.40f); // Adjusted for taller customization section
             container.AddChild(raceListContainer);
 
-            raceList = new ListNode<Node>(Color.Gray);
+            raceList = new ListNode<Node>(Theme.Current.ScrollBar.XNA);
             raceList.RelativeBounds = new RectangleF(0, 0, 1, 1);
             raceListContainer.AddChild(raceList);
 
@@ -824,20 +823,20 @@ namespace UI.Nodes
             textContainer.RelativeBounds = new RectangleF(0, 0.52f, 1, 0.35f); // Fixed height for consistent layout
             container.AddChild(textContainer);
 
-            // Create a bordered container for the text area
-            var textBackground = new ColorNode(Color.Black);
+            // Create a bordered container for the text area using theme panel-alt color
+            var textBackground = new ColorNode(Theme.Current.PanelAlt.XNA);
             textBackground.RelativeBounds = new RectangleF(0, 0, 1, 1);
             textContainer.AddChild(textBackground);
 
             // Create scrollable list for chapter markers
-            chapterList = new ListNode<TextNode>(Color.Gray);
+            chapterList = new ListNode<TextNode>(Theme.Current.ScrollBar.XNA);
             chapterList.RelativeBounds = new RectangleF(0.01f, 0.01f, 0.98f, 0.98f);
             chapterList.ItemHeight = 18; // Smaller height per line (75% of 25 = ~18)
             chapterList.ItemPadding = 1; // Smaller padding between lines
             textContainer.AddChild(chapterList);
 
             // Add initial placeholder text
-            var placeholderText = new TextNode("Generated chapter markers will appear here...", Color.White);
+            var placeholderText = new TextNode("Generated chapter markers will appear here...", Theme.Current.TextMain.XNA);
             placeholderText.Alignment = RectangleAlignment.CenterLeft; // Left align the placeholder text
             chapterList.AddChild(placeholderText);
 
@@ -1124,7 +1123,7 @@ namespace UI.Nodes
 
             if (availableRaces == null || !availableRaces.Any())
             {
-                var noRacesText = new TextNode("No races available.", Color.White);
+                var noRacesText = new TextNode("No races available.", Theme.Current.TextMain.XNA);
                 chapterList.AddChild(noRacesText);
                 Logger.UI.Log(this, "GenerateChapterMarkers: No races available", Logger.LogType.Notice);
                 return;
@@ -1134,7 +1133,7 @@ namespace UI.Nodes
 
             if (!racesToProcess.Any())
             {
-                var noDisplayText = new TextNode("No races to display.", Color.White);
+                var noDisplayText = new TextNode("No races to display.", Theme.Current.TextMain.XNA);
                 chapterList.AddChild(noDisplayText);
                 Logger.UI.Log(this, "GenerateChapterMarkers: No races to display", Logger.LogType.Notice);
                 return;
@@ -1147,7 +1146,7 @@ namespace UI.Nodes
 
             // Add the required "Stream Start" entry at 00:00:00
             var streamStartText = "00:00:00 Stream Start";
-            var streamStartNode = new TextNode(streamStartText, Color.White);
+            var streamStartNode = new TextNode(streamStartText, Theme.Current.TextMain.XNA);
             streamStartNode.Scale(0.5625f); // Same scale as other chapters
             streamStartNode.Alignment = RectangleAlignment.CenterLeft;
             chapterList.AddChild(streamStartNode);
@@ -1221,7 +1220,7 @@ namespace UI.Nodes
                 }
                 
                 // Create a text node for this chapter marker with smaller scale and left alignment
-                var chapterNode = new TextNode(chapterText, Color.White);
+                var chapterNode = new TextNode(chapterText, Theme.Current.TextMain.XNA);
                 chapterNode.Scale(0.5625f); // Shrink text to 75% of current size (0.75 * 0.75)
                 chapterNode.Alignment = RectangleAlignment.CenterLeft; // Left align the text
                 chapterList.AddChild(chapterNode);
@@ -1362,12 +1361,12 @@ namespace UI.Nodes
 
             // Add section header with lap count info
             var lapText = lapCount == 1 ? "Best Single Lap" : $"Best {lapCount} Consecutive Laps";
-            var headerText = new TextNode("", Color.White);
+            var headerText = new TextNode("", Theme.Current.TextMain.XNA);
             headerText.Text = $"\nPilot Performance Leaderboard ({lapText}):";
             headerText.Alignment = RectangleAlignment.CenterLeft;
             chapterList.AddChild(headerText);
 
-            var separatorText = new TextNode("", Color.White);
+            var separatorText = new TextNode("", Theme.Current.TextMain.XNA);
             separatorText.Text = "===================================";
             separatorText.Alignment = RectangleAlignment.CenterLeft;
             chapterList.AddChild(separatorText);
@@ -1405,7 +1404,7 @@ namespace UI.Nodes
                 }
 
                 // Create leaderboard entry
-                var entryText = new TextNode("", Color.White);
+                var entryText = new TextNode("", Theme.Current.TextMain.XNA);
                 entryText.Text = $"{position}. {pilot.Name}: {bestTime.TotalSeconds:F2}s (at {timeString} - {raceDisplayName})";
                 entryText.Alignment = RectangleAlignment.CenterLeft;
                 chapterList.AddChild(entryText);
