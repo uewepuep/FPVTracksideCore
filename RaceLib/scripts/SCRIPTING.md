@@ -27,11 +27,14 @@ end
 The round being generated. Read-only fields are informational; writable fields are applied back after `generate()` returns.
 
 ```lua
-round.number          -- int, read-only. The round number.
-round.name            -- string, writable. Override the round's display name.
-round.event_type      -- string, writable. One of: "Race", "TimeTrial", "Practice", "Freestyle", "Endurance", "CasualPractice", "Game"
+round.number       -- int, read-only. The round number within its event type.
+round.stage_index  -- int, read-only. 1-based position of this round within the stage, counting all rounds regardless of event type.
+round.name         -- string, writable. Override the round's display name.
+round.event_type   -- string, writable. One of: "Race", "TimeTrial", "Practice", "Freestyle", "Endurance", "CasualPractice", "Game"
 round.game_type_name  -- string, writable. Game type identifier.
 ```
+
+`round.stage_index` is the most reliable way to reason about position within a stage. It counts all rounds in order regardless of event type, so it stays correct even when a stage mixes Race and TimeTrial rounds.
 
 ---
 
@@ -61,12 +64,26 @@ channels[i].band  -- string, band name e.g. "RaceBand", "Fatshark"
 ## Input: `options`
 
 ```lua
-options.race_count        -- int, number of races to generate
-options.max_per_race      -- int, maximum pilots per race (number of channels)
-options.target_laps       -- int, the event's configured target lap count
-options.pb_laps           -- int, the event's configured PB lap count
-options.stage_start_round -- int, round number of the first round in this stage
+options.race_count    -- int, number of races to generate
+options.max_per_race  -- int, maximum pilots per race (number of channels)
+options.target_laps   -- int, the event's configured target lap count
+options.pb_laps       -- int, the event's configured PB lap count
 ```
+
+---
+
+## Round Offsets
+
+Many helper functions accept an optional **round offset** argument. Offsets are relative to the round currently being generated:
+
+| Offset | Meaning |
+|--------|---------|
+| `0`    | Current round (being generated — no races exist yet) |
+| `-1`   | Previous round (the default when omitted) |
+| `-2`   | Two rounds back |
+| `-3`   | Three rounds back |
+
+Rounds are ordered by their insertion order within the event, ignoring event type. This means a stage mixing Race and TimeTrial rounds is counted correctly without ambiguity.
 
 ---
 
@@ -148,7 +165,7 @@ local worst_result = max(get_results(pilot.id), function(r) return r.position en
 Returns a sorted copy of a list. `fn(item)` returns the sort key (number or string). Sorts ascending.
 ```lua
 local by_points = sort_by(pilots, function(p) return get_points(p.id) end)
-local by_time   = sort_by(pilots, function(p) return get_best_consecutive_laps_event(p.id, 3) end)
+local by_time   = sort_by(pilots, function(p) return get_best_consecutive_laps(p.id, 3) end)
 ```
 
 ### `history(pilot_id_a, pilot_id_b)`
@@ -167,13 +184,14 @@ race1 = minimise_channel_change(race1)
 
 ## Pilot Data Functions
 
-### `get_results(pilot_id [, start_round [, end_round]])`
-Returns a list of result objects for a pilot, oldest first. Defaults to all results up to the previous round. Use `start_round` and `end_round` to narrow the window — both are round numbers and both are optional.
+### `get_results(pilot_id [, from_offset [, to_offset]])`
+Returns a list of result objects for a pilot, oldest first. Defaults to all results up to the previous round. Use `from_offset` and `to_offset` to narrow the window — both are round offsets and both are optional.
 
 ```lua
-local results = get_results(pilot.id)            -- all results up to previous round
-local recent  = get_results(pilot.id, round.number - 3)          -- last 3 rounds
-local window  = get_results(pilot.id, round.number - 5, round.number - 2)  -- specific window
+local results = get_results(pilot.id)           -- all results up to previous round
+local recent  = get_results(pilot.id, -3)       -- from 3 rounds ago to previous round
+local window  = get_results(pilot.id, -5, -2)   -- specific window
+local one     = get_results(pilot.id, -2, -2)   -- exactly 2 rounds ago
 ```
 
 Each result object has:
@@ -186,48 +204,56 @@ result.round     -- int,    round number this result is from
 result.time      -- number, total race time in seconds
 ```
 
-### `has_any_results([round_number])`
-Returns `true` if any race in the given round has ended. Defaults to the previous round.
+### `has_any_results([round_offset])`
+Returns `true` if any race in the given round has ended. Defaults to the previous round (`-1`).
 ```lua
 if has_any_results() then
     pilots = pilots_with_results(pilots)
 end
-if has_any_results(round.number - 2) then ... end
+if has_any_results(-2) then ... end
 ```
 
-### `all_results_in([round_number])`
+### `all_results_in([round_offset])`
 Returns `true` if all races in the given round have ended. Defaults to the previous round. Useful to hold off generating a new round until the previous one is fully complete.
 ```lua
 if has_any_results() and not all_results_in() then
     return nil  -- not ready yet, leave existing races unchanged
 end
-if all_results_in(round.number - 2) then ... end
+if all_results_in(-2) then ... end
 ```
 
-### `has_result(pilot_id [, round_number])`
+### `has_result(pilot_id [, round_offset])`
 Returns `true` if the pilot has a completed race in the given round. Defaults to the previous round.
 ```lua
 if has_result(pilot.id) then
     -- pilot has actually flown this round
 end
-if has_result(pilot.id, round.number - 1) then ... end
+if has_result(pilot.id, -2) then ... end
 ```
 
-### `pilots_with_results(pilots [, round_number])`
+### `pilots_with_results(pilots [, round_offset])`
 Returns a filtered copy of the pilots list containing only those with a completed race in the given round. Defaults to the previous round.
 ```lua
 pilots = pilots_with_results(pilots)
 -- or filter by a specific round
-pilots = pilots_with_results(pilots, round.number - 1)
+pilots = pilots_with_results(pilots, -2)
 ```
 
-### `top_half(pilot_id [, round_number])`
+### `top_half(pilot_id [, round_offset])`
 Returns `true` if the pilot finished in the top half of their race in the given round, or if their race has not ended yet. Returns `false` if their race ended and they finished in the bottom half. Defaults to the previous round.
 ```lua
 if top_half(pilot.id) then
     table.insert(a_final, pilot.id)
 end
-if top_half(pilot.id, round.number - 2) then ... end
+if top_half(pilot.id, -2) then ... end
+```
+
+### `is_first_round()`
+Returns `true` if this is the first round of the current stage (i.e. there is no previous round in this stage). Equivalent to checking `round.stage_index == 1`.
+```lua
+if not is_first_round() then
+    pilots = pilots_with_results(pilots)
+end
 ```
 
 ### `get_unflown_pilots(pilot_id)`
@@ -237,12 +263,12 @@ local fresh = get_unflown_pilots(pilot.id)
 -- fresh[i].id, fresh[i].name
 ```
 
-### `get_bracket(pilot_id [, round_number])`
+### `get_bracket(pilot_id [, round_offset])`
 Returns the bracket string this pilot was in during the given round. Defaults to the previous round.
 Possible values: `"None"`, `"Winners"`, `"Losers"`, `"A"`, `"B"`, `"C"` etc.
 ```lua
 if get_bracket(pilot.id) == "Winners" then ... end
-if get_bracket(pilot.id, round.number - 2) == "Losers" then ... end
+if get_bracket(pilot.id, -2) == "Losers" then ... end
 ```
 
 ---
@@ -251,27 +277,27 @@ if get_bracket(pilot.id, round.number - 2) == "Losers" then ... end
 
 All times are returned in **seconds** as a decimal number. Returns `0` if the pilot has no data.
 
-### `get_best_consecutive_laps(pilot_id, lap_count [, start_round [, end_round]])`
+### `get_best_consecutive_laps(pilot_id, lap_count [, from_offset [, to_offset]])`
 Best consecutive `lap_count` laps across all races, optionally filtered to a round range. Use `lap_count = 1` for single-lap PB.
 ```lua
-local pb       = get_best_consecutive_laps(pilot.id, 1)                              -- all time
-local best3    = get_best_consecutive_laps(pilot.id, 3)                              -- all time, 3 consecutive laps
-local recent   = get_best_consecutive_laps(pilot.id, 1, round.number - 3)            -- last 3 rounds
-local window   = get_best_consecutive_laps(pilot.id, 1, round.number - 5, round.number - 2)
+local pb     = get_best_consecutive_laps(pilot.id, 1)           -- all time
+local best3  = get_best_consecutive_laps(pilot.id, 3)           -- all time, 3 consecutive laps
+local recent = get_best_consecutive_laps(pilot.id, 1, -3)       -- last 3 rounds
+local window = get_best_consecutive_laps(pilot.id, 1, -5, -2)   -- specific window
 ```
 
 ---
 
 ## Channel Functions
 
-### `get_last_channel(pilot_id [, round_number])`
+### `get_last_channel(pilot_id [, round_offset])`
 Returns the channel object the pilot was on in the given round, or `nil` if they have no channel for that round. Defaults to the previous round.
 ```lua
 local ch = get_last_channel(pilot.id)
 if ch then
     print(ch.id, ch.name, ch.band)
 end
-local ch_prev = get_last_channel(pilot.id, round.number - 2)
+local ch_prev = get_last_channel(pilot.id, -2)
 ```
 
 ### `get_interfering_channels(channel_id)`
@@ -285,4 +311,3 @@ Returns how many times this pilot has been assigned a different channel across a
 ```lua
 local changes = count_channel_changes(pilot.id)
 ```
-

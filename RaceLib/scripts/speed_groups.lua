@@ -3,7 +3,9 @@ description = "Pilots grouped by best consecutive lap time. Fastest pilots in gr
 
 function generate(round, pilots, channels, options)
 
-    pilots = pilots_with_results(pilots);
+    if not is_first_round() then
+        pilots = pilots_with_results(pilots)
+    end
 
     local sorted = sort_by(pilots, function(p)
         local t = get_best_consecutive_laps(p.id, options.target_laps)

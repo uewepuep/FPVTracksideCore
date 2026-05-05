@@ -3,9 +3,9 @@ description = "3-round cycles. Bottom half of Winners drop to Losers. Bottom hal
 
 function generate(round, pilots, channels, options)
     local max      = options.max_per_race
-    local rel      = round.number - options.stage_start_round  -- 0-based offset into stage
-    local cycle    = math.floor(rel / 3)                       -- which cycle (0-indexed)
-    local in_cycle = rel % 3                                   -- position within cycle (0, 1, 2)
+    local rel      = round.stage_index - 1  -- 0-based offset into stage
+    local cycle    = math.floor(rel / 3)    -- which cycle (0-indexed)
+    local in_cycle = rel % 3                -- position within cycle (0, 1, 2)
 
     local winners = {}
     local losers  = {}
@@ -18,11 +18,8 @@ function generate(round, pilots, channels, options)
 
     elseif in_cycle == 0 then
         -- First round of a new cycle: reassign brackets based on previous cycle points
-        local cycle_start = round.number - 3
-        local cycle_end   = round.number - 1
-
         local active = filter(pilots, function(p)
-            return #get_results(p.id, cycle_start, cycle_end) > 0
+            return #get_results(p.id, -3, -1) > 0
         end)
 
         local prev_winners = filter(active, function(p)
@@ -35,7 +32,7 @@ function generate(round, pilots, channels, options)
 
         local function sort_by_cycle_points(group)
             return sort_by(group, function(p)
-                return -sum(get_results(p.id, cycle_start, cycle_end), function(r) return r.points end)
+                return -sum(get_results(p.id, -3, -1), function(r) return r.points end)
             end)
         end
 
@@ -59,9 +56,8 @@ function generate(round, pilots, channels, options)
 
     else
         -- Mid-cycle: keep pilots who raced in the first round of this cycle
-        local cycle_round_1 = round.number - in_cycle
         local active = filter(pilots, function(p)
-            return #get_results(p.id, cycle_round_1, cycle_round_1) > 0
+            return #get_results(p.id, -in_cycle, -in_cycle) > 0
         end)
         for _, p in ipairs(active) do
             if get_bracket(p.id) == "Losers" then

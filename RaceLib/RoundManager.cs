@@ -88,6 +88,24 @@ namespace RaceLib
             }
         }
 
+        public Round GetRelativeRound(Round current, int offset)
+        {
+            if (offset == 0)
+                return current;
+
+            lock (Event.Rounds)
+            {
+                if (offset > 0)
+                {
+                    return Event.Rounds.Where(r => r.Order > current.Order).OrderBy(r => r.Order).Skip(offset - 1).FirstOrDefault();
+                }
+                else
+                {
+                    return Event.Rounds.Where(r => r.Order < current.Order).OrderByDescending(r => r.Order).Skip(Math.Abs(offset) - 1).FirstOrDefault();
+                }
+            }
+        }
+
         public IEnumerable<Round> RoundsWhere(Func<Round, bool> predicate)
         {
             lock (Event.Rounds)

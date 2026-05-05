@@ -4,9 +4,7 @@ description = "Winners bracket and Losers bracket. Lose twice and you're out."
 function generate(round, pilots, channels, options)
     local max         = options.max_per_race
     local total       = #pilots
-    local any_results = has_any_results()
-
-    if any_results then
+    if not is_first_round() then
         pilots = pilots_with_results(pilots)
     end
 
@@ -46,7 +44,7 @@ function generate(round, pilots, channels, options)
     -- Race counts based on total pilots, not just those with results so far.
     -- This keeps the bracket structure stable as round 1 races finish.
     local winner_race_count, loser_race_count
-    if not any_results then
+    if is_first_round() then
         winner_race_count = math.ceil(total / max)
         loser_race_count  = 0
     else
