@@ -237,9 +237,12 @@ namespace UI.Video
                             ? new Scalar(255, 255, 0, 255)   // RGBA: yellow
                             : new Scalar(0, 255, 255, 255);  // BGRA: yellow
                         var fpsOrg = new Point((int)fxBase, (int)fyBase);
-                        // Outline pass for contrast.
-                        Cv2.PutText(mat, fpsText, fpsOrg, HersheyFonts.HersheySimplex, fontScale * 1.2, Scalar.Black, textThickness + 2, LineTypes.AntiAlias);
-                        Cv2.PutText(mat, fpsText, fpsOrg, HersheyFonts.HersheySimplex, fontScale * 1.2, fpsColor, textThickness, LineTypes.AntiAlias);
+                        // bottomLeftOrigin flips glyph rows so text is upright when the buffer
+                        // is bottom-up DIB (DirectShow / MediaFoundation) — points map fine via
+                        // FlipY, but PutText writes glyphs top-down by default and would appear
+                        // upside-down on screen for a bottom-up buffer.
+                        Cv2.PutText(mat, fpsText, fpsOrg, HersheyFonts.HersheySimplex, fontScale * 1.2, Scalar.Black, textThickness + 2, LineTypes.AntiAlias, cached.FlipY);
+                        Cv2.PutText(mat, fpsText, fpsOrg, HersheyFonts.HersheySimplex, fontScale * 1.2, fpsColor, textThickness, LineTypes.AntiAlias, cached.FlipY);
                     }
 
                     if (detections == null) return;
@@ -295,8 +298,13 @@ namespace UI.Video
 
                         if (label != null)
                         {
-                            var org = new Point((int)acx, (int)acy - 10);
-                            Cv2.PutText(mat, label, org, HersheyFonts.HersheySimplex, fontScale, color, textThickness, LineTypes.AntiAlias);
+                            // For a bottom-up buffer the label sits visually above the marker
+                            // when its origin is BELOW the marker centre (because rows are
+                            // inverted). Mirror the +/- offset alongside passing FlipY to the
+                            // PutText origin flag so glyphs render upright.
+                            int yOffset = cached.FlipY ? +10 : -10;
+                            var org = new Point((int)acx, (int)acy + yOffset);
+                            Cv2.PutText(mat, label, org, HersheyFonts.HersheySimplex, fontScale, color, textThickness, LineTypes.AntiAlias, cached.FlipY);
                         }
                     }
                 }

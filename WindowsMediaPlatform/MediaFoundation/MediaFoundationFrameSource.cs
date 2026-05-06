@@ -364,16 +364,12 @@ namespace WindowsMediaPlatform.MediaFoundation
                 MFError.ThrowExceptionForHR(hr);
 
 
-                int stride = MFExtern.MFGetAttributeUINT32(outputType, MFAttributesClsid.MF_MT_DEFAULT_STRIDE, 0);
-
-                if (stride != 0) 
-                {
-                    Direction = stride < 0 ? Directions.TopDown : Directions.BottomUp;
-                }
-                else
-                {
-                    Direction = MFHelper.GetDirection(outputSubType);
-                }
+                // MF buffers reach the renderer with bottom-up byte ordering on the devices
+                // tested here (e.g. NV12 reports stride>0, which the spec calls top-down, yet
+                // the actual rows arrive bottom-up). Flag TopDown so FrameNode.Flip() flips Y,
+                // matching the DirectShow path and giving an upright image. FFmpeg, which truly
+                // emits top-down RGBA, sets BottomUp itself.
+                Direction = Directions.TopDown;
 
                 string format = MFHelper.GetFormat(currentSubType);
                 Tools.Logger.VideoLog.Log(this, VideoConfig.DeviceName, "Width: " + width + " Height: " + height + " Format: " + format);
