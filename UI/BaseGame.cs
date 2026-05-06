@@ -222,18 +222,10 @@ namespace UI
                 LayerStack.Add(alreadyRunning);
             }
 
-            if (ApplicationProfileSettings.Instance.VSync)
-            {
-                IsFixedTimeStep = false;
-            }
-            else
-            {
-                int frameRate = Math.Min(1000, Math.Max(1, ApplicationProfileSettings.Instance.FrameRateLimit));
-                TargetElapsedTime = TimeSpan.FromSeconds(1f / frameRate);
-                IsFixedTimeStep = true;
-            }
+            int frameRate = Math.Min(1000, Math.Max(1, ApplicationProfileSettings.Instance.FrameRateLimit));
+            TargetElapsedTime = TimeSpan.FromSeconds(1f / frameRate);
+            IsFixedTimeStep = true;
 
-            
             loadingLayer.WorkQueue.Enqueue("Database Upgrade", DatabaseUpgrade);
 
             loadingLayer.WorkQueue.Enqueue("Load Translations", LoadTranslations);
