@@ -19,6 +19,8 @@ namespace DB.JSON
 
         public string SheetFormatFilename { get; set; }
 
+        public string ScriptFormatFilename { get; set; }
+
         public bool Valid { get; set; }
 
         public int Order { get; set; }

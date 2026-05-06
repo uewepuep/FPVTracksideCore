@@ -103,7 +103,7 @@ namespace UI.Nodes.Rounds
             {
                 int count = Math.Min(pilotsPerColumn, all.Count - start);
                 float leftAlign = column * width;
-                Node.MakeColumns(all.Skip(start).Take(count), count, leftAlign, width);
+                Node.MakeColumns(all.Skip(start).Take(count), pilotsPerColumn, leftAlign, width);
                 column++;
                 start += count;
             }
@@ -130,7 +130,7 @@ namespace UI.Nodes.Rounds
     {
         private const int NameWidth = 150;
         private const int ValueWidth = 25;
-        private const int ScoreWidth = 50;
+        private const int ScoreWidth = 100;
         private const int Padding = 10;
         private const int VertPad = 2;
 
@@ -184,7 +184,8 @@ namespace UI.Nodes.Rounds
 
         public int GetRequiredWidth()
         {
-            return NameWidth + Padding + valueNodes.Length * (ValueWidth + Padding) + ScoreWidth + Padding;
+            int inner = NameWidth + Padding + valueNodes.Length * (ValueWidth + Padding) + ScoreWidth + Padding;
+            return (int)Math.Ceiling(inner / 0.975f) + 20;
         }
 
         public override void Layout(RectangleF parentBounds)
@@ -214,11 +215,8 @@ namespace UI.Nodes.Rounds
 
             RectangleF scoreBounds = work;
             scoreBounds.X = x;
-            scoreBounds.Width = ScoreWidth;
+            scoreBounds.Width = work.Right - x - Padding;
             scoreNode.Layout(scoreBounds);
-
-            work.Width = scoreBounds.Right - work.X;
-            background.BoundsF = work;
         }
     }
 }

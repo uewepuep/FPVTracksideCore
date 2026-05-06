@@ -41,15 +41,13 @@ function generate(round, pilots, channels, options)
         }
     end
 
-    -- Race counts based on total pilots, not just those with results so far.
-    -- This keeps the bracket structure stable as round 1 races finish.
     local winner_race_count, loser_race_count
     if is_first_round() then
         winner_race_count = math.ceil(total / max)
         loser_race_count  = 0
     else
-        winner_race_count = math.ceil(math.ceil(total / 2) / max)
-        loser_race_count  = math.ceil(math.floor(total / 2) / max)
+        winner_race_count = math.ceil(#winners / max)
+        loser_race_count  = math.ceil(#losers / max)
     end
 
     local races = {}
@@ -82,4 +80,79 @@ function generate(round, pilots, channels, options)
     end
 
     return races
+end
+
+function standings(pilots, options)
+    local total = #pilots
+    local active_winners = {}
+    local active_losers  = {}
+    local eliminated     = {}
+
+    local function add_eliminated(p)
+        local results = get_results(p.id)
+        if #results > 0 then
+            local last_round    = 0
+            local last_position = 0
+            for _, r in ipairs(results) do
+                if r.round > last_round then
+                    last_round    = r.round
+                    last_position = r.position
+                end
+            end
+            table.insert(eliminated, {
+                name          = p.name,
+                result_count  = #results,
+                last_round    = last_round,
+                last_position = last_position
+            })
+        end
+    end
+
+    for _, p in ipairs(pilots) do
+        local bracket = get_bracket(p.id)
+        if bracket == "Winners" then
+            table.insert(active_winners, p)
+        elseif bracket == "Losers" then
+            if top_half(p.id) then
+                table.insert(active_losers, p)
+            else
+                -- bottom half of a finished Losers race = eliminated
+                add_eliminated(p)
+            end
+        else
+            -- bracket "None" + results = eliminated in a previous round
+            add_eliminated(p)
+            -- bracket "None" + no results = assigned but not yet raced, skip
+        end
+    end
+
+    -- Sort ascending: worst first (gets the highest final position number)
+    -- Priority: fewer rounds < earlier last round < worse race finish
+    -- last_position is subtracted because lower = better finish = should rank higher
+    eliminated = sort_by(eliminated, function(p)
+        return p.result_count * 10000 + p.last_round * 100 - p.last_position
+    end)
+
+    -- Assign positions: i=1 (worst, eliminated first) → total; i=n (best) → total - n + 1
+    local n_elim = #eliminated
+    for i, p in ipairs(eliminated) do
+        p.position = total - i + 1
+    end
+
+    local rows = {}
+
+    for _, p in ipairs(active_winners) do
+        table.insert(rows, { name = p.name, values = { "Winners" } })
+    end
+    for _, p in ipairs(active_losers) do
+        table.insert(rows, { name = p.name, values = { "Losers" } })
+    end
+
+    -- Show best-eliminated first (last to be knocked out nearest the top)
+    for i = n_elim, 1, -1 do
+        local p = eliminated[i]
+        table.insert(rows, { name = p.name, values = { ordinal(p.position) } })
+    end
+
+    return { headings = { "Status" }, rows = rows }
 end

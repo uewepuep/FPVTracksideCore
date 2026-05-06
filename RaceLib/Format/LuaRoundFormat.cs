@@ -208,6 +208,13 @@ namespace RaceLib.Format
                 if (round == null) return Array.Empty<Race>();
                 return RaceManager.GetRaces(round);
             }
+            // ordinal(n) -> ordinal string, e.g. 1 -> "1st", 2 -> "2nd", 11 -> "11th"
+            lua.Globals["ordinal"] = DynValue.NewCallback((ctx, args) =>
+            {
+                int n = (int)(args[0].CastToNumber() ?? 0);
+                return DynValue.NewString(n.ToStringPosition());
+            });
+
             // history(pilot_id_a, pilot_id_b) -> number of times these two pilots have flown together
             lua.Globals["history"] = DynValue.NewCallback((ctx, args) =>
             {
@@ -374,6 +381,9 @@ namespace RaceLib.Format
                 int i = 1;
                 foreach (Result result in EventManager.ResultManager.GetResults(toRound, pilot))
                 {
+                    if (result.Race?.Ended != true)
+                        continue;
+
                     if (fromRound != null && (result.Round?.Order ?? -1) < fromRound.Order)
                         continue;
 
