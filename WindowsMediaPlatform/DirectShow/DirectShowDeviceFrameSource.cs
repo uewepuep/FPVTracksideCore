@@ -294,7 +294,13 @@ namespace WindowsMediaPlatform.DirectShow
                 }
                 DsUtils.FreeAMMediaType(ammediaType);
 
-                Direction = MediaFoundation.MFHelper.GetDirection(SubType);
+                // DirectShow's sample grabber is configured (in DirectShowFrameSource.Setup)
+                // to deliver RGB32 regardless of the device's native subtype, and DirectShow
+                // RGB32 follows the DIB convention (bottom-up in memory). The renderer flips Y
+                // when Direction == TopDown, which is exactly what's needed to display upright.
+                // Using GetDirection(SubType) made YUY2/RGB-native inputs render upside-down
+                // because those subtypes resolve to BottomUp.
+                Direction = Directions.TopDown;
 
                 return result;
             }
