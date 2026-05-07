@@ -522,7 +522,7 @@ namespace RaceLib
             {
                 LuaFormatManager.ScriptFile scriptFile = LuaFormatManager?.GetScriptFile(stage.ScriptFormatFilename);
                 if (scriptFile != null)
-                    return new LuaRoundFormat(EventManager, stage, scriptFile);
+                    return new LuaRoundFormat(EventManager, stage, scriptFile, LuaFormatManager.ScriptTimeout);
 
                 Logger.AllLog.Log(this, $"Script '{stage.ScriptFormatFilename}' not found for stage '{stage.Name}'.");
             }

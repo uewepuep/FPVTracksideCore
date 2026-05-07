@@ -281,6 +281,10 @@ namespace UI
         [DisplayName("Sponsor screensaver idle time (minutes, 0 = disabled)")]
         public int ScreensaverIdleMinutes { get; set; }
 
+        [Category("Scripting")]
+        [DisplayName("Lua script timeout (seconds)")]
+        public int LuaScriptTimeoutSeconds { get; set; }
+
         [Category("QR Pilot Scan")]
         [DisplayName("Enable QR pilot scan")]
         public bool QRPilotScan { get; set; }
@@ -354,6 +358,7 @@ namespace UI
             AutoSync = true;
             SponsoredByMessages = false;
             ScreensaverIdleMinutes = 5;
+            LuaScriptTimeoutSeconds = 10;
 
             FrameRateLimit = 60;
             VSync = true;

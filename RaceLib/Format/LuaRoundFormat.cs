@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Tools;
 
 namespace RaceLib.Format
@@ -14,10 +15,13 @@ namespace RaceLib.Format
         public string ScriptName => scriptFile.Name;
         public bool HasStandings => scriptFile.HasStandings;
 
-        public LuaRoundFormat(EventManager em, Stage stage, LuaFormatManager.ScriptFile scriptFile)
+        private readonly TimeSpan scriptTimeout;
+
+        public LuaRoundFormat(EventManager em, Stage stage, LuaFormatManager.ScriptFile scriptFile, TimeSpan scriptTimeout)
             : base(em, stage)
         {
             this.scriptFile = scriptFile;
+            this.scriptTimeout = scriptTimeout;
         }
 
         public StandingsResult GetStandings(Pilot[] stagePilots)
@@ -56,7 +60,16 @@ namespace RaceLib.Format
             optionsTable["pb_laps"] = (double)EventManager.Event.PBLaps;
 
             DynValue result;
-            try { result = lua.Call(standingsFn, pilotTable, optionsTable); }
+            try
+            {
+                Task<DynValue> callTask = Task.Run(() => lua.Call(standingsFn, pilotTable, optionsTable));
+                if (!callTask.Wait(scriptTimeout))
+                {
+                    Logger.AllLog.Log(this, $"Script '{scriptFile.Name}' standings() timed out.");
+                    return null;
+                }
+                result = callTask.GetAwaiter().GetResult();
+            }
             catch (InterpreterException ex)
             {
                 Logger.AllLog.Log(this, $"Script '{scriptFile.Name}' standings() error: {ex.DecoratedMessage}");
@@ -176,7 +189,13 @@ namespace RaceLib.Format
             DynValue result;
             try
             {
-                result = lua.Call(generateFn, roundTable, pilotTable, channelTable, optionsTable);
+                Task<DynValue> callTask = Task.Run(() => lua.Call(generateFn, roundTable, pilotTable, channelTable, optionsTable));
+                if (!callTask.Wait(scriptTimeout))
+                {
+                    Logger.AllLog.Log(this, $"Script '{scriptFile.Name}' generate() timed out.");
+                    return preExisting;
+                }
+                result = callTask.GetAwaiter().GetResult();
             }
             catch (InterpreterException ex)
             {

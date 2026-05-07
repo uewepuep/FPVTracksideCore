@@ -117,6 +117,7 @@ namespace UI
             RaceStringFormatter.Instance.Round = Translator.Get("Label.Round", "Round");
 
             EventManager.RaceManager.RemainingTimesToAnnounce = ApplicationProfileSettings.Instance.RemainingSecondsToAnnounce;
+            EventManager.RoundManager.LuaFormatManager.ScriptTimeout = TimeSpan.FromSeconds(ApplicationProfileSettings.Instance.LuaScriptTimeoutSeconds);
 
             // Init the videos into the video directories.
             VideoManagerFactory.Init(eventDirectory.FullName, eventManager.Profile);

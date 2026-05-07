@@ -12,6 +12,8 @@ namespace RaceLib.Format
         private readonly DirectoryInfo directory;
         private readonly Dictionary<string, bool> standingsCache = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 
+        public TimeSpan ScriptTimeout { get; set; } = TimeSpan.FromSeconds(10);
+
         public LuaFormatManager()
             : this(new DirectoryInfo("scripts")) { }
 
