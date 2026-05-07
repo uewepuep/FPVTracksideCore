@@ -18,7 +18,7 @@ namespace UI.Nodes.Rounds
 {
     public class EventRaceNode : AspectNode
     {
-        public Race Race { get; private set; }
+        public Race Race { get; internal set; }
 
         public EventManager EventManager { get; private set; }
 
