@@ -48,6 +48,7 @@ namespace RaceLib.Format
             public FileInfo FileInfo { get; }
             public string Name { get; private set; }
             public string Description { get; private set; }
+            public string Author { get; private set; }
             public bool HasStandings { get; private set; }
 
             public ScriptFile(FileInfo fileInfo)
@@ -55,6 +56,7 @@ namespace RaceLib.Format
                 FileInfo = fileInfo;
                 Name = Path.GetFileNameWithoutExtension(fileInfo.Name);
                 Description = string.Empty;
+                Author = string.Empty;
 
                 try
                 {
@@ -62,9 +64,11 @@ namespace RaceLib.Format
                     lua.DoFile(fileInfo.FullName);
                     DynValue nameDyn = lua.Globals.Get("name");
                     DynValue descDyn = lua.Globals.Get("description");
+                    DynValue authorDyn = lua.Globals.Get("author");
                     DynValue standingsDyn = lua.Globals.Get("standings");
                     if (nameDyn.Type == DataType.String) Name = nameDyn.String;
                     if (descDyn.Type == DataType.String) Description = descDyn.String;
+                    if (authorDyn.Type == DataType.String) Author = authorDyn.String;
                     HasStandings = standingsDyn.Type == DataType.Function;
                 }
                 catch (Exception ex)

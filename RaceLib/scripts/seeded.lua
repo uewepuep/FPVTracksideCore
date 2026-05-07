@@ -1,5 +1,6 @@
 name = "Seeded"
 description = "Fastest pilots seeded across races by qualifying lap time."
+author = "uewepuep"
 
 function generate(round, pilots, channels, options)
 

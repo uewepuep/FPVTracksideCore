@@ -1,5 +1,6 @@
 name = "Speed Groups"
 description = "Pilots grouped by best consecutive lap time. Fastest pilots in group 1, next in group 2, etc."
+author = "uewepuep"
 
 function generate(round, pilots, channels, options)
 

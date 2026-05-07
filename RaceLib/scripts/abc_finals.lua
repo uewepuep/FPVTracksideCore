@@ -1,5 +1,6 @@
 name = "A/B/C Finals"
 description = "Top pilots to A Final, next group to B Final, etc. Seeded by points."
+author = "uewepuep"
 
 function generate(round, pilots, channels, options)
     local max = options.max_pilots_per_race

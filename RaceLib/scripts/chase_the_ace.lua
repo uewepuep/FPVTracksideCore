@@ -1,5 +1,6 @@
 name = "Chase the Ace"
 description = "One race of pilots. First to win twice takes the title."
+author = "uewepuep"
 
 function generate(round, pilots, channels, options)
     if not is_first_round() then

@@ -1,5 +1,6 @@
 name = "Double Elimination"
 description = "Winners bracket and Losers bracket. Lose twice and you're out."
+author = "uewepuep"
 
 function generate(round, pilots, channels, options)
     local max         = options.max_pilots_per_race

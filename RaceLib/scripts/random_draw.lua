@@ -1,5 +1,6 @@
 name = "Random Draw"
 description = "Randomly distributes pilots across heats"
+author = "uewepuep"
 
 function generate(round, pilots, channels, options)
     local shuffled   = shuffle(pilots)

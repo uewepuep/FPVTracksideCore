@@ -197,16 +197,8 @@ namespace UI.Nodes.Rounds
             if (!IsRoundInStage())
             {
                 Pilot[] pilots = GetOrderedPilots().ToArray();
-                if (EventManager.RoundManager.IsEmpty(Round))
-                {
-                    MouseMenu format = rootMenu.AddSubmenu("Set Format");
-                    AddFormatMenu(format, pilots);
-                }
-                else
-                {
-                    MouseMenu format = rootMenu.AddSubmenu("Add Format");
-                    AddFormatMenu(format, pilots);
-                }
+                string formatLabel = EventManager.RoundManager.IsEmpty(Round) ? "Set Format" : "Add Format";
+                rootMenu.AddItem(formatLabel, () => ShowFormatSelector(pilots));
             }
 
             if (EventManager.ExternalRaceProviders != null)
@@ -241,37 +233,12 @@ namespace UI.Nodes.Rounds
             }
         }
 
-        protected void AddFormatMenu(MouseMenu menu, IEnumerable<Pilot> orderedPilots)
+        protected void ShowFormatSelector(IEnumerable<Pilot> orderedPilots)
         {
-            MouseMenu sheets = menu.AddSubmenu("From Spreadsheet");
-            if (EventManager.RoundManager.SheetFormatManager.Sheets.Any())
-            {
-                foreach (SheetFormatManager.SheetFile sheet in EventManager.RoundManager.SheetFormatManager.Sheets)
-                {
-                    string name = sheet.Name + " (" + sheet.Pilots + " pilots)";
-
-                    var sheet2 = sheet;
-                    sheets.AddItem(name, () => { SheetFormat(sheet2, orderedPilots); });
-                }
-            }
-
-            MouseMenu scripts = menu.AddSubmenu("From Script");
-            foreach (RaceLib.Format.LuaFormatManager.ScriptFile script in EventManager.RoundManager.LuaFormatManager.GetScriptFiles())
-            {
-                var script2 = script;
-                string scriptName = string.IsNullOrEmpty(script.Description) ? script.Name : script.Name + " — " + script.Description;
-                scripts.AddItem(scriptName, () => { ScriptFormat(script2, orderedPilots); });
-            }
-
-            menu.AddBlank();
-
-            foreach (StageTypes stageType in Enum.GetValues<StageTypes>().Except([StageTypes.Default]))
-            {
-                string name = stageType.ToString().CamelCaseToHuman();
-                StageTypes local = stageType;
-
-                menu.AddItem(name, () => { AddStage?.Invoke(Round, local, orderedPilots); });
-            }
+            FormatSelectorNode selector = new FormatSelectorNode(EventManager, Round, orderedPilots, SheetFormat, ScriptFormat,
+                (r, st, p) => AddStage?.Invoke(r, st, p));
+            PopupLayer py = GetLayer<PopupLayer>();
+            py.Popup(selector);
         }
 
         protected virtual void AddButtonRoundMenu(MouseMenu addRound)

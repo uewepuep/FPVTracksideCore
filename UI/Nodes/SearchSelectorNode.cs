@@ -92,11 +92,16 @@ namespace UI.Nodes
         public void SetValues(IEnumerable<T> values)
         {
             searchables.ClearDisposeChildren();
+            List<SearchableNode<T>> nodes = new List<SearchableNode<T>>();
             foreach (T value in values)
             {
                 SearchableNode<T> searchable = Activator.CreateInstance(typeof(S), value) as SearchableNode<T>;
                 searchable.OnClick += (mie) => { Select(searchable.Value); };
-                searchables.AddChild(searchable);
+                nodes.Add(searchable);
+            }
+            foreach (SearchableNode<T> node in nodes.OrderBy(n => n.DisplayString()))
+            {
+                searchables.AddChild(node);
             }
             RequestLayout();
         }
@@ -135,7 +140,8 @@ namespace UI.Nodes
         public virtual void Init()
         {
             textButtonNode = new TextButtonNode(DisplayString(), Theme.Current.InfoPanel.Background.XNA, Theme.Current.Hover.XNA, Theme.Current.InfoPanel.Text.XNA);
-            textButtonNode.OnClick += OnClick;
+            textButtonNode.TextNode.Alignment = RectangleAlignment.BottomLeft;
+            textButtonNode.OnClick += (mie) => OnClick?.Invoke(mie);
             AddChild(textButtonNode);
         }
 

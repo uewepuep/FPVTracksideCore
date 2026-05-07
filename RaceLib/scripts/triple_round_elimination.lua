@@ -1,5 +1,6 @@
 name = "Triple Round Elimination"
 description = "3-round cycles. Bottom half of Winners drop to Losers. Bottom half of Losers are eliminated."
+author = "uewepuep"
 
 function generate(round, pilots, channels, options)
     local max      = options.max_pilots_per_race

@@ -1,5 +1,6 @@
 name = "Points Grouped"
 description = "Pilots sorted by points. Lowest scorers race together, highest scorers race together."
+author = "uewepuep"
 
 function generate(round, pilots, channels, options)
     local max = options.max_pilots_per_race
