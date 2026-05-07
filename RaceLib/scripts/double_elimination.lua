@@ -31,14 +31,20 @@ function generate(round, pilots, channels, options)
         end
     end
 
-    -- Grand final: one pilot left in each bracket
-    if #winners == 1 and #losers == 1 then
-        return {
-            {
-                bracket = "Winners",
-                pilots  = { winners[1], losers[1] }
+    -- When fewer active pilots remain than fit in one race, collapse into a single final
+    if not is_first_round() then
+        local all_active = {}
+        for _, id in ipairs(winners) do table.insert(all_active, id) end
+        for _, id in ipairs(losers) do table.insert(all_active, id) end
+
+        if #all_active > 0 and #all_active <= max then
+            return {
+                {
+                    bracket = "Winners",
+                    pilots  = minimise_channel_change(all_active)
+                }
             }
-        }
+        end
     end
 
     local winner_race_count, loser_race_count
@@ -120,9 +126,18 @@ function standings(pilots, options)
                 add_eliminated(p)
             end
         else
-            -- bracket "None" + results = eliminated in a previous round
-            add_eliminated(p)
-            -- bracket "None" + no results = assigned but not yet raced, skip
+            -- Pilot not in current round. Check the previous round to guard against
+            -- premature round generation while earlier races are still in progress.
+            local prev_bracket = get_bracket(p.id, -2)
+            if prev_bracket == "None" then
+                -- not in previous round either = eliminated in an earlier round
+                add_eliminated(p)
+            elseif prev_bracket == "Losers" and not top_half(p.id, -2) then
+                -- finished bottom half of previous round's Losers race = second loss = eliminated
+                add_eliminated(p)
+            end
+            -- if the previous round race is still running, top_half returns true and we
+            -- leave this pilot out of the eliminated list until the race is complete
         end
     end
 
