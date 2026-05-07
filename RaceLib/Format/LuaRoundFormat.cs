@@ -689,6 +689,28 @@ namespace RaceLib.Format
                 return DynValue.NewTable(table);
             });
 
+            // get_round_by_stage_index(stage_index) -> round_info table for the nth round of this stage, or nil
+            lua.Globals["get_round_by_stage_index"] = DynValue.NewCallback((ctx, args) =>
+            {
+                if (args[0].Type != DataType.Number || plan.Stage == null)
+                    return DynValue.Nil;
+
+                int stageIndex = (int)args[0].Number;
+                Round[] stageRounds = EventManager.RoundManager.GetStageRounds(plan.Stage).ToArray();
+                Round round = stageIndex >= 1 && stageIndex <= stageRounds.Length
+                    ? stageRounds[stageIndex - 1]
+                    : null;
+
+                if (round == null) return DynValue.Nil;
+
+                Table info = new Table(lua);
+                info["number"]      = (double)round.RoundNumber;
+                info["event_type"]  = round.EventType.ToString();
+                info["name"]        = round.Name ?? "";
+                info["stage_index"] = (double)stageIndex;
+                return DynValue.NewTable(info);
+            });
+
             // get_round_info([round_offset]) -> table with info about the given round, or nil if the round does not exist
             lua.Globals["get_round_info"] = DynValue.NewCallback((ctx, args) =>
             {
