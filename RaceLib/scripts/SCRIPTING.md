@@ -132,6 +132,14 @@ race.pilots       -- table of pilot IDs. If omitted, the array part of the race 
 
 ## Helper Functions
 
+### `ordinal(n)`
+Converts a number to an ordinal string.
+```lua
+ordinal(1)  -- "1st"
+ordinal(2)  -- "2nd"
+ordinal(11) -- "11th"
+```
+
 ### `shuffle(list)`
 Returns a randomly shuffled copy of a list.
 ```lua
@@ -295,6 +303,15 @@ local info = get_round_info()
 local prev_type = get_round_info(-1).event_type
 ```
 
+### `get_round_by_stage_index(stage_index)`
+Returns the round at the given 1-based position within the current stage, or `nil` if the index is out of range. Returns the same info table as `get_round_info`.
+```lua
+local first = get_round_by_stage_index(1)
+if first then
+    -- first.number, first.event_type, first.name, first.stage_index
+end
+```
+
 ### `get_unflown_pilots(pilot_id)`
 Returns a list of pilot objects this pilot has not yet raced against.
 ```lua
@@ -357,6 +374,8 @@ local changes = count_channel_changes(pilot.id)
 
 Define `standings(pilots, options)` alongside `generate()` to display a live result card that updates after each race. If omitted, no result card is shown for this stage.
 
+Standings are also automatically saved to the stage and synced to the website along with the rest of the event data.
+
 ```lua
 function standings(pilots, options)
     return {
@@ -395,3 +414,87 @@ Returning `nil` suppresses the display until data is ready.
 ### Helper functions in `standings()`
 
 All the same helper functions available in `generate()` work here too — `get_results()`, `get_best_consecutive_laps()`, `get_bracket()`, etc. Round offsets are relative to the last round in the stage, so `get_results(pilot.id)` returns all results up to and including the most recent round.
+
+---
+
+## Examples
+
+### Random Draw
+
+Randomly shuffles pilots across heats each round.
+
+```lua
+name = "Random Draw"
+description = "Randomly distributes pilots across heats"
+
+function generate(round, pilots, channels, options)
+    local shuffled = shuffle(pilots)
+    local heats = {}
+
+    for i = 1, options.race_count do
+        heats[i] = {}
+    end
+
+    for i, pilot in ipairs(shuffled) do
+        local heat_index = ((i - 1) % options.race_count) + 1
+        table.insert(heats[heat_index], pilot.id)
+    end
+
+    return heats
+end
+```
+
+---
+
+### Points Grouped
+
+Sorts pilots by cumulative points so lower scorers race together and top scorers race together. Includes a standings card showing total points.
+
+```lua
+name = "Points Grouped"
+description = "Pilots sorted by points. Lowest scorers race together, highest scorers race together."
+
+function generate(round, pilots, channels, options)
+    local max = options.max_per_race
+
+    local sorted = sort_by(pilots, function(p)
+        return sum(get_results(p.id), function(r) return r.points end)
+    end)
+
+    local races = {}
+    for i = 1, #sorted, max do
+        local race_pilots = {}
+        for j = i, math.min(i + max - 1, #sorted) do
+            table.insert(race_pilots, sorted[j].id)
+        end
+        table.insert(races, minimise_channel_change(race_pilots))
+    end
+
+    return races
+end
+
+function standings(pilots, options)
+    local scored = {}
+    for _, p in ipairs(pilots) do
+        local total = sum(get_results(p.id), function(r) return r.points end)
+        table.insert(scored, { name = p.name, points = total })
+    end
+
+    scored = sort_by(scored, function(p) return -p.points end)
+
+    local rows = {}
+    for _, p in ipairs(scored) do
+        table.insert(rows, { name = p.name, values = { tostring(p.points) } })
+    end
+
+    return { headings = { "Points" }, rows = rows }
+end
+```
+
+---
+
+### Double Elimination
+
+Winners bracket and Losers bracket. Lose twice and you're out. When fewer active pilots remain than fit in one race, they collapse into a single final. Includes a standings card showing current bracket or final position for eliminated pilots.
+
+See `double_elimination.lua` for the full implementation.
