@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
+using RaceLib.Format;
 
 namespace RaceLib
 {
@@ -93,6 +94,9 @@ namespace RaceLib
 
         public int Order { get; set; }
         public StageTypes StageType { get; set; }
+
+        [System.ComponentModel.Browsable(false)]
+        public StandingsResult Standings { get; set; }
 
         public Stage()
         {

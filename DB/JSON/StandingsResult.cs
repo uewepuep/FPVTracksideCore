@@ -1,12 +1,12 @@
-namespace RaceLib.Format
+namespace DB.JSON
 {
-    public class LuaStandingsResult
+    public class StandingsResult
     {
         public string[] Headings { get; set; }
-        public LuaStandingsRow[] Rows { get; set; }
+        public StandingsRow[] Rows { get; set; }
     }
 
-    public class LuaStandingsRow
+    public class StandingsRow
     {
         public string Name { get; set; }
         public string[] Values { get; set; }

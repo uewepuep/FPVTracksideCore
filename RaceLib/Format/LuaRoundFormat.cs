@@ -20,7 +20,7 @@ namespace RaceLib.Format
             this.scriptFile = scriptFile;
         }
 
-        public LuaStandingsResult GetStandings(Pilot[] stagePilots)
+        public StandingsResult GetStandings(Pilot[] stagePilots)
         {
             string source;
             try { source = File.ReadAllText(scriptFile.FileInfo.FullName); }
@@ -67,9 +67,9 @@ namespace RaceLib.Format
             return ParseStandingsResult(result.Table);
         }
 
-        private LuaStandingsResult ParseStandingsResult(Table t)
+        private StandingsResult ParseStandingsResult(Table t)
         {
-            var result = new LuaStandingsResult();
+            var result = new StandingsResult();
 
             DynValue headingsDyn = t.Get("headings");
             if (headingsDyn.Type == DataType.Table)
@@ -83,13 +83,13 @@ namespace RaceLib.Format
             DynValue rowsDyn = t.Get("rows");
             if (rowsDyn.Type == DataType.Table)
             {
-                var rows = new List<LuaStandingsRow>();
+                var rows = new List<StandingsRow>();
                 for (int i = 1; i <= rowsDyn.Table.Length; i++)
                 {
                     DynValue rowDyn = rowsDyn.Table.Get(i);
                     if (rowDyn.Type != DataType.Table) continue;
 
-                    var row = new LuaStandingsRow();
+                    var row = new StandingsRow();
                     row.Name = rowDyn.Table.Get("name").CastToString() ?? "";
 
                     DynValue valuesDyn = rowDyn.Table.Get("values");
@@ -110,7 +110,7 @@ namespace RaceLib.Format
             }
             else
             {
-                result.Rows = Array.Empty<LuaStandingsRow>();
+                result.Rows = Array.Empty<StandingsRow>();
             }
 
             return result;

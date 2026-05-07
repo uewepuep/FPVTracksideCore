@@ -57,7 +57,7 @@ namespace UI.Nodes.Rounds
                 .ToArray();
 
             LuaRoundFormat format = EventManager.RoundManager.GetRoundFormat(Stage) as LuaRoundFormat;
-            LuaStandingsResult result = format?.GetStandings(stagePilots);
+            StandingsResult result = format?.GetStandings(stagePilots);
 
             headingNode?.Dispose();
             headingNode = null;
@@ -73,7 +73,7 @@ namespace UI.Nodes.Rounds
                 contentContainer.AddChild(headingNode);
             }
 
-            foreach (LuaStandingsRow row in result.Rows)
+            foreach (StandingsRow row in result.Rows)
             {
                 LuaStandingsPilotNode node = new LuaStandingsPilotNode(isHeading: false);
                 node.Update(row.Name, row.Values);
