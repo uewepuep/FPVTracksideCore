@@ -2,7 +2,7 @@ name = "Points Grouped"
 description = "Pilots sorted by points. Lowest scorers race together, highest scorers race together."
 
 function generate(round, pilots, channels, options)
-    local max = options.max_per_race
+    local max = options.max_pilots_per_race
 
     -- Sort ascending: lowest points races in the earliest groups
     local sorted = sort_by(pilots, function(p)

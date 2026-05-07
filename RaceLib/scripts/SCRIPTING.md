@@ -67,9 +67,12 @@ pilots[i].name  -- string, pilot's display name
 A list of available channel objects for this round.
 
 ```lua
-channels[i].id    -- string, unique channel ID
-channels[i].name  -- string, display name e.g. "R1", "F4"
-channels[i].band  -- string, band name e.g. "RaceBand", "Fatshark"
+channels[i].id               -- string, unique channel ID
+channels[i].name             -- string, display name e.g. "R1", "F4"
+channels[i].band             -- string, band name e.g. "Raceband", "Fatshark"
+channels[i].band_type        -- string, technology group: "Analogue", "DJIDigital", or "HDZeroDigital"
+channels[i].channel_group_id -- int, interference group index (1-based). Channels sharing the same
+                             --   id cannot be used in the same race (they share a frequency group).
 ```
 
 ---
@@ -77,8 +80,7 @@ channels[i].band  -- string, band name e.g. "RaceBand", "Fatshark"
 ## Input: `options`
 
 ```lua
-options.race_count    -- int, number of races to generate
-options.max_per_race  -- int, maximum pilots per race (number of channels)
+options.max_pilots_per_race  -- int, maximum pilots per race (number of channels)
 options.target_laps   -- int, the event's configured target lap count
 options.pb_laps       -- int, the event's configured PB lap count
 ```
@@ -131,6 +133,12 @@ race.pilots       -- table of pilot IDs. If omitted, the array part of the race 
 ---
 
 ## Helper Functions
+
+### `log(message)`
+Writes a message to the UI log (UILog.txt). Useful for debugging.
+```lua
+log("winners: " .. #winners .. ", losers: " .. #losers)
+```
 
 ### `ordinal(n)`
 Converts a number to an ordinal string.
@@ -346,6 +354,16 @@ local window = get_best_consecutive_laps(pilot.id, 1, -5, -2)   -- specific wind
 
 ## Channel Functions
 
+### `get_channels()`
+Returns a list of all channel objects available in the event. Same format as the `channels` input parameter (fields: `id`, `name`, `band`, `band_type`, `channel_group_id`). Useful for grouping pilots by technology type or avoiding interference conflicts in custom assignment logic.
+```lua
+local all_channels = get_channels()
+-- find all analogue channels
+local analogue = filter(all_channels, function(ch) return ch.band_type == "Analogue" end)
+-- group channels by interference group
+-- channels with the same channel_group_id cannot be used in the same race
+```
+
 ### `get_last_channel(pilot_id [, round_offset])`
 Returns the channel object the pilot was on in the given round, or `nil` if they have no channel for that round. Defaults to the previous round.
 ```lua
@@ -391,7 +409,7 @@ end
 ### Parameters
 
 - **`pilots`** — list of pilot objects who have raced in this stage so far. Same format as in `generate()`: `pilots[i].id`, `pilots[i].name`.
-- **`options`** — `options.target_laps`, `options.pb_laps`. (No `race_count` or `max_per_race` — those are generation-only.)
+- **`options`** — `options.target_laps`, `options.pb_laps`. (No `race_count` or `max_pilots_per_race` — those are generation-only.)
 
 ### Return value
 
@@ -455,7 +473,7 @@ name = "Points Grouped"
 description = "Pilots sorted by points. Lowest scorers race together, highest scorers race together."
 
 function generate(round, pilots, channels, options)
-    local max = options.max_per_race
+    local max = options.max_pilots_per_race
 
     local sorted = sort_by(pilots, function(p)
         return sum(get_results(p.id), function(r) return r.points end)

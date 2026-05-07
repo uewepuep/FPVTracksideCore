@@ -2,7 +2,7 @@ name = "Double Elimination"
 description = "Winners bracket and Losers bracket. Lose twice and you're out."
 
 function generate(round, pilots, channels, options)
-    local max         = options.max_per_race
+    local max         = options.max_pilots_per_race
     local total       = #pilots
     if not is_first_round() then
         pilots = pilots_with_results(pilots)

@@ -14,7 +14,7 @@ function generate(round, pilots, channels, options)
     end)
 
     local n          = #sorted
-    local race_count = options.race_count
+    local race_count = math.ceil(n / options.max_pilots_per_race)
     local base       = math.floor(n / race_count)
     local extra      = n % race_count  -- first `extra` groups get one extra pilot
 

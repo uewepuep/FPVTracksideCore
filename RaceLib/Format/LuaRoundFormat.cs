@@ -208,6 +208,20 @@ namespace RaceLib.Format
                 if (round == null) return Array.Empty<Race>();
                 return RaceManager.GetRaces(round);
             }
+            // get_channels() -> list of all channel objects available in the event
+            lua.Globals["get_channels"] = DynValue.NewCallback((ctx, args) =>
+            {
+                return DynValue.NewTable(BuildChannelTable(lua, plan.Channels));
+            });
+
+            // log(message) -> writes a message to the UI log
+            lua.Globals["log"] = DynValue.NewCallback((ctx, args) =>
+            {
+                string message = args[0].CastToString() ?? "";
+                Logger.UI.Log(this, message);
+                return DynValue.Nil;
+            });
+
             // ordinal(n) -> ordinal string, e.g. 1 -> "1st", 2 -> "2nd", 11 -> "11th"
             lua.Globals["ordinal"] = DynValue.NewCallback((ctx, args) =>
             {
@@ -270,10 +284,13 @@ namespace RaceLib.Format
                 if (channel == null)
                     return DynValue.Nil;
 
+                Dictionary<Guid, int> groupLookup = BuildChannelGroupLookup(plan.Channels);
                 Table c = new Table(lua);
                 c["id"] = channel.ID.ToString();
                 c["name"] = channel.UIDisplayName;
                 c["band"] = channel.Band.ToString();
+                c["band_type"] = channel.Band.GetBandType().ToString();
+                c["channel_group_id"] = groupLookup.TryGetValue(channel.ID, out int gid) ? (object)(double)gid : null;
                 return DynValue.NewTable(c);
             });
 
@@ -620,6 +637,7 @@ namespace RaceLib.Format
                 if (id == null || !channelLookup.TryGetValue(id, out Channel channel))
                     return DynValue.NewTable(table);
 
+                Dictionary<Guid, int> groupLookup = BuildChannelGroupLookup(plan.Channels);
                 int i = 1;
                 foreach (Channel other in channel.GetInterferringChannels(plan.Channels))
                 {
@@ -627,6 +645,8 @@ namespace RaceLib.Format
                     c["id"] = other.ID.ToString();
                     c["name"] = other.UIDisplayName;
                     c["band"] = other.Band.ToString();
+                    c["band_type"] = other.Band.GetBandType().ToString();
+                    c["channel_group_id"] = groupLookup.TryGetValue(other.ID, out int gid) ? (object)(double)gid : null;
                     table[i++] = DynValue.NewTable(c);
                 }
                 return DynValue.NewTable(table);
@@ -785,15 +805,31 @@ namespace RaceLib.Format
             return table;
         }
 
+        private Dictionary<Guid, int> BuildChannelGroupLookup(IEnumerable<Channel> channels)
+        {
+            Dictionary<Guid, int> lookup = new Dictionary<Guid, int>();
+            int groupId = 1;
+            foreach (Channel[] group in channels.GetChannelGroups())
+            {
+                foreach (Channel ch in group)
+                    lookup[ch.ID] = groupId;
+                groupId++;
+            }
+            return lookup;
+        }
+
         private Table BuildChannelTable(Script lua, Channel[] channels)
         {
             Table table = new Table(lua);
+            Dictionary<Guid, int> groupLookup = BuildChannelGroupLookup(channels);
             for (int i = 0; i < channels.Length; i++)
             {
                 Table c = new Table(lua);
                 c["id"] = channels[i].ID.ToString();
                 c["name"] = channels[i].UIDisplayName;
                 c["band"] = channels[i].Band.ToString();
+                c["band_type"] = channels[i].Band.GetBandType().ToString();
+                c["channel_group_id"] = groupLookup.TryGetValue(channels[i].ID, out int gid) ? (object)(double)gid : null;
                 table[i + 1] = DynValue.NewTable(c);
             }
             return table;
@@ -802,8 +838,7 @@ namespace RaceLib.Format
         private Table BuildOptionsTable(Script lua, RoundPlan plan)
         {
             Table table = new Table(lua);
-            table["race_count"] = (double)plan.NumberOfRaces;
-            table["max_per_race"] = (double)plan.Channels.Length;
+            table["max_pilots_per_race"] = (double)plan.Channels.Length;
             table["target_laps"] = (double)EventManager.Event.Laps;
             table["pb_laps"] = (double)EventManager.Event.PBLaps;
 

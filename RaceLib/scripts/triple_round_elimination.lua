@@ -2,7 +2,7 @@ name = "Triple Round Elimination"
 description = "3-round cycles. Bottom half of Winners drop to Losers. Bottom half of Losers are eliminated."
 
 function generate(round, pilots, channels, options)
-    local max      = options.max_per_race
+    local max      = options.max_pilots_per_race
     local rel      = round.stage_index - 1  -- 0-based offset into stage
     local cycle    = math.floor(rel / 3)    -- which cycle (0-indexed)
     local in_cycle = rel % 3                -- position within cycle (0, 1, 2)

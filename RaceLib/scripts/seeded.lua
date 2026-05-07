@@ -3,7 +3,7 @@ description = "Fastest pilots seeded across races by qualifying lap time."
 
 function generate(round, pilots, channels, options)
 
-    local max = options.max_per_race
+    local max = options.max_pilots_per_race
 
     -- Sort slowest-first so the serpentine puts the fastest pilot in the
     -- final slot of race 1 and the second-fastest in the final slot of race 2,
