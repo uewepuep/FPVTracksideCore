@@ -51,17 +51,23 @@ namespace UI.Nodes.Rounds
             categoryNode.Scale(0.75f);
             textButtonNode.AddChild(categoryNode);
 
-            TextNode descriptionNode = new TextNode(Value.Description, Theme.Current.InfoPanel.Text.XNA);
-            descriptionNode.RelativeBounds = new RectangleF(0.02f, 0.55f, 0.75f, 0.45f);
-            descriptionNode.Alignment = RectangleAlignment.CenterLeft;
-            descriptionNode.Scale(0.8f);
-            textButtonNode.AddChild(descriptionNode);
-
-            TextNode authorNode = new TextNode(Value.Author, Theme.Current.InfoPanel.Text.XNA);
-            authorNode.RelativeBounds = new RectangleF(0, 0.55f, 0.97f, 0.45f);
-            authorNode.Alignment = RectangleAlignment.CenterRight;
-            authorNode.Scale(0.8f);
-            textButtonNode.AddChild(authorNode);
+            if (!string.IsNullOrEmpty(Value.Description))
+            {
+                TextNode descriptionNode = new TextNode("Description: " + Value.Description, Theme.Current.InfoPanel.Text.XNA);
+                descriptionNode.RelativeBounds = new RectangleF(0.02f, 0.55f, 0.75f, 0.45f);
+                descriptionNode.Alignment = RectangleAlignment.CenterLeft;
+                descriptionNode.Scale(0.8f);
+                textButtonNode.AddChild(descriptionNode);
+            }
+            
+            if (!string.IsNullOrEmpty(Value.Author))
+            {
+                TextNode authorNode = new TextNode("Author: " + Value.Author, Theme.Current.InfoPanel.Text.XNA);
+                authorNode.RelativeBounds = new RectangleF(0, 0.55f, 0.97f, 0.45f);
+                authorNode.Alignment = RectangleAlignment.CenterRight;
+                authorNode.Scale(0.8f);
+                textButtonNode.AddChild(authorNode);
+            }
         }
 
         public override string SearchString()
