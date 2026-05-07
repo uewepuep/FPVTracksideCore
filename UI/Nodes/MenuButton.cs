@@ -258,6 +258,46 @@ namespace UI.Nodes
 
             if (hasEvent)
             {
+                BaseGame baseGame = CompositorLayer.Game as BaseGame;
+
+                openWindow.AddItem("Event Status", () =>
+                {
+                    baseGame.QuickLaunchWindow<EventStatusNodeTopBar>(eventManager, keyMapper);
+                });
+
+                openWindow.AddItem("Lap Count Summary", () =>
+                {
+                    baseGame.QuickLaunchWindow<LapCountSummaryNode>(eventManager, keyMapper);
+                });
+
+                openWindow.AddItem("Lap Records", () =>
+                {
+                    baseGame.QuickLaunchWindow<LapRecordsSummaryNode>(eventManager, keyMapper);
+                });
+
+                openWindow.AddItem("Pilot Channel List", () =>
+                {
+                    baseGame.QuickLaunchWindow<PilotChanelList>(eventManager, keyMapper);
+                });
+
+                openWindow.AddItem("Points Summary", () =>
+                {
+                    baseGame.QuickLaunchWindow<PointsSummaryNode>(eventManager, keyMapper);
+                });
+
+                openWindow.AddItem("Replay", () =>
+                {
+                    baseGame.QuickLaunchWindow<ReplayNode>(eventManager, keyMapper);
+                });
+
+                openWindow.AddItem("Rounds", () =>
+                {
+                    baseGame.QuickLaunchWindow<RoundsNode>(eventManager, keyMapper);
+                });
+            }
+
+            if (hasEvent)
+            {
                 root.AddBlank();
 
                 root.AddItem("YouTube Chapters", () =>

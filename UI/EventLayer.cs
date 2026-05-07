@@ -1163,7 +1163,6 @@ namespace UI
                     return true;
                 }
 
-
                 Race race = EventManager.RaceManager.CurrentRace;
                 if (KeyMapper.AnnounceRace.Match(inputEvent))
                 {

@@ -171,8 +171,8 @@ namespace RaceLib
             newEvent.EventType = this.EventType;
 
             newEvent.Name = name;
-            newEvent.Start = DateTime.Today;
-            newEvent.End = DateTime.Today + TimeSpan.FromDays(1);
+            newEvent.Start = DateTime.Now;
+            newEvent.End = DateTime.Now + TimeSpan.FromDays(1);
             newEvent.TimeZone = TimeZone;
             
             newEvent.PilotChannels = this.PilotChannels.Select(pc => pc.Clone()).ToList();

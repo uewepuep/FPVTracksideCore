@@ -276,17 +276,28 @@ namespace UI.Nodes
             if (ppl == null)
                 return;
 
-            string newEventName = Selected.Name;
+            string baseName;
             try
             {
-                newEventName = Regex.Replace(newEventName, @"\([A-z0-9 ]*\)", "");
+                baseName = Regex.Replace(Selected.Name, @"\([^)]*\)", "").Trim();
             }
             catch
             {
-                newEventName = "Cloned Event";
+                baseName = "Cloned Event";
             }
 
-            newEventName = newEventName + " (" + DateTime.Now.ToString(dateFormat) + ")";
+            string newEventName = baseName + " (" + DateTime.Now.ToString(dateFormat) + ")";
+
+            if (Objects.Any(e => e.Name == newEventName))
+            {
+                string dateStr = DateTime.Now.ToString(dateFormat);
+                int copyNumber = 2;
+                while (Objects.Any(e => e.Name == newEventName))
+                {
+                    newEventName = baseName + " (" + dateStr + " #" + copyNumber + ")";
+                    copyNumber++;
+                }
+            }
 
             TextPopupNode textPopupNode = new TextPopupNode("Clone Event", "Event Name", newEventName);
             textPopupNode.OnOK += Clone;

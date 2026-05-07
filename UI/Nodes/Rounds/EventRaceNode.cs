@@ -62,6 +62,7 @@ namespace UI.Nodes.Rounds
                     heading.OnClick += Heading_OnClick;
                     AddChild(heading);
                 }
+                heading.TextNode.Text = Race.RaceName;
                 float headingHeight = 0.15f;
 
                 // Make the heading shrink as the Aspect ratio becomes non-standard
@@ -276,7 +277,7 @@ namespace UI.Nodes.Rounds
                     mm.AddItemConfirm("Clear Race", () => { EventManager.RaceManager.ClearRace(Race); SyncSheetChange(); Refresh(); });
                 }
 
-                mm.AddItemConfirm("Delete Race", () => { EventManager.RaceManager.RemoveRace(Race, false); SyncSheetChange(); Refresh(); });
+                mm.AddItemConfirm("Delete Race", () => { EventManager.RaceManager.RemoveRace(Race, false); SyncSheetChange(); Refresh(true); });
 
                 mm.AddSubmenu("Set Race Bracket", SetBracket, Enum.GetValues(typeof(Brackets)).OfType<Brackets>().ToArray());
                 mm.AddItem("Open Race Folder", () =>
