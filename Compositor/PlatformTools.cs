@@ -19,7 +19,8 @@ namespace Composition
         Speech,
         Video,
         Windows,
-        GMFBridge
+        GMFBridge,
+        SecondaryWindow
     }
 
     public abstract class PlatformTools

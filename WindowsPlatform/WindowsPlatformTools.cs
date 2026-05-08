@@ -45,7 +45,8 @@ namespace WindowsPlatform
                 {
                     PlatformFeature.Speech,
                     PlatformFeature.Video,
-                    PlatformFeature.GMFBridge
+                    PlatformFeature.GMFBridge,
+                    PlatformFeature.SecondaryWindow
                 };
             }
         }
