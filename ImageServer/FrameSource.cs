@@ -77,6 +77,11 @@ namespace ImageServer
 
         public Directions Direction { get; protected set; }
 
+        // True when the source has already baked VideoConfig.Flipped/Mirrored into its frames
+        // (e.g. via an ffmpeg vflip/hflip filter). Consumers must not apply those flips again
+        // at render/save time, otherwise the two cancel and the toggles appear to do nothing.
+        public virtual bool AppliesUserFlipMirror => false;
+
         public FrameSource(VideoConfig videoConfig)
         {
             VideoConfig = videoConfig;

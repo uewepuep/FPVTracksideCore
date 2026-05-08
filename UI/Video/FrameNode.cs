@@ -99,13 +99,17 @@ namespace UI.Video
         {
             bool flipped = Source.Direction == FrameSource.Directions.TopDown;
 
-            if (Source.VideoConfig.Flipped)
+            // Skip the user's Flipped/Mirrored toggles when the source has already baked them in
+            // (e.g. ffmpeg sources apply vflip/hflip in their pipeline so recordings match preview).
+            bool applyUserFlip = !Source.AppliesUserFlipMirror;
+
+            if (applyUserFlip && Source.VideoConfig.Flipped)
                 flipped = !flipped;
 
             if (flipped)
                 src = src.Flip(texture.Height);
 
-            if (Source.VideoConfig.Mirrored)
+            if (applyUserFlip && Source.VideoConfig.Mirrored)
                 src = src.Mirror(texture.Width);
 
             return src;
@@ -131,12 +135,18 @@ namespace UI.Video
         public void SaveImage(string filename)
         {
             bool flipped = Source.Direction == FrameSource.Directions.TopDown;
+            bool mirrored = false;
 
-            if (Source.VideoConfig.Flipped)
-                flipped = !flipped;
+            // The texture already reflects baked-in user flip/mirror for sources like ffmpeg —
+            // only apply them on top when the source hasn't done it itself.
+            if (!Source.AppliesUserFlipMirror)
+            {
+                if (Source.VideoConfig.Flipped)
+                    flipped = !flipped;
+                mirrored = Source.VideoConfig.Mirrored;
+            }
 
-
-            texture.SaveAs(filename, Source.VideoConfig.Mirrored, flipped);
+            texture.SaveAs(filename, mirrored, flipped);
         }
     }
 }

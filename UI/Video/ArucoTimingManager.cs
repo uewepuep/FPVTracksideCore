@@ -298,9 +298,16 @@ namespace UI.Video
                         {
                             var rsb = cvn.FrameNode.RelativeSourceBounds;
                             bool flipY = source.Direction == FrameSource.Directions.TopDown;
-                            if (source.VideoConfig != null && source.VideoConfig.Flipped)
-                                flipY = !flipY;
-                            bool mirrorX = source.VideoConfig != null && source.VideoConfig.Mirrored;
+                            bool mirrorX = false;
+                            // If the source pre-applied flip/mirror, detection coords are already
+                            // in the rendered orientation — don't remap a second time.
+                            if (!source.AppliesUserFlipMirror)
+                            {
+                                if (source.VideoConfig != null && source.VideoConfig.Flipped)
+                                    flipY = !flipY;
+                                if (source.VideoConfig != null && source.VideoConfig.Mirrored)
+                                    mirrorX = true;
+                            }
 
                             var cached = new ArucoFrameOverlay.Cached
                             {
