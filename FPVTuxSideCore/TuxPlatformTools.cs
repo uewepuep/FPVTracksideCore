@@ -2,6 +2,7 @@ using Composition;
 using Composition.Nodes;
 using Composition.Text;
 using ImageServer;
+using Microsoft.Xna.Framework;
 using System.Diagnostics;
 using Tools;
 
@@ -15,8 +16,6 @@ namespace FPVTuxsideCore
         private DialogBackend dialogBackend;
 
         public override IClipboard Clipboard => tuxClipboard;
-
-        public override bool Focused => true;
 
         public override PlatformFeature[] Features
         {

@@ -167,18 +167,6 @@ namespace Composition.Input
             autoResetEvent.Set();
         }
 
-        // Window activation gate. Game.IsActive is MonoGame's cross-platform
-        // foreground check; PlatformTools.Focused is unreliable on Windows
-        // (Control.GotFocus/LostFocus on a Form doesn't track app activation)
-        // and a no-op on Mac/Tux, so prefer IsActive when a Game is attached.
-        private bool IsAppActive()
-        {
-            Microsoft.Xna.Framework.Game game = layerStack?.Game;
-            if (game != null)
-                return game.IsActive;
-            return PlatformTools.Focused;
-        }
-
         public void ProcessInputs()
         {
             KeyboardInputEvent[] newKeyboardInputs = null;
@@ -214,7 +202,7 @@ namespace Composition.Input
 
         private void UpdateKeyboard()
         {
-            if (OnKeyboardInputEvent != null && IsAppActive())
+            if (OnKeyboardInputEvent != null && PlatformTools.Focused)
             {
                 try
                 {
@@ -345,13 +333,12 @@ namespace Composition.Input
                     MouseState newState = Mouse.GetState(Window);
                     Point cursorPosition = new Point((int)(newState.X * ResolutionScale), (int)(newState.Y * ResolutionScale));
 
-                    if (IsAppActive())
+                    if (PlatformTools.Focused)
                     {
                         if (cursorPosition != OldMouseState.Position)
                         {
                             LastMouseUpdateTime = DateTime.Now;
                         }
-
 
                         if (newState.LeftButton != OldMouseState.LeftButton)
                         {

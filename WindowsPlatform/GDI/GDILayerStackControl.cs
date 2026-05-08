@@ -28,7 +28,7 @@ namespace WindowsPlatform.GDI
         {
             oldMouse = new Point(0, 0);
 
-            LayerStack = new GDILayerStack(new WindowsPlatformTools());
+            LayerStack = new GDILayerStack(new WindowsPlatformToolsGDI());
             LayerStack.InputEventFactory.CreateKeyboardEvents = false;
             LayerStack.InputEventFactory.CreateMouseEvents = false;
 

@@ -22,7 +22,7 @@ namespace FPVMacsideCore
         public FPVMacsideCoreGame()
             :base(new MacPlatformTools())
         {
-          
+            Platform.SetGame(this);
         }
 
         protected override void Update(GameTime gameTime)

@@ -16,6 +16,7 @@ namespace FPVTuxsideCore
         public FPVTuxsideCoreGame()
             : base(new TuxPlatformTools())
         {
+            Platform.SetGame(this);
         }
 
         protected override void Update(GameTime gameTime)

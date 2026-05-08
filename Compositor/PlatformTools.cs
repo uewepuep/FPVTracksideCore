@@ -1,6 +1,7 @@
 ﻿using Composition.Layers;
 using Composition.Nodes;
 using Composition.Text;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Newtonsoft.Json;
 using System;
@@ -23,6 +24,7 @@ namespace Composition
 
     public abstract class PlatformTools
     {
+
         public abstract ITextRenderer CreateTextRenderer();
 
         public abstract ISpeaker CreateSpeaker(string voice);
@@ -38,7 +40,6 @@ namespace Composition
 
         public abstract IClipboard Clipboard { get; }
 
-        public abstract bool Focused { get; }
         public abstract bool ThreadedDrawing { get; }
 
         public abstract void ShowNewWindow(Node node);
@@ -63,6 +64,15 @@ namespace Composition
         }
 
         public abstract Keys[] CutCopyPasteModifierKeys { get; }
+
+        public Game Game { get; private set; }
+
+        public virtual bool Focused => Game == null ? true : Game.IsActive;
+
+        public void SetGame(Game game)
+        {
+            Game = game;
+        }
     }
 
     public class LoginDetails
@@ -77,4 +87,5 @@ namespace Composition
             MultiGPKey = "";
         }
     }
+
 }

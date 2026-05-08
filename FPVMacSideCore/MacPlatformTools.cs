@@ -25,14 +25,6 @@ namespace FPVMacsideCore
             }
         }
 
-        public override bool Focused
-        {
-            get
-            {
-                return true;
-            }
-        }
-
         public override PlatformFeature[] Features
         {
             get
