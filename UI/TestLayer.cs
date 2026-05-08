@@ -15,7 +15,6 @@ using UI.Nodes;
 using RaceLib;
 using System.IO;
 using Tools;
-using UI.Sponsor;
 
 namespace UI
 {
@@ -236,15 +235,6 @@ namespace UI
         {
             timerFrameCount = 0;
             DebugTimer.Clear();
-        }
-
-        public void TestSponsorPopup()
-        {
-            SponsorLayer sponsorLayer = LayerStack.GetLayer<SponsorLayer>();
-            if (sponsorLayer != null)
-            {
-                sponsorLayer.Trigger();
-            }
         }
 
         private void TriggerButton(CompositorLayer layer, string nodeName)

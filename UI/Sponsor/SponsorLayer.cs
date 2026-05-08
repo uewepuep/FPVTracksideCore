@@ -46,9 +46,13 @@ namespace UI.Sponsor
 
         public TimeSpan TriggerPeriod { get; private set; }
 
-        public SponsorLayer(GraphicsDevice device)
+        public TimeSpan IdleTime { get; private set; }
+
+        public SponsorLayer(GraphicsDevice device, TimeSpan idle)
             : base(device)
         {
+            IdleTime = idle;
+
             endButton = new TextButtonNode("", Theme.Current.Button.XNA, Theme.Current.Hover.XNA, Theme.Current.TextMain.XNA);
             endButton.RelativeBounds = new RectangleF(0.89f, 0.94f, 0.1f, 0.05f);
             endButton.OnClick += OnClick;
@@ -67,7 +71,7 @@ namespace UI.Sponsor
             Visible = false;
             random = new Random(DateTime.Now.Millisecond);
             triggered = DateTime.Now;
-            lastInputTime = DateTime.Now + TimeSpan.FromMinutes(ApplicationProfileSettings.Instance.ScreensaverIdleMinutes);
+            lastInputTime = DateTime.Now + idle;
         }
 
         public void Load()
@@ -225,7 +229,7 @@ namespace UI.Sponsor
 
         protected override void OnUpdate(GameTime gameTime)
         {
-            bool isOverTime = DateTime.Now - lastInputTime > TimeSpan.FromMinutes(ApplicationProfileSettings.Instance.ScreensaverIdleMinutes);
+            bool isOverTime = DateTime.Now - lastInputTime > IdleTime;
 
             bool noRaceRunning = RaceManager == null || (!RaceManager.RaceRunning && !RaceManager.PreRaceStartDelay);
 
@@ -236,9 +240,8 @@ namespace UI.Sponsor
 
             if (!ScreensaverMode &&
                 noRaceRunning &&
-                ApplicationProfileSettings.Instance.SponsoredByMessages &&
                 Sponsors.Count > 0 &&
-                ApplicationProfileSettings.Instance.ScreensaverIdleMinutes > 0 && isOverTime)
+                IdleTime.TotalSeconds > 0 && isOverTime)
             {
                 lastInputTime = DateTime.Now;
                 StartScreensaver();

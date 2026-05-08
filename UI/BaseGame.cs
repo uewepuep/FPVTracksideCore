@@ -21,7 +21,6 @@ using Tools;
 using UI;
 using UI.Nodes;
 using UI.Nodes.Rounds;
-using UI.Sponsor;
 using UI.Video;
 using Webb;
 
@@ -50,7 +49,6 @@ namespace UI
         public DirectoryInfo Data { get; private set; }
         public DirectoryInfo Themes { get; private set; }
         public DirectoryInfo Video { get; private set; }
-        public DirectoryInfo Sponsors { get; private set; }
         public DirectoryInfo Pilots { get; private set; }
         public DirectoryInfo Patreons { get; private set; }
         public DirectoryInfo HTTPFiles { get; private set; }
@@ -73,7 +71,6 @@ namespace UI
             Data = CreateDirectory(platformTools.WorkingDirectory, "data");
             Themes = CreateDirectory(platformTools.WorkingDirectory, "themes");
             Video = CreateDirectory(platformTools.WorkingDirectory, "video");
-            Sponsors = CreateDirectory(platformTools.WorkingDirectory, "sponsors");
             Pilots = CreateDirectory(platformTools.WorkingDirectory, "pilots");
             Patreons = CreateDirectory(platformTools.WorkingDirectory, "patreons");
             HTTPFiles = CreateDirectory(platformTools.WorkingDirectory, "httpfiles");
@@ -201,7 +198,6 @@ namespace UI
             LayerStack.Add(dragLayer);
             LayerStack.Add(loadingLayer);
 
-            LayerStack.Add(new SponsorLayer(GraphicsDevice));
 #if DEBUG
             LayerStack.Add(new TestLayer(GraphicsDevice, popupLayer));
 #endif

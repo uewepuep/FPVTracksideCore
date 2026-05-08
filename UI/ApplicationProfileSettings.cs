@@ -273,14 +273,6 @@ namespace UI
         [NeedsRestart]
         public float PilotProfileMaskAlpha { get; set; }
 
-        [Category("Sponsorship")]
-        [DisplayName("'Sponsored By' messages between races")]
-        public bool SponsoredByMessages { get; set; }
-
-        [Category("Sponsorship")]
-        [DisplayName("Sponsor screensaver idle time (minutes, 0 = disabled)")]
-        public int ScreensaverIdleMinutes { get; set; }
-
         [Category("Scripting")]
         [DisplayName("Lua script timeout (seconds)")]
         public int LuaScriptTimeoutSeconds { get; set; }
@@ -356,8 +348,6 @@ namespace UI
 
             InverseResolutionScalePercent = 100;
             AutoSync = true;
-            SponsoredByMessages = false;
-            ScreensaverIdleMinutes = 5;
             LuaScriptTimeoutSeconds = 10;
 
             FrameRateLimit = 60;

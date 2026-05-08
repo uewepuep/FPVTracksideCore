@@ -14,7 +14,6 @@ using Tools;
 using UI.Nodes;
 using UI.Video;
 using Webb;
-using UI.Sponsor;
 using System.IO;
 using UI.Nodes.Rounds;
 using Composition;
@@ -519,11 +518,6 @@ namespace UI
 
         public override void Dispose()
         {
-            SponsorLayer sponsor = LayerStack.GetLayer<SponsorLayer>();
-            if (sponsor != null)
-            {
-                sponsor.SoundManager = null;
-            }
             SoundManager.Dispose();
             EventManager.Dispose();
             workQueueStartStopRace.Dispose();
@@ -578,18 +572,7 @@ namespace UI
 
         public void NextRace(bool unfinishedOnly)
         {
-            SponsorLayer sponsorLayer = LayerStack.GetLayer<SponsorLayer>();
-            if (sponsorLayer != null && ApplicationProfileSettings.Instance.SponsoredByMessages)
-            {
-                sponsorLayer.TriggerMaybe(() => 
-                {
-                    EventManager.RaceManager.NextRace(unfinishedOnly);
-                });       
-            }
-            else
-            {
-                EventManager.RaceManager.NextRace(unfinishedOnly);
-            }
+            EventManager.RaceManager.NextRace(unfinishedOnly);
         }
 
         private bool RecoverRace(Race toRecover)
@@ -648,13 +631,6 @@ namespace UI
         {
             base.SetLayerStack(layerStack);
             UpdateCrop(ApplicationProfileSettings.Instance.CropContent16by9);
-
-            SponsorLayer sponsor = LayerStack.GetLayer<SponsorLayer>();
-            if (sponsor != null)
-            {
-                sponsor.SoundManager = SoundManager;
-                sponsor.RaceManager = EventManager.RaceManager;
-            }
 
             if (SoundManager != null)
             {
