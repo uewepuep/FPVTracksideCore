@@ -760,5 +760,17 @@ namespace RaceLib
                 OnPilotRefresh?.Invoke();
             }
         }
+
+        public event System.Action<Race, Lap> OnJumpToReplay;
+
+        public virtual bool HasReplay(Race race)
+        {
+            return false;
+        }
+
+        public void JumpToReplay(Race race, Lap lap = null)
+        {
+            OnJumpToReplay?.Invoke(race, lap);
+        }
     }
 }

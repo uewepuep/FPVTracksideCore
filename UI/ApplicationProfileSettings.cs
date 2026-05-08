@@ -281,10 +281,24 @@ namespace UI
         [DisplayName("Sponsor screensaver idle time (minutes, 0 = disabled)")]
         public int ScreensaverIdleMinutes { get; set; }
 
+        [Category("Scripting")]
+        [DisplayName("Lua script timeout (seconds)")]
+        public int LuaScriptTimeoutSeconds { get; set; }
+
+        [Category("QR Pilot Scan")]
+        [DisplayName("Enable QR pilot scan")]
+        public bool QRPilotScan { get; set; }
+
+        [Category("QR Pilot Scan")]
+        [DisplayName("QR scan frequency (seconds, lower = faster detection but higher CPU usage)")]
+        public float QRPilotScanFrequencySeconds { get; set; }
+
+        [Category("QR Pilot Scan")]
+        [DisplayName("QR scan centre crop fraction (0.5 = scan centre 50% of image)")]
+        public float QRPilotScanCentreCropFraction { get; set; }
+
         public ApplicationProfileSettings()
         {
-            Theme = "FPVTrackside";
-
             AlignChannels = RectangleAlignment.Center;
 
             ReOrderDelaySeconds = 3;
@@ -344,6 +358,7 @@ namespace UI
             AutoSync = true;
             SponsoredByMessages = false;
             ScreensaverIdleMinutes = 5;
+            LuaScriptTimeoutSeconds = 10;
 
             FrameRateLimit = 60;
             VSync = true;
@@ -366,6 +381,9 @@ namespace UI
             ShowDownPilotLapTimes = true;
             PilotProfileMask = true;
             PilotProfileMaskAlpha = 0.6f;
+            QRPilotScan = false;
+            QRPilotScanFrequencySeconds = 0.1f;
+            QRPilotScanCentreCropFraction = 0.5f;
         }
 
         protected const string filename = "ProfileSettings.xml";
@@ -378,23 +396,23 @@ namespace UI
 
         public static ApplicationProfileSettings Read(Profile profile)
         {
-            ApplicationProfileSettings s = null;
             try
             {
-                s = Tools.IOTools.Read<ApplicationProfileSettings>(profile, filename).FirstOrDefault();
+                ApplicationProfileSettings s = Tools.IOTools.Read<ApplicationProfileSettings>(profile, filename).FirstOrDefault();
                 if (s == null)
                 {
                     s = new ApplicationProfileSettings();
                 }
+
+                Write(profile, s);
+
+                return s;
             }
-            catch
+            catch (Exception ex)
             {
-                s = new ApplicationProfileSettings();
+                Logger.UI.LogException(typeof(ApplicationProfileSettings), ex);
+                return new ApplicationProfileSettings();
             }
-
-            Write(profile, s);
-
-            return s;
         }
 
         public static void Write()

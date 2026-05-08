@@ -37,6 +37,7 @@ namespace UI.Nodes.Rounds
         public event RoundDelegate Finals;
         public event RoundDelegate Clone;
         public event RoundDelegate AddSheetFormatRound;
+        public event RoundDelegate AddScriptFormatRound;
         public event Action<Round, StageTypes, IEnumerable<Pilot>> AddStage;
 
         public event RoundDelegate RemoveRound;
@@ -71,6 +72,8 @@ namespace UI.Nodes.Rounds
                 return Round.Order;
             }
         }
+
+        private ShadowNode shadow;
 
         public EventXNode(EventManager ev, Round round)
         {
@@ -114,6 +117,8 @@ namespace UI.Nodes.Rounds
             contentContainer.RelativeBounds = new RectangleF(0, subHeading.RelativeBounds.Bottom, 1, 1 - subHeading.RelativeBounds.Bottom);
             panel.Inner.AddChild(contentContainer);
             UpdateButtons();
+
+            shadow = new ShadowNode();
         }
 
         public virtual bool IsRoundInStage()
@@ -192,16 +197,9 @@ namespace UI.Nodes.Rounds
             if (!IsRoundInStage())
             {
                 Pilot[] pilots = GetOrderedPilots().ToArray();
-                if (EventManager.RoundManager.IsEmpty(Round))
-                {
-                    MouseMenu format = rootMenu.AddSubmenu("Set Format");
-                    AddFormatMenu(format, pilots);
-                }
-                else
-                {
-                    MouseMenu format = rootMenu.AddSubmenu("Add Format");
-                    AddFormatMenu(format, pilots);
-                }
+                string formatLabel = EventManager.RoundManager.IsEmpty(Round) ? "Set Format" : "Add Format";
+                MouseMenu formatMenu = rootMenu.AddSubmenu(formatLabel);
+                AddFormatMenu(formatMenu, pilots);
             }
 
             if (EventManager.ExternalRaceProviders != null)
@@ -216,9 +214,9 @@ namespace UI.Nodes.Rounds
                 }
             }
 
-            if ((canSum || canAddTimes || canAddLapCount) && !IsRoundInStage())
+            if (canSum || canAddTimes || canAddLapCount)
             {
-                MouseMenu results = rootMenu.AddSubmenu("Add Results Stage");
+                MouseMenu results =  IsRoundInStage() ? rootMenu.AddSubmenu("Set Results Stage") : rootMenu.AddSubmenu("Add Results Stage");
                 if (canSum)
                     results.AddItem("Points Stage", () => { SumPoints?.Invoke(Round); });
 
@@ -238,27 +236,40 @@ namespace UI.Nodes.Rounds
 
         protected void AddFormatMenu(MouseMenu menu, IEnumerable<Pilot> orderedPilots)
         {
+            foreach (StageTypes stageType in Enum.GetValues<StageTypes>().Except([StageTypes.Default]))
+            {
+                string name = stageType.ToString().CamelCaseToHuman();
+                StageTypes local = stageType;
+                menu.AddItem(name, () => { AddStage?.Invoke(Round, local, orderedPilots); });
+            }
+            menu.AddBlank();
+
+            MouseMenu scripts = menu.AddSubmenu("From Scripts");
+            foreach (LuaFormatManager.ScriptFile script in EventManager.RoundManager.LuaFormatManager.GetScriptFiles())
+            {
+                LuaFormatManager.ScriptFile script2 = script;
+                scripts.AddItem(script.Name, () => { ScriptFormat(script2, orderedPilots); });
+            }
+
             MouseMenu sheets = menu.AddSubmenu("From Spreadsheet");
             if (EventManager.RoundManager.SheetFormatManager.Sheets.Any())
             {
                 foreach (SheetFormatManager.SheetFile sheet in EventManager.RoundManager.SheetFormatManager.Sheets)
                 {
                     string name = sheet.Name + " (" + sheet.Pilots + " pilots)";
-
-                    var sheet2 = sheet;
+                    SheetFormatManager.SheetFile sheet2 = sheet;
                     sheets.AddItem(name, () => { SheetFormat(sheet2, orderedPilots); });
                 }
             }
+            menu.AddItem("Search Formats...", () => ShowFormatSelector(orderedPilots));
+        }
 
-            menu.AddBlank();
-
-            foreach (StageTypes stageType in Enum.GetValues<StageTypes>().Except([StageTypes.Default]))
-            {
-                string name = stageType.ToString().CamelCaseToHuman();
-                StageTypes local = stageType;
-
-                menu.AddItem(name, () => { AddStage?.Invoke(Round, local, orderedPilots); });
-            }
+        protected void ShowFormatSelector(IEnumerable<Pilot> orderedPilots)
+        {
+            FormatSelectorNode selector = new FormatSelectorNode(EventManager, Round, orderedPilots, SheetFormat, ScriptFormat,
+                (r, st, p) => AddStage?.Invoke(r, st, p));
+            PopupLayer py = GetLayer<PopupLayer>();
+            py.Popup(selector);
         }
 
         protected virtual void AddButtonRoundMenu(MouseMenu addRound)
@@ -330,6 +341,27 @@ namespace UI.Nodes.Rounds
             });
         }
 
+        private void ScriptFormat(RaceLib.Format.LuaFormatManager.ScriptFile script, IEnumerable<Pilot> orderedPilots)
+        {
+            LoadingLayer ll = GetLayer<LoadingLayer>();
+            ll.WorkQueue.Enqueue("Loading script", () =>
+            {
+                Stage stage = new Stage();
+                stage.ID = Guid.NewGuid();
+                stage.Name = script.Name;
+                stage.ScriptFormatFilename = script.FileInfo.Name;
+
+                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                {
+                    db.Insert(stage);
+                    Round.Stage = stage;
+                    db.Update(Round);
+                }
+
+                AddScriptFormatRound?.Invoke(Round);
+            });
+        }
+
         protected void AddRace()
         {
             EventManager.RaceManager.AddRaceToRound(Round);
@@ -360,6 +392,24 @@ namespace UI.Nodes.Rounds
         public virtual IEnumerable<Pilot> GetOrderedPilots()
         {
             return EventManager.Event.Pilots;
+        }
+
+        public override void Layout(RectangleF parentBounds)
+        {
+            base.Layout(parentBounds);
+            shadow.Layout(BoundsF);
+        }
+
+        public override void Draw(Drawer id, float parentAlpha)
+        {
+            base.Draw(id, parentAlpha);
+            shadow.Draw(id, parentAlpha);
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+            shadow?.Dispose();
         }
     }
 }

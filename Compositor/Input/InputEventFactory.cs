@@ -157,8 +157,7 @@ namespace Composition.Input
                 }
                 catch (Exception ex)
                 {
-                    Tools.Logger.CrashLogger.Log(ex);
-                    throw;
+                    Tools.Logger.CrashLogger?.Log(ex);
                 }
             }
         }
@@ -267,7 +266,7 @@ namespace Composition.Input
                 }
                 catch (Exception e)
                 {
-                    Logger.Input.LogException(this, e);
+                    Logger.Input?.LogException(this, e);
                 }
             }
         }
@@ -369,7 +368,7 @@ namespace Composition.Input
                 }
                 catch (Exception e)
                 {
-                    Logger.Input.LogException(this, e);
+                    Logger.Input?.LogException(this, e);
                 }
             }
             OldMouseState = Mouse.GetState();
@@ -405,7 +404,7 @@ namespace Composition.Input
                 }
                 catch (Exception e)
                 {
-                    Logger.Input.LogException(this, e);
+                    Logger.Input?.LogException(this, e);
                 }
             }
         }

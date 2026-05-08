@@ -12,6 +12,8 @@ namespace Composition
     {
         public static Translator Instance { get; private set; }
 
+        private static string cachedListSeparator = null;
+
         private Dictionary<string, string> translations;
 
         public string Language { get; private set; }
@@ -33,11 +35,13 @@ namespace Composition
         public void MakePrimary()
         {
             Instance = this;
+            cachedListSeparator = null;
         }
 
         public static void ClearPrimary()
         {
             Instance = null;
+            cachedListSeparator = null;
         }
 
         public void Clear()
@@ -46,7 +50,9 @@ namespace Composition
             {
                 translations.Clear();
             }
+            cachedListSeparator = null;
         }
+
         public void Set(string itemName, string translation)
         {
             lock (translations)
@@ -60,6 +66,8 @@ namespace Composition
                     translations.Add(itemName, translation);
                 }
             }
+            if (itemName == "ListSeparator")
+                cachedListSeparator = null;
         }
 
 
@@ -88,6 +96,16 @@ namespace Composition
             }
 
             return englishName;
+        }
+
+        public static string ListSeparator
+        {
+            get
+            {
+                if (cachedListSeparator == null)
+                    cachedListSeparator = Get("ListSeparator", ", ");
+                return cachedListSeparator;
+            }
         }
 
         public static string GetPropertyName<T>(string name, string defaultName)

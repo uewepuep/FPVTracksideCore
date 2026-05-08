@@ -30,9 +30,9 @@ namespace WindowsMediaPlatform.MediaFoundation
         {
             get
             {
-                if (seek.HasValue)
+                if (seekingFrame.HasValue)
                 {
-                    return TimeSpan.FromSeconds(seek.Value / FrameRate);
+                    return TimeSpan.FromSeconds(seekingFrame.Value / FrameRate);
                 }
 
                 return sampleTime;
@@ -74,9 +74,11 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         public TimeSpan Length { get; private set; }
 
-        private Queue<Action<IMFSourceReader>> queue;
 
-        private long? seek;
+        private object seekLock;
+
+        private SeekRequest seekRequest;
+        private long? seekingFrame;
         private DateTime epoch;
 
         public TimeSpan Latency { get; private set; }
@@ -101,6 +103,8 @@ namespace WindowsMediaPlatform.MediaFoundation
         public MediaFoundationFileFrameSource(VideoConfig videoConfig) 
             : base(videoConfig)
         {
+            seekLock = new object();
+
             ASync = false;
             AutomaticVideoConversion = true;
 
@@ -119,7 +123,7 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         protected override void ProcessImage()
         {
-            if (State == States.Paused && seek == null)
+            if (State == States.Paused && seekingFrame == null)
             {
                 Thread.Sleep(10);
             }
@@ -143,7 +147,7 @@ namespace WindowsMediaPlatform.MediaFoundation
                     //Logger.VideoLog.Log(this, sampleFrame + ", tim " + sample.GetSampleTime() + ", dur " + sample.GetSampleDuration());
                     CurrentlySeeking();
 
-                    if (PlaybackSpeed != PlaybackSpeed.FastAsPossible && State == States.Running && (seek == null || seek.Value < sampleFrame))
+                    if (PlaybackSpeed != PlaybackSpeed.FastAsPossible && State == States.Running && (seekingFrame == null || seekingFrame.Value < sampleFrame))
                     {
                         TimeSpan diff = due - DateTime.Now;
 
@@ -178,12 +182,42 @@ namespace WindowsMediaPlatform.MediaFoundation
                 }
             }
 
-            lock (queue)
+            lock (seekLock)
             {
-                while (queue.Count > 0)
+                SeekRequest request = seekRequest;
+                seekRequest = null;
+
+                if (request != null)
                 {
-                    var action = queue.Dequeue();
-                    action?.Invoke(reader);
+                    DateTime? dateTime = request.DateTime;
+                    TimeSpan? mediaTime = request.MediaTime;
+                    long? frame = request.Frame;
+
+                    if (dateTime.HasValue)
+                    {
+                        mediaTime = FrameTimes.GetMediaTime(dateTime.Value, Latency);
+                    }
+
+                    if (mediaTime.HasValue)
+                    {
+                        frame = GetFrameTime(mediaTime.Value);
+                    }
+
+                    if (frame.HasValue)
+                    {
+                        if (frame < 0)
+                            frame = 0;
+
+                        TimeSpan actualMediaTime = GetFrameTime(frame.Value);
+
+                        reader.Flush(0);
+                        using (PropVariant value = new PropVariant(actualMediaTime.Ticks))
+                        {
+                            reader.SetCurrentPosition(Guid.Empty, value);
+                            seekingFrame = frame;
+                            epoch = DateTime.Now - actualMediaTime;
+                        }
+                    }
                 }
             }
         }
@@ -201,12 +235,12 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         public bool CurrentlySeeking()
         {
-            if (seek.HasValue)
+            if (seekingFrame.HasValue)
             {
-                if (sampleFrame >= seek.Value)
+                if (sampleFrame >= seekingFrame.Value)
                 {
                     //Logger.VideoLog.LogCall(this, sampleFrame, (int)(seek.Value / FrameRate), seek.Value % FrameRate);
-                    seek = null;
+                    seekingFrame = null;
                     return false;
                 }
 
@@ -292,9 +326,6 @@ namespace WindowsMediaPlatform.MediaFoundation
             if (source == null)
             {
                 CreateMediaSource(Path.FullName);
-
-                queue = new Queue<Action<IMFSourceReader>>();
-
                 NotifyReceivedFrame();
             }
 
@@ -316,45 +347,17 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         public void SetPosition(DateTime seekTime)
         {
-            TimeSpan mediaTime = FrameTimes.GetMediaTime(seekTime, Latency);
-            if (queue == null)
-                return;
-
-            SetPosition(mediaTime);
+            seekRequest = new SeekRequest() { DateTime = seekTime };
         }
+
         public void SetPosition(TimeSpan mediaTime)
         {
-            if (mediaTime < TimeSpan.Zero)
-                mediaTime = TimeSpan.Zero;
-            if (mediaTime > Length)
-                mediaTime = Length;
-
-            SetPosition(GetFrameTime(mediaTime));
+            seekRequest = new SeekRequest() { MediaTime = mediaTime };
         }
 
         public void SetPosition(long frame)
         {
-            if (frame < 0)
-                frame = 0;
-
-
-            lock (queue)
-            {
-                queue.Enqueue((reader) =>
-                {
-                    TimeSpan mediaTime = GetFrameTime(frame);
-
-                    reader.Flush(0);
-                    using (PropVariant value = new PropVariant(mediaTime.Ticks))
-                    {
-                        reader.SetCurrentPosition(Guid.Empty, value);
-                        seek = frame;
-                        epoch = DateTime.Now - mediaTime;
-
-                        //Logger.VideoLog.LogCall(this, mediaTime, (int)(frame / FrameRate), frame % FrameRate);
-                    }
-                });
-            }
+            seekRequest = new SeekRequest() { Frame = frame };
         }
 
         public void Mute(bool mute = true)
@@ -385,5 +388,11 @@ namespace WindowsMediaPlatform.MediaFoundation
             SetPosition(sampleFrame + 1);
         }
 
+        private class SeekRequest
+        {
+            public DateTime? DateTime;
+            public TimeSpan? MediaTime;
+            public long? Frame;
+        }
     }
 }

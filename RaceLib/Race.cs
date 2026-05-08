@@ -698,10 +698,10 @@ namespace RaceLib
                 GamePoints.Clear();
             }
 
-            db.Update(this);
-
             Start = default(DateTime);
             End = default(DateTime);
+
+            db.Update(this);
         }
 
         public DateTime GetRaceStartTime(Pilot p)

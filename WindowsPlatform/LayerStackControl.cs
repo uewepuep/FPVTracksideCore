@@ -26,11 +26,14 @@ namespace WindowsPlatform
         public event Action<GraphicsDevice, LayerStack> OnInitialise;
 
         private Point oldMouse;
+        private volatile bool redrawPending;
+        private readonly Action invalidateAction;
 
         public LayerStackControl()
         {
             oldMouse = new Point(0, 0);
             GameWindow = new LayerStackControlWindow(this);
+            invalidateAction = Invalidate;
         }
 
         protected override void Dispose(bool disposing)
@@ -45,6 +48,7 @@ namespace WindowsPlatform
         {
             DateTime now = DateTime.Now;
             GameTime gameTime = new GameTime(now - Start, now - LastFrame);
+            LastFrame = now;
 
             LayerStack.DoBackground();
 
@@ -54,6 +58,9 @@ namespace WindowsPlatform
 
         protected override void Initialize()
         {
+            Start = DateTime.Now;
+            LastFrame = DateTime.Now;
+
             LayerStack = new LayerStack(GraphicsDevice, GameWindow, new WindowsPlatformTools());
             LayerStack.InputEventFactory.CreateKeyboardEvents = false;
             LayerStack.InputEventFactory.CreateMouseEvents = false;
@@ -69,14 +76,24 @@ namespace WindowsPlatform
 
         private void Redraw()
         {
+            if (redrawPending)
+                return;
+            redrawPending = true;
             try
             {
-                BeginInvoke(new Action(Invalidate));
+                BeginInvoke(invalidateAction);
             }
             catch (Exception e)
             {
                 Logger.UI.LogException(this, e);
+                redrawPending = false;
             }
+        }
+
+        protected override void OnPaint(System.Windows.Forms.PaintEventArgs e)
+        {
+            redrawPending = false;
+            base.OnPaint(e);
         }
 
         protected override void OnMouseDown(MouseEventArgs e)

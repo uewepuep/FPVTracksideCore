@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using RaceLib;
+using Sound;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -28,15 +29,18 @@ namespace UI
 {
     public class BaseGame : LayerStackGameBackgroundThread
     {
+        protected virtual string DefaultTheme => "FPVTrackside";
+
         protected EventLayer eventLayer;
 
         protected LoadingLayer loadingLayer;
 
         private Mutex mutex;
+        private bool mutexAcquired;
 
         private bool hasEverShownEventSelector;
 
-        public Texture2D Banner { get; private set; }
+        public Texture2D Banner { get; protected set; }
 
         public WorkQueue Background { get; private set; }
 
@@ -120,11 +124,20 @@ namespace UI
             Logger.UI.Log(this, this.ToString(), "Dispose");
 
             Background.Dispose();
-            
-            base.Dispose(disposing);
+
+            try
+            {
+                base.Dispose(disposing);
+            }
+            catch (Exception ex)
+            {
+                // MonoGame bug: Effect.Dispose can throw NullReferenceException during GraphicsDevice cleanup
+                Logger.UI.LogException(this, ex);
+            }
+
             Tools.Logger.CleanUp();
 
-            if (alreadyRunning == null)
+            if (mutexAcquired)
             {
                 mutex.ReleaseMutex();
                 mutex.Dispose();
@@ -137,6 +150,10 @@ namespace UI
 
             Profile = new Profile(PlatformTools.WorkingDirectory, GeneralSettings.Instance.Profile);
             ApplicationProfileSettings.Initialize(Profile);
+
+            // ShownDecimalPlaces is [NeedsRestart], so a single startup-time copy
+            // into SpeechParameters is enough for every TTS call site.
+            SpeechParameters.DecimalPlaces = ApplicationProfileSettings.Instance.ShownDecimalPlaces;
 
             if (!ApplicationProfileSettings.Instance.UseDirectX9)
             {
@@ -191,7 +208,8 @@ namespace UI
             bool waitingOnMutex;
             try
             {
-                waitingOnMutex = !mutex.WaitOne(TimeSpan.Zero);
+                mutexAcquired = mutex.WaitOne(TimeSpan.Zero);
+                waitingOnMutex = !mutexAcquired;
             }
             catch
             {
@@ -208,7 +226,6 @@ namespace UI
             TargetElapsedTime = TimeSpan.FromSeconds(1f / frameRate);
             IsFixedTimeStep = true;
 
-            
             loadingLayer.WorkQueue.Enqueue("Database Upgrade", DatabaseUpgrade);
 
             loadingLayer.WorkQueue.Enqueue("Load Translations", LoadTranslations);
@@ -275,7 +292,7 @@ namespace UI
             return new EventSelectorEditor(Banner, Profile);
         }
 
-        public void ShowWelcomeSetup()
+        public virtual void ShowWelcomeSetup()
         {
             Logger.UI.LogCall(this);
 
@@ -342,7 +359,7 @@ namespace UI
             loadingLayer.BlockOnLoading = true;
 
             BackgroundLayer backgroundLayer = LayerStack.GetLayer<BackgroundLayer>();
-            EventManager eventManager = new EventManager(profile);
+            EventManager eventManager = new VideoEventManager(profile);
 
             WorkSet startEventWorkSet = new WorkSet();
             startEventWorkSet.OnError += ErrorLoadingEvent;
@@ -365,7 +382,7 @@ namespace UI
 
             loadingLayer.WorkQueue.Enqueue(startEventWorkSet, "Loading Theme", () =>
             {
-                Theme.Initialise(GraphicsDevice, PlatformTools.WorkingDirectory, "FPVTrackside");
+                Theme.Initialise(GraphicsDevice, PlatformTools.WorkingDirectory, DefaultTheme);
 
                 if (backgroundLayer != null)
                 {

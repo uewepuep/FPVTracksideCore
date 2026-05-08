@@ -151,10 +151,10 @@ namespace UI.Nodes
             return textEditNode.OnKeyboardInput(inputEvent);
         }
         
-        public bool HasFocus 
-        { 
-            get => textEditNode.HasFocus; 
-            set => textEditNode.HasFocus = value; 
+        public override bool HasFocus
+        {
+            get => textEditNode.HasFocus;
+            set => textEditNode.HasFocus = value;
         }
     }
 

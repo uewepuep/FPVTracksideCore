@@ -65,14 +65,7 @@ namespace RaceLib.Game
         {
             try
             {
-                GameType[] s = null;
-                try
-                {
-                    s = IOTools.Read<GameType>(profile, filename).Where(c => c != null).ToArray();
-                }
-                catch
-                {
-                }
+                GameType[] s = IOTools.Read<GameType>(profile, filename).Where(c => c != null).ToArray();
 
                 if (s == null)
                 {
@@ -83,8 +76,9 @@ namespace RaceLib.Game
 
                 return s;
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.AllLog.LogException(typeof(GameType), ex);
                 return new GameType[0];
             }
         }

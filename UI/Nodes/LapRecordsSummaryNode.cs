@@ -161,6 +161,14 @@ namespace UI.Nodes
                     {
                         eventManager.RaceManager.SetRace(shortestLap.Race);
                     });
+
+                    if (eventManager.HasReplay(shortestLap.Race))
+                    {
+                        mm.AddItem("Jump to Replay", () =>
+                        {
+                            eventManager.JumpToReplay(shortestLap.Race, shortestLap);
+                        });
+                    }
                 }
             }
         }

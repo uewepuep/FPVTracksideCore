@@ -64,13 +64,15 @@ namespace FPVMacsideCore
         public override Microsoft.Xna.Framework.Input.Keys[] CutCopyPasteModifierKeys => [Microsoft.Xna.Framework.Input.Keys.LeftWindows, Microsoft.Xna.Framework.Input.Keys.RightWindows];
 
 
-        public MacPlatformTools()
+        public MacPlatformTools() : this("FPVTrackside") { }
+
+        public MacPlatformTools(string appName)
         {
             Console.WriteLine("Mac Platform Start");
             Console.WriteLine("Working Dir " + Directory.GetCurrentDirectory());
 
             string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            workingDirectory = new DirectoryInfo(Path.Combine(home, "Documents", "FPVTrackside"));
+            workingDirectory = new DirectoryInfo(Path.Combine(home, "Documents", appName));
 
             if (!WorkingDirectory.Exists)
             {

@@ -434,19 +434,14 @@ namespace RaceLib
             }
         }
 
-        public static string Names(this Pilot[] pilots)
+        public static string Names(this Pilot[] pilots, string listSeparator = ", ")
         {
-            return string.Join(", ", pilots.Select(p => p.Name));
+            return string.Join(listSeparator, pilots.Select(p => p.Name));
         }
 
-        public static string Phonetic(this Pilot[] pilots)
+        public static string Phonetic(this Pilot[] pilots, string listSeparator = ", ")
         {
-            return string.Join(", ", pilots.Select(p => p.Phonetic));
-        }
-
-        public static string PhoneticNoComma(this Pilot[] pilots)
-        {
-            return string.Join(" ", pilots.Select(p => p.Phonetic));
+            return string.Join(listSeparator, pilots.Select(p => p.Phonetic));
         }
 
         public static IEnumerable<Pilot> Seed(this IEnumerable<Pilot> orderedPilots, int channelCount)

@@ -289,6 +289,7 @@ namespace UI.Nodes
             if (Scene != Scenes.Fullscreen)
             {
                 UnFullScreen();
+                Scene = s; // UnFullScreen may call SetScene(preFullScreenScene) which overwrites Scene
             }
 
             SetChannelGridReordering(s);

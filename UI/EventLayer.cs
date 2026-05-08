@@ -118,12 +118,19 @@ namespace UI
             RaceStringFormatter.Instance.Round = Translator.Get("Label.Round", "Round");
 
             EventManager.RaceManager.RemainingTimesToAnnounce = ApplicationProfileSettings.Instance.RemainingSecondsToAnnounce;
+            EventManager.RoundManager.LuaFormatManager.ScriptTimeout = TimeSpan.FromSeconds(ApplicationProfileSettings.Instance.LuaScriptTimeoutSeconds);
 
             // Init the videos into the video directories.
             VideoManagerFactory.Init(eventDirectory.FullName, eventManager.Profile);
 
             videoManager = VideoManagerFactory.CreateVideoManager();
             videoManager.AutoPause = true;
+
+            VideoEventManager videoEventManager = EventManager as VideoEventManager;
+            if (videoEventManager != null)
+            {
+                videoEventManager.VideoManager = videoManager;
+            }
 
             SoundManager = new SoundManager(EventManager, eventManager.Profile);
             SoundManager.MuteTTS = !ApplicationProfileSettings.Instance.TextToSpeech;
@@ -328,11 +335,11 @@ namespace UI
             MenuButton.OBSRemoteConfigSaved += ReloadOBSRemoteControl;
             MenuButton.AutoRunnerConfigsSaved += ReloadAutoRunnerConfig;
 
-            float width = 0.9f;
+            float width = 0.95f;
 
             systemStatusNode = new SystemStatusNode();
             systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager);
-            systemStatusNode.RelativeBounds = new RectangleF((1 - width) / 2, MenuButton.RelativeBounds.Bottom + 0.01f, 0.9f, 1);
+            systemStatusNode.RelativeBounds = new RectangleF((1 - width) / 2, MenuButton.RelativeBounds.Bottom + 0.01f, width, 1);
             rightSideColor.AddChild(systemStatusNode);
 
             ChannelsGridNode.OnChannelNodeCloseClick += (ChannelNodeBase cn) =>
@@ -1193,7 +1200,6 @@ namespace UI
                     return true;
                 }
 
-
                 Race race = EventManager.RaceManager.CurrentRace;
                 if (KeyMapper.AnnounceRace.Match(inputEvent))
                 {
@@ -1471,6 +1477,9 @@ namespace UI
 
         private void OnTabChange(string tab, Node s)
         {
+            if (ControlButtons == null)
+                return;
+
             ControlButtons.UpdateControlButtons(); 
             if (ApplicationProfileSettings.Instance.AutoHideShowPilotList)
             {

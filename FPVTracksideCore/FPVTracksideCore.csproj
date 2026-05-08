@@ -5,9 +5,8 @@
     <TargetFramework>net9.0-windows</TargetFramework>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
     <Platforms>x64;AnyCPU</Platforms>
-    <StartupObject />
 	  <usewpf>true</usewpf>
-	  <Version>2.73.1.751</Version>
+	  <Version>2.74.3.808</Version>
 	  
 	  <PublishReadyToRun>false</PublishReadyToRun>
 	  <TieredCompilation>false</TieredCompilation>

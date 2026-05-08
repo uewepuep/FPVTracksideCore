@@ -26,7 +26,7 @@ namespace WindowsMediaPlatform.MediaFoundation
         private IMFMediaType destinationType;
         public IMFMediaType DestinationType { get { return destinationType; } }
 
-        public DecoderProcessor(IMFMediaType sourceType, Guid destinationSubType)
+        public DecoderProcessor(IMFMediaType sourceType, Guid destinationSubType, bool hardwareAcceleration = true)
         {
             SingleSample = false;
 
@@ -41,7 +41,9 @@ namespace WindowsMediaPlatform.MediaFoundation
             hr = destinationType.SetGUID(MFAttributesClsid.MF_MT_SUBTYPE, destinationSubType);
             MFError.ThrowExceptionForHR(hr);
 
-            MFT_EnumFlag flags = MFT_EnumFlag.SyncMFT | MFT_EnumFlag.Hardware | MFT_EnumFlag.LocalMFT | MFT_EnumFlag.SortAndFilter;
+            MFT_EnumFlag flags = MFT_EnumFlag.SyncMFT | MFT_EnumFlag.LocalMFT | MFT_EnumFlag.SortAndFilter;
+            if (hardwareAcceleration)
+                flags |= MFT_EnumFlag.Hardware;
             Initialise(MFTransformCategory.MFT_CATEGORY_VIDEO_DECODER, sourceType, destinationType, flags, false);
         }
 

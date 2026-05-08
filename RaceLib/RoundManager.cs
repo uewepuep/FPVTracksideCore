@@ -16,6 +16,7 @@ namespace RaceLib
         public RaceManager RaceManager { get { return EventManager.RaceManager; } }
         public ResultManager ResultManager { get { return EventManager.ResultManager; } }
         public SheetFormatManager SheetFormatManager { get; set; }
+        public LuaFormatManager LuaFormatManager { get; set; }
 
         public event Action OnRoundAdded;
         public event Action OnRoundRemoved;
@@ -38,6 +39,7 @@ namespace RaceLib
         {
             EventManager = eventManager;
             SheetFormatManager = new SheetFormatManager(this);
+            LuaFormatManager = new LuaFormatManager();
             RaceManager.OnRaceEnd += OnRaceResultsChange;
             RaceManager.OnRaceReset += OnRaceResultsChange;
             ResultManager.RaceResultsChanged += OnRaceResultsChange;
@@ -65,10 +67,28 @@ namespace RaceLib
             }
 
             // Non-sheet stages: existing behaviour (generate next round when any result changes)
-            RoundFormat roundFormat = GetRoundFormat(race.Round.Stage);
-            RoundPlan roundPlan = new RoundPlan(EventManager, race.Round, race.Round.Stage);
+            Stage stage = race.Round.Stage;
+            RoundFormat roundFormat = GetRoundFormat(stage);
+            RoundPlan roundPlan = new RoundPlan(EventManager, race.Round, stage);
 
             GenerateNewRound(race.Round, roundFormat, roundPlan);
+
+            LuaRoundFormat luaFormat = roundFormat as LuaRoundFormat;
+            if (luaFormat != null && luaFormat.HasStandings)
+            {
+                Pilot[] stagePilots = RaceManager.Races
+                    .Where(r => r.Round?.Stage == stage)
+                    .SelectMany(r => r.Pilots)
+                    .Distinct()
+                    .ToArray();
+
+                stage.Standings = luaFormat.GetStandings(stagePilots);
+
+                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                {
+                    db.Upsert(stage);
+                }
+            }
         }
 
         public Round NextRound(Round round)
@@ -83,6 +103,24 @@ namespace RaceLib
             lock (Event.Rounds)
             {
                 return Event.Rounds.Count(r => r.Order >= start.Order && r.Order <= end.Order);
+            }
+        }
+
+        public Round GetRelativeRound(Round current, int offset)
+        {
+            if (offset == 0)
+                return current;
+
+            lock (Event.Rounds)
+            {
+                if (offset > 0)
+                {
+                    return Event.Rounds.Where(r => r.Order > current.Order).OrderBy(r => r.Order).Skip(offset - 1).FirstOrDefault();
+                }
+                else
+                {
+                    return Event.Rounds.Where(r => r.Order < current.Order).OrderByDescending(r => r.Order).Skip(Math.Abs(offset) - 1).FirstOrDefault();
+                }
             }
         }
 
@@ -480,6 +518,15 @@ namespace RaceLib
 
         public RoundFormat GetRoundFormat(Stage stage)
         {
+            if (stage.HasScriptFormat)
+            {
+                LuaFormatManager.ScriptFile scriptFile = LuaFormatManager?.GetScriptFile(stage.ScriptFormatFilename);
+                if (scriptFile != null)
+                    return new LuaRoundFormat(EventManager, stage, scriptFile, LuaFormatManager.ScriptTimeout);
+
+                Logger.AllLog.Log(this, $"Script '{stage.ScriptFormatFilename}' not found for stage '{stage.Name}'.");
+            }
+
             switch (stage.StageType)
             {
                 case StageTypes.DoubleElimination:
@@ -488,10 +535,10 @@ namespace RaceLib
                 case StageTypes.Final:
                     return new FinalFormat(EventManager, stage);
 
-                case StageTypes.StreetLeague: 
+                case StageTypes.StreetLeague:
                     return new StreetLeague(EventManager, stage);
 
-                case StageTypes.ChaseTheAce: 
+                case StageTypes.ChaseTheAce:
                     return new ChaseTheAce(EventManager, stage);
 
                 case StageTypes.Default:
@@ -669,13 +716,15 @@ namespace RaceLib
 
         public void DeleteStage(IDatabase db, Stage stage)
         {
+            if (stage == null)
+                return;
+
             Round[] rounds = GetStageRounds(stage).ToArray();
             foreach (Round r in rounds)
             {
                 r.Stage = null;
                 db.Update(r);
             }
-
             stage.Valid = false;
             db.Update(stage);
             OnStageChanged?.Invoke();
@@ -794,81 +843,63 @@ namespace RaceLib
             yield return lastRound;
         }
 
-        public bool ToggleSumPoints(Round round)
+        public void AddSumPoints(Round round)
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
                 if (round.Stage == null)
-                {
                     round.Stage = CreateStage(db, round);
-                    round.Stage.PointSummary = new PointSummary(ResultManager.PointsSettings);
-                    db.Update(round.Stage);
-                    return true;
-                }
-                else
-                {
-                    DeleteStage(db, round.Stage);
-                    return false;
-                }
+
+                round.Stage.PointSummary = new PointSummary(ResultManager.PointsSettings);
+                round.Stage.TimeSummary = null;
+                round.Stage.LapCountAfterRound = false;
+                round.Stage.PackCountAfterRound = false;
+                db.Update(round.Stage);
             }
         }
 
-        public bool ToggleTimePoints(Round round, TimeSummary.TimeSummaryTypes type)
+        public void AddTimeSummary(Round round, TimeSummary.TimeSummaryTypes type)
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
                 if (round.Stage == null)
-                {
                     round.Stage = CreateStage(db, round);
-                    round.Stage.TimeSummary = new TimeSummary() { TimeSummaryType = type };
-                    db.Update(round.Stage);
-                    return true;
-                }
-                else
-                {
-                    DeleteStage(db, round.Stage);
-                    return false;
-                }
+
+                round.Stage.PointSummary = null;
+                round.Stage.TimeSummary = new TimeSummary() { TimeSummaryType = type };
+                round.Stage.LapCountAfterRound = false;
+                round.Stage.PackCountAfterRound = false;
+                db.Update(round.Stage);
             }
         }
 
-        public bool ToggleLapCount(Round round)
+        public void AddLapCount(Round round)
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
                 if (round.Stage == null)
-                {
                     round.Stage = CreateStage(db, round);
-                    round.Stage.LapCountAfterRound = !round.Stage.LapCountAfterRound;
 
-                    db.Update(round.Stage);
-                    return true;
-                }
-                else
-                {
-                    DeleteStage(db, round.Stage);
-                    return false;
-                }
+                round.Stage.PointSummary = null;
+                round.Stage.TimeSummary = null;
+                round.Stage.LapCountAfterRound = true;
+                round.Stage.PackCountAfterRound = false;
+                db.Update(round.Stage);
             }
         }
 
-        public bool TogglePackCount(Round round)
+        public void AddPackCount(Round round)
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
                 if (round.Stage == null)
-                {
                     round.Stage = CreateStage(db, round);
-                    round.Stage.PackCountAfterRound = !round.Stage.PackCountAfterRound;
 
-                    db.Update(round.Stage);
-                    return true;
-                }
-                else
-                {
-                    DeleteStage(db, round.Stage);
-                    return false;
-                }
+                round.Stage.PointSummary = null;
+                round.Stage.TimeSummary = null;
+                round.Stage.LapCountAfterRound = false;
+                round.Stage.PackCountAfterRound = true;
+                db.Update(round.Stage);
             }
         }
 

@@ -31,7 +31,6 @@ namespace FfmpegMediaPlatform
         private int recordingFrameCounter;
         private DateTime lastFrameWriteTime;
         private float detectedFrameRate;
-        private bool frameRateDetected;
         private double targetFrameInterval; // Target interval between frames in milliseconds
         
         // PERFORMANCE: Async frame writing to prevent blocking
@@ -99,7 +98,6 @@ namespace FfmpegMediaPlatform
                     recordingFrameCounter = 0; // Reset frame counter for this recording session
                     lastFrameWriteTime = DateTime.MinValue;
                     detectedFrameRate = frameRate; // Start with configured rate
-                    frameRateDetected = false;
 
                     // BUGFIX: Dispose and recreate cancellation token and semaphore for each recording session
                     // This fixes the issue where subsequent races produce black screen videos

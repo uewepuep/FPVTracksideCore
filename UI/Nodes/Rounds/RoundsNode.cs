@@ -23,6 +23,7 @@ namespace UI.Nodes.Rounds
         public IEnumerable<EventLapsTimesNode> EventTimesNodes { get { return Children.OfType<EventLapsTimesNode>(); } }
         public IEnumerable<EventLapCountsNode> EventLapCountsNodes { get { return Children.OfType<EventLapCountsNode>(); } }
         public IEnumerable<EventPackCountNode> EventPackCountNodes { get { return Children.OfType<EventPackCountNode>(); } }
+        public IEnumerable<EventLuaStandingsNode> EventLuaStandingsNodes { get { return Children.OfType<EventLuaStandingsNode>(); } }
         public IEnumerable<EventResultNode> EventResultNodes { get { return Children.OfType<EventResultNode>(); } }
         public IEnumerable<StageNode> ResultStageNodes { get { return EventResultNodes.Select(e => e.StageNode).Distinct(); } }
         public IEnumerable<StageNode> FormatStageNodes { get { return Children.OfType<StageNode>().Distinct(); } }
@@ -206,13 +207,22 @@ namespace UI.Nodes.Rounds
             eventXNode.Finals += GenerateFinal;
             eventXNode.AddStage += GenerateRoundStage;
             eventXNode.AddSheetFormatRound += AddSheetFormatRound;
-            eventXNode.SumPoints += ToggleSumPoints;
-            eventXNode.Times += ToggleTimePoints;
-            eventXNode.LapCounts += ToggleLapCount;
-            eventXNode.PackCount += TogglePackCount;
+            eventXNode.AddScriptFormatRound += AddScriptFormatRound;
+            eventXNode.SumPoints += AddSumPoints;
+            eventXNode.Times += AddTimeSummary;
+            eventXNode.LapCounts += AddLapCount;
+            eventXNode.PackCount += AddPackCount;
             eventXNode.Clone += CloneRound;
             eventXNode.AddEmptyRound += AddEmptyRound;
             eventXNode.NeedsFormatLayout += RequestLayout;
+        }
+
+        private void AddScriptFormatRound(Round round)
+        {
+            if (round.Stage == null) return;
+            IEnumerable<Pilot> pilots = EventManager.Event.Pilots;
+            RoundManager.GenerateStageRound(round, round.Stage.StageType, pilots);
+            Refresh();
         }
 
         private void AddSheetFormatRound(Round round)
@@ -267,7 +277,7 @@ namespace UI.Nodes.Rounds
                     if (esn == null)
                     {
                         esn = new EventPointsNode(this, EventManager, round);
-                        esn.RemoveRound += ToggleSumPoints;
+                        esn.RemoveRound += RemoveResultStage;
                         HookUp(esn);
                         AddChild(esn);
                     }
@@ -283,7 +293,7 @@ namespace UI.Nodes.Rounds
                     if (esn == null)
                     {
                         esn = new EventLapsTimesNode(this, EventManager, round);
-                        esn.RemoveRound += ToggleTimePoints;
+                        esn.RemoveRound += RemoveResultStage;
                         HookUp(esn);
                         AddChild(esn);
                     }
@@ -299,7 +309,7 @@ namespace UI.Nodes.Rounds
                     if (esn == null)
                     {
                         esn = new EventPackCountNode(this, EventManager, round);
-                        esn.RemoveRound += TogglePackCount;
+                        esn.RemoveRound += RemoveResultStage;
                         HookUp(esn);
                         AddChild(esn);
                     }
@@ -315,7 +325,23 @@ namespace UI.Nodes.Rounds
                     if (esn == null)
                     {
                         esn = new EventLapCountsNode(this, EventManager, round);
-                        esn.RemoveRound += ToggleLapCount;
+                        esn.RemoveRound += RemoveResultStage;
+                        HookUp(esn);
+                        AddChild(esn);
+                    }
+                    else
+                    {
+                        esn.Refresh();
+                        RequestLayout();
+                    }
+                }
+                else if (stage.HasScriptFormat && EventManager.RoundManager.LuaFormatManager.ScriptHasStandings(stage.ScriptFormatFilename))
+                {
+                    EventLuaStandingsNode esn = EventLuaStandingsNodes.FirstOrDefault(d => d.Round == round);
+                    if (esn == null)
+                    {
+                        esn = new EventLuaStandingsNode(this, EventManager, round);
+                        esn.RemoveRound += RemoveResultStage;
                         HookUp(esn);
                         AddChild(esn);
                     }
@@ -334,7 +360,16 @@ namespace UI.Nodes.Rounds
                         AddChild(stageNode);
                     }
 
-                    stageNode.SetNodes(RoundNodes.Where(rn => rn.Round.Stage == stage));
+                    
+                    IEnumerable<EventRoundNode> stageRoundNodes = RoundNodes.Where(rn => rn.Round.Stage == stage);
+
+
+
+                    if (stageRoundNodes.Count() != stageNode.EventRoundNodes.Length)
+                    {
+                        stageNode.SetNodes(stageRoundNodes);
+                        Refresh();
+                    }
                 }
             }
 
@@ -385,50 +420,51 @@ namespace UI.Nodes.Rounds
             Scroller.ScrollToEnd(scrollTime);
         }
 
-        private void ToggleSumPoints(Round callingRound)
+        private void RemoveResultStage(Round callingRound)
         {
-            if (EventManager.RoundManager.ToggleSumPoints(callingRound))
+            if (callingRound.Stage != null)
             {
-                EditStageName(callingRound);
+                EventManager.RoundManager.DeleteStage(callingRound.Stage);
             }
             Refresh();
+        }
 
+        private void AddSumPoints(Round callingRound)
+        {
+            bool isNew = callingRound.Stage == null;
+            if (!isNew) EventManager.RoundManager.DeleteStage(callingRound.Stage);
+            EventManager.RoundManager.AddSumPoints(callingRound);
+            if (isNew) EditStageName(callingRound);
+            Refresh();
             Scroller.ScrollToEnd(scrollTime);
         }
 
-        private void ToggleTimePoints(Round callingRound)
+        private void AddTimeSummary(Round callingRound, TimeSummary.TimeSummaryTypes type)
         {
-            ToggleTimePoints(callingRound, TimeSummary.TimeSummaryTypes.PB);
-        }
-
-        private void ToggleTimePoints(Round callingRound, TimeSummary.TimeSummaryTypes type)
-        {
-            if (EventManager.RoundManager.ToggleTimePoints(callingRound, type))
-            {
-                EditStageName(callingRound);
-            }
+            bool isNew = callingRound.Stage == null;
+            if (!isNew) EventManager.RoundManager.DeleteStage(callingRound.Stage);
+            EventManager.RoundManager.AddTimeSummary(callingRound, type);
+            if (isNew) EditStageName(callingRound);
             Refresh();
-
             Scroller.ScrollToEnd(scrollTime);
         }
 
-        public void TogglePackCount(Round callingRound)
+        public void AddPackCount(Round callingRound)
         {
-            if (EventManager.RoundManager.TogglePackCount(callingRound))
-            {
-                EditStageName(callingRound);
-            }
+            bool isNew = callingRound.Stage == null;
+            if (!isNew) EventManager.RoundManager.DeleteStage(callingRound.Stage);
+            EventManager.RoundManager.AddPackCount(callingRound);
+            if (isNew) EditStageName(callingRound);
             Refresh();
         }
 
-        private void ToggleLapCount(Round callingRound)
+        private void AddLapCount(Round callingRound)
         {
-            if (EventManager.RoundManager.ToggleLapCount(callingRound))
-            {
-                EditStageName(callingRound);
-            }
+            bool isNew = callingRound.Stage == null;
+            if (!isNew) EventManager.RoundManager.DeleteStage(callingRound.Stage);
+            EventManager.RoundManager.AddLapCount(callingRound);
+            if (isNew) EditStageName(callingRound);
             Refresh();
-
             Scroller.ScrollToEnd(scrollTime);
         }
 

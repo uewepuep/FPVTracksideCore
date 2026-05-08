@@ -2,10 +2,8 @@
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net9.0-windows</TargetFramework>
-		<ApplicationIcon />
 		<Platforms>x64</Platforms>
-		<StartupObject />
-		<Version>2.73.1.751</Version>
+		<Version>2.74.3.808</Version>
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
 		

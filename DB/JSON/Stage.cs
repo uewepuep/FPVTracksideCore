@@ -19,11 +19,15 @@ namespace DB.JSON
 
         public string SheetFormatFilename { get; set; }
 
+        public string ScriptFormatFilename { get; set; }
+
         public bool Valid { get; set; }
 
         public int Order { get; set; }
 
         public RaceLib.StageTypes StageType { get; set; }
+
+        public StandingsResult Standings { get; set; }
 
         public Stage() { }
 
@@ -43,6 +47,12 @@ namespace DB.JSON
                 TimeSummary = new TimeSummary();
                 ReflectionTools.Copy(obj.TimeSummary, TimeSummary);
             }
+
+            Standings = obj.Standings == null ? null : new StandingsResult
+            {
+                Headings = obj.Standings.Headings,
+                Rows = obj.Standings.Rows?.Select(r => new StandingsRow { Name = r.Name, Values = r.Values }).ToArray()
+            };
         }
 
         public override RaceLib.Stage GetRaceLibObject(ICollectionDatabase database)
@@ -60,6 +70,12 @@ namespace DB.JSON
                 stage.TimeSummary = new RaceLib.TimeSummary();
                 ReflectionTools.Copy(TimeSummary, stage.TimeSummary);
             }
+
+            stage.Standings = Standings == null ? null : new RaceLib.Format.StandingsResult
+            {
+                Headings = Standings.Headings,
+                Rows = Standings.Rows?.Select(r => new RaceLib.Format.StandingsRow { Name = r.Name, Values = r.Values }).ToArray()
+            };
 
             return stage;
         }

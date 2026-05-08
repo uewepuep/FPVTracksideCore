@@ -110,7 +110,7 @@ namespace Composition.Nodes
             }
         }
 
-        public bool HasFocus
+        public virtual bool HasFocus
         {
             get
             {

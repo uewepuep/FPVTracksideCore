@@ -158,10 +158,10 @@ namespace Timing
     [XmlInclude(typeof(LapRFSettings))]
     [XmlInclude(typeof(LapRFSettingsUSB))]
     [XmlInclude(typeof(LapRFSettingsEthernet))]
-    [XmlInclude(typeof(VideoTimingSettings))]
     [XmlInclude(typeof(RotorHazardSettings))]
     [XmlInclude(typeof(ChorusSettings))]
     [XmlInclude(typeof(Velocidrone.VelocidroneSettings))]
+    [XmlInclude(typeof(Timing.Aruco.ArucoTimingSettings))]
     public class TimingSystemSettings
     {
         [Category("System Settings")]
@@ -188,8 +188,9 @@ namespace Timing
 
                 return s;
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.TimingLog.LogException(typeof(TimingSystemSettings), ex);
                 return new TimingSystemSettings[] { };
             }
         }

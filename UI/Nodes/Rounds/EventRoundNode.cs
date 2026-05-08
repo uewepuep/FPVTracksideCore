@@ -271,8 +271,8 @@ namespace UI.Nodes.Rounds
 
             if (!hasRace)
             {
-                MouseMenu addFormat = mm.AddSubmenu("Set Format");
-                AddFormatMenu(addFormat, EventManager.Event.Pilots);
+                MouseMenu formatMenu = mm.AddSubmenu("Set Format");
+                AddFormatMenu(formatMenu, EventManager.Event.Pilots);
             }
 
             if (hasRace)
@@ -296,8 +296,6 @@ namespace UI.Nodes.Rounds
             }
 
             mm.AddItem("Edit Round", EditRound);
-
-
             if (Round.Stage != null)
             {
                 mm.AddItem("Edit Stage", EditStage);
@@ -314,6 +312,11 @@ namespace UI.Nodes.Rounds
                             Refresh(true);
                         });
                     });
+                });
+
+                mm.AddItemConfirm("Delete Stage", () =>
+                {
+                    EventManager.RoundManager.DeleteStage(Round.Stage);
                 });
 
                 mm.AddItem("Delete Stage and contents", () =>

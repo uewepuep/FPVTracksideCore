@@ -3,27 +3,37 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net9.0</TargetFramework>
-    <ApplicationIcon />
     <Platforms>AnyCPU;x64</Platforms>
-    <StartupObject />
-    <Version>2.73.1.751</Version>
+    <Version>2.74.3.808</Version>
   </PropertyGroup>
 
-
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
 
   <ItemGroup>
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1">
 		  <PrivateAssets>all</PrivateAssets>
 	  </PackageReference>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="OpenCvSharp4" Version="4.11.0.20250507" />
+    <!-- Windows-only: native DLLs for OpenCvSharp. On macOS/Linux install OpenCV via system
+         package manager (e.g. `brew install opencv`) so OpenCvSharp can load libOpenCvSharpExtern. -->
+    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.11.0.20250507" Condition="'$(OS)' == 'Windows_NT'" />
     <PackageReference Include="SocketIOClient" Version="3.0.8" />
     <PackageReference Include="System.IO.Ports" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Tools\Tools.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Aruco\README.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Aruco\README.txt</Link>
+    </None>
+    <None Include="Aruco\camera_calibration.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Aruco\camera_calibration.json</Link>
+    </None>
   </ItemGroup>
 
 </Project>

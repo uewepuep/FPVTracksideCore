@@ -22,8 +22,6 @@ namespace WindowsPlatform.GDI
         public DateTime Start { get; private set; }
         public DateTime LastFrame { get; private set; }
 
-        public event Action<GraphicsDevice, LayerStack> OnInitialise;
-
         private Point oldMouse;
 
         public GDILayerStackControl()

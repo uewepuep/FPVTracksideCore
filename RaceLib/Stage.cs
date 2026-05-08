@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
+using RaceLib.Format;
 
 namespace RaceLib
 {
@@ -53,13 +54,32 @@ namespace RaceLib
             }
         }
 
+        [Category("Advanced")]
+        public string ScriptFormatFilename { get; set; }
+
+        [Category("Advanced")]
+        public bool HasScriptFormat
+        {
+            get
+            {
+                return !string.IsNullOrEmpty(ScriptFormatFilename);
+            }
+            set
+            {
+                if (value == false)
+                {
+                    ScriptFormatFilename = null;
+                }
+            }
+        }
+
         public bool GeneratesRounds
         {
             get
             {
                 if (StageType == StageTypes.Default || StageType == StageTypes.Final)
                 {
-                    return HasSheetFormat;
+                    return HasSheetFormat || HasScriptFormat;
                 }
 
                 return true;
@@ -74,6 +94,9 @@ namespace RaceLib
 
         public int Order { get; set; }
         public StageTypes StageType { get; set; }
+
+        [System.ComponentModel.Browsable(false)]
+        public StandingsResult Standings { get; set; }
 
         public Stage()
         {

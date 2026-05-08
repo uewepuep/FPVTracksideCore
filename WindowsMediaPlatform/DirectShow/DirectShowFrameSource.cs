@@ -289,7 +289,11 @@ namespace WindowsMediaPlatform.DirectShow
                     FrameProcessNumber++;
 
                     long sampleTicks = (long)(sampleTime * 10000000);
-                    sampleTime = sampleTicks;
+
+                    // Overlay hook: mutate the DirectShow sample buffer in place before the
+                    // display copy. Recording is through a separate DirectShow filter graph
+                    // and is not affected here.
+                    ImageServer.FrameSource.BeforeFrameDispatchPtr?.Invoke(this, buffer, bufferLen);
 
                     frame.SetData(buffer, sampleTicks, FrameProcessNumber);
                     rawTextures.WriteOne(frame);

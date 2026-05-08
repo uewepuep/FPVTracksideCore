@@ -258,6 +258,46 @@ namespace UI.Nodes
 
             if (hasEvent)
             {
+                BaseGame baseGame = CompositorLayer.Game as BaseGame;
+
+                openWindow.AddItem("Event Status", () =>
+                {
+                    baseGame.QuickLaunchWindow<EventStatusNodeTopBar>(eventManager, keyMapper);
+                });
+
+                openWindow.AddItem("Lap Count Summary", () =>
+                {
+                    baseGame.QuickLaunchWindow<LapCountSummaryNode>(eventManager, keyMapper);
+                });
+
+                openWindow.AddItem("Lap Records", () =>
+                {
+                    baseGame.QuickLaunchWindow<LapRecordsSummaryNode>(eventManager, keyMapper);
+                });
+
+                openWindow.AddItem("Pilot Channel List", () =>
+                {
+                    baseGame.QuickLaunchWindow<PilotChanelList>(eventManager, keyMapper);
+                });
+
+                openWindow.AddItem("Points Summary", () =>
+                {
+                    baseGame.QuickLaunchWindow<PointsSummaryNode>(eventManager, keyMapper);
+                });
+
+                openWindow.AddItem("Replay", () =>
+                {
+                    baseGame.QuickLaunchWindow<ReplayNode>(eventManager, keyMapper);
+                });
+
+                openWindow.AddItem("Rounds", () =>
+                {
+                    baseGame.QuickLaunchWindow<RoundsNode>(eventManager, keyMapper);
+                });
+            }
+
+            if (hasEvent)
+            {
                 root.AddBlank();
 
                 root.AddItem("YouTube Chapters", () =>
@@ -392,23 +432,34 @@ namespace UI.Nodes
 
         public void ShowVideoSettings()
         {
-            videoManager?.StopDevices();
+            LoadingLayer ll = GetLayer<LoadingLayer>();
+            if (ll == null)
+                return;
 
-            VideoSourceEditor editor = VideoSourceEditor.GetVideoSourceEditor(eventManager, Profile);
-            GetLayer<PopupLayer>().Popup(editor);
-
-            editor.OnOK += (e) =>
+            WorkSet workSet = new WorkSet();
+            ll.WorkQueue.Enqueue(workSet, "Stopping Devices", () =>
             {
-                List<VideoConfig> sources = editor.Objects.ToList();
-                VideoManager.WriteDeviceConfig(Profile, sources);
+                videoManager?.StopDevices();
+            });
 
-                VideoSettingsExited?.Invoke(true);
-            };
-
-            editor.OnCancel += (e) =>
+            ll.WorkQueue.Enqueue(workSet, "Loading Settings", () =>
             {
-                VideoSettingsExited?.Invoke(false);
-            };
+                VideoSourceEditor editor = VideoSourceEditor.GetVideoSourceEditor(eventManager, Profile);
+                GetLayer<PopupLayer>().Popup(editor);
+
+                editor.OnOK += (e) =>
+                {
+                    List<VideoConfig> sources = editor.Objects.ToList();
+                    VideoManager.WriteDeviceConfig(Profile, sources);
+
+                    VideoSettingsExited?.Invoke(true);
+                };
+
+                editor.OnCancel += (e) =>
+                {
+                    VideoSettingsExited?.Invoke(false);
+                };
+            });
         }
 
         public void ShowPointsSettings()

@@ -2,6 +2,7 @@
 using ImageServer;
 using MediaFoundation;
 using MediaFoundation.Misc;
+using MediaFoundation.ReadWrite;
 using MediaFoundation.Transform;
 using Microsoft.Xna.Framework.Graphics;
 using SharpDX.MediaFoundation;
@@ -15,11 +16,43 @@ using System.Threading.Tasks;
 
 namespace WindowsMediaPlatform.MediaFoundation
 {
-    public class MFHelper 
+    public class MFHelper
     {
+        // {ec822da2-e1e9-4b29-a0d8-563c719f5269}
+        public static readonly Guid MF_SOURCE_READER_D3D_MANAGER =
+            new Guid("ec822da2-e1e9-4b29-a0d8-563c719f5269");
+
         public static bool Succeeded(HResult hr) { return COMBase.Succeeded(hr); }
         public static bool Failed(HResult hr) { return COMBase.Failed(hr); }
         public static void SafeRelease(object o) { COMBase.SafeRelease(o); }
+
+        public static void LogSinkWriterTransforms(object caller, IMFSinkWriter writer, int streamIndex)
+        {
+            IMFSinkWriterEx writerEx = writer as IMFSinkWriterEx;
+            if (writerEx == null)
+                return;
+
+            for (int i = 0; ; i++)
+            {
+                IMFTransform transform;
+                Guid category;
+                HResult hr = writerEx.GetTransformForStream(streamIndex, i, out category, out transform);
+                if (Failed(hr))
+                    break;
+
+                IMFAttributes attribs;
+                if (Succeeded(transform.GetAttributes(out attribs)))
+                {
+                    string name;
+                    MFExtern.MFGetAttributeString(attribs, MFAttributesClsid.MFT_FRIENDLY_NAME_Attribute, out name);
+                    if (name != null)
+                        Tools.Logger.VideoLog.Log(caller, "Sink writer transform: " + name);
+                    SafeRelease(attribs);
+                }
+
+                SafeRelease(transform);
+            }
+        }
 
 
         public static FrameSource.Directions GetDirection(Guid subtype)
@@ -112,6 +145,29 @@ namespace WindowsMediaPlatform.MediaFoundation
             return hr;
         }
 
+        // Locks an MF media buffer, calls UpdateSubresource to DMA the RGB32 pixels directly
+        // into a pooled D3D11 texture, then unlocks.  Avoids the staging-buffer round-trip
+        // that Texture2D.SetData incurs.
+        public static void UpdateSubresource(Microsoft.Xna.Framework.Graphics.GraphicsDevice graphicsDevice, IMFMediaBuffer buffer, Texture2DDX destTexture, int frameWidth)
+        {
+            IntPtr dataPtr;
+            int maxLength;
+            int currentLength;
+
+            HResult hr = buffer.Lock(out dataPtr, out maxLength, out currentLength);
+            MFError.ThrowExceptionForHR(hr);
+            try
+            {
+                int rowPitch = frameWidth * 4; // BGRA/BGRX = 4 bytes per pixel
+                var dataBox = new SharpDX.DataBox(dataPtr, rowPitch, 0);
+                graphicsDevice.GetSharpDXDevice().ImmediateContext.UpdateSubresource(dataBox, destTexture.SharpDXTexture2D, 0);
+            }
+            finally
+            {
+                buffer.Unlock();
+            }
+        }
+
         public static void CreateD3DSample(Texture2D texture, out IMFMediaBuffer buffer)
         {
             FieldInfo type = texture.GetType().GetField("_texture", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -129,6 +185,31 @@ namespace WindowsMediaPlatform.MediaFoundation
                 0, false, out buffer
             );
             MFError.ThrowExceptionForHR(hr);
+        }
+
+        // Attempts to retrieve the underlying D3D11 texture from a D3D11-backed MF buffer.
+        // Returns false (and nulls out the texture) if the buffer is not DXGI-backed.
+        // Caller MUST call texture.Dispose() when done.
+        public static bool TryGetD3DTexture(IMFMediaBuffer buffer, out SharpDX.Direct3D11.Texture2D texture, out int subresourceIndex)
+        {
+            texture = null;
+            subresourceIndex = 0;
+
+            IMFDXGIBuffer dxgiBuffer = buffer as IMFDXGIBuffer;
+            if (dxgiBuffer == null)
+                return false;
+
+            IntPtr texPtr;
+            HResult hr = dxgiBuffer.GetResource(typeof(SharpDX.Direct3D11.Texture2D).GUID, out texPtr);
+            if (Failed(hr) || texPtr == IntPtr.Zero)
+                return false;
+
+            dxgiBuffer.GetSubresourceIndex(out subresourceIndex);
+
+            // SharpDX constructor AddRefs, so release the ref we got from GetResource
+            texture = new SharpDX.Direct3D11.Texture2D(texPtr);
+            Marshal.Release(texPtr);
+            return true;
         }
 
         // EntryPoint must be provided since we are naming the alternate
@@ -337,7 +418,8 @@ namespace WindowsMediaPlatform.MediaFoundation
         }
 
         /// <summary>
-        /// Returns a unique identifier for a device
+        /// Returns a unique identifier for a device. Falls back to "name:FriendlyName" for
+        /// virtual cameras that don't have a PnP symbolic link attribute.
         /// </summary>
         public string Path
         {
@@ -351,6 +433,13 @@ namespace WindowsMediaPlatform.MediaFoundation
                         out m_SymbolicName,
                         out iSize
                         );
+
+                    // Virtual cameras (e.g. OBS Virtual Camera) may not have a symbolic link.
+                    // Fall back to a name-based identifier so they can still be matched.
+                    if (COMBase.Failed(hr) || string.IsNullOrEmpty(m_SymbolicName))
+                    {
+                        m_SymbolicName = "name:" + Name;
+                    }
                 }
 
                 return m_SymbolicName;

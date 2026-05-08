@@ -5,6 +5,7 @@ using ImageServer;
 using Microsoft.Xna.Framework;
 using OfficeOpenXml.Style;
 using RaceLib;
+using Sound;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -64,7 +65,7 @@ namespace UI.Nodes
 
         public AutoCrashOut AutoCrashOut { get; private set; }
 
-        private VideoTimingManager videoTimingManager;
+        private UI.Video.ArucoTimingManager arucoTimingManager;
 
         private List<ChannelVideoInfo> channelInfos;
 
@@ -137,7 +138,7 @@ namespace UI.Nodes
             channelCreationLock = new object();
             channelInfos = new List<ChannelVideoInfo>();
 
-            videoTimingManager = new VideoTimingManager(eventManager.RaceManager.TimingSystemManager, this);
+            arucoTimingManager = new UI.Video.ArucoTimingManager(eventManager.RaceManager.TimingSystemManager, this);
 
             EventManager = eventManager;
             VideoManager = videoManager;
@@ -179,9 +180,9 @@ namespace UI.Nodes
             EventManager.RaceManager.OnRaceEnd -= RaceManager_OnRaceEnd;
             EventManager.RaceManager.OnRaceChanged -= RaceManager_OnRaceChanged;
             EventManager.OnPilotRefresh -= Refresh;
-
-            videoTimingManager?.Dispose();
             AutoCrashOut?.Dispose();
+
+            arucoTimingManager?.Dispose();
             base.Dispose();
         }
 
@@ -358,7 +359,7 @@ namespace UI.Nodes
             {
                 case ReOrderTypes.None:
                 default:
-                    output = input;
+                    output = input.OfType<ChannelNodeBase>();
                     break;
                 case ReOrderTypes.ChannelOrder:
                     // Order by channel
@@ -440,6 +441,21 @@ namespace UI.Nodes
             }
 
             return channelNodeBase;
+        }
+
+        private void OnChannelQRPilotDetected(Channel channel, string pilotName)
+        {
+            Pilot pilot = EventManager.Event.Pilots.FirstOrDefault(p => p.Name.Equals(pilotName, StringComparison.OrdinalIgnoreCase));
+            if (pilot != null)
+            {
+                if (!EventManager.RaceManager.HasPilot(pilot))
+                {
+                    SoundManager.Instance.QRCheckedIn(pilot, channel);
+                    EventManager.RaceManager.AddPilot(channel, pilot);
+                    return;
+                }
+            }
+            SoundManager.Instance.QRCheckedInNotAPilot();
         }
 
         public void OnRaceManagerAddPilot(PilotChannel pilotChannel)
@@ -524,6 +540,7 @@ namespace UI.Nodes
                     channelNode.Init();
                     channelNode.FrameNode.RelativeSourceBounds = ci.ScaledRelativeSourceBounds;
                     channelNode.FrameNode.SetAspectRatio(withLaps);
+                    channelNode.OnQRPilotDetected += OnChannelQRPilotDetected;
                     AutoCrashOut?.AddChannelNode(channelNode);
 
                     channelNodeBase = channelNode;

@@ -36,6 +36,7 @@ namespace WindowsMediaPlatform.MediaFoundation
         public override SurfaceFormat FrameFormat => SurfaceFormat.Bgr32;
 
         public bool AutomaticVideoConversion { get; set; }
+        public bool CanUseDecoderProcessor { get; set; }
 
         public MediaFoundationFrameSource(VideoConfig videoConfig)
             : base(videoConfig)
@@ -53,13 +54,14 @@ namespace WindowsMediaPlatform.MediaFoundation
         {
 
             List<IMFMediaType> mediaTypes = new List<IMFMediaType>();
-            for (int i = 0; reader != null; i++)
+            if (reader == null)
+                return mediaTypes.ToArray();
+
+            for (int i = 0; ; i++)
             {
                 IMFMediaType pType = GetNativeMediaType(i);
                 if (pType == null)
-                {
                     break;
-                }
                 mediaTypes.Add(pType);
             }
 
@@ -107,16 +109,20 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         public override bool Start()
         {
+            bool result = base.Start();
+
             if (reader != null)
             {
-                // Ask for the first sample.
+                // Ask for the first sample — must be after base.Start() so that
+                // mutex and State=Running are set before OnReadSample can fire.
                 HResult hr = ReadASync();
                 if (MFHelper.Succeeded(hr))
                 {
                     Connected = true;
                 }
             }
-            return base.Start();
+
+            return result;
         }
 
         public override bool Stop()
@@ -124,7 +130,7 @@ namespace WindowsMediaPlatform.MediaFoundation
             return base.Stop();
         }
 
-        public HResult OnReadSample(HResult hrStatus, int dwStreamIndex, MF_SOURCE_READER_FLAG dwStreamFlags, long timestep, IMFSample sample)
+        public virtual HResult OnReadSample(HResult hrStatus, int dwStreamIndex, MF_SOURCE_READER_FLAG dwStreamFlags, long timestep, IMFSample sample)
         {
             HResult hr = hrStatus;
 
@@ -203,6 +209,11 @@ namespace WindowsMediaPlatform.MediaFoundation
             return hr;
         }
 
+        protected override ImageServer.FrameTextureSample CreateTextureSample(Microsoft.Xna.Framework.Graphics.GraphicsDevice graphicsDevice)
+        {
+            return new FrameTextureSampleDX(graphicsDevice, FrameWidth, FrameHeight, FrameFormat);
+        }
+
         protected override void ProcessImage()
         {
             if (colorProcessor != null)
@@ -243,6 +254,10 @@ namespace WindowsMediaPlatform.MediaFoundation
                             hr = buffer.Lock(out intPtr, out length, out current);
                             MFError.ThrowExceptionForHR(hr);
 
+                            // Overlay hook: mutate the sample buffer in place so both the
+                            // display copy below and the sink writer recording see the overlay.
+                            ImageServer.FrameSource.BeforeFrameDispatchPtr?.Invoke(this, intPtr, length);
+
                             frame.SetData(intPtr, sampleTime, FrameProcessNumber);
 
                             hr = buffer.Unlock();
@@ -273,7 +288,7 @@ namespace WindowsMediaPlatform.MediaFoundation
             return HResult.S_OK;
         }
 
-        protected HResult CreateReader(IMFMediaSource pSource)
+        protected virtual HResult CreateReader(IMFMediaSource pSource)
         {
             HResult hr = HResult.S_OK;
             IMFAttributes pAttributes = null;
@@ -289,10 +304,10 @@ namespace WindowsMediaPlatform.MediaFoundation
                 hr = pAttributes.SetUINT32(MFAttributesClsid.MF_SOURCE_READER_ENABLE_VIDEO_PROCESSING, 0);
                 MFError.ThrowExceptionForHR(hr);
 
-                hr = pAttributes.SetUINT32(MFAttributesClsid.MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, 1);
+                hr = pAttributes.SetUINT32(MFAttributesClsid.MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, VideoConfig.HardwareAcceleration ? 1 : 0);
                 MFError.ThrowExceptionForHR(hr);
 
-                hr = pAttributes.SetUINT32(MFAttributesClsid.MF_SOURCE_READER_DISABLE_DXVA, 0);
+                hr = pAttributes.SetUINT32(MFAttributesClsid.MF_SOURCE_READER_DISABLE_DXVA, VideoConfig.HardwareAcceleration ? 0 : 1);
                 MFError.ThrowExceptionForHR(hr);
 
                 if (AutomaticVideoConversion)
@@ -326,7 +341,7 @@ namespace WindowsMediaPlatform.MediaFoundation
             return HResult.E_FAIL;
         }
 
-        protected HResult SetupReader()
+        protected virtual HResult SetupReader()
         {
             HResult hr = HResult.S_OK;
             IMFAttributes pAttributes = null;
@@ -404,7 +419,7 @@ namespace WindowsMediaPlatform.MediaFoundation
 
             if (DecoderProcessor.SupportedInputTypes().Contains(subType))
             {
-                decoderProcessor = new DecoderProcessor(sourceMediaType, MFMediaType.NV12);
+                decoderProcessor = new DecoderProcessor(sourceMediaType, MFMediaType.NV12, VideoConfig.HardwareAcceleration);
                 outputMediaType = decoderProcessor.DestinationType;
                 decoderProcessor.Output = ProcessUncompressed;
             }
@@ -437,7 +452,7 @@ namespace WindowsMediaPlatform.MediaFoundation
             }
             else
             {
-                colorProcessor = new ColorProcessor(outputMediaType, MFMediaType.RGB32);
+                colorProcessor = new ColorProcessor(outputMediaType, MFMediaType.RGB32, VideoConfig.HardwareAcceleration);
                 colorProcessor.Output = ProcessRGBSample;
 
                 height = colorProcessor.Height;

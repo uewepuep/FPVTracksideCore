@@ -218,7 +218,7 @@ namespace UI.Sponsor
             Visible = false;
             sponsorNode?.Dispose();
 
-            SoundManager.Instance.StopSound();
+            SoundManager.Instance?.StopSound();
 
             this.afterTrigger?.Invoke();
         }

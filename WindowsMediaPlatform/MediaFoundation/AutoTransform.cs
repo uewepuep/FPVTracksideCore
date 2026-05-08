@@ -11,7 +11,7 @@ namespace WindowsMediaPlatform.MediaFoundation
 {
     public class AutoTransform : MediaFoundationTransform
     {
-        public AutoTransform(IMFMediaType nativeType, int outputWidth, int outputHeight, int frameRate)
+        public AutoTransform(IMFMediaType nativeType, int outputWidth, int outputHeight, int frameRate, bool hardwareAcceleration = true)
         {
             HResult hr;
 
@@ -28,7 +28,9 @@ namespace WindowsMediaPlatform.MediaFoundation
             hr = MFExtern.MFSetAttributeRatio(outputMediaType, MFAttributesClsid.MF_MT_FRAME_RATE, frameRate, 1);
             MFError.ThrowExceptionForHR(hr);
 
-            MFT_EnumFlag flags = MFT_EnumFlag.SyncMFT | MFT_EnumFlag.Hardware | MFT_EnumFlag.LocalMFT | MFT_EnumFlag.SortAndFilter;
+            MFT_EnumFlag flags = MFT_EnumFlag.SyncMFT | MFT_EnumFlag.LocalMFT | MFT_EnumFlag.SortAndFilter;
+            if (hardwareAcceleration)
+                flags |= MFT_EnumFlag.Hardware;
             Initialise(MFTransformCategory.MFT_CATEGORY_VIDEO_PROCESSOR, nativeType, outputMediaType, flags);
             SafeRelease(outputMediaType);
         }

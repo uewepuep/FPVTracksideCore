@@ -214,9 +214,16 @@ namespace UI
 
             Themes = themes.ToList();
 
+            Theme oldCurrent = Current;
+
             if (ApplicationProfileSettings.Instance != null)
             {
                 Current = Themes.FirstOrDefault(t => t.Name == ApplicationProfileSettings.Instance.Theme);
+            }
+
+            if (Current == null)
+            {
+                Current = oldCurrent;
             }
 
             if (Current == null)
@@ -235,6 +242,7 @@ namespace UI
             }
 
             Logger.UI.LogCall(Current, "Theme.Init");
+
 
             if (Current == null)
             {

@@ -32,6 +32,7 @@ namespace UI.Video
 
         private IPlaybackFrameSource primary;
         private Race race;
+        private DateTime? seekOnStart;
 
         private DateTime minStart;
         private DateTime maxEnd;
@@ -48,6 +49,9 @@ namespace UI.Video
         {
             get
             {
+                Race race = this.race;
+                SeekNode SeekNode = this.SeekNode;
+
                 if (race == null || SeekNode == null)
                     return DateTime.Now;
 
@@ -59,6 +63,9 @@ namespace UI.Video
         {
             get
             {
+                Race race = this.race;
+                SeekNode SeekNode = this.SeekNode;
+
                 if (race == null || SeekNode == null) 
                     return TimeSpan.Zero;
 
@@ -70,6 +77,9 @@ namespace UI.Video
         {
             get
             {
+                Race race = this.race;
+                SeekNode SeekNode = this.SeekNode;
+
                 if (race == null || SeekNode == null)
                     return TimeSpan.Zero;
 
@@ -231,7 +241,7 @@ namespace UI.Video
             race = null;
         }
 
-        public bool ReplayRace(Race race)
+        public bool ReplayRace(Race race, Lap lap = null)
         {
             try
             {
@@ -239,6 +249,14 @@ namespace UI.Video
                 SeekNode.ClearFlags();
 
                 this.race = race;
+                if (lap != null)
+                {
+                    seekOnStart = lap.Start;
+                }
+                else
+                {
+                    seekOnStart = null;
+                }
 
                 PlaybackVideoManager = VideoManagerFactory.CreateVideoManager();
                 PlaybackVideoManager.OnStart += PlaybackVideoManager_OnStart;
@@ -287,6 +305,7 @@ namespace UI.Video
                     ChannelNodeBase[] channelNodes = ChannelsGridNode.AddPilots(race.PilotChannelsSafe);
                     foreach (ChannelNodeBase cbn in channelNodes)
                     {
+                        cbn.LapsNode.OnSeekToLap = (l) => { Seek(l.Start); };
                         cbn.OnCloseClick += () => { Hide(cbn); };
                         cbn.OnCrashedOutClick += () => { Hide(cbn); };
 
@@ -322,6 +341,13 @@ namespace UI.Video
                 primary = (IPlaybackFrameSource)obj;
             }
             PlaybackVideoManager.OnStart -= PlaybackVideoManager_OnStart;
+
+            if (seekOnStart != null)
+            {
+                Seek(seekOnStart.Value);
+                Stop();
+                seekOnStart = null;
+            }
         }
 
         private void Hide(ChannelNodeBase cbn)

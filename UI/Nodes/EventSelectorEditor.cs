@@ -162,6 +162,8 @@ namespace UI.Nodes
 
         public MenuButton MenuButton { get; private set; }
 
+        protected ColorNode panelTop;
+
         public EventSelectorEditor(Texture2D logo, Profile profile)
             : this(new SimpleEvent[0], true, false)
         {
@@ -171,14 +173,14 @@ namespace UI.Nodes
             const float headingHeight = 0.2f;
             heading.RelativeBounds = new RectangleF(0, 1 - headingHeight, 1, headingHeight);
 
-            ColorNode colorNode = new ColorNode(Theme.Current.EventSelectorTop);
-            colorNode.RelativeBounds = new RectangleF(0, 0, 1, 1 - headingHeight);
-            mainDock.Top.AddChild(colorNode);
+            panelTop = new ColorNode(Theme.Current.EventSelectorTop);
+            panelTop.RelativeBounds = new RectangleF(0, 0, 1, 1 - headingHeight);
+            mainDock.Top.AddChild(panelTop);
 
             ImageNode logoNode = new ImageNode(logo, true);
             logoNode.RelativeBounds = new RectangleF(0, 0, 1, 0.99f);
             logoNode.Alignment = RectangleAlignment.TopCenter;
-            colorNode.AddChild(logoNode);
+            panelTop.AddChild(logoNode);
 
             addButton.Text = Translator.Get("Button.New", "New");
             okButton.Text = Translator.Get("Button.Open", "Open");
@@ -200,12 +202,12 @@ namespace UI.Nodes
             float profwidth = 0.2f;
             profileButtonNode.RelativeBounds = new RectangleF(MenuButton.RelativeBounds.Right - profwidth, 0.80f, profwidth, 0.15f);
             profileButtonNode.ProfileSet += MenuButton_ProfileSet;
-            colorNode.AddChild(profileButtonNode);
+            panelTop.AddChild(profileButtonNode);
 
             LanguageButtonNode languageButtonNode = new LanguageButtonNode(Color.Transparent, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA);
             languageButtonNode.RelativeBounds = new RectangleF(0.01f, 0.80f, profwidth, 0.15f);
             languageButtonNode.OnLanguageSet += LanguageSet;
-            colorNode.AddChild(languageButtonNode);
+            panelTop.AddChild(languageButtonNode);
 
             SetObjects(GetEvents(profile), true);
 
@@ -274,17 +276,28 @@ namespace UI.Nodes
             if (ppl == null)
                 return;
 
-            string newEventName = Selected.Name;
+            string baseName;
             try
             {
-                newEventName = Regex.Replace(newEventName, @"\([A-z0-9 ]*\)", "");
+                baseName = Regex.Replace(Selected.Name, @"\([^)]*\)", "").Trim();
             }
             catch
             {
-                newEventName = "Cloned Event";
+                baseName = "Cloned Event";
             }
 
-            newEventName = newEventName + " (" + DateTime.Now.ToString(dateFormat) + ")";
+            string newEventName = baseName + " (" + DateTime.Now.ToString(dateFormat) + ")";
+
+            if (Objects.Any(e => e.Name == newEventName))
+            {
+                string dateStr = DateTime.Now.ToString(dateFormat);
+                int copyNumber = 2;
+                while (Objects.Any(e => e.Name == newEventName))
+                {
+                    newEventName = baseName + " (" + dateStr + " #" + copyNumber + ")";
+                    copyNumber++;
+                }
+            }
 
             TextPopupNode textPopupNode = new TextPopupNode("Clone Event", "Event Name", newEventName);
             textPopupNode.OnOK += Clone;

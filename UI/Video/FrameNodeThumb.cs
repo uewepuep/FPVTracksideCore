@@ -114,8 +114,20 @@ namespace UI.Video
                 {
                     DrawToTexture();
 
-                    if (colorData != null)
-                        renderTarget.GetData(colorData);
+                    if (renderTarget != null && colorData != null)
+                    {
+                        try
+                        {
+                            renderTarget.GetData(colorData);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.VideoLog.LogException(this, "GetData failed, discarding render target", ex);
+                            CompositorLayer.CleanUp(renderTarget);
+                            renderTarget = null;
+                            colorData = null;
+                        }
+                    }
                 }
             }
         }
@@ -144,8 +156,10 @@ namespace UI.Video
                 drawer.Draw(texture2d, sourceBounds, new Rectangle(0, 0, Size.Width, Size.Height), Color.White, 1);
                 drawer.End();
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.VideoLog.LogException(this, "DrawToTexture failed, discarding render target", ex);
+
                 if (renderTarget != null)
                 {
                     renderTarget.Dispose();
@@ -161,7 +175,7 @@ namespace UI.Video
             finally
             {
                 // Drop the render target
-                drawer.GraphicsDevice.SetRenderTarget(null);
+                drawer?.GraphicsDevice.SetRenderTarget(null);
             }
         }
 

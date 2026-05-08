@@ -18,6 +18,8 @@ namespace UI.Nodes
             background.RelativeBounds = new RectangleF(0, 0, 1, 1);
             AddChild(background);
             SetBack(background);
+
+            AddChild(new ShadowNode());
         }
 
         protected void SetBack(Node node)

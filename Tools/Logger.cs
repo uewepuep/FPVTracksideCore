@@ -255,7 +255,7 @@ namespace Tools
 
         public void LogDebugCall(object caller, params object[] targets)
         {
-#if DEBUG
+#if DEBUG_VIDEO
             LogCall(caller, targets);
 #endif  
         }

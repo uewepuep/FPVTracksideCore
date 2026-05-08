@@ -36,6 +36,8 @@ namespace WinFormsGraphicsDevice
         // the same underlying GraphicsDevice, managed by this helper service.
         GraphicsDeviceService graphicsDeviceService;
 
+        private System.Drawing.Size lastKnownClientSize;
+
 
         #endregion
 
@@ -224,10 +226,15 @@ namespace WinFormsGraphicsDevice
 
                 default:
                     // If the device state is ok, check whether it is big enough.
-                    PresentationParameters pp = GraphicsDevice.PresentationParameters;
-
-                    deviceNeedsReset = (ClientSize.Width != pp.BackBufferWidth) ||
-                                       (ClientSize.Height != pp.BackBufferHeight);
+                    // Only read PresentationParameters when the client size has changed.
+                    System.Drawing.Size currentSize = ClientSize;
+                    if (currentSize != lastKnownClientSize)
+                    {
+                        PresentationParameters pp = GraphicsDevice.PresentationParameters;
+                        deviceNeedsReset = (currentSize.Width != pp.BackBufferWidth) ||
+                                           (currentSize.Height != pp.BackBufferHeight);
+                        lastKnownClientSize = currentSize;
+                    }
                     break;
             }
 

@@ -15,8 +15,6 @@ namespace UI.Nodes
     {
         private TextNode number;
         private TextNode desc;
-        private RaceManager raceManager;
-
         private int points;
         public int Points
         {

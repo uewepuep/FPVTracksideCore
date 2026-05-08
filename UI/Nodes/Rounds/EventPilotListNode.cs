@@ -171,7 +171,7 @@ namespace UI.Nodes.Rounds
             }
         }
 
-        public virtual IEnumerable<T> Order(IEnumerable<T> nodes)
+        public new virtual IEnumerable<T> Order(IEnumerable<T> nodes)
         {
             return PilotNodes;
         }

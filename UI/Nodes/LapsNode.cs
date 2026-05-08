@@ -33,6 +33,8 @@ namespace UI.Nodes
 
         public int LapLines { get; set; }
 
+        public Action<Lap> OnSeekToLap { get; set; }
+
         private TableNode table;
 
         private DateTime? playbackTime;
@@ -284,6 +286,12 @@ namespace UI.Nodes
                 lap = lapNode.Lap;
             }
 
+            if (lap != null && OnSeekToLap != null)
+            {
+                mm.AddItem("Seek to Lap", () => { OnSeekToLap(lap); });
+                mm.AddBlank();
+            }
+
             if (EventManager.RaceManager.RaceRunning)
             {
                 mm.AddItem("Add Lap Now", () =>
@@ -301,7 +309,7 @@ namespace UI.Nodes
             if (EventManager.RaceManager.RaceFinished)
             {
                 // if we're in video playback do some adjustments..
-                if (playbackTime.HasValue)
+                if (OnSeekToLap != null)
                 {
                     mm.AddItem("Add Lap Now", () =>
                     {
@@ -315,6 +323,8 @@ namespace UI.Nodes
                 {
                     GetLayer<PopupLayer>().Popup(new AddLapTimeNode(EventManager.RaceManager, Pilot));
                 });
+
+                mm.AddBlank();
 
                 mm.AddItem("Edit Laps", () =>
                 {
@@ -338,6 +348,8 @@ namespace UI.Nodes
 
             if (lap != null)
             {
+                mm.AddBlank();
+
                 mm.AddItem("Disqualify Lap", () =>
                 {
                     EventManager.RaceManager.DisqualifyLap(lap);

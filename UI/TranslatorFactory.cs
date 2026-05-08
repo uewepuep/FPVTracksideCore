@@ -85,6 +85,10 @@ namespace UI
 
                         if (!string.IsNullOrEmpty(replacement))
                         {
+                            // Surrounding quotes are stripped so e.g. "" = empty string, " " = literal space
+                            if (replacement.Length >= 2 && replacement[0] == '"' && replacement[replacement.Length - 1] == '"')
+                                replacement = replacement.Substring(1, replacement.Length - 2);
+
                             string name = translationItemNames[i];
                             translator.Set(name, replacement);
                         }

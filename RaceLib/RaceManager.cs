@@ -31,6 +31,7 @@ namespace RaceLib
         public event Race.OnRaceEvent OnRaceCreated;
         public event Race.OnRaceEvent OnRaceStart;
         public event Race.OnRaceEvent OnRacePreStart;
+        public event Action<Race, DateTime> OnRaceStartScheduled;
         public event Race.OnRaceEvent OnRaceChanged;
         public event Race.OnRaceEvent OnRaceResumed;
         public event Race.OnRaceEvent OnRacePilotsSet;
@@ -747,6 +748,8 @@ namespace RaceLib
                 }
             }
 
+            OnRaceStartScheduled?.Invoke(currentRace, startTime);
+
             while (PreRaceStartDelay && DateTime.Now < startTime)
             {
                 Thread.Sleep(1);
@@ -982,6 +985,7 @@ namespace RaceLib
             {
                 db.Upsert(race.PilotChannelsSafe);
                 db.Upsert(race);
+                db.Upsert(EventManager.Event);
             }
 
             OnRaceCreated?.Invoke(race);

@@ -405,7 +405,7 @@ namespace UI.Video
         }
     }
 
-    public class ConfirmPictureNode : BorderPanelNode
+    public class ConfirmPictureNode : BorderPanelShadowNode
     {
         private FileInfo existingPhoto;
         private FileInfo newPhoto;
