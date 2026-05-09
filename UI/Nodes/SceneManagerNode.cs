@@ -168,6 +168,11 @@ namespace UI.Nodes
             ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
         }
 
+        private void UpdateNextRaceNode(Round r)
+        {
+            UpdateNextRaceNode();
+        }
+
         public void UpdateNextRaceNode()
         {
             Race nextRace = eventManager.RaceManager.GetNextRace(true);

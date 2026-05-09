@@ -18,8 +18,8 @@ namespace RaceLib
         public SheetFormatManager SheetFormatManager { get; set; }
         public LuaFormatManager LuaFormatManager { get; set; }
 
-        public event Action OnRoundAdded;
-        public event Action OnRoundRemoved;
+        public event Action<Round> OnRoundAdded;
+        public event Action<Round> OnRoundRemoved;
         public event Action OnStageChanged;
 
         public Round[] Rounds
@@ -225,12 +225,8 @@ namespace RaceLib
 
         public IEnumerable<Race> GenerateRound(RoundPlan roundPlan)
         {
-            Round newRound = GetCreateRound(RaceManager.GetMaxRoundNumber(roundPlan.CallingRound.EventType) + 1, roundPlan.CallingRound.EventType);
-
-            if (roundPlan.KeepStage)
-            {
-                newRound.Stage = roundPlan.Stage;
-            }
+            Stage roundStage = roundPlan.KeepStage ? roundPlan.Stage : null;
+            Round newRound = GetCreateRound(RaceManager.GetMaxRoundNumber(roundPlan.CallingRound.EventType) + 1, roundPlan.CallingRound.EventType, roundStage, roundPlan.CallingRound.Order);
 
             RoundFormat roundFormat = null;
 
@@ -253,7 +249,8 @@ namespace RaceLib
 
         public IEnumerable<Race> GenerateNewRound(Round callingRound, RoundFormat roundFormat, RoundPlan roundPlan)
         {
-            Round newRound = GetCreateRound(callingRound.RoundNumber + 1, callingRound.EventType, roundFormat.Stage);
+            int newRoundNumber = RaceManager.GetMaxRoundNumber(callingRound.EventType) + 1;
+            Round newRound = GetCreateRound(newRoundNumber, callingRound.EventType, roundFormat.Stage, callingRound.Order);
             return GenerateFillRound(newRound, roundFormat, roundPlan);
         }
 
@@ -312,7 +309,7 @@ namespace RaceLib
 
         public IEnumerable<Race> GenerateSeededX(Round callingRound, IEnumerable<Pilot> pilots)
         {
-            Round newRound = GetCreateRound(RaceManager.GetMaxRoundNumber(callingRound.EventType) + 1, callingRound.EventType);
+            Round newRound = GetCreateRound(RaceManager.GetMaxRoundNumber(callingRound.EventType) + 1, callingRound.EventType, callingRound.Stage, callingRound.Order);
 
             RoundFormat roundFormat = new SeededFormat(EventManager);
 
@@ -325,7 +322,7 @@ namespace RaceLib
 
         public IEnumerable<Race> GenerateTopX(Round callingRound, IEnumerable<Pilot> pilots)
         {
-            Round newRound = GetCreateRound(RaceManager.GetMaxRoundNumber(callingRound.EventType) + 1, callingRound.EventType);
+            Round newRound = GetCreateRound(RaceManager.GetMaxRoundNumber(callingRound.EventType) + 1, callingRound.EventType, callingRound.Stage, callingRound.Order);
 
             RoundFormat roundFormat = new TopFormat(EventManager);
 
@@ -353,7 +350,7 @@ namespace RaceLib
                 }
 
                 RaceManager.UpdateRaceRoundNumbers();
-                OnRoundAdded?.Invoke();
+                OnRoundAdded?.Invoke(newRound);
 
                 return aRound;
             }
@@ -399,7 +396,7 @@ namespace RaceLib
             }
         }
 
-        public Round GetCreateRound(int roundNumber, EventTypes eventType, Stage stage = null)
+        public Round GetCreateRound(int roundNumber, EventTypes eventType, Stage stage = null, int insertAfterOrder = -1)
         {
             if (roundNumber == 0)
                 roundNumber = 1;
@@ -421,7 +418,13 @@ namespace RaceLib
                             round.GameTypeName = gameType.Name;
                     }
 
-                    if (Event.Rounds.Any())
+                    if (insertAfterOrder >= 0)
+                    {
+                        foreach (Round r in Event.Rounds.Where(r => r.Order > insertAfterOrder))
+                            r.Order += 100;
+                        round.Order = insertAfterOrder + 100;
+                    }
+                    else if (Event.Rounds.Any())
                     {
                         round.Order = Event.Rounds.Max(r => r.Order) + 100;
                     }
@@ -459,13 +462,14 @@ namespace RaceLib
             return !RaceManager.GetRaces(round).Any();
         }
 
-        public Round CreateEmptyRound(EventTypes eventType, Stage stage = null)
+        public Round CreateEmptyRound(EventTypes eventType, Stage stage = null, Round callingRound = null)
         {
             int maxRoundNumber = RaceManager.GetMaxRoundNumber(eventType);
+            int insertAfterOrder = callingRound != null ? callingRound.Order : -1;
 
-            Round newRound = GetCreateRound(maxRoundNumber + 1, eventType);
-            newRound.Stage = stage;
-            OnRoundAdded?.Invoke();
+            Round newRound = GetCreateRound(maxRoundNumber + 1, eventType, stage, insertAfterOrder);
+            RaceManager.UpdateRaceRoundNumbers();
+            OnRoundAdded?.Invoke(newRound);
 
             return newRound;
         }
@@ -498,7 +502,7 @@ namespace RaceLib
 
             CheckThereIsOneRound();
 
-            OnRoundRemoved?.Invoke();
+            OnRoundRemoved?.Invoke(round);
         }
 
         public IEnumerable<Pilot> GetOutputPilots(Round round)
@@ -562,7 +566,7 @@ namespace RaceLib
 
             RaceManager.UpdateRaceRoundNumbers();
 
-            OnRoundAdded?.Invoke();
+            OnRoundAdded?.Invoke(round);
             return cloned;
         }
 
@@ -572,8 +576,7 @@ namespace RaceLib
 
             int maxRound = RaceManager.GetMaxRoundNumber(round.EventType);
 
-            Round newRound = GetCreateRound(maxRound + 1, round.EventType);
-            newRound.Stage = round.Stage;
+            Round newRound = GetCreateRound(maxRound + 1, round.EventType, round.Stage, round.Order);
 
             List<Race> newRaces = new List<Race>();
             foreach (Race race in races)
@@ -589,13 +592,13 @@ namespace RaceLib
             }
 
             RaceManager.UpdateRaceRoundNumbers();
-            OnRoundAdded?.Invoke();
+            OnRoundAdded?.Invoke(newRound);
             return newRaces;
         }
 
         public void GenerateFinal(Round callingRound)
         {
-            Round newRound = GetCreateRound(callingRound.RoundNumber + 1, EventManager.Event.EventType);
+            Round newRound = GetCreateRound(RaceManager.GetMaxRoundNumber(callingRound.EventType) + 1, callingRound.EventType, callingRound.Stage, callingRound.Order);
 
             RoundFormat roundFormat = new FinalFormat(EventManager);
             RoundPlan plan = new RoundPlan(EventManager, callingRound, null);

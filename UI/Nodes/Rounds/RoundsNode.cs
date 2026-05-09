@@ -34,6 +34,8 @@ namespace UI.Nodes.Rounds
         public ISync Syncer { get; private set; }
 
         private bool needsRefresh;
+        private Node pendingScrollToNode;
+        private Round pendingScrollToRound;
 
         public ScrollerNode Scroller { get; private set; }
 
@@ -52,7 +54,7 @@ namespace UI.Nodes.Rounds
             roundControl.Next += RoundControl_Next;
             roundControl.Prev += RoundControl_Prev;
 
-            scrollTime = TimeSpan.FromSeconds(2);
+            scrollTime = TimeSpan.FromSeconds(0.3);
 
             Scroller = new ScrollerNode(this, ScrollerNode.Types.Horizontal, Theme.Current.ScrollBar.XNA);
             Scroller.OnSelfLayout += RequestLayout;
@@ -151,10 +153,11 @@ namespace UI.Nodes.Rounds
             Refresh();
         }
 
-        private void Em_OnRoundAdded()
+        private void Em_OnRoundAdded(Round round)
         {
+            if (!EventManager.RoundManager.Rounds.Any(r => r.Order > round.Order))
+                ScrollToRound(round);
             Refresh();
-            Scroller.ScrollToEnd(scrollTime);
         }
 
         private void RaceManager_OnPilotAdded(PilotChannel pc)
@@ -231,7 +234,7 @@ namespace UI.Nodes.Rounds
 
             if (EventManager.RaceManager.GetRaces(round).Any() && roundSheetFormat != null)
             {
-                Round newRound = EventManager.RoundManager.GetCreateRound(round.RoundNumber + 1, round.EventType);
+                Round newRound = EventManager.RoundManager.GetCreateRound(EventManager.RaceManager.GetMaxRoundNumber(round.EventType) + 1, round.EventType, round.Stage, round.Order);
                 roundSheetFormat.GenerateSingleRound(newRound);
             }
         }
@@ -403,7 +406,7 @@ namespace UI.Nodes.Rounds
 
         private void AddEmptyRound(Round callingRound, Stage stage)
         {
-            RoundManager.CreateEmptyRound(callingRound.EventType, stage);
+            RoundManager.CreateEmptyRound(callingRound.EventType, stage, callingRound);
             Refresh();
         }
 
@@ -417,7 +420,6 @@ namespace UI.Nodes.Rounds
         {
             RoundManager.CloneRound(callingRound);
             Refresh();
-            Scroller.ScrollToEnd(scrollTime);
         }
 
         private void RemoveResultStage(Round callingRound)
@@ -435,8 +437,8 @@ namespace UI.Nodes.Rounds
             if (!isNew) EventManager.RoundManager.DeleteStage(callingRound.Stage);
             EventManager.RoundManager.AddSumPoints(callingRound);
             if (isNew) EditStageName(callingRound);
+            ScrollToRound(callingRound);
             Refresh();
-            Scroller.ScrollToEnd(scrollTime);
         }
 
         private void AddTimeSummary(Round callingRound, TimeSummary.TimeSummaryTypes type)
@@ -445,8 +447,8 @@ namespace UI.Nodes.Rounds
             if (!isNew) EventManager.RoundManager.DeleteStage(callingRound.Stage);
             EventManager.RoundManager.AddTimeSummary(callingRound, type);
             if (isNew) EditStageName(callingRound);
+            ScrollToRound(callingRound);
             Refresh();
-            Scroller.ScrollToEnd(scrollTime);
         }
 
         public void AddPackCount(Round callingRound)
@@ -464,8 +466,8 @@ namespace UI.Nodes.Rounds
             if (!isNew) EventManager.RoundManager.DeleteStage(callingRound.Stage);
             EventManager.RoundManager.AddLapCount(callingRound);
             if (isNew) EditStageName(callingRound);
+            ScrollToRound(callingRound);
             Refresh();
-            Scroller.ScrollToEnd(scrollTime);
         }
 
         private void GenerateRoundStage(Round round, StageTypes stageType, IEnumerable<Pilot> orderedPilots)
@@ -571,6 +573,14 @@ namespace UI.Nodes.Rounds
             {
                 needsRefresh = false;
                 DoRefresh();
+
+                if (pendingScrollToRound != null)
+                {
+                    EventXNode xnode = EventXNodes.LastOrDefault(r => r.Round == pendingScrollToRound);
+                    if (xnode != null)
+                        pendingScrollToNode = xnode;
+                    pendingScrollToRound = null;
+                }
             }
             
             if (parentBounds.Width == 0)
@@ -599,15 +609,19 @@ namespace UI.Nodes.Rounds
 
             const int extraPaddingForDragAndDropArea = 100;
 
-            Scroller.ContentSizePixels = paddingX + extraPaddingForDragAndDropArea;
-            if (EventXNodes.Any())
-            {
-                Scroller.ContentSizePixels += EventXNodes.Select(e => e.Bounds.Right).Max() - EventXNodes.Select(e => e.Bounds.X).Min();
-            }
+            Scroller.ContentSizePixels = x - BoundsF.X + extraPaddingForDragAndDropArea;
 
             Scroller.Layout(BoundsF);
 
             base.Layout(parentBounds);
+
+            if (pendingScrollToNode != null)
+            {
+                float nodeAbsoluteX = pendingScrollToNode.BoundsF.X + Scroller.CurrentScrollPixels;
+                float scrollTarget = nodeAbsoluteX - BoundsF.X - (Scroller.ViewSizePixels / 2) + (pendingScrollToNode.Bounds.Width / 2);
+                Scroller.ScrollTo(scrollTarget, scrollTime);
+                pendingScrollToNode = null;
+            }
         }
 
         public override void Draw(Drawer id, float parentAlpha)
@@ -796,20 +810,22 @@ namespace UI.Nodes.Rounds
 
         public void ScrollToRace(Race race)
         {
-            foreach (EventRoundNode ern in RoundNodes)
-            {
-                if (ern.Races.Contains(race))
-                {
-                    ScrollToRound(ern);
-                }
-            }
+            ScrollToRound(race.Round);
         }
 
-        public void ScrollToRound(EventRoundNode round)
+        public void ScrollToRound(Round round)
         {
-            int minX = RoundNodes.Select(e => e.Bounds.X).Min();
+            EventXNode x = EventXNodes.LastOrDefault(r => r.Round == round);
+            if (x != null)
+                ScrollToNode(x);
+            else
+                pendingScrollToRound = round;
+        }
 
-            Scroller.ScrollTo(round.Bounds.X - minX);
+
+        public void ScrollToNode(Node node)
+        {
+            pendingScrollToNode = node;
         }
     }
 

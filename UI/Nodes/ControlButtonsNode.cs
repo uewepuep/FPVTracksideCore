@@ -127,6 +127,11 @@ namespace UI.Nodes
             UpdateControlButtons();
         }
 
+        private void UpdateControlButtons(Round r)
+        {
+            UpdateControlButtons();
+        }
+
         public void UpdateControlButtons()
         {
             needsUpdate = true;
