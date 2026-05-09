@@ -68,25 +68,29 @@ namespace RaceLib
 
             // Non-sheet stages: existing behaviour (generate next round when any result changes)
             Stage stage = race.Round.Stage;
-            RoundFormat roundFormat = GetRoundFormat(stage);
-            RoundPlan roundPlan = new RoundPlan(EventManager, race.Round, stage);
 
-            GenerateNewRound(race.Round, roundFormat, roundPlan);
-
-            LuaRoundFormat luaFormat = roundFormat as LuaRoundFormat;
-            if (luaFormat != null && luaFormat.HasStandings)
+            if (stage.GeneratesRounds)
             {
-                Pilot[] stagePilots = RaceManager.Races
-                    .Where(r => r.Round?.Stage == stage)
-                    .SelectMany(r => r.Pilots)
-                    .Distinct()
-                    .ToArray();
+                RoundFormat roundFormat = GetRoundFormat(stage);
+                RoundPlan roundPlan = new RoundPlan(EventManager, race.Round, stage);
 
-                stage.Standings = luaFormat.GetStandings(stagePilots);
+                GenerateNewRound(race.Round, roundFormat, roundPlan);
 
-                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                LuaRoundFormat luaFormat = roundFormat as LuaRoundFormat;
+                if (luaFormat != null && luaFormat.HasStandings)
                 {
-                    db.Upsert(stage);
+                    Pilot[] stagePilots = RaceManager.Races
+                        .Where(r => r.Round?.Stage == stage)
+                        .SelectMany(r => r.Pilots)
+                        .Distinct()
+                        .ToArray();
+
+                    stage.Standings = luaFormat.GetStandings(stagePilots);
+
+                    using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                    {
+                        db.Upsert(stage);
+                    }
                 }
             }
         }

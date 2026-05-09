@@ -82,6 +82,7 @@ namespace RaceLib
                     return HasSheetFormat || HasScriptFormat;
                 }
 
+                // DoubleElimination, ChaseTheAce, StreetLeague,
                 return true;
             }
         }
