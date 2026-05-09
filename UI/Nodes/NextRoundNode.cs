@@ -102,7 +102,7 @@ namespace UI.Nodes
 
         private void Clone_OnClick(Composition.Input.MouseInputEvent mie)
         {
-            eventManager.RoundManager.CloneRound(Round);
+            eventManager.RoundManager.CloneRound(Round, Round.Stage);
         }
 
         private void LastAgain_OnClick(Composition.Input.MouseInputEvent mie)

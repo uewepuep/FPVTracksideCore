@@ -416,9 +416,9 @@ namespace UI.Nodes.Rounds
             Refresh();
         }
 
-        private void CloneRound(Round callingRound)
+        private void CloneRound(Round callingRound, Stage stage)
         {
-            RoundManager.CloneRound(callingRound);
+            RoundManager.CloneRound(callingRound, stage);
             Refresh();
         }
 
@@ -470,9 +470,9 @@ namespace UI.Nodes.Rounds
             Refresh();
         }
 
-        private void GenerateRoundStage(Round round, StageTypes stageType, IEnumerable<Pilot> orderedPilots)
+        private void GenerateRoundStage(Round round, StageTypes stageType, IEnumerable<Pilot> orderedPilots, Action<Stage> stageSetup)
         {
-            RoundManager.GenerateStageRound(round, stageType, orderedPilots);
+            RoundManager.GenerateStageRound(round, stageType, orderedPilots, stageSetup);
             Refresh();
         }
 
@@ -489,14 +489,14 @@ namespace UI.Nodes.Rounds
             };
         }
 
-        private void GenerateRoundKeepChannels(Round callingRound)
+        private void GenerateRoundKeepChannels(Round callingRound, Stage stage)
         {
-            GenerateRound(callingRound, callingRound.Stage, RoundPlan.ChannelChangeEnum.KeepFromPreviousRound);
+            GenerateRound(callingRound, stage, RoundPlan.ChannelChangeEnum.KeepFromPreviousRound);
         }
 
-        private void GenerateChangeChannels(Round callingRound)
+        private void GenerateChangeChannels(Round callingRound, Stage stage)
         {
-            GenerateRound(callingRound, callingRound.Stage, RoundPlan.ChannelChangeEnum.Change);
+            GenerateRound(callingRound, stage, RoundPlan.ChannelChangeEnum.Change);
         }
 
         private void GenerateRound(Round callingRound, Stage stage, RoundPlan.ChannelChangeEnum changeChannel)
@@ -508,7 +508,7 @@ namespace UI.Nodes.Rounds
             Refresh();
         }
 
-        private void GenerateFinal(Round callingRound)
+        private void GenerateFinal(Round callingRound, Stage stage)
         {
             RoundManager.GenerateFinal(callingRound);
             Refresh();

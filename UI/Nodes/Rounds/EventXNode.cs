@@ -32,13 +32,13 @@ namespace UI.Nodes.Rounds
         public delegate void RoundStageDelegate(Round round, Stage stage);
         public delegate void RoundTimeDelegate(Round round, TimeSummary.TimeSummaryTypes type);
 
-        public event RoundDelegate AddRound;
-        public event RoundDelegate ChangeChannels;
-        public event RoundDelegate Finals;
-        public event RoundDelegate Clone;
+        public event RoundStageDelegate AddRound;
+        public event RoundStageDelegate ChangeChannels;
+        public event RoundStageDelegate Finals;
+        public event RoundStageDelegate Clone;
         public event RoundDelegate AddSheetFormatRound;
         public event RoundDelegate AddScriptFormatRound;
-        public event Action<Round, StageTypes, IEnumerable<Pilot>> AddStage;
+        public event Action<Round, StageTypes, IEnumerable<Pilot>, Action<Stage>> AddStage;
 
         public event RoundDelegate RemoveRound;
         public event RoundDelegate SumPoints;
@@ -74,6 +74,7 @@ namespace UI.Nodes.Rounds
         }
 
         private ShadowNode shadow;
+
 
         public EventXNode(EventManager ev, Round round)
         {
@@ -240,7 +241,7 @@ namespace UI.Nodes.Rounds
             {
                 string name = stageType.ToString().CamelCaseToHuman();
                 StageTypes local = stageType;
-                menu.AddItem(name, () => { AddStage?.Invoke(Round, local, orderedPilots); });
+                menu.AddItem(name, () => { AddStageTypeStage(Round, local, orderedPilots, null); });
             }
             menu.AddBlank();
 
@@ -267,7 +268,7 @@ namespace UI.Nodes.Rounds
         protected void ShowFormatSelector(IEnumerable<Pilot> orderedPilots)
         {
             FormatSelectorNode selector = new FormatSelectorNode(EventManager, Round, orderedPilots, SheetFormat, ScriptFormat,
-                (r, st, p) => AddStage?.Invoke(r, st, p));
+                (r, st, p) => AddStage?.Invoke(r, st, p, null));
             PopupLayer py = GetLayer<PopupLayer>();
             py.Popup(selector);
         }
@@ -289,14 +290,14 @@ namespace UI.Nodes.Rounds
             addRound.AddItem("Empty", () => { AddEmptyRound?.Invoke(Round, stage); });
             if (canClone)
             {
-                addRound.AddItem("Clone", () => { Clone?.Invoke(Round); });
+                addRound.AddItem("Clone", () => { Clone?.Invoke(Round, stage); });
             }
 
-            addRound.AddItem("Randomise (Random channels)", () => { ChangeChannels?.Invoke(Round); });
-            addRound.AddItem("Randomise (Keep Channels)", () => { AddRound?.Invoke(Round); });
+            addRound.AddItem("Randomise (Random channels)", () => { ChangeChannels?.Invoke(Round, stage); });
+            addRound.AddItem("Randomise (Keep Channels)", () => { AddRound?.Invoke(Round, stage); });
 
             if (canAddFinal)
-                addRound.AddItem("Final", () => { Finals?.Invoke(Round); });
+                addRound.AddItem("Final", () => { Finals?.Invoke(Round, stage); });
             addRound.AddItem("Custom Round", () => { CustomRound?.Invoke(Round, stage); });
         }
 
@@ -305,60 +306,49 @@ namespace UI.Nodes.Rounds
             if (Round.Stage == null)
                 return; 
 
-            if (Round.Stage.HasSheetFormat)
+            if (Round.Stage.GeneratesRounds)
             {
                 AddSheetFormatRound(Round);
             }
             else 
             {
-                AddStage(Round, Round.Stage.StageType, GetOrderedPilots().ToArray());
+                AddStage(Round, Round.Stage.StageType, GetOrderedPilots().ToArray(), null);
             }
+        }
+
+        private void AddStageTypeStage(Round round, StageTypes local, IEnumerable<Pilot> orderedPilots, object value)
+        {
+            LoadingLayer ll = GetLayer<LoadingLayer>();
+            ll.WorkQueue.Enqueue("Generating", () =>
+            {
+                AddStage?.Invoke(Round, local, orderedPilots, null);
+            });
         }
 
         private void SheetFormat(SheetFormatManager.SheetFile sheet, IEnumerable<Pilot> orderedPilots)
         {
             LoadingLayer ll = GetLayer<LoadingLayer>();
-            ll.WorkQueue.Enqueue("Loading format", () =>
+            ll.WorkQueue.Enqueue("Loading Sheet", () =>
             {
-                Stage stage = null;
-                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                AddStage?.Invoke(Round, StageTypes.Default, orderedPilots, (stage) =>
                 {
-                    stage = new Stage();
-                    stage.ID = Guid.NewGuid();
                     stage.Name = sheet.Name;
                     stage.SheetFormatFilename = sheet.FileInfo.Name;
-
-                    db.Insert(stage);
-
-                    bool empty = !EventManager.RaceManager.GetRaces(Round).Any();
-                    if (empty)
-                    {
-                        Round.Stage = stage;
-                        db.Update(Round);
-                    }
-                }
-                EventManager.RoundManager.SheetFormatManager.LoadSheet(stage, orderedPilots.ToArray(), true);
+                    EventManager.RoundManager.SheetFormatManager.LoadSheet(stage, orderedPilots.ToArray(), true);
+                });
             });
         }
 
         private void ScriptFormat(RaceLib.Format.LuaFormatManager.ScriptFile script, IEnumerable<Pilot> orderedPilots)
         {
             LoadingLayer ll = GetLayer<LoadingLayer>();
-            ll.WorkQueue.Enqueue("Loading script", () =>
+            ll.WorkQueue.Enqueue("Loading Script", () =>
             {
-                Stage stage = new Stage();
-                stage.ID = Guid.NewGuid();
-                stage.Name = script.Name;
-                stage.ScriptFormatFilename = script.FileInfo.Name;
-
-                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                AddStage?.Invoke(Round, StageTypes.Default, orderedPilots, (stage) => 
                 {
-                    db.Insert(stage);
-                    Round.Stage = stage;
-                    db.Update(Round);
-                }
-
-                AddScriptFormatRound?.Invoke(Round);
+                    stage.Name = script.Name;
+                    stage.ScriptFormatFilename = script.FileInfo.Name;
+                });
             });
         }
 

@@ -261,7 +261,7 @@ namespace UI
                     break;
 
                 case AutoRunnerConfig.AutoCreateRoundsTypes.CloneLast:
-                    EventManager.RoundManager.CloneRound(round);
+                    EventManager.RoundManager.CloneRound(round, round.Stage);
                     break;
             }
         }

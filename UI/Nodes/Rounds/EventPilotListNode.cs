@@ -48,7 +48,6 @@ namespace UI.Nodes.Rounds
 
             base.Dispose();
         }
-
         private void OnLapDisqualified(Lap lap)
         {
             // Don't refresh mid-race.
@@ -251,6 +250,13 @@ namespace UI.Nodes.Rounds
             base.CalculateAspectRatio(height);
         }
 
+
+        public override bool IsRoundInStage()
+        {
+            // Result nodes are in a stage, but returning true here causes new rounds added
+            // from this node to inherit the result stage. New rounds should have no stage.
+            return false;
+        }
 
         protected override void AddButtonRoundMenu(MouseMenu addRound)
         {

@@ -2111,22 +2111,46 @@ namespace RaceLib
         {
             public Channel Channel { get; set; }
             public int ChangeCount { get; set; }
+
+            public override string ToString()
+            {
+                return Channel.ToString() + " change " + ChangeCount;
+            }
         }
 
-        private PreferedChannel GetPreferedChannel(Pilot pilot, Race race)
+        private PreferedChannel GetPreferedChannel(Pilot pilot, int raceOrder)
         {
             PreferedChannel preferedChannel = new PreferedChannel();
 
-            Race[] pilotRaces = GetRaces(r => r.HasPilot(pilot) && r.RaceOrder < race.RaceOrder).ToArray();
+            Race[] pilotRaces = GetRaces(r => r.HasPilot(pilot) && r.Valid && r.RaceOrder < raceOrder).ToArray();
             preferedChannel.ChangeCount = pilot.CountChannelChanges(pilotRaces);
 
-            preferedChannel.Channel = pilotRaces.Where(r => r.RaceOrder < race.RaceOrder).OrderByDescending(r => r.RaceOrder).Select(r => r.GetChannel(pilot)).FirstOrDefault();
+            preferedChannel.Channel = pilotRaces.Where(r => r.RaceOrder < raceOrder).OrderByDescending(r => r.RaceOrder).Select(r => r.GetChannel(pilot)).FirstOrDefault();
             if (preferedChannel.Channel == null)
             {
                 preferedChannel.Channel = EventManager.GetChannel(pilot);
             }
 
             return preferedChannel;
+        }
+
+        public IEnumerable<(Pilot Pilot, Channel Channel)> OrderPilotsForChannelAssignment(IEnumerable<Pilot> pilots, int raceOrder = int.MaxValue)
+        {
+            Pilot[] pilotArray = pilots.ToArray();
+
+            Dictionary<Pilot, PreferedChannel> pilotPrefered = pilotArray.ToDictionary(p => p, p => GetPreferedChannel(p, raceOrder));
+
+            // Count how many pilots want each channel
+            Dictionary<Channel, int> contention = pilotPrefered.Values
+                .Where(pc => pc.Channel != null && pc.Channel != Channel.None)
+                .GroupBy(pc => pc.Channel)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            // Uncontested pilots go first, then contested ordered by most channel changes
+            return pilotArray
+                .OrderBy(p => contention.TryGetValue(pilotPrefered[p].Channel, out int c) && c > 1 ? 1 : 0)
+                .ThenByDescending(p => pilotPrefered[p].ChangeCount)
+                .Select(p => (p, pilotPrefered[p].Channel));
         }
 
         public void OptimiseChannels(IDatabase db, Race race)
@@ -2136,19 +2160,16 @@ namespace RaceLib
                 return;
             }
 
-            Dictionary<Pilot, PreferedChannel> pilotPrefered = race.Pilots.ToDictionary(p => p, p => GetPreferedChannel(p, race));
+            IEnumerable<(Pilot Pilot, Channel Channel)> orderedPilots = OrderPilotsForChannelAssignment(race.Pilots, race.RaceOrder);
+
             if (!race.ClearPilots(db))
             {
                 return;
             }
 
-            IEnumerable<Channel> channels = EventManager.Channels;
-            
-            var orderedPilots = pilotPrefered.OrderBy(kvp => channels.CountBandTypes(kvp.Value.Channel.Band.GetBandType())).ThenByDescending(kvp => kvp.Value.ChangeCount).ToArray();
-            foreach (var kvp in orderedPilots)
+            foreach ((Pilot pilot, Channel channel) in orderedPilots)
             {
-                Pilot pilot = kvp.Key;
-                Channel preferedChannel = kvp.Value.Channel;
+                Channel preferedChannel = channel;
 
                 if (!race.IsFrequencyFree(preferedChannel))
                 {
@@ -2163,6 +2184,7 @@ namespace RaceLib
                 race.SetPilot(db, preferedChannel, pilot);
             }
         }
+
 
         public Pilot GetPilot(Channel channel)
         {

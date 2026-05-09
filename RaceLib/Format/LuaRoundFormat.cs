@@ -148,17 +148,6 @@ namespace RaceLib.Format
             Race[] lastRoundRaces = RaceManager.Races.Where(r => r.Round == plan.CallingRound).ToArray();
 
             Pilot[] pilots = plan.Pilots;
-            if (lastRoundRaces.Any())
-            {
-                List<Pilot> ordered = new List<Pilot>();
-                IEnumerable<Race> endedRaces = lastRoundRaces.Where(r => r.Ended).OrderBy(r => r.End);
-                IEnumerable<Race> unEndedRaces = lastRoundRaces.Where(r => !r.Ended).OrderBy(r => r.RaceNumber);
-
-                ordered.AddRange(endedRaces.GetPilots());
-                ordered.AddRange(unEndedRaces.GetPilots());
-
-                pilots = ordered.ToArray();
-            }
 
             Dictionary<string, Pilot> pilotLookup = pilots.ToDictionary(p => p.ID.ToString());
             Dictionary<string, Channel> channelLookup = plan.Channels.ToDictionary(c => c.ID.ToString());
@@ -436,9 +425,9 @@ namespace RaceLib.Format
                 return DynValue.NewTable(table);
             });
 
-            // minimise_channel_change(race) -> reordered race
-            // Reorders pilots within a race by their last channel frequency so the C# channel
-            // assignment gives as many pilots as possible their previous channel.
+            // minimise_channel_change(pilots) -> reordered pilots
+            // Reorders pilots using RaceManager.OrderPilotsForChannelAssignment so channel
+            // assignment minimises changes from each pilot's previous channel.
             lua.Globals["minimise_channel_change"] = DynValue.NewCallback((ctx, args) =>
             {
                 if (args[0].Type != DataType.Table)
@@ -446,7 +435,7 @@ namespace RaceLib.Format
 
                 Table input = args[0].Table;
 
-                var entries = new List<(DynValue original, int freq)>();
+                List<(DynValue original, Pilot pilot)> entries = new List<(DynValue, Pilot)>();
                 for (int i = 1; i <= input.Length; i++)
                 {
                     DynValue entry = input.Get(i);
@@ -454,20 +443,27 @@ namespace RaceLib.Format
                         ? entry.Table.Get("id").CastToString()
                         : entry.CastToString();
 
-                    int freq = int.MaxValue;
-                    if (pilotId != null && pilotLookup.TryGetValue(pilotId, out Pilot pilot))
-                    {
-                        Channel ch = pilot.GetChannelInRound(lastRoundRaces, plan.CallingRound);
-                        if (ch != null) freq = ch.Frequency;
-                    }
-                    entries.Add((entry, freq));
+                    Pilot pilot = null;
+                    if (pilotId != null)
+                        pilotLookup.TryGetValue(pilotId, out pilot);
+
+                    entries.Add((entry, pilot));
                 }
 
-                entries.Sort((a, b) => a.freq.CompareTo(b.freq));
+                IEnumerable<Pilot> knownPilots = entries.Where(e => e.pilot != null).Select(e => e.pilot);
+                IEnumerable<(Pilot Pilot, Channel Channel)> ordered = RaceManager.OrderPilotsForChannelAssignment(knownPilots);
 
                 Table result = new Table(lua);
-                for (int i = 0; i < entries.Count; i++)
-                    result[i + 1] = entries[i].original;
+                int idx = 1;
+                foreach ((Pilot p, Channel _) in ordered)
+                {
+                    (DynValue original, Pilot _) = entries.First(e => e.pilot == p);
+                    result[idx++] = original;
+                }
+                foreach ((DynValue original, Pilot pilot) in entries.Where(e => e.pilot == null))
+                {
+                    result[idx++] = original;
+                }
 
                 return DynValue.NewTable(result);
             });

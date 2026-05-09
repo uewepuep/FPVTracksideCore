@@ -1,23 +1,13 @@
 name = "Seeded"
-description = "Fastest pilots seeded across races by qualifying lap time."
+description = "Pilots seeded across races by incoming order. Best pilot spread across races via serpentine draft."
 author = "uewepuep"
 
 function generate(round, pilots, channels, options)
 
     local max = options.max_pilots_per_race
 
-    -- Sort slowest-first so the serpentine puts the fastest pilot in the
-    -- final slot of race 1 and the second-fastest in the final slot of race 2,
-    -- spreading speed evenly across the field.
-    local sorted = sort_by(pilots, function(p)
-        local t = get_best_consecutive_laps(p.id, 1)
-        -- pilots with no qualifying time go last (slowest)
-        if t == 0 then return 999999 end
-        return t
-    end)
-
     -- Work out how many races we need
-    local race_count = math.ceil(#sorted / max)
+    local race_count = math.ceil(#pilots / max)
 
     -- Build empty race buckets
     local race_pilots = {}
@@ -28,7 +18,7 @@ function generate(round, pilots, channels, options)
     -- Serpentine (snake draft): fill left-to-right then right-to-left
     local direction = 1
     local race_idx  = 1
-    for _, pilot in ipairs(sorted) do
+    for _, pilot in ipairs(pilots) do
         table.insert(race_pilots[race_idx], pilot.id)
         race_idx = race_idx + direction
         if race_idx > race_count then
