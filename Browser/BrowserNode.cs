@@ -32,10 +32,16 @@ namespace Browser
             set { if (chromiumNode != null) chromiumNode.RefreshInterval = value; }
         }
 
+        private Color? backgroundColor;
         public Color? BackgroundColor
         {
-            get => chromiumNode?.BackgroundColor ?? null;
-            set { if (chromiumNode != null) chromiumNode.BackgroundColor = value; }
+            get => chromiumNode?.BackgroundColor ?? backgroundColor;
+            set
+            {
+                backgroundColor = value;
+                if (chromiumNode != null)
+                    chromiumNode.BackgroundColor = value;
+            }
         }
 
         private InstallState state = InstallState.Checking;
@@ -120,6 +126,7 @@ namespace Browser
 
             chromiumNode = new ChromiumNode();
             chromiumNode.RelativeBounds = new RectangleF(0, 0, 1, 1);
+            chromiumNode.BackgroundColor = backgroundColor;
             chromiumNode.Url = url;
             AddChild(chromiumNode);
 
