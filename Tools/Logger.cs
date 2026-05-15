@@ -26,6 +26,7 @@ namespace Tools
         public static Logger Sheets { get; private set; }
         public static Logger OBS { get; private set; }
         public static Logger AutoRunner { get; private set; }
+        public static Logger Browser { get; private set; }
         public static Logger AllLog { get; private set; }
 
         public static CrashLogger CrashLogger { get; private set; }
@@ -46,6 +47,7 @@ namespace Tools
                 yield return Sheets;
                 yield return OBS;
                 yield return AutoRunner;
+                yield return Browser;
                 yield return AllLog;
             }
         }
@@ -76,6 +78,7 @@ namespace Tools
             Sync = new Logger(logDir, "Sync", AllLog);
             Sheets = new Logger(logDir, "Sheets", AllLog);
             OBS = new Logger(logDir, "OBS", AllLog);
+            Browser = new Logger(logDir, "Browser", AllLog);
             AutoRunner = new Logger(logDir, "AutoRunner", AllLog);
 
             CrashLogger = new CrashLogger(logDir);
