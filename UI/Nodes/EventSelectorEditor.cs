@@ -414,7 +414,7 @@ namespace UI.Nodes
             ppl.Popup(textPopupNode);
         }
 
-        private void CreateNewEvent(string name)
+        protected void CreateNewEvent(string name)
         {
             if (string.IsNullOrEmpty(name))
             {
@@ -422,7 +422,7 @@ namespace UI.Nodes
                 if (ppl == null)
                     return;
 
-                ppl.PopupMessage("Cannot create event with empty name");
+                ppl.PopupMessage("Cannot create with empty name");
 
                 return;
             }
@@ -438,7 +438,7 @@ namespace UI.Nodes
             AddNew(new SimpleEvent(eve));
         }
 
-        private Event CreateNewEvent()
+        protected virtual Event CreateNewEvent()
         {
             Event eve;
             using (IDatabase db = DatabaseFactory.Open(Guid.Empty))

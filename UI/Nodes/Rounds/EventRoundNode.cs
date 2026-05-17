@@ -337,7 +337,7 @@ namespace UI.Nodes.Rounds
             {
                 MouseMenu typeMenu = mm.AddSubmenu("Set Type");
 
-                foreach (EventTypes t in Event.GetEventTypes())
+                foreach (EventTypes t in EventManager.GetEventTypes())
                 {
                     EventTypes typee = t;
 

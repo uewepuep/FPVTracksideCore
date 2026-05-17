@@ -350,12 +350,18 @@ namespace UI
             }
         }
 
+        protected virtual EventManager CreateEventMananger(Profile profile)
+        {
+            return new VideoEventManager(profile); ;
+        }
+
+
         private void StartEvent(Guid eventId, Profile profile)
         {
             loadingLayer.BlockOnLoading = true;
 
             BackgroundLayer backgroundLayer = LayerStack.GetLayer<BackgroundLayer>();
-            EventManager eventManager = new VideoEventManager(profile);
+            EventManager eventManager = CreateEventMananger(profile);
 
             WorkSet startEventWorkSet = new WorkSet();
             startEventWorkSet.OnError += ErrorLoadingEvent;

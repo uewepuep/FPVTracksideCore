@@ -59,7 +59,7 @@ namespace UI.Nodes
             {
                 MouseMenu mouseMenu = new MouseMenu(this);
 
-                foreach (EventTypes type in Event.GetEventTypes())
+                foreach (EventTypes type in EventManager.GetEventTypes())
                 {
                     EventTypes thisType = type;
                  

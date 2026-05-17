@@ -56,7 +56,7 @@ namespace UI.Nodes
             EventManager.RaceManager.OnLapDisqualified += NeedsWormUpdate;
             EventManager.RaceManager.OnLapsRecalculated += NeedsWormUpdate;
             EventManager.RaceManager.OnSplitDetection += NeedsWormUpdate;
-            eventManager.GameManager.OnCapture += GameManager_OnCapture;
+            EventManager.GameManager.OnCapture += GameManager_OnCapture;
         }
 
         private void GameManager_OnCapture(Pilot[] pilots, RaceLib.Game.Captured captured)

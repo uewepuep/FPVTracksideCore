@@ -18,6 +18,7 @@ namespace RaceLib
         public string Endurance { get; set; }
         public string CasualPractice { get; set; }
         public string Game { get; set; }
+        public string Training { get; set; }
 
         public EventManager EventManager { get; set; }
 
@@ -36,19 +37,21 @@ namespace RaceLib
             Endurance = "Endurance";
             Game = "Game";
             Round = "Round";
+            Training = "Training";
         }
 
-        public string GetEventTypeText(EventTypes eventType)
+        public virtual string GetEventTypeText(EventTypes eventType)
         {
             switch (eventType)
             {
-                case RaceLib.EventTypes.Practice: return Practice;
-                case RaceLib.EventTypes.TimeTrial: return TimeTrial;
-                case RaceLib.EventTypes.Race: return Race;
-                case RaceLib.EventTypes.Freestyle: return Freestyle;
-                case RaceLib.EventTypes.Endurance: return Endurance;
-                case RaceLib.EventTypes.CasualPractice: return CasualPractice;
-                case RaceLib.EventTypes.Game:
+                case EventTypes.Practice: return Practice;
+                case EventTypes.TimeTrial: return TimeTrial;
+                case EventTypes.Race: return Race;
+                case EventTypes.Freestyle: return Freestyle;
+                case EventTypes.Endurance: return Endurance;
+                case EventTypes.CasualPractice: return CasualPractice;
+                case EventTypes.Training: return Training;
+                case EventTypes.Game:
                     if (EventManager.GameManager.GameType == null)
                         return Game;
                     return EventManager.GameManager.GameType.Name;

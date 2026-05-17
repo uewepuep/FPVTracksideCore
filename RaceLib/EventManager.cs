@@ -16,7 +16,7 @@ namespace RaceLib
 {
     public class EventManager : IDisposable
     {
-        public RaceManager RaceManager { get; private set; }
+        public RaceManager RaceManager { get; protected set; }
 
         public Channel[] Channels { get { return Event.Channels; } }
 
@@ -55,13 +55,7 @@ namespace RaceLib
         public EventManager(Profile profile)
         {
             Profile = profile;
-            RaceManager = new RaceManager(this);
-            LapRecordManager = new LapRecordManager(RaceManager);
-            ResultManager = new ResultManager(this);
-            TimedActionManager = new TimedActionManager();
-            RoundManager = new RoundManager(this);
-            SpeedRecordManager = new SpeedRecordManager(RaceManager);
-            GameManager = new GameManager(this);
+            Init();
 
             RaceStringFormatter = new RaceStringFormatter(this);
 
@@ -70,7 +64,17 @@ namespace RaceLib
             channelColour = new Dictionary<Channel, Microsoft.Xna.Framework.Color>();
 
             RaceManager.TimingSystemManager.Connect();
+        }
 
+        public virtual void Init()
+        {
+            RaceManager = new RaceManager(this);
+            LapRecordManager = new LapRecordManager(RaceManager);
+            ResultManager = new ResultManager(this);
+            TimedActionManager = new TimedActionManager();
+            RoundManager = new RoundManager(this);
+            SpeedRecordManager = new SpeedRecordManager(RaceManager);
+            GameManager = new GameManager(this);
         }
 
         public void Dispose()
@@ -300,6 +304,8 @@ namespace RaceLib
                     }
                 }
             });
+
+            
 
             workQueue.Enqueue(workSet, "Loading Game Types", () =>
             {
@@ -771,6 +777,17 @@ namespace RaceLib
         public void JumpToReplay(Race race, Lap lap = null)
         {
             OnJumpToReplay?.Invoke(race, lap);
+        }
+
+        public virtual IEnumerable<EventTypes> GetEventTypes()
+        {
+            yield return EventTypes.Practice;
+            yield return EventTypes.TimeTrial;
+            yield return EventTypes.Race;
+            yield return EventTypes.Endurance;
+            yield return EventTypes.Freestyle;
+            yield return EventTypes.CasualPractice;
+            yield return EventTypes.Game;
         }
     }
 }

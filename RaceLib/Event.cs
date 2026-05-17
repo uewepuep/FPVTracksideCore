@@ -32,7 +32,8 @@ namespace RaceLib
         CasualPractise = 5,
         CasualPractice = 5,
 
-        Game = 6
+        Game = 6,
+        Training = 7
     }
 
     public enum PrimaryTimingSystemLocation
@@ -186,17 +187,6 @@ namespace RaceLib
         public override string ToString()
         {
             return Name;
-        }
-
-        public static IEnumerable<EventTypes> GetEventTypes()
-        {
-            yield return EventTypes.Practice;
-            yield return EventTypes.TimeTrial;
-            yield return EventTypes.Race;
-            yield return EventTypes.Endurance;
-            yield return EventTypes.Freestyle;
-            yield return EventTypes.CasualPractice;
-            yield return EventTypes.Game;
         }
 
         public void RefreshPilots(IEnumerable<Pilot> editedPilots)
