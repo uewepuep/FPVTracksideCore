@@ -73,6 +73,14 @@ namespace UI
             return defaultValue;
         }
 
+        public Dictionary<Channel, bool> SnapshotMotion()
+        {
+            lock (channelHasMotion)
+            {
+                return new Dictionary<Channel, bool>(channelHasMotion);
+            }
+        }
+
         private void RaceManager_OnRaceChanged(Race race)
         {
             waitTill = DateTime.MaxValue;

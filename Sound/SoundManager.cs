@@ -213,6 +213,11 @@ namespace Sound
             return speechManager.HasSpeech();
         }
 
+        public bool IsSpeaking
+        {
+            get { return speechManager?.IsSpeaking ?? false; }
+        }
+
         public void WaitForInit()
         {
             while (!initialised)

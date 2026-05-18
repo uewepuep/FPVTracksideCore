@@ -88,6 +88,11 @@ namespace Sound
             return ttsQueue != null;
         }
 
+        public bool IsSpeaking
+        {
+            get { return ttsQueue?.NeedWorkDone ?? false; }
+        }
+
         public void StopSpeech()
         {
             ttsQueue?.Clear();
