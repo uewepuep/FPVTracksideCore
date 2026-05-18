@@ -601,10 +601,20 @@ namespace UI.Nodes
             RemovePilot(pc.Pilot);
         }
 
+        private void ShowChannelNode(ChannelNodeBase cn)
+        {
+            if (!cn.Visible)
+            {
+                cn.SetAnimatedVisibility(true);
+            }
+        }
+
         private void HideChannelNode(ChannelNodeBase cn)
         {
-            if (!AlwaysShowAllChannels)
+            if (!AlwaysShowAllChannels && cn.Visible)
+            {
                 cn.SetAnimatedVisibility(false);
+            }
         }
 
         public void RemovePilot(Pilot p)
@@ -758,7 +768,7 @@ namespace UI.Nodes
             {
                 foreach (ChannelNodeBase cn in pilotNodes)
                 {
-                    cn.SetAnimatedVisibility(true);
+                    ShowChannelNode(cn);
                     cn.SetCrashedOutType(CrashState.ManualUp);
                 }
 

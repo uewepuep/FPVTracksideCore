@@ -602,7 +602,7 @@ namespace UI
                 videoManager.LoadCreateDevices((fs) =>
                 {
                     ChannelsGridNode.FillChannelNodes();
-                    ChannelsGridNode.AutoCrashOut.OnChannelVideoActivityChange += OnChannelVideoActivityChange;
+
                     sceneManagerNode.SetupCams();
                     systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager);
 
@@ -677,10 +677,6 @@ namespace UI
 
                 rightBar.RelativeBounds = new RectangleF(1 - rightBarWidth, topBar.RelativeBounds.Bottom, rightBarWidth, 1 - topBar.RelativeBounds.Bottom);
             }
-        }
-
-        protected virtual void OnChannelVideoActivityChange(Channel channel, bool active)
-        {
         }
 
         protected virtual void BackToEventSelector()

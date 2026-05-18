@@ -1,4 +1,4 @@
-﻿using Composition.Nodes;
+using Composition.Nodes;
 using Microsoft.Xna.Framework;
 using RaceLib;
 using System;
@@ -31,8 +31,6 @@ namespace UI
 
         public bool Enabled { get { return ApplicationProfileSettings.Instance.VideoStaticDetector; } }
 
-        public event Action<Channel, bool> OnChannelVideoActivityChange;
-
         public AutoCrashOut(EventManager eventManager, ChannelsGridNode channelsGridNode)
         {
             this.eventManager = eventManager;
@@ -48,7 +46,6 @@ namespace UI
             thread.Name = "Auto Crash Out";
         }
 
-
         public void Dispose()
         {
             eventManager.RaceManager.OnRaceChanged -= RaceManager_OnRaceChanged;
@@ -63,7 +60,7 @@ namespace UI
             }
         }
 
-        public bool HasMotion(Channel channel)
+        public bool HasMotion(Channel channel, bool defaultValue = true)
         {
             lock (channelHasMotion)
             {
@@ -73,14 +70,14 @@ namespace UI
                     return motion;
                 }
             }
-            return true;
+            return defaultValue;
         }
-
 
         private void RaceManager_OnRaceChanged(Race race)
         {
             waitTill = DateTime.MaxValue;
-            if (!eventManager.RaceManager.RaceRunning)
+
+            if (race == null || !race.Running)
             {
                 needsClear = true;
             }
@@ -120,7 +117,7 @@ namespace UI
                     KeyValuePair<ChannelVideoNode, MotionDetector>[] temp;
                     lock (toProcess)
                     {
-                         temp = toProcess.ToArray();
+                        temp = toProcess.ToArray();
                     }
 
                     if (!temp.Any())
@@ -144,8 +141,7 @@ namespace UI
                         needsClear = false;
                         foreach (KeyValuePair<ChannelVideoNode, MotionDetector> kvp in temp)
                         {
-                            MotionDetector motionDetector = kvp.Value;
-                            motionDetector.Clear();
+                            kvp.Value.Clear();
                         }
                         lock (channelHasMotion)
                         {
@@ -167,39 +163,19 @@ namespace UI
 
                         motionDetector.AddFrame(colors);
 
-                        float motionValue;
-                        bool motion;
-                        motionDetector.DetectMotion(out motionValue, out motion);
-
-                        lock (channelHasMotion)
+                        if (motionDetector.DetectMotion(out float motionValue, out bool motion))
                         {
-                            if (channelHasMotion.ContainsKey(channelNode.Channel))
+                            lock (channelHasMotion)
                             {
-                                bool previous = channelHasMotion[channelNode.Channel];
                                 channelHasMotion[channelNode.Channel] = motion;
-                                if (motion != previous)
-                                {
-                                    OnChannelVideoActivityChange?.Invoke(channelNode.Channel, motion);
-                                }
                             }
-                            else
-                            {
-                                if (motionDetector.HasMotionData())
-                                {
-                                    channelHasMotion.Add(channelNode.Channel, motion);
-                                    if (motion)
-                                    {
-                                        OnChannelVideoActivityChange?.Invoke(channelNode.Channel, motion);
-                                    }
-                                }
-                            }
-                        }
 
-                        if (eventManager.RaceManager.RaceRunning && DateTime.Now > waitTill)
-                        {
-                            if (motion == channelNode.CrashedOut)
+                            if (eventManager.RaceManager.RaceRunning && DateTime.Now > waitTill)
                             {
-                                channelsGridNode.AutomaticSetCrashed(channelNode, !motion);
+                                if (motion == channelNode.CrashedOut)
+                                {
+                                    channelsGridNode.AutomaticSetCrashed(channelNode, !motion);
+                                }
                             }
                         }
                     }
@@ -209,7 +185,7 @@ namespace UI
                     Thread.Sleep(10);
                 }
             }
-            catch (Exception e) 
+            catch (Exception e)
             {
                 Tools.Logger.VideoLog.LogException(this, e);
             }

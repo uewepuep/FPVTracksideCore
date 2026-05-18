@@ -22,6 +22,7 @@ namespace UI.Video
         private bool inLowState;
         public Channel Channel { get; private set; }
 
+
         public MotionDetector(Channel channel)
         {
             Channel = channel;
@@ -101,14 +102,14 @@ namespace UI.Video
             return tmc.Motion;
         }
 
-        public void DetectMotion(out float motionValue, out bool motion)
+        public bool DetectMotion(out float motionValue, out bool motion)
         {
             motionValue = 0;
-            motion = true;
+            motion = false;
 
             if (!HasMotionData())
             {
-                return;
+                return false;
             }
 
             motionValue = lastFrames.Select(t => t.Motion).Average();
@@ -126,6 +127,7 @@ namespace UI.Video
                     inLowState = true;
             }
 
+            return true;
         }
 
         private class TimeMotionContainer
