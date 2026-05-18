@@ -37,20 +37,6 @@ namespace WindowsPlatform
             }
         }
 
-        public override PlatformFeature[] Features
-        {
-            get
-            {
-                return new PlatformFeature[]
-                {
-                    PlatformFeature.Speech,
-                    PlatformFeature.Video,
-                    PlatformFeature.GMFBridge,
-                    PlatformFeature.SecondaryWindow
-                };
-            }
-        }
-
         private DirectoryInfo workingDirectory;
         public override DirectoryInfo WorkingDirectory
         {
@@ -68,6 +54,14 @@ namespace WindowsPlatform
         {
             workingDirectory = new DirectoryInfo(Directory.GetCurrentDirectory());
             clipboard = new Clipboard();
+
+            Features = new PlatformFeature[]
+            {
+                PlatformFeature.Speech,
+                PlatformFeature.Video,
+                PlatformFeature.GMFBridge,
+                PlatformFeature.SecondaryWindow
+            };
         }
 
         public override ITextRenderer CreateTextRenderer()

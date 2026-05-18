@@ -1,4 +1,5 @@
-﻿using Composition.Input;
+﻿using Composition;
+using Composition.Input;
 using Composition.Nodes;
 using System;
 using System.Collections.Generic;
@@ -289,6 +290,16 @@ namespace UI
         [DisplayName("QR scan centre crop fraction (0.5 = scan centre 50% of image)")]
         public float QRPilotScanCentreCropFraction { get; set; }
 
+        [Category("Training")]
+        [DisplayName("Pilot check interval (seconds)")]
+        [PlatformFeature(PlatformFeature.Training)]
+        public int TrainingPilotCheckIntervalSeconds { get; set; }
+
+        [Category("Training")]
+        [DisplayName("Race start delay after first pilot detected (seconds)")]
+        [PlatformFeature(PlatformFeature.Training)]
+        public int TrainingRaceStartDelaySeconds { get; set; }
+
         public ApplicationProfileSettings()
         {
             AlignChannels = RectangleAlignment.Center;
@@ -374,6 +385,9 @@ namespace UI
             QRPilotScan = false;
             QRPilotScanFrequencySeconds = 0.1f;
             QRPilotScanCentreCropFraction = 0.5f;
+
+            TrainingPilotCheckIntervalSeconds = 1;
+            TrainingRaceStartDelaySeconds = 5;
         }
 
         protected const string filename = "ProfileSettings.xml";

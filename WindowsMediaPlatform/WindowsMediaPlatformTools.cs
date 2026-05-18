@@ -39,6 +39,5 @@ namespace WindowsMediaPlatform
 
             return base.Check(toCheck);
         }
-
     }
 }

@@ -25,18 +25,6 @@ namespace FPVMacsideCore
             }
         }
 
-        public override PlatformFeature[] Features
-        {
-            get
-            {
-                return new PlatformFeature[]
-                {
-                    PlatformFeature.Speech,
-                    PlatformFeature.Video
-                };
-            }
-        }
-
         public override string InstallerExtension
         {
             get
@@ -60,6 +48,12 @@ namespace FPVMacsideCore
 
         public MacPlatformTools(string appName)
         {
+            Features = new PlatformFeature[]
+            {
+                PlatformFeature.Speech,
+                PlatformFeature.Video
+            };
+
             Console.WriteLine("Mac Platform Start");
             Console.WriteLine("Working Dir " + Directory.GetCurrentDirectory());
 

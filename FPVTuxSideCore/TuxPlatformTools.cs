@@ -17,18 +17,6 @@ namespace FPVTuxsideCore
 
         public override IClipboard Clipboard => tuxClipboard;
 
-        public override PlatformFeature[] Features
-        {
-            get
-            {
-                return new PlatformFeature[]
-                {
-                    PlatformFeature.Speech,
-                    PlatformFeature.Video
-                };
-            }
-        }
-
         public override string InstallerExtension => ".AppImage";
 
         private List<Action> todo;
@@ -45,6 +33,12 @@ namespace FPVTuxsideCore
 
         public TuxPlatformTools(string appName)
         {
+            Features = new PlatformFeature[]
+            {
+                PlatformFeature.Speech,
+                PlatformFeature.Video
+            };
+
             Console.WriteLine("Tux Platform Start");
             Console.WriteLine("Working Dir " + Directory.GetCurrentDirectory());
 

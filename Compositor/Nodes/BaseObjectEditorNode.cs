@@ -518,6 +518,15 @@ namespace Composition.Nodes
             if (ba != null && !ba.Browsable)
                 return null;
 
+            PlatformFeatureAttribute platformFeatureAttribute = pi.GetCustomAttribute<PlatformFeatureAttribute>();
+            if (platformFeatureAttribute != null)
+            {
+                if (!PlatformTools.HasFeature(platformFeatureAttribute.Feature))
+                {
+                    return null;
+                }
+            }
+
             ReadOnlyAttribute ro = pi.GetCustomAttribute<ReadOnlyAttribute>();
             PropertyNode<T> newNode = null;
 
@@ -1796,5 +1805,14 @@ namespace Composition.Nodes
 
     public class NeedsRestartAttribute : Attribute
     {
+    }
+
+    public class PlatformFeatureAttribute : Attribute
+    {
+        public PlatformFeature Feature { get; private set; }    
+        public PlatformFeatureAttribute(PlatformFeature feature) 
+        {
+            Feature = feature;
+        }
     }
 }

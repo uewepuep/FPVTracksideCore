@@ -20,7 +20,8 @@ namespace Composition
         Video,
         Windows,
         GMFBridge,
-        SecondaryWindow
+        SecondaryWindow,
+        Training
     }
 
     public abstract class PlatformTools
@@ -51,7 +52,7 @@ namespace Composition
 
         public abstract void OpenFileManager(string directory);
 
-        public abstract PlatformFeature[] Features { get; }
+        public PlatformFeature[] Features { get; protected set; }
         public abstract string InstallerExtension { get; }
 
         public bool HasFeature(PlatformFeature platformFeature)
@@ -73,6 +74,11 @@ namespace Composition
         public void SetGame(Game game)
         {
             Game = game;
+        }
+
+        public void AddFeature(PlatformFeature feature)
+        {
+            Features = Features.Append(feature).ToArray();
         }
     }
 
