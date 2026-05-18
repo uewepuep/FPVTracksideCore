@@ -426,8 +426,7 @@ namespace RaceLib
                 return false;
             }
 
-            // Only practise/freestyle can add pilots randomly.
-            if (EventType != EventTypes.Practice || EventType != EventTypes.Freestyle)
+            if (!EventType.CanAddPilotsDuringRace())
             {
                 if (currentRace.Running)
                 {
@@ -626,7 +625,7 @@ namespace RaceLib
             return true;
         }
 
-        public bool StartRace()
+        public virtual bool StartRace()
         {
             return StartRaceInLessThan(EventManager.Event.MinStartDelay, EventManager.Event.MaxStartDelay);
         }
@@ -759,34 +758,37 @@ namespace RaceLib
             if (PreRaceStartDelay)
             {
                 Logger.RaceLog.LogCall(this, CurrentRace, "Requested wait", randomTime, "Actual wait", DateTime.Now - now);
-
-                currentRace.PrimaryTimingSystemLocation = EventManager.Event.PrimaryTimingSystemLocation;
-                currentRace.TargetLaps = EventManager.Event.Laps;
-                currentRace.Start = startTime;
-                currentRace.End = default(DateTime);
-                currentRace.TotalPausedTime = TimeSpan.Zero;
-                currentRace.AutoAssignNumbers = false;
-
-                lock (races)
-                {
-                    if (!races.Contains(currentRace))
-                    {
-                        races.Add(currentRace);
-                        OnRaceCreated(currentRace);
-                    }
-                }
-
-                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
-                {
-                    db.Upsert(currentRace);
-                    CheckEventStart(db);
-                }
-
-                OnRaceStart?.Invoke(currentRace);
-
+                CommitRaceStart(currentRace, startTime);
                 PreRaceStartDelay = false;
             }
             return true;
+        }
+
+        protected void CommitRaceStart(Race currentRace, DateTime startTime)
+        {
+            currentRace.PrimaryTimingSystemLocation = EventManager.Event.PrimaryTimingSystemLocation;
+            currentRace.TargetLaps = EventManager.Event.Laps;
+            currentRace.Start = startTime;
+            currentRace.End = default(DateTime);
+            currentRace.TotalPausedTime = TimeSpan.Zero;
+            currentRace.AutoAssignNumbers = false;
+
+            lock (races)
+            {
+                if (!races.Contains(currentRace))
+                {
+                    races.Add(currentRace);
+                    OnRaceCreated?.Invoke(currentRace);
+                }
+            }
+
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                db.Upsert(currentRace);
+                CheckEventStart(db);
+            }
+
+            OnRaceStart?.Invoke(currentRace);
         }
 
         private void CheckEventStart(IDatabase db)
@@ -815,7 +817,7 @@ namespace RaceLib
             return false;
         }
 
-        private bool SetListeningFrequencies(Race race)
+        protected bool SetListeningFrequencies(Race race)
         {
             if (race == null)
                 return false;
@@ -847,7 +849,7 @@ namespace RaceLib
             }
             else
             {
-                if (race.Type == EventTypes.CasualPractice)
+                if (race.Type.ListenAllChannels())
                 {
                     frequencies = EventManager.Channels.Select(c => new ListeningFrequency(c.Band.ToString(), c.Number, c.Frequency, 1, EventManager.GetChannelColor(c))).ToList();
                 }
@@ -866,7 +868,7 @@ namespace RaceLib
             return true;
         }
 
-        private bool StartDetection(ref DateTime start)
+        protected bool StartDetection(ref DateTime start)
         {
             Guid raceId = Guid.Empty;
             if (CurrentRace != null)
@@ -887,7 +889,7 @@ namespace RaceLib
             return true;
         }
 
-        public bool EndRace()
+        public virtual bool EndRace()
         {
             Logger.RaceLog.LogCall(this, CurrentRace);
 
@@ -1397,8 +1399,8 @@ namespace RaceLib
             if (eve == null)
                 return;
 
-            // If its added manually by race director every lap is valid.
-            if (detection.TimingSystemType != TimingSystemType.Manual)
+            // If its added manually by race director every lap is valid. All training laps are valid.
+            if (detection.TimingSystemType != TimingSystemType.Manual || EventType != EventTypes.Training)
             {
                 // We start the timer before the race start, so just ignore any times in there...
                 if (currentRace.Start > detection.Time)

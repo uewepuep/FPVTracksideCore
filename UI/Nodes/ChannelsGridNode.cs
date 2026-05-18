@@ -65,6 +65,8 @@ namespace UI.Nodes
 
         public AutoCrashOut AutoCrashOut { get; private set; }
 
+        public bool AlwaysShowAllChannels { get; set; }
+
         private UI.Video.ArucoTimingManager arucoTimingManager;
 
         private List<ChannelVideoInfo> channelInfos;
@@ -286,6 +288,10 @@ namespace UI.Nodes
                         }
                         cbn.SetAnimatedVisibility(visible);
                     }
+                    else if (AlwaysShowAllChannels && cbn.Pilot == null)
+                    {
+                        cbn.SetAnimatedVisibility(true);
+                    }
                 }
 
 
@@ -404,7 +410,8 @@ namespace UI.Nodes
             ChannelNodeBase cn = GetCreateChannelNode(ci.Channel);
             if (cn != null)
             {
-                cn.Visible = false;
+                cn.Visible = AlwaysShowAllChannels;
+                cn.SetLapsVisible(EventManager.RaceManager.RaceType.HasLaps());
                 cn.Snap();
             }
         }
@@ -594,13 +601,19 @@ namespace UI.Nodes
             RemovePilot(pc.Pilot);
         }
 
+        private void HideChannelNode(ChannelNodeBase cn)
+        {
+            if (!AlwaysShowAllChannels)
+                cn.SetAnimatedVisibility(false);
+        }
+
         public void RemovePilot(Pilot p)
         {
             ChannelNodeBase channelNode = ChannelNodes.FirstOrDefault(lpn => lpn.Pilot == p);
             if (channelNode != null)
             {
                 channelNode.SetPilot(null);
-                channelNode.SetAnimatedVisibility(false);
+                HideChannelNode(channelNode);
 
                 Reorder(true);
             }
@@ -644,7 +657,7 @@ namespace UI.Nodes
             {
                 cn.LapsNode.ClearLaps();
                 cn.SetPilot(null);
-                cn.SetAnimatedVisibility(false);
+                HideChannelNode(cn);
             }
             Reorder(true);
         }
@@ -775,7 +788,7 @@ namespace UI.Nodes
             {
                 foreach (ChannelNodeBase cn in emptyNodes)
                 {
-                    cn.SetAnimatedVisibility(false);
+                    HideChannelNode(cn);
                 }
 
                 RequestLayout();

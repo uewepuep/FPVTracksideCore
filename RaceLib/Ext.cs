@@ -176,6 +176,33 @@ namespace RaceLib
             }
         }
 
+        public static bool CanAddPilotsDuringRace(this EventTypes eventType)
+        {
+            switch (eventType)
+            {
+                case EventTypes.Training:
+                case EventTypes.Practice:
+                case EventTypes.CasualPractice:
+                case EventTypes.Freestyle:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        public static bool ListenAllChannels(this EventTypes eventType)
+        {
+            switch (eventType)
+            {
+                case EventTypes.CasualPractise:
+                case EventTypes.Training:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         public static string GetCharacter(this Band band)
         {
             if (band == Band.HDZero)
