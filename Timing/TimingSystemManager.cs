@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Intrinsics.X86;
@@ -10,6 +10,7 @@ using Timing.Aruco;
 using Timing.Chorus;
 using Timing.ImmersionRC;
 using Timing.RotorHazard;
+using Timing.Velocidrone;
 using Tools;
 
 namespace Timing
@@ -190,6 +191,9 @@ namespace Timing
                 else if (settings is ChorusSettings)
                     timingSystem = new ChorusTiming();
 
+                else if (settings is VelocidroneSettings)
+                    timingSystem = new VelocidroneTimingSystem();
+                    
                 else if (settings is ArucoTimingSettings)
                     timingSystem = new ArucoTimingSystem();
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -21,6 +21,8 @@ namespace DB
         public string SillyName { get; set; }
 
         public string DiscordID { get; set; }
+
+        public string VelocidroneUID { get; set; }
 
         public string Aircraft { get; set; }
 

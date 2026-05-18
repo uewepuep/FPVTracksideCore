@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -74,7 +74,10 @@ namespace RaceLib
         public bool VideoMirrored { get; set; }
 
         [Category("Advanced")]
+        [DisplayName("Velocidrone UID")]
+        public string VelocidroneUID { get; set; }
 
+        [Category("Advanced")]
         public int MultiGP_ID
         {
             get
