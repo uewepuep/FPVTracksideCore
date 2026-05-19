@@ -22,6 +22,8 @@ namespace DB
 
         public DateTime ScheduledStart { get; set; }
 
+        public bool Handicapped { get; set; }
+
         public string GameTypeName { get; set; }
 
         public Guid Stage { get; set; }

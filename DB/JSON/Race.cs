@@ -20,6 +20,8 @@ namespace DB.JSON
 
         public TimeSpan TotalPausedTime { get; set; }
 
+        public Dictionary<string, TimeSpan> HandicapOffsets { get; set; }
+
         public List<PilotChannel> PilotChannels { get; set; }
 
         public int RaceNumber { get; set; }
@@ -55,6 +57,8 @@ namespace DB.JSON
                 Event = obj.Event.ID;
             if (obj.GamePoints != null)
                 GamePoints = obj.GamePoints.Convert<GamePoint>().ToList();
+            if (obj.HandicapOffsets != null && obj.HandicapOffsets.Count > 0)
+                HandicapOffsets = obj.HandicapOffsets.ToDictionary(kv => kv.Key.ToString(), kv => kv.Value);
         }
 
         public override RaceLib.Race GetRaceLibObject(ICollectionDatabase database)
@@ -65,6 +69,16 @@ namespace DB.JSON
             race.PilotChannels = PilotChannels.Convert(database).ToList();
             race.Detections = Detections.Convert(database).ToList();
             race.GamePoints = GamePoints.Convert(database).ToList();
+
+            race.HandicapOffsets = new Dictionary<Guid, TimeSpan>();
+            if (HandicapOffsets != null)
+            {
+                foreach (var kv in HandicapOffsets)
+                {
+                    if (Guid.TryParse(kv.Key, out Guid pilotId))
+                        race.HandicapOffsets[pilotId] = kv.Value;
+                }
+            }
 
             race.Round = Round.Convert<RaceLib.Round>(database);
             race.Event = Event.Convert<RaceLib.Event>(database);

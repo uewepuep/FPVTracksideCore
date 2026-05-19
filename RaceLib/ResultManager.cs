@@ -557,7 +557,7 @@ namespace RaceLib
                     }
                     else
                     {
-                        r.Time = lastDetection.Time - race.Start;
+                        r.Time = lastDetection.Time - race.GetRaceStartTime(pilot);
                     }
                     r.LapsFinished = lastDetection.LapNumber;
                 }
