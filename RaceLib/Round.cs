@@ -26,6 +26,9 @@ namespace RaceLib
         [Category("Editable Details")]
         public DateTime ScheduledStart { get; set; }
 
+        [Category("Editable Details")]
+        public bool Handicapped { get; set; }
+
 
         [Category("Advanced")]
         public int Order { get; set; }

@@ -41,6 +41,9 @@ namespace RaceLib
         public TimeSpan TotalPausedTime { get; set; }
 
         [System.ComponentModel.Browsable(false)]
+        public Dictionary<Guid, TimeSpan> HandicapOffsets { get; set; }
+
+        [System.ComponentModel.Browsable(false)]
         public List<PilotChannel> PilotChannels { get; set; }
        
         [System.ComponentModel.Browsable(false)]
@@ -277,6 +280,7 @@ namespace RaceLib
             PilotChannels = new List<PilotChannel>();
             Detections = new List<Detection>();
             GamePoints = new List<GamePoint>();
+            HandicapOffsets = new Dictionary<Guid, TimeSpan>();
             AutoAssignNumbers = false;
             TargetLaps = 0;
         }
@@ -704,18 +708,29 @@ namespace RaceLib
             db.Update(this);
         }
 
+        public DateTime GetHandicappedStart(Pilot p)
+        {
+            if (p != null && HandicapOffsets != null && HandicapOffsets.TryGetValue(p.ID, out TimeSpan offset))
+            {
+                return Start + offset;
+            }
+            return Start;
+        }
+
         public DateTime GetRaceStartTime(Pilot p)
         {
+            DateTime baseStart = GetHandicappedStart(p);
+
             if (PrimaryTimingSystemLocation == PrimaryTimingSystemLocation.Holeshot)
             {
                 Lap lap = GetHoleshot(p);
-                if (lap != null)
+                if (lap != null && lap.End >= baseStart)
                 {
                     return lap.End;
                 }
             }
 
-            return Start;
+            return baseStart;
         }
         public void ReCalculateLaps(IDatabase db, Pilot pilot)
         {

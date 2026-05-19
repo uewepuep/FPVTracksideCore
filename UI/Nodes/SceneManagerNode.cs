@@ -68,6 +68,7 @@ namespace UI.Nodes
         public TimeSpan MidRaceAnimationTime { get { return TimeSpan.FromSeconds(ApplicationProfileSettings.Instance.ReOrderAnimationSeconds); } }
 
         private AutoRunnerTimerNode autoRunnerTimerNode;
+        private HandicapStartBarNode handicapStartBarNode;
 
         public Node LapTimesGraph { get; private set; }
 
@@ -141,6 +142,10 @@ namespace UI.Nodes
             fullScreenContainer = new FullScreenAspectClosable();
             fullScreenContainer.Close += UnFullScreen;
             AddChild(fullScreenContainer);
+
+            handicapStartBarNode = new HandicapStartBarNode(eventManager);
+            handicapStartBarNode.RelativeBounds = new RectangleF(0.05f, 0.92f, 0.9f, 0.045f);
+            AddChild(handicapStartBarNode);
         }
 
         private void ResultManager_RaceResultsChanged(Race obj)
