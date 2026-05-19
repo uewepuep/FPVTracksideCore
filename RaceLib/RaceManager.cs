@@ -42,6 +42,7 @@ namespace RaceLib
         public event Action<Race, bool> OnRaceCancelled;
         public event Action<Race, TimeSpan> OnRaceTimeRemaining;
         public event Action<Race> OnRaceTimesUp;
+        public event Action<Race, Pilot> OnPilotHandicapStart;
 
         public event Race.OnRaceEvent OnRaceRemoved;
 
@@ -789,6 +790,38 @@ namespace RaceLib
             }
 
             OnRaceStart?.Invoke(currentRace);
+
+            ScheduleHandicapStartCues(currentRace, startTime);
+        }
+
+        private void ScheduleHandicapStartCues(Race race, DateTime raceStart)
+        {
+            if (race == null || race.HandicapOffsets == null || race.HandicapOffsets.Count == 0)
+                return;
+
+            foreach (PilotChannel pc in race.PilotChannelsSafe)
+            {
+                if (pc.Pilot == null)
+                    continue;
+
+                TimeSpan offset;
+                if (!race.HandicapOffsets.TryGetValue(pc.Pilot.ID, out offset))
+                    offset = TimeSpan.Zero;
+
+                DateTime fireAt = raceStart + offset;
+                TimeSpan delay = fireAt - DateTime.Now;
+                if (delay < TimeSpan.Zero)
+                    delay = TimeSpan.Zero;
+
+                Pilot capturedPilot = pc.Pilot;
+                Race capturedRace = race;
+                Task.Delay(delay).ContinueWith(t =>
+                {
+                    if (CurrentRace != capturedRace || !capturedRace.Running)
+                        return;
+                    OnPilotHandicapStart?.Invoke(capturedRace, capturedPilot);
+                }, TaskScheduler.Default);
+            }
         }
 
         private void CheckEventStart(IDatabase db)
@@ -1215,11 +1248,20 @@ namespace RaceLib
             if (race == null || race.Round == null) return;
             if (!race.Round.Handicapped) return;
             if (race.Ended || race.Started) return;
-            if (!race.Type.HasLaps()) return;
             if (race.HandicapOffsets != null && race.HandicapOffsets.Count > 0) return;
 
+            if (!race.Type.HasLaps())
+            {
+                Logger.RaceLog.LogCall(this, race, "Handicap requested but race type has no laps; skipping");
+                return;
+            }
+
             int targetLaps = race.TargetLaps > 0 ? race.TargetLaps : EventManager.Event.Laps;
-            if (targetLaps <= 0) return;
+            if (targetLaps <= 0)
+            {
+                Logger.RaceLog.LogCall(this, race, "Handicap requested but no lap target (TimesUp race); skipping");
+                return;
+            }
 
             int pbLaps = EventManager.Event.PBLaps;
             if (pbLaps <= 0) return;
