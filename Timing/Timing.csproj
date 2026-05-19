@@ -14,8 +14,7 @@
 	  </PackageReference>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="OpenCvSharp4" Version="4.11.0.20250507" />
-    <!-- Windows-only: native DLLs for OpenCvSharp. On macOS/Linux install OpenCV via system
-         package manager (e.g. `brew install opencv`) so OpenCvSharp can load libOpenCvSharpExtern. -->
+    <!-- Native runtime for OpenCvSharp (libOpenCvSharpExtern). -->
     <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.11.0.20250507" Condition="'$(OS)' == 'Windows_NT'" />
     <PackageReference Include="SocketIOClient" Version="3.0.8" />
     <PackageReference Include="System.IO.Ports" Version="6.0.0" />
@@ -34,6 +33,15 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>Aruco\camera_calibration.json</Link>
     </None>
+  </ItemGroup>
+
+  <!-- macOS arm64: locally-built libOpenCvSharpExtern.dylib (linked against OpenCV 4.11 + opencv_contrib, includes ArUco).
+       Placed under runtimes/osx-arm64/native/ because that's where OpenCvSharp4's native loader searches. -->
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('OSX')) AND '$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)' == 'Arm64'">
+    <Content Include="native\osx-arm64\libOpenCvSharpExtern.dylib">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>runtimes\osx-arm64\native\libOpenCvSharpExtern.dylib</Link>
+    </Content>
   </ItemGroup>
 
 </Project>
