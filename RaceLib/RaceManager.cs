@@ -1243,12 +1243,11 @@ namespace RaceLib
             return false;
         }
 
-        private void ComputeHandicapOffsets(Race race)
+        public void ComputeHandicapOffsets(Race race)
         {
             if (race == null || race.Round == null) return;
             if (!race.Round.Handicapped) return;
             if (race.Ended || race.Started) return;
-            if (race.HandicapOffsets != null && race.HandicapOffsets.Count > 0) return;
 
             if (!race.Type.HasLaps())
             {

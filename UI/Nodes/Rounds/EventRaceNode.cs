@@ -56,6 +56,8 @@ namespace UI.Nodes.Rounds
                 RoundSheetFormat sheetFormat = EventManager.RoundManager.SheetFormatManager.GetRoundSheetFormat(Race.Round);
                 int pilotCount = Race.PilotCount;
 
+                EventManager.RaceManager.ComputeHandicapOffsets(Race);
+
                 if (heading == null)
                 {
                     heading = new TextButtonNode(Race.RaceName, Theme.Current.Rounds.RaceTitle, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
