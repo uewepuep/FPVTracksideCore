@@ -40,7 +40,7 @@ namespace UI.Video
         {
             float next = Process(frameData);
 
-            //Logger.VideoLog.Log(this, Channel.ToStringShort() + " : " + next);  
+            //Logger.VideoLog.Log(this, Channel.ToStringShort() + " : " + next);
 
             lastFrames.Enqueue(new TimeMotionContainer() { Motion = next, Time = DateTime.Now });
 

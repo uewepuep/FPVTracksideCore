@@ -16,6 +16,9 @@ namespace UI
     {
         private Dictionary<ChannelVideoNode, MotionDetector> toProcess;
         private Dictionary<Channel, bool> channelHasMotion;
+        private Dictionary<Channel, Queue<(DateTime Time, bool HasMotion)>> channelMotionHistory;
+        private DateTime nextHistorySample;
+        private static readonly TimeSpan HistoryLength = TimeSpan.FromSeconds(30);
 
         private Thread thread;
         private volatile bool run;
@@ -41,6 +44,8 @@ namespace UI
 
             run = true;
             channelHasMotion = new Dictionary<Channel, bool>();
+            channelMotionHistory = new Dictionary<Channel, Queue<(DateTime, bool)>>();
+            nextHistorySample = DateTime.Now + TimeSpan.FromSeconds(1);
             toProcess = new Dictionary<ChannelVideoNode, MotionDetector>();
             thread = new Thread(Process);
             thread.Name = "Auto Crash Out";
@@ -71,6 +76,28 @@ namespace UI
                 }
             }
             return defaultValue;
+        }
+
+        public bool HasMotionFor(Channel channel, TimeSpan duration)
+        {
+            DateTime cutoff = DateTime.Now - duration;
+            lock (channelMotionHistory)
+            {
+                if (!channelMotionHistory.TryGetValue(channel, out var queue) || !queue.Any() || queue.Peek().Time > cutoff)
+                    return false;
+                return queue.Where(s => s.Time >= cutoff).All(s => s.HasMotion);
+            }
+        }
+
+        public bool IsStaticFor(Channel channel, TimeSpan duration)
+        {
+            DateTime cutoff = DateTime.Now - duration;
+            lock (channelMotionHistory)
+            {
+                if (!channelMotionHistory.TryGetValue(channel, out var queue) || !queue.Any() || queue.Peek().Time > cutoff)
+                    return false;
+                return queue.Where(s => s.Time >= cutoff).All(s => !s.HasMotion);
+            }
         }
 
         public Dictionary<Channel, bool> SnapshotMotion()
@@ -155,6 +182,11 @@ namespace UI
                         {
                             channelHasMotion.Clear();
                         }
+                        lock (channelMotionHistory)
+                        {
+                            channelMotionHistory.Clear();
+                        }
+                        nextHistorySample = DateTime.Now + TimeSpan.FromSeconds(1);
                     }
 
                     foreach (KeyValuePair<ChannelVideoNode, MotionDetector> kvp in temp)
@@ -190,6 +222,35 @@ namespace UI
 
                     if (!run)
                         break;
+
+                    if (DateTime.Now >= nextHistorySample)
+                    {
+                        nextHistorySample = DateTime.Now + TimeSpan.FromSeconds(1);
+                        DateTime now = DateTime.Now;
+                        DateTime cutoff = now - HistoryLength;
+
+                        Dictionary<Channel, bool> snapshot;
+                        lock (channelHasMotion)
+                        {
+                            snapshot = new Dictionary<Channel, bool>(channelHasMotion);
+                        }
+
+                        lock (channelMotionHistory)
+                        {
+                            foreach (var kvp in snapshot)
+                            {
+                                if (!channelMotionHistory.TryGetValue(kvp.Key, out var queue))
+                                {
+                                    queue = new Queue<(DateTime, bool)>();
+                                    channelMotionHistory[kvp.Key] = queue;
+                                }
+                                queue.Enqueue((now, kvp.Value));
+                                while (queue.Count > 0 && queue.Peek().Time < cutoff)
+                                    queue.Dequeue();
+                            }
+                        }
+                    }
+
                     Thread.Sleep(10);
                 }
             }

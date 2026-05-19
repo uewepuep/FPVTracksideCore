@@ -300,6 +300,16 @@ namespace UI
         [PlatformFeature(PlatformFeature.Training)]
         public int TrainingRaceStartDelaySeconds { get; set; }
 
+        [Category("Training")]
+        [DisplayName("Sustained motion required to detect pilot (seconds)")]
+        [PlatformFeature(PlatformFeature.Training)]
+        public int TrainingMotionDetectSeconds { get; set; }
+
+        [Category("Training")]
+        [DisplayName("Sustained static required to end race (seconds)")]
+        [PlatformFeature(PlatformFeature.Training)]
+        public int TrainingStaticDetectSeconds { get; set; }
+
         public ApplicationProfileSettings()
         {
             AlignChannels = RectangleAlignment.Center;
@@ -388,6 +398,8 @@ namespace UI
 
             TrainingPilotCheckIntervalSeconds = 1;
             TrainingRaceStartDelaySeconds = 5;
+            TrainingMotionDetectSeconds = 3;
+            TrainingStaticDetectSeconds = 2;
         }
 
         protected const string filename = "ProfileSettings.xml";
