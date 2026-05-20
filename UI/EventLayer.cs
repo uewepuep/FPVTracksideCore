@@ -59,6 +59,7 @@ namespace UI
         private bool showPilotList;
 
         private ExternalData.RemoteNotifier RemoteNotifier;
+        private ExternalData.ExtensionNotifier ExtensionNotifier;
         private WorkQueue workQueueStartStopRace;
 
         private SystemStatusNode systemStatusNode;
@@ -387,9 +388,23 @@ namespace UI
 
             ControlButtons.UpdateControlButtons();
 
-            if (ApplicationProfileSettings.Instance.NotificationEnabled)
+            // ExtensionMode supersedes the legacy RemoteNotifier — running both at
+            // once would produce duplicate, conflicting traffic on the same URL/port.
+            if (ApplicationProfileSettings.Instance.NotificationEnabled
+                && !ApplicationProfileSettings.Instance.ExtensionMode)
             {
                 RemoteNotifier = new RemoteNotifier(EventManager, ApplicationProfileSettings.Instance.NotificationURL, ApplicationProfileSettings.Instance.NotificationSerialPort);
+            }
+
+            if (ApplicationProfileSettings.Instance.ExtensionMode)
+            {
+                ExtensionNotifier = new ExtensionNotifier(
+                    EventManager,
+                    ApplicationProfileSettings.Instance.NotificationURL,
+                    ApplicationProfileSettings.Instance.NotificationSerialPort,
+                    Profile,
+                    ApplicationProfileSettings.Instance.EventStorageLocation,
+                    ApplicationProfileSettings.Instance.ShownDecimalPlaces);
             }
 
             ReloadOBSRemoteControl();
@@ -563,6 +578,7 @@ namespace UI
 
             eventWebServer?.Stop();
             RemoteNotifier?.Dispose();
+            ExtensionNotifier?.Dispose();
 
             OBSRemoteControlManager?.Dispose();
 
@@ -983,7 +999,9 @@ namespace UI
                 });
 
                 // Trigger the sound. The actual race start will happen after it ends
-                SoundManager.StartRaceIn(EventManager.Event.MaxStartDelay, () =>
+                TimeSpan delay = EventManager.Event.MaxStartDelay;
+
+                SoundManager.StartRaceIn(delay, () =>
                 {
                     // Put in the queue so it definitely happens after preRaceStart
                     // Otherwise if audio is disabled it may happen before.

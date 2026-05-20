@@ -231,6 +231,11 @@ namespace UI
         [NeedsRestart]
         public bool NotificationEnabled { get; set; }
 
+        [Category("Gate / LED POST notifications")]
+        [NeedsRestart]
+        [DisplayName("Use new POST format (Extension)")]
+        public bool ExtensionMode { get; set; }
+
         [Category("Fun Stuff")]
         [NeedsRestart]
         public float SillyNameChance { get; set; }
