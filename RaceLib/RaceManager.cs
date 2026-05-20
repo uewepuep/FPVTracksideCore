@@ -37,6 +37,10 @@ namespace RaceLib
         public event Race.OnRaceEvent OnRacePilotsSet;
 
         public event Race.OnRaceEvent OnRaceReset;
+        // Staggered start (TimeTrial + ApplicationProfileSettings.TimeTrialStaggeredStart):
+        // fires once per pilot at the instant they get the go signal inside StartStaggered.
+        // Args: race, pilot-channel, orderIndex (0-based), totalPilots, delay between pilots.
+        public event Action<Race, PilotChannel, int, int, TimeSpan> OnPilotStartStaggered;
         public event Race.OnRaceEvent OnRaceEnd;
         public event Race.OnRaceEvent OnRaceClear;
         public event Action<Race, bool> OnRaceCancelled;
@@ -695,10 +699,14 @@ namespace RaceLib
 
             OnRaceStart?.Invoke(currentRace);
 
+            int totalPilots = pilotChannels.Length;
+            int orderIndex = 0;
             foreach (PilotChannel pc in pilotChannels)
             {
                 Thread.Sleep(delay);
+                OnPilotStartStaggered?.Invoke(currentRace, pc, orderIndex, totalPilots, delay);
                 onStart(pc);
+                orderIndex++;
             }
 
             StaggeredStart = false;
