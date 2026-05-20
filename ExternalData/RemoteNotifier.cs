@@ -1,4 +1,4 @@
-﻿using ExternalData;
+using ExternalData;
 using Microsoft.Xna.Framework;
 using Newtonsoft.Json;
 using RaceLib;
@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Tools;
 
@@ -26,6 +27,10 @@ namespace ExternalData
 
         private JsonSerializerSettings serializerSettings;
 
+        private Timer pilotChangeDebounce;
+        private readonly object pilotChangeLock = new object();
+        private long lastRaceChangedSendTicks;
+
         public RemoteNotifier(EventManager eventManager, string url, string comportname)
         {
             this.eventManager = eventManager;
@@ -36,6 +41,7 @@ namespace ExternalData
             eventManager.RaceManager.OnRaceEnd += RaceManager_OnRaceEnd;
             eventManager.RaceManager.OnRacePreStart += RaceManager_OnRacePreStart;
             eventManager.RaceManager.OnRaceCancelled += RaceManager_OnRaceCancelled;
+            eventManager.RaceManager.OnRaceChanged += RaceManager_OnRaceChanged;
             eventManager.RaceManager.OnPilotAdded += OnPilotsChanged;
             eventManager.RaceManager.OnPilotRemoved += OnPilotsChanged;
             eventManager.RaceManager.OnRaceTimesUp += OnRaceTimesUp;
@@ -85,10 +91,17 @@ namespace ExternalData
             eventManager.RaceManager.OnRaceEnd -= RaceManager_OnRaceEnd;
             eventManager.RaceManager.OnRacePreStart -= RaceManager_OnRacePreStart;
             eventManager.RaceManager.OnRaceCancelled -= RaceManager_OnRaceCancelled;
+            eventManager.RaceManager.OnRaceChanged -= RaceManager_OnRaceChanged;
             eventManager.RaceManager.OnPilotAdded -= OnPilotsChanged;
             eventManager.RaceManager.OnPilotRemoved -= OnPilotsChanged;
             eventManager.RaceManager.OnRaceTimesUp -= OnRaceTimesUp;
             eventManager.GameManager.OnCapture -= GameManager_OnCapture;
+
+            lock (pilotChangeLock)
+            {
+                pilotChangeDebounce?.Dispose();
+                pilotChangeDebounce = null;
+            }
 
             workQueue?.Dispose();
             workQueue = null;
@@ -116,14 +129,46 @@ namespace ExternalData
             PutObject(raceState);
         }
 
+        private void RaceManager_OnRaceChanged(RaceLib.Race race)
+        {
+            if (race != null)
+            {
+                lock (pilotChangeLock)
+                {
+                    pilotChangeDebounce?.Dispose();
+                    pilotChangeDebounce = null;
+                    lastRaceChangedSendTicks = DateTime.UtcNow.Ticks;
+                }
+                SendPilotRaceState(race);
+            }
+        }
+
         private void OnPilotsChanged(RaceLib.PilotChannel pilot)
         {
+            lock (pilotChangeLock)
+            {
+                pilotChangeDebounce?.Dispose();
+                pilotChangeDebounce = new Timer(DebouncedPilotChange, null, 500, Timeout.Infinite);
+            }
+        }
+
+        private void DebouncedPilotChange(object state)
+        {
+            long ticksSinceSend = DateTime.UtcNow.Ticks - Interlocked.Read(ref lastRaceChangedSendTicks);
+            if (ticksSinceSend < TimeSpan.TicksPerSecond)
+                return;
+
             RaceLib.Race race = eventManager.RaceManager.CurrentRace;
             if (race != null)
             {
-                PilotState[] pilotRaceStates = GetPilotRaceStates(race).ToArray();
-                PutObject(new PilotRaceState(race, pilotRaceStates, URL));
+                SendPilotRaceState(race);
             }
+        }
+
+        private void SendPilotRaceState(RaceLib.Race race)
+        {
+            PilotState[] pilotRaceStates = GetPilotRaceStates(race).ToArray();
+            PutObject(new PilotRaceState(race, pilotRaceStates, URL));
         }
 
         private IEnumerable<PilotState> GetPilotRaceStates(RaceLib.Race race)

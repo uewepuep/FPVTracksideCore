@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Graphics;
 using RaceLib.Format;
 using System;
 using System.Collections;
@@ -900,10 +900,6 @@ namespace RaceLib
         {
             lock (Results)
             {
-                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
-                {
-                    db.Delete(Results);
-                }
                 Results.Clear();
             }
         }
