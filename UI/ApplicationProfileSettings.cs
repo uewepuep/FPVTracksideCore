@@ -305,6 +305,10 @@ namespace UI
         [DisplayName("Sustained static required to end race (seconds)")]
         [PlatformFeature(PlatformFeature.Training)]
         public int TrainingStaticDetectSeconds { get; set; }
+        [Category("Training")]
+        [DisplayName("Cooldown after race ends before new race can begin (seconds)")]
+        [PlatformFeature(PlatformFeature.Training)]
+        public int TrainingRaceCooldownSeconds { get; set; }
 
         public ApplicationProfileSettings()
         {
@@ -394,6 +398,7 @@ namespace UI
             TrainingRaceStartDelaySeconds = 5;
             TrainingMotionDetectSeconds = 3;
             TrainingStaticDetectSeconds = 2;
+            TrainingRaceCooldownSeconds = 30;
         }
 
         protected const string filename = "ProfileSettings.xml";
