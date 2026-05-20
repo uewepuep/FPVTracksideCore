@@ -750,6 +750,8 @@ namespace UI
             EventManager?.Update(gameTime);
             AutoRunner?.Update();
 
+            AutoCrashOut?.Update();
+
             if (ApplicationProfileSettings.Instance.AutoRaceStartVideoCheck)
             {
                 UpdateAutoVideoCheck();
@@ -770,7 +772,7 @@ namespace UI
 
                         foreach (Channel channel in race.Channels)
                         {
-                            if (!AutoCrashOut.HasMotion(channel))
+                            if (!AutoCrashOut.IsActive(channel))
                             {
                                 badChannel = channel;
                                 allFine = false;

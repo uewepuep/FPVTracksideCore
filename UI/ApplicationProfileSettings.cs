@@ -70,10 +70,6 @@ namespace UI
         [NeedsRestart]
         public bool VideoStaticDetector { get; set; }
         [Category("Static Detector")]
-        public float CrashThreshold { get; set; }
-        [Category("Static Detector")]
-        public float ReactivateThreshold { get; set; }
-        [Category("Static Detector")]
         public float StartDelaySeconds { get; set; }
 
         [Category("Web")]
@@ -380,8 +376,6 @@ namespace UI
             EventStorageLocation = @"events";
 
             VideoStaticDetector = true;
-            CrashThreshold = 4;
-            ReactivateThreshold = 20;
             StartDelaySeconds = 5;
             ShowWelcomeScreen = true;
 

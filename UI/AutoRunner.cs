@@ -379,7 +379,7 @@ namespace UI
 
             foreach (Channel channel in race.Channels) 
             {
-                if (!AutoCrashOut.HasMotion(channel))
+                if (!AutoCrashOut.IsActive(channel))
                 {
                     badChannel = channel;
                     return false;

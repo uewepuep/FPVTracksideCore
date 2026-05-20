@@ -12,13 +12,6 @@ using UI.Video;
 
 namespace UI
 {
-    public enum MotionState
-    {
-        Unknown,
-        Static,
-        Active
-    }
-
     public class AutoCrashOut
     {
         private Dictionary<ChannelVideoNode, MotionDetector> toProcess;
@@ -26,6 +19,9 @@ namespace UI
         private Dictionary<Channel, Queue<(DateTime Time, MotionState State)>> channelMotionHistory;
         private DateTime nextHistorySample;
         private static readonly TimeSpan HistoryLength = TimeSpan.FromSeconds(30);
+        private static readonly TimeSpan HistorySampleRate = TimeSpan.FromMilliseconds(100);
+        private static readonly TimeSpan CrashDuration = TimeSpan.FromSeconds(2);
+        private static readonly TimeSpan RecoverDuration = TimeSpan.FromSeconds(3);
 
         private Thread thread;
         private volatile bool run;
@@ -46,13 +42,13 @@ namespace UI
             this.eventManager = eventManager;
             this.channelsGridNode = channelsGridNode;
 
-            eventManager.RaceManager.OnRaceChanged += RaceManager_OnRaceChanged;
             eventManager.RaceManager.OnRaceStart += RaceManager_OnRaceStart;
+            eventManager.RaceManager.OnRaceEnd += RaceManager_OnRaceEnd;
 
             run = true;
             channelHasMotion = new Dictionary<Channel, MotionState>();
             channelMotionHistory = new Dictionary<Channel, Queue<(DateTime, MotionState)>>();
-            nextHistorySample = DateTime.Now + TimeSpan.FromSeconds(1);
+            nextHistorySample = DateTime.Now + HistorySampleRate;
             toProcess = new Dictionary<ChannelVideoNode, MotionDetector>();
             thread = new Thread(Process);
             thread.Name = "Auto Crash Out";
@@ -60,7 +56,7 @@ namespace UI
 
         public void Dispose()
         {
-            eventManager.RaceManager.OnRaceChanged -= RaceManager_OnRaceChanged;
+            eventManager.RaceManager.OnRaceEnd -= RaceManager_OnRaceEnd;
             eventManager.RaceManager.OnRaceStart -= RaceManager_OnRaceStart;
 
             run = false;
@@ -84,38 +80,93 @@ namespace UI
 
         public bool HasMotion(Channel channel)
         {
-            return GetMotionState(channel) != MotionState.Static;
+            MotionState state = GetMotionState(channel);
+            return state == MotionState.ActiveMotion || state == MotionState.InactiveMotion || state == MotionState.Unknown;
         }
 
         public bool HasMotionFor(Channel channel, TimeSpan duration)
         {
-            return GetMotionStateFor(channel, duration) == MotionState.Active;
+            IEnumerable<MotionState> states = GetMotionStatesFor(channel, duration);
+            return states.Any() && states.All(s => s == MotionState.ActiveMotion || s == MotionState.InactiveMotion);
         }
 
-        public bool IsStaticFor(Channel channel, TimeSpan duration)
+        public bool HasNoMotionFor(Channel channel, TimeSpan duration)
         {
-            return GetMotionStateFor(channel, duration) == MotionState.Static;
+            IEnumerable<MotionState> states = GetMotionStatesFor(channel, duration);
+            return states.Any() && states.All(s => s == MotionState.ActiveNoMotion || s == MotionState.InactiveNoMotion);
         }
 
-        public MotionState GetMotionStateFor(Channel channel, TimeSpan duration)
+        public bool IsActive(Channel channel)
+        {
+            MotionState state = GetMotionState(channel);
+            return state == MotionState.ActiveMotion || state == MotionState.ActiveNoMotion || state == MotionState.Unknown;
+        }
+
+        public bool IsActiveFor(Channel channel, TimeSpan duration)
+        {
+            IEnumerable<MotionState> states = GetMotionStatesFor(channel, duration);
+            return states.Any() && states.All(s => s == MotionState.ActiveMotion || s == MotionState.ActiveNoMotion);
+        }
+
+        public bool IsInactiveFor(Channel channel, TimeSpan duration)
+        {
+            IEnumerable<MotionState> states = GetMotionStatesFor(channel, duration);
+            return states.Any() && states.All(s => s == MotionState.InactiveMotion || s == MotionState.InactiveNoMotion);
+        }
+
+        public void Update()
+        {
+            if (!eventManager.RaceManager.RaceRunning)
+                return;
+
+            bool inStartDelay = DateTime.Now <= waitTill;
+
+            KeyValuePair<ChannelVideoNode, MotionDetector>[] temp;
+            lock (toProcess)
+            {
+                temp = toProcess.ToArray();
+            }
+
+            foreach (KeyValuePair<ChannelVideoNode, MotionDetector> kvp in temp)
+            {
+                ChannelVideoNode channelNode = kvp.Key;
+                Channel channel = channelNode.Channel;
+
+                if (channelNode.CrashedOut)
+                {
+                    if (IsActive(channel))
+                    {
+                        if (HasMotionFor(channel, RecoverDuration))
+                        {
+                            channelsGridNode.AutomaticSetCrashed(channelNode, false);
+                        }
+                    }
+                }
+                else if (!inStartDelay)
+                {
+                    if (HasNoMotionFor(channel, CrashDuration))
+                    {
+                        channelsGridNode.AutomaticSetCrashed(channelNode, true);
+                    }
+                }
+            }
+        }
+
+        private IEnumerable<MotionState> GetMotionStatesFor(Channel channel, TimeSpan duration)
         {
             DateTime cutoff = DateTime.Now - duration;
             lock (channelMotionHistory)
             {
-                if (!channelMotionHistory.TryGetValue(channel, out var queue) || !queue.Any() || queue.Peek().Time > cutoff)
-                    return MotionState.Unknown;
+                if (!channelMotionHistory.TryGetValue(channel, out Queue<(DateTime Time, MotionState State)> queue) || !queue.Any() || queue.Peek().Time > cutoff)
+                    return Enumerable.Empty<MotionState>();
 
-                var relevant = queue.Where(s => s.Time >= cutoff).ToList();
-                if (relevant.All(s => s.State == MotionState.Active))
-                    return MotionState.Active;
-
-                if (relevant.All(s => s.State == MotionState.Static))
-                    return MotionState.Static;
-                return MotionState.Unknown;
+                return queue.Where(s => s.Time >= cutoff).Select(s => s.State).ToList();
             }
         }
 
-        private void RaceManager_OnRaceChanged(Race race)
+
+
+        private void RaceManager_OnRaceEnd(Race race)
         {
             waitTill = DateTime.MaxValue;
 
@@ -170,7 +221,7 @@ namespace UI
 
                     if (DateTime.Now >= nextHistorySample)
                     {
-                        nextHistorySample = DateTime.Now + TimeSpan.FromSeconds(1);
+                        nextHistorySample = DateTime.Now + HistorySampleRate;
                         DateTime now = DateTime.Now;
                         DateTime cutoff = now - HistoryLength;
 
@@ -222,7 +273,7 @@ namespace UI
                         {
                             channelMotionHistory.Clear();
                         }
-                        nextHistorySample = DateTime.Now + TimeSpan.FromSeconds(1);
+                        nextHistorySample = DateTime.Now + HistorySampleRate;
                     }
 
                     foreach (KeyValuePair<ChannelVideoNode, MotionDetector> kvp in temp)
@@ -239,20 +290,12 @@ namespace UI
 
                         motionDetector.AddFrame(colors);
 
-                        if (motionDetector.DetectMotion(out float motionValue, out bool motion))
+                        MotionState state = motionDetector.DetectMotion(out float saturationValue, out float diffValue);
+                        if (state != MotionState.Unknown)
                         {
-                            MotionState state = motion ? MotionState.Active : MotionState.Static;
                             lock (channelHasMotion)
                             {
                                 channelHasMotion[channelNode.Channel] = state;
-                            }
-
-                            if (eventManager.RaceManager.RaceRunning && DateTime.Now > waitTill)
-                            {
-                                if (motion == channelNode.CrashedOut)
-                                {
-                                    channelsGridNode.AutomaticSetCrashed(channelNode, !motion);
-                                }
                             }
                         }
                     }
