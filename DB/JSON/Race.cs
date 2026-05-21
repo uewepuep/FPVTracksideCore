@@ -20,7 +20,7 @@ namespace DB.JSON
 
         public TimeSpan TotalPausedTime { get; set; }
 
-        public List<PilotChannel> PilotChannels { get; set; }
+        public List<RacePilotChannel> PilotChannels { get; set; }
 
         public int RaceNumber { get; set; }
 
@@ -44,7 +44,7 @@ namespace DB.JSON
             : base(obj)
         {
             if (obj.PilotChannels != null)
-                PilotChannels = obj.PilotChannels.Convert<PilotChannel>().ToList();
+                PilotChannels = obj.PilotChannels.Convert<RacePilotChannel>().ToList();
             if (obj.Laps != null)
                 Laps = obj.Laps.Convert<Lap>().ToList();
             if (obj.Detections != null)

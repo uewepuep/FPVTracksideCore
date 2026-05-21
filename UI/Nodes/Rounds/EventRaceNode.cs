@@ -56,6 +56,8 @@ namespace UI.Nodes.Rounds
                 RoundSheetFormat sheetFormat = EventManager.RoundManager.SheetFormatManager.GetRoundSheetFormat(Race.Round);
                 int pilotCount = Race.PilotCount;
 
+                EventManager.RaceManager.ComputeHandicapOffsets(Race);
+
                 if (heading == null)
                 {
                     heading = new TextButtonNode(Race.RaceName, Theme.Current.Rounds.RaceTitle, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
@@ -88,7 +90,7 @@ namespace UI.Nodes.Rounds
                     bool channelChanged = false;
 
                     Pilot pilot = null;
-                    PilotChannel pilotChannel = Race.GetPilotChannel(channel);
+                    RacePilotChannel pilotChannel = Race.GetPilotChannel(channel);
                     if (pilotChannel != null)
                     {
                         pilot = pilotChannel.Pilot;
@@ -109,6 +111,16 @@ namespace UI.Nodes.Rounds
                     container.AddChild(pilotRaceInfoNode);
 
                     pilotRaceInfoNode.ResultText = EventManager.ResultManager.GetResultText(Race, pilot, channel);
+
+                    TimeSpan handicapOffset = pilotChannel?.HandicapOffset ?? TimeSpan.Zero;
+                    if (pilot != null && !Race.Ended && handicapOffset > TimeSpan.Zero)
+                    {
+                        string handicapText = "+" + handicapOffset.TotalSeconds.ToString("0.0") + "s";
+                        if (string.IsNullOrEmpty(pilotRaceInfoNode.ResultText))
+                            pilotRaceInfoNode.ResultText = handicapText;
+                        else
+                            pilotRaceInfoNode.ResultText += " " + handicapText;
+                    }
                 }
 
                 int size = Math.Max(grouped.Count(), 6);

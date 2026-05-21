@@ -125,7 +125,7 @@ namespace DB.JSON
             if (typeof(T) == typeof(RaceLib.Track))
                 return new ConvertedCollection<RaceLib.Track, Track>(Tracks, this) as IDatabaseCollection<T>;
 
-            if (typeof(T) == typeof(RaceLib.PilotChannel))
+            if (typeof(RaceLib.PilotChannel).IsAssignableFrom(typeof(T)))
                 return new DummyCollection<T>();
 
             if (typeof(T) == typeof(RaceLib.Lap))

@@ -41,11 +41,11 @@ namespace RaceLib
         public TimeSpan TotalPausedTime { get; set; }
 
         [System.ComponentModel.Browsable(false)]
-        public List<PilotChannel> PilotChannels { get; set; }
+        public List<RacePilotChannel> PilotChannels { get; set; }
        
         [System.ComponentModel.Browsable(false)]
         
-        public PilotChannel[] PilotChannelsSafe 
+        public RacePilotChannel[] PilotChannelsSafe 
         { 
             get 
             {
@@ -274,7 +274,7 @@ namespace RaceLib
             Valid = true;
             PrimaryTimingSystemLocation = PrimaryTimingSystemLocation.EndOfLap;
             Laps = new List<Lap>();
-            PilotChannels = new List<PilotChannel>();
+            PilotChannels = new List<RacePilotChannel>();
             Detections = new List<Detection>();
             GamePoints = new List<GamePoint>();
             AutoAssignNumbers = false;
@@ -314,7 +314,7 @@ namespace RaceLib
         }
 
 
-        public PilotChannel GetPilotChannel(Channel c)
+        public RacePilotChannel GetPilotChannel(Channel c)
         {
             lock (PilotChannels)
             {
@@ -322,7 +322,7 @@ namespace RaceLib
             }
         }
 
-        public PilotChannel GetPilotChannel(Pilot p)
+        public RacePilotChannel GetPilotChannel(Pilot p)
         {
             lock (PilotChannels)
             {
@@ -335,7 +335,7 @@ namespace RaceLib
             return Laps.Any(l => l.Pilot == p && l.Detection.Valid);
         }
 
-        public PilotChannel SetPilot(IDatabase db, Channel channel, Pilot p, bool force = false)
+        public RacePilotChannel SetPilot(IDatabase db, Channel channel, Pilot p, bool force = false)
         {
             if (channel == null || p == null)
                 return null;
@@ -349,7 +349,7 @@ namespace RaceLib
             if (!IsFrequencyFree(channel))
                 return null;
 
-            PilotChannel pc = new PilotChannel(p, channel);
+            RacePilotChannel pc = new RacePilotChannel(p, channel);
             lock (PilotChannels)
             {
                 PilotChannels.Add(pc);
@@ -362,11 +362,11 @@ namespace RaceLib
             return pc;
         }
 
-        public PilotChannel ClearChannel(IDatabase db, Channel channel)
+        public RacePilotChannel ClearChannel(IDatabase db, Channel channel)
         {
             lock (PilotChannels)
             {
-                PilotChannel pc = PilotChannels.Get(channel);
+                RacePilotChannel pc = PilotChannels.Get(channel);
                 if (pc != null)
                 {
                     PilotChannels.Remove(pc);
@@ -377,7 +377,7 @@ namespace RaceLib
             return null;
         }
 
-        public PilotChannel RemovePilot(IDatabase db, Pilot pilot, bool force = false)
+        public RacePilotChannel RemovePilot(IDatabase db, Pilot pilot, bool force = false)
         {
             if (!force && Ended)
             {
@@ -386,7 +386,7 @@ namespace RaceLib
 
             lock (PilotChannels)
             {
-                PilotChannel pc = GetPilotChannel(pilot);
+                RacePilotChannel pc = GetPilotChannel(pilot);
                 if (pc != null)
                 {
                     PilotChannels.Remove(pc);
@@ -400,7 +400,7 @@ namespace RaceLib
 
         public Channel GetChannel(Pilot pilot)
         {
-            PilotChannel pc = GetPilotChannel(pilot);
+            RacePilotChannel pc = GetPilotChannel(pilot);
             if (pc != null)
             {
                 return pc.Channel;
@@ -413,7 +413,7 @@ namespace RaceLib
         {
             lock (PilotChannels)
             {
-                PilotChannel pc = PilotChannels.FirstOrDefault(pac => pac.Channel != null && channels.Contains(pac.Channel));
+                RacePilotChannel pc = PilotChannels.FirstOrDefault(pac => pac.Channel != null && channels.Contains(pac.Channel));
                 if (pc != null)
                 {
                     return pc.Pilot;
@@ -426,7 +426,7 @@ namespace RaceLib
         {
             lock (PilotChannels)
             {
-                PilotChannel pc = PilotChannels.FirstOrDefault(pac => pac.Channel != null && pac.Channel == channel);
+                RacePilotChannel pc = PilotChannels.FirstOrDefault(pac => pac.Channel != null && pac.Channel == channel);
                 if (pc != null)
                 {
                     return pc.Pilot;
@@ -435,11 +435,11 @@ namespace RaceLib
             return null;
         }
 
-        public PilotChannel GetPilotChannel(int freq)
+        public RacePilotChannel GetPilotChannel(int freq)
         {
             lock (PilotChannels)
             {
-                PilotChannel pc = PilotChannels.FirstOrDefault(pac => pac.Channel != null && pac.Channel.Frequency == freq);
+                RacePilotChannel pc = PilotChannels.FirstOrDefault(pac => pac.Channel != null && pac.Channel.Frequency == freq);
                 if (pc != null)
                 {
                     return pc;
@@ -450,7 +450,7 @@ namespace RaceLib
 
         public Pilot GetPilot(int freq)
         {
-            PilotChannel pc = GetPilotChannel(freq);
+            RacePilotChannel pc = GetPilotChannel(freq);
             if (pc != null)
             {
                 return pc.Pilot;
@@ -704,18 +704,31 @@ namespace RaceLib
             db.Update(this);
         }
 
+        public DateTime GetHandicappedStart(Pilot p)
+        {
+            if (p != null)
+            {
+                RacePilotChannel pc = GetPilotChannel(p);
+                if (pc != null && pc.HandicapOffset > TimeSpan.Zero)
+                    return Start + pc.HandicapOffset;
+            }
+            return Start;
+        }
+
         public DateTime GetRaceStartTime(Pilot p)
         {
+            DateTime baseStart = GetHandicappedStart(p);
+
             if (PrimaryTimingSystemLocation == PrimaryTimingSystemLocation.Holeshot)
             {
                 Lap lap = GetHoleshot(p);
-                if (lap != null)
+                if (lap != null && lap.End >= baseStart)
                 {
                     return lap.End;
                 }
             }
 
-            return Start;
+            return baseStart;
         }
         public void ReCalculateLaps(IDatabase db, Pilot pilot)
         {
@@ -789,9 +802,9 @@ namespace RaceLib
 
         public bool SwapPilots(IDatabase db, Pilot newPilot, Channel newChannel, Race oldRace)
         {
-            PilotChannel existingPilotChannel = GetPilotChannel(newChannel.Frequency);
+            RacePilotChannel existingPilotChannel = GetPilotChannel(newChannel.Frequency);
             Pilot existingPilot = null;
-            PilotChannel oldPilotChannel = oldRace.GetPilotChannel(newPilot);
+            RacePilotChannel oldPilotChannel = oldRace.GetPilotChannel(newPilot);
             Channel oldChannel = Channel.None;
 
             if (existingPilotChannel != null)

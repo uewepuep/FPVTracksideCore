@@ -134,6 +134,7 @@ namespace Sound
             {
                 em.RaceManager.OnRaceStart += RaceManager_OnRaceStart;
                 em.RaceManager.OnRaceStartScheduled += RaceManager_OnRaceStartScheduled;
+                em.RaceManager.OnPilotHandicapStart += RaceManager_OnPilotHandicapStart;
                 em.RaceManager.OnRaceEnd += RaceOver;
                 em.RaceManager.OnLapDetected += Lap;
                 em.RaceManager.OnSplitDetection += Sector;
@@ -170,6 +171,7 @@ namespace Sound
             {
                 em.RaceManager.OnRaceStart -= RaceManager_OnRaceStart;
                 em.RaceManager.OnRaceStartScheduled -= RaceManager_OnRaceStartScheduled;
+                em.RaceManager.OnPilotHandicapStart -= RaceManager_OnPilotHandicapStart;
                 em.RaceManager.OnRaceEnd -= RaceOver;
                 em.RaceManager.OnLapDetected -= Lap;
                 em.RaceManager.OnSplitDetection -= Sector;
@@ -419,10 +421,27 @@ namespace Sound
 
         private void RaceManager_OnRaceStart(Race race)
         {
-            if (!eventManager.RaceManager.StaggeredStart)
-            {
-                Start();
-            }
+            if (eventManager.RaceManager.StaggeredStart)
+                return;
+
+            // Suppress the global "GO" for handicap races — per-pilot cues fire individually.
+            if (race != null && race.Round != null && race.Round.Handicapped)
+                return;
+
+            Start();
+        }
+
+        private void RaceManager_OnPilotHandicapStart(Race race, Pilot pilot)
+        {
+            if (pilot == null)
+                return;
+
+            SpeechParameters sp = new SpeechParameters();
+            sp.Add(SpeechParameters.Types.pilot, pilot);
+            sp.Priority = 9500;
+            sp.SecondsExpiry = 2;
+
+            PlaySound(SoundKey.StaggeredPilot, sp);
         }
 
         private void RaceManager_OnRaceStartScheduled(Race race, DateTime startTime)

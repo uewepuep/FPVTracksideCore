@@ -238,7 +238,9 @@ namespace UI.Nodes.Rounds
 
             AspectRatio = 0.4f * columns;
 
-            SetHeading(RaceStringFormatter.Instance.RoundToString(Round));
+            string headingText = RaceStringFormatter.Instance.RoundToString(Round);
+            if (Round.Handicapped) headingText += "  (Handicap)";
+            SetHeading(headingText);
             UpdateButtons();
             RequestLayout();
         }

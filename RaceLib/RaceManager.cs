@@ -46,6 +46,7 @@ namespace RaceLib
         public event Action<Race, bool> OnRaceCancelled;
         public event Action<Race, TimeSpan> OnRaceTimeRemaining;
         public event Action<Race> OnRaceTimesUp;
+        public event Action<Race, Pilot> OnPilotHandicapStart;
 
         public event Race.OnRaceEvent OnRaceRemoved;
 
@@ -797,6 +798,34 @@ namespace RaceLib
             }
 
             OnRaceStart?.Invoke(currentRace);
+
+            ScheduleHandicapStartCues(currentRace, startTime);
+        }
+
+        private void ScheduleHandicapStartCues(Race race, DateTime raceStart)
+        {
+            if (race == null || race.Round == null || !race.Round.Handicapped)
+                return;
+
+            foreach (RacePilotChannel pc in race.PilotChannelsSafe)
+            {
+                if (pc.Pilot == null)
+                    continue;
+
+                DateTime fireAt = raceStart + pc.HandicapOffset;
+                TimeSpan delay = fireAt - DateTime.Now;
+                if (delay < TimeSpan.Zero)
+                    delay = TimeSpan.Zero;
+
+                Pilot capturedPilot = pc.Pilot;
+                Race capturedRace = race;
+                Task.Delay(delay).ContinueWith(t =>
+                {
+                    if (CurrentRace != capturedRace || !capturedRace.Running)
+                        return;
+                    OnPilotHandicapStart?.Invoke(capturedRace, capturedPilot);
+                }, TaskScheduler.Default);
+            }
         }
 
         private void CheckEventStart(IDatabase db)
@@ -1191,6 +1220,9 @@ namespace RaceLib
 
                 //Update the first detection so it matches the event so you can change it on an existing race and rerun it.
                 currentRace.PrimaryTimingSystemLocation = EventManager.Event.PrimaryTimingSystemLocation;
+
+                ComputeHandicapOffsets(currentRace);
+
                 OnRaceChanged?.Invoke(currentRace);
 
                 if (currentRace != null)
@@ -1213,6 +1245,42 @@ namespace RaceLib
                 return true;
             }
             return false;
+        }
+
+        public void ComputeHandicapOffsets(Race race)
+        {
+            if (race == null || race.Round == null) return;
+            if (!race.Round.Handicapped) return;
+            if (race.Ended || race.Started) return;
+
+            if (!race.Type.HasLaps())
+            {
+                Logger.RaceLog.LogCall(this, race, "Handicap requested but race type has no laps; skipping");
+                return;
+            }
+
+            int targetLaps = race.TargetLaps > 0 ? race.TargetLaps : EventManager.Event.Laps;
+            if (targetLaps <= 0)
+            {
+                Logger.RaceLog.LogCall(this, race, "Handicap requested but no lap target (TimesUp race); skipping");
+                return;
+            }
+
+            int pbLaps = EventManager.Event.PBLaps;
+            if (pbLaps <= 0) return;
+
+            Dictionary<Pilot, TimeSpan> offsets = HandicapCalculator.Calculate(
+                race.Pilots,
+                targetLaps,
+                pbLaps,
+                EventManager.LapRecordManager);
+
+            foreach (RacePilotChannel pc in race.PilotChannelsSafe)
+            {
+                if (pc.Pilot == null) continue;
+                TimeSpan offset;
+                pc.HandicapOffset = offsets.TryGetValue(pc.Pilot, out offset) ? offset : TimeSpan.Zero;
+            }
         }
 
         public void SetupCasualPractice(Race race)
@@ -1417,13 +1485,15 @@ namespace RaceLib
             if (detection.TimingSystemType != TimingSystemType.Manual || EventType != EventTypes.Training)
             {
                 // We start the timer before the race start, so just ignore any times in there...
-                if (currentRace.Start > detection.Time)
+                // For handicapped pilots, gate against their personal staggered start instead of Race.Start.
+                DateTime pilotStart = currentRace.GetHandicappedStart(detection.Pilot);
+                if (pilotStart > detection.Time)
                 {
                     detection.Valid = false;
                 }
 
                 //Inside race start ignore window. Which is disabled in the UI for holeshot..
-                if (currentRace.Start + eve.RaceStartIgnoreDetections > detection.Time)
+                if (pilotStart + eve.RaceStartIgnoreDetections > detection.Time)
                 {
                     detection.Valid = false;
                 }

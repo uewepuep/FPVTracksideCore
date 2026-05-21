@@ -108,6 +108,11 @@ namespace UI.Nodes
         private bool needsLapRefresh;
         private bool needsSplitClear;
 
+        private ColorNode goFlashBackground;
+        private TextNode goFlashText;
+        private DateTime? goFlashEnd;
+        private static readonly TimeSpan GoFlashDuration = TimeSpan.FromSeconds(1.5);
+
         public event Action RequestReorder;
         public event Action OnPBChange;
 
@@ -163,6 +168,7 @@ namespace UI.Nodes
             EventManager.LapRecordManager.OnNewPersonalBest += RecordManager_OnNewPersonalBest;
             EventManager.RaceManager.OnRaceResumed += RaceManager_OnRaceStateChanged;
             EventManager.GameManager.OnGamePointChanged += RaceManager_OnGamePoint;
+            EventManager.RaceManager.OnPilotHandicapStart += RaceManager_OnPilotHandicapStart;
         }
 
 
@@ -182,6 +188,7 @@ namespace UI.Nodes
             EventManager.RaceManager.OnLapsRecalculated -= RaceManager_OnLapsRecalculated;
             EventManager.LapRecordManager.OnNewPersonalBest -= RecordManager_OnNewPersonalBest;
             EventManager.GameManager.OnGamePointChanged -= RaceManager_OnGamePoint;
+            EventManager.RaceManager.OnPilotHandicapStart -= RaceManager_OnPilotHandicapStart;
 
             base.Dispose();
         }
@@ -219,6 +226,13 @@ namespace UI.Nodes
         {
             CrashedOutType = CrashState.AutoUp;
             needUpdatePosition = true;
+        }
+
+        private void RaceManager_OnPilotHandicapStart(Race race, Pilot pilot)
+        {
+            if (pilot == null || Pilot == null) return;
+            if (pilot.ID != Pilot.ID) return;
+            goFlashEnd = DateTime.Now + GoFlashDuration;
         }
 
         private void RaceManager_OnLapDisqualified(Lap lap)
@@ -444,6 +458,21 @@ namespace UI.Nodes
             crashedOut.KeepAspectRatio = false;
             crashedOut.Visible = false;
             DisplayNode.AddChild(crashedOut);
+
+            goFlashBackground = new ColorNode(new Color(40, 220, 80));
+            goFlashBackground.KeepAspectRatio = false;
+            goFlashBackground.Visible = false;
+            goFlashBackground.Alpha = 0;
+            DisplayNode.AddChild(goFlashBackground);
+
+            goFlashText = new TextNode("GO!", Color.White);
+            goFlashText.Style.Bold = true;
+            goFlashText.Style.Border = true;
+            goFlashText.Alignment = RectangleAlignment.Center;
+            goFlashText.RelativeBounds = new RectangleF(0.1f, 0.2f, 0.8f, 0.6f);
+            goFlashText.Visible = false;
+            goFlashText.Alpha = 0;
+            DisplayNode.AddChild(goFlashText);
 
             DisplayNode.AddChild(velocidroneGateContainer);
 
@@ -893,7 +922,42 @@ namespace UI.Nodes
             // udpdate crashed out visible
             crashedOut.Visible = CrashedOut && !resultContainer.Visible;
 
+            UpdateGoFlash();
+
             base.Update(gameTime);
+        }
+
+        private void UpdateGoFlash()
+        {
+            if (goFlashBackground == null || goFlashText == null) return;
+
+            if (!goFlashEnd.HasValue)
+            {
+                if (goFlashBackground.Visible)
+                {
+                    goFlashBackground.Visible = false;
+                    goFlashText.Visible = false;
+                }
+                return;
+            }
+
+            TimeSpan remaining = goFlashEnd.Value - DateTime.Now;
+            if (remaining <= TimeSpan.Zero)
+            {
+                goFlashEnd = null;
+                goFlashBackground.Visible = false;
+                goFlashText.Visible = false;
+                return;
+            }
+
+            float t = (float)(remaining.TotalSeconds / GoFlashDuration.TotalSeconds);
+            if (t < 0f) t = 0f;
+            if (t > 1f) t = 1f;
+
+            goFlashBackground.Visible = true;
+            goFlashText.Visible = true;
+            goFlashBackground.Alpha = 0.55f * t;
+            goFlashText.Alpha = t;
         }
 
 
