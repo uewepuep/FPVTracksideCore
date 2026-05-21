@@ -390,21 +390,20 @@ namespace UI
 
             // ExtensionMode supersedes the legacy RemoteNotifier — running both at
             // once would produce duplicate, conflicting traffic on the same URL/port.
-            if (ApplicationProfileSettings.Instance.NotificationEnabled
-                && !ApplicationProfileSettings.Instance.ExtensionMode)
+            switch (ApplicationProfileSettings.Instance.Notifier)
             {
-                RemoteNotifier = new RemoteNotifier(EventManager, ApplicationProfileSettings.Instance.NotificationURL, ApplicationProfileSettings.Instance.NotificationSerialPort);
-            }
-
-            if (ApplicationProfileSettings.Instance.ExtensionMode)
-            {
-                ExtensionNotifier = new ExtensionNotifier(
+                case ApplicationProfileSettings.NotificationTypes.LegacyMode:
+                    RemoteNotifier = new RemoteNotifier(EventManager, ApplicationProfileSettings.Instance.NotificationURL, ApplicationProfileSettings.Instance.NotificationSerialPort);
+                    break;
+                case ApplicationProfileSettings.NotificationTypes.ExtensionMode:
+                    ExtensionNotifier = new ExtensionNotifier(
                     EventManager,
                     ApplicationProfileSettings.Instance.NotificationURL,
                     ApplicationProfileSettings.Instance.NotificationSerialPort,
                     Profile,
                     ApplicationProfileSettings.Instance.EventStorageLocation,
                     ApplicationProfileSettings.Instance.ShownDecimalPlaces);
+                    break;
             }
 
             ReloadOBSRemoteControl();

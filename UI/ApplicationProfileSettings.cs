@@ -227,14 +227,17 @@ namespace UI
         [NeedsRestart]
         public string NotificationURL { get; set; }
 
-        [Category("Gate / LED POST notifications")]
-        [NeedsRestart]
-        public bool NotificationEnabled { get; set; }
+        public enum NotificationTypes
+        {
+            Disabled,
+            LegacyMode,
+            ExtensionMode
+        }
 
         [Category("Gate / LED POST notifications")]
         [NeedsRestart]
-        [DisplayName("Use new POST format (Extension)")]
-        public bool ExtensionMode { get; set; }
+        [DisplayName("Notifier enabled / mode")]
+        public NotificationTypes Notifier { get; set; }
 
         [Category("Fun Stuff")]
         [NeedsRestart]
