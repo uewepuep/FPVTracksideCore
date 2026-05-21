@@ -18,23 +18,23 @@ namespace UI.Nodes
 {
     public class SceneManagerNode : Node
     {
-        private CamContainerNode launchCamsNode;
-        private CamContainerNode commentatorsAndSummary;
-        private CamContainerNode finishLineNode;
+        protected CamContainerNode launchCamsNode;
+        protected CamContainerNode commentatorsAndSummary;
+        protected CamContainerNode finishLineNode;
 
-        private VideoManager videoManager;
-        private EventManager eventManager;
+        protected VideoManager videoManager;
+        protected EventManager eventManager;
 
         public ChannelsGridNode ChannelsGridNode { get; private set; }
-        private TopBarNode topBarNode;
+        protected TopBarNode topBarNode;
 
-        private NamedRaceNode resultsRaceNode;
-        private NamedRaceNode nextRaceNode;
+        protected NamedRaceNode resultsRaceNode;
+        protected NamedRaceNode nextRaceNode;
 
-        private bool showWorm;
-        private WormNode wormNode;
+        protected bool showWorm;
+        protected WormNode wormNode;
 
-        private AnimatedNode eventStatusNodeContainer;
+        protected AnimatedNode eventStatusNodeContainer;
 
         private Scenes preFullScreenScene;
         private FullScreenAspectClosable fullScreenContainer;
@@ -374,7 +374,7 @@ namespace UI.Nodes
 
         }
 
-        private void SceneLayout(Scenes scene)
+        protected virtual void SceneLayout(Scenes scene)
         {
             float channelGridHeight = 0.3f;
             float nonChannelGridHeight = 1 - channelGridHeight;

@@ -214,10 +214,10 @@ namespace UI
 
             Node.SplitHorizontally(leftContainer, centreContainer, leftContainerWidth);
 
-            AutoRunner = new AutoRunner(this);
+            AutoRunner = CreateAutoRunner();
 
             ChannelsGridNode = new ChannelsGridNode(EventManager, videoManager);
-            sceneManagerNode = new SceneManagerNode(EventManager, videoManager, ChannelsGridNode, topBar, AutoRunner);
+            sceneManagerNode = CreateSceneManagerNode(EventManager, videoManager, ChannelsGridNode, topBar, AutoRunner);
             sceneManagerNode.OnSceneChange += SceneManagerNode_OnSceneChange;
             sceneManagerNode.OnVideoSettingsChange += LoadVideo;
 
@@ -426,6 +426,16 @@ namespace UI
                 cn.ClearVelocidroneGate();
         }
 
+        protected virtual AutoRunner CreateAutoRunner()
+        {
+            return new AutoRunner(this);
+        }
+
+        protected virtual SceneManagerNode CreateSceneManagerNode(EventManager eventManager, VideoManager videoManager, ChannelsGridNode channelsGridNode, TopBarNode topBarNode, AutoRunner autoRunner)
+        {
+            return new SceneManagerNode(eventManager, videoManager, channelsGridNode, topBarNode, autoRunner);
+        }
+
         protected virtual MenuButton CreateMenuButton()
         {
             return new MenuButton(Profile, EventManager, videoManager, SoundManager, eventWebServer, TabbedMultiNode, KeyMapper, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
@@ -629,7 +639,7 @@ namespace UI
             return false;
         }
 
-        public void LoadVideo()
+        public virtual void LoadVideo()
         {
             using (AutoResetEvent waiter = new AutoResetEvent(false))
             {

@@ -99,11 +99,17 @@ namespace UI.Nodes
         {
             pauseNode.Visible = AutoRunner.Paused;
 
-            bottomButtonsContainer.Visible = AutoRunner.State != AutoRunner.States.None;
+            AutoRunner.States state = AutoRunner.State;
+            if (!AutoRunner.ShowText)
+            {
+                state = AutoRunner.States.None;
+            }
+
+            bottomButtonsContainer.Visible = state != AutoRunner.States.None;
 
             string time = " " + AutoRunner.Timer.TotalSeconds.ToString("0") + "s";
 
-            switch (AutoRunner.State)
+            switch (state)
             {
                 case AutoRunner.States.None:
 

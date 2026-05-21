@@ -94,6 +94,14 @@ namespace UI
 
         private TimeSpan pausedAt;
 
+        public virtual bool ShowText
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public AutoRunner(EventLayer eventLayer) 
         { 
             EventLayer = eventLayer;
@@ -266,7 +274,7 @@ namespace UI
             }
         }
 
-        public void Update()
+        public virtual void Update()
         {
             DateTime now = DateTime.Now;
 

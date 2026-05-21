@@ -26,7 +26,7 @@ namespace UI.Video
         private const float HighThreshold = 20f; // must exceed this to recover from inactive state
 
         // Frame-diff (mean per-channel pixel delta) — truly static feeds read ~0.1, flying drones ~9-12
-        private const float DiffLowThreshold = 3f;  // below this → no motion
+        private const float DiffLowThreshold = 2f;  // below this → no motion
         private const float DiffHighThreshold = 8f; // must exceed this to recover from no-motion state
 
         private bool inLowState;     // hysteresis state for saturation

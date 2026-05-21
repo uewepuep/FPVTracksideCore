@@ -310,6 +310,11 @@ namespace UI
         [PlatformFeature(PlatformFeature.Training)]
         public int TrainingRaceCooldownSeconds { get; set; }
 
+        [Category("Training")]
+        [DisplayName("Minimum race length before race can end (seconds)")]
+        [PlatformFeature(PlatformFeature.Training)]
+        public int TrainingMinRaceLengthSeconds { get; set; }
+
         public ApplicationProfileSettings()
         {
             AlignChannels = RectangleAlignment.Center;
@@ -399,6 +404,7 @@ namespace UI
             TrainingMotionDetectSeconds = 3;
             TrainingStaticDetectSeconds = 2;
             TrainingRaceCooldownSeconds = 30;
+            TrainingMinRaceLengthSeconds = 30;
         }
 
         protected const string filename = "ProfileSettings.xml";
