@@ -760,6 +760,24 @@ namespace Composition.Nodes
             }
         }
 
+        public static void AlignLines(float lineHeight, params Node[] nodes)
+        {
+            AlignLines(lineHeight, 0, nodes);
+        }
+
+        public static void AlignLines(float lineHeight, float padding, params Node[] nodes)
+        {
+            float y = 0;
+            foreach (Node n in nodes)
+            {
+                if (n != null)
+                {
+                    n.RelativeBounds = new RectangleF(n.RelativeBounds.X, y, n.RelativeBounds.Width, lineHeight);
+                }
+                y += lineHeight + padding;
+            }
+        }
+
         public static void MakeColumns(IEnumerable<Node> nodes, int count, float leftAlign, float width)
         {
             AlignVertically(0, count, nodes.ToArray());

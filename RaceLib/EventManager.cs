@@ -263,7 +263,7 @@ namespace RaceLib
             OnEventChange?.Invoke();
         }
 
-        public void LoadEvent(WorkSet workSet, WorkQueue workQueue, Guid eventId)
+        public virtual void LoadEvent(WorkSet workSet, WorkQueue workQueue, Guid eventId)
         {
             EventId = eventId;
             ProfilePictures = new ProfilePictures(EventId);
@@ -372,7 +372,7 @@ namespace RaceLib
             }
         }
 
-        public void UnloadRaces(WorkSet workSet, WorkQueue workQueue)
+        public virtual void UnloadRaces(WorkSet workSet, WorkQueue workQueue)
         {
             workQueue.Enqueue(workSet, "Unloading Races", () =>
             {
@@ -398,7 +398,7 @@ namespace RaceLib
             });
         }
 
-        public void LoadRaces(WorkSet workSet, WorkQueue workQueue)
+        public virtual void LoadRaces(WorkSet workSet, WorkQueue workQueue)
         {
             workQueue.Enqueue(workSet, "Loading Races", () =>
             {
