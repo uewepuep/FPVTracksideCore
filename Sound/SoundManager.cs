@@ -425,7 +425,7 @@ namespace Sound
                 return;
 
             // Suppress the global "GO" for handicap races — per-pilot cues fire individually.
-            if (race != null && race.HandicapOffsets != null && race.HandicapOffsets.Count > 0)
+            if (race != null && race.Round != null && race.Round.Handicapped)
                 return;
 
             Start();

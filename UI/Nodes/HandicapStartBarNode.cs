@@ -121,9 +121,19 @@ namespace UI.Nodes
         {
             chipContainer.ClearDisposeChildren();
 
-            if (race == null || race.Round == null || !race.Round.Handicapped
-                || race.HandicapOffsets == null || race.HandicapOffsets.Count == 0
-                || race.Ended)
+            if (race == null || race.Round == null || !race.Round.Handicapped || race.Ended)
+            {
+                Hide();
+                return;
+            }
+
+            TimeSpan maxOffset = TimeSpan.Zero;
+            foreach (RacePilotChannel pc in race.PilotChannelsSafe)
+            {
+                if (pc.HandicapOffset > maxOffset) maxOffset = pc.HandicapOffset;
+            }
+
+            if (maxOffset <= TimeSpan.Zero)
             {
                 Hide();
                 return;
@@ -132,23 +142,16 @@ namespace UI.Nodes
             trackedRace = race;
             active = true;
 
-            TimeSpan maxOffset = TimeSpan.Zero;
-            foreach (var kv in race.HandicapOffsets)
-            {
-                if (kv.Value > maxOffset) maxOffset = kv.Value;
-            }
             if (maxOffset < TimeSpan.FromSeconds(0.5)) maxOffset = TimeSpan.FromSeconds(0.5);
             windowDuration = maxOffset;
 
             label.Text = "Handicap start (" + maxOffset.TotalSeconds.ToString("0.0") + "s)";
 
-            foreach (PilotChannel pc in race.PilotChannelsSafe)
+            foreach (RacePilotChannel pc in race.PilotChannelsSafe)
             {
                 if (pc.Pilot == null || pc.Channel == null) continue;
 
-                TimeSpan offset;
-                if (!race.HandicapOffsets.TryGetValue(pc.Pilot.ID, out offset))
-                    offset = TimeSpan.Zero;
+                TimeSpan offset = pc.HandicapOffset;
 
                 float t = (float)(offset.TotalSeconds / maxOffset.TotalSeconds);
                 if (t < 0f) t = 0f;

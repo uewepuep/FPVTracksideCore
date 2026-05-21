@@ -90,7 +90,7 @@ namespace UI.Nodes.Rounds
                     bool channelChanged = false;
 
                     Pilot pilot = null;
-                    PilotChannel pilotChannel = Race.GetPilotChannel(channel);
+                    RacePilotChannel pilotChannel = Race.GetPilotChannel(channel);
                     if (pilotChannel != null)
                     {
                         pilot = pilotChannel.Pilot;
@@ -112,9 +112,8 @@ namespace UI.Nodes.Rounds
 
                     pilotRaceInfoNode.ResultText = EventManager.ResultManager.GetResultText(Race, pilot, channel);
 
-                    if (pilot != null && !Race.Ended && Race.HandicapOffsets != null
-                        && Race.HandicapOffsets.TryGetValue(pilot.ID, out TimeSpan handicapOffset)
-                        && handicapOffset > TimeSpan.Zero)
+                    TimeSpan handicapOffset = pilotChannel?.HandicapOffset ?? TimeSpan.Zero;
+                    if (pilot != null && !Race.Ended && handicapOffset > TimeSpan.Zero)
                     {
                         string handicapText = "+" + handicapOffset.TotalSeconds.ToString("0.0") + "s";
                         if (string.IsNullOrEmpty(pilotRaceInfoNode.ResultText))

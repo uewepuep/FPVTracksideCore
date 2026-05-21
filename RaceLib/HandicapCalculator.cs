@@ -6,19 +6,19 @@ namespace RaceLib
 {
     public static class HandicapCalculator
     {
-        public static Dictionary<Guid, TimeSpan> Calculate(
+        public static Dictionary<Pilot, TimeSpan> Calculate(
             IEnumerable<Pilot> pilots,
             int raceLaps,
             int pbLapCount,
             LapRecordManager lapRecords,
             TimeSpan? maxOffset = null)
         {
-            var offsets = new Dictionary<Guid, TimeSpan>();
+            Dictionary<Pilot, TimeSpan> offsets = new Dictionary<Pilot, TimeSpan>();
 
             if (pilots == null || lapRecords == null) return offsets;
             if (raceLaps <= 0 || pbLapCount <= 0) return offsets;
 
-            var perLapByPilot = new Dictionary<Pilot, TimeSpan?>();
+            Dictionary<Pilot, TimeSpan?> perLapByPilot = new Dictionary<Pilot, TimeSpan?>();
             foreach (Pilot p in pilots)
             {
                 if (p == null) continue;
@@ -35,12 +35,12 @@ namespace RaceLib
                 }
             }
 
-            var withPB = perLapByPilot.Where(kv => kv.Value.HasValue).ToList();
+            List<KeyValuePair<Pilot, TimeSpan?>> withPB = perLapByPilot.Where(kv => kv.Value.HasValue).ToList();
             if (withPB.Count < 2) return offsets;
 
             TimeSpan slowestPerLap = withPB.Max(kv => kv.Value.Value);
 
-            foreach (var kv in perLapByPilot)
+            foreach (KeyValuePair<Pilot, TimeSpan?> kv in perLapByPilot)
             {
                 if (!kv.Value.HasValue) continue;
 
@@ -51,7 +51,7 @@ namespace RaceLib
                 if (maxOffset.HasValue && offset > maxOffset.Value)
                     offset = maxOffset.Value;
 
-                offsets[kv.Key.ID] = offset;
+                offsets[kv.Key] = offset;
             }
 
             return offsets;

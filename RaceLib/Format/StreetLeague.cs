@@ -83,7 +83,7 @@ namespace RaceLib.Format
                 r.PilotChannels.Clear();
                 foreach (var pc in EventManager.Event.Channels)
                 {
-                    r.PilotChannels.Add(new PilotChannel(null, pc));
+                    r.PilotChannels.Add(new RacePilotChannel(null, pc));
                 }
 
                 List<Pilot> unassignedPilots = new List<Pilot>();

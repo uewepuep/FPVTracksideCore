@@ -796,19 +796,15 @@ namespace RaceLib
 
         private void ScheduleHandicapStartCues(Race race, DateTime raceStart)
         {
-            if (race == null || race.HandicapOffsets == null || race.HandicapOffsets.Count == 0)
+            if (race == null || race.Round == null || !race.Round.Handicapped)
                 return;
 
-            foreach (PilotChannel pc in race.PilotChannelsSafe)
+            foreach (RacePilotChannel pc in race.PilotChannelsSafe)
             {
                 if (pc.Pilot == null)
                     continue;
 
-                TimeSpan offset;
-                if (!race.HandicapOffsets.TryGetValue(pc.Pilot.ID, out offset))
-                    offset = TimeSpan.Zero;
-
-                DateTime fireAt = raceStart + offset;
+                DateTime fireAt = raceStart + pc.HandicapOffset;
                 TimeSpan delay = fireAt - DateTime.Now;
                 if (delay < TimeSpan.Zero)
                     delay = TimeSpan.Zero;
@@ -1265,11 +1261,18 @@ namespace RaceLib
             int pbLaps = EventManager.Event.PBLaps;
             if (pbLaps <= 0) return;
 
-            race.HandicapOffsets = HandicapCalculator.Calculate(
+            Dictionary<Pilot, TimeSpan> offsets = HandicapCalculator.Calculate(
                 race.Pilots,
                 targetLaps,
                 pbLaps,
                 EventManager.LapRecordManager);
+
+            foreach (RacePilotChannel pc in race.PilotChannelsSafe)
+            {
+                if (pc.Pilot == null) continue;
+                TimeSpan offset;
+                pc.HandicapOffset = offsets.TryGetValue(pc.Pilot, out offset) ? offset : TimeSpan.Zero;
+            }
         }
 
         public void SetupCasualPractice(Race race)
