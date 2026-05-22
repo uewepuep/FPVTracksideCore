@@ -44,9 +44,14 @@ namespace UI.Nodes.Rounds
         private RoundControl roundControl;
 
         public int RacesPerColumn { get; private set; }
+        
+        
+        private TextButtonNode filterButton;
+        private Dictionary<Stage, bool> stagesHidden;
 
         public RoundsNode(EventManager eventManager)
         {
+            stagesHidden = new Dictionary<Stage, bool>();
             roundControl = new RoundControl();
             roundControl.RelativeBounds = new RectangleF(0, 0.96f, 1, 0.03f);
             AddChild(roundControl);
@@ -77,9 +82,12 @@ namespace UI.Nodes.Rounds
             EventManager.RaceManager.OnRaceCreated += Refresh;
             EventManager.ResultManager.RaceResultsChanged += Refresh;
             EventManager.OnPilotRefresh += Refresh;
+
+            filterButton = new TextButtonNode("Stage Filter", Color.Transparent, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
+            filterButton.RelativeBounds = new RectangleF(0.94f, 0.96f, 0.05f, 0.03f);
+            filterButton.OnClick += FilterButton_OnClick;
+            AddChild(filterButton);
         }
-
-
 
         public override void Dispose()
         {
@@ -363,11 +371,7 @@ namespace UI.Nodes.Rounds
                         AddChild(stageNode);
                     }
 
-                    
                     IEnumerable<EventRoundNode> stageRoundNodes = RoundNodes.Where(rn => rn.Round.Stage == stage);
-
-
-
                     if (stageRoundNodes.Count() != stageNode.EventRoundNodes.Length)
                     {
                         stageNode.SetNodes(stageRoundNodes);
@@ -386,6 +390,8 @@ namespace UI.Nodes.Rounds
                 }
             }
 
+            // FormatStageNodes only — SetNodes overwrites toWrap, which would evict the
+            // EventResultNode that ResultStageNodes add to their own wrap list via AddWrapNode.
             foreach (StageNode stageNode1 in FormatStageNodes.ToArray())
             {
                 stageNode1.SetNodes(RoundNodes.Where(rn => rn.Round != null && rn.Round.Stage == stageNode1.Stage));
@@ -396,7 +402,19 @@ namespace UI.Nodes.Rounds
                 }
             }
 
+            // AllStageNodes so hiding applies to both format and result stage nodes.
+            foreach (StageNode stageNode1 in AllStageNodes.ToArray())
+            {
+                if (stagesHidden.TryGetValue(stageNode1.Stage, out bool hidden))
+                {
+                    stageNode1.HideStage(hidden);
+                }
+            }
+
             RoundManager.CleanUpOrphanStages();
+
+            // Only show filter button if there are stages to filter by.
+            filterButton.Visible = stages.Length > 1;
 
             SetOrder<EventXNode, long>((a) =>
             {
@@ -594,6 +612,9 @@ namespace UI.Nodes.Rounds
 
             foreach (EventXNode ern in EventXNodes)
             {
+                if (!ern.Visible)
+                    continue;
+
                 ern.Alignment = RectangleAlignment.CenterLeft;
                 ern.RelativeBounds = new RectangleF(0, 0, 1, 1);
                 ern.CalculateAspectRatio(height);
@@ -821,11 +842,43 @@ namespace UI.Nodes.Rounds
             else
                 pendingScrollToRound = round;
         }
-
-
         public void ScrollToNode(Node node)
         {
             pendingScrollToNode = node;
+        }
+
+
+        private void FilterButton_OnClick(MouseInputEvent mie)
+        {
+            MouseMenu mouseMenu = new MouseMenu(filterButton);
+
+            Stage[] stages = EventManager.RoundManager.GetStages().Where(s => s != null && s.Valid).Distinct().ToArray();
+
+            foreach (Stage stage in stages)
+            {
+                bool hidden = false;
+
+                if (stagesHidden.TryGetValue(stage, out bool temp))
+                {
+                    hidden = temp;
+                }
+
+                mouseMenu.AddCheckboxItem(stage.Name, !hidden, (value) =>
+                {
+                    if (stagesHidden.ContainsKey(stage))
+                    {
+                        stagesHidden[stage] = !value;
+                    }
+                    else
+                    {
+                        stagesHidden.Add(stage, !value);
+                    }
+                    Refresh();
+                    RequestLayout();
+                });
+            }
+
+            mouseMenu.Show(filterButton);
         }
     }
 

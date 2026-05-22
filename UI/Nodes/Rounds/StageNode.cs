@@ -243,6 +243,19 @@ namespace UI.Nodes.Rounds
                 return toWrap.Any();
             }
         }
+
+        public void HideStage(bool hidden)
+        {
+            lock (toWrap)
+            {
+                foreach (Node n in toWrap)
+                {
+                    n.Visible = !hidden;
+                }
+            }
+
+            Visible = !hidden;
+        }
     }
 
     public class TitleNode : Node
