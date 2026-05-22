@@ -25,6 +25,10 @@ namespace Composition.Nodes
 
         protected ListNode<ItemNode<T>> multiItemBox;
         protected ListNode<PropertyNode<T>> objectProperties;
+        private TextEditNode propertySearchBox;
+        private string propertySearchText;
+        protected TextEditNode searchBox;
+        private string searchText;
 
         public Color ButtonBackground { get; set; }
         public Color ButtonHover { get; set; }
@@ -131,6 +135,8 @@ namespace Composition.Nodes
             multiItemBox.ItemHeight = 30;
             mainDock.Left.AddChild(multiItemBox);
 
+            propertySearchText = "";
+
             itemName = new TextNode("", TextColor);
             itemName.Alignment = RectangleAlignment.BottomLeft;
             centralDock.Top.AddChild(itemName);
@@ -227,7 +233,7 @@ namespace Composition.Nodes
                 }
 
                 itemName.Visible = false;
-                centralDock.Top.Visible = false;
+                centralDock.Top.Visible = propertySearchBox != null;
             }
 
             if (Type.GetConstructor(Type.EmptyTypes) != null || Type.IsValueType || addRemove)
@@ -439,7 +445,11 @@ namespace Composition.Nodes
 
                 selected = obj;
             }
-            UpdateCategoryVisibilities();
+
+            if (searchBox != null)
+            {
+                FilterProperties();
+            }
 
             RequestLayout();
             objectProperties.RequestLayout();
@@ -590,6 +600,59 @@ namespace Composition.Nodes
             }
 
             return newNode;
+        }
+
+        public void EnablePropertySearch()
+        {
+            centralDock.Top.Visible = true;
+
+            Node container = new Node();
+            container.RelativeBounds = new RectangleF(0.65f, 0.2f, 0.3f, 0.6f);
+            centralDock.Top.AddChild(container);
+
+            TextNode textNode = new TextNode("Search", TextColor);
+            textNode.RelativeBounds = new RectangleF(0, 0, 0.3f, 1);
+            container.AddChild(textNode);
+
+            ColorNode searchBackground = new ColorNode(ButtonBackground);
+            searchBackground.RelativeBounds = new RectangleF(0.3f, 0, 0.7f, 1);
+            container.AddChild(searchBackground);
+
+            propertySearchBox = new TextEditNode("", TextColor);
+            propertySearchBox.TextChanged += (text) => { propertySearchText = text; FilterProperties(); };
+            searchBackground.AddChild(propertySearchBox);
+        }
+
+        private void FilterProperties()
+        {
+            string lower = propertySearchText.ToLower();
+            string currentCategory = "";
+
+            bool filtering = !string.IsNullOrEmpty(lower);
+
+            foreach (Node n in objectProperties.Children)
+            {
+                if (n is SpacerNode)
+                {
+                    n.Visible = !filtering;
+                }
+                else if (n is CategoryNode cat)
+                {
+                    currentCategory = cat.Title.Text.ToLower();
+                    n.Visible = !filtering;
+                }
+                else if (n is NamedPropertyNode<T> named)
+                {
+                    n.Visible = !filtering
+                        || named.Name.ToLower().Contains(lower)
+                        || currentCategory.Contains(lower);
+                }
+            }
+            if (!filtering)
+            {
+                UpdateCategoryVisibilities();
+            }
+            objectProperties.RequestLayout();
         }
 
         private void UpdateCategoryVisibilities()

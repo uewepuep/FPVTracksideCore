@@ -476,6 +476,7 @@ namespace UI.Nodes
         public SettingsEditor(ApplicationProfileSettings toEdit)
             : base(toEdit, false, true, false)
         {
+            EnablePropertySearch();
         }
 
         protected override PropertyNode<ApplicationProfileSettings> CreatePropertyNode(ApplicationProfileSettings obj, PropertyInfo pi)
