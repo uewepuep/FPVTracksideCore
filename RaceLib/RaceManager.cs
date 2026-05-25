@@ -2448,5 +2448,21 @@ namespace RaceLib
 
             OnRacePilotsSet?.Invoke(race);
         }
+        public IEnumerable<Pilot> GetPilotsOnChannelLastRace(Channel channel)
+        {
+            Race[] finished = GetRaces(r => r.Valid && r.Ended).OrderByDescending(r => r.Start).ToArray();
+
+            List<Pilot> returned = new List<Pilot>();
+
+            foreach (Race race in finished)
+            {
+                Pilot p = race.GetPilot(channel);
+                if (p != null && !returned.Contains(p))
+                {
+                    returned.Add(p);
+                    yield return p;
+                }
+            }
+        }
     }
 }

@@ -289,7 +289,7 @@ namespace UI.Nodes
             }
         }
 
-        public void SetScene(Scenes s, bool force = false)
+        public virtual void SetScene(Scenes s, bool force = false)
         {
             if (Scene == s && !force)
                 return;
