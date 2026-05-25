@@ -51,6 +51,11 @@ namespace UI
 
         [Category("Performance")]
         [NeedsRestart]
+        [DisplayName("Anti-Aliasing (MSAA)")]
+        public bool AntiAliasing { get; set; }
+
+        [Category("Performance")]
+        [NeedsRestart]
         [DisplayName("UI / Font Scale (Percent)")]
         public float InverseResolutionScalePercent { get; set; }
 
@@ -386,6 +391,7 @@ namespace UI
 
             FrameRateLimit = 60;
             VSync = true;
+            AntiAliasing = true;
 
             VideosToKeep = 50;
             HTTPServer = false;

@@ -1,10 +1,8 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Tools;
 
 namespace Composition.Nodes
@@ -13,16 +11,16 @@ namespace Composition.Nodes
     {
         private List<GraphSeries> series;
 
-        private Dictionary<float, string> xLabels;
-        private Dictionary<float, string> yLabels;
+        private Dictionary<float, TextNode> xLabelNodes;
+        private Dictionary<float, TextNode> yLabelNodes;
 
         public RectangleF View { get; set; }
 
-        public GraphNode() 
+        public GraphNode()
         {
             series = new List<GraphSeries>();
-            xLabels = new Dictionary<float, string>();
-            yLabels = new Dictionary<float, string>();
+            xLabelNodes = new Dictionary<float, TextNode>();
+            yLabelNodes = new Dictionary<float, TextNode>();
         }
 
         public void Clear()
@@ -32,14 +30,24 @@ namespace Composition.Nodes
                 series.Clear();
             }
 
-            lock (xLabels)
+            lock (xLabelNodes)
             {
-                xLabels.Clear();
+                foreach (TextNode n in xLabelNodes.Values)
+                {
+                    RemoveChild(n);
+                    n.Dispose();
+                }
+                xLabelNodes.Clear();
             }
 
-            lock (yLabels)
+            lock (yLabelNodes)
             {
-                yLabels.Clear();    
+                foreach (TextNode n in yLabelNodes.Values)
+                {
+                    RemoveChild(n);
+                    n.Dispose();
+                }
+                yLabelNodes.Clear();
             }
         }
 
@@ -73,20 +81,20 @@ namespace Composition.Nodes
         {
             Color color = Color.Gray;
 
-            lock (xLabels)
+            lock (xLabelNodes)
             {
-                foreach (var kvp in xLabels)
+                foreach (float value in xLabelNodes.Keys)
                 {
-                    float px = ToPixel(new Vector2(kvp.Key)).X;
+                    float px = ToPixel(new Vector2(value)).X;
                     id.DrawLine(new Vector2(px, Bounds.Top), new Vector2(px, Bounds.Bottom), color);
                 }
             }
 
-            lock (yLabels)
+            lock (yLabelNodes)
             {
-                foreach (var kvp in yLabels)
+                foreach (float value in yLabelNodes.Keys)
                 {
-                    float py = ToPixel(new Vector2(kvp.Key)).Y;
+                    float py = ToPixel(new Vector2(value)).Y;
                     id.DrawLine(new Vector2(Bounds.Left, py), new Vector2(Bounds.Right, py), color);
                 }
             }
@@ -94,23 +102,56 @@ namespace Composition.Nodes
 
         public void AddXLabel(float value, string label)
         {
-            lock (xLabels)
+            TextNode node = new TextNode(label, Color.White);
+            node.Alignment = RectangleAlignment.TopCenter;
+            AddChild(node);
+            lock (xLabelNodes)
             {
-                xLabels.Add(value, label);
+                xLabelNodes[value] = node;
             }
         }
 
         public void AddYLabel(float value, string label)
         {
-            lock (yLabels)
+            TextNode node = new TextNode(label, Color.White);
+            node.Alignment = RectangleAlignment.CenterLeft;
+            AddChild(node);
+            lock (yLabelNodes)
             {
-                yLabels.Add(value, label);
+                yLabelNodes[value] = node;
+            }
+        }
+
+        private void PositionLabelNodes()
+        {
+            if (Bounds.Height == 0 || Bounds.Width == 0 || View.Width == 0 || View.Height == 0)
+                return;
+
+            float labelHeight = Bounds.Height * 0.08f;
+            float labelWidth = Bounds.Width * 0.18f;
+
+            lock (xLabelNodes)
+            {
+                foreach (KeyValuePair<float, TextNode> kvp in xLabelNodes)
+                {
+                    float px = ToPixel(new Vector2(kvp.Key, 0)).X;
+                    kvp.Value.BoundsF = new RectangleF(px - labelWidth / 2, Bounds.Bottom - labelHeight, labelWidth, labelHeight);
+                }
+            }
+
+            lock (yLabelNodes)
+            {
+                foreach (KeyValuePair<float, TextNode> kvp in yLabelNodes)
+                {
+                    float py = ToPixel(new Vector2(0, kvp.Key)).Y;
+                    kvp.Value.BoundsF = new RectangleF(Bounds.Left, py - labelHeight / 2, labelWidth, labelHeight);
+                }
             }
         }
 
         public override void Draw(Drawer id, float parentAlpha)
         {
-            base.Draw(id, parentAlpha);
+            PositionLabelNodes();
 
             DrawGrid(id);
 
@@ -121,6 +162,8 @@ namespace Composition.Nodes
                     s.Draw(id);
                 }
             }
+
+            base.Draw(id, parentAlpha);
         }
     }
 
@@ -180,8 +223,6 @@ namespace Composition.Nodes
             if (!Points.Any())
                 return;
 
-            int ithickness = (int)Math.Ceiling(Thickness) * 2;
-            int idoubleThickness = (int)Math.Ceiling(Thickness * 4);
             lock (points)
             {
                 Vector2 last = graph.ToPixel(Points.First());
@@ -191,8 +232,6 @@ namespace Composition.Nodes
 
                     id.DrawLine(last, p, texture, Thickness);
                     last = p;
-
-                    id.Draw(texture, new Rectangle((int)p.X - ithickness, (int)p.Y - ithickness, idoubleThickness, idoubleThickness), Color.White, 1);
                 }
             }
         }

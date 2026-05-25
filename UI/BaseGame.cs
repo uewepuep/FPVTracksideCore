@@ -157,6 +157,7 @@ namespace UI
                 GraphicsDeviceManager.GraphicsProfile = GraphicsProfile.HiDef;
             }
             GraphicsDeviceManager.SynchronizeWithVerticalRetrace = ApplicationProfileSettings.Instance.VSync;
+            GraphicsDeviceManager.PreferMultiSampling = ApplicationProfileSettings.Instance.AntiAliasing;
             GraphicsDeviceManager.ApplyChanges();
 
             Window.Position = new Point(Math.Max(Window.Position.X, 0), Math.Max(Window.Position.Y, 0));
