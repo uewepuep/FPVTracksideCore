@@ -389,7 +389,7 @@ namespace UI.Nodes
         {
             try
             {
-                DataTools.StartBrowser(@"https://docs.google.com/document/d/1ysdQD3JdPvdTsNZR1Q_jh6voXrC2lJlIUAcL1TOb670");
+                DataTools.StartBrowser(@"https://github.com/uewepuep/FPVTracksideCore/blob/master/documentation/FPVTrackside%20Manual.md");
             }
             catch
             {
