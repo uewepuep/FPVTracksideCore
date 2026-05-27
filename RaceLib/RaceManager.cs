@@ -1816,7 +1816,7 @@ namespace RaceLib
                 Logger.RaceLog.LogCall(this);
                 using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
                 {
-                    var types = from round in EventManager.RoundManager.Rounds.OrderBy(r => r.Order)
+                    var types = from round in EventManager.RoundManager.Rounds.Where(r => r.Valid).OrderBy(r => r.Order)
                                 group round by round.EventType into newGroup
                                 select newGroup;
                     

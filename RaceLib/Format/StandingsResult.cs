@@ -1,3 +1,5 @@
+using System;
+
 namespace RaceLib.Format
 {
     public class StandingsResult
@@ -9,6 +11,7 @@ namespace RaceLib.Format
     public class StandingsRow
     {
         public string Name { get; set; }
+        public Guid? PilotId { get; set; }
         public string[] Values { get; set; }
     }
 }

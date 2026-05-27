@@ -40,7 +40,6 @@ namespace RaceLib
             EventManager = eventManager;
             SheetFormatManager = new SheetFormatManager(this);
             LuaFormatManager = new LuaFormatManager();
-            RaceManager.OnRaceEnd += OnRaceResultsChange;
             RaceManager.OnRaceReset += OnRaceResultsChange;
             ResultManager.RaceResultsChanged += OnRaceResultsChange;
         }
@@ -253,7 +252,8 @@ namespace RaceLib
 
         public IEnumerable<Race> GenerateNewRound(Round callingRound, RoundFormat roundFormat, RoundPlan roundPlan)
         {
-            int newRoundNumber = RaceManager.GetMaxRoundNumber(callingRound.EventType) + 1;
+            Round existingNext = GetStageRounds(roundFormat.Stage).FirstOrDefault(r => r.Valid && r.Order > callingRound.Order);
+            int newRoundNumber = existingNext?.RoundNumber ?? (RaceManager.GetMaxRoundNumber(callingRound.EventType) + 1);
             Round newRound = GetCreateRound(newRoundNumber, callingRound.EventType, roundFormat.Stage, callingRound.Order);
             return GenerateFillRound(newRound, roundFormat, roundPlan);
         }

@@ -399,8 +399,8 @@ function standings(pilots, options)
     return {
         headings = { "R1", "R2", "Score" },  -- optional column headers
         rows = {
-            { name = "Alice", values = { "10", "8", "18" } },
-            { name = "Bob",   values = {  "8", "9", "17" } },
+            { pilot_id = pilots[1].id, name = "Alice", values = { "10", "8", "18" } },
+            { pilot_id = pilots[2].id, name = "Bob",   values = {  "8", "9", "17" } },
         }
     }
 end
@@ -425,6 +425,7 @@ Each row object:
 | Field | Type | Description |
 |-------|------|-------------|
 | `name` | string | Pilot display name. |
+| `pilot_id` | string, optional | The pilot's `id`. Omit for rows that don't represent a specific pilot. |
 | `values` | table of strings | One string per column. The **last value** is the counting score (shown bold). |
 
 Returning `nil` suppresses the display until data is ready.
@@ -495,14 +496,14 @@ function standings(pilots, options)
     local scored = {}
     for _, p in ipairs(pilots) do
         local total = sum(get_results(p.id), function(r) return r.points end)
-        table.insert(scored, { name = p.name, points = total })
+        table.insert(scored, { id = p.id, name = p.name, points = total })
     end
 
     scored = sort_by(scored, function(p) return -p.points end)
 
     local rows = {}
     for _, p in ipairs(scored) do
-        table.insert(rows, { name = p.name, values = { tostring(p.points) } })
+        table.insert(rows, { pilot_id = p.id, name = p.name, values = { tostring(p.points) } })
     end
 
     return { headings = { "Points" }, rows = rows }

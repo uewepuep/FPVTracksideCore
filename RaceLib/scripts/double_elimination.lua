@@ -107,6 +107,7 @@ function standings(pilots, options)
                 end
             end
             table.insert(eliminated, {
+                id            = p.id,
                 name          = p.name,
                 result_count  = #results,
                 last_round    = last_round,
@@ -158,16 +159,16 @@ function standings(pilots, options)
     local rows = {}
 
     for _, p in ipairs(active_winners) do
-        table.insert(rows, { name = p.name, values = { "Winners" } })
+        table.insert(rows, { pilot_id = p.id, name = p.name, values = { "Winners" } })
     end
     for _, p in ipairs(active_losers) do
-        table.insert(rows, { name = p.name, values = { "Losers" } })
+        table.insert(rows, { pilot_id = p.id, name = p.name, values = { "Losers" } })
     end
 
     -- Show best-eliminated first (last to be knocked out nearest the top)
     for i = n_elim, 1, -1 do
         local p = eliminated[i]
-        table.insert(rows, { name = p.name, values = { ordinal(p.position) } })
+        table.insert(rows, { pilot_id = p.id, name = p.name, values = { ordinal(p.position) } })
     end
 
     return { headings = { "Status" }, rows = rows }

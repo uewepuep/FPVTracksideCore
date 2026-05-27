@@ -9,6 +9,7 @@ namespace DB.JSON
     public class StandingsRow
     {
         public string Name { get; set; }
+        public string PilotId { get; set; }
         public string[] Values { get; set; }
     }
 }

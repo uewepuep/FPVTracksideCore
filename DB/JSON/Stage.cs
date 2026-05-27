@@ -51,7 +51,7 @@ namespace DB.JSON
             Standings = obj.Standings == null ? null : new StandingsResult
             {
                 Headings = obj.Standings.Headings,
-                Rows = obj.Standings.Rows?.Select(r => new StandingsRow { Name = r.Name, Values = r.Values }).ToArray()
+                Rows = obj.Standings.Rows?.Select(r => new StandingsRow { Name = r.Name, PilotId = r.PilotId?.ToString(), Values = r.Values }).ToArray()
             };
         }
 
@@ -74,7 +74,7 @@ namespace DB.JSON
             stage.Standings = Standings == null ? null : new RaceLib.Format.StandingsResult
             {
                 Headings = Standings.Headings,
-                Rows = Standings.Rows?.Select(r => new RaceLib.Format.StandingsRow { Name = r.Name, Values = r.Values }).ToArray()
+                Rows = Standings.Rows?.Select(r => new RaceLib.Format.StandingsRow { Name = r.Name, PilotId = Guid.TryParse(r.PilotId, out Guid g) ? g : (Guid?)null, Values = r.Values }).ToArray()
             };
 
             return stage;

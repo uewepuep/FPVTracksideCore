@@ -104,6 +104,8 @@ namespace RaceLib.Format
 
                     var row = new StandingsRow();
                     row.Name = rowDyn.Table.Get("name").CastToString() ?? "";
+                    string pilotIdStr = rowDyn.Table.Get("pilot_id").CastToString();
+                    row.PilotId = Guid.TryParse(pilotIdStr, out Guid pilotGuid) ? pilotGuid : (Guid?)null;
 
                     DynValue valuesDyn = rowDyn.Table.Get("values");
                     if (valuesDyn.Type == DataType.Table)

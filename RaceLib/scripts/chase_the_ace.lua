@@ -27,7 +27,7 @@ function standings(pilots, options)
         local results = get_results(p.id)
         local wins   = sum(results, function(r) return r.position == 1 and 1 or 0 end)
         local points = sum(results, function(r) return r.points end)
-        table.insert(scored, { name = p.name, wins = wins, points = points })
+        table.insert(scored, { id = p.id, name = p.name, wins = wins, points = points })
     end
 
     scored = sort_by(scored, function(s)
@@ -36,7 +36,7 @@ function standings(pilots, options)
 
     local rows = {}
     for _, s in ipairs(scored) do
-        table.insert(rows, { name = s.name, values = { tostring(s.wins), tostring(s.points) } })
+        table.insert(rows, { pilot_id = s.id, name = s.name, values = { tostring(s.wins), tostring(s.points) } })
     end
 
     return { headings = { "Wins", "Points" }, rows = rows }
