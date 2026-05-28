@@ -505,6 +505,8 @@ absolutePath = path.join(config.Fpvt.Paths.WorkingDirectory, pilot.PhotoPath)
 
 `RacePreStart.scheduledStart` は `StartRaceInLessThan(MinStartDelay, MaxStartDelay)` が選んだ**正確な予定スタート瞬間** — `[Now + MinStartDelay, Now + MaxStartDelay]` の一様分布乱数で決定されます。本値は wait ループ実行前に配信されるため、受信側はランダム窓全体（およそ `MaxStartDelay − MinStartDelay` から通信遅延数 ms を引いた時間）をスタート合図準備に使えます。これは特に**アクセシビリティ**用途で価値があります: 聴覚障害者・難聴者、あるいは環境騒音で「Go」のビープ音がマスクされる場面でも、`scheduledStart` に固定された LED パネル／ストロボに頼ることで、他のパイロットと同条件で同じスタート合図を受け取れます — イベントがランダムスタート遅延（`MinStartDelay != MaxStartDelay`）を使う場合でも有効です。`scheduledStart`（`RacePreStart`）と `actualStart`（`RaceStart`）を突き合わせれば、運営側はスタートタイミングのジッタを事後監査することも可能です.
 
+注意: `RacePreStart` は「Arm your quads…」音声アナウンスが**完了した後**に送出されます — `OnRaceStartScheduled` は発声完了コールバック内で実行される `RaceManager.StartRace → StartRaceInLessThan` の中でのみ発火するためです. アナウンス**開始**の瞬間に反応したい受信側（例: 発声開始と同時にパネルを点灯したい LED）は、代わりに `RaceStartAnnouncement`（§7.10）を購読してください. これは `RacePreStart` よりおおよそ `MaxStartDelay` 秒早く送出されます.
+
 ### 7.4 `DetectionExt`
 
 最も高頻度なイベント. ゲート検出（セクター通過またはラップ終端）毎に 1 回発火. Extension 用途では既存の `DetectionDetails` を置き換え. レガシー Notifier も有効な場合、両方が wire 上に流れる.
@@ -674,6 +676,44 @@ absolutePath = path.join(config.Fpvt.Paths.WorkingDirectory, pilot.PhotoPath)
 
 受信側は本イベントの**到着自体**を staggered start のシグナルとして扱える。Hello に staggered フラグは含まれない。
 
+### 7.10 `RaceStartAnnouncement`
+
+「Arm your quads. Starting on the tone in less than {time}」アナウンス音声（`SoundManager.StartRaceIn`）が**発声を開始した瞬間**に発火. アナウンス**開始**に合わせて LED やストロボの合図を出したい受信側のためのイベントで、`RacePreStart` より大幅に早く届きます。
+
+```json
+{
+  "type": "RaceStartAnnouncement",
+  "ts": "2026-05-23T13:00:00.000Z",
+  "seq": 88,
+  "round": 3,
+  "race": 2,
+  "raceType": "Race",
+  "delaySeconds": 5.0,
+  "expectedStart": "2026-05-23T13:00:05.000Z"
+}
+```
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| `round` / `race` | int | レース識別子 |
+| `raceType` | string | C# `EventTypes` enum 名 |
+| `delaySeconds` | number（秒） | `SoundManager.StartRaceIn(...)` に渡される値で、`Event.MaxStartDelay` と等しい. アナウンス音声の長さの近似値. 実際のレース開始は発声完了後さらに `[MinStartDelay, MaxStartDelay]` のランダム待機を挟む |
+| `expectedStart` | string（ISO-8601 UTC） | `ts + delaySeconds`. 受信側が自前で加算する手間を省くための補助値. **概算値**であり厳密値は後述の `RacePreStart.scheduledStart` を参照 |
+
+**発火条件.** `EventLayer.StartRace` が **delayed-start ブランチ**に入る場合のみ. 具体的には以下すべてを満たす必要があります:
+- `Event.MaxStartDelay + Event.MinStartDelay > 0`（既定 5.5 秒. 両方 0 だと即時開始ブランチに入り、本イベントは送出されない）
+- `RaceType.HasDelayedStart() == true`（`Freestyle` と `CasualPractice` 以外のすべての `EventTypes` で true）
+- `!staggeredStart`（つまり `RaceType == TimeTrial` かつ `ApplicationProfileSettings.TimeTrialStaggeredStart == true` の組合せ**ではない**）
+- **`StartRaceIn` サウンド自体が有効**（`SoundManager.GetSound(SoundKey.StartRaceIn).Enabled == true`）. サウンドを無効化していると `SoundManager.PlaySound` が発声完了 callback を即座に発火させてしまい delayed-start のタイムラインが崩壊するため、本イベントを送ると `expectedStart` が実際のレース開始と大きくずれて受信側を誤誘導します. そのため本ケースでは送出を抑制します. 厳密なレース状態ストリーム（`RacePreStart` / `RaceStart`）は影響を受けず通常通り流れます.
+
+staggered TimeTrial 経路では `RaceStartAnnouncement` は送出されません. 代わりに各パイロットの go タイミングで `PilotStaggeredStart`（§7.9）が 1 件ずつ送られます.
+
+**`RacePreStart` との関係.** `RaceStartAnnouncement` が先に（発声開始時に）送られ、その後およそ `MaxStartDelay` 秒経過後、音声完了コールバックで `RaceManager.StartRace → StartRaceInLessThan → OnRaceStartScheduled` が走った時点で `RacePreStart` が送出されます. 本イベントの `expectedStart` はあくまで**概算**であり、レースタイマー開始の**厳密な予定時刻**は `RacePreStart.scheduledStart`（`[Now + MinStartDelay, Now + MaxStartDelay]` のランダム値）です. 両イベントを併用してください:
+
+- `RaceStartAnnouncement` → アナウンス開始と同時にパネル点灯 / 視覚カウントダウン開始
+- `RacePreStart.scheduledStart` → 「GO」瞬間の精密化
+- `RaceStart.actualStart` → レースタイマーゼロの確定値
+
 ---
 
 ## 8. 時刻と数値の表現
@@ -758,6 +798,8 @@ def worker(queue):
             "StageRanking": on_stage_ranking(evt)
             "PilotCrashedOut": on_crash(evt)
             "PilotRaceState":  on_roster_change(evt)
+            "PilotStaggeredStart":   on_staggered_start(evt)
+            "RaceStartAnnouncement": on_start_announcement(evt)
             _: log_debug("ignored Type:", evt.Type)
 ```
 

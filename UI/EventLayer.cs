@@ -1010,6 +1010,22 @@ namespace UI
                 // Trigger the sound. The actual race start will happen after it ends
                 TimeSpan delay = EventManager.Event.MaxStartDelay;
 
+                // Emit RaceStartAnnouncement at the exact instant the "Arm your
+                // quads…" speech begins. RacePreStart is sent ~delay seconds
+                // later (after the speech callback runs StartRaceInLessThan),
+                // so receivers that need to anchor LED/strobe cues at the start
+                // of the announcement subscribe to this event instead.
+                //
+                // Skip the emit when the StartRaceIn sound is disabled: PlaySound
+                // fires its onFinished callback immediately in that case, so the
+                // delayed-start timeline collapses and the event's expectedStart
+                // would mislead receivers. The race-state stream (RacePreStart /
+                // RaceStart) still carries authoritative timing.
+                if (SoundManager.GetSound(SoundKey.StartRaceIn)?.Enabled == true)
+                {
+                    ExtensionNotifier?.EmitRaceStartAnnouncement(delay, race);
+                }
+
                 SoundManager.StartRaceIn(delay, () =>
                 {
                     // Put in the queue so it definitely happens after preRaceStart

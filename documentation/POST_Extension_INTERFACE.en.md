@@ -504,6 +504,8 @@ The five `type` values:
 
 `RacePreStart.scheduledStart` is the **exact planned start instant** chosen by `StartRaceInLessThan(MinStartDelay, MaxStartDelay)` — a uniformly distributed pick in `[Now + MinStartDelay, Now + MaxStartDelay]`. The value is delivered before the wait loop runs, so receivers have the full random window (~`MaxStartDelay − MinStartDelay`, minus a few network/serial milliseconds) to prepare their start cues. This is particularly valuable for **accessibility** scenarios: a pilot who is deaf, hard-of-hearing, or running with ambient noise that masks the audio "GO" beep can rely on an LED panel or strobe anchored to `scheduledStart`, getting the same fair start signal as every other pilot — even when the event uses randomised start delays (`MinStartDelay != MaxStartDelay`). Operators can also audit race-start jitter after the fact by comparing `scheduledStart` (from `RacePreStart`) with `actualStart` (from `RaceStart`).
 
+Note: `RacePreStart` is sent **after** the "Arm your quads…" voice prompt finishes, because `OnRaceStartScheduled` only fires inside the post-speech callback that runs `RaceManager.StartRace → StartRaceInLessThan`. Receivers that need to react at the **start** of the voice prompt (e.g. light a panel as the announcement begins) should subscribe to `RaceStartAnnouncement` (§7.10) instead, which fires ≈ `MaxStartDelay` seconds earlier than `RacePreStart`.
+
 ### 7.4 `DetectionExt`
 
 The most frequent event. Fires once per gate detection (sector pass or lap end). Replaces the legacy `DetectionDetails` for Extension purposes; both may be present on the wire when the legacy notifier is also enabled.
@@ -673,6 +675,44 @@ Fires only when a TimeTrial race runs with FPVTrackside's "Time Trial Staggered 
 
 The arrival of this event itself is the staggered-start signal for receivers. No staggered flag is sent in Hello.
 
+### 7.10 `RaceStartAnnouncement`
+
+Fires the instant the "Arm your quads. Starting on the tone in less than {time}" voice prompt begins (`SoundManager.StartRaceIn`). Lets receivers anchor LED/strobe cues at the **start** of the announcement, well before `RacePreStart` arrives.
+
+```json
+{
+  "type": "RaceStartAnnouncement",
+  "ts": "2026-05-23T13:00:00.000Z",
+  "seq": 88,
+  "round": 3,
+  "race": 2,
+  "raceType": "Race",
+  "delaySeconds": 5.0,
+  "expectedStart": "2026-05-23T13:00:05.000Z"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `round` / `race` | int | Race identifiers |
+| `raceType` | string | C# `EventTypes` enum name |
+| `delaySeconds` | number (seconds) | Value passed to `SoundManager.StartRaceIn(...)` — equals `Event.MaxStartDelay`. Approximates the duration of the spoken announcement; the actual race start occurs after the speech completes plus a randomised wait in `[MinStartDelay, MaxStartDelay]`. |
+| `expectedStart` | string (ISO-8601 UTC) | `ts + delaySeconds`. Convenience value so receivers don't need to add `delaySeconds` to `ts` themselves. Approximate — see "Relationship to `RacePreStart`" below. |
+
+**When it fires.** Only when `EventLayer.StartRace` enters the **delayed-start branch**, which requires all of:
+- `Event.MaxStartDelay + Event.MinStartDelay > 0` (default 5.5 s; if both are 0 the immediate-start branch is taken and no announcement plays)
+- `RaceType.HasDelayedStart() == true` (true for every `EventTypes` except `Freestyle` and `CasualPractice`)
+- `!staggeredStart` (i.e. not the combination `RaceType == TimeTrial` AND `ApplicationProfileSettings.TimeTrialStaggeredStart == true`)
+- **The `StartRaceIn` sound itself is enabled** (`SoundManager.GetSound(SoundKey.StartRaceIn).Enabled == true`). When the sound is disabled, `SoundManager.PlaySound` fires the post-speech callback immediately, which collapses the delayed-start timeline; the announcement event would mislead receivers about the actual race-start moment, so it is suppressed. The authoritative race-state stream (`RacePreStart` / `RaceStart`) is unaffected and continues to flow.
+
+For the staggered TimeTrial path, no `RaceStartAnnouncement` is sent; `PilotStaggeredStart` (§7.9) fires per pilot at their individual go moment instead.
+
+**Relationship to `RacePreStart`.** `RaceStartAnnouncement` is sent first (at speech start), and `RacePreStart` follows ≈ `MaxStartDelay` seconds later when the speech callback runs `RaceManager.StartRace → StartRaceInLessThan → OnRaceStartScheduled`. The `expectedStart` field in this event is therefore an **estimate** of when the race timer will start; the **authoritative** start moment is `RacePreStart.scheduledStart`, which is the post-randomisation pick from `[Now + MinStartDelay, Now + MaxStartDelay]`. Use both events:
+
+- `RaceStartAnnouncement` → light the panel / start an audible-equivalent visual countdown the moment the announcement begins.
+- `RacePreStart.scheduledStart` → refine the exact moment of "GO".
+- `RaceStart.actualStart` → the actual race-timer zero.
+
 ---
 
 ## 8. Time and number formats
@@ -758,6 +798,8 @@ def worker(queue):
             "StageRanking": on_stage_ranking(evt)
             "PilotCrashedOut": on_crash(evt)
             "PilotRaceState":  on_roster_change(evt)
+            "PilotStaggeredStart":   on_staggered_start(evt)
+            "RaceStartAnnouncement": on_start_announcement(evt)
             _: log_debug("ignored type:", evt.type)
 ```
 

@@ -211,6 +211,17 @@ namespace ExternalData
             UnsubscribeRaceManager();
             UnsubscribeResultManager();
 
+            // Drop queued items before WorkQueue.Dispose() runs — its
+            // thread.Join() would otherwise wait while the worker drains every
+            // pending HTTP PUT at up to 1500 ms apiece. With an unreachable
+            // receiver and a race-end backlog (RaceEnd / RaceResult /
+            // StageRanking / trailing DetectionExt), that freezes "Back to
+            // event selection" for several seconds. Clearing first bounds the
+            // wait to at most one in-flight request. Per spec §9 the sender
+            // does not retry on failure, so dropping the tail is acceptable.
+            try { httpQueue?.Clear(); } catch { }
+            try { serialQueue?.Clear(); } catch { }
+
             try { serialPort?.Close(); } catch { }
             try { serialPort?.Dispose(); } catch { }
             serialPort = null;
@@ -493,6 +504,30 @@ namespace ExternalData
                 next = null;
             }
             Send(BuildNextRace(next));
+        }
+
+        // Fires the instant SoundManager.StartRaceIn() begins speaking the
+        // "Arm your quads…" announcement — i.e. EventLayer.StartRace's
+        // delayedStart branch. Distinct from RacePreStart, which is sent
+        // ~MaxStartDelay seconds later when the speech callback runs
+        // RaceManager.StartRace → StartRaceInLessThan → OnRaceStartScheduled.
+        // Receivers anchor LED/strobe cues at speech-start (well before the
+        // randomised PreRaceStart resolution) by listening for this event.
+        public void EmitRaceStartAnnouncement(TimeSpan delay, Race race)
+        {
+            if (disposed || race == null) return;
+            DateTime nowUtc = DateTime.UtcNow;
+            Send(new RaceStartAnnouncementMessage
+            {
+                Type = "RaceStartAnnouncement",
+                Ts = nowUtc.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                Seq = NextSeq(),
+                Round = race.RoundNumber,
+                Race = race.RaceNumber,
+                RaceType = race.Type.ToString(),
+                DelaySeconds = delay.TotalSeconds,
+                ExpectedStart = (nowUtc + delay).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+            });
         }
 
         private void RaceManager_OnRaceStart(Race race)
@@ -1416,6 +1451,18 @@ namespace ExternalData
         public long Seq { get; set; }
         public PilotInfoExt Pilot { get; set; }
         public bool ManuallySet { get; set; }
+    }
+
+    public class RaceStartAnnouncementMessage
+    {
+        public string Type { get; set; }
+        public string Ts { get; set; }
+        public long Seq { get; set; }
+        public int Round { get; set; }
+        public int Race { get; set; }
+        public string RaceType { get; set; }
+        public double DelaySeconds { get; set; }
+        public string ExpectedStart { get; set; }
     }
 
     public class PilotStaggeredStartMessage
