@@ -228,6 +228,10 @@ namespace UI.Video
                         ArucoFrameOverlay.ShowSizePercent = primarySettings.ShowMarkerSizePercent;
                         ArucoFrameOverlay.ShowFps = primarySettings.ShowFps;
                         ArucoFrameOverlay.FlipTextVertical = primarySettings.CharacterFlipVertical;
+                        // Reuse HybridDistanceThreshold (the "same physical marker" px) for the
+                        // overlay's per-instance bridge matching. Clamp to >=1 so a 0 config can't
+                        // collapse every same-Id detection into one held marker.
+                        ArucoFrameOverlay.SameMarkerCentreDistancePx = Math.Max(1, primarySettings.HybridDistanceThreshold);
                     }
                     bool multiThread = primarySettings?.UseMultiThreadDetection ?? true;
 

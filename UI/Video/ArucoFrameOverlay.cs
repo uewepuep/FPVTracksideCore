@@ -48,15 +48,26 @@ namespace UI.Video
         }
 
         /// <summary>
-        /// Per-channel state: latest geometry (crop/flip/mirror/sizes) plus a per-marker-ID
-        /// dictionary of the most recent detection and when it was seen. Aging out markers by ID
-        /// rather than by whole-frame lets a brief miss on one of N markers preserve the others.
+        /// Per-channel state: latest geometry (crop/flip/mirror/sizes) plus a list of held markers
+        /// with per-instance timestamps. Held markers are identified by (Id, approximate centre)
+        /// so multiple physical markers sharing the same ID are tracked separately; aging is then
+        /// per-instance, so a brief miss on one of N markers preserves the others.
         /// </summary>
         private sealed class ChannelEntry
         {
             public Cached Geometry;
-            public readonly Dictionary<int, HeldMarker> Markers = new Dictionary<int, HeldMarker>();
+            public readonly List<HeldMarker> Markers = new List<HeldMarker>();
         }
+
+        /// <summary>
+        /// Maximum distance (in detection-frame pixels) at which an incoming detection is
+        /// considered to refresh an existing held marker with the same Id (per-instance bridge
+        /// across short detection misses). Beyond this, the detection is added as a new instance
+        /// so duplicate same-Id markers at distinct screen positions each get their own outline.
+        /// Driven by the ArUco timing system's existing "Hybrid Distance Threshold" — both use the
+        /// same "what counts as the same physical marker" criterion, just at different layers.
+        /// </summary>
+        public static volatile int SameMarkerCentreDistancePx = 20;
 
         // Multiple channels can share the same FrameSource (e.g. a single 2x2 capture split
         // by RelativeSourceBounds into 4 pilot views). We therefore index first by FrameSource
@@ -117,8 +128,50 @@ namespace UI.Video
                 {
                     foreach (var d in cached.Detections)
                     {
-                        if (d == null || d.Corners == null) continue;
-                        entry.Markers[d.Id] = new HeldMarker { Detection = d, SeenAt = now };
+                        if (d == null || d.Corners == null || d.Corners.Length == 0) continue;
+
+                        double cx = 0, cy = 0;
+                        for (int i = 0; i < d.Corners.Length; i++)
+                        {
+                            cx += d.Corners[i].X;
+                            cy += d.Corners[i].Y;
+                        }
+                        cx /= d.Corners.Length;
+                        cy /= d.Corners.Length;
+
+                        // Refresh the nearest existing held marker that shares this Id, or add a
+                        // new instance when none is close enough — same-Id markers at distinct
+                        // positions each get their own outline this way. Snapshot the volatile
+                        // threshold once so a mid-loop config change can't desync the comparison.
+                        int radius = SameMarkerCentreDistancePx;
+                        int matchIdx = -1;
+                        double matchDistSq = (double)radius * radius;
+                        for (int i = 0; i < entry.Markers.Count; i++)
+                        {
+                            var held = entry.Markers[i];
+                            if (held.Detection.Id != d.Id || held.Detection.Corners == null || held.Detection.Corners.Length == 0) continue;
+                            double hcx = 0, hcy = 0;
+                            for (int j = 0; j < held.Detection.Corners.Length; j++)
+                            {
+                                hcx += held.Detection.Corners[j].X;
+                                hcy += held.Detection.Corners[j].Y;
+                            }
+                            hcx /= held.Detection.Corners.Length;
+                            hcy /= held.Detection.Corners.Length;
+                            double dx = hcx - cx, dy = hcy - cy;
+                            double distSq = dx * dx + dy * dy;
+                            if (distSq < matchDistSq)
+                            {
+                                matchDistSq = distSq;
+                                matchIdx = i;
+                            }
+                        }
+
+                        var refreshed = new HeldMarker { Detection = d, SeenAt = now };
+                        if (matchIdx >= 0)
+                            entry.Markers[matchIdx] = refreshed;
+                        else
+                            entry.Markers.Add(refreshed);
                     }
                 }
             }
@@ -131,26 +184,20 @@ namespace UI.Video
         private static List<MarkerDetection> CollectActive(ChannelEntry entry, DateTime now)
         {
             List<MarkerDetection> active = null;
-            List<int> expired = null;
             lock (entry.Markers)
             {
-                foreach (var kv in entry.Markers)
+                for (int i = entry.Markers.Count - 1; i >= 0; i--)
                 {
-                    double ageMs = (now - kv.Value.SeenAt).TotalMilliseconds;
+                    double ageMs = (now - entry.Markers[i].SeenAt).TotalMilliseconds;
                     if (ageMs > OverlayHoldMs)
                     {
-                        if (expired == null) expired = new List<int>();
-                        expired.Add(kv.Key);
+                        entry.Markers.RemoveAt(i);
                     }
                     else
                     {
                         if (active == null) active = new List<MarkerDetection>();
-                        active.Add(kv.Value.Detection);
+                        active.Add(entry.Markers[i].Detection);
                     }
-                }
-                if (expired != null)
-                {
-                    foreach (var k in expired) entry.Markers.Remove(k);
                 }
             }
             return active;
