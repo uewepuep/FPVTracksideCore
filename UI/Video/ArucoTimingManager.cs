@@ -227,6 +227,7 @@ namespace UI.Video
                         ArucoFrameOverlay.ShowId = primarySettings.ShowMarkerId;
                         ArucoFrameOverlay.ShowSizePercent = primarySettings.ShowMarkerSizePercent;
                         ArucoFrameOverlay.ShowFps = primarySettings.ShowFps;
+                        ArucoFrameOverlay.FlipTextVertical = primarySettings.CharacterFlipVertical;
                     }
                     bool multiThread = primarySettings?.UseMultiThreadDetection ?? true;
 

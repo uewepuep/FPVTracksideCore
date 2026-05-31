@@ -74,6 +74,12 @@ namespace UI.Video
         public static volatile bool Enabled = false;
 
         /// <summary>
+        /// When true, overlay text (ID / size % / FPS) is rendered upside-down at the same on-screen
+        /// position. Useful for cameras/displays mounted in a vertically-inverted orientation.
+        /// </summary>
+        public static volatile bool FlipTextVertical = true;
+
+        /// <summary>
         /// Latest detection iterations per second, published by <see cref="UI.Video.ArucoTimingManager"/>
         /// once per ~1 s. Drawn in each channel's overlay when <see cref="ShowFps"/> is on.
         /// </summary>
@@ -231,15 +237,23 @@ namespace UI.Video
                         string fpsText = DetectionFps.ToString("F0") + " fps";
                         double fxBase = cropX + 6;
                         double fyBase = cropY + cropH - 6;  // baseline near crop bottom
+                        // Pull the baseline one text-height inward (toward the channel's
+                        // centre) so the FPS label doesn't sit flush against the crop edge.
+                        // Computed in pre-flip visual coords so the offset always moves
+                        // toward centre regardless of MirrorX / FlipY.
+                        OpenCvSharp.Size fpsTextSize = Cv2.GetTextSize(
+                            fpsText, HersheyFonts.HersheySimplex,
+                            fontScale * 1.2, textThickness + 2, out _);
+                        fyBase -= fpsTextSize.Height;
                         if (cached.MirrorX) fxBase = w - 1 - fxBase;
                         if (cached.FlipY)   fyBase = h - 1 - fyBase;
                         Scalar fpsColor = format == SurfaceFormat.Color
                             ? new Scalar(255, 255, 0, 255)   // RGBA: yellow
                             : new Scalar(0, 255, 255, 255);  // BGRA: yellow
                         var fpsOrg = new Point((int)fxBase, (int)fyBase);
-                        // Outline pass for contrast.
-                        Cv2.PutText(mat, fpsText, fpsOrg, HersheyFonts.HersheySimplex, fontScale * 1.2, Scalar.Black, textThickness + 2, LineTypes.AntiAlias);
-                        Cv2.PutText(mat, fpsText, fpsOrg, HersheyFonts.HersheySimplex, fontScale * 1.2, fpsColor, textThickness, LineTypes.AntiAlias);
+                        DrawOverlayText(mat, w, h, fpsText, fpsOrg,
+                                        fontScale * 1.2, fpsColor, textThickness,
+                                        outlineScale: fontScale * 1.2, outlineThickness: textThickness + 2);
                     }
 
                     if (detections == null) return;
@@ -296,7 +310,7 @@ namespace UI.Video
                         if (label != null)
                         {
                             var org = new Point((int)acx, (int)acy - 10);
-                            Cv2.PutText(mat, label, org, HersheyFonts.HersheySimplex, fontScale, color, textThickness, LineTypes.AntiAlias);
+                            DrawOverlayText(mat, w, h, label, org, fontScale, color, textThickness);
                         }
                     }
                 }
@@ -304,6 +318,68 @@ namespace UI.Video
             catch
             {
                 // Never let overlay errors take down the capture thread.
+            }
+        }
+
+        /// <summary>
+        /// Draws antialiased text on <paramref name="mat"/>, optionally with a black outline
+        /// (when <paramref name="outlineThickness"/> &gt; 0) and optionally flipped vertically
+        /// in-place (when <see cref="FlipTextVertical"/> is true). Position of <paramref name="org"/>
+        /// is preserved; only the glyph shape is inverted top-to-bottom.
+        /// </summary>
+        /// <remarks>
+        /// Vertical flip is performed by drawing into a tight ROI on <paramref name="mat"/> and
+        /// applying <see cref="Cv2.Flip"/> with <see cref="FlipMode.X"/>. Background pixels within
+        /// that small ROI are also flipped — invisible for typical glyph-sized rectangles.
+        /// </remarks>
+        private static void DrawOverlayText(Mat mat, int w, int h, string text, Point org,
+                                            double scale, Scalar color, int thickness,
+                                            double outlineScale = 0, int outlineThickness = 0)
+        {
+            const HersheyFonts font = HersheyFonts.HersheySimplex;
+            const LineTypes lineType = LineTypes.AntiAlias;
+            bool hasOutline = outlineThickness > 0;
+
+            if (!FlipTextVertical)
+            {
+                if (hasOutline)
+                    Cv2.PutText(mat, text, org, font, outlineScale, Scalar.Black, outlineThickness, lineType);
+                Cv2.PutText(mat, text, org, font, scale, color, thickness, lineType);
+                return;
+            }
+
+            // Use the wider of (outline, main) for bounding-rect calculation so the flipped
+            // ROI covers both passes. Pad a few pixels for AA fringe.
+            double measureScale = hasOutline ? outlineScale : scale;
+            int measureThickness = hasOutline ? outlineThickness : thickness;
+            OpenCvSharp.Size textSize = Cv2.GetTextSize(text, font, measureScale, measureThickness, out int baseline);
+            const int padding = 2;
+            int rectX = org.X - padding;
+            int rectY = org.Y - textSize.Height - padding;
+            int rectW = textSize.Width + padding * 2;
+            int rectH = textSize.Height + baseline + padding * 2;
+
+            // Clip to image bounds. Fall back to a non-flipped draw if the ROI vanishes.
+            int x0 = Math.Max(0, rectX);
+            int y0 = Math.Max(0, rectY);
+            int x1 = Math.Min(w, rectX + rectW);
+            int y1 = Math.Min(h, rectY + rectH);
+            if (x1 - x0 <= 0 || y1 - y0 <= 0)
+            {
+                if (hasOutline)
+                    Cv2.PutText(mat, text, org, font, outlineScale, Scalar.Black, outlineThickness, lineType);
+                Cv2.PutText(mat, text, org, font, scale, color, thickness, lineType);
+                return;
+            }
+
+            Rect roi = new Rect(x0, y0, x1 - x0, y1 - y0);
+            using (Mat sub = new Mat(mat, roi))
+            {
+                Point adjOrg = new Point(org.X - roi.X, org.Y - roi.Y);
+                if (hasOutline)
+                    Cv2.PutText(sub, text, adjOrg, font, outlineScale, Scalar.Black, outlineThickness, lineType);
+                Cv2.PutText(sub, text, adjOrg, font, scale, color, thickness, lineType);
+                Cv2.Flip(sub, sub, FlipMode.X);
             }
         }
 
