@@ -60,7 +60,39 @@ namespace UI.Video
         {
             CleanUp();
 
-            if (!HasAruco()) return;
+            // Probe (and log) native availability up front so we always see the result, even when
+            // there are zero ArUco systems configured (which is why the menu would have been
+            // hidden in TimingSystemEditor).
+            bool nativeOk = ArucoTimingSystem.IsNativeAvailable();
+            Logger.TimingLog.Log(this, "[ArUco-Debug] Init: IsNativeAvailable=" + nativeOk);
+
+            try
+            {
+                var systems = timingSystemManager?.TimingSystems?.OfType<ArucoTimingSystem>().ToArray();
+                int arucoCount = systems?.Length ?? 0;
+                Logger.TimingLog.Log(this, "[ArUco-Debug] Init: ArucoTimingSystem count=" + arucoCount);
+                if (systems != null)
+                {
+                    foreach (var sys in systems)
+                    {
+                        var s = sys.ArucoSettings;
+                        Logger.TimingLog.Log(this, "[ArUco-Debug] Init:  - Role="
+                            + (sys.Settings?.Role.ToString() ?? "null")
+                            + " MarkerIds=" + (s?.MarkerIds ?? "null")
+                            + " DetectMode=" + (s?.DetectMode.ToString() ?? "null")
+                            + " MarkerThreshold=" + (s?.MarkerThreshold.ToString() ?? "null")
+                            + " MinMarkerPercent=" + (s?.MinMarkerPercent.ToString() ?? "null")
+                            + " FlickerLengthMs=" + (s?.FlickerLengthMs.ToString() ?? "null"));
+                    }
+                }
+            }
+            catch (Exception ex) { Logger.TimingLog.LogException(this, ex); }
+
+            if (!HasAruco())
+            {
+                Logger.TimingLog.Log(this, "[ArUco-Debug] Init: no ArucoTimingSystem configured — detection thread will NOT start.");
+                return;
+            }
 
             EnforceSinglePrimary();
 
@@ -71,6 +103,7 @@ namespace UI.Video
                 IsBackground = true
             };
             thread.Start();
+            Logger.TimingLog.Log(this, "[ArUco-Debug] Init: detection thread started.");
         }
 
         /// <summary>
@@ -98,7 +131,7 @@ namespace UI.Video
 
                 string ids = sys.ArucoSettings?.MarkerIds ?? "-";
                 Logger.TimingLog.Log(this,
-                    "ArUco: only one Primary is allowed; demoting Marker(s) " + ids + " to Split.");
+                    "[ArUco-Debug] only one Primary is allowed; demoting Marker(s) " + ids + " to Split.");
                 sys.Settings.Role = TimingSystemRole.Split;
             }
         }
@@ -128,10 +161,10 @@ namespace UI.Video
                 string calPath = Path.Combine(AppContext.BaseDirectory, "Aruco", "camera_calibration.json");
                 ArucoCalibration calibration = ArucoCalibration.TryLoad(calPath, out string calError);
                 if (calibration != null)
-                    Logger.TimingLog.Log(this, "ArUco: calibration loaded from " + calPath
+                    Logger.TimingLog.Log(this, "[ArUco-Debug] calibration loaded from " + calPath
                         + " (ref " + calibration.ReferenceWidth + "x" + calibration.ReferenceHeight + ")");
                 else
-                    Logger.TimingLog.Log(this, "ArUco: calibration NOT loaded (" + (calError ?? "unknown") + ") — Corrected/Hybrid passes will be skipped. Path: " + calPath);
+                    Logger.TimingLog.Log(this, "[ArUco-Debug] calibration NOT loaded (" + (calError ?? "unknown") + ") — Corrected/Hybrid passes will be skipped. Path: " + calPath);
 
                 ArucoFrameOverlay.EnsureRegistered();
                 ArucoFrameOverlay.Enabled = true;
@@ -144,29 +177,47 @@ namespace UI.Video
                 var fpsSw = Stopwatch.StartNew();
                 int fpsIter = 0;
 
+                // [ArUco-Debug] per-second aggregates so we can see why detection isn't firing
+                // without spamming the log every frame.
+                int dbgLoopIter = 0;
+                int dbgSkipNoSystems = 0, dbgSkipNoChannels = 0, dbgSkipNullSource = 0, dbgSkipSameFrame = 0;
+                int dbgBgraOk = 0, dbgBgraNullPixels = 0, dbgBgraBadSize = 0;
+                int dbgTotalDetections = 0;
+                int[] dbgPerIdCount = new int[4];
+                int dbgMatchingPositive = 0;
+                int dbgPrimaryAbsent = 0;
+                ArucoDetectMode dbgLastMode = ArucoDetectMode.Original;
+                double dbgLastMinAreaPx = 0;
+                int dbgLastChannelCount = 0;
+                long dbgLastFrameSeen = -1;
+
                 while (run)
                 {
                     // Re-assert each iteration so that another ArucoTimingManager instance's
                     // shutdown (e.g. the one ReplayNode spawns via its own ChannelsGridNode)
                     // cannot leave this thread running with the global overlay disabled.
                     ArucoFrameOverlay.Enabled = true;
+                    dbgLoopIter++;
 
                     var systems = timingSystemManager.TimingSystems
                         .OfType<ArucoTimingSystem>()
                         .ToArray();
                     if (systems.Length == 0)
                     {
+                        dbgSkipNoSystems++;
                         Thread.Sleep(500);
-                        continue;
+                        goto SecondTick;
                     }
 
                     var channelNodes = channelsGridNode.ChannelNodes
                         .OfType<ChannelVideoNode>()
                         .ToArray();
+                    dbgLastChannelCount = channelNodes.Length;
                     if (channelNodes.Length == 0)
                     {
+                        dbgSkipNoChannels++;
                         Thread.Sleep(100);
-                        continue;
+                        goto SecondTick;
                     }
 
                     // Ensure each FrameNodeThumb is sized for detection (480x360, not the default 8x8).
@@ -191,17 +242,20 @@ namespace UI.Video
                     var src = first.FrameNode.Source;
                     if (src == null)
                     {
+                        dbgSkipNullSource++;
                         Thread.Sleep(10);
-                        continue;
+                        goto SecondTick;
                     }
 
                     long frame = src.FrameProcessNumber;
                     if (frame == lastFrame)
                     {
+                        dbgSkipSameFrame++;
                         Thread.Sleep(1);
-                        continue;
+                        goto SecondTick;
                     }
                     lastFrame = frame;
+                    dbgLastFrameSeen = frame;
 
                     DateTime captureTime = DateTime.Now;
 
@@ -224,6 +278,8 @@ namespace UI.Video
                     ArucoDetectMode sharedMode = primarySettings?.DetectMode ?? ArucoDetectMode.Original;
                     double sharedEcRate = primarySettings?.ErrorCorrectionRate ?? 0.0;
                     int sharedHybridDist = primarySettings?.HybridDistanceThreshold ?? 0;
+                    dbgLastMode = sharedMode;
+                    if (primarySettings == null) dbgPrimaryAbsent++;
 
                     // Overlay display flags track the Primary's settings.
                     if (primarySettings != null)
@@ -262,6 +318,7 @@ namespace UI.Video
                         Color[] pixels = cvn.FrameNode.GetColorData();
                         if (pixels == null)
                         {
+                            dbgBgraNullPixels++;
                             inputs[i] = (cvn, null);
                             continue;
                         }
@@ -270,10 +327,12 @@ namespace UI.Video
                         if (size.Width != FrameWidth || size.Height != FrameHeight ||
                             pixels.Length != FrameWidth * FrameHeight)
                         {
+                            dbgBgraBadSize++;
                             inputs[i] = (cvn, null);
                             continue;
                         }
 
+                        dbgBgraOk++;
                         byte[] bgra = new byte[pixels.Length * 4];
                         for (int k = 0; k < pixels.Length; k++)
                         {
@@ -314,6 +373,13 @@ namespace UI.Video
                         var cvn = inputs[ch].cvn;
                         var detections = channelResults[ch];
                         if (detections == null) continue;
+
+                        dbgTotalDetections += detections.Count;
+                        foreach (var d in detections)
+                        {
+                            if (d.Id >= 0 && d.Id < dbgPerIdCount.Length)
+                                dbgPerIdCount[d.Id]++;
+                        }
 
                         // Cache per full-resolution FrameSource so the overlay hook can find them.
                         FrameSource source = cvn.FrameNode.Source;
@@ -362,6 +428,7 @@ namespace UI.Video
                             int matching = 0;
                             double maxArea = 0;
                             double minAreaPx = (double)FrameWidth * FrameHeight * (effective.MinMarkerPercent / 100.0);
+                            dbgLastMinAreaPx = minAreaPx;
 
                             foreach (var d in detections)
                             {
@@ -371,17 +438,56 @@ namespace UI.Video
                                 if (d.AreaPx > maxArea) maxArea = d.AreaPx;
                             }
 
+                            if (matching > 0) dbgMatchingPositive++;
+
                             sys.ReportMarkerCount(cvn.Channel.Frequency, matching, (int)maxArea, captureTime,
                                 effective.MarkerThreshold, effective.FlickerLengthMs);
                         }
                     }
 
                     fpsIter++;
+
+                SecondTick:
                     if (fpsSw.ElapsedMilliseconds >= 1000)
                     {
                         ArucoFrameOverlay.DetectionFps = (float)(fpsIter * 1000.0 / fpsSw.Elapsed.TotalMilliseconds);
+
+                        // [ArUco-Debug] one-line summary every ~1s so we can answer:
+                        //   * is the loop even running? (loopIter)
+                        //   * what's gating it? (skip*)
+                        //   * are frames flowing? (bgraOk vs bgraNullPixels/bgraBadSize)
+                        //   * are markers being seen? (totalDet, perId)
+                        //   * are matches surviving the wantedIds + minAreaPx filter? (matching>0)
+                        Logger.TimingLog.Log(this,
+                            "[ArUco-Debug] 1s: loop=" + dbgLoopIter
+                            + " fps=" + fpsIter
+                            + " channels=" + dbgLastChannelCount
+                            + " lastFrame=" + dbgLastFrameSeen
+                            + " skip[noSys=" + dbgSkipNoSystems
+                            + ",noCh=" + dbgSkipNoChannels
+                            + ",nullSrc=" + dbgSkipNullSource
+                            + ",sameFrame=" + dbgSkipSameFrame + "]"
+                            + " bgra[ok=" + dbgBgraOk
+                            + ",nullPx=" + dbgBgraNullPixels
+                            + ",badSize=" + dbgBgraBadSize + "]"
+                            + " mode=" + dbgLastMode
+                            + " primaryAbsent=" + dbgPrimaryAbsent
+                            + " minAreaPx=" + dbgLastMinAreaPx.ToString("F1")
+                            + " totalDet=" + dbgTotalDetections
+                            + " perId=[" + dbgPerIdCount[0] + "," + dbgPerIdCount[1] + "," + dbgPerIdCount[2] + "," + dbgPerIdCount[3] + "]"
+                            + " matching>0=" + dbgMatchingPositive);
+
                         fpsIter = 0;
                         fpsSw.Restart();
+
+                        // reset 1-second aggregates
+                        dbgLoopIter = 0;
+                        dbgSkipNoSystems = dbgSkipNoChannels = dbgSkipNullSource = dbgSkipSameFrame = 0;
+                        dbgBgraOk = dbgBgraNullPixels = dbgBgraBadSize = 0;
+                        dbgTotalDetections = 0;
+                        for (int i = 0; i < dbgPerIdCount.Length; i++) dbgPerIdCount[i] = 0;
+                        dbgMatchingPositive = 0;
+                        dbgPrimaryAbsent = 0;
                     }
                 }
             }
