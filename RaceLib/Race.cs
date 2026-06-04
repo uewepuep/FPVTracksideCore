@@ -69,6 +69,15 @@ namespace RaceLib
         [Category("Editable Details")]
         public int RaceNumber { get; set; }
 
+        // ExternalRaceID links this heat to a race in an external system.
+        // Populated from the optional 2nd CSV column on a pasted pilot list;
+        // empty for heats created by name only. Surfaced in Race.json so an
+        // external consumer can route a finished heat's result back to the
+        // exact race. Editable in the race edit screen so it can be set or
+        // corrected by hand.
+        [Category("Editable Details")]
+        public string ExternalRaceID { get; set; }
+
         [System.ComponentModel.Browsable(false)]
         public Round Round { get; set; }
 

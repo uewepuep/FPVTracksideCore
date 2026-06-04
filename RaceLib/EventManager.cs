@@ -602,7 +602,16 @@ namespace RaceLib
         }
 
 
-        public IEnumerable<Tuple<Pilot, Channel>> GetPilotsFromLines(IEnumerable<string> pilots, bool assignChannel)
+        // GetPilotsFromLines parses a pasted pilot list. Each line is CSV; only
+        // the first column (pilot name) is required. Two optional trailing
+        // columns are read when present and ignored when absent, so older paste
+        // lists that are name-only keep working unchanged:
+        //   col 0: pilot name (matched case-insensitively to an event pilot)
+        //   col 1: ExternalRaceID  — an external system's race identifier,
+        //          returned in Item3 so the caller can stamp the heat it lands in
+        //   col 2: ExternalPilotID — an external system's pilot identifier,
+        //          stamped onto the matched Pilot here, since a pilot is event-global
+        public IEnumerable<Tuple<Pilot, Channel, string>> GetPilotsFromLines(IEnumerable<string> pilots, bool assignChannel)
         {
             int channelIndex = 0;
 
@@ -611,11 +620,21 @@ namespace RaceLib
             foreach (string untrimmed in pilots)
             {
                 string pilotname = untrimmed;
+                string externalRaceID = "";
+                string externalPilotID = "";
 
-                string[] csv = pilotname.Split(',');    
+                string[] csv = pilotname.Split(',');
                 if (csv.Length > 0)
                 {
                     pilotname = csv[0];
+                }
+                if (csv.Length > 1)
+                {
+                    externalRaceID = csv[1].Trim();
+                }
+                if (csv.Length > 2)
+                {
+                    externalPilotID = csv[2].Trim();
                 }
 
                 pilotname = pilotname.Trim();
@@ -623,6 +642,11 @@ namespace RaceLib
                 Pilot p = Event.Pilots.FirstOrDefault(pa => pa != null && pa.Name.ToLower() == pilotname.ToLower());
                 if (p != null)
                 {
+                    if (!string.IsNullOrEmpty(externalPilotID))
+                    {
+                        p.ExternalPilotID = externalPilotID;
+                    }
+
                     Channel c = GetChannel(p);
                     if (assignChannel)
                     {
@@ -638,7 +662,7 @@ namespace RaceLib
                         }
                     }
 
-                    yield return new Tuple<Pilot, Channel>(p, c);
+                    yield return new Tuple<Pilot, Channel, string>(p, c, externalRaceID);
                 }
                 channelIndex++;
                 channelIndex = channelIndex % Channels.Length;
@@ -647,8 +671,8 @@ namespace RaceLib
 
         public void AddPilotsFromLines(IEnumerable<string> pilots)
         {
-            IEnumerable<Tuple<Pilot, Channel>> pcs = GetPilotsFromLines(pilots, true);
-            foreach (Tuple<Pilot, Channel> pc in pcs)
+            IEnumerable<Tuple<Pilot, Channel, string>> pcs = GetPilotsFromLines(pilots, true);
+            foreach (Tuple<Pilot, Channel, string> pc in pcs)
             {
                 Pilot p = pc.Item1;
                 Channel c = pc.Item2;

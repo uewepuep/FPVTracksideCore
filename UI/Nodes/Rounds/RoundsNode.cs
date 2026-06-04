@@ -566,7 +566,7 @@ namespace UI.Nodes.Rounds
         private void Paste(Round round)
         {
             var lines = PlatformTools.Clipboard.GetLines();
-            IEnumerable<Tuple<Pilot, Channel>> pilotChannels = EventManager.GetPilotsFromLines(lines, true);
+            IEnumerable<Tuple<Pilot, Channel, string>> pilotChannels = EventManager.GetPilotsFromLines(lines, true);
             if (pilotChannels.Any())
             {
                 RoundManager.SetRoundPilots(round, pilotChannels);

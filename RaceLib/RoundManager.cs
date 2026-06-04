@@ -167,7 +167,7 @@ namespace RaceLib
             return races.All(r => r.Ended) && races.Any();
         }
 
-        public void SetRoundPilots(Round round, IEnumerable<Tuple<Pilot, Channel>> pilotChannels)
+        public void SetRoundPilots(Round round, IEnumerable<Tuple<Pilot, Channel, string>> pilotChannels)
         {
             Race race = null;
             int startNumber = RaceManager.GetRaceCount(round);
@@ -180,6 +180,7 @@ namespace RaceLib
                 {
                     Channel c = tup.Item2;
                     Pilot p = tup.Item1;
+                    string externalRaceID = tup.Item3;
 
                     if (race == null || !race.IsFrequencyFree(c))
                     {
@@ -188,6 +189,13 @@ namespace RaceLib
                         race.RaceNumber = startNumber + 1 + races.Count;
                         race.Round = round;
                         races.Add(race);
+                    }
+
+                    // Stamp the external race id from the paste (first non-empty
+                    // value within the heat wins; blank-padded rows contribute none).
+                    if (!string.IsNullOrEmpty(externalRaceID) && string.IsNullOrEmpty(race.ExternalRaceID))
+                    {
+                        race.ExternalRaceID = externalRaceID;
                     }
 
                     race.SetPilot(db, c, p);

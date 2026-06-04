@@ -271,7 +271,7 @@ namespace UI.Nodes.Rounds
                 else
                 {
                     var lines = PlatformTools.Clipboard.GetLines();
-                    IEnumerable<Tuple<Pilot, Channel>> pilotChannels = EventManager.GetPilotsFromLines(lines, false);
+                    IEnumerable<Tuple<Pilot, Channel, string>> pilotChannels = EventManager.GetPilotsFromLines(lines, false);
 
                     if (pilotChannels.Any())
                     {
@@ -505,14 +505,21 @@ namespace UI.Nodes.Rounds
         private void PasteFromClipboard(bool assign)
         {
             var lines = PlatformTools.Clipboard.GetLines();
-            IEnumerable<Tuple<Pilot, Channel>> pcs = EventManager.GetPilotsFromLines(lines, assign);
+            IEnumerable<Tuple<Pilot, Channel, string>> pcs = EventManager.GetPilotsFromLines(lines, assign);
 
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
-                foreach (Tuple<Pilot, Channel> pc in pcs)
+                foreach (Tuple<Pilot, Channel, string> pc in pcs)
                 {
                     Pilot p = pc.Item1;
                     Channel c = pc.Item2;
+                    string externalRaceID = pc.Item3;
+
+                    // Single-race paste: stamp the external race id from the paste.
+                    if (!string.IsNullOrEmpty(externalRaceID) && string.IsNullOrEmpty(Race.ExternalRaceID))
+                    {
+                        Race.ExternalRaceID = externalRaceID;
+                    }
 
                     if (!assign && c != null)
                     {

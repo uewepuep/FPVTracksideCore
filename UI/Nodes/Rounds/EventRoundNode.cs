@@ -484,7 +484,7 @@ namespace UI.Nodes.Rounds
         private void PasteRace()
         {
             var lines = PlatformTools.Clipboard.GetLines();
-            IEnumerable<Tuple<Pilot, Channel>> pilotChannels = EventManager.GetPilotsFromLines(lines, true);
+            IEnumerable<Tuple<Pilot, Channel, string>> pilotChannels = EventManager.GetPilotsFromLines(lines, true);
             if (pilotChannels.Any())
             {
                 Race race = EventManager.RaceManager.AddRaceToRound(Round);
@@ -493,6 +493,11 @@ namespace UI.Nodes.Rounds
                 {
                     foreach (var kvp in pilotChannels)
                     {
+                        // Single-race paste: stamp the external race id from the paste.
+                        if (!string.IsNullOrEmpty(kvp.Item3) && string.IsNullOrEmpty(race.ExternalRaceID))
+                        {
+                            race.ExternalRaceID = kvp.Item3;
+                        }
                         race.SetPilot(db, kvp.Item2, kvp.Item1);
                     }
                 }
