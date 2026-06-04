@@ -261,7 +261,7 @@ namespace UI.Video
                 PlaybackVideoManager = VideoManagerFactory.CreateVideoManager();
                 PlaybackVideoManager.OnStart += PlaybackVideoManager_OnStart;
 
-                ChannelsGridNode = new ChannelsGridNode(EventManager, PlaybackVideoManager);
+                ChannelsGridNode = new ChannelsGridNode(EventManager, PlaybackVideoManager, isPlayback: true);
                 ChannelsGridNode.RelativeBounds = new RectangleF(0, 0, 1, 1 - seekBarHeight);
                 AddChild(ChannelsGridNode);
 
