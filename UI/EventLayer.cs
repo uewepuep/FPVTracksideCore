@@ -663,6 +663,7 @@ namespace UI
 
                 videoManager.LoadCreateDevices((fs) =>
                 {
+                    ChannelsGridNode.InitVideoTimingSystems();
                     ChannelsGridNode.FillChannelNodes();
 
                     sceneManagerNode.SetupCams();
