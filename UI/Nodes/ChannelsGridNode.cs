@@ -133,14 +133,19 @@ namespace UI.Nodes
             }
         }
 
-        public ChannelsGridNode(EventManager eventManager, VideoManager videoManager)
+        public ChannelsGridNode(EventManager eventManager, VideoManager videoManager, bool isPlayback = false)
         {
             SingleRow = false;
 
             channelCreationLock = new object();
             channelInfos = new List<ChannelVideoInfo>();
 
-            arucoTimingManager = new UI.Video.ArucoTimingManager(eventManager.RaceManager.TimingSystemManager, this);
+            // Skip ArUco detection on playback grids — the ReplayNode spawns its own
+            // ChannelsGridNode for recorded video, and running detection there would burn FPS
+            // text into the replay output and fight with the live grid for the global overlay
+            // state (Enabled/ShowFps/cache).
+            if (!isPlayback)
+                arucoTimingManager = new UI.Video.ArucoTimingManager(eventManager.RaceManager.TimingSystemManager, this);
 
             EventManager = eventManager;
             VideoManager = videoManager;
