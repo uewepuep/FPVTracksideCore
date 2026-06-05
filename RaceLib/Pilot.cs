@@ -90,13 +90,6 @@ namespace RaceLib
             }
         }
 
-        // ExternalPilotID links this pilot to a pilot record in an external
-        // system. Populated from the optional 3rd CSV column on a pasted pilot
-        // list; empty for pilots added by name only. Surfaced in Pilots.json so
-        // an external consumer can resolve results back to the exact pilot
-        // without fuzzy name matching.
-        public string ExternalPilotID { get; set; }
-
         public static Pilot CreateFromName(string name)
         {
             Pilot pilot = new Pilot() { Name = name };

@@ -38,12 +38,6 @@ namespace DB.JSON
 
         public string Bracket { get; set; }
 
-        // Links this heat to a race in an external system (an opaque identifier
-        // defined by the consuming system). Copied by reflection to/from
-        // RaceLib.Race.ExternalRaceID so it persists into Race.json and is
-        // exposed by the event web API for external result routing.
-        public string ExternalRaceID { get; set; }
-
         public Race() { }
 
         public Race(RaceLib.Race obj)

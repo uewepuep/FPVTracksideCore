@@ -38,12 +38,6 @@ namespace DB
         public bool VideoFlipped { get; set; }
         public bool VideoMirrored { get; set; }
 
-        // Links this pilot to a pilot record in an external system (an opaque
-        // identifier defined by the consuming system). Copied by reflection
-        // to/from RaceLib.Pilot.ExternalPilotID so it persists into Pilots.json
-        // and is exposed by the event web API for external result routing.
-        public string ExternalPilotID { get; set; }
-
         public Pilot() { }
 
         public Pilot(RaceLib.Pilot obj)

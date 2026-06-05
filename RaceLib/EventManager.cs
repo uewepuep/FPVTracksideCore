@@ -607,11 +607,13 @@ namespace RaceLib
         // columns are read when present and ignored when absent, so older paste
         // lists that are name-only keep working unchanged:
         //   col 0: pilot name (matched case-insensitively to an event pilot)
-        //   col 1: ExternalRaceID  — an external system's race identifier,
+        //   col 1: external race id  — an external system's race identifier,
         //          returned in Item3 so the caller can stamp the heat it lands in
-        //   col 2: ExternalPilotID — an external system's pilot identifier,
+        //   col 2: external pilot id — an external system's pilot identifier,
         //          stamped onto the matched Pilot here, since a pilot is event-global
-        public IEnumerable<Tuple<Pilot, Channel, string>> GetPilotsFromLines(IEnumerable<string> pilots, bool assignChannel)
+        // Both ids reuse the existing integer ExternalID on BaseObject (the same
+        // field surfaced on Pilot as MultiGP_ID); non-numeric values are ignored.
+        public IEnumerable<Tuple<Pilot, Channel, int>> GetPilotsFromLines(IEnumerable<string> pilots, bool assignChannel)
         {
             int channelIndex = 0;
 
@@ -620,8 +622,8 @@ namespace RaceLib
             foreach (string untrimmed in pilots)
             {
                 string pilotname = untrimmed;
-                string externalRaceID = "";
-                string externalPilotID = "";
+                int externalRaceID = 0;
+                int externalPilotID = 0;
 
                 string[] csv = pilotname.Split(',');
                 if (csv.Length > 0)
@@ -630,11 +632,11 @@ namespace RaceLib
                 }
                 if (csv.Length > 1)
                 {
-                    externalRaceID = csv[1].Trim();
+                    int.TryParse(csv[1].Trim(), out externalRaceID);
                 }
                 if (csv.Length > 2)
                 {
-                    externalPilotID = csv[2].Trim();
+                    int.TryParse(csv[2].Trim(), out externalPilotID);
                 }
 
                 pilotname = pilotname.Trim();
@@ -642,9 +644,9 @@ namespace RaceLib
                 Pilot p = Event.Pilots.FirstOrDefault(pa => pa != null && pa.Name.ToLower() == pilotname.ToLower());
                 if (p != null)
                 {
-                    if (!string.IsNullOrEmpty(externalPilotID))
+                    if (externalPilotID != 0)
                     {
-                        p.ExternalPilotID = externalPilotID;
+                        p.ExternalID = externalPilotID;
                     }
 
                     Channel c = GetChannel(p);
@@ -662,7 +664,7 @@ namespace RaceLib
                         }
                     }
 
-                    yield return new Tuple<Pilot, Channel, string>(p, c, externalRaceID);
+                    yield return new Tuple<Pilot, Channel, int>(p, c, externalRaceID);
                 }
                 channelIndex++;
                 channelIndex = channelIndex % Channels.Length;
@@ -671,8 +673,8 @@ namespace RaceLib
 
         public void AddPilotsFromLines(IEnumerable<string> pilots)
         {
-            IEnumerable<Tuple<Pilot, Channel, string>> pcs = GetPilotsFromLines(pilots, true);
-            foreach (Tuple<Pilot, Channel, string> pc in pcs)
+            IEnumerable<Tuple<Pilot, Channel, int>> pcs = GetPilotsFromLines(pilots, true);
+            foreach (Tuple<Pilot, Channel, int> pc in pcs)
             {
                 Pilot p = pc.Item1;
                 Channel c = pc.Item2;
