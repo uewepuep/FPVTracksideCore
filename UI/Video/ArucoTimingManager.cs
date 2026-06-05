@@ -146,6 +146,11 @@ namespace UI.Video
 
                 while (run)
                 {
+                    // Re-assert each iteration so that another ArucoTimingManager instance's
+                    // shutdown (e.g. the one ReplayNode spawns via its own ChannelsGridNode)
+                    // cannot leave this thread running with the global overlay disabled.
+                    ArucoFrameOverlay.Enabled = true;
+
                     var systems = timingSystemManager.TimingSystems
                         .OfType<ArucoTimingSystem>()
                         .ToArray();
@@ -227,6 +232,7 @@ namespace UI.Video
                         ArucoFrameOverlay.ShowId = primarySettings.ShowMarkerId;
                         ArucoFrameOverlay.ShowSizePercent = primarySettings.ShowMarkerSizePercent;
                         ArucoFrameOverlay.ShowFps = primarySettings.ShowFps;
+                        ArucoFrameOverlay.FlipTextVertical = primarySettings.CharacterFlipVertical;
                     }
                     bool multiThread = primarySettings?.UseMultiThreadDetection ?? true;
 

@@ -254,8 +254,13 @@ namespace WindowsMediaPlatform.MediaFoundation
                             hr = buffer.Lock(out intPtr, out length, out current);
                             MFError.ThrowExceptionForHR(hr);
 
-                            // Overlay hook: mutate the sample buffer in place so both the
-                            // display copy below and the sink writer recording see the overlay.
+                            // Overlay hook: mutate the RGB32 sample buffer in place.
+                            // NOTE: this is the post-color-conversion RGB32 buffer used for display.
+                            // MediaFoundationCaptureFrameSource.ProcessUncompressed passes the
+                            // *original* (pre-conversion, typically NV12) sample to recorder.WriteSample,
+                            // so the recording does NOT see this overlay when a colorProcessor is in use
+                            // (i.e. the normal webcam path). Overlay-in-recording is currently only
+                            // guaranteed when colorProcessor == null, which is rare for capture sources.
                             ImageServer.FrameSource.BeforeFrameDispatchPtr?.Invoke(this, intPtr, length);
 
                             frame.SetData(intPtr, sampleTime, FrameProcessNumber);

@@ -290,9 +290,14 @@ namespace WindowsMediaPlatform.DirectShow
 
                     long sampleTicks = (long)(sampleTime * 10000000);
 
-                    // Overlay hook: mutate the DirectShow sample buffer in place before the
-                    // display copy. Recording is through a separate DirectShow filter graph
-                    // and is not affected here.
+                    // Overlay hook: mutate the SampleGrabber's display buffer in place.
+                    // NOTE: when this source is DirectShowCaptureFrameSource, recording runs through
+                    // a parallel branch of the filter graph (SmartTee → SinkFilter → GMFBridge →
+                    // DestinationGraph), which receives its own buffer copies upstream of here, so
+                    // this overlay does NOT appear in DirectShow-recorded files.
+                    // The MediaFoundationDSCaptureFrameSource subclass *does* pick up the overlay
+                    // because it records by forwarding the same buffer mutated here into an
+                    // IMFSinkWriter (see MediaFoundationDSCaptureFrameSource.BufferCB).
                     ImageServer.FrameSource.BeforeFrameDispatchPtr?.Invoke(this, buffer, bufferLen);
 
                     frame.SetData(buffer, sampleTicks, FrameProcessNumber);
