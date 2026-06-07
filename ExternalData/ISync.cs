@@ -1,7 +1,6 @@
 ﻿using RaceLib;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
@@ -30,7 +29,8 @@ namespace ExternalData
 
         bool CanSyncDownRoundRaces { get; }
 
-        void SyncDownEvents(WorkSet workSet, WorkQueue queue);
+        IEnumerable<RemoteEventInfo> GetRemoteEvents();
+        void SyncDownEvent(WorkSet workSet, WorkQueue queue, RemoteEventInfo eventInfo);
         void SyncDownRoundRaces(WorkSet workSet, WorkQueue queue, EventManager eventManager);
 
         void SyncUpEvent(WorkSet workSet, WorkQueue queue, Guid eventID);
