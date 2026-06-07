@@ -34,6 +34,7 @@ namespace ExternalData
         void SyncDownRoundRaces(WorkSet workSet, WorkQueue queue, EventManager eventManager);
 
         void SyncUpEvent(WorkSet workSet, WorkQueue queue, Guid eventID);
+        void SyncUpRace(WorkSet workSet, WorkQueue queue, EventManager eventManager, Race race);
         void SyncUpResults(WorkSet workSet, WorkQueue queue, EventManager eventManager);
 
         LoginType Login(string authkey);
