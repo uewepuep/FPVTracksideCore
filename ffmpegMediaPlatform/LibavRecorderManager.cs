@@ -249,8 +249,15 @@ namespace FfmpegMediaPlatform
                 // Frame rate
                 codecContext->framerate = new AVRational { num = (int)(frameRate * 1000), den = 1000 };
 
-                // Bitrate and quality settings
-                codecContext->bit_rate = width * height * 4; // Reasonable bitrate
+                // Bitrate and quality settings.
+                // Match the Windows MediaFoundation recorder (H264Encoder.GetBitRate): ~12 Mbps at
+                // 1280x720@30, scaled by pixel count AND framerate. The previous width*height*4
+                // formula ignored framerate and produced ~1/3 of the Windows bitrate (e.g. 3.7 Mbps
+                // vs 12 Mbps at 720p30), which is why recordings looked far lower quality on macOS.
+                const int goodBitrate = 12_000_000;
+                const int goodPixelCount = 1280 * 720 * 30;
+                float bitrateRatio = goodBitrate / (float)goodPixelCount;
+                codecContext->bit_rate = (long)(bitrateRatio * width * height * frameRate);
                 codecContext->gop_size = 3; // Keyframe every 3 frames (~0.1s at 30fps) for precise seeking
                 codecContext->max_b_frames = 0; // No B-frames for lower latency
                 codecContext->keyint_min = 3; // Minimum GOP size - ensures regular keyframes
