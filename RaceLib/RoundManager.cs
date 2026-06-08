@@ -167,38 +167,35 @@ namespace RaceLib
             return races.All(r => r.Ended) && races.Any();
         }
 
-        public void SetRoundPilots(Round round, IEnumerable<Tuple<Pilot, Channel, int>> pilotChannels)
+        public void SetRoundPilots(Round round, IEnumerable<ResolvedRace> pastedRaces)
         {
-            Race race = null;
             int startNumber = RaceManager.GetRaceCount(round);
 
             List<Race> races = new List<Race>();
 
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
-                foreach (var tup in pilotChannels)
+                foreach (ResolvedRace pasted in pastedRaces)
                 {
-                    Channel c = tup.Item2;
-                    Pilot p = tup.Item1;
-                    int externalRaceID = tup.Item3;
+                    if (!pasted.PilotChannels.Any())
+                        continue;
 
-                    if (race == null || !race.IsFrequencyFree(c))
+                    Race race = new Race(Event);
+                    race.AutoAssignNumbers = true;
+                    race.RaceNumber = startNumber + 1 + races.Count;
+                    race.Round = round;
+
+                    // Each pasted race carries its external race id once, so we can
+                    // stamp it straight on (set before SetPilot so its db.Update
+                    // persists it). 0 simply means "no external id".
+                    race.ExternalID = pasted.ExternalRaceID;
+
+                    races.Add(race);
+
+                    foreach (Tuple<Pilot, Channel> pc in pasted.PilotChannels)
                     {
-                        race = new Race(Event);
-                        race.AutoAssignNumbers = true;
-                        race.RaceNumber = startNumber + 1 + races.Count;
-                        race.Round = round;
-                        races.Add(race);
+                        race.SetPilot(db, pc.Item2, pc.Item1);
                     }
-
-                    // Stamp the external race id from the paste (first non-zero
-                    // value within the heat wins; blank-padded rows contribute none).
-                    if (externalRaceID != 0 && race.ExternalID == 0)
-                    {
-                        race.ExternalID = externalRaceID;
-                    }
-
-                    race.SetPilot(db, c, p);
                 }
             }
 

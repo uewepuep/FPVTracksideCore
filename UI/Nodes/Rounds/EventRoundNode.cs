@@ -247,8 +247,9 @@ namespace UI.Nodes.Rounds
 
         private void ShowMenu(MouseInputEvent mie, Point position)
         {
-            var lines = PlatformTools.Clipboard.GetLines();
-            int pastePilotCount = EventManager.GetPilotsFromLines(lines, true).Count();
+            string clipboardText = PlatformTools.Clipboard.GetText();
+            List<ResolvedRace> pastedRaces = EventManager.GetPastedRaces(clipboardText, true);
+            int pasteRaceCount = pastedRaces.Count(r => r.PilotChannels.Any());
 
             MouseMenu mm = new MouseMenu(this);
 
@@ -282,12 +283,12 @@ namespace UI.Nodes.Rounds
                 mm.AddItem("Copy Round", CopyPilots);
             }
 
-            if (pastePilotCount > 0 && pastePilotCount <= EventManager.Channels.Length)
+            if (pasteRaceCount == 1)
             {
                 mm.AddItem("Paste Race", PasteRace);
             }
 
-            if (canPasteAll && pastePilotCount > EventManager.Channels.Length)
+            if (canPasteAll && pasteRaceCount > 1)
             {
                 mm.AddItem("Paste Round", () => { PastePilot?.Invoke(Round); });
             }
@@ -483,22 +484,25 @@ namespace UI.Nodes.Rounds
 
         private void PasteRace()
         {
-            var lines = PlatformTools.Clipboard.GetLines();
-            IEnumerable<Tuple<Pilot, Channel, int>> pilotChannels = EventManager.GetPilotsFromLines(lines, true);
-            if (pilotChannels.Any())
-            {
-                Race race = EventManager.RaceManager.AddRaceToRound(Round);
+            string text = PlatformTools.Clipboard.GetText();
+            List<ResolvedRace> pastedRaces = EventManager.GetPastedRaces(text, true);
 
-                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                foreach (ResolvedRace pasted in pastedRaces)
                 {
-                    foreach (var kvp in pilotChannels)
+                    if (!pasted.PilotChannels.Any())
+                        continue;
+
+                    Race race = EventManager.RaceManager.AddRaceToRound(Round);
+
+                    // Each pasted race carries its external race id once (set before
+                    // SetPilot so its db.Update persists it).
+                    race.ExternalID = pasted.ExternalRaceID;
+
+                    foreach (Tuple<Pilot, Channel> pc in pasted.PilotChannels)
                     {
-                        // Single-race paste: stamp the external race id from the paste.
-                        if (kvp.Item3 != 0 && race.ExternalID == 0)
-                        {
-                            race.ExternalID = kvp.Item3;
-                        }
-                        race.SetPilot(db, kvp.Item2, kvp.Item1);
+                        race.SetPilot(db, pc.Item2, pc.Item1);
                     }
                 }
             }

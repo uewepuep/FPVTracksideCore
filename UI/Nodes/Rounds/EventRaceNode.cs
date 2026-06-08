@@ -270,10 +270,10 @@ namespace UI.Nodes.Rounds
                 }
                 else
                 {
-                    var lines = PlatformTools.Clipboard.GetLines();
-                    IEnumerable<Tuple<Pilot, Channel, int>> pilotChannels = EventManager.GetPilotsFromLines(lines, false);
+                    string clipboardText = PlatformTools.Clipboard.GetText();
+                    List<ResolvedRace> pastedRaces = EventManager.GetPastedRaces(clipboardText, false);
 
-                    if (pilotChannels.Any())
+                    if (pastedRaces.Any(r => r.PilotChannels.Any()))
                     {
                         mm.AddItem("Paste Pilots", () =>
                         {
@@ -504,22 +504,27 @@ namespace UI.Nodes.Rounds
 
         private void PasteFromClipboard(bool assign)
         {
-            var lines = PlatformTools.Clipboard.GetLines();
-            IEnumerable<Tuple<Pilot, Channel, int>> pcs = EventManager.GetPilotsFromLines(lines, assign);
+            string text = PlatformTools.Clipboard.GetText();
+            List<ResolvedRace> pastedRaces = EventManager.GetPastedRaces(text, assign);
+
+            // Pasting into one existing heat: take the first pasted race.
+            ResolvedRace pasted = pastedRaces.FirstOrDefault(r => r.PilotChannels.Any());
+            if (pasted == null)
+                return;
 
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
-                foreach (Tuple<Pilot, Channel, int> pc in pcs)
+                // Stamp the external race id from the paste (set before SetPilot so
+                // its db.Update persists it).
+                if (pasted.ExternalRaceID != 0 && Race.ExternalID == 0)
+                {
+                    Race.ExternalID = pasted.ExternalRaceID;
+                }
+
+                foreach (Tuple<Pilot, Channel> pc in pasted.PilotChannels)
                 {
                     Pilot p = pc.Item1;
                     Channel c = pc.Item2;
-                    int externalRaceID = pc.Item3;
-
-                    // Single-race paste: stamp the external race id from the paste.
-                    if (externalRaceID != 0 && Race.ExternalID == 0)
-                    {
-                        Race.ExternalID = externalRaceID;
-                    }
 
                     if (!assign && c != null)
                     {

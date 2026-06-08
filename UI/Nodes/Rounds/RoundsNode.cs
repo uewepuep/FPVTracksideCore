@@ -565,11 +565,11 @@ namespace UI.Nodes.Rounds
 
         private void Paste(Round round)
         {
-            var lines = PlatformTools.Clipboard.GetLines();
-            IEnumerable<Tuple<Pilot, Channel, int>> pilotChannels = EventManager.GetPilotsFromLines(lines, true);
-            if (pilotChannels.Any())
+            string text = PlatformTools.Clipboard.GetText();
+            List<ResolvedRace> pastedRaces = EventManager.GetPastedRaces(text, true);
+            if (pastedRaces.Any(r => r.PilotChannels.Any()))
             {
-                RoundManager.SetRoundPilots(round, pilotChannels);
+                RoundManager.SetRoundPilots(round, pastedRaces);
             }
             Refresh();
         }
