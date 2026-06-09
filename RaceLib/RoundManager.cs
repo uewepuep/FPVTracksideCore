@@ -167,34 +167,78 @@ namespace RaceLib
             return races.All(r => r.Ended) && races.Any();
         }
 
-        public void SetRoundPilots(Round round, IEnumerable<ResolvedRace> pastedRaces)
+        public void SetRoundPilots(Round round, IEnumerable<Tuple<Pilot, Channel>> pilotChannels)
         {
+            Race race = null;
             int startNumber = RaceManager.GetRaceCount(round);
 
             List<Race> races = new List<Race>();
 
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
-                foreach (ResolvedRace pasted in pastedRaces)
+                foreach (var tup in pilotChannels)
                 {
-                    if (!pasted.PilotChannels.Any())
+                    Channel c = tup.Item2;
+                    Pilot p = tup.Item1;
+
+                    if (race == null || !race.IsFrequencyFree(c))
+                    {
+                        race = new Race(Event);
+                        race.AutoAssignNumbers = true;
+                        race.RaceNumber = startNumber + 1 + races.Count;
+                        race.Round = round;
+                        races.Add(race);
+                    }
+
+                    race.SetPilot(db, c, p);
+                }
+            }
+
+            foreach (Race r in races)
+            {
+                RaceManager.AddRace(r);
+            }
+        }
+
+        public void SetRoundPilots(Round round, IEnumerable<PastedRace> pastedRaces)
+        {
+            int startNumber = RaceManager.GetRaceCount(round);
+            List<Race> races = new List<Race>();
+
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                foreach (PastedRace pasted in pastedRaces)
+                {
+                    if (pasted.Pilots == null || !pasted.Pilots.Any())
                         continue;
 
                     Race race = new Race(Event);
                     race.AutoAssignNumbers = true;
                     race.RaceNumber = startNumber + 1 + races.Count;
                     race.Round = round;
-
-                    // Each pasted race carries its external race id once, so we can
-                    // stamp it straight on (set before SetPilot so its db.Update
-                    // persists it). 0 simply means "no external id".
                     race.ExternalID = pasted.ExternalRaceID;
-
                     races.Add(race);
 
-                    foreach (Tuple<Pilot, Channel> pc in pasted.PilotChannels)
+                    int channelIndex = 0;
+                    foreach (PastedPilot pp in pasted.Pilots)
                     {
-                        race.SetPilot(db, pc.Item2, pc.Item1);
+                        string name = (pp.Name ?? "").Trim();
+                        Pilot p = Event.Pilots.FirstOrDefault(pa => pa != null && pa.Name.ToLower() == name.ToLower());
+                        if (p != null)
+                        {
+                            if (pp.ExternalPilotID != 0)
+                                p.ExternalID = pp.ExternalPilotID;
+
+                            Channel c = EventManager.GetChannel(p);
+                            Channel chosen = EventManager.GetChannelGroup(channelIndex)
+                                ?.FirstOrDefault(ch => ch.Band.GetBandType() == c.Band.GetBandType());
+                            if (chosen != null)
+                                c = chosen;
+
+                            race.SetPilot(db, c, p);
+                        }
+                        channelIndex++;
+                        channelIndex = channelIndex % EventManager.Channels.Length;
                     }
                 }
             }

@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace RaceLib
 {
@@ -13,15 +14,15 @@ namespace RaceLib
     //
     //   [
     //     {
-    //       "externalRaceId": 12345,
-    //       "pilots": [
-    //         { "name": "Alice", "externalPilotId": 111 },
-    //         { "name": "Bob",   "externalPilotId": 222 }
+    //       "ExternalRaceId": 12345,
+    //       "Pilots": [
+    //         { "Name": "Alice", "ExternalPilotId": 111 },
+    //         { "Name": "Bob",   "ExternalPilotId": 222 }
     //       ]
     //     },
     //     {
-    //       "externalRaceId": 12346,
-    //       "pilots": [ { "name": "Carol", "externalPilotId": 333 } ]
+    //       "ExternalRaceId": 12346,
+    //       "Pilots": [ { "Name": "Carol", "ExternalPilotId": 333 } ]
     //     }
     //   ]
     //
@@ -30,29 +31,52 @@ namespace RaceLib
     // external id (or, worse, set one to a lap time / position) by accident.
     public class PastedRace
     {
-        [JsonProperty("externalRaceId")]
         public int ExternalRaceID { get; set; }
 
-        [JsonProperty("pilots")]
         public List<PastedPilot> Pilots { get; set; } = new List<PastedPilot>();
+
+        // Returns true and the parsed races only when the clipboard genuinely
+        // holds the JSON race array; any other text (including unrelated JSON)
+        // falls through to the name-only paste.
+        public static bool TryParsePastedRaces(string clipboardText, out List<PastedRace> races)
+        {
+            races = null;
+
+            if (string.IsNullOrWhiteSpace(clipboardText))
+                return false;
+
+            // The format is a bare array; bail early on anything else so a normal
+            // pilot-name paste never hits the JSON parser.
+            if (!clipboardText.TrimStart().StartsWith("["))
+                return false;
+
+            try
+            {
+                races = JsonConvert.DeserializeObject<List<PastedRace>>(clipboardText);
+            }
+            catch
+            {
+                races = null;
+                return false;
+            }
+
+            // Require it to actually look like races (at least one pilot somewhere)
+            // so a random array of strings/numbers isn't treated as a paste.
+            if (races == null || races.Any(r => r == null) ||
+                !races.Any(r => r.Pilots != null && r.Pilots.Count > 0))
+            {
+                races = null;
+                return false;
+            }
+
+            return true;
+        }
     }
 
     public class PastedPilot
     {
-        [JsonProperty("name")]
         public string Name { get; set; }
 
-        [JsonProperty("externalPilotId")]
         public int ExternalPilotID { get; set; }
-    }
-
-    // A race from a paste after its pilots have been matched to event pilots and
-    // assigned channels. Produced from either the JSON format above or the legacy
-    // name-only line paste, so every paste site consumes one shape.
-    public class ResolvedRace
-    {
-        public int ExternalRaceID { get; set; }
-
-        public List<Tuple<Pilot, Channel>> PilotChannels { get; } = new List<Tuple<Pilot, Channel>>();
     }
 }

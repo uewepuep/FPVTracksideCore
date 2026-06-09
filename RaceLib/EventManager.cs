@@ -602,13 +602,6 @@ namespace RaceLib
             return ExportColumns.Any(ec => ec.Enabled && ec.Type == type);
         }
 
-
-        // GetPilotsFromLines parses a pasted pilot list, one pilot per line. The
-        // line is matched by name only: if a stray spreadsheet paste arrives with
-        // extra comma-separated columns we keep the first field as the name and
-        // ignore the rest, so a misclicked CSV can never stamp an external id (or
-        // a lap time / position) onto a pilot. External ids only arrive through the
-        // JSON race format (see GetPastedRaces / RacePaste.cs).
         public IEnumerable<Tuple<Pilot, Channel>> GetPilotsFromLines(IEnumerable<string> pilots, bool assignChannel)
         {
             int channelIndex = 0;
@@ -619,8 +612,6 @@ namespace RaceLib
             {
                 string pilotname = untrimmed;
 
-                // Tolerate (but ignore) any extra spreadsheet columns; only the
-                // first field is the pilot name.
                 string[] csv = pilotname.Split(',');
                 if (csv.Length > 0)
                 {
@@ -632,148 +623,26 @@ namespace RaceLib
                 Pilot p = Event.Pilots.FirstOrDefault(pa => pa != null && pa.Name.ToLower() == pilotname.ToLower());
                 if (p != null)
                 {
-                    Channel c = ResolveChannel(p, channelIndex, channelLanes, assignChannel);
+                    Channel c = GetChannel(p);
+                    if (assignChannel)
+                    {
+                        if (channelIndex < channelLanes.Length)
+                        {
+                            var laneOptions = channelLanes[channelIndex];
+
+                            var chosen = laneOptions.FirstOrDefault(r => r.Band.GetBandType() == c.Band.GetBandType());
+                            if (chosen != null)
+                            {
+                                c = chosen;
+                            }
+                        }
+                    }
+
                     yield return new Tuple<Pilot, Channel>(p, c);
                 }
                 channelIndex++;
                 channelIndex = channelIndex % Channels.Length;
             }
-        }
-
-        // Pick the channel a pilot lands on. When assignChannel is set we map the
-        // pilot's slot (channelIndex) onto the matching lane of the event's channel
-        // groups, keeping the same band type; otherwise we use the pilot's own
-        // preferred channel.
-        private Channel ResolveChannel(Pilot p, int channelIndex, Channel[][] channelLanes, bool assignChannel)
-        {
-            Channel c = GetChannel(p);
-            if (assignChannel && channelIndex < channelLanes.Length)
-            {
-                var laneOptions = channelLanes[channelIndex];
-                var chosen = laneOptions.FirstOrDefault(r => r.Band.GetBandType() == c.Band.GetBandType());
-                if (chosen != null)
-                {
-                    c = chosen;
-                }
-            }
-            return c;
-        }
-
-        // Unified entry point for every "paste races" site. Clipboard text is
-        // either the JSON race array (carrying external ids) or a plain-text /
-        // CSV name list. JSON gives explicit per-race boundaries; the name list
-        // is grouped into heats the legacy way (a new heat starts whenever the
-        // next pilot's channel clashes with one already in the current heat).
-        public List<ResolvedRace> GetPastedRaces(string clipboardText, bool assignChannel)
-        {
-            if (TryParsePastedRaces(clipboardText, out List<PastedRace> jsonRaces))
-            {
-                return ResolvePastedRaces(jsonRaces, assignChannel);
-            }
-
-            string[] lines = (clipboardText ?? "").Split('\n').Select(l => l.Replace("\r", "")).ToArray();
-            return GroupIntoRaces(GetPilotsFromLines(lines, assignChannel));
-        }
-
-        // Returns true and the parsed races only when the clipboard genuinely
-        // holds the JSON race array; any other text (including unrelated JSON)
-        // falls through to the name-only paste.
-        public bool TryParsePastedRaces(string clipboardText, out List<PastedRace> races)
-        {
-            races = null;
-
-            if (string.IsNullOrWhiteSpace(clipboardText))
-                return false;
-
-            // The format is a bare array; bail early on anything else so a normal
-            // pilot-name paste never hits the JSON parser.
-            if (!clipboardText.TrimStart().StartsWith("["))
-                return false;
-
-            try
-            {
-                races = JsonConvert.DeserializeObject<List<PastedRace>>(clipboardText);
-            }
-            catch
-            {
-                races = null;
-                return false;
-            }
-
-            // Require it to actually look like races (at least one pilot somewhere)
-            // so a random array of strings/numbers isn't treated as a paste.
-            if (races == null || races.Any(r => r == null) ||
-                !races.Any(r => r.Pilots != null && r.Pilots.Count > 0))
-            {
-                races = null;
-                return false;
-            }
-
-            return true;
-        }
-
-        // Match each pasted pilot to an event pilot and assign a channel. The
-        // external pilot id is stamped onto the (event-global) Pilot; the external
-        // race id is carried on the ResolvedRace for the caller to stamp onto the
-        // heat it creates. Channel ordering restarts per race.
-        public List<ResolvedRace> ResolvePastedRaces(IEnumerable<PastedRace> pastedRaces, bool assignChannel)
-        {
-            var channelLanes = Channels.GetChannelGroups().ToArray();
-
-            List<ResolvedRace> resolved = new List<ResolvedRace>();
-            foreach (PastedRace pr in pastedRaces)
-            {
-                ResolvedRace race = new ResolvedRace { ExternalRaceID = pr.ExternalRaceID };
-
-                int channelIndex = 0;
-                foreach (PastedPilot pp in pr.Pilots ?? Enumerable.Empty<PastedPilot>())
-                {
-                    string name = (pp.Name ?? "").Trim();
-                    Pilot p = Event.Pilots.FirstOrDefault(pa => pa != null && pa.Name.ToLower() == name.ToLower());
-                    if (p != null)
-                    {
-                        if (pp.ExternalPilotID != 0)
-                        {
-                            p.ExternalID = pp.ExternalPilotID;
-                        }
-
-                        Channel c = ResolveChannel(p, channelIndex, channelLanes, assignChannel);
-                        race.PilotChannels.Add(new Tuple<Pilot, Channel>(p, c));
-                    }
-                    channelIndex++;
-                    channelIndex = channelIndex % Channels.Length;
-                }
-
-                resolved.Add(race);
-            }
-            return resolved;
-        }
-
-        // Split a flat, name-only pilot list into heats the legacy way: keep
-        // filling the current heat until a pilot's channel clashes with one
-        // already in it (or is null), then start a new heat. Legacy paste carries
-        // no external ids, so every heat here has ExternalRaceID 0.
-        private List<ResolvedRace> GroupIntoRaces(IEnumerable<Tuple<Pilot, Channel>> pilotChannels)
-        {
-            List<ResolvedRace> races = new List<ResolvedRace>();
-            ResolvedRace current = null;
-
-            foreach (Tuple<Pilot, Channel> pc in pilotChannels)
-            {
-                Channel c = pc.Item2;
-                bool fits = current != null && c != null &&
-                    !c.InterferesWith(current.PilotChannels.Select(t => t.Item2).Where(x => x != null));
-
-                if (!fits)
-                {
-                    current = new ResolvedRace();
-                    races.Add(current);
-                }
-
-                current.PilotChannels.Add(pc);
-            }
-
-            return races;
         }
 
         public void AddPilotsFromLines(IEnumerable<string> pilots)
