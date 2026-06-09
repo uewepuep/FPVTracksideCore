@@ -188,16 +188,16 @@ namespace UI.Video
 
             if (File.Exists(filename))
             {
-                // Video is recorded raw, so store the source's flip/mirror state for playback.
-                // When the source bakes the user's flip/mirror into its frames (ffmpeg pipelines),
-                // the recording is already oriented correctly — playback should not re-apply.
+                // The encoder stores frames in the correct orientation regardless of the
+                // capture source's Direction. The only flip state that needs carrying through
+                // is the user's explicit VideoConfig.Flipped preference, because that is NOT
+                // applied during recording (unlike ffmpeg sources which bake it in).
                 FrameSource source = camNode.FrameNode.Source;
-                bool flipped = source.Direction == FrameSource.Directions.TopDown;
+                bool flipped = false;
                 bool mirrored = false;
                 if (!source.AppliesUserFlipMirror)
                 {
-                    if (source.VideoConfig.Flipped)
-                        flipped = !flipped;
+                    flipped = source.VideoConfig.Flipped;
                     mirrored = source.VideoConfig.Mirrored;
                 }
 
