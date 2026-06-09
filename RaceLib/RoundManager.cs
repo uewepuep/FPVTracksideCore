@@ -176,7 +176,7 @@ namespace RaceLib
 
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
-                foreach (var tup in pilotChannels)
+                foreach (Tuple<Pilot, Channel> tup in pilotChannels)
                 {
                     Channel c = tup.Item2;
                     Pilot p = tup.Item1;

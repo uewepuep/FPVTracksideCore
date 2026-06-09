@@ -502,7 +502,7 @@ namespace UI.Nodes.Rounds
                 PastedRace first = jsonRaces.FirstOrDefault(r => r.Pilots != null && r.Pilots.Any());
                 if (first != null)
                 {
-                    RoundManager.SetRoundPilots(Round, new PastedRace[] { first });
+                    EventManager.RoundManager.SetRoundPilots(Round, new PastedRace[] { first });
                 }
             }
             else
