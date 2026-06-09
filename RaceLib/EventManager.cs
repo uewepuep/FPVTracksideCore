@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Newtonsoft.Json;
 using RaceLib.Format;
 using RaceLib.Game;
 using System;
@@ -601,7 +602,6 @@ namespace RaceLib
             return ExportColumns.Any(ec => ec.Enabled && ec.Type == type);
         }
 
-
         public IEnumerable<Tuple<Pilot, Channel>> GetPilotsFromLines(IEnumerable<string> pilots, bool assignChannel)
         {
             int channelIndex = 0;
@@ -612,7 +612,7 @@ namespace RaceLib
             {
                 string pilotname = untrimmed;
 
-                string[] csv = pilotname.Split(',');    
+                string[] csv = pilotname.Split(',');
                 if (csv.Length > 0)
                 {
                     pilotname = csv[0];

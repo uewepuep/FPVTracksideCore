@@ -176,7 +176,7 @@ namespace RaceLib
 
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
-                foreach (var tup in pilotChannels)
+                foreach (Tuple<Pilot, Channel> tup in pilotChannels)
                 {
                     Channel c = tup.Item2;
                     Pilot p = tup.Item1;
@@ -191,6 +191,55 @@ namespace RaceLib
                     }
 
                     race.SetPilot(db, c, p);
+                }
+            }
+
+            foreach (Race r in races)
+            {
+                RaceManager.AddRace(r);
+            }
+        }
+
+        public void SetRoundPilots(Round round, IEnumerable<PastedRace> pastedRaces)
+        {
+            int startNumber = RaceManager.GetRaceCount(round);
+            List<Race> races = new List<Race>();
+
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                foreach (PastedRace pasted in pastedRaces)
+                {
+                    if (pasted.Pilots == null || !pasted.Pilots.Any())
+                        continue;
+
+                    Race race = new Race(Event);
+                    race.AutoAssignNumbers = true;
+                    race.RaceNumber = startNumber + 1 + races.Count;
+                    race.Round = round;
+                    race.ExternalID = pasted.ExternalRaceID;
+                    races.Add(race);
+
+                    int channelIndex = 0;
+                    foreach (PastedPilot pp in pasted.Pilots)
+                    {
+                        string name = (pp.Name ?? "").Trim();
+                        Pilot p = Event.Pilots.FirstOrDefault(pa => pa != null && pa.Name.ToLower() == name.ToLower());
+                        if (p != null)
+                        {
+                            if (pp.ExternalPilotID != 0)
+                                p.ExternalID = pp.ExternalPilotID;
+
+                            Channel c = EventManager.GetChannel(p);
+                            Channel chosen = EventManager.GetChannelGroup(channelIndex)
+                                ?.FirstOrDefault(ch => ch.Band.GetBandType() == c.Band.GetBandType());
+                            if (chosen != null)
+                                c = chosen;
+
+                            race.SetPilot(db, c, p);
+                        }
+                        channelIndex++;
+                        channelIndex = channelIndex % EventManager.Channels.Length;
+                    }
                 }
             }
 

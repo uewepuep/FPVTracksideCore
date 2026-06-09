@@ -247,8 +247,21 @@ namespace UI.Nodes.Rounds
 
         private void ShowMenu(MouseInputEvent mie, Point position)
         {
-            var lines = PlatformTools.Clipboard.GetLines();
-            int pastePilotCount = EventManager.GetPilotsFromLines(lines, true).Count();
+            string clipboardText = PlatformTools.Clipboard.GetText();
+            int pasteRaceCount = 0;
+            if (PastedRace.TryParsePastedRaces(clipboardText, out List<PastedRace> jsonRaces))
+            {
+                pasteRaceCount = jsonRaces.Count(r => r.Pilots != null && r.Pilots.Any());
+            }
+            else
+            {
+                var lines = PlatformTools.Clipboard.GetLines();
+                int pastePilotCount = EventManager.GetPilotsFromLines(lines, true).Count();
+                if (pastePilotCount > 0 && pastePilotCount <= EventManager.Channels.Length)
+                    pasteRaceCount = 1;
+                else if (pastePilotCount > EventManager.Channels.Length)
+                    pasteRaceCount = 2;
+            }
 
             MouseMenu mm = new MouseMenu(this);
 
@@ -282,12 +295,12 @@ namespace UI.Nodes.Rounds
                 mm.AddItem("Copy Round", CopyPilots);
             }
 
-            if (pastePilotCount > 0 && pastePilotCount <= EventManager.Channels.Length)
+            if (pasteRaceCount == 1)
             {
                 mm.AddItem("Paste Race", PasteRace);
             }
 
-            if (canPasteAll && pastePilotCount > EventManager.Channels.Length)
+            if (canPasteAll && pasteRaceCount > 1)
             {
                 mm.AddItem("Paste Round", () => { PastePilot?.Invoke(Round); });
             }
@@ -483,17 +496,29 @@ namespace UI.Nodes.Rounds
 
         private void PasteRace()
         {
-            var lines = PlatformTools.Clipboard.GetLines();
-            IEnumerable<Tuple<Pilot, Channel>> pilotChannels = EventManager.GetPilotsFromLines(lines, true);
-            if (pilotChannels.Any())
+            string text = PlatformTools.Clipboard.GetText();
+            if (PastedRace.TryParsePastedRaces(text, out List<PastedRace> jsonRaces))
             {
-                Race race = EventManager.RaceManager.AddRaceToRound(Round);
-
-                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                PastedRace first = jsonRaces.FirstOrDefault(r => r.Pilots != null && r.Pilots.Any());
+                if (first != null)
                 {
-                    foreach (var kvp in pilotChannels)
+                    EventManager.RoundManager.SetRoundPilots(Round, new PastedRace[] { first });
+                }
+            }
+            else
+            {
+                var lines = PlatformTools.Clipboard.GetLines();
+                IEnumerable<Tuple<Pilot, Channel>> pilotChannels = EventManager.GetPilotsFromLines(lines, true);
+                if (pilotChannels.Any())
+                {
+                    Race race = EventManager.RaceManager.AddRaceToRound(Round);
+
+                    using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
                     {
-                        race.SetPilot(db, kvp.Item2, kvp.Item1);
+                        foreach (var kvp in pilotChannels)
+                        {
+                            race.SetPilot(db, kvp.Item2, kvp.Item1);
+                        }
                     }
                 }
             }

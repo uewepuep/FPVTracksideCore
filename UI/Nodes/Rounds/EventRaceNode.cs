@@ -270,10 +270,20 @@ namespace UI.Nodes.Rounds
                 }
                 else
                 {
-                    var lines = PlatformTools.Clipboard.GetLines();
-                    IEnumerable<Tuple<Pilot, Channel>> pilotChannels = EventManager.GetPilotsFromLines(lines, false);
+                    string clipboardText = PlatformTools.Clipboard.GetText();
+                    bool hasPastePilots;
+                    if (PastedRace.TryParsePastedRaces(clipboardText, out List<PastedRace> jsonRaces))
+                    {
+                        hasPastePilots = jsonRaces.Any(r => r.Pilots != null && r.Pilots.Any());
+                    }
+                    else
+                    {
+                        var lines = PlatformTools.Clipboard.GetLines();
+                        IEnumerable<Tuple<Pilot, Channel>> pilotChannels = EventManager.GetPilotsFromLines(lines, false);
+                        hasPastePilots = pilotChannels.Any();
+                    }
 
-                    if (pilotChannels.Any())
+                    if (hasPastePilots)
                     {
                         mm.AddItem("Paste Pilots", () =>
                         {
@@ -504,12 +514,32 @@ namespace UI.Nodes.Rounds
 
         private void PasteFromClipboard(bool assign)
         {
-            var lines = PlatformTools.Clipboard.GetLines();
-            IEnumerable<Tuple<Pilot, Channel>> pcs = EventManager.GetPilotsFromLines(lines, assign);
+            string text = PlatformTools.Clipboard.GetText();
+            IEnumerable<Tuple<Pilot, Channel>> pilotChannels;
+            int externalRaceId = 0;
+
+            if (PastedRace.TryParsePastedRaces(text, out List<PastedRace> jsonRaces))
+            {
+                PastedRace first = jsonRaces.FirstOrDefault(r => r.Pilots != null && r.Pilots.Any());
+                if (first == null)
+                    return;
+                externalRaceId = first.ExternalRaceID;
+                pilotChannels = EventManager.GetPilotsFromLines(first.Pilots.Select(p => p.Name ?? ""), assign);
+            }
+            else
+            {
+                var lines = PlatformTools.Clipboard.GetLines();
+                pilotChannels = EventManager.GetPilotsFromLines(lines, assign);
+            }
 
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
-                foreach (Tuple<Pilot, Channel> pc in pcs)
+                if (externalRaceId != 0 && Race.ExternalID == 0)
+                {
+                    Race.ExternalID = externalRaceId;
+                }
+
+                foreach (Tuple<Pilot, Channel> pc in pilotChannels)
                 {
                     Pilot p = pc.Item1;
                     Channel c = pc.Item2;
@@ -518,7 +548,7 @@ namespace UI.Nodes.Rounds
                     {
                         if (!Race.IsFrequencyFree(c))
                         {
-                            c = Race.GetFreeFrequencies(EventManager.Channels.Where(c => c.Band == c.Band)).FirstOrDefault();
+                            c = Race.GetFreeFrequencies(EventManager.Channels.Where(ch => ch.Band == c.Band)).FirstOrDefault();
                             if (c == null)
                                 continue;
                         }
@@ -529,7 +559,6 @@ namespace UI.Nodes.Rounds
             }
 
             SyncSheetChange();
-
             Refresh();
         }
 
