@@ -137,7 +137,7 @@ namespace ExternalData
                 {
                     pilotChangeDebounce?.Dispose();
                     pilotChangeDebounce = null;
-                    lastRaceChangedSendTicks = DateTime.UtcNow.Ticks;
+                    Interlocked.Exchange(ref lastRaceChangedSendTicks, DateTime.UtcNow.Ticks);
                 }
                 SendPilotRaceState(race);
             }
