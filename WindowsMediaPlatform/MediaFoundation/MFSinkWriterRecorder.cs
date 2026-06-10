@@ -513,18 +513,18 @@ namespace WindowsMediaPlatform.MediaFoundation
                     MFError.ThrowExceptionForHR(hr);
                 }
 
+                IMFSinkWriter writerToFinalize;
                 lock (writerLocker)
                 {
-                    if (writer != null)
-                    {
-                        hr = writer.Flush(0);
-                        MFError.ThrowExceptionForHR(hr);
+                    writerToFinalize = writer;
+                    writer = null;
+                }
 
-                        hr = writer.Finalize_();
-                        MFError.ThrowExceptionForHR(hr);
-
-                        writer = null;
-                    }
+                if (writerToFinalize != null)
+                {
+                    hr = writerToFinalize.Finalize_();
+                    MFError.ThrowExceptionForHR(hr);
+                    MFHelper.SafeRelease(writerToFinalize);
                 }
 
                 encoder?.Dispose();
