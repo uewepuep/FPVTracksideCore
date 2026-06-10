@@ -236,12 +236,29 @@ namespace UI.Video
                     }
                     bool multiThread = primarySettings?.UseMultiThreadDetection ?? true;
 
+                    // Only detect on channels of pilots actually racing while a race is running
+                    // (start -> end, including abort). Unassigned channels typically show RF
+                    // static, which is extremely expensive for ArUco (huge contour counts), so
+                    // feed those a black frame instead. Outside a running race, detect on all.
+                    var raceManager = channelNodes[0].EventManager?.RaceManager;
+                    bool raceRunning = raceManager != null && raceManager.RaceRunning;
+                    var currentRace = raceManager?.CurrentRace;
+
                     // Phase 1: collect BGRA buffers from each FrameNodeThumb sequentially
                     // (GetColorData can race with the UI draw thread; do it once up front).
                     var inputs = new (ChannelVideoNode cvn, byte[] bgra)[channelNodes.Length];
                     for (int i = 0; i < channelNodes.Length; i++)
                     {
                         var cvn = channelNodes[i];
+
+                        // Black frame (zero buffer) for non-racing / unassigned channels during a race.
+                        if (raceRunning &&
+                            !(cvn.Pilot != null && currentRace != null && currentRace.HasPilot(cvn.Pilot)))
+                        {
+                            inputs[i] = (cvn, new byte[FrameWidth * FrameHeight * 4]);
+                            continue;
+                        }
+
                         Color[] pixels = cvn.FrameNode.GetColorData();
                         if (pixels == null)
                         {
