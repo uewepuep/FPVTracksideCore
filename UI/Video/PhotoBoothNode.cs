@@ -183,6 +183,7 @@ namespace UI.Video
 
             if (!Waiter.WaitFor(() => { return !CaptureFrameSource.Finalising; }, Timeout))
             {
+                Logger.VideoLog.LogCall(this, "Wait for finalising failure.");
                 return;
             }
 

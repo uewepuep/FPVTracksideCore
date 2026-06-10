@@ -487,7 +487,6 @@ namespace WindowsMediaPlatform.MediaFoundation
                 if (flushing && sampleTime >= recordingTargetLength)
                 {
                     Logger.VideoLog.LogCall(this, "Final Length " + sampleTime);
-                    flushing = false;
                     FlushFinalize();
                 }
             }
