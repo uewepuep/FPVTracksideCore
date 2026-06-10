@@ -21,7 +21,7 @@ using UI.Nodes;
 
 namespace UI.Video
 {
-    public class PhotoBoothNode : Node
+    public class PhotoBoothNode : Node, IUpdateableNode
     {
         public Pilot Pilot { get; private set; }
 
@@ -45,7 +45,10 @@ namespace UI.Video
 
         public TimeSpan Timeout { get; private set; }
 
-        public PhotoBoothNode(VideoManager videoManager, EventManager eventManager, SoundManager soundManager) 
+        private string pendingFilename;
+        private DateTime finalizingStartTime;
+
+        public PhotoBoothNode(VideoManager videoManager, EventManager eventManager, SoundManager soundManager)
         {
             this.videoManager = videoManager;
             this.eventManager = eventManager;
@@ -177,15 +180,29 @@ namespace UI.Video
         {
             soundManager.PlaySound(SoundKey.PhotoboothTrigger);
 
-            string filename = CaptureFrameSource.Filename;
+            pendingFilename = CaptureFrameSource.Filename;
+            finalizingStartTime = DateTime.Now;
             CaptureFrameSource.StopRecording();
             CaptureFrameSource.ManualRecording = false;
+        }
 
-            if (!Waiter.WaitFor(() => { return !CaptureFrameSource.Finalising; }, Timeout))
+        public void Update(GameTime gameTime)
+        {
+            if (pendingFilename == null || CaptureFrameSource == null)
+                return;
+
+            if (CaptureFrameSource.Finalising)
             {
-                Logger.VideoLog.LogCall(this, "Wait for finalising failure.");
+                if (DateTime.Now - finalizingStartTime > Timeout)
+                {
+                    Logger.VideoLog.LogCall(this, "Wait for finalising timeout.");
+                    pendingFilename = null;
+                }
                 return;
             }
+
+            string filename = pendingFilename;
+            pendingFilename = null;
 
             if (File.Exists(filename))
             {
