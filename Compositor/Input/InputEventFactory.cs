@@ -413,6 +413,9 @@ namespace Composition.Input
         {
             try
             {
+                if (!TouchPanel.GetCapabilities().IsConnected)
+                    return new TouchCollection(new TouchLocation[0]);
+
                 return TouchPanel.GetState();
             }
             catch

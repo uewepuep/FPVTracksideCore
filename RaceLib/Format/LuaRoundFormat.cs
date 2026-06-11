@@ -70,6 +70,11 @@ namespace RaceLib.Format
                 }
                 result = callTask.GetAwaiter().GetResult();
             }
+            catch (AggregateException ex) when (ex.InnerException is InterpreterException ie)
+            {
+                Logger.AllLog.Log(this, $"Script '{scriptFile.Name}' standings() error: {ie.DecoratedMessage}");
+                return null;
+            }
             catch (InterpreterException ex)
             {
                 Logger.AllLog.Log(this, $"Script '{scriptFile.Name}' standings() error: {ex.DecoratedMessage}");
@@ -187,6 +192,11 @@ namespace RaceLib.Format
                     return preExisting;
                 }
                 result = callTask.GetAwaiter().GetResult();
+            }
+            catch (AggregateException ex) when (ex.InnerException is InterpreterException ie)
+            {
+                Logger.AllLog.Log(this, $"Script '{scriptFile.Name}' generate() error: {ie.DecoratedMessage}");
+                return preExisting;
             }
             catch (InterpreterException ex)
             {

@@ -112,6 +112,9 @@ namespace DB.JSON
 
         private IEnumerable<Guid> GetRaceIDs(Event even)
         {
+            if (even == null)
+                yield break;
+
             DirectoryInfo dir = collection.GetDirectoryInfo(even.ID);
             if (dir.Exists)
             {
