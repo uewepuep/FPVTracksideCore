@@ -27,6 +27,7 @@ namespace WindowsMediaPlatform.MediaFoundation
         private int sink_stream;
         private MediaFoundationTransform encoder;
         private bool flushing;
+        private volatile bool finalisingWriter;
         private bool hasBegun;
         private TimeSpan firstSampleTime;
         private long firstSampleTicks;
@@ -41,7 +42,7 @@ namespace WindowsMediaPlatform.MediaFoundation
         public string Filename { get; private set; }
         public bool RecordNextFrameTime { get; set; }
         public bool ManualRecording { get; set; }
-        public bool Finalising => flushing || encoder != null;
+        public bool Finalising => flushing || encoder != null || finalisingWriter;
         public FileFormats FileFormat { get; set; }
 
         public enum FileFormats { WMV, mp4 }
@@ -487,8 +488,13 @@ namespace WindowsMediaPlatform.MediaFoundation
                 if (flushing && sampleTime >= recordingTargetLength)
                 {
                     Logger.VideoLog.LogCall(this, "Final Length " + sampleTime);
+                    // Must not call writer.Flush/Finalize_ from within the MF async callback
+                    // (OnReadSample → WriteSample → CommitSample) — MF's pipeline cannot drain
+                    // until this callback returns, so any blocking call here deadlocks.
+                    // Set flushing=false first to gate out new frames, then finalize off-thread.
+                    finalisingWriter = true;
                     flushing = false;
-                    FlushFinalize();
+                    Task.Run(() => FlushFinalize());
                 }
             }
         }
@@ -507,18 +513,18 @@ namespace WindowsMediaPlatform.MediaFoundation
                     MFError.ThrowExceptionForHR(hr);
                 }
 
+                IMFSinkWriter writerToFinalize;
                 lock (writerLocker)
                 {
-                    if (writer != null)
-                    {
-                        hr = writer.Flush(0);
-                        MFError.ThrowExceptionForHR(hr);
+                    writerToFinalize = writer;
+                    writer = null;
+                }
 
-                        hr = writer.Finalize_();
-                        MFError.ThrowExceptionForHR(hr);
-
-                        writer = null;
-                    }
+                if (writerToFinalize != null)
+                {
+                    hr = writerToFinalize.Finalize_();
+                    MFError.ThrowExceptionForHR(hr);
+                    MFHelper.SafeRelease(writerToFinalize);
                 }
 
                 encoder?.Dispose();
@@ -533,6 +539,7 @@ namespace WindowsMediaPlatform.MediaFoundation
                 MFHelper.SafeRelease(writer);
                 writer = null;
                 flushing = false;
+                finalisingWriter = false;
             }
         }
 

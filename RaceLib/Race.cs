@@ -69,6 +69,24 @@ namespace RaceLib
         [Category("Editable Details")]
         public int RaceNumber { get; set; }
 
+        // ExternalRaceID surfaces the base ExternalID (Browsable(false)) in the
+        // race editor so it can be set or corrected by hand, mirroring how Pilot
+        // exposes ExternalID as MultiGP_ID. Carries the external system's race id
+        // (for us a bracket_races.id) used to route a finished heat's result back.
+        [Category("Editable Details")]
+        [DisplayName("External Race ID")]
+        public int ExternalRaceID
+        {
+            get
+            {
+                return ExternalID;
+            }
+            set
+            {
+                ExternalID = value;
+            }
+        }
+
         [System.ComponentModel.Browsable(false)]
         public Round Round { get; set; }
 

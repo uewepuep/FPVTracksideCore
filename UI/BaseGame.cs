@@ -136,7 +136,13 @@ namespace UI
 
             if (mutexAcquired)
             {
-                mutex.ReleaseMutex();
+                try
+                {
+                    mutex.ReleaseMutex();
+                }
+                catch (ApplicationException)
+                {
+                }
                 mutex.Dispose();
             }
         }
@@ -322,7 +328,10 @@ namespace UI
             SimpleEvent selected = editor.Selected;
 
             if (selected == null)
-                selected = editor.Objects.First();
+                selected = editor.Objects.FirstOrDefault();
+
+            if (selected == null)
+                return;
 
             StartEvent(selected.ID, editor.Profile);
         }

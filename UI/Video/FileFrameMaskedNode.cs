@@ -26,6 +26,7 @@ namespace UI.Video
         {
             MaskFilename = maskFilename;
             SecondDrawAlpha = secondDrawAlpha;
+            EnableMask = true;
         }
 
         public override void LoadImage(Drawer id)

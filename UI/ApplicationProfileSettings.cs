@@ -391,7 +391,7 @@ namespace UI
 
             FrameRateLimit = 60;
             VSync = true;
-            AntiAliasing = true;
+            AntiAliasing = false;
 
             VideosToKeep = 50;
             HTTPServer = false;

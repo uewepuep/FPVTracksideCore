@@ -70,6 +70,11 @@ namespace RaceLib.Format
                 }
                 result = callTask.GetAwaiter().GetResult();
             }
+            catch (AggregateException ex) when (ex.InnerException is InterpreterException ie)
+            {
+                Logger.AllLog.Log(this, $"Script '{scriptFile.Name}' standings() error: {ie.DecoratedMessage}");
+                return null;
+            }
             catch (InterpreterException ex)
             {
                 Logger.AllLog.Log(this, $"Script '{scriptFile.Name}' standings() error: {ex.DecoratedMessage}");
@@ -187,6 +192,11 @@ namespace RaceLib.Format
                     return preExisting;
                 }
                 result = callTask.GetAwaiter().GetResult();
+            }
+            catch (AggregateException ex) when (ex.InnerException is InterpreterException ie)
+            {
+                Logger.AllLog.Log(this, $"Script '{scriptFile.Name}' generate() error: {ie.DecoratedMessage}");
+                return preExisting;
             }
             catch (InterpreterException ex)
             {
@@ -1014,28 +1024,43 @@ namespace RaceLib.Format
                 Pilot[] existingPilots = race.Pilots;
                 List<Pilot> assignedPilots = new List<Pilot>();
 
-                for (int p = 1; p <= pilotList.Length; p++)
+                // Never touch a race that has already finished.
+                if (race.Ended)
                 {
-                    string pilotId = pilotList.Get(p).CastToString();
-                    if (pilotId == null || !pilotLookup.TryGetValue(pilotId, out Pilot pilot))
+                    assignedPilots.AddRange(existingPilots);
+                }
+                else
+                {
+                    for (int p = 1; p <= pilotList.Length; p++)
                     {
-                        continue;
-                    }
+                        string pilotId = pilotList.Get(p).CastToString();
+                        if (pilotId == null || !pilotLookup.TryGetValue(pilotId, out Pilot pilot))
+                        {
+                            continue;
+                        }
 
-                    BandType bandType = BandType.Analogue;
-                    Channel prevChannel = pilot.GetChannelInRound(lastRoundRaces, plan.CallingRound);
-                    if (prevChannel != null)
-                        bandType = prevChannel.Band.GetBandType();
+                        // Pilot already in this race — preserve their existing channel assignment.
+                        if (existingPilots.Contains(pilot))
+                        {
+                            assignedPilots.Add(pilot);
+                            continue;
+                        }
 
-                    Channel channel = prevChannel != null && race.IsFrequencyFree(prevChannel) && plan.Channels.Contains(prevChannel)
-                        ? prevChannel
-                        : plan.Channels.Where(c => race.IsFrequencyFree(c) && c.Band.GetBandType() == bandType).FirstOrDefault()
-                          ?? plan.Channels.FirstOrDefault(c => race.IsFrequencyFree(c));
+                        BandType bandType = BandType.Analogue;
+                        Channel prevChannel = pilot.GetChannelInRound(lastRoundRaces, plan.CallingRound);
+                        if (prevChannel != null)
+                            bandType = prevChannel.Band.GetBandType();
 
-                    if (channel != null)
-                    {
-                        race.SetPilot(db, channel, pilot);
-                        assignedPilots.Add(pilot);
+                        Channel channel = prevChannel != null && race.IsFrequencyFree(prevChannel) && plan.Channels.Contains(prevChannel)
+                            ? prevChannel
+                            : plan.Channels.Where(c => race.IsFrequencyFree(c) && c.Band.GetBandType() == bandType).FirstOrDefault()
+                              ?? plan.Channels.FirstOrDefault(c => race.IsFrequencyFree(c));
+
+                        if (channel != null)
+                        {
+                            race.SetPilot(db, channel, pilot);
+                            assignedPilots.Add(pilot);
+                        }
                     }
                 }
 

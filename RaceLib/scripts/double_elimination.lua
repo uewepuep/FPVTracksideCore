@@ -38,7 +38,15 @@ function generate(round, pilots, channels, options)
         for _, id in ipairs(winners) do table.insert(all_active, id) end
         for _, id in ipairs(losers) do table.insert(all_active, id) end
 
-        if #all_active > 0 and #all_active <= max then
+        -- Collapse into a single grand final only when:
+        --   1. every race in the current round has finished (so we have complete information), AND
+        --   2. the remaining pilots all fit in one race, AND
+        --   3. there are no Losers bracket pilots left (pure Winners final) OR it is a true
+        --      head-to-head grand final (at most one pilot per bracket).
+        -- Without condition 1 the collapse fires prematurely after the very first race ends,
+        -- before the other pilots in the round have even raced.
+        local is_grand_final = #winners <= 1 and #losers <= 1
+        if all_results_in() and #all_active > 0 and #all_active <= max and (#losers == 0 or is_grand_final) then
             return {
                 {
                     bracket = "Winners",

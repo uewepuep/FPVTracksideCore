@@ -313,7 +313,8 @@ namespace UI.Nodes
                 {
                     mm.AddItem("Add Lap Now", () =>
                     {
-                        EventManager.RaceManager.AddManualLap(Pilot, playbackTime.Value);
+                        if (playbackTime.HasValue)
+                            EventManager.RaceManager.AddManualLap(Pilot, playbackTime.Value);
                     });
                 }
             }

@@ -48,14 +48,14 @@ namespace UI.Video
         }
 
         /// <summary>
-        /// Per-channel state: latest geometry (crop/flip/mirror/sizes) plus a per-marker-ID
-        /// dictionary of the most recent detection and when it was seen. Aging out markers by ID
-        /// rather than by whole-frame lets a brief miss on one of N markers preserve the others.
+        /// Per-channel state: latest geometry (crop/flip/mirror/sizes) plus a snapshot of held
+        /// markers from the most recent detection update. The list is fully replaced on every
+        /// update — no per-instance bridge across detection misses.
         /// </summary>
         private sealed class ChannelEntry
         {
             public Cached Geometry;
-            public readonly Dictionary<int, HeldMarker> Markers = new Dictionary<int, HeldMarker>();
+            public readonly List<HeldMarker> Markers = new List<HeldMarker>();
         }
 
         // Multiple channels can share the same FrameSource (e.g. a single 2x2 capture split
@@ -72,6 +72,12 @@ namespace UI.Video
         public static volatile bool ShowSizePercent = true;
         public static volatile bool ShowFps = false;
         public static volatile bool Enabled = false;
+
+        /// <summary>
+        /// When true, overlay text (ID / size % / FPS) is rendered upside-down at the same on-screen
+        /// position. Useful for cameras/displays mounted in a vertically-inverted orientation.
+        /// </summary>
+        public static volatile bool FlipTextVertical = true;
 
         /// <summary>
         /// Latest detection iterations per second, published by <see cref="UI.Video.ArucoTimingManager"/>
@@ -107,12 +113,17 @@ namespace UI.Video
             DateTime now = DateTime.UtcNow;
             lock (entry.Markers)
             {
+                // Snapshot mode: the detector's merged list is the source of truth for the frame.
+                // Per-marker bridging across detection misses is intentionally not done — every
+                // detection update fully replaces the held set, so a missed marker disappears for
+                // one detection cycle instead of being held with a stale outline.
+                entry.Markers.Clear();
                 if (cached.Detections != null)
                 {
                     foreach (var d in cached.Detections)
                     {
-                        if (d == null || d.Corners == null) continue;
-                        entry.Markers[d.Id] = new HeldMarker { Detection = d, SeenAt = now };
+                        if (d == null || d.Corners == null || d.Corners.Length == 0) continue;
+                        entry.Markers.Add(new HeldMarker { Detection = d, SeenAt = now });
                     }
                 }
             }
@@ -125,26 +136,20 @@ namespace UI.Video
         private static List<MarkerDetection> CollectActive(ChannelEntry entry, DateTime now)
         {
             List<MarkerDetection> active = null;
-            List<int> expired = null;
             lock (entry.Markers)
             {
-                foreach (var kv in entry.Markers)
+                for (int i = entry.Markers.Count - 1; i >= 0; i--)
                 {
-                    double ageMs = (now - kv.Value.SeenAt).TotalMilliseconds;
+                    double ageMs = (now - entry.Markers[i].SeenAt).TotalMilliseconds;
                     if (ageMs > OverlayHoldMs)
                     {
-                        if (expired == null) expired = new List<int>();
-                        expired.Add(kv.Key);
+                        entry.Markers.RemoveAt(i);
                     }
                     else
                     {
                         if (active == null) active = new List<MarkerDetection>();
-                        active.Add(kv.Value.Detection);
+                        active.Add(entry.Markers[i].Detection);
                     }
-                }
-                if (expired != null)
-                {
-                    foreach (var k in expired) entry.Markers.Remove(k);
                 }
             }
             return active;
@@ -231,15 +236,23 @@ namespace UI.Video
                         string fpsText = DetectionFps.ToString("F0") + " fps";
                         double fxBase = cropX + 6;
                         double fyBase = cropY + cropH - 6;  // baseline near crop bottom
+                        // Pull the baseline one text-height inward (toward the channel's
+                        // centre) so the FPS label doesn't sit flush against the crop edge.
+                        // Computed in pre-flip visual coords so the offset always moves
+                        // toward centre regardless of MirrorX / FlipY.
+                        OpenCvSharp.Size fpsTextSize = Cv2.GetTextSize(
+                            fpsText, HersheyFonts.HersheySimplex,
+                            fontScale * 1.2, textThickness + 2, out _);
+                        fyBase -= fpsTextSize.Height;
                         if (cached.MirrorX) fxBase = w - 1 - fxBase;
                         if (cached.FlipY)   fyBase = h - 1 - fyBase;
                         Scalar fpsColor = format == SurfaceFormat.Color
                             ? new Scalar(255, 255, 0, 255)   // RGBA: yellow
                             : new Scalar(0, 255, 255, 255);  // BGRA: yellow
                         var fpsOrg = new Point((int)fxBase, (int)fyBase);
-                        // Outline pass for contrast.
-                        Cv2.PutText(mat, fpsText, fpsOrg, HersheyFonts.HersheySimplex, fontScale * 1.2, Scalar.Black, textThickness + 2, LineTypes.AntiAlias);
-                        Cv2.PutText(mat, fpsText, fpsOrg, HersheyFonts.HersheySimplex, fontScale * 1.2, fpsColor, textThickness, LineTypes.AntiAlias);
+                        DrawOverlayText(mat, w, h, fpsText, fpsOrg,
+                                        fontScale * 1.2, fpsColor, textThickness,
+                                        outlineScale: fontScale * 1.2, outlineThickness: textThickness + 2);
                     }
 
                     if (detections == null) return;
@@ -296,7 +309,7 @@ namespace UI.Video
                         if (label != null)
                         {
                             var org = new Point((int)acx, (int)acy - 10);
-                            Cv2.PutText(mat, label, org, HersheyFonts.HersheySimplex, fontScale, color, textThickness, LineTypes.AntiAlias);
+                            DrawOverlayText(mat, w, h, label, org, fontScale, color, textThickness);
                         }
                     }
                 }
@@ -304,6 +317,94 @@ namespace UI.Video
             catch
             {
                 // Never let overlay errors take down the capture thread.
+            }
+        }
+
+        /// <summary>
+        /// Draws antialiased text on <paramref name="mat"/>, optionally with a black outline
+        /// (when <paramref name="outlineThickness"/> &gt; 0) and optionally flipped vertically
+        /// (when <see cref="FlipTextVertical"/> is true). Position of <paramref name="org"/>
+        /// is preserved; only the glyph shape is inverted top-to-bottom.
+        /// </summary>
+        /// <remarks>
+        /// Flip path: glyphs are rendered into an isolated transparent temp Mat, flipped, then
+        /// alpha-composited onto the main mat. This keeps any pre-existing pixels under the
+        /// text's bounding rect — marker outlines, underlying video — untouched, and avoids the
+        /// AA-fringe ghosting that an in-place ROI flip would leave outside the tight rect.
+        /// </remarks>
+        private static void DrawOverlayText(Mat mat, int w, int h, string text, Point org,
+                                            double scale, Scalar color, int thickness,
+                                            double outlineScale = 0, int outlineThickness = 0)
+        {
+            const HersheyFonts font = HersheyFonts.HersheySimplex;
+            const LineTypes lineType = LineTypes.AntiAlias;
+            bool hasOutline = outlineThickness > 0;
+
+            if (!FlipTextVertical)
+            {
+                if (hasOutline)
+                    Cv2.PutText(mat, text, org, font, outlineScale, Scalar.Black, outlineThickness, lineType);
+                Cv2.PutText(mat, text, org, font, scale, color, thickness, lineType);
+                return;
+            }
+
+            // Measure with the wider of (outline, main) so the temp Mat covers both passes.
+            // Padding generous enough to hold the AA fringe of the heaviest stroke we draw.
+            double measureScale = hasOutline ? outlineScale : scale;
+            int measureThickness = hasOutline ? outlineThickness : thickness;
+            OpenCvSharp.Size textSize = Cv2.GetTextSize(text, font, measureScale, measureThickness, out int baseline);
+            int padding = Math.Max(4, measureThickness + 2);
+            int rectX = org.X - padding;
+            int rectY = org.Y - textSize.Height - padding;
+            int rectW = textSize.Width + padding * 2;
+            int rectH = textSize.Height + baseline + padding * 2;
+
+            // Clip to image bounds. Fall back to a non-flipped draw if the ROI vanishes.
+            int x0 = Math.Max(0, rectX);
+            int y0 = Math.Max(0, rectY);
+            int x1 = Math.Min(w, rectX + rectW);
+            int y1 = Math.Min(h, rectY + rectH);
+            if (x1 - x0 <= 0 || y1 - y0 <= 0)
+            {
+                if (hasOutline)
+                    Cv2.PutText(mat, text, org, font, outlineScale, Scalar.Black, outlineThickness, lineType);
+                Cv2.PutText(mat, text, org, font, scale, color, thickness, lineType);
+                return;
+            }
+
+            Rect rect = new Rect(x0, y0, x1 - x0, y1 - y0);
+            // Adjust the glyph origin into the temp's local coords. When the rect was clipped at
+            // the image edge, rect.X / rect.Y may differ from the unclipped rectX / rectY — using
+            // rect.* here keeps the glyph centred correctly within whatever portion survived.
+            Point adjOrg = new Point(org.X - rect.X, org.Y - rect.Y);
+            using (Mat temp = new Mat(rect.Height, rect.Width, MatType.CV_8UC4, Scalar.All(0)))
+            {
+                if (hasOutline)
+                    Cv2.PutText(temp, text, adjOrg, font, outlineScale, Scalar.Black, outlineThickness, lineType);
+                Cv2.PutText(temp, text, adjOrg, font, scale, color, thickness, lineType);
+                Cv2.Flip(temp, temp, FlipMode.X);
+                AlphaCompositeOnto(mat, rect, temp);
+            }
+        }
+
+        /// <summary>
+        /// Premultiplied-alpha composite of <paramref name="src"/> (8UC4, glyph pixels pre-multiplied
+        /// by AA coverage thanks to PutText into an all-zero buffer) onto the <paramref name="rect"/>
+        /// portion of <paramref name="dst"/>. Equivalent to: dst_roi = src + dst_roi * (255 - src_alpha) / 255.
+        /// </summary>
+        private static void AlphaCompositeOnto(Mat dst, Rect rect, Mat src)
+        {
+            using (Mat alpha = new Mat())
+            using (Mat invAlpha = new Mat())
+            using (Mat invAlphaBgra = new Mat())
+            using (Mat scaledBg = new Mat())
+            using (Mat dstRoi = new Mat(dst, rect))
+            {
+                Cv2.ExtractChannel(src, alpha, 3);
+                Cv2.BitwiseNot(alpha, invAlpha);  // 255 - alpha for 8-bit
+                Cv2.Merge(new[] { invAlpha, invAlpha, invAlpha, invAlpha }, invAlphaBgra);
+                Cv2.Multiply(dstRoi, invAlphaBgra, scaledBg, 1.0 / 255.0);
+                Cv2.Add(scaledBg, src, dstRoi);
             }
         }
 

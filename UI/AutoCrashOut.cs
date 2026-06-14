@@ -179,6 +179,7 @@ namespace UI
         private void RaceManager_OnRaceStart(Race race)
         {
             waitTill = DateTime.Now + RaceStartDelay;
+            needsClear = true;
         }
 
         public void AddChannelNode(ChannelVideoNode channelNode)

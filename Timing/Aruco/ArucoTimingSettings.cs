@@ -86,6 +86,11 @@ namespace Timing.Aruco
         [Description("Draw the ArUco detection thread's iterations-per-second on each channel's overlay.")]
         public bool ShowFps { get; set; }
 
+        [Category("Overlay")]
+        [DisplayName("Character Flip Vertical")]
+        [Description("Render the overlay text (ID / size % / FPS) upside-down. Useful when the camera or display is mounted vertically inverted. Text position is unchanged; only the glyphs are flipped.")]
+        public bool CharacterFlipVertical { get; set; }
+
         public ArucoTimingSettings()
         {
             MarkerIds = "0";
@@ -100,6 +105,7 @@ namespace Timing.Aruco
             ShowMarkerId = true;
             ShowMarkerSizePercent = true;
             ShowFps = false;
+            CharacterFlipVertical = true;
         }
 
         public override string ToString()
