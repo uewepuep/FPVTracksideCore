@@ -212,7 +212,11 @@ namespace UI.Video
             TextPopupNode tn = new TextPopupNode("RTMP Server", "URL", defaultUrl);
             tn.OnOK += (url) =>
             {
-                Uri uri = new Uri(url);
+                if (!Uri.TryCreate(url, UriKind.Absolute, out Uri uri))
+                {
+                    GetLayer<PopupLayer>().PopupMessage("Invalid URL: " + url);
+                    return;
+                }
                 VideoConfig vs = new VideoConfig();
                 vs.DeviceName = "RTMP Server (" + uri.Port + ")";
                 vs.URL = uri.AbsoluteUri;

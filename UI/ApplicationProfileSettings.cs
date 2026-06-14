@@ -18,6 +18,11 @@ namespace UI
         public static ApplicationProfileSettings Instance { get; protected set; }
         public static Profile ProfileInstance { get; protected set; }
 
+        [Browsable(false)]
+        public Dictionary<string, int> ProductVersions { get; set; } = new Dictionary<string, int>();
+
+        protected virtual string ProductId => "FPVTrackside";
+
         public enum OrderTypes
         {
             PositionAndPB,
@@ -429,6 +434,20 @@ namespace UI
             ProfileInstance = profile;
         }
 
+        protected virtual int ApplyMigrations(int version)
+        {
+            if (version < 276) { AntiAliasing = false; version = 276; }
+            return version;
+        }
+
+        private void Migrate()
+        {
+            int version = ProductVersions.TryGetValue(ProductId, out int v) ? v : 0;
+            int newVersion = ApplyMigrations(version);
+            if (newVersion != version)
+                ProductVersions[ProductId] = newVersion;
+        }
+
         public static ApplicationProfileSettings Read(Profile profile)
         {
             try
@@ -437,6 +456,10 @@ namespace UI
                 if (s == null)
                 {
                     s = new ApplicationProfileSettings();
+                }
+                else
+                {
+                    s.Migrate();
                 }
 
                 Write(profile, s);
