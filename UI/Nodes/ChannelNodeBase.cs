@@ -963,6 +963,9 @@ namespace UI.Nodes
 
         public void UpdatePosition(Detection detection)
         {
+            if (Replay)
+                return;
+
             int oldPosition = Position;
 
             bool newDetection = false;

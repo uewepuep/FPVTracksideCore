@@ -19,7 +19,7 @@ namespace UI
         public static Profile ProfileInstance { get; protected set; }
 
         [Browsable(false)]
-        public Dictionary<string, int> ProductVersions { get; set; } = new Dictionary<string, int>();
+        public int SettingsVersion { get; set; }
 
         protected virtual string ProductId => "FPVTrackside";
 
@@ -442,10 +442,9 @@ namespace UI
 
         private void Migrate()
         {
-            int version = ProductVersions.TryGetValue(ProductId, out int v) ? v : 0;
-            int newVersion = ApplyMigrations(version);
-            if (newVersion != version)
-                ProductVersions[ProductId] = newVersion;
+            int newVersion = ApplyMigrations(SettingsVersion);
+            if (newVersion != SettingsVersion)
+                SettingsVersion = newVersion;
         }
 
         public static ApplicationProfileSettings Read(Profile profile)

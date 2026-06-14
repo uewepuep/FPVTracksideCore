@@ -306,6 +306,7 @@ namespace UI.Video
                     foreach (ChannelNodeBase cbn in channelNodes)
                     {
                         cbn.LapsNode.OnSeekToLap = (l) => { Seek(l.Start); };
+                        cbn.LapsNode.OnAddLap = (pilot, time) => { EventManager.RaceManager.AddManualLapWithRace(race, pilot, time, 0); };
                         cbn.OnCloseClick += () => { Hide(cbn); };
                         cbn.OnCrashedOutClick += () => { Hide(cbn); };
 

@@ -34,6 +34,7 @@ namespace UI.Nodes
         public int LapLines { get; set; }
 
         public Action<Lap> OnSeekToLap { get; set; }
+        public Action<Pilot, DateTime> OnAddLap { get; set; }
 
         private TableNode table;
 
@@ -306,17 +307,13 @@ namespace UI.Nodes
 #endif
             }  
 
-            if (EventManager.RaceManager.RaceFinished)
+            if (OnSeekToLap != null)
             {
-                // if we're in video playback do some adjustments..
-                if (OnSeekToLap != null)
+                mm.AddItem("Add Lap Now", () =>
                 {
-                    mm.AddItem("Add Lap Now", () =>
-                    {
-                        if (playbackTime.HasValue)
-                            EventManager.RaceManager.AddManualLap(Pilot, playbackTime.Value);
-                    });
-                }
+                    if (playbackTime.HasValue)
+                        OnAddLap?.Invoke(Pilot, playbackTime.Value);
+                });
             }
             if (EventManager.RaceManager.RaceStarted)
             {
