@@ -499,6 +499,114 @@ namespace RaceLib.Format
             });
 
 
+            // get_lap_times(pilot_id [, round_offset [, include_holeshot]]) -> list of lap times in seconds for the pilot in the given round
+            lua.Globals["get_lap_times"] = DynValue.NewCallback((ctx, args) =>
+            {
+                string id = args[0].CastToString();
+                Table table = new Table(lua);
+                if (id == null || !pilotLookup.TryGetValue(id, out Pilot pilot))
+                    return DynValue.NewTable(table);
+
+                Race[] races = args[1].Type == DataType.Number
+                    ? GetRacesForRoundOffset((int)args[1].Number)
+                    : lastRoundRaces;
+
+                bool includeHoleshot = args[2].Type == DataType.Boolean && args[2].Boolean;
+
+                int i = 1;
+                foreach (Race race in races.Where(r => r.HasPilot(pilot) && r.Ended))
+                {
+                    foreach (Lap lap in race.GetValidLaps(pilot, includeHoleshot))
+                        table[i++] = DynValue.NewNumber(lap.Length.TotalSeconds);
+                }
+
+                return DynValue.NewTable(table);
+            });
+
+            // get_best_lap(pilot_id [, round_offset]) -> fastest single lap time in seconds, or 0 if no data
+            lua.Globals["get_best_lap"] = DynValue.NewCallback((ctx, args) =>
+            {
+                string id = args[0].CastToString();
+                if (id == null || !pilotLookup.TryGetValue(id, out Pilot pilot))
+                    return DynValue.NewNumber(0);
+
+                Race[] races = args[1].Type == DataType.Number
+                    ? GetRacesForRoundOffset((int)args[1].Number)
+                    : lastRoundRaces;
+
+                Lap best = races
+                    .Where(r => r.HasPilot(pilot) && r.Ended)
+                    .SelectMany(r => r.GetValidLaps(pilot, false))
+                    .OrderBy(l => l.Length)
+                    .FirstOrDefault();
+
+                return DynValue.NewNumber(best != null ? best.Length.TotalSeconds : 0);
+            });
+
+            // get_lap_count(pilot_id [, round_offset]) -> number of valid laps for the pilot in the given round
+            lua.Globals["get_lap_count"] = DynValue.NewCallback((ctx, args) =>
+            {
+                string id = args[0].CastToString();
+                if (id == null || !pilotLookup.TryGetValue(id, out Pilot pilot))
+                    return DynValue.NewNumber(0);
+
+                Race[] races = args[1].Type == DataType.Number
+                    ? GetRacesForRoundOffset((int)args[1].Number)
+                    : lastRoundRaces;
+
+                int count = races
+                    .Where(r => r.HasPilot(pilot) && r.Ended)
+                    .Sum(r => r.GetValidLaps(pilot, false).Length);
+
+                return DynValue.NewNumber(count);
+            });
+
+            // get_position(pilot_id [, round_offset]) -> finish position (1 = first) in the pilot's race in the given round, or 0 if no result
+            lua.Globals["get_position"] = DynValue.NewCallback((ctx, args) =>
+            {
+                string id = args[0].CastToString();
+                if (id == null || !pilotLookup.TryGetValue(id, out Pilot pilot))
+                    return DynValue.NewNumber(0);
+
+                Race[] races = args[1].Type == DataType.Number
+                    ? GetRacesForRoundOffset((int)args[1].Number)
+                    : lastRoundRaces;
+
+                Race race = races.FirstOrDefault(r => r.HasPilot(pilot) && r.Ended);
+                if (race == null) return DynValue.NewNumber(0);
+
+                return DynValue.NewNumber(EventManager.ResultManager.GetPosition(race, pilot));
+            });
+
+            // get_points_total(pilot_id [, round_offset]) -> total accumulated points up to and including the given round
+            lua.Globals["get_points_total"] = DynValue.NewCallback((ctx, args) =>
+            {
+                string id = args[0].CastToString();
+                if (id == null || !pilotLookup.TryGetValue(id, out Pilot pilot))
+                    return DynValue.NewNumber(0);
+
+                Round round = args[1].Type == DataType.Number
+                    ? EventManager.RoundManager.GetRelativeRound(plan.CallingRound, (int)args[1].Number + 1)
+                    : plan.CallingRound;
+
+                return DynValue.NewNumber(EventManager.ResultManager.GetPointsTotal(round, pilot));
+            });
+
+            // get_race_number(pilot_id [, round_offset]) -> race number within the round the pilot was assigned to, or 0 if not found
+            lua.Globals["get_race_number"] = DynValue.NewCallback((ctx, args) =>
+            {
+                string id = args[0].CastToString();
+                if (id == null || !pilotLookup.TryGetValue(id, out Pilot pilot))
+                    return DynValue.NewNumber(0);
+
+                Race[] races = args[1].Type == DataType.Number
+                    ? GetRacesForRoundOffset((int)args[1].Number)
+                    : lastRoundRaces;
+
+                Race race = races.FirstOrDefault(r => r.HasPilot(pilot));
+                return DynValue.NewNumber(race?.RaceNumber ?? 0);
+            });
+
             // get_unflown_pilots(pilot_id) -> list of pilot objects not yet raced against
             lua.Globals["get_unflown_pilots"] = DynValue.NewCallback((ctx, args) =>
             {

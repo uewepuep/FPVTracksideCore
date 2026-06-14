@@ -277,6 +277,27 @@ end
 if top_half(pilot.id, -2) then ... end
 ```
 
+### `get_position(pilot_id [, round_offset])`
+Returns the pilot's numeric finish position (1 = first) in their race in the given round. Returns `0` if the pilot has no completed result. Defaults to the previous round.
+```lua
+local pos = get_position(pilot.id)       -- position in the previous round
+local pos = get_position(pilot.id, -2)   -- two rounds back
+```
+
+### `get_points_total(pilot_id [, round_offset])`
+Returns the pilot's total accumulated points up to and including the given round. Defaults to the current (calling) round.
+```lua
+local total = get_points_total(pilot.id)       -- all points so far
+local total = get_points_total(pilot.id, -1)   -- up to the previous round
+```
+
+### `get_race_number(pilot_id [, round_offset])`
+Returns the race number within the round that the pilot was assigned to (e.g. `1`, `2`, `3`). Returns `0` if the pilot was not in any race in that round. Defaults to the previous round. Useful for ladder and promotion/relegation formats where a pilot's heat assignment determines who they swap with.
+```lua
+local race_num = get_race_number(pilot.id)       -- previous round
+local race_num = get_race_number(pilot.id, -2)   -- two rounds back
+```
+
 ### `is_first_round()`
 Returns `true` if this is the first round of the current stage (i.e. there is no previous round in this stage). Equivalent to checking `round.stage_index == 1`.
 ```lua
@@ -342,12 +363,34 @@ if get_bracket(pilot.id, -2) == "Losers" then ... end
 All times are returned in **seconds** as a decimal number. Returns `0` if the pilot has no data.
 
 ### `get_best_consecutive_laps(pilot_id, lap_count [, from_offset [, to_offset]])`
-Best consecutive `lap_count` laps across all races, optionally filtered to a round range. Use `lap_count = 1` for single-lap PB.
+Best consecutive `lap_count` laps across all races, optionally filtered to a round range. Holeshot is always excluded. Use `lap_count = 1` for single-lap PB.
 ```lua
 local pb     = get_best_consecutive_laps(pilot.id, 1)           -- all time
 local best3  = get_best_consecutive_laps(pilot.id, 3)           -- all time, 3 consecutive laps
 local recent = get_best_consecutive_laps(pilot.id, 1, -3)       -- last 3 rounds
 local window = get_best_consecutive_laps(pilot.id, 1, -5, -2)   -- specific window
+```
+
+### `get_best_lap(pilot_id [, round_offset])`
+Returns the fastest single lap time in seconds from the pilot's races in the given round. Holeshot is always excluded. Returns `0` if the pilot has no data. Defaults to the previous round.
+```lua
+local best = get_best_lap(pilot.id)       -- previous round
+local best = get_best_lap(pilot.id, -2)   -- two rounds back
+```
+
+### `get_lap_times(pilot_id [, round_offset [, include_holeshot]])`
+Returns a flat list of all lap times in seconds from the pilot's races in the given round. Defaults to the previous round. Holeshot is excluded by default — pass `true` as the third argument to include it.
+```lua
+local laps = get_lap_times(pilot.id)              -- previous round, no holeshot
+local laps = get_lap_times(pilot.id, -2)          -- two rounds back
+local laps = get_lap_times(pilot.id, -1, true)    -- include holeshot
+```
+
+### `get_lap_count(pilot_id [, round_offset])`
+Returns the number of valid laps completed by the pilot in the given round. Holeshot is always excluded. Returns `0` if no data. Defaults to the previous round.
+```lua
+local n = get_lap_count(pilot.id)       -- previous round
+local n = get_lap_count(pilot.id, -2)   -- two rounds back
 ```
 
 ---
