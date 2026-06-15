@@ -80,7 +80,15 @@ namespace UI.Nodes
 
                 DownChannelNode dcn = DownChannelNodes.FirstOrDefault(d => d.Channel == channel);
 
-                if (channelNodeBase.CrashedOut && pilot != null)
+                bool crashedOut = channelNodeBase.CrashedOut;
+
+                // if its visible, and not heading towards invisible, cancel the crashed out.
+                if (channelNodeBase.Visible && !channelNodeBase.IsAnimatingInvisibility())
+                {
+                    crashedOut = false;
+                }
+
+                if (crashedOut && pilot != null)
                 {
                     if (dcn == null)
                     {

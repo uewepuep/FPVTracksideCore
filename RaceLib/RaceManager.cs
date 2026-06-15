@@ -248,7 +248,7 @@ namespace RaceLib
 
         private List<Race> races;
 
-        public bool PreRaceStartDelay { get; private set; }
+        public bool PreRaceStartDelay { get; protected set; }
         public bool StaggeredStart { get; private set; }
 
         public bool TimesUp

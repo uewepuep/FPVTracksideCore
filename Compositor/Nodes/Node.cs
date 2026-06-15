@@ -658,12 +658,12 @@ namespace Composition.Nodes
             return false;
         }
 
-        public virtual bool IsAnimatingInvisiblity()
+        public virtual bool IsAnimatingInvisibility()
         {
             Node parent = Parent;
             if (parent != null)
             {
-                return parent.IsAnimatingInvisiblity();
+                return parent.IsAnimatingInvisibility();
             }
 
             return false;

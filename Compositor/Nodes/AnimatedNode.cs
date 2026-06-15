@@ -14,13 +14,13 @@ namespace Composition.Nodes
 
         public TimeSpan AnimationTime { get; protected set; }
 
-        private bool animatingInvisiblity;
+        private bool animatingInvisibility;
 
         public override bool Drawable
         {
             get
             {
-                if ((animatingInvisiblity))
+                if ((animatingInvisibility))
                     return true;
                 else
                     return base.Drawable;
@@ -51,7 +51,7 @@ namespace Composition.Nodes
 
         public AnimatedNode()
         {
-            animatingInvisiblity = false;
+            animatingInvisibility = false;
             AnimationTime = TimeSpan.FromSeconds(0.3f);
         }
 
@@ -75,9 +75,9 @@ namespace Composition.Nodes
             }
             else
             {
-                if (animatingInvisiblity)
+                if (animatingInvisibility)
                 {
-                    animatingInvisiblity = false;
+                    animatingInvisibility = false;
                     Visible = false;
                 }
             }
@@ -87,7 +87,7 @@ namespace Composition.Nodes
         {
             RectangleF bounds = base.CalculateRelativeBounds(parentPosition);
 
-            if (animatingInvisiblity)
+            if (animatingInvisibility)
             {
                 RectangleF tiny = new RectangleF(bounds.Center.X, bounds.Center.Y, 10, 10);
 
@@ -194,12 +194,12 @@ namespace Composition.Nodes
             return base.IsAnimatingSize();
         }
 
-        public override bool IsAnimatingInvisiblity()
+        public override bool IsAnimatingInvisibility()
         {
-            if (animatingInvisiblity)
+            if (animatingInvisibility)
                 return true;
 
-            return base.IsAnimatingInvisiblity();
+            return base.IsAnimatingInvisibility();
         }
 
         public void SetAnimatedVisibility(bool visible)
@@ -214,14 +214,14 @@ namespace Composition.Nodes
 
             if (visible)
             {
-                animatingInvisiblity = false;
+                animatingInvisibility = false;
                 Visible = true;
             }
             else
             {
                 if (Visible)
                 {
-                    animatingInvisiblity = true;
+                    animatingInvisibility = true;
                     Visible = false;
                 }
             }

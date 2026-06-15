@@ -302,7 +302,6 @@ namespace UI.Nodes
                     }
                 }
 
-
                 foreach (CamGridNode camNode in CamNodes)
                 {
                     camNode.SetAnimatedVisibility(camNode.VideoBounds.ShowInGrid && extrasVisible);
@@ -312,7 +311,7 @@ namespace UI.Nodes
                 {
                     int visibleNodes = VisibleChildCount();
                     downPilotsList.UpdateDown(ChannelNodes);
-                    downPilotsList.SetAnimatedVisibility(crashed >= 1 && visibleNodes > 1);
+                    downPilotsList.SetAnimatedVisibility(downPilotsList.DownChannelNodes.Any() && visibleNodes > 1);
                 }
 
                 CheckGridStatsVisiblilty();
@@ -577,6 +576,8 @@ namespace UI.Nodes
                     OnChannelNodeCloseClick?.Invoke(channelNodeBase);
                     Reorder();
                 };
+
+                channelNodeBase.AllowCrashedOut = !AlwaysShowAllChannels;
 
                 channelNodeBase.OnCrashedOutClick += () =>
                 {

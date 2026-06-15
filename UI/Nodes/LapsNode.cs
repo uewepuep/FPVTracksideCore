@@ -416,14 +416,12 @@ namespace UI.Nodes
                     return;
 
                 Lap[] laps = r.GetValidLaps(Pilot, true).OrderBy(l => l.End).Where(lap => lap.Detection.Time <= playbackTime.Value).ToArray();
-             
-                if (laps.Any())
+
+                int visibleCount = lapNodes.Count(ln => ln != null && ln.Visible);
+                if (laps.Length != visibleCount ||
+                    (laps.Any() && laps.FirstOrDefault() != lapNodes.FirstOrDefault()?.Lap))
                 {
-                    if (laps.Length != lapNodes.Where(ln => ln != null).Where(ln => ln.Visible).Count() ||
-                                        laps.FirstOrDefault() != lapNodes.FirstOrDefault()?.Lap)
-                    {
-                        RefreshData(laps);
-                    }
+                    RefreshData(laps);
                 }
             }
         }

@@ -49,7 +49,8 @@ namespace UI.Nodes
 
         protected EventManager eventManager;
         private VideoManager VideoManager;
-        
+        private KeyboardShortcuts keyMapper;
+
         private TextButtonNode rssiButton;
         public TextButtonNode PhotoBoothButton { get; private set; }
 
@@ -58,6 +59,7 @@ namespace UI.Nodes
             : base(TimeSpan.FromSeconds(0.6f), tabButtons)
         {
             this.eventManager = eventManager;
+            this.keyMapper = keyMapper;
             VideoManager = videoManager;
 
             this.rounds = rounds;
@@ -77,6 +79,7 @@ namespace UI.Nodes
             eventManager.RaceManager.TimingSystemManager.OnInitialise += UpdateRSSIVisible;
             videoManager.OnFinishedFinalizing += VideoManager_OnFinishedFinalizing;
             eventManager.OnJumpToReplay += ShowReplay;
+            eventManager.OnJumpToReplaySecondWindow += ShowReplaySecondWindow;
         }
 
         public override void Dispose()
@@ -85,6 +88,7 @@ namespace UI.Nodes
             eventManager.RaceManager.OnRaceEnd -= UpdateReplayButton;
             eventManager.RaceManager.TimingSystemManager.OnInitialise -= UpdateRSSIVisible;
             eventManager.OnJumpToReplay -= ShowReplay;
+            eventManager.OnJumpToReplaySecondWindow -= ShowReplaySecondWindow;
 
             base.Dispose();
         }
@@ -347,6 +351,17 @@ namespace UI.Nodes
         {
             Race current = eventManager.RaceManager.CurrentRace;
             ShowReplay(current);
+        }
+
+        private void ShowReplaySecondWindow(Race race, Lap lap = null)
+        {
+            BaseGame baseGame = CompositorLayer.Game as BaseGame;
+            if (baseGame == null)
+                return;
+
+            var replayNode = new ReplayNode(eventManager, keyMapper);
+            replayNode.ReplayRace(race, lap);
+            baseGame.ShowNewWindow(replayNode);
         }
 
         public override void Show(Node node)

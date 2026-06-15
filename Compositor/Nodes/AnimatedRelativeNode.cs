@@ -14,13 +14,13 @@ namespace Composition.Nodes
 
         public TimeSpan AnimationTime { get; protected set; }
 
-        private bool animatingInvisiblity;
+        private bool animatingInvisibility;
 
         public override bool Drawable
         {
             get
             {
-                if ((animatingInvisiblity))
+                if ((animatingInvisibility))
                     return true;
                 else
                     return base.Drawable;
@@ -59,9 +59,9 @@ namespace Composition.Nodes
                     {
                         interpolatedRelativeBounds.SetTarget(value, AnimationTime);
 
-                        if (animatingInvisiblity)
+                        if (animatingInvisibility)
                         {
-                            animatingInvisiblity = false;
+                            animatingInvisibility = false;
                             Visible = true;
                         }
                     }
@@ -72,7 +72,7 @@ namespace Composition.Nodes
 
         public AnimatedRelativeNode()
         {
-            animatingInvisiblity = false;
+            animatingInvisibility = false;
             AnimationTime = TimeSpan.FromSeconds(0.3f);
         }
 
@@ -111,9 +111,9 @@ namespace Composition.Nodes
                     relativeBounds = inter.Target;
                     interpolatedRelativeBounds = null;
 
-                    if (animatingInvisiblity)
+                    if (animatingInvisibility)
                     {
-                        animatingInvisiblity = false;
+                        animatingInvisibility = false;
                         Visible = false;
                     }
 
@@ -134,9 +134,9 @@ namespace Composition.Nodes
             if (interpolatedRelativeBounds != null)
             {
                 interpolatedRelativeBounds = null;
-                if (animatingInvisiblity)
+                if (animatingInvisibility)
                 {
-                    animatingInvisiblity = false;
+                    animatingInvisibility = false;
                     Visible = false;
                 }
                 RequestLayout();
@@ -165,19 +165,19 @@ namespace Composition.Nodes
             return base.IsAnimatingSize();
         }
 
-        public override bool IsAnimatingInvisiblity()
+        public override bool IsAnimatingInvisibility()
         {
-            if (animatingInvisiblity)
+            if (animatingInvisibility)
                 return true;
 
-            return base.IsAnimatingInvisiblity();
+            return base.IsAnimatingInvisibility();
         }
 
         public void SetAnimatedVisibility(bool visible)
         {
             if (visible)
             {
-                animatingInvisiblity = false;
+                animatingInvisibility = false;
                 Visible = true;
             }
             else
@@ -191,7 +191,7 @@ namespace Composition.Nodes
 
                 if (interpolatedRelativeBounds != null && Visible)
                 {
-                    animatingInvisiblity = true;
+                    animatingInvisibility = true;
                 }
                 Visible = false;
             }

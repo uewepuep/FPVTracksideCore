@@ -484,9 +484,11 @@ namespace UI.Nodes
             SetBiggerInfo(true, true);
         }
 
+        public bool AllowCrashedOut { get; set; } = true;
+
         public void Close()
         {
-            if (CrashedOut || Finished || EventManager.RaceManager.CanRunRace)
+            if (!AllowCrashedOut || CrashedOut || Finished || EventManager.RaceManager.CanRunRace)
             {
                 OnCloseClick?.Invoke();
                 CrashedOutType = CrashState.ManualDown;

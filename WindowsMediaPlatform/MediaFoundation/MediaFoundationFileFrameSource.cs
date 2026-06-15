@@ -309,6 +309,10 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         public override void CleanUp()
         {
+            // Flush any in-progress ReadSample so imageProcessor exits cleanly before
+            // base.CleanUp() releases the reader — otherwise SafeRelease races the read.
+            reader?.Flush((int)MF_SOURCE_READER.AllStreams);
+
             base.CleanUp();
 
             if (source != null)

@@ -768,6 +768,7 @@ namespace RaceLib
         }
 
         public event System.Action<Race, Lap> OnJumpToReplay;
+        public event System.Action<Race, Lap> OnJumpToReplaySecondWindow;
 
         public virtual bool HasReplay(Race race)
         {
@@ -777,6 +778,11 @@ namespace RaceLib
         public void JumpToReplay(Race race, Lap lap = null)
         {
             OnJumpToReplay?.Invoke(race, lap);
+        }
+
+        public void JumpToReplaySecondWindow(Race race, Lap lap = null)
+        {
+            OnJumpToReplaySecondWindow?.Invoke(race, lap);
         }
 
         public virtual IEnumerable<EventTypes> GetEventTypes()

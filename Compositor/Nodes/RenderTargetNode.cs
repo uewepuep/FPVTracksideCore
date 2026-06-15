@@ -509,7 +509,7 @@ namespace Composition.Nodes
             return false;
         }
 
-        public override bool IsAnimatingInvisiblity()
+        public override bool IsAnimatingInvisibility()
         {
             return false;
         }

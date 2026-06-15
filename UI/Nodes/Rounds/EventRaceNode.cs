@@ -202,6 +202,11 @@ namespace UI.Nodes.Rounds
                     mm.AddItem("Open Race Replay", () => { EventManager.JumpToReplay(Race); });
                 }
 
+                if (EventManager.HasReplay(Race))
+                {
+                    mm.AddItem("Open Race Replay (Second Window)", () => { EventManager.JumpToReplaySecondWindow(Race); });
+                }
+
                 if (Race != null)
                 {
                     if (Race.Ended)

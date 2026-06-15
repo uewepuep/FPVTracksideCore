@@ -74,7 +74,7 @@ namespace Composition.Nodes
                 {
                     updateGeomety = true;
                 }
-                else if (needsUpdate == UpdateTypes.Size && !IsAnimatingInvisiblity() && !isAnimatingSize && Alpha > 0)
+                else if (needsUpdate == UpdateTypes.Size && !IsAnimatingInvisibility() && !isAnimatingSize && Alpha > 0)
                 {
                     updateGeomety = true;
                 }

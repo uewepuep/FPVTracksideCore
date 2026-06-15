@@ -131,7 +131,7 @@ namespace UI.Video
             if (primary != null && race != null)
             {
                 SeekNode.SetRace(race, minStart, maxEnd);
-                ChannelsGridNode.SetPlaybackTime(race.Start);
+                ChannelsGridNode.SetPlaybackTime(CurrentTime);
             }
         }
 
