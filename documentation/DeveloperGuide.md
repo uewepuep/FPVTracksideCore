@@ -27,7 +27,7 @@ FPVTrackside is a comprehensive drone racing timing and video software designed 
 - **Cross-platform**: Windows and macOS support
 
 ### Technology Stack
-- **Framework**: .NET 6.0 with MonoGame/XNA
+- **Framework**: .NET 9.0 with MonoGame/XNA
 - **Graphics**: DirectX (Windows) / OpenGL (macOS)
 - **Database**: LiteDB (NoSQL document database)
 - **Video Processing**: FFmpeg
@@ -105,13 +105,13 @@ FPVTracksideCore/
 
 #### Windows Development
 - Visual Studio 2022 (Community or higher)
-- .NET 6.0 SDK
+- .NET 9.0 SDK
 - Windows 10/11
 - DirectX 11 compatible graphics card
 
 #### macOS Development
 - Visual Studio for Mac or JetBrains Rider
-- .NET 6.0 SDK
+- .NET 9.0 SDK
 - macOS 10.15 or higher
 - Xcode Command Line Tools
 
@@ -593,7 +593,7 @@ public void TestEventCreation()
 ```xml
 <!-- Project file configuration -->
 <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <OutputType>WinExe</OutputType>
     <Platforms>x64</Platforms>
 </PropertyGroup>
@@ -605,9 +605,23 @@ public void TestEventCreation()
 # Windows Release Build
 dotnet publish FPVTracksideCore/FPVTracksideCore.csproj -c Release -r win-x64 --self-contained
 
-# macOS Release Build
-dotnet publish FPVMacSideCore/FPVMacsideCore.csproj -c Release -r osx-x64 --self-contained
+# macOS Release Build (Apple Silicon / arm64)
+# -p:BundleMacDylibs=true is REQUIRED to bundle the OpenCV/ArUco native dylibs
+# (Timing/native/osx-arm64/*.dylib) into runtimes/osx-arm64/native/. It is a global
+# property so it propagates to the referenced Timing project; without it the ArUco
+# dylibs are NOT copied. Windows builds omit the flag so they are not bloated by the
+# ~280MB of Mac dylibs.
+dotnet publish FPVMacSideCore/FPVMacsideCore.csproj -c Release -r osx-arm64 --self-contained -p:BundleMacDylibs=true
 ```
+
+> **ArUco detection is only supported on `osx-arm64` (Apple Silicon).**
+> Only arm64 OpenCV dylibs are bundled, so an Intel **`osx-x64` build CANNOT perform
+> ArUco detection** (the native OpenCV libraries fail to load on x64). Supporting Intel
+> Macs would require building and bundling a separate set of x64 OpenCV dylibs under
+> `Timing/native/`.
+
+A zip of the macOS publish output can be run on a Mac after `chmod +x FPVMacsideCore`
+and `xattr -dr com.apple.quarantine .` (the build is unsigned).
 
 ### 3. Distribution
 
