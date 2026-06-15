@@ -3,7 +3,7 @@
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net9.0-windows</TargetFramework>
 		<Platforms>x64</Platforms>
-		<Version>2.76.2.852</Version>
+		<Version>2.76.2.853</Version>
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
 		
