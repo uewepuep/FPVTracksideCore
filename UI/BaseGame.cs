@@ -147,12 +147,17 @@ namespace UI
             }
         }
 
+        protected virtual void InitializeProfileSettings(Profile profile)
+        {
+            ApplicationProfileSettings.Initialize(profile);
+        }
+
         protected override void Initialize()
         {
             GeneralSettings.Initialise();
 
             Profile = new Profile(PlatformTools.WorkingDirectory, GeneralSettings.Instance.Profile);
-            ApplicationProfileSettings.Initialize(Profile);
+            InitializeProfileSettings(Profile);
 
             // ShownDecimalPlaces is [NeedsRestart], so a single startup-time copy
             // into SpeechParameters is enough for every TTS call site.
@@ -389,7 +394,7 @@ namespace UI
             loadingLayer.WorkQueue.Enqueue(startEventWorkSet, "Loading Settings", () =>
             {
                 // Re-init the following settings so settings windows can reload event to reload settings.
-                ApplicationProfileSettings.Initialize(Profile);
+                InitializeProfileSettings(Profile);
             });
 
             loadingLayer.WorkQueue.Enqueue(startEventWorkSet, "Loading Theme", () =>

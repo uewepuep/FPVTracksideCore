@@ -440,7 +440,7 @@ namespace UI
             return version;
         }
 
-        private void Migrate()
+        protected void Migrate()
         {
             int newVersion = ApplyMigrations(SettingsVersion);
             if (newVersion != SettingsVersion)
