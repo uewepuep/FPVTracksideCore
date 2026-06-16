@@ -51,7 +51,10 @@ namespace WindowsMediaPlatform.DirectShow
         {
             IBaseFilter filter;
 
-            DsDevice device = DirectShowHelper.GetVideoCaptureDeviceByPath(VideoConfig.DirectShowPath);
+            // Bind to the runtime-resolved device path when set (LegacyUVCAssign),
+            // otherwise the saved DirectShowPath. RuntimeDevicePath is null unless that option is on.
+            string bindPath = string.IsNullOrEmpty(VideoConfig.RuntimeDevicePath) ? VideoConfig.DirectShowPath : VideoConfig.RuntimeDevicePath;
+            DsDevice device = DirectShowHelper.GetVideoCaptureDeviceByPath(bindPath);
             if (device == null)
             {
                 if (VideoConfig.AnyUSBPort)

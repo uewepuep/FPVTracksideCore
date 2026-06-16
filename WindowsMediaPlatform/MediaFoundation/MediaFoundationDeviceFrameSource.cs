@@ -129,7 +129,10 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         private HResult SetupDevice()
         {
-            MFDevice found = MFHelper.GetVideoCaptureDeviceByPath(VideoConfig.MediaFoundationPath);
+            // Bind to the runtime-resolved device path when set (LegacyUVCAssign),
+            // otherwise the saved MediaFoundationPath. RuntimeDevicePath is null unless that option is on.
+            string bindPath = string.IsNullOrEmpty(VideoConfig.RuntimeDevicePath) ? VideoConfig.MediaFoundationPath : VideoConfig.RuntimeDevicePath;
+            MFDevice found = MFHelper.GetVideoCaptureDeviceByPath(bindPath);
             HResult hr = HResult.E_FAIL;
 
             if (found != null)

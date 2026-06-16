@@ -85,6 +85,16 @@ namespace ImageServer
         [System.ComponentModel.Browsable(false)]
         public string ffmpegId { get; set; }
 
+        // Runtime-only override of the device path used to bind to a connected capture
+        // device. Set by VideoManager when the "Legacy UVC Assign" option
+        // is enabled, so that identical same-name cameras each bind to a distinct device
+        // even when their saved paths have gone stale. Never serialized: the saved
+        // DirectShowPath/MediaFoundationPath are left untouched. Null = use the saved path.
+        [System.ComponentModel.Browsable(false)]
+        [JsonIgnore]
+        [XmlIgnore]
+        public string RuntimeDevicePath { get; set; }
+
         [Category("Device")]
         public string URL { get; set; }
 
