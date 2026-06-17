@@ -236,11 +236,18 @@ namespace RaceLib
                             if (pp.ExternalPilotID != 0)
                                 p.ExternalID = pp.ExternalPilotID;
 
-                            Channel c = EventManager.GetChannel(p);
-                            Channel chosen = EventManager.GetChannelGroup(channelIndex)
-                                ?.FirstOrDefault(ch => ch.Band.GetBandType() == c.Band.GetBandType());
-                            if (chosen != null)
-                                c = chosen;
+                            // An explicit pasted channel (e.g. "R1") wins — assign the
+                            // pilot to that exact channel from the event's set. Fall back
+                            // to the auto-cycled channel group when absent/unresolvable.
+                            Channel c = ResolveChannelLabel(pp.Channel, EventManager.Channels);
+                            if (c == null)
+                            {
+                                c = EventManager.GetChannel(p);
+                                Channel chosen = EventManager.GetChannelGroup(channelIndex)
+                                    ?.FirstOrDefault(ch => ch.Band.GetBandType() == c.Band.GetBandType());
+                                if (chosen != null)
+                                    c = chosen;
+                            }
 
                             race.SetPilot(db, c, p);
                         }
@@ -254,6 +261,35 @@ namespace RaceLib
             {
                 RaceManager.AddRace(r);
             }
+        }
+
+        // ResolveChannelLabel maps a pasted channel label to one of the event's
+        // channels. Accepts the canonical band+number text ("R1", "F3", "L2"), the
+        // channel's display name, and the long form ("Raceband 1"), matched case-
+        // and space-insensitively. Returns null when the label is empty or doesn't
+        // match a channel in the event's set (caller then auto-assigns).
+        public static Channel ResolveChannelLabel(string label, IEnumerable<Channel> eventChannels)
+        {
+            if (string.IsNullOrWhiteSpace(label) || eventChannels == null)
+                return null;
+
+            string Norm(string s) => (s ?? "").Replace(" ", "").Replace("-", "").ToLowerInvariant();
+            string want = Norm(label);
+            if (want.Length == 0)
+                return null;
+
+            foreach (Channel c in eventChannels)
+            {
+                if (c == null)
+                    continue;
+                if (want == Norm(c.GetBandChannelText()) ||
+                    want == Norm(c.DisplayName) ||
+                    want == Norm(c.ToStringShort()))
+                {
+                    return c;
+                }
+            }
+            return null;
         }
 
         public IEnumerable<Round> GetRoundsBetween(Round start, Round end)
