@@ -358,7 +358,12 @@ namespace RaceLib
 
         public static Channel GetByShortString(this IEnumerable<Channel> channels, string shortString)
         {
-            return channels.FirstOrDefault(c => c.ToStringShort() == shortString || c.GetBandChannelText() == shortString);
+            return channels.FirstOrDefault(c => c.ToStringShort() == shortString);
+        }
+
+        public static Channel GetByString(this IEnumerable<Channel> channels, string channelString)
+        {
+            return channels.FirstOrDefault(c => c.ToStringShort() == channelString || c.GetBandChannelText() == channelString);
         }
 
         public static IEnumerable<Channel> GetOthersInChannelGroup(this IEnumerable<Channel> pool, Channel c)

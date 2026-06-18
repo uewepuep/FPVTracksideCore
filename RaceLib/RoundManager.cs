@@ -239,12 +239,11 @@ namespace RaceLib
                             // An explicit pasted channel (e.g. "R1") wins — assign the
                             // pilot to that exact channel from the event's set. Fall back
                             // to the auto-cycled channel group when absent/unresolvable.
-                            Channel c = EventManager.Channels.GetByShortString(pp.Channel);
+                            Channel c = EventManager.Channels.GetByString(pp.Channel);
                             if (c == null)
                             {
                                 c = EventManager.GetChannel(p);
-                                Channel chosen = EventManager.GetChannelGroup(channelIndex)
-                                    ?.FirstOrDefault(ch => ch.Band.GetBandType() == c.Band.GetBandType());
+                                Channel chosen = EventManager.GetChannelGroup(channelIndex)?.FirstOrDefault(ch => ch.Band.GetBandType() == c.Band.GetBandType());
                                 if (chosen != null)
                                     c = chosen;
                             }
