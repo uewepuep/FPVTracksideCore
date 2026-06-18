@@ -1,24 +1,125 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using OpenCvSharp;
+using OpenCvSharp.Aruco;
+using Tools;
 
 namespace Timing.Aruco
 {
     public class ArucoTimingSystem : ITimingSystem
     {
+        private static bool nativeProbed;
+        private static bool nativeAvailable;
+        private static readonly object nativeProbeLock = new object();
+
         public static bool IsNativeAvailable()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return true;
+            lock (nativeProbeLock)
+            {
+                if (nativeProbed) return nativeAvailable;
+                nativeProbed = true;
+                nativeAvailable = ProbeNative();
+                return nativeAvailable;
+            }
+        }
 
+        private static bool ProbeNative()
+        {
+            // Always log the host environment so we can correlate failures with arch / OS.
             try
             {
-                Cv2.GetVersionString();
+                Logger.TimingLog?.Log(null,
+                    "[ArUco-Debug] env: OS=" + RuntimeInformation.OSDescription
+                    + ", FrameworkDesc=" + RuntimeInformation.FrameworkDescription
+                    + ", ProcessArch=" + RuntimeInformation.ProcessArchitecture
+                    + ", OSArch=" + RuntimeInformation.OSArchitecture
+                    + ", RID=" + RuntimeInformation.RuntimeIdentifier);
+            }
+            catch { /* logging must never abort the probe */ }
+
+            // Surface where the loader will search and whether the bundled dylib actually exists.
+            try
+            {
+                string baseDir = AppContext.BaseDirectory;
+                Logger.TimingLog?.Log(null, "[ArUco-Debug] AppContext.BaseDirectory=" + baseDir);
+
+                string[] candidates = new[]
+                {
+                    Path.Combine(baseDir, "runtimes", "osx-arm64", "native", "libOpenCvSharpExtern.dylib"),
+                    Path.Combine(baseDir, "runtimes", "osx-x64",   "native", "libOpenCvSharpExtern.dylib"),
+                    Path.Combine(baseDir, "libOpenCvSharpExtern.dylib"),
+                    Path.Combine(baseDir, "runtimes", "linux-x64", "native", "libOpenCvSharpExtern.so"),
+                    Path.Combine(baseDir, "libOpenCvSharpExtern.so"),
+                    Path.Combine(baseDir, "runtimes", "win-x64",   "native", "OpenCvSharpExtern.dll"),
+                    Path.Combine(baseDir, "OpenCvSharpExtern.dll"),
+                };
+                foreach (string c in candidates)
+                {
+                    bool exists = File.Exists(c);
+                    Logger.TimingLog?.Log(null, "[ArUco-Debug] native-probe: "
+                        + (exists ? "FOUND   " : "missing ") + c
+                        + (exists ? (" size=" + new FileInfo(c).Length) : ""));
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.TimingLog?.LogException(null, ex);
+            }
+
+            // On Windows the OpenCvSharp4.runtime.win NuGet ships the native DLL, so just trust it.
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Logger.TimingLog?.Log(null, "[ArUco-Debug] Windows host: skipping Cv2.GetVersionString probe (assumed available).");
                 return true;
             }
-            catch
+
+            // Non-Windows: actually call into the native library so dlopen failures surface.
+            // Log the concrete exception type/message — the original code swallowed it silently.
+            try
             {
+                string ver = Cv2.GetVersionString();
+                Logger.TimingLog?.Log(null, "[ArUco-Debug] Cv2.GetVersionString() OK, OpenCV " + ver);
+
+                try
+                {
+                    using (var d = CvAruco.GetPredefinedDictionary(OpenCvSharp.Aruco.PredefinedDictionaryName.Dict4X4_50))
+                    {
+                        Logger.TimingLog?.Log(null, "[ArUco-Debug] CvAruco.GetPredefinedDictionary(Dict4X4_50) OK.");
+                    }
+                }
+                catch (Exception arEx)
+                {
+                    // Cv2 loaded but ArUco entry points missing — common when the dylib was built
+                    // without opencv_contrib.
+                    Logger.TimingLog?.LogException(null, arEx);
+                    Logger.TimingLog?.Log(null, "[ArUco-Debug] Cv2 loaded but ArUco failed: "
+                        + arEx.GetType().FullName + ": " + arEx.Message);
+                    return false;
+                }
+
+                return true;
+            }
+            catch (DllNotFoundException dnf)
+            {
+                Logger.TimingLog?.Log(null, "[ArUco-Debug] DllNotFoundException loading OpenCvSharpExtern: " + dnf.Message);
+                return false;
+            }
+            catch (TypeInitializationException tie)
+            {
+                Logger.TimingLog?.LogException(null, tie);
+                Logger.TimingLog?.Log(null, "[ArUco-Debug] TypeInitializationException: "
+                    + (tie.InnerException?.GetType().FullName ?? "no-inner")
+                    + ": " + (tie.InnerException?.Message ?? ""));
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Logger.TimingLog?.LogException(null, ex);
+                Logger.TimingLog?.Log(null, "[ArUco-Debug] Cv2 probe threw "
+                    + ex.GetType().FullName + ": " + ex.Message);
                 return false;
             }
         }

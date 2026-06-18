@@ -60,7 +60,39 @@ namespace UI.Video
         {
             CleanUp();
 
-            if (!HasAruco()) return;
+            // Probe (and log) native availability up front so we always see the result, even when
+            // there are zero ArUco systems configured (which is why the menu would have been
+            // hidden in TimingSystemEditor).
+            bool nativeOk = ArucoTimingSystem.IsNativeAvailable();
+            Logger.TimingLog.Log(this, "[ArUco-Debug] Init: IsNativeAvailable=" + nativeOk);
+
+            try
+            {
+                var systems = timingSystemManager?.TimingSystems?.OfType<ArucoTimingSystem>().ToArray();
+                int arucoCount = systems?.Length ?? 0;
+                Logger.TimingLog.Log(this, "[ArUco-Debug] Init: ArucoTimingSystem count=" + arucoCount);
+                if (systems != null)
+                {
+                    foreach (var sys in systems)
+                    {
+                        var s = sys.ArucoSettings;
+                        Logger.TimingLog.Log(this, "[ArUco-Debug] Init:  - Role="
+                            + (sys.Settings?.Role.ToString() ?? "null")
+                            + " MarkerIds=" + (s?.MarkerIds ?? "null")
+                            + " DetectMode=" + (s?.DetectMode.ToString() ?? "null")
+                            + " MarkerThreshold=" + (s?.MarkerThreshold.ToString() ?? "null")
+                            + " MinMarkerPercent=" + (s?.MinMarkerPercent.ToString() ?? "null")
+                            + " FlickerLengthMs=" + (s?.FlickerLengthMs.ToString() ?? "null"));
+                    }
+                }
+            }
+            catch (Exception ex) { Logger.TimingLog.LogException(this, ex); }
+
+            if (!HasAruco())
+            {
+                Logger.TimingLog.Log(this, "[ArUco-Debug] Init: no ArucoTimingSystem configured — detection thread will NOT start.");
+                return;
+            }
 
             EnforceSinglePrimary();
 
@@ -71,6 +103,7 @@ namespace UI.Video
                 IsBackground = true
             };
             thread.Start();
+            Logger.TimingLog.Log(this, "[ArUco-Debug] Init: detection thread started.");
         }
 
         /// <summary>
@@ -98,7 +131,7 @@ namespace UI.Video
 
                 string ids = sys.ArucoSettings?.MarkerIds ?? "-";
                 Logger.TimingLog.Log(this,
-                    "ArUco: only one Primary is allowed; demoting Marker(s) " + ids + " to Split.");
+                    "[ArUco-Debug] only one Primary is allowed; demoting Marker(s) " + ids + " to Split.");
                 sys.Settings.Role = TimingSystemRole.Split;
             }
         }
@@ -128,10 +161,10 @@ namespace UI.Video
                 string calPath = Path.Combine(AppContext.BaseDirectory, "Aruco", "camera_calibration.json");
                 ArucoCalibration calibration = ArucoCalibration.TryLoad(calPath, out string calError);
                 if (calibration != null)
-                    Logger.TimingLog.Log(this, "ArUco: calibration loaded from " + calPath
+                    Logger.TimingLog.Log(this, "[ArUco-Debug] calibration loaded from " + calPath
                         + " (ref " + calibration.ReferenceWidth + "x" + calibration.ReferenceHeight + ")");
                 else
-                    Logger.TimingLog.Log(this, "ArUco: calibration NOT loaded (" + (calError ?? "unknown") + ") — Corrected/Hybrid passes will be skipped. Path: " + calPath);
+                    Logger.TimingLog.Log(this, "[ArUco-Debug] calibration NOT loaded (" + (calError ?? "unknown") + ") — Corrected/Hybrid passes will be skipped. Path: " + calPath);
 
                 ArucoFrameOverlay.EnsureRegistered();
                 ArucoFrameOverlay.Enabled = true;

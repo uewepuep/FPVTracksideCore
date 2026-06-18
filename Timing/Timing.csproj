@@ -35,12 +35,24 @@
     </None>
   </ItemGroup>
 
-  <!-- macOS arm64: locally-built libOpenCvSharpExtern.dylib (linked against OpenCV 4.11 + opencv_contrib, includes ArUco).
-       Placed under runtimes/osx-arm64/native/ because that's where OpenCvSharp4's native loader searches. -->
-  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('OSX')) AND Exists('native/osx-arm64/libOpenCvSharpExtern.dylib')">
-    <Content Include="native/osx-arm64/libOpenCvSharpExtern.dylib">
+  <!-- macOS arm64: locally-built libOpenCvSharpExtern.dylib (linked against OpenCV 4.11 + opencv_contrib,
+       includes ArUco) together with all OpenCV / dependency dylibs it loads at runtime. They are placed
+       under runtimes/osx-arm64/native/ because that's where OpenCvSharp4's native loader searches.
+       Included only when the build actually targets osx-arm64 so Windows and other-RID builds are not
+       bloated by the ~280MB of Mac dylibs. Two triggers, because $(RuntimeIdentifier) is NOT set when
+       Timing is built as a RID-agnostic project reference of an app being published for osx-arm64:
+         - '$(RuntimeIdentifier)' == 'osx-arm64'  -> direct `dotnet publish Timing -r osx-arm64`
+         - '$(BundleMacDylibs)' == 'true'         -> set via `-p:BundleMacDylibs=true` on the app publish;
+                                                     global -p: properties propagate to all references.
+       So publish the Mac app with: dotnet publish FPVMacSideCore -r osx-arm64 -p:BundleMacDylibs=true
+       Unlike the previous build-host check, neither trigger depends on the build host OS, so cross-
+       publishing from Windows works. TargetPath is used instead of Link so the output path is explicit
+       and SDK-version-independent. -->
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == 'osx-arm64' Or '$(BundleMacDylibs)' == 'true'">
+    <Content Include="native/osx-arm64/*.dylib">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>runtimes/osx-arm64/native/libOpenCvSharpExtern.dylib</Link>
+      <TargetPath>runtimes/osx-arm64/native/%(Filename)%(Extension)</TargetPath>
+      <Visible>false</Visible>
     </Content>
   </ItemGroup>
 
