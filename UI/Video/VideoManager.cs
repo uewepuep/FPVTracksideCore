@@ -589,9 +589,13 @@ namespace UI.Video
             DoOnWorkerThread(() =>
             {
                 IEnumerable<VideoConfig> toCreate = videoConfigs;
-                if (ApplicationProfileSettings.Instance != null && ApplicationProfileSettings.Instance.LegacyUVCAssign)
+                bool hasDuplicates = videoConfigs
+                    .Where(v => IsOrdinalMatchable(v))
+                    .GroupBy(v => v.DeviceName?.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .Any(g => g.Count() > 1);
+                if (hasDuplicates)
                 {
-                    toCreate = ResolveSameNameDevices(videoConfigs);
+                    toCreate = AssignDuplicateDevices(videoConfigs);
                 }
 
                 List<FrameSource> list = new List<FrameSource>();
@@ -609,16 +613,7 @@ namespace UI.Video
             });
         }
 
-        /// <summary>
-        /// When the "Legacy UVC Assign" option is enabled, make sure that
-        /// configs which share a DeviceName each bind to a distinct connected device.
-        /// Configs whose saved device path still matches a connected device keep it; the
-        /// remaining configs are assigned, in order, to the still-unclaimed connected
-        /// same-name devices via a runtime-only path override (RuntimeDevicePath). The
-        /// saved DirectShowPath/MediaFoundationPath are never modified, so settings files
-        /// are left untouched. Only DirectShow and MediaFoundation configs are affected.
-        /// </summary>
-        private IEnumerable<VideoConfig> ResolveSameNameDevices(IEnumerable<VideoConfig> videoConfigs)
+        private IEnumerable<VideoConfig> AssignDuplicateDevices(IEnumerable<VideoConfig> videoConfigs)
         {
             VideoConfig[] configs = videoConfigs.ToArray();
 
@@ -677,7 +672,7 @@ namespace UI.Video
                 {
                     claimed.Add(DeviceKey(candidate));
                     config.RuntimeDevicePath = StoredDevicePath(candidate);
-                    Logger.VideoLog.Log(this, "LegacyUVCAssign: assigned '" + config.DeviceName + "' to " + config.RuntimeDevicePath);
+                    Logger.VideoLog.Log(this, "Duplicate UVC: assigned '" + config.DeviceName + "' to " + config.RuntimeDevicePath);
                 }
             }
 

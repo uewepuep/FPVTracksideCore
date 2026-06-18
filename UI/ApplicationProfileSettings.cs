@@ -72,11 +72,7 @@ namespace UI
         [DisplayName("Video recordings to keep")]
         [Category("Video")]
         public int VideosToKeep { get; set; }
-        [Category("Video")]
-        [DisplayName("Legacy UVC Assign")]
-        [NeedsRestart]
-        public bool LegacyUVCAssign { get; set; }
-        [Category("Data")]
+[Category("Data")]
         [NeedsRestart]
         public string EventStorageLocation { get; set; }
 
