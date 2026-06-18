@@ -78,5 +78,11 @@ namespace RaceLib
         public string Name { get; set; }
 
         public int ExternalPilotID { get; set; }
+
+        // Optional VTX channel label for this seat, e.g. "R1", "F3", "L2", or a
+        // band+number like "Raceband 1". When present (and resolvable against the
+        // event's channels), the pilot is assigned to that channel instead of the
+        // auto-cycled one. Empty/unresolvable falls back to auto-assignment.
+        public string Channel { get; set; }
     }
 }

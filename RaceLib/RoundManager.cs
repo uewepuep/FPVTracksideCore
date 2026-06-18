@@ -184,7 +184,11 @@ namespace RaceLib
                     if (race == null || !race.IsFrequencyFree(c))
                     {
                         race = new Race(Event);
-                        race.AutoAssignNumbers = true;
+                        // Pasted races have explicit, correct race numbers. Do NOT flag
+                        // AutoAssignNumbers: that makes a later AddPilot (e.g. when the
+                        // race is opened / made current) renumber the race to max+1,
+                        // which is the "Race 9-1 jumps to 9-7" bug.
+                        race.AutoAssignNumbers = false;
                         race.RaceNumber = startNumber + 1 + races.Count;
                         race.Round = round;
                         races.Add(race);
@@ -213,7 +217,10 @@ namespace RaceLib
                         continue;
 
                     Race race = new Race(Event);
-                    race.AutoAssignNumbers = true;
+                    // See the note on the other overload: pasted races keep their own
+                    // numbers, so AutoAssignNumbers must stay false or opening the race
+                    // later renumbers it to max+1.
+                    race.AutoAssignNumbers = false;
                     race.RaceNumber = startNumber + 1 + races.Count;
                     race.Round = round;
                     race.ExternalID = pasted.ExternalRaceID;
@@ -229,11 +236,18 @@ namespace RaceLib
                             if (pp.ExternalPilotID != 0)
                                 p.ExternalID = pp.ExternalPilotID;
 
-                            Channel c = EventManager.GetChannel(p);
-                            Channel chosen = EventManager.GetChannelGroup(channelIndex)
-                                ?.FirstOrDefault(ch => ch.Band.GetBandType() == c.Band.GetBandType());
-                            if (chosen != null)
-                                c = chosen;
+                            // An explicit pasted channel (e.g. "R1") wins — assign the
+                            // pilot to that exact channel from the event's set. Fall back
+                            // to the auto-cycled channel group when absent/unresolvable.
+                            Channel c = EventManager.Channels.GetByShortString(pp.Channel);
+                            if (c == null)
+                            {
+                                c = EventManager.GetChannel(p);
+                                Channel chosen = EventManager.GetChannelGroup(channelIndex)
+                                    ?.FirstOrDefault(ch => ch.Band.GetBandType() == c.Band.GetBandType());
+                                if (chosen != null)
+                                    c = chosen;
+                            }
 
                             race.SetPilot(db, c, p);
                         }
