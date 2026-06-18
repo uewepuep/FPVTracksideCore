@@ -129,7 +129,9 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         private HResult SetupDevice()
         {
-            MFDevice found = MFHelper.GetVideoCaptureDeviceByPath(VideoConfig.MediaFoundationPath);
+            // RuntimeDevicePath is set when duplicate same-name devices are auto-assigned; fall back to saved path.
+            string bindPath = string.IsNullOrEmpty(VideoConfig.RuntimeDevicePath) ? VideoConfig.MediaFoundationPath : VideoConfig.RuntimeDevicePath;
+            MFDevice found = MFHelper.GetVideoCaptureDeviceByPath(bindPath);
             HResult hr = HResult.E_FAIL;
 
             if (found != null)

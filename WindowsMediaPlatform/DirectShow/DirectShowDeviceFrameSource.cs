@@ -51,7 +51,9 @@ namespace WindowsMediaPlatform.DirectShow
         {
             IBaseFilter filter;
 
-            DsDevice device = DirectShowHelper.GetVideoCaptureDeviceByPath(VideoConfig.DirectShowPath);
+            // RuntimeDevicePath is set when duplicate same-name devices are auto-assigned; fall back to saved path.
+            string bindPath = string.IsNullOrEmpty(VideoConfig.RuntimeDevicePath) ? VideoConfig.DirectShowPath : VideoConfig.RuntimeDevicePath;
+            DsDevice device = DirectShowHelper.GetVideoCaptureDeviceByPath(bindPath);
             if (device == null)
             {
                 if (VideoConfig.AnyUSBPort)

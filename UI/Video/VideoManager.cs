@@ -588,8 +588,18 @@ namespace UI.Video
         {
             DoOnWorkerThread(() =>
             {
+                IEnumerable<VideoConfig> toCreate = videoConfigs;
+                bool hasDuplicates = videoConfigs
+                    .Where(v => IsOrdinalMatchable(v))
+                    .GroupBy(v => v.DeviceName?.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .Any(g => g.Count() > 1);
+                if (hasDuplicates)
+                {
+                    toCreate = AssignDuplicateDevices(videoConfigs);
+                }
+
                 List<FrameSource> list = new List<FrameSource>();
-                foreach (var videoConfig in videoConfigs)
+                foreach (var videoConfig in toCreate)
                 {
                     RemoveFrameSource(videoConfig);
                     FrameSource fs = CreateFrameSource(videoConfig);
@@ -601,6 +611,94 @@ namespace UI.Video
                     frameSourcesDelegate(list);
                 }
             });
+        }
+
+        private IEnumerable<VideoConfig> AssignDuplicateDevices(IEnumerable<VideoConfig> videoConfigs)
+        {
+            VideoConfig[] configs = videoConfigs.ToArray();
+
+            // Recompute from scratch every time: clear any previous runtime resolution.
+            foreach (VideoConfig vc in configs)
+            {
+                vc.RuntimeDevicePath = null;
+            }
+
+            List<VideoConfig> live;
+            try
+            {
+                live = GetAvailableVideoSources().ToList();
+            }
+            catch (Exception e)
+            {
+                Logger.VideoLog.LogException(this, e);
+                return configs;
+            }
+
+            HashSet<string> claimed = new HashSet<string>();
+
+            // Pass 1: configs whose saved path matches a connected device claim that device.
+            foreach (VideoConfig config in configs)
+            {
+                if (!IsOrdinalMatchable(config))
+                    continue;
+
+                string savedPath = StoredDevicePath(config);
+                VideoConfig match = live.FirstOrDefault(l => l.FrameWork == config.FrameWork
+                    && !string.IsNullOrEmpty(savedPath) && StoredDevicePath(l) == savedPath);
+                if (match != null)
+                {
+                    claimed.Add(DeviceKey(match));
+                }
+            }
+
+            // Pass 2: configs whose saved path no longer matches get the next unclaimed same-name device.
+            foreach (VideoConfig config in configs)
+            {
+                if (!IsOrdinalMatchable(config))
+                    continue;
+
+                string savedPath = StoredDevicePath(config);
+                bool alreadyConnected = !string.IsNullOrEmpty(savedPath)
+                    && live.Any(l => l.FrameWork == config.FrameWork && StoredDevicePath(l) == savedPath);
+                if (alreadyConnected)
+                    continue;
+
+                VideoConfig candidate = live.FirstOrDefault(l => l.FrameWork == config.FrameWork
+                    && string.Equals(l.DeviceName == null ? null : l.DeviceName.Trim(), config.DeviceName == null ? null : config.DeviceName.Trim(), StringComparison.OrdinalIgnoreCase)
+                    && !string.IsNullOrEmpty(StoredDevicePath(l))
+                    && !claimed.Contains(DeviceKey(l)));
+
+                if (candidate != null)
+                {
+                    claimed.Add(DeviceKey(candidate));
+                    config.RuntimeDevicePath = StoredDevicePath(candidate);
+                    Logger.VideoLog.Log(this, "Duplicate UVC: assigned '" + config.DeviceName + "' to " + config.RuntimeDevicePath);
+                }
+            }
+
+            return configs;
+        }
+
+        private static bool IsOrdinalMatchable(VideoConfig config)
+        {
+            return config != null
+                && string.IsNullOrEmpty(config.FilePath)
+                && (config.FrameWork == FrameWork.DirectShow || config.FrameWork == FrameWork.MediaFoundation);
+        }
+
+        private static string StoredDevicePath(VideoConfig config)
+        {
+            switch (config.FrameWork)
+            {
+                case FrameWork.DirectShow: return config.DirectShowPath;
+                case FrameWork.MediaFoundation: return config.MediaFoundationPath;
+                default: return null;
+            }
+        }
+
+        private static string DeviceKey(VideoConfig config)
+        {
+            return config.FrameWork + "|" + StoredDevicePath(config);
         }
 
         public void Initialize(FrameSource frameSource)
