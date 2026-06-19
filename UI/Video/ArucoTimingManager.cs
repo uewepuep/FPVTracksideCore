@@ -258,6 +258,13 @@ namespace UI.Video
                     double sharedEcRate = primarySettings?.ErrorCorrectionRate ?? 0.0;
                     int sharedHybridDist = primarySettings?.HybridDistanceThreshold ?? 0;
 
+                    // Ignore lost-signal frames on racing pilots' channels (shared from the reference).
+                    bool ignoreLostSignal = primarySettings?.IgnoreLostSignal ?? false;
+                    double lostSignalThreshold = primarySettings?.LostSignalThreshold ?? 0.4;
+                    bool showSignalRatio = primarySettings?.ShowSignalRatio ?? false;
+                    // Measure the ratio whenever we either act on it (ignore) or display it (overlay).
+                    bool measureSignal = ignoreLostSignal || showSignalRatio;
+
                     // Overlay display flags track the Primary's settings.
                     if (primarySettings != null)
                     {
@@ -265,6 +272,8 @@ namespace UI.Video
                         ArucoFrameOverlay.ShowId = primarySettings.ShowMarkerId;
                         ArucoFrameOverlay.ShowSizePercent = primarySettings.ShowMarkerSizePercent;
                         ArucoFrameOverlay.ShowFps = primarySettings.ShowFps;
+                        ArucoFrameOverlay.ShowSignalRatio = primarySettings.ShowSignalRatio;
+                        ArucoFrameOverlay.LostSignalThreshold = primarySettings.LostSignalThreshold;
                         ArucoFrameOverlay.FlipTextVertical = primarySettings.CharacterFlipVertical;
                     }
                     bool multiThread = primarySettings?.UseMultiThreadDetection ?? true;
@@ -280,6 +289,9 @@ namespace UI.Video
                     // Phase 1: collect BGRA buffers from each FrameNodeThumb sequentially
                     // (GetColorData can race with the UI draw thread; do it once up front).
                     var inputs = new (ChannelVideoNode cvn, byte[] bgra)[channelNodes.Length];
+                    // Per-channel signal ratio for the overlay; NaN = not measured.
+                    var channelSignal = new double[channelNodes.Length];
+                    Array.Fill(channelSignal, double.NaN);
                     for (int i = 0; i < channelNodes.Length; i++)
                     {
                         var cvn = channelNodes[i];
@@ -316,6 +328,20 @@ namespace UI.Video
                             bgra[k * 4 + 2] = p.R;
                             bgra[k * 4 + 3] = p.A;
                         }
+
+                        // Of the channels we still detect on (a racing pilot is registered), measure the
+                        // signal ratio when we either act on it (ignore) or display it (overlay).
+                        // Blank out any lost-signal frame so the detector never chews on snow. We
+                        // zero the buffer rather than skip detection so the timing system still receives a
+                        // "0 markers" report, consistent with the unassigned-channel path above.
+                        if (measureSignal)
+                        {
+                            double ratio = ArucoMarkerDetector.SignalRatio(bgra, FrameWidth, FrameHeight);
+                            channelSignal[i] = ratio;
+                            if (ignoreLostSignal && ratio < lostSignalThreshold)
+                                Array.Clear(bgra, 0, bgra.Length);
+                        }
+
                         inputs[i] = (cvn, bgra);
                     }
 
@@ -376,6 +402,7 @@ namespace UI.Video
                                 CropRelH = rsb.Height,
                                 FlipY = flipY,
                                 MirrorX = mirrorX,
+                                SignalRatio = channelSignal[ch],
                             };
                             // Key per-channel so multiple channels sharing one FrameSource
                             // (e.g. 2x2 capture) each keep their own crop cached.
