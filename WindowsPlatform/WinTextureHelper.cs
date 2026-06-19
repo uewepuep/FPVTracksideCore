@@ -106,7 +106,6 @@ namespace WindowsPlatform
             }
 #endif
 
-
             texture.SetData(pixels);
 
             return texture;
