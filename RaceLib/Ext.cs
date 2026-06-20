@@ -405,7 +405,7 @@ namespace RaceLib
                 Channel[] interferring = next.GetInterferringChannels(channels).ToArray();
                 if (interferring.Any())
                 {
-                    yield return interferring.ToArray();
+                    yield return interferring.OrderBy(r => r.Band).ToArray();
                     channels.RemoveAll(r => interferring.Contains(r));
                 }
             }
