@@ -542,15 +542,35 @@ namespace RaceLib
 
         public void RedistrubuteChannels()
         {
-            var channelLanes = Channels.GetChannelGroups().ToArray();
+            var channelGroups = Channels.GetChannelGroups().ToArray();
 
-            int counter = 0;
-            foreach (var p in Event.PilotChannels.OrderBy(p => p.Pilot.Name))
+            var pilotsByBandType = Event.PilotChannels
+                .OrderBy(p => p.Pilot.Name)
+                .GroupBy(p => p.Channel.Band.GetBandType());
+
+            foreach (var bandGroup in pilotsByBandType)
             {
-                Channel c = channelLanes[counter % channelLanes.Length].First();
+                var compatibleChannels = channelGroups
+                    .Select(g => g.FirstOrDefault(c => c.Band.GetBandType() == bandGroup.Key))
+                    .Where(c => c != null)
+                    .ToArray();
 
-                SetPilotChannel(p.Pilot, c);
-                counter++;
+                if (!compatibleChannels.Any())
+                    continue;
+
+                int counter = 0;
+                foreach (var p in bandGroup)
+                {
+                    try
+                    {
+                        SetPilotChannel(p.Pilot, compatibleChannels[counter % compatibleChannels.Length]);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Generation.LogException(this, e);
+                    }
+                    counter++;
+                }
             }
         }
 
