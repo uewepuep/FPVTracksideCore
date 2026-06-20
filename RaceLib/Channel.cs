@@ -33,7 +33,10 @@ namespace RaceLib
     {
         Analogue,
         DJIDigital,
-        HDZeroDigital
+        HDZeroDigital,
+        DJIO3Digital,
+        DJIO4Digital,
+        WalkSnailDigital,
     }
 
     public class Channel : BaseObject
