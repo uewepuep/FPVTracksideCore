@@ -260,13 +260,13 @@ namespace RaceLib
             new Channel(40, 8, Band.DJIFPVHD),
         };
         public static Channel[] DJIO3 = new Channel[] {
-            new Channel(75, 1, Band.DJIO3),
-            new Channel(76, 2, Band.DJIO3),
-            new Channel(77, 3, Band.DJIO3),
-            new Channel(78, 4, Band.DJIO3),
-            new Channel(79, 5, Band.DJIO3),
-            new Channel(80, 6, Band.DJIO3),
-            new Channel(81, 7, Band.DJIO3),
+            new Channel(75, 'O', 1, Band.DJIO3),
+            new Channel(76, 'O', 2, Band.DJIO3),
+            new Channel(77, 'O', 3, Band.DJIO3),
+            new Channel(78, 'O', 4, Band.DJIO3),
+            new Channel(79, 'O', 5, Band.DJIO3),
+            new Channel(80, 'O', 6, Band.DJIO3),
+            new Channel(81, 'O', 7, Band.DJIO3),
         };
 
         public static Channel[] DJIO4 = new Channel[] {
