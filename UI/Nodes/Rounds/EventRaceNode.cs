@@ -311,6 +311,12 @@ namespace UI.Nodes.Rounds
                 {
                     // Use the same logic as the HTTP service to find the events folder
                     string eventsPath = ApplicationProfileSettings.Instance.EventStorageLocation;
+
+                    if (eventsPath.EndsWith("/"))
+                    {
+                        eventsPath = eventsPath.Substring(0, eventsPath.Length - 1);
+                    }
+
                     if (string.IsNullOrEmpty(eventsPath))
                     {
                         eventsPath = Path.Combine(IOTools.WorkingDirectory?.FullName ?? "", "events");
@@ -319,7 +325,9 @@ namespace UI.Nodes.Rounds
                     {
                         eventsPath = Path.Combine(IOTools.WorkingDirectory?.FullName ?? "", eventsPath);
                     }
-                    PlatformTools.OpenFileManager(Path.Combine(eventsPath, EventManager.EventId.ToString(), Race.ID.ToString()));
+
+                    string racePath = Path.Combine(eventsPath, EventManager.EventId.ToString(), Race.ID.ToString());
+                    PlatformTools.OpenFileManager(racePath);
                 });
                 if (pilot != null)
                 {
