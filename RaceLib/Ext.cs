@@ -349,6 +349,12 @@ namespace RaceLib
             {
                 case Band.DJIFPVHD:
                     return BandType.DJIDigital;
+                case Band.DJIO3:
+                    return BandType.DJIO3Digital;
+                case Band.DJIO4:
+                    return BandType.DJIO4Digital;
+                case Band.WalkSnail:
+                    return BandType.WalkSnailDigital;
                 case Band.HDZero:
                     return BandType.HDZeroDigital;
                 default:
@@ -405,7 +411,7 @@ namespace RaceLib
                 Channel[] interferring = next.GetInterferringChannels(channels).ToArray();
                 if (interferring.Any())
                 {
-                    yield return interferring.ToArray();
+                    yield return interferring.OrderBy(r => r.Band).ToArray();
                     channels.RemoveAll(r => interferring.Contains(r));
                 }
             }
