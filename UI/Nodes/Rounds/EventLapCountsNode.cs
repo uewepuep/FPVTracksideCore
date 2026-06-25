@@ -55,7 +55,7 @@ namespace UI.Nodes.Rounds
         {
             List<string[]> output = new List<string[]>();
 
-            foreach (PilotLapCountsNode pn in PilotNodes.OrderBy(pn => pn.Bounds.Y))
+            foreach (PilotLapCountsNode pn in PilotNodes.OrderBy(pn => pn.Bounds.X).ThenBy(pn => pn.Bounds.Y))
             {
                 List<string> line = new List<string>();
                 if (pn.Pilot != null)

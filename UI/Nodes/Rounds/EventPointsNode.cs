@@ -56,7 +56,7 @@ namespace UI.Nodes.Rounds
         public override string[][] MakeTable()
         {
             List<string[]> output = new List<string[]>();
-            foreach (PilotPointsNode pn in PilotNodes.OrderBy(pn => pn.Bounds.Y))
+            foreach (PilotPointsNode pn in PilotNodes.OrderBy(pn => pn.Bounds.X).ThenBy(pn => pn.Bounds.Y))
             {
                 List<string> line = new List<string>();
                 if (pn.Pilot != null)
