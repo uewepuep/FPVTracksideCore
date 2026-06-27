@@ -32,6 +32,12 @@ namespace UI.Video
             public bool FlipY;
             /// <summary>Horizontal mirror applied when drawing into the detection RT.</summary>
             public bool MirrorX;
+
+            /// <summary>
+            /// Latest signal ratio for this channel (see ArucoMarkerDetector.SignalRatio).
+            /// NaN when not measured (e.g. unassigned channel) — the overlay then draws nothing.
+            /// </summary>
+            public double SignalRatio = double.NaN;
         }
 
         /// <summary>
@@ -71,7 +77,14 @@ namespace UI.Video
         public static volatile bool ShowId = true;
         public static volatile bool ShowSizePercent = true;
         public static volatile bool ShowFps = false;
+        public static volatile bool ShowSignalRatio = false;
         public static volatile bool Enabled = false;
+
+        /// <summary>
+        /// Lost-signal threshold (shared, from the reference ArUco settings), drawn alongside each
+        /// channel's measured signal ratio so "measured/threshold" reads like the FPS overlay.
+        /// </summary>
+        public static volatile float LostSignalThreshold = 0.4f;
 
         /// <summary>
         /// When true, overlay text (ID / size % / FPS) is rendered upside-down at the same on-screen
@@ -158,7 +171,7 @@ namespace UI.Video
         private static void OnBeforeFrame(ImageServer.FrameSource source, byte[] buffer)
         {
             if (!Enabled || buffer == null) return;
-            if (!(ShowBox || ShowId || ShowSizePercent || ShowFps)) return;
+            if (!(ShowBox || ShowId || ShowSizePercent || ShowFps || ShowSignalRatio)) return;
 
             int w = source.FrameWidth;
             int h = source.FrameHeight;
@@ -175,7 +188,7 @@ namespace UI.Video
                     if (entry?.Geometry == null) continue;
                     var active = CollectActive(entry, now);
                     bool hasMarkers = active != null && active.Count > 0;
-                    if (!hasMarkers && !ShowFps) continue;
+                    if (!hasMarkers && !ShowFps && !ShowSignalRatio) continue;
                     DrawInto(data, w, h, source.FrameFormat, entry.Geometry, active);
                 }
             }
@@ -188,7 +201,7 @@ namespace UI.Video
         private static void OnBeforeFramePtr(ImageServer.FrameSource source, IntPtr buffer, int length)
         {
             if (!Enabled || buffer == IntPtr.Zero) return;
-            if (!(ShowBox || ShowId || ShowSizePercent || ShowFps)) return;
+            if (!(ShowBox || ShowId || ShowSizePercent || ShowFps || ShowSignalRatio)) return;
 
             int w = source.FrameWidth;
             int h = source.FrameHeight;
@@ -201,7 +214,7 @@ namespace UI.Video
                 if (entry?.Geometry == null) continue;
                 var active = CollectActive(entry, now);
                 bool hasMarkers = active != null && active.Count > 0;
-                if (!hasMarkers && !ShowFps) continue;
+                if (!hasMarkers && !ShowFps && !ShowSignalRatio) continue;
                 DrawInto(buffer, w, h, source.FrameFormat, entry.Geometry, active);
             }
         }
@@ -253,6 +266,34 @@ namespace UI.Video
                         DrawOverlayText(mat, w, h, fpsText, fpsOrg,
                                         fontScale * 1.2, fpsColor, textThickness,
                                         outlineScale: fontScale * 1.2, outlineThickness: textThickness + 2);
+                    }
+
+                    // Signal-ratio readout: "measured/threshold" at the channel's centre-left,
+                    // mirroring the FPS overlay style. Red when below threshold (frame treated as
+                    // lost signal), else green. Skipped when this channel has no measurement (NaN).
+                    if (ShowSignalRatio && !double.IsNaN(cached.SignalRatio))
+                    {
+                        double thr = LostSignalThreshold;
+                        bool lostSignal = cached.SignalRatio < thr;
+                        string signalText = "S " + cached.SignalRatio.ToString("F2") + "/" + thr.ToString("F2");
+                        double nScale = fontScale * 1.2;
+                        int nThick = textThickness;
+
+                        OpenCvSharp.Size signalTextSize = Cv2.GetTextSize(
+                            signalText, HersheyFonts.HersheySimplex, nScale, nThick + 2, out _);
+                        double nxBase = cropX + 6;
+                        double nyBase = cropY + cropH / 2 + signalTextSize.Height / 2.0; // vertical centre, left side
+                        if (cached.MirrorX) nxBase = w - 1 - nxBase;
+                        if (cached.FlipY)   nyBase = h - 1 - nyBase;
+
+                        // red when lost signal, green when valid (channel-order aware).
+                        Scalar signalColor = format == SurfaceFormat.Color
+                            ? (lostSignal ? new Scalar(255, 60, 60, 255) : new Scalar(60, 255, 60, 255))   // RGBA
+                            : (lostSignal ? new Scalar(60, 60, 255, 255) : new Scalar(60, 255, 60, 255));  // BGRA
+                        var signalOrg = new Point((int)nxBase, (int)nyBase);
+                        DrawOverlayText(mat, w, h, signalText, signalOrg,
+                                        nScale, signalColor, nThick,
+                                        outlineScale: nScale, outlineThickness: nThick + 2);
                     }
 
                     if (detections == null) return;
