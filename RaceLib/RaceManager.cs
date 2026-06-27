@@ -1482,7 +1482,10 @@ namespace RaceLib
                 return;
 
             // If its added manually by race director every lap is valid. All training laps are valid.
-            if (detection.TimingSystemType != TimingSystemType.Manual || EventType != EventTypes.Training)
+            // (Validate only auto detections in non-training events. A previous '||' here invalidated
+            //  manual director-added laps in Race events - e.g. laps added during replay of a
+            //  finished race, where TimesUp is true - contradicting the comment above.)
+            if (detection.TimingSystemType != TimingSystemType.Manual && EventType != EventTypes.Training)
             {
                 // We start the timer before the race start, so just ignore any times in there...
                 // For handicapped pilots, gate against their personal staggered start instead of Race.Start.
