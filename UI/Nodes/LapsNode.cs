@@ -176,9 +176,11 @@ namespace UI.Nodes
 
             if (playbackTime.HasValue)
             {
-                DateTime padding = playbackTime.Value + TimeSpan.FromSeconds(0.009);
-
-                laps = laps.Where(lap => lap.Detection.Time <= padding).ToArray();
+                // Use <= so a lap whose detection time is exactly the current playback
+                // position (e.g. one just added via "Add Lap Now" while paused) is included.
+                // Must match the comparison in SetPlaybackTime, otherwise this path (reached
+                // via ChannelNodeBase's OnLapDetected handler) runs after it and hides the lap.
+                laps = laps.Where(lap => lap.Detection.Time <= playbackTime.Value).ToArray();
             }
 
             RefreshData(laps);
@@ -204,8 +206,12 @@ namespace UI.Nodes
                         Lap lap = laps[lapIndex];
                         if (lap == null)
                             continue;
-                        
+
                         lapNode.SetLap(lap);
+                        // Apply visibility here too, not only in Update(): while replay is
+                        // paused the per-frame Update tick doesn't reveal a freshly added lap,
+                        // so set it immediately to keep the data and the displayed rows in sync.
+                        lapNode.Visible = true;
 
                         int pbLaps = EventManager.Event.PBLaps;
 
@@ -228,6 +234,7 @@ namespace UI.Nodes
                     else
                     {
                         lapNodes[i].Clear();
+                        lapNodes[i].Visible = false;
                     }
                 }
             }
@@ -416,6 +423,13 @@ namespace UI.Nodes
 
                 if (!r.HasPilot(Pilot))
                     return;
+
+                // Grow/shrink the lap-cell table to fit the pilot's current lap count. Without
+                // this, a lap added during replay has no cell to display in (the array-based
+                // RefreshData never resizes the table), so it only shows once an UpdateLapCount
+                // happens on unpause.
+                if (lapsPerRow != GetLapsPerRowCount() || LapLines != table.Rows)
+                    UpdateLapCount();
 
                 Lap[] laps = r.GetValidLaps(Pilot, true).OrderBy(l => l.End).Where(lap => lap.Detection.Time <= playbackTime.Value).ToArray();
 

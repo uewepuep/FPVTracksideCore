@@ -131,7 +131,12 @@ namespace UI.Video
             if (primary != null && race != null)
             {
                 SeekNode.SetRace(race, minStart, maxEnd);
-                ChannelsGridNode.SetPlaybackTime(CurrentTime);
+                // Use the frame source's full-precision time rather than SeekNode.CurrentTime,
+                // which round-trips through a float progress factor. A lap added at the current
+                // playback position has Detection.Time == primary.CurrentTime; the lossy seek time
+                // could round just below it and cause SetPlaybackTime's "Detection.Time <= time"
+                // filter to drop the freshly added lap from the replay list.
+                ChannelsGridNode.SetPlaybackTime(primary.CurrentTime);
             }
         }
 
