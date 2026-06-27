@@ -601,7 +601,7 @@ namespace UI
         {
             bool recoveredRace = false;
             Race toRecover = EventManager.RaceManager.GetRaceToRecover();
-            if (toRecover != null)
+            if (toRecover != null && EventManager.RaceManager.TimingSystemManager.TimingSystemCount > 0)
             {
                 Popuper.PopupConfirmation("Recover race?", () =>
                 {
