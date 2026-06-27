@@ -498,7 +498,7 @@ namespace RaceLib
             }
 
             // ignore impossibly short laps
-            if ((detection.Time - lapStart).TotalMilliseconds < 1)
+            if ((detection.Time - lapStart).TotalMilliseconds < 1 && detection.TimingSystemType != TimingSystemType.Manual)
             {
                 detection.Valid = false;
             }

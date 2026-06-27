@@ -176,7 +176,9 @@ namespace UI.Nodes
 
             if (playbackTime.HasValue)
             {
-                laps = laps.Where(lap => lap.Detection.Time < playbackTime.Value).ToArray();
+                DateTime padding = playbackTime.Value + TimeSpan.FromSeconds(0.009);
+
+                laps = laps.Where(lap => lap.Detection.Time <= padding).ToArray();
             }
 
             RefreshData(laps);
