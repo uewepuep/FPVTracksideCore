@@ -44,6 +44,10 @@ namespace UI
         [NeedsRestart]
         public int ShownDecimalPlaces { get; set; }
 
+        [Category("General")]
+        [DisplayName("Export Decimal Places")]
+        public int ExportDecimalPlaces { get; set; }
+
 
         [Category("Performance")]
         [NeedsRestart]
@@ -408,6 +412,7 @@ namespace UI
             ShowWelcomeScreen = true;
 
             ShownDecimalPlaces = 2;
+            ExportDecimalPlaces = 3;
             UseDirectX9 = false;
             ShowPositionDeltaTime = 6;
             Language = "English";

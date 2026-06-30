@@ -382,7 +382,7 @@ namespace RaceLib
             return false;
         }
 
-        public string[][] ExportPBs()
+        public string[][] ExportPBs(int decimalPlaces)
         {
             List<string> line = new List<string>();
 
@@ -435,7 +435,7 @@ namespace RaceLib
                         if (laps != null && laps.Any())
                         {
                             TimeSpan timeSpan = laps.TotalTime();
-                            line.Add(timeSpan.TotalSeconds.ToString("0.000"));
+                            line.Add(timeSpan.TotalSeconds.ToString("F" + decimalPlaces));
                         }
                         else
                         {
@@ -451,7 +451,7 @@ namespace RaceLib
 
                         foreach (Lap lap in laps)
                         {
-                            line.Add(lap.Length.TotalSeconds.ToString("0.000"));
+                            line.Add(lap.Length.TotalSeconds.ToString("F" + decimalPlaces));
                         }
                         line.Add("");
                     }

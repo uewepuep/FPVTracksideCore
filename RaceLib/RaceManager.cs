@@ -1854,7 +1854,7 @@ namespace RaceLib
             }
         }
 
-        public string[][] GetRaceResultsText(Units units)
+        public string[][] GetRaceResultsText(Units units, int decimalPlaces)
         {
             List<string[]> output = new List<string[]>();
             foreach (Round round in EventManager.RoundManager.Rounds)
@@ -1869,7 +1869,7 @@ namespace RaceLib
                         line.Add(ec.ToString());
                     }
 
-                    foreach (string[] resultLine in EventManager.ResultManager.GetResultsText(race, units))
+                    foreach (string[] resultLine in EventManager.ResultManager.GetResultsText(race, units, decimalPlaces))
                     {
                         output.Add(resultLine);
                     }
@@ -1878,7 +1878,7 @@ namespace RaceLib
             return output.ToArray();
         }
 
-        public string[][] GetRawLaps()
+        public string[][] GetRawLaps(int decimalPlaces)
         {
             List<string[]> output = new List<string[]>();
 
@@ -1897,8 +1897,9 @@ namespace RaceLib
                         line.Add(race.Start.ToString());
                         line.Add(pilot.Name);
                         line.Add(lap.Number.ToString());
-                        line.Add(lap.Length.TotalSeconds.ToString("0.000"));
-                        line.Add(lap.EndRaceTime.TotalSeconds.ToString("0.000"));
+                        string exportFormat = "F" + decimalPlaces;
+                        line.Add(lap.Length.TotalSeconds.ToString(exportFormat));
+                        line.Add(lap.EndRaceTime.TotalSeconds.ToString(exportFormat));
                         line.Add(lap.Detection.Valid.ToString());
                         output.Add(line.ToArray());
                     }
