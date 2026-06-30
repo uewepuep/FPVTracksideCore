@@ -267,7 +267,7 @@ namespace UI.Nodes.Rounds
 
                     copyMenu.AddItem("Copy Results", () =>
                     {
-                        string textResults = EventManager.ResultManager.GetResultsText(Race, ApplicationProfileSettings.Instance.Units).ToTSV();
+                        string textResults = EventManager.ResultManager.GetResultsText(Race, ApplicationProfileSettings.Instance.Units, ApplicationProfileSettings.Instance.ExportDecimalPlaces).ToTSV();
                         PlatformTools.Clipboard.SetText(textResults);
                     });
 

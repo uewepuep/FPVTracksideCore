@@ -677,12 +677,12 @@ namespace RaceLib
             }
         }
 
-        public string[][] GetResultsText(Units units)
+        public string[][] GetResultsText(Units units, int decimalPlaces)
         {
             Race currentRace = RaceManager.CurrentRace;
             if (currentRace != null)
             {
-                return ResultManager.GetResultsText(currentRace, units);
+                return ResultManager.GetResultsText(currentRace, units, decimalPlaces);
             }
 
             return new string[0][];

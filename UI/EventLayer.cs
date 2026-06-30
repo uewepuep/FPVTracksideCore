@@ -269,7 +269,7 @@ namespace UI
 
             ControlButtons.CopyResultsClipboard.OnClick += (mie) =>
             {
-                PlatformTools.Clipboard.SetText(EventManager.GetResultsText(ApplicationProfileSettings.Instance.Units).ToTSV());
+                PlatformTools.Clipboard.SetText(EventManager.GetResultsText(ApplicationProfileSettings.Instance.Units, ApplicationProfileSettings.Instance.ExportDecimalPlaces).ToTSV());
             };
 
             IRaceControl raceControl = null;
@@ -855,7 +855,7 @@ namespace UI
 
             if (GlobalInterceptKeys.Match(KeyMapper.GlobalCopyResults))
             {
-                PlatformTools.Clipboard.SetText(EventManager.GetResultsText(ApplicationProfileSettings.Instance.Units).ToTSV());
+                PlatformTools.Clipboard.SetText(EventManager.GetResultsText(ApplicationProfileSettings.Instance.Units, ApplicationProfileSettings.Instance.ExportDecimalPlaces).ToTSV());
             }
         }
 
@@ -1426,7 +1426,7 @@ namespace UI
                         {
                             if (ControlButtons.CopyResultsClipboard.Visible)
                             {
-                                PlatformTools.Clipboard.SetText(EventManager.GetResultsText(ApplicationProfileSettings.Instance.Units).ToTSV());
+                                PlatformTools.Clipboard.SetText(EventManager.GetResultsText(ApplicationProfileSettings.Instance.Units, ApplicationProfileSettings.Instance.ExportDecimalPlaces).ToTSV());
                             }
                         }
                         return true;
