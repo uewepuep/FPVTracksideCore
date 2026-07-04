@@ -138,7 +138,8 @@ namespace RaceLib
 
                 if (currentRace == null)
                     return EventManager.Channels;
-                return EventManager.Channels.Except(currentRace.Channels);
+
+                return currentRace.GetFreeFrequencies(EventManager.Channels);
             }
         }
 
