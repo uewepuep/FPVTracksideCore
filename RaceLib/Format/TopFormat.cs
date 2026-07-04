@@ -52,8 +52,7 @@ namespace RaceLib.Format
 
                 if (!race.IsFrequencyFree(c))
                 {
-                    IEnumerable<Channel> freeChannels = plan.Channels.Except(race.Channels).Where(r => r.Band.GetBandType() == bandType);
-                    c = freeChannels.OrderByDescending(ca => ca == c).FirstOrDefault();
+                    c = RaceManager.GetFreeChannel(race, bandType, plan.Channels);
                 }
 
                 if (c != null)

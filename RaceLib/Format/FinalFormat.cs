@@ -64,9 +64,14 @@ namespace RaceLib.Format
                 }
 
                 Channel c = pilot.GetChannelInRound(lastRoundRaces, plan.CallingRound);
+                BandType bandType = BandType.Analogue;
+                if (c != null)
+                {
+                    bandType = c.Band.GetBandType();
+                }
                 if (!race.IsFrequencyFree(c))
                 {
-                    c = freeChannels.OrderByDescending(ca => ca == c).FirstOrDefault();
+                    c = RaceManager.GetFreeChannel(race, bandType, plan.Channels);
                 }
 
                 race.SetPilot(db, c, pilot);

@@ -131,9 +131,15 @@ namespace RaceLib.Format
                     c = lastRace.GetChannel(p);
                 }
 
+                BandType bandType = BandType.Analogue;
+                if (c != null)
+                {
+                    bandType = c.Band.GetBandType();
+                }
+
                 if (!race.IsFrequencyFree(c))
                 {
-                    c = race.GetFreeFrequencies(plan.Channels).FirstOrDefault();
+                    c = RaceManager.GetFreeChannel(race, bandType, plan.Channels);
                 }
 
                 if (c != null)
