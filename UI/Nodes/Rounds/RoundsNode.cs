@@ -346,12 +346,30 @@ namespace UI.Nodes.Rounds
                         RequestLayout();
                     }
                 }
+
                 else if (stage.HasScriptFormat && EventManager.RoundManager.LuaFormatManager.ScriptHasStandings(stage.ScriptFormatFilename))
                 {
                     EventLuaStandingsNode esn = EventLuaStandingsNodes.FirstOrDefault(d => d.Round == round);
                     if (esn == null)
                     {
                         esn = new EventLuaStandingsNode(this, EventManager, round);
+                        esn.RemoveRound += RemoveResultStage;
+                        HookUp(esn);
+                        AddChild(esn);
+                    }
+                    else
+                    {
+                        esn.Refresh();
+                        RequestLayout();
+                    }
+                }
+
+                else if (stage.HasSheetFormat && EventManager.RoundManager.SheetFormatManager.SheetHasStandings(stage.SheetFormatFilename))
+                {
+                    EventSheetStandingsNode esn = Children.OfType<EventSheetStandingsNode>().FirstOrDefault(d => d.Round == round);
+                    if (esn == null)
+                    {
+                        esn = new EventSheetStandingsNode(this, EventManager, round);
                         esn.RemoveRound += RemoveResultStage;
                         HookUp(esn);
                         AddChild(esn);
