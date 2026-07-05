@@ -162,6 +162,36 @@ namespace RaceLib.Format
             return null;
         }
 
+        // Returns true if the given sheet file contains a standings block.
+        // Detection: scans the first row for a header starting with "Standing" or "Standings".
+        public bool SheetHasStandings(string filename)
+        {
+            if (string.IsNullOrEmpty(filename)) return false;
+            SheetFile sheetFile = GetSheetFile(filename);
+            if (sheetFile == null) return false;
+
+            try
+            {
+                Spreadsheets.SheetFormat sf = new Spreadsheets.SheetFormat(sheetFile.FileInfo);
+                int rows, cols;
+                sf.GetSize(out rows, out cols);
+                for (int c = 1; c <= cols; c++)
+                {
+                    string header = sf.GetCellText(1, c);
+                    if (string.IsNullOrEmpty(header)) continue;
+                    string lower = header.Trim().ToLower();
+                    if (lower.StartsWith("standing") || lower.StartsWith("standings"))
+                        return true;
+                }
+            }
+            catch
+            {
+                // ignore errors and report no standings
+            }
+
+            return false;
+        }
+
         public RoundSheetFormat GetRoundSheetFormat(Round round)
         {
             lock (roundSheetFormats)
@@ -787,6 +817,108 @@ namespace RaceLib.Format
                 {
                     SheetFormat.SwapPilots(eventType, roundNumber, race.RaceNumber, "", name);
                 }
+            }
+        }
+
+        // Returns a StandingsResult built from a standings table present in the sheet.
+        // The sheet contains a block with a header "Standing N" followed by N result header columns.
+        // Each subsequent row contains in the "Standing" column the pilot sheet name (callsign) and
+        // in the following N columns the associated values.
+        public StandingsResult GetStandings(Pilot[] stagePilots)
+        {
+            var result = new StandingsResult();
+
+            try
+            {
+                int totalRows, totalCols;
+                SheetFormat.GetSize(out totalRows, out totalCols);
+
+                int standingCol = 0;
+                int nCols = 0;
+
+                // Rechercher la colonne contenant "standing"
+                for (int c = 1; c <= totalCols; c++)
+                {
+                    string header = SheetFormat.GetCellText(1, c)?.Trim();
+                    if (string.IsNullOrEmpty(header)) continue;
+                    string lower = header.ToLower();
+                    if (lower.StartsWith("standing"))
+                    {
+                        // tenter d'extraire le nombre N qui suit
+                        string[] parts = header.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length >= 2 && int.TryParse(parts[1], out int parsed))
+                        {
+                            standingCol = c;
+                            nCols = parsed;
+                        }
+                        else
+                        {
+                            // si pas de nombre, tenter d'utiliser la prochaine colonne jusqu'à ce qu'il n'y ait plus de header
+                            standingCol = c;
+                            int count = 0;
+                            for (int k = c + 1; k <= totalCols; k++)
+                            {
+                                string h = SheetFormat.GetCellText(1, k)?.Trim();
+                                if (string.IsNullOrEmpty(h)) break;
+                                count++;
+                            }
+                            nCols = count;
+                        }
+                        break;
+                    }
+                }
+
+                if (standingCol == 0 || nCols <= 0)
+                {
+                    // Aucun bloc de standings trouvé
+                    result.Headings = null;
+                    result.Rows = Array.Empty<StandingsRow>();
+                    return result;
+                }
+
+                // Lire les headings (colonnes suivantes)
+                var headings = new List<string>();
+                for (int j = 1; j <= nCols; j++)
+                {
+                    string h = SheetFormat.GetCellText(1, standingCol + j) ?? "";
+                    headings.Add(h);
+                }
+                result.Headings = headings.ToArray();
+
+                var rows = new List<StandingsRow>();
+
+                // Parcourir les lignes sous l'en-tête
+                for (int r = 2; r <= totalRows; r++)
+                {
+                    string sheetName = SheetFormat.GetCellText(r, standingCol)?.Trim();
+                    if (string.IsNullOrEmpty(sheetName))
+                        continue;
+
+                    // Trouver le pilote mappé si existant
+                    Pilot pilot = null;
+                    GetPilotMapped(sheetName, out pilot);
+
+                    var row = new StandingsRow();
+                    row.Name = pilot != null ? pilot.Name : sheetName;
+                    row.PilotId = pilot?.ID;
+
+                    var values = new List<string>();
+                    for (int j = 1; j <= nCols; j++)
+                    {
+                        string val = SheetFormat.GetCellText(r, standingCol + j) ?? "";
+                        values.Add(val);
+                    }
+
+                    row.Values = values.ToArray();
+                    rows.Add(row);
+                }
+
+                result.Rows = rows.ToArray();
+                return result;
+            }
+            catch
+            {
+                return new StandingsResult { Headings = null, Rows = Array.Empty<StandingsRow>() };
             }
         }
     }
