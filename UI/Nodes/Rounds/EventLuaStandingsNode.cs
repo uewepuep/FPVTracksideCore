@@ -1,4 +1,6 @@
 using Composition.Nodes;
+using Composition.Layers;
+using Composition.Input;
 using Microsoft.Xna.Framework;
 using RaceLib;
 using RaceLib.Format;
@@ -11,6 +13,8 @@ namespace UI.Nodes.Rounds
 {
     public class EventLuaStandingsNode : EventResultNode
     {
+        public ImageButtonNode MenuButton { get; private set; }
+
         private LuaStandingsPilotNode headingNode;
         private readonly List<LuaStandingsPilotNode> rowNodes = new List<LuaStandingsPilotNode>();
         private bool needsRefresh;
@@ -20,6 +24,13 @@ namespace UI.Nodes.Rounds
             : base(roundsNode, ev, round)
         {
             EventManager.RaceManager.OnRaceEnd += OnRaceEnd;
+
+
+            MenuButton = new ImageButtonNode(@"img\settings.png", Color.Transparent, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
+            MenuButton.OnClick += MenuButton_OnClick;
+            buttonContainer.AddChild(MenuButton, 0);
+
+            UpdateButtons();
             SetHeading("Standings");
             Refresh();
         }
@@ -32,10 +43,58 @@ namespace UI.Nodes.Rounds
 
         private void OnRaceEnd(Race race) => Refresh();
 
+        protected override void UpdateButtons()
+        {
+            base.UpdateButtons();
+
+            if (MenuButton != null)
+                MenuButton.Scale(0.6f);
+        }
+
         public void Refresh()
         {
             needsRefresh = true;
             RequestLayout();
+        }
+
+        private void MenuButton_OnClick(MouseInputEvent mie)
+        {
+            MouseMenu mm = new MouseMenu(this);
+
+            MakeMenu(mm);
+
+            Point position = new Point(MenuButton.Bounds.X, MenuButton.Bounds.Bottom);
+            mm.Show(position - mie.Translation);
+        }
+
+        public void MakeMenu(MouseMenu mm)
+        {
+            if (StageNode != null)
+                mm.AddItem("Edit Stage", StageNode.EditStage);
+            mm.AddItem("Copy to Clipboard", CopyToClipboard);
+
+            FileTools.ExportMenu(mm, "Export", PlatformTools, "Save", MakeTable(), GetLayer<PopupLayer>());
+        }
+
+
+        private void CopyToClipboard()
+        {
+            string tsv = MakeTable().ToTSV();
+            if (!string.IsNullOrEmpty(tsv))
+            {
+                PlatformTools.Clipboard.SetText(tsv);
+            }
+        }
+
+        public string[][] MakeTable()
+        {
+            List<string[]> output = new List<string[]>();
+            output.Add(headingNode.MakeLine());
+            foreach (LuaStandingsPilotNode pn in rowNodes)
+            {
+                output.Add(pn.MakeLine());
+            }
+            return output.ToArray();
         }
 
         public override void Layout(RectangleF parentBounds)
@@ -124,6 +183,23 @@ namespace UI.Nodes.Rounds
         }
 
         public override bool HasResult() => true;
+
+        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
+        {
+            MouseInputEvent translated = Translate(mouseInputEvent);
+
+            if (translated.EventType == MouseInputEvent.EventTypes.Button && translated.Button == MouseButtons.Right && translated.ButtonState == ButtonStates.Released)
+            {
+                MouseMenu mouseMenu = new MouseMenu(this);
+                mouseMenu.AddItem("Copy Pilots", CopyToClipboard);
+                mouseMenu.AddItem("Edit Stage", StageNode.EditStage);
+
+                mouseMenu.Show(mouseInputEvent.Position);
+                return true;
+            }
+
+            return base.OnMouseInput(mouseInputEvent);
+        }
     }
 
     public class LuaStandingsPilotNode : Node
@@ -180,6 +256,18 @@ namespace UI.Nodes.Rounds
                 newNodes[i] = tn;
             }
             valueNodes = newNodes;
+        }
+
+        public string[] MakeLine()
+        {
+            List<string> line = new List<string>();
+            line.Add(nameNode.Text);
+            foreach (TextNode vn in valueNodes)
+            {
+                line.Add(vn.Text);
+            }
+            line.Add(scoreNode.Text);
+            return line.ToArray();
         }
 
         public int GetRequiredWidth()
