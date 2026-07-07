@@ -132,20 +132,88 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         public virtual HResult OnReadSample(HResult hrStatus, int dwStreamIndex, MF_SOURCE_READER_FLAG dwStreamFlags, long timestep, IMFSample sample)
         {
-            HResult hr = hrStatus;
-
-            if (sample != null)
+            // This is the self-pumping async read loop: each callback must request the next
+            // sample, or frames stop forever. A live HDMI capture (e.g. an HDZero VRX feeding
+            // a capture card) routinely produces transient read errors and stream discontinuities
+            // when the signal briefly drops or renegotiates. Those must NOT kill the pump — if
+            // they do, no more frames arrive, the 10s frame watchdog fires and VideoManager does
+            // a full device teardown/re-open, which is the multi-second freeze users see. So we
+            // keep re-arming through transient issues and only hand off to a clean reconnect for
+            // genuinely terminal conditions. Nothing here may throw off the MF work-queue thread.
+            try
             {
-                hr = ProcessRaw(sample);
-            }
+                // Process whatever we got. A null sample (a stream tick / gap with no data) is
+                // normal during a brief signal loss and is not an error.
+                if (sample != null)
+                {
+                    try
+                    {
+                        ProcessRaw(sample);
+                    }
+                    catch (Exception e)
+                    {
+                        // A single bad/oversized frame must not tear down the capture loop.
+                        Logger.VideoLog.LogException(this, e);
+                    }
+                }
 
-            if (MFHelper.Succeeded(hrStatus) && State == States.Running)
-            {
+                if (State != States.Running)
+                {
+                    // Paused/stopped: don't re-arm. Unpause()/Start() restarts the pump.
+                    return HResult.S_OK;
+                }
+
+                // End-of-stream is terminal — let VideoManager reconnect from scratch.
+                if ((dwStreamFlags & MF_SOURCE_READER_FLAG.EndOfStream) != 0)
+                {
+                    Logger.VideoLog.Log(this, "OnReadSample EndOfStream - flagging for reconnect");
+                    Connected = false;
+                    return HResult.S_OK;
+                }
+
+                // A real format renegotiation (resolution / pixel-format change on the HDMI
+                // source) needs the transforms rebuilt for the new dimensions. Flag a clean
+                // reinit via VideoManager rather than reading on with mismatched processors.
+                if ((dwStreamFlags & (MF_SOURCE_READER_FLAG.CurrentMediaTypeChanged | MF_SOURCE_READER_FLAG.NativeMediaTypeChanged)) != 0)
+                {
+                    Logger.VideoLog.Log(this, "OnReadSample media type changed (flags=" + dwStreamFlags + ") - flagging for reinit");
+                    Connected = false;
+                    return HResult.S_OK;
+                }
+
+                // A transient read error or error flag (a brief HDMI dropout / glitch). Keep the
+                // pump alive so frames resume the instant the source recovers, instead of stalling
+                // until the watchdog forces a full teardown. Back off briefly so we don't hot-loop
+                // while the signal is genuinely absent — the watchdog still fires and reconnects
+                // if it never returns.
+                if (MFHelper.Failed(hrStatus) || (dwStreamFlags & MF_SOURCE_READER_FLAG.Error) != 0)
+                {
+                    Logger.VideoLog.Log(this, "OnReadSample transient read issue (hr=0x" + ((int)hrStatus).ToString("X8") + " flags=" + dwStreamFlags + ") - re-arming");
+                    Thread.Sleep(15);
+                }
+
                 // Ask for the next sample.
-                hr = readerAsync.ReadSample((int)MF_SOURCE_READER.FirstVideoStream, 0, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-                MFError.ThrowExceptionForHR(hr);
+                HResult hr = readerAsync.ReadSample((int)MF_SOURCE_READER.FirstVideoStream, 0, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                if (MFHelper.Failed(hr))
+                {
+                    // Couldn't re-arm at all — hand off to VideoManager for a clean reconnect
+                    // rather than dying silently on the callback thread.
+                    Logger.VideoLog.Log(this, "OnReadSample ReadSample re-arm failed (hr=0x" + ((int)hr).ToString("X8") + ") - flagging for reconnect");
+                    Connected = false;
+                }
             }
-            MFHelper.SafeRelease(sample);
+            catch (Exception e)
+            {
+                // Never let an exception propagate out of the MF callback thread — that would
+                // silently kill the pump with no recovery. Fall back to a clean reconnect.
+                Logger.VideoLog.LogException(this, e);
+                Connected = false;
+            }
+            finally
+            {
+                MFHelper.SafeRelease(sample);
+            }
+
             return HResult.S_OK;
         }
 
