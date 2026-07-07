@@ -147,7 +147,13 @@ namespace UI.Nodes.Rounds
             {
                 if (pn.Pilot != null)
                 {
-                    output.Add(new string[] { pn.Pilot.Name, pn.TimeNode.Text });
+                    string time = "";
+                    if (pn.Time != TimeSpan.MaxValue && pn.Time != TimeSpan.Zero)
+                    {
+                        time = pn.Time.ToStringRaceTime(ApplicationProfileSettings.Instance.ExportDecimalPlaces);
+                    }
+
+                    output.Add(new string[] { pn.Pilot.Name, time });
                 }
             }
             return output.ToArray();
