@@ -973,7 +973,7 @@ namespace RaceLib.Format
         private Table BuildOptionsTable(Script lua, RoundPlan plan)
         {
             Table table = new Table(lua);
-            table["max_pilots_per_race"] = (double)plan.Channels.Length;
+            table["max_pilots_per_race"] = (double)plan.Channels.GetChannelGroups().Count();
             table["target_laps"] = (double)EventManager.Event.Laps;
             table["pb_laps"] = (double)EventManager.Event.PBLaps;
 
