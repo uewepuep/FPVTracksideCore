@@ -80,9 +80,8 @@ namespace RaceLib.Format
                 }
                 r.RaceNumber = raceIndex + 1;
                 r.Round = newRound;
-                r.PilotChannels.Clear();
+                r.ClearPilots(db);
 
-                List<Pilot> unassignedPilots = new List<Pilot>();
                 for (int i = (group.Count - 1); i > -1; i--)
                 {
                     var pilot = pilotPoints.ElementAt(group[i]).pilot;
