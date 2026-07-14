@@ -163,7 +163,7 @@ namespace RaceLib.Format
         }
 
         // Returns true if the given sheet file contains a standings block.
-        // Detection: scans the first row for a header starting with "Standing" or "Standings".
+        // Detection: scans the first row for a header starting with "Standing" (matches "Standing" and "Standings").
         public bool SheetHasStandings(string filename)
         {
             if (string.IsNullOrEmpty(filename)) return false;
@@ -179,8 +179,7 @@ namespace RaceLib.Format
                 {
                     string header = sf.GetCellText(1, c);
                     if (string.IsNullOrEmpty(header)) continue;
-                    string lower = header.Trim().ToLower();
-                    if (lower.StartsWith("standing") || lower.StartsWith("standings"))
+                    if (header.Trim().StartsWith("standing", StringComparison.OrdinalIgnoreCase))
                         return true;
                 }
             }
@@ -824,101 +823,101 @@ namespace RaceLib.Format
         // The sheet contains a block with a header "Standing N" followed by N result header columns.
         // Each subsequent row contains in the "Standing" column the pilot sheet name (callsign) and
         // in the following N columns the associated values.
+        // Rows whose sheet name maps to a known pilot outside stagePilots are skipped, so leftover
+        // rows for pilots no longer part of this stage don't show up in the table.
         public StandingsResult GetStandings(Pilot[] stagePilots)
         {
-            var result = new StandingsResult();
-
             try
             {
                 int totalRows, totalCols;
                 SheetFormat.GetSize(out totalRows, out totalCols);
 
-                int standingCol = 0;
-                int nCols = 0;
-
-                // Rechercher la colonne contenant "standing"
-                for (int c = 1; c <= totalCols; c++)
-                {
-                    string header = SheetFormat.GetCellText(1, c)?.Trim();
-                    if (string.IsNullOrEmpty(header)) continue;
-                    string lower = header.ToLower();
-                    if (lower.StartsWith("standing"))
-                    {
-                        // tenter d'extraire le nombre N qui suit
-                        string[] parts = header.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-                        if (parts.Length >= 2 && int.TryParse(parts[1], out int parsed))
-                        {
-                            standingCol = c;
-                            nCols = parsed;
-                        }
-                        else
-                        {
-                            // si pas de nombre, tenter d'utiliser la prochaine colonne jusqu'à ce qu'il n'y ait plus de header
-                            standingCol = c;
-                            int count = 0;
-                            for (int k = c + 1; k <= totalCols; k++)
-                            {
-                                string h = SheetFormat.GetCellText(1, k)?.Trim();
-                                if (string.IsNullOrEmpty(h)) break;
-                                count++;
-                            }
-                            nCols = count;
-                        }
-                        break;
-                    }
-                }
+                FindStandingsColumn(totalCols, out int standingCol, out int nCols);
 
                 if (standingCol == 0 || nCols <= 0)
                 {
-                    // Aucun bloc de standings trouvé
-                    result.Headings = null;
-                    result.Rows = Array.Empty<StandingsRow>();
-                    return result;
+                    // No standings block found.
+                    return new StandingsResult { Headings = null, Rows = Array.Empty<StandingsRow>() };
                 }
 
-                // Lire les headings (colonnes suivantes)
-                var headings = new List<string>();
+                string[] headings = new string[nCols];
                 for (int j = 1; j <= nCols; j++)
                 {
-                    string h = SheetFormat.GetCellText(1, standingCol + j) ?? "";
-                    headings.Add(h);
+                    headings[j - 1] = SheetFormat.GetCellText(1, standingCol + j) ?? "";
                 }
-                result.Headings = headings.ToArray();
+
+                HashSet<Guid> stageIds = stagePilots != null && stagePilots.Any()
+                    ? stagePilots.Select(p => p.ID).ToHashSet()
+                    : null;
 
                 var rows = new List<StandingsRow>();
 
-                // Parcourir les lignes sous l'en-tête
                 for (int r = 2; r <= totalRows; r++)
                 {
                     string sheetName = SheetFormat.GetCellText(r, standingCol)?.Trim();
                     if (string.IsNullOrEmpty(sheetName))
                         continue;
 
-                    // Trouver le pilote mappé si existant
-                    Pilot pilot = null;
-                    GetPilotMapped(sheetName, out pilot);
+                    GetPilotMapped(sheetName, out Pilot pilot);
 
-                    var row = new StandingsRow();
-                    row.Name = pilot != null ? pilot.Name : sheetName;
-                    row.PilotId = pilot?.ID;
+                    // A row that resolves to a pilot known to be outside this stage is stale sheet data - skip it.
+                    if (pilot != null && stageIds != null && !stageIds.Contains(pilot.ID))
+                        continue;
 
-                    var values = new List<string>();
+                    string[] values = new string[nCols];
                     for (int j = 1; j <= nCols; j++)
                     {
-                        string val = SheetFormat.GetCellText(r, standingCol + j) ?? "";
-                        values.Add(val);
+                        values[j - 1] = SheetFormat.GetCellText(r, standingCol + j) ?? "";
                     }
 
-                    row.Values = values.ToArray();
-                    rows.Add(row);
+                    rows.Add(new StandingsRow
+                    {
+                        Name = pilot != null ? pilot.Name : sheetName,
+                        PilotId = pilot?.ID,
+                        Values = values
+                    });
                 }
 
-                result.Rows = rows.ToArray();
-                return result;
+                return new StandingsResult { Headings = headings, Rows = rows.ToArray() };
             }
             catch
             {
                 return new StandingsResult { Headings = null, Rows = Array.Empty<StandingsRow>() };
+            }
+        }
+
+        // Locates the "Standing"/"Standings" header cell in row 1 and works out how many result
+        // columns follow it: either an explicit "Standing N" count, or - if no number is given -
+        // by counting contiguous non-empty header cells after it.
+        private void FindStandingsColumn(int totalCols, out int standingCol, out int columnCount)
+        {
+            standingCol = 0;
+            columnCount = 0;
+
+            for (int c = 1; c <= totalCols; c++)
+            {
+                string header = SheetFormat.GetCellText(1, c)?.Trim();
+                if (string.IsNullOrEmpty(header)) continue;
+                if (!header.StartsWith("standing", StringComparison.OrdinalIgnoreCase)) continue;
+
+                standingCol = c;
+
+                string[] parts = header.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length >= 2 && int.TryParse(parts[1], out int parsed))
+                {
+                    columnCount = parsed;
+                    return;
+                }
+
+                int count = 0;
+                for (int k = c + 1; k <= totalCols; k++)
+                {
+                    string h = SheetFormat.GetCellText(1, k)?.Trim();
+                    if (string.IsNullOrEmpty(h)) break;
+                    count++;
+                }
+                columnCount = count;
+                return;
             }
         }
     }
