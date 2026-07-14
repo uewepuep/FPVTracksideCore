@@ -24,6 +24,7 @@ namespace UI.Nodes.Rounds
         public IEnumerable<EventLapCountsNode> EventLapCountsNodes { get { return Children.OfType<EventLapCountsNode>(); } }
         public IEnumerable<EventPackCountNode> EventPackCountNodes { get { return Children.OfType<EventPackCountNode>(); } }
         public IEnumerable<EventLuaStandingsNode> EventLuaStandingsNodes { get { return Children.OfType<EventLuaStandingsNode>(); } }
+        public IEnumerable<EventSheetStandingsNode> EventSheetStandingsNodes { get { return Children.OfType<EventSheetStandingsNode>(); } }
         public IEnumerable<EventResultNode> EventResultNodes { get { return Children.OfType<EventResultNode>(); } }
         public IEnumerable<StageNode> ResultStageNodes { get { return EventResultNodes.Select(e => e.StageNode).Distinct(); } }
         public IEnumerable<StageNode> FormatStageNodes { get { return Children.OfType<StageNode>().Distinct(); } }
@@ -352,6 +353,22 @@ namespace UI.Nodes.Rounds
                     if (esn == null)
                     {
                         esn = new EventLuaStandingsNode(this, EventManager, round);
+                        esn.RemoveRound += RemoveResultStage;
+                        HookUp(esn);
+                        AddChild(esn);
+                    }
+                    else
+                    {
+                        esn.Refresh();
+                        RequestLayout();
+                    }
+                }
+                else if (stage.HasSheetFormat && EventManager.RoundManager.SheetFormatManager.SheetHasStandings(stage.SheetFormatFilename))
+                {
+                    EventSheetStandingsNode esn = EventSheetStandingsNodes.FirstOrDefault(d => d.Round == round);
+                    if (esn == null)
+                    {
+                        esn = new EventSheetStandingsNode(this, EventManager, round);
                         esn.RemoveRound += RemoveResultStage;
                         HookUp(esn);
                         AddChild(esn);
