@@ -2287,6 +2287,16 @@ namespace RaceLib
             return null;
         }
 
+        public Pilot GetPilot(IEnumerable<Channel> channels)
+        {
+            Race race = CurrentRace;
+            if (race != null)
+            {
+                return race.GetPilot(channels);
+            }
+            return null;
+        }
+
         public void CrashedOut(Pilot pilot, Channel channel, bool manual)
         {
             if (EventManager.RaceManager.RaceRunning && pilot != null && channel != null)
@@ -2453,7 +2463,7 @@ namespace RaceLib
 
             OnRacePilotsSet?.Invoke(race);
         }
-        public IEnumerable<Pilot> GetPilotsOnChannelLastRace(Channel channel)
+        public IEnumerable<Pilot> GetPilotsOnChannelLastRace(IEnumerable<Channel> channels)
         {
             Race[] finished = GetRaces(r => r.Valid && r.Ended).OrderByDescending(r => r.Start).ToArray();
 
@@ -2461,7 +2471,7 @@ namespace RaceLib
 
             foreach (Race race in finished)
             {
-                Pilot p = race.GetPilot(channel);
+                Pilot p = race.GetPilot(channels);
                 if (p != null && !returned.Contains(p))
                 {
                     returned.Add(p);
