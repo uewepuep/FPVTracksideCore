@@ -35,8 +35,8 @@ namespace Timing.Aruco
 
         public ArucoMarkerDetector()
         {
-            // Use the standard Dict4X4_50 dictionary; DetectInto restricts results to IDs 0..3
-            // so that only the four markers used by TVPAS2-compatible setups are reported.
+            // Use the standard Dict4X4_50 dictionary (IDs 0..49); TVPAS2-compatible setups
+            // using IDs 0..3 keep working, but any ID in the dictionary is usable.
             dict = CvAruco.GetPredefinedDictionary(PredefinedDictionaryName.Dict4X4_50);
             parameters = new DetectorParameters();
             cachedEcRate = parameters.ErrorCorrectionRate;
@@ -249,8 +249,8 @@ namespace Timing.Aruco
             for (int i = 0; i < ids.Length; i++)
             {
                 int id = ids[i];
-                // Accept only IDs 0..3 (defensive even if the custom dictionary subset is active).
-                if (id < 0 || id > 3) continue;
+                // Dict4X4_50 contains 50 markers, IDs 0..49.
+                if (id < 0 || id > 49) continue;
 
                 into.Add(new MarkerDetection
                 {

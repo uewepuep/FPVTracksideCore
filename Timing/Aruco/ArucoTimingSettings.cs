@@ -42,7 +42,7 @@ namespace Timing.Aruco
         public ArucoDetectMode DetectMode { get; set; }
 
         [Category("Detection")]
-        [Description("Consecutive detections required before the system considers the marker in-view.")]
+        [Description("Minimum number of the listed Marker IDs that must be detected at the same time, in the same frame, before the gate is considered in-view.")]
         public int MarkerThreshold { get; set; }
 
         [Category("Detection")]
