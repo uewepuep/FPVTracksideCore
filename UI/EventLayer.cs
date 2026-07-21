@@ -150,6 +150,27 @@ namespace UI
                 SoundManager.TimingSystemDisconnected();
             };
 
+            EventManager.RaceManager.TimingSystemManager.RaceStartRequest += () =>
+            {
+                PlatformTools.Invoke(() =>
+                {
+                    Logger.UI.Log(this, "ELRS race control", "Start requested", Logger.LogType.Notice);
+                    StartRaceWithVideoCheck();
+                });
+            };
+
+            EventManager.RaceManager.TimingSystemManager.RaceStopRequest += () =>
+            {
+                PlatformTools.Invoke(() =>
+                {
+                    Logger.UI.Log(this, "ELRS race control", "Stop requested", Logger.LogType.Notice);
+                    if (EventManager.RaceManager.RaceRunning || EventManager.RaceManager.PreRaceStartDelay)
+                    {
+                        StopRace();
+                    }
+                });
+            };
+
             EventManager.RaceManager.OnRaceTimeRemaining += (r, t) =>
             {
                 SoundManager.TimeRemaining(r, t);
