@@ -38,7 +38,7 @@ namespace UI.Nodes
 
             AddChild(new FrameRateStatusNode());
 
-            foreach (ITimingSystem timingSystem in timingSystemManager.TimingSystems)
+            foreach (ITimingSystem timingSystem in timingSystemManager.AllSystems)
             {
                 TimingSystemStatusNode tsn = new TimingSystemStatusNode(timingSystemManager, timingSystem);
                 AddChild(tsn);
@@ -227,7 +227,11 @@ namespace UI.Nodes
 
             if (TimingSystem != null)
             {
-                if (TimingSystemManager.TimingSystemCount > 1)
+                if (TimingSystem is IRaceControlTimingSystem)
+                {
+                    Name = TimingSystem.Name;
+                }
+                else if (TimingSystemManager.TimingSystemCount > 1)
                 {
                     string[] nameOptions = new string[] { TimingSystem.Name, TimingSystem.Settings.Role.ToString().Substring(0, 3).ToUpper() };
                     Name = nameOptions.GetFromCurrentTime(updateEverySeconds);
