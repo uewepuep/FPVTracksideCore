@@ -311,9 +311,10 @@ namespace UI.Nodes
 
                 MouseMenu export = root.AddSubmenu("Export");
 
-                FileTools.ExportMenu(export, "Export PBs", PlatformTools, "Save Top Consecutive Laps", eventManager.LapRecordManager.ExportPBs(), GetLayer<PopupLayer>());
-                FileTools.ExportMenu(export, "Export Raw Laps", PlatformTools, "Save Top Consecutive Laps", eventManager.RaceManager.GetRawLaps(), GetLayer<PopupLayer>());
-                FileTools.ExportMenu(export, "Export Race Results", PlatformTools, "Save Race Results", eventManager.RaceManager.GetRaceResultsText(ApplicationProfileSettings.Instance.Units), GetLayer<PopupLayer>());
+                int exportDecimalPlaces = ApplicationProfileSettings.Instance.ExportDecimalPlaces;
+                FileTools.ExportMenu(export, "Export PBs", PlatformTools, "Save Top Consecutive Laps", eventManager.LapRecordManager.ExportPBs(exportDecimalPlaces), GetLayer<PopupLayer>());
+                FileTools.ExportMenu(export, "Export Raw Laps", PlatformTools, "Save Top Consecutive Laps", eventManager.RaceManager.GetRawLaps(exportDecimalPlaces), GetLayer<PopupLayer>());
+                FileTools.ExportMenu(export, "Export Race Results", PlatformTools, "Save Race Results", eventManager.RaceManager.GetRaceResultsText(ApplicationProfileSettings.Instance.Units, exportDecimalPlaces), GetLayer<PopupLayer>());
 
                 MouseMenu delete = root.AddSubmenu("Delete from event");
 

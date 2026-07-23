@@ -193,6 +193,18 @@ namespace Webb
                 DirectoryInfo eventRoot = new DirectoryInfo(Path.Combine(eventsPath, eventManager.Event.ID.ToString()));
                 switch (action)
                 {
+                    case "current":
+                        // The operator's currently-selected race (RaceManager.CurrentRace),
+                        // so an external dashboard/agent can show the cued heat before it
+                        // starts — even when races are run out of order. Surfaced while the
+                        // race is still live (un-run or running); an already-finished race
+                        // returns null so reviewing past results doesn't move "current".
+                        {
+                            RaceLib.Race cur = eventManager.RaceManager.CurrentRace;
+                            Guid? curId = (cur != null && !cur.Ended) ? (Guid?)cur.ID : null;
+                            context.Response.ContentType = "application/json";
+                            return Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new { CurrentRace = curId }));
+                        }
                     case "events":
                         // Build the full path: replace "events" prefix with the actual event storage location
                         string[] pathWithoutEvents = requestPath.Skip(1).ToArray(); // Remove "events" from the path

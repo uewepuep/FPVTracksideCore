@@ -423,6 +423,17 @@ namespace UI.Nodes
             }
         }
 
+        public void EnsureChannelNode(Channel c)
+        {
+            if (ChannelNodes.Any(cn => cn.Channel == c))
+                return;
+
+            ChannelNodeBase cn = GetCreateChannelNode(c);
+            cn.Visible = AlwaysShowAllChannels;
+            cn.SetLapsVisible(EventManager.RaceManager.RaceType.HasLaps());
+            cn.Snap();
+        }
+
         public void ClearVideo()
         {
             AutoCrashOut?.Dispose();

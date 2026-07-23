@@ -456,7 +456,7 @@ namespace UI.Video
                 {
                     if (CompositorLayer?.InputEventFactory.AreControlKeysDown() == true)
                     {
-                        PlatformTools.Clipboard.SetText(EventManager.GetResultsText(ApplicationProfileSettings.Instance.Units).ToTSV());
+                        PlatformTools.Clipboard.SetText(EventManager.GetResultsText(ApplicationProfileSettings.Instance.Units, ApplicationProfileSettings.Instance.ExportDecimalPlaces).ToTSV());
                     }
                 }
             }

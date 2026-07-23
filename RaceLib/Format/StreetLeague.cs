@@ -80,46 +80,27 @@ namespace RaceLib.Format
                 }
                 r.RaceNumber = raceIndex + 1;
                 r.Round = newRound;
-                r.PilotChannels.Clear();
-                foreach (var pc in EventManager.Event.Channels)
-                {
-                    r.PilotChannels.Add(new RacePilotChannel(null, pc));
-                }
+                r.ClearPilots(db);
 
-                List<Pilot> unassignedPilots = new List<Pilot>();
                 for (int i = (group.Count - 1); i > -1; i--)
                 {
                     var pilot = pilotPoints.ElementAt(group[i]).pilot;
                     var lastRace = races.FirstOrDefault(e => e.Pilots.Contains(pilot));
-                    if (lastRace == null) continue;
-                    var lastChannel = lastRace.PilotChannels.FirstOrDefault(e => e.Pilot == pilot);
-                    if (lastChannel == null) continue;
-                    var currentChannel = r.PilotChannels.FirstOrDefault(e => e.Channel == lastChannel.Channel);
-                    if (currentChannel == null) continue;
-                    if (currentChannel.Pilot == null)
-                    {
-                        currentChannel.Pilot = pilot;
-                    }
-                    else
-                    {
-                        unassignedPilots.Add(pilot);
-                    }
-                }
-                while (unassignedPilots.Count > 0)
-                {
-                    var unassignedPilot = unassignedPilots.ElementAt(0);
-                    foreach (var pc in r.PilotChannels)
-                    {
-                        if (pc.Pilot == null)
-                        {
-                            pc.Pilot = unassignedPilot;
-                            unassignedPilots.RemoveAt(0);
-                            break;
-                        }
-                    }
-                }
+                    Channel c = lastRace?.PilotChannels.FirstOrDefault(e => e.Pilot == pilot)?.Channel;
 
-                r.PilotChannels.RemoveAll(e => e.Pilot == null);
+                    BandType bandType = BandType.Analogue;
+                    if (c != null)
+                    {
+                        bandType = c.Band.GetBandType();
+                    }
+
+                    if (!r.IsFrequencyFree(c))
+                    {
+                        c = RaceManager.GetFreeChannel(r, bandType, plan.Channels);
+                    }
+
+                    r.SetPilot(db, c, pilot);
+                }
                 raceIndex++;
             }
 

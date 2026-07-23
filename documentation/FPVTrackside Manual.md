@@ -21,6 +21,7 @@
     - [RotorHazard](#rotorhazard)
     - [Lap RF 8 way](#lap-rf-8-way)
     - [Lap RF Puck](#lap-rf-puck)
+    - [ArUco (Video Marker)](#aruco-video-marker)
     - [Delta 5 / ZippyD](#delta-5-zippyd)
     - [Dummy](#dummy)
     - [Multiple Timing Systems](#multiple-timing-systems)
@@ -292,7 +293,34 @@ After that give it a full reboot and it should now be in binary mode. If you’r
 After that it’s just a matter of selecting LapRF Puck USB and using the drop down list to select its com port. It should connect and behave just like its bigger brother, just less accurately.
 
 
-### Delta 5 / ZippyD
+### ArUco (Video Marker)
+
+ArUco timing detects a printed marker directly in the pilots' FPV video feeds instead of using an RF timing gate. It's a good option if you don't have RotorHazard or LapRF hardware, since there's nothing to buy — it just runs on the video you're already capturing.
+
+Because it works off the video feed, you'll need Video Settings configured first (capture device added, channels assigned to pilots) before adding an ArUco timing system. Print or display an ArUco marker (4x4_50 dictionary, IDs 0 to 49) and mount it at the gate you want to time, positioned so it's clearly visible in each pilot's camera as they cross.
+
+You can generate printable markers at [chev.me/arucogen](https://chev.me/arucogen/) — set the dictionary to "Original ArUco 4x4 (50, 100, 250, 1000)", set the Marker ID (0-3) and the physical size in mm, then print or export as SVG.
+
+To add it, press Add in Timing Settings and choose "ArUco (Video Marker)". On macOS this option is greyed out until OpenCV is available on the machine.
+
+Set Marker IDs to whichever ID(s) you printed (default is "0"). You can list more than one, comma-separated, if several physical markers all belong to the same gate — this is how the TVPAS2-style multi-marker gates work: mount several markers (e.g. IDs "0,1,2,3") at different points on the one gate structure so at least a couple stay visible regardless of the pilot's line, tilt, or motion blur. You don't need all of them seen at once — see Marker Threshold below.
+
+Detection mode can be switched between Original (raw frame), Corrected (undistorted, needs a calibration file) and Hybrid (runs both and merges the results — the default, and the most reliable, but the heaviest on CPU). To enable Corrected or Hybrid properly, drop a TVPAS2-compatible camera_calibration.json into the Aruco folder next to the FPVTrackside executable — without it, correction is skipped and detection effectively runs in Original mode.
+
+A few other settings worth knowing about:
+
+- Marker Threshold — how many of your listed Marker IDs need to be visible at the same time, in the same frame, before the gate counts as "in view". Defaults to 2, so if you've listed several markers for redundancy you don't need every one of them in shot at once — just this many. Dropping it to 1 makes false positives from OSD elements more likely.
+- Flicker Length MS — how long a marker has to be gone before a lap/split is actually recorded. Defaults to 150ms and stops a single dropped frame from splitting one pass into two. Raise it if you're getting doubled-up laps, but every millisecond you add is a delay before the lap shows up on screen.
+- Min Marker Percent — filters out markers that are too small/far away to be a reliable read.
+- Multi-thread Detection — runs detection for each channel in parallel. Leave this on unless you're short on CPU cores.
+- Ignore Lost-Signal Frames / Lost Signal Threshold — if your pilots run analog video that shows RF static on a crash rather than going to black, turn this on so the static doesn't get mistaken for markers or spike your CPU.
+
+Turning on the Show Marker Box / Show Marker ID / Show Marker Size / Show Detection FPS / Show Signal Ratio overlay options draws that info directly onto the video, live and in saved Replay footage, which is the easiest way to tune the above settings — you can watch detections happening in real time and see exactly why a lap did or didn't register.
+
+Like the other timing systems, an ArUco instance is either Primary or Split — see Multiple Timing Systems below. Only one Primary is allowed; extra ArUco instances added after that are treated as Splits and only need their own Marker IDs set, since the rest of the detection settings are shared from the Primary. With 50 marker IDs available (0-49) you've got plenty of room to give every gate on the track its own distinct ID, or a small group of IDs if you want the multi-marker redundancy described above.
+
+
+### Delta 5
 
 We no longer support the Delta 5 system. However there is a software upgrade path to RotorHazard which we do support and is still being actively developed.
 

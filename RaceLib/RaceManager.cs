@@ -138,7 +138,8 @@ namespace RaceLib
 
                 if (currentRace == null)
                     return EventManager.Channels;
-                return EventManager.Channels.Except(currentRace.Channels);
+
+                return currentRace.GetFreeFrequencies(EventManager.Channels);
             }
         }
 
@@ -1854,7 +1855,7 @@ namespace RaceLib
             }
         }
 
-        public string[][] GetRaceResultsText(Units units)
+        public string[][] GetRaceResultsText(Units units, int decimalPlaces)
         {
             List<string[]> output = new List<string[]>();
             foreach (Round round in EventManager.RoundManager.Rounds)
@@ -1869,7 +1870,7 @@ namespace RaceLib
                         line.Add(ec.ToString());
                     }
 
-                    foreach (string[] resultLine in EventManager.ResultManager.GetResultsText(race, units))
+                    foreach (string[] resultLine in EventManager.ResultManager.GetResultsText(race, units, decimalPlaces))
                     {
                         output.Add(resultLine);
                     }
@@ -1878,7 +1879,7 @@ namespace RaceLib
             return output.ToArray();
         }
 
-        public string[][] GetRawLaps()
+        public string[][] GetRawLaps(int decimalPlaces)
         {
             List<string[]> output = new List<string[]>();
 
@@ -1897,8 +1898,9 @@ namespace RaceLib
                         line.Add(race.Start.ToString());
                         line.Add(pilot.Name);
                         line.Add(lap.Number.ToString());
-                        line.Add(lap.Length.TotalSeconds.ToString("0.000"));
-                        line.Add(lap.EndRaceTime.TotalSeconds.ToString("0.000"));
+                        string exportFormat = "F" + decimalPlaces;
+                        line.Add(lap.Length.TotalSeconds.ToString(exportFormat));
+                        line.Add(lap.EndRaceTime.TotalSeconds.ToString(exportFormat));
                         line.Add(lap.Detection.Valid.ToString());
                         output.Add(line.ToArray());
                     }
@@ -2285,6 +2287,16 @@ namespace RaceLib
             return null;
         }
 
+        public Pilot GetPilot(IEnumerable<Channel> channels)
+        {
+            Race race = CurrentRace;
+            if (race != null)
+            {
+                return race.GetPilot(channels);
+            }
+            return null;
+        }
+
         public void CrashedOut(Pilot pilot, Channel channel, bool manual)
         {
             if (EventManager.RaceManager.RaceRunning && pilot != null && channel != null)
@@ -2451,7 +2463,7 @@ namespace RaceLib
 
             OnRacePilotsSet?.Invoke(race);
         }
-        public IEnumerable<Pilot> GetPilotsOnChannelLastRace(Channel channel)
+        public IEnumerable<Pilot> GetPilotsOnChannelLastRace(IEnumerable<Channel> channels)
         {
             Race[] finished = GetRaces(r => r.Valid && r.Ended).OrderByDescending(r => r.Start).ToArray();
 
@@ -2459,7 +2471,7 @@ namespace RaceLib
 
             foreach (Race race in finished)
             {
-                Pilot p = race.GetPilot(channel);
+                Pilot p = race.GetPilot(channels);
                 if (p != null && !returned.Contains(p))
                 {
                     returned.Add(p);
