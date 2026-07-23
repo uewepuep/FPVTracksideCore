@@ -15,7 +15,7 @@ namespace RaceLib.Format
         public TimeSpan ScriptTimeout { get; set; } = TimeSpan.FromSeconds(10);
 
         public LuaFormatManager()
-            : this(new DirectoryInfo("scripts")) { }
+            : this(new DirectoryInfo(Path.Combine(IOTools.WorkingDirectory.FullName, "scripts"))) { }
 
         public LuaFormatManager(DirectoryInfo directory)
         {

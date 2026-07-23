@@ -93,7 +93,7 @@ namespace FPVTuxsideCore
         {
             Console.WriteLine("Source " + oldWorkDir.FullName);
 
-            string[] toCopy = new string[] { "themes", "img", "bitmapfonts", "httpfiles", "formats", "sounds", "Content" };
+            string[] toCopy = new string[] { "themes", "img", "bitmapfonts", "httpfiles", "formats", "scripts", "sounds", "Content" };
             foreach (string copy in toCopy)
             {
                 try

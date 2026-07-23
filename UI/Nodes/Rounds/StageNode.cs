@@ -219,7 +219,7 @@ namespace UI.Nodes.Rounds
 
         public void EditScript()
         {
-            string path = Path.GetFullPath(Path.Combine("scripts", Stage.ScriptFormatFilename));
+            string path = Path.GetFullPath(Path.Combine(IOTools.WorkingDirectory.FullName, "scripts", Stage.ScriptFormatFilename));
             try
             {
                 Process.Start(new ProcessStartInfo { FileName = "code", Arguments = path, UseShellExecute = true });
