@@ -54,7 +54,7 @@ namespace UI.Nodes
         {
             Text = "Timing Settings";
 
-            ScanButton = new TextButtonNode("Scan Systems", ButtonBackground, ButtonHover, TextColor);
+            ScanButton = new TextButtonNode("Scan", ButtonBackground, ButtonHover, TextColor);
             buttonContainer.AddChild(ScanButton);
 
             Node[] buttons = new Node[] { ScanButton, addButton, removeButton, cancelButton, okButton };
@@ -67,10 +67,19 @@ namespace UI.Nodes
 
         private void ScanButton_OnClick(MouseInputEvent mie)
         {
+            MouseMenu mouseMenu = new MouseMenu(ScanButton);
+            mouseMenu.AddItem("Scan Network", ScanNetwork);
+            mouseMenu.AddItem("Scan Serial", ScanSerial);
+            mouseMenu.TopToBottom = false;
+            mouseMenu.Show(ScanButton);
+        }
+
+        private void ScanNetwork()
+        {
             LoadingLayer ll = GetLayer<LoadingLayer>();
             if (ll != null)
             {
-                ll.WorkQueue.Enqueue("Scanning Systems", () =>
+                ll.WorkQueue.Enqueue("Scanning Network", () =>
                 {
                     SubnetScanner ss = new SubnetScanner();
                     ss.Exceptions = Hostnames.ToArray();
@@ -88,7 +97,7 @@ namespace UI.Nodes
 
                             if (port == lapRFPort)
                             {
-                                mouseMenu.AddItem("Add LapRF 8way - " + copy, () => 
+                                mouseMenu.AddItem("Add LapRF 8way - " + copy, () =>
                                 {
                                     var laprf = new LapRFSettingsEthernet();
                                     laprf.HostName = copy.ToString();
@@ -98,7 +107,7 @@ namespace UI.Nodes
 
                             if (port == rhPort)
                             {
-                                mouseMenu.AddItem("Add RotorHazard - " + copy, () => 
+                                mouseMenu.AddItem("Add RotorHazard - " + copy, () =>
                                 {
                                     var rotorhazard = new RotorHazardSettings();
                                     rotorhazard.HostName = copy.ToString();
@@ -108,7 +117,7 @@ namespace UI.Nodes
 
                             if (port == vdPort)
                             {
-                                mouseMenu.AddItem("Add Velocidrone - " + copy, () => 
+                                mouseMenu.AddItem("Add Velocidrone - " + copy, () =>
                                 {
                                     var velocidrone = new VelocidroneSettings();
                                     velocidrone.HostName = copy.ToString();
@@ -118,9 +127,26 @@ namespace UI.Nodes
                         }
                     }
 
+                    mouseMenu.TopToBottom = false;
+                    mouseMenu.Show(ScanButton);
+                });
+            }
+        }
+
+        private void ScanSerial()
+        {
+            LoadingLayer ll = GetLayer<LoadingLayer>();
+            if (ll != null)
+            {
+                ll.WorkQueue.Enqueue("Scanning Serial", () =>
+                {
+                    MouseMenu mouseMenu = new MouseMenu(ScanButton);
+                    bool foundAny = false;
+
                     string elrsPort = VRXCProtocol.DetectPort();
                     if (!string.IsNullOrEmpty(elrsPort))
                     {
+                        foundAny = true;
                         mouseMenu.AddItem("Add ELRS Backpack - " + elrsPort, () =>
                         {
                             var elrs = new ELRSSettings();
@@ -129,9 +155,25 @@ namespace UI.Nodes
                         });
                     }
 
+                    string lapRFPort = LapRFTimingUSB.DetectPort();
+                    if (!string.IsNullOrEmpty(lapRFPort))
+                    {
+                        foundAny = true;
+                        mouseMenu.AddItem("Add LapRF Puck - " + lapRFPort, () =>
+                        {
+                            var laprf = new LapRFSettingsUSB();
+                            laprf.ComPort = lapRFPort;
+                            AddNew(laprf);
+                        });
+                    }
+
+                    if (!foundAny)
+                    {
+                        mouseMenu.AddItem("No serial timing systems found", () => { });
+                    }
+
                     mouseMenu.TopToBottom = false;
                     mouseMenu.Show(ScanButton);
-
                 });
             }
         }

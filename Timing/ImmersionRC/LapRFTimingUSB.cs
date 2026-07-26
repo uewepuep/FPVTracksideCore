@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LapRF;
+using System;
 using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
@@ -16,6 +17,90 @@ namespace Timing.ImmersionRC
         {
             timeoutSeconds = 30;
             comPort = null;
+        }
+
+        // Probes serial ports for a LapRF puck by sending a real RTC_TIME request and
+        // waiting for a validly-CRC'd response - same request the normal Connect() flow uses.
+        public static string DetectPort()
+        {
+            string[] avoidedPorts = { "COM1", "/dev/ttyAMA0", "/dev/ttyAMA10" };
+
+            string[] portNames;
+            try
+            {
+                portNames = SerialPort.GetPortNames();
+            }
+            catch
+            {
+                return null;
+            }
+
+            foreach (string portName in portNames)
+            {
+                if (Array.Exists(avoidedPorts, value => value.Equals(portName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+
+                if (TryProbe(portName))
+                {
+                    return portName;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool TryProbe(string portName)
+        {
+            SerialPort candidate = null;
+            try
+            {
+                candidate = new SerialPort(portName, 115200, Parity.None, 8, StopBits.One)
+                {
+                    RtsEnable = true,
+                    DtrEnable = true,
+                    ReadTimeout = 500,
+                    WriteTimeout = 1000
+                };
+                candidate.Open();
+
+                LapRFProtocol probe = new LapRFProtocol();
+                bool gotResponse = false;
+                probe.OnRTC += (rtcTime) => { gotResponse = true; };
+
+                byte[] request = probe.requestRTCTime().ToArray();
+                candidate.Write(request, 0, request.Length);
+
+                byte[] buffer = new byte[256];
+                DateTime deadline = DateTime.UtcNow.AddMilliseconds(2000);
+                while (!gotResponse && DateTime.UtcNow < deadline)
+                {
+                    try
+                    {
+                        int read = candidate.Read(buffer, 0, buffer.Length);
+                        if (read > 0)
+                        {
+                            probe.processBytes(buffer, read);
+                        }
+                    }
+                    catch (TimeoutException)
+                    {
+                        // No bytes yet - keep polling until the deadline.
+                    }
+                }
+
+                return gotResponse;
+            }
+            catch
+            {
+                // Ports in use by another device, or not a LapRF, are expected during a scan.
+                return false;
+            }
+            finally
+            {
+                candidate?.Dispose();
+            }
         }
 
         public override bool Connect()
