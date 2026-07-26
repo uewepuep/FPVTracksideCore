@@ -51,7 +51,7 @@ namespace UI
             ColorNode colorNode = new ColorNode(Theme.Current.SubtitleBackground);
             AddChild(colorNode);
 
-            textNode = new TextNode("", Theme.Current.TextMain.XNA);
+            textNode = new TextNode("", Theme.Current.SubtitleText.XNA);
             textNode.Scale(0.9f);
 
             AddChild(textNode);
@@ -59,6 +59,9 @@ namespace UI
 
         private void SoundManager_OnSpeech(string speech)
         {
+            if (!speech.EndsWith("."))
+                speech += '.';
+
             textNode.Text = speech;
             expires = DateTime.Now + TimeSpan.FromSeconds(ApplicationProfileSettings.Instance.SubtitleTimeoutSeconds);
             timedOut = false;

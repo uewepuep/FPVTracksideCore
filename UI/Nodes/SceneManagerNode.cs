@@ -158,7 +158,7 @@ namespace UI.Nodes
 
             fullScreenContainer = new FullScreenAspectClosable();
             fullScreenContainer.Close += UnFullScreen;
-            AddChild(fullScreenContainer);
+            dockNode.Center.AddChild(fullScreenContainer);
 
             handicapStartBarNode = new HandicapStartBarNode(eventManager);
             handicapStartBarNode.RelativeBounds = new RectangleF(0.05f, 0.92f, 0.9f, 0.045f);
@@ -676,6 +676,12 @@ namespace UI.Nodes
                     HideWorm();
                     break;
             }
+
+            // Subtitle dock sizing depends on Bounds.Height being resolved, which isn't
+            // guaranteed the first time this scene is ever reached (eg. going straight to
+            // PreRace on a freshly-loaded race never previously hit the Race case that used
+            // to be the only place this got recalculated) - so refresh it on every scene.
+            UpdateDockSizes();
         }
 
         public void Hide()
@@ -788,7 +794,7 @@ namespace UI.Nodes
                 fullScreenContainer.KeepAspectRatio = false;
             }
 
-            SetFront(fullScreenContainer);
+            dockNode.Center.SetFront(fullScreenContainer);
 
             SetScene(Scenes.Fullscreen);
         }

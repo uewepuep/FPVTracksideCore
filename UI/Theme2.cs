@@ -222,8 +222,8 @@ namespace UI
             RightButtonBackground = new TextureRegion() { Filename = "theme.png", X = 1836, Y = 1002, W = 64, H = 64 };
             RightText = new TextureColor() { Filename = "theme.png", X = 1979, Y = 1052 };
 
-            SubtitleBackground = new TextureRegion() { Filename = "theme.png", X = 1836, Y = 131, W = 64, H = 870 };
-            SubtitleText = new TextureColor() { Filename = "theme.png", X = 1979, Y = 1052 };
+            SubtitleBackground = new TextureRegion() { Filename = "theme.png", X = 1786, Y = 1002, W = 20, H = 65 };
+            SubtitleText = new TextureColor() { Filename = "theme.png", X = 1769, Y = 1029 };
 
             ChannelPilotNameBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 223, W = 211, H = 48 };
             ChannelPBBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 276, W = 138, H = 26 };

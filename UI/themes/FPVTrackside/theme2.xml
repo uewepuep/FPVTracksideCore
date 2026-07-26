@@ -136,6 +136,18 @@
       <X>1979</X>
       <Y>1052</Y>
     </RightText>
+    <SubtitleBackground>
+      <Filename>theme.png</Filename>
+      <X>1786</X>
+      <Y>1002</Y>
+      <W>20</W>
+      <H>65</H>
+    </SubtitleBackground>
+    <SubtitleText>
+      <Filename>theme.png</Filename>
+      <X>1769</X>
+      <Y>1029</Y>
+    </SubtitleText>
     <ChannelLapBackground>
       <Filename>theme.png</Filename>
       <X>305</X>
