@@ -38,7 +38,10 @@ namespace DB
         public bool VideoFlipped { get; set; }
         public bool VideoMirrored { get; set; }
 
-        public Pilot() { }
+        public Pilot()
+        {
+            TimingSensitivityPercent = 100;
+        }
 
         public Pilot(RaceLib.Pilot obj)
             : base(obj)
