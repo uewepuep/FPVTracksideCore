@@ -50,6 +50,11 @@ namespace Sound
 
         Dictionary<Types, string> parameters;
 
+        // Sparse overrides for the display/subtitle text. Only entries that differ from
+        // the spoken text (eg. a pilot's real name vs their phonetic TTS spelling) live here -
+        // Apply(display: true) falls back to the normal (spoken) value for anything not present.
+        Dictionary<Types, string> displayOverrides;
+
         public int Priority { get; set; }
         public double SecondsExpiry { get; set; }
 
@@ -60,6 +65,7 @@ namespace Sound
             Priority = 1;
             SecondsExpiry = 5;
             parameters = new Dictionary<Types, string>();
+            displayOverrides = new Dictionary<Types, string>();
         }
 
         public SpeechParameters(Types type, object value)
@@ -120,9 +126,15 @@ namespace Sound
 
             if (type == Types.pilot && value is Pilot pilot)
             {
+                displayOverrides[type] = pilot.Name;
                 value = pilot.Phonetic;
             }
 
+            if (type == Types.pilots && value is Pilot[] pilots)
+            {
+                displayOverrides[type] = pilots.Names(Translator.ListSeparator);
+                value = pilots.Phonetic(Translator.ListSeparator);
+            }
 
             if (type == Types.position && value is int)
             {
@@ -203,14 +215,19 @@ namespace Sound
             Add(type, subs);
         }
 
-        public string Apply(string input)
+        public string Apply(string input, bool display = false)
         {
             string output = input;
 
             foreach (var kvp in parameters)
             {
                 string name = "{" + kvp.Key + "}";
+
                 string value = kvp.Value;
+                if (display && displayOverrides.TryGetValue(kvp.Key, out string overrideValue))
+                {
+                    value = overrideValue;
+                }
 
                 output = output.Replace(name, value);
             }
@@ -224,6 +241,14 @@ namespace Sound
                 return rawText;
 
             return parameters.Apply(rawText);
+        }
+
+        public static string CreateDisplayText(string rawText, SpeechParameters parameters)
+        {
+            if (parameters == null)
+                return rawText;
+
+            return parameters.Apply(rawText, true);
         }
 
         public static string PositionToString(int position)

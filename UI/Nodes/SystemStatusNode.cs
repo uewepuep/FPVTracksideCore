@@ -21,12 +21,13 @@ namespace UI.Nodes
         public MuteStatusNode MuteTTS { get; private set; }
         public MuteStatusNode MuteWAV { get; private set; }
         public OBSStatusNode OBS { get; private set; }
+        public SubTitleStatusNode Subtitles { get; private set; }
 
         public SystemStatusNode()
         {
         }
 
-        public void SetupStatuses(TimingSystemManager timingSystemManager, VideoManager videoManager, SoundManager soundManager, OBSRemoteControlManager oBSRemoteControlManager)
+        public void SetupStatuses(TimingSystemManager timingSystemManager, VideoManager videoManager, SoundManager soundManager, OBSRemoteControlManager oBSRemoteControlManager, SubtitleNode subtitleNode)
         {
             ClearDisposeChildren();
 
@@ -37,6 +38,9 @@ namespace UI.Nodes
             AddChild(MuteWAV);
 
             AddChild(new FrameRateStatusNode());
+
+            Subtitles = new SubTitleStatusNode(subtitleNode);
+            AddChild(Subtitles);
 
             foreach (ITimingSystem timingSystem in timingSystemManager.TimingSystems)
             {
@@ -543,6 +547,71 @@ namespace UI.Nodes
             }
 
             base.Draw(id, parentAlpha);
+        }
+    }
+
+
+    public class SubTitleStatusNode : StatusNode
+    {
+        public SubtitleNode SubtitleNode { get; private set; }
+
+        private CheckboxNode cbn;
+
+        public bool Value
+        {
+            get
+            {
+                return SubtitleNode.Enabled;
+            }
+            set
+            {
+                SubtitleNode.Enabled = value;
+            }
+        }
+
+        public override Color Tint
+        {
+            get
+            {
+                return base.Tint;
+            }
+            set
+            {
+                base.Tint = value;
+                cbn.Tint = value;
+            }
+        }
+
+        public SubTitleStatusNode(SubtitleNode subtitleNode)
+            : base("")
+        {
+            SubtitleNode = subtitleNode;
+
+            Name = "Sub";
+            cbn = new CheckboxNode();
+            cbn.Tint = Tint;
+            cbn.TickFilename = @"img/ccoff.png";
+            cbn.UnTickFilename = @"img/ccon.png";
+            cbn.Alignment = icon.Alignment;
+            cbn.RelativeBounds = icon.RelativeBounds;
+            cbn.ValueChanged += Cbn_ValueChanged;
+            AddChild(cbn);
+            icon.Dispose();
+            icon = cbn;
+
+            SetMute(Value);
+            SetStatus("titles", true);
+        }
+
+        public void SetMute(bool mute)
+        {
+            Value = mute;
+            cbn.Value = !mute;
+        }
+
+        private void Cbn_ValueChanged(bool obj)
+        {
+            SetMute(!obj);
         }
     }
 }

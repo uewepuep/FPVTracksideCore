@@ -67,6 +67,9 @@ namespace UI
         public TextureRegion RightButtonBackground { get; set; }
         public TextureColor RightText { get; set; }
 
+        public TextureRegion SubtitleBackground { get; set; }
+        public TextureColor SubtitleText { get; set; }
+
 
         public TextureColor OverallBestTime { get; set; }
         public TextureColor NewPersonalBest { get; set; }
@@ -147,6 +150,9 @@ namespace UI
                 theme.RightControls.Foreground = RightButtonBackground.ToToolTexture(rawTextureCache);
                 theme.RightControls.Text = RightText.ToToolColor(rawTextureCache);
 
+                theme.SubtitleBackground = SubtitleBackground.ToToolTexture(rawTextureCache);
+                theme.SubtitleText = SubtitleText.ToToolColor(rawTextureCache);
+
                 theme.Rounds.Background = PanelBackground.ToToolTexture(rawTextureCache);
                 theme.Rounds.Foreground = PanelForeground.ToToolTexture(rawTextureCache);
                 theme.Rounds.Text = PanelText.ToToolColor(rawTextureCache);
@@ -213,6 +219,9 @@ namespace UI
             RightBackground = new TextureRegion() { Filename = "theme.png", X = 1836, Y = 131, W = 64, H = 870 };
             RightButtonBackground = new TextureRegion() { Filename = "theme.png", X = 1836, Y = 1002, W = 64, H = 64 };
             RightText = new TextureColor() { Filename = "theme.png", X = 1979, Y = 1052 };
+
+            SubtitleBackground = new TextureRegion() { Filename = "theme.png", X = 1836, Y = 131, W = 64, H = 870 };
+            SubtitleText = new TextureColor() { Filename = "theme.png", X = 1979, Y = 1052 };
 
             ChannelPilotNameBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 223, W = 211, H = 48 };
             ChannelPBBackground = new TextureRegion() { Filename = "theme.png", X = 305, Y = 276, W = 138, H = 26 };

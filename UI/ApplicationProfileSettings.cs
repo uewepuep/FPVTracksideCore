@@ -175,6 +175,13 @@ namespace UI
         [NeedsRestart]
         public int[] RemainingSecondsToAnnounce { get; set; }
 
+        [Category("Sound")]
+        public bool ShowSubtitles { get; set; }
+
+        [Category("Sound")]
+        [DisplayName("Subtitle Timeout (seconds)")]
+        public float SubtitleTimeoutSeconds { get; set; }
+
         [Category("Start Rules")]
         public bool TimeTrialStaggeredStart { get; set; }
 
@@ -349,6 +356,8 @@ namespace UI
             PilotOrderPostRace = OrderTypes.PositionAndPB;
 
             TextToSpeechVolume = 100;
+            SubtitleTimeoutSeconds = 5;
+            ShowSubtitles = false;
 
             ChannelGrid1 = true;
             ChannelGrid2 = true;

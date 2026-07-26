@@ -4,6 +4,7 @@ using Composition.Nodes;
 using ImageServer;
 using Microsoft.Xna.Framework;
 using RaceLib;
+using Sound;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,7 @@ namespace UI.Nodes
 
         protected VideoManager videoManager;
         protected EventManager eventManager;
+        protected SoundManager soundManager;
 
         public ChannelsGridNode ChannelsGridNode { get; private set; }
         protected TopBarNode topBarNode;
@@ -33,6 +35,12 @@ namespace UI.Nodes
 
         protected bool showWorm;
         protected WormNode wormNode;
+
+        protected SubtitleNode subtitleNode;
+        public SubtitleNode SubtitleNode { get { return subtitleNode; } }
+
+        private DockNode dockNode;
+        private const float subtitleHeightFraction = 0.06f;
 
         protected AnimatedNode eventStatusNodeContainer;
 
@@ -72,7 +80,7 @@ namespace UI.Nodes
 
         public Node LapTimesGraph { get; private set; }
 
-        public SceneManagerNode(EventManager eventManager, VideoManager videoManager, ChannelsGridNode channelsGridNode, TopBarNode topBarNode, AutoRunner autoRunner)
+        public SceneManagerNode(EventManager eventManager, VideoManager videoManager, ChannelsGridNode channelsGridNode, TopBarNode topBarNode, AutoRunner autoRunner, SoundManager soundManager)
         {
             AfterRaceStart = TimeSpan.FromSeconds(2);
 
@@ -80,13 +88,17 @@ namespace UI.Nodes
             this.videoManager = videoManager;
             ChannelsGridNode = channelsGridNode;
             this.topBarNode = topBarNode;
+            this.soundManager = soundManager;
 
             channelsGridNode.OnFullScreen += OnChannelsGridNodeFullScreen;
+
+            dockNode = new DockNode();
+            AddChild(dockNode);
 
             eventStatusNodeContainer = new AnimatedNode();
             eventStatusNodeContainer.Visible = false;
             eventStatusNodeContainer.RelativeBounds = new RectangleF(0, 0.05f, 1, 0.9f);
-            AddChild(eventStatusNodeContainer);
+            dockNode.Center.AddChild(eventStatusNodeContainer);
 
             EventStatusNode eventStatusNode = new EventStatusNode(eventManager);
             eventStatusNodeContainer.AddChild(eventStatusNode);
@@ -108,16 +120,21 @@ namespace UI.Nodes
             nextRaceNode.RelativeBounds = new RectangleF(0, 0, 0.01f, 0.01f);
 
             wormNode = new WormNode(eventManager);
-            wormNode.RelativeBounds = new RectangleF(0.0f, 1f, 1, 0.0f);
+            dockNode.Top.AddChild(wormNode);
 
-            AddChild(resultsRaceNode);
-            AddChild(nextRaceNode);
-            AddChild(wormNode);
+            subtitleNode = new SubtitleNode(soundManager);
+            subtitleNode.EnabledChanged += UpdateDockSizes;
+            dockNode.Bottom.AddChild(subtitleNode);
 
-            AddChild(launchCamsNode);
-            AddChild(commentatorsAndSummary);
-            AddChild(channelsGridNode);
-            AddChild(finishLineNode);
+            dockNode.Center.AddChild(resultsRaceNode);
+            dockNode.Center.AddChild(nextRaceNode);
+
+            dockNode.Center.AddChild(launchCamsNode);
+            dockNode.Center.AddChild(commentatorsAndSummary);
+            dockNode.Center.AddChild(channelsGridNode);
+            dockNode.Center.AddChild(finishLineNode);
+
+            UpdateDockSizes();
 
             eventManager.RaceManager.OnRaceStart += RaceManager_OnRaceStart;
             eventManager.RaceManager.OnRaceEnd += RaceManager_OnRaceEnd;
@@ -452,7 +469,7 @@ namespace UI.Nodes
 
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
                     finishLineNode.SetAnimatedVisibility(false);
-                    wormNode.SetAnimatedAlpha(0);
+                    HideWorm();
                     break;
 
                 case Scenes.FinishLine:
@@ -515,7 +532,7 @@ namespace UI.Nodes
 
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
                     launchCamsNode.SetAnimatedVisibility(false);
-                    wormNode.SetAnimatedAlpha(0);
+                    HideWorm();
                     break;
 
                 case Scenes.Race:
@@ -538,7 +555,7 @@ namespace UI.Nodes
                     ChannelsGridNode.MakeExtrasVisible(true);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
 
-                    PositionWorm();
+                    UpdateDockSizes();
 
                     break;
 
@@ -561,7 +578,7 @@ namespace UI.Nodes
                     ChannelsGridNode.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.None);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
 
-                    wormNode.SetAnimatedAlpha(0);
+                    HideWorm();
 
                     break;
 
@@ -619,7 +636,7 @@ namespace UI.Nodes
                     ChannelsGridNode.SetBiggerInfo(true, true);
                     ChannelsGridNode.MakeExtrasVisible(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(false);
-                    wormNode.SetAnimatedAlpha(0);
+                    HideWorm();
 
                     //LapTimesGraph?.Dispose();
 
@@ -656,7 +673,7 @@ namespace UI.Nodes
                     nextRaceNode.SetAnimatedVisibility(false);
                     resultsRaceNode.SetAnimatedVisibility(false);
                     eventStatusNodeContainer.SetAnimatedVisibility(true);
-                    wormNode.SetAnimatedAlpha(0);
+                    HideWorm();
                     break;
             }
         }
@@ -813,26 +830,34 @@ namespace UI.Nodes
                 {
                     showWorm = true;
                 }
-                PositionWorm();
+                UpdateDockSizes();
             }
         }
 
-        private void PositionWorm()
+        private void HideWorm()
         {
+            wormNode.SetAnimatedAlpha(0);
+            dockNode.Top.SetFixedSize(0);
+        }
+
+        private void UpdateDockSizes()
+        {
+            float height = Bounds.Height;
+
             if (showWorm)
             {
                 wormNode.SetAnimatedAlpha(1);
                 // 0.2 and 6 are the numbers it was designed for...
-                float height = 0.2f * (eventManager.RaceManager.PilotCount / 6.0f);
-                wormNode.RelativeBounds = new RectangleF(0.0f, 1 - height, 1, height);
-
-                ChannelsGridNode.RelativeBounds = new RectangleF(0, 0, 1, 1 - height);
+                float wormHeightFraction = 0.2f * (eventManager.RaceManager.PilotCount / 6.0f);
+                dockNode.Top.SetFixedSize((int)(height * wormHeightFraction));
             }
             else
             {
-                wormNode.SetAnimatedAlpha(0);
-                ChannelsGridNode.RelativeBounds = new RectangleF(0, 0, 1, 1);
+                HideWorm();
             }
+
+            dockNode.Bottom.SetFixedSize(subtitleNode.Enabled ? (int)(height * subtitleHeightFraction) : 0);
+
             RequestLayout();
         }
 

@@ -46,6 +46,9 @@ namespace UI
         public ToolColor PanelAlt { get; set; }
         public ToolColor Panel { get; set; }
 
+        public ToolTexture SubtitleBackground { get; set; }
+        public ToolColor SubtitleText { get; set; }
+
         public ToolColor ScrollBar { get; set; }
                 
         public ToolColor MenuBackground { get; set; }
@@ -262,6 +265,11 @@ namespace UI
             if (EventSelectorTop == null)
                 EventSelectorTop = new ToolTexture(TopPanel.R, TopPanel.G, TopPanel.B, TopPanel.A);
 
+            if (SubtitleBackground == null)
+                SubtitleBackground = new ToolTexture(RightControls.Background);
+
+            if (SubtitleText == null)
+                SubtitleText = new ToolColor(RightControls.Text.XNA);
         }
 
 
