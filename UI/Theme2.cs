@@ -94,6 +94,7 @@ namespace UI
 
         public ToolTexture FPVTracksideLogo { get; set; }
         public ToolTexture PilotProfileMask { get; set; }
+        public ToolTexture RaceStartGraphic { get; set; }
 
         public Theme2()
         {
@@ -177,6 +178,7 @@ namespace UI
 
                 theme.ChannelColors = ChannelColors.Select(c => c.ToToolColor(rawTextureCache)).ToArray();
                 theme.FPVTracksideLogo = FPVTracksideLogo;
+                theme.RaceStartGraphic = RaceStartGraphic;
                 theme.PilotProfileMask = PilotProfileMask;
             }
 
@@ -237,6 +239,7 @@ namespace UI
             CrashedOut = new TextureRegion() { Filename = "theme.png", X = 615, Y = 688, W = 282, H = 237 };
 
             FPVTracksideLogo = new ToolTexture(@"img\logo.png", 0, 0, 0, 0);
+            RaceStartGraphic = new ToolTexture(@"racestart.png", 0, 0, 0, 0);
 
             PilotProfileMask = new ToolTexture(@"profilemask.png", 0, 0, 0, 0);
 

@@ -130,6 +130,10 @@ namespace UI
         public bool PostRaceScene { get; set; }
 
         [Category("Layout")]
+        [DisplayName("Show Race Start/GO Graphic (If theme has it)")]
+        public bool ShowRaceStartGraphic { get; set; }
+
+        [Category("Layout")]
         public bool AlwaysShowPosition { get; set; }
 
         [Category("Layout")]
@@ -358,6 +362,7 @@ namespace UI
             TextToSpeechVolume = 100;
             SubtitleTimeoutSeconds = 5;
             ShowSubtitles = false;
+            ShowRaceStartGraphic = true;
 
             ChannelGrid1 = true;
             ChannelGrid2 = true;

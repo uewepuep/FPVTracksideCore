@@ -29,6 +29,7 @@ namespace UI
         public string FontFamily { get; set; }
         public ToolTexture Background { get; set; }
         public ToolTexture FPVTracksideLogo { get; set; }
+        public ToolTexture RaceStartGraphic { get; set; }
 
         public ToolColor TextAlt { get; set; }
         public ToolColor TextMain { get; set; }
@@ -92,6 +93,7 @@ namespace UI
             Tabs = new PanelTheme();
 
             FPVTracksideLogo = new ToolTexture(@"img\logo.png", 0, 0, 0, 0);
+            RaceStartGraphic = new ToolTexture(@"racestart.png", 0, 0, 0, 0);
 
             PilotViewTheme = new PilotTheme();
 

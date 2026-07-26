@@ -47,6 +47,8 @@ namespace UI
 
         protected SceneManagerNode sceneManagerNode;
 
+        private RaceStartNode raceStartNode;
+
         private TopBarNode topBar;
         private AspectNode centralAspectNode;
         private AnimatedNode rightBar;
@@ -425,6 +427,17 @@ namespace UI
             {
                 Popuper.PopupMessage("Warning / Reminder: Dummy timer is active");
             }
+
+            raceStartNode = new RaceStartNode();
+            Root.AddChild(raceStartNode);
+
+            EventManager.RaceManager.OnRaceStart += (race) =>
+            {
+                if (ApplicationProfileSettings.Instance.ShowRaceStartGraphic)
+                {
+                    raceStartNode.Show();
+                }
+            };
         }
 
         private void RaceManager_OnHitPackLimit(Pilot pilot, int packCount)
