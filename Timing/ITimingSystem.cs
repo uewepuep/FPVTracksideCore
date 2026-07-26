@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Timing.Chorus;
+using Timing.ELRS;
 using Timing.ImmersionRC;
 using Timing.RotorHazard;
 using Timing.Velocidrone;
@@ -148,6 +149,17 @@ namespace Timing
         string Name { get; }
     }
 
+    /// <summary>
+    /// Optional capability for devices that control race state but do not record laps.
+    /// Race-control systems are connected and displayed like timing systems, but are
+    /// excluded from the primary/split detection pipeline.
+    /// </summary>
+    public interface IRaceControlTimingSystem : ITimingSystem
+    {
+        event Action OnRaceStartRequest;
+        event Action OnRaceStopRequest;
+    }
+
     public struct StatusItem
     {
         public string Value { get; set; }
@@ -155,6 +167,7 @@ namespace Timing
     }
 
     [XmlInclude(typeof(DummySettings))]
+    [XmlInclude(typeof(ELRSSettings))]
     [XmlInclude(typeof(LapRFSettings))]
     [XmlInclude(typeof(LapRFSettingsUSB))]
     [XmlInclude(typeof(LapRFSettingsEthernet))]
@@ -245,5 +258,4 @@ namespace Timing
         public TimeSpan RaceTime { get; set; }
     }
 }
-
 

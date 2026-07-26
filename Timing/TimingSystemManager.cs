@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Timers;
 using Timing.Aruco;
 using Timing.Chorus;
+using Timing.ELRS;
 using Timing.ImmersionRC;
 using Timing.RotorHazard;
 using Timing.Velocidrone;
@@ -35,14 +36,26 @@ namespace Timing
         public event TimingSystemDetectionEventDelegate DetectionEvent;
         public event MarshallEventDelegate MarshallEvent;
 
+        public event Action RaceStartRequest;
+        public event Action RaceStopRequest;
+
         public ITimingSystem[] PrimeSystems { get; private set; }
         public ITimingSystem[] SplitSystems { get; private set; }
+        public IRaceControlTimingSystem[] RaceControlSystems { get; private set; }
 
         public IEnumerable<ITimingSystem> TimingSystems
         {
             get
             {
                 return PrimeSystems.Union(SplitSystems);
+            }
+        }
+
+        public IEnumerable<ITimingSystem> AllSystems
+        {
+            get
+            {
+                return TimingSystems.Union(RaceControlSystems.Cast<ITimingSystem>());
             }
         }
 
@@ -106,6 +119,7 @@ namespace Timing
         {
             PrimeSystems = new ITimingSystem[0];
             SplitSystems = new ITimingSystem[0];
+            RaceControlSystems = new IRaceControlTimingSystem[0];
             LastListeningFrequencies = new ListeningFrequency[0];
 
             InitialiseTimingSystems(profile);
@@ -116,12 +130,13 @@ namespace Timing
         {
             Logger.TimingLog.LogCall(this);
 
-            foreach (ITimingSystem timingSystem in TimingSystems)
+            foreach (ITimingSystem timingSystem in AllSystems)
             {
                 timingSystem.Dispose();
             }
             PrimeSystems = new ITimingSystem[0];
             SplitSystems = new ITimingSystem[0];
+            RaceControlSystems = new IRaceControlTimingSystem[0];
 
             HasSpectrumAnalyser = false;
         }
@@ -130,7 +145,7 @@ namespace Timing
         {
             Logger.TimingLog.LogCall(this);
 
-            if (TimingSystemCount > 0)
+            if (AllSystems.Any())
             {
                 ClearTimingSystems();
             }
@@ -139,7 +154,9 @@ namespace Timing
 
             TimingSystemsSettings = TimingSystemSettings.Read(profile);
 
-            ITimingSystem[] timingSystems = CreateTimingSystems().ToArray();
+            ITimingSystem[] allSystems = CreateTimingSystems().ToArray();
+            RaceControlSystems = allSystems.OfType<IRaceControlTimingSystem>().ToArray();
+            ITimingSystem[] timingSystems = allSystems.Except(RaceControlSystems.Cast<ITimingSystem>()).ToArray();
 
             foreach (ITimingSystem timingSystem in timingSystems)
             {
@@ -150,6 +167,12 @@ namespace Timing
                 {
                     HasSpectrumAnalyser = true;
                 }
+            }
+
+            foreach (IRaceControlTimingSystem raceControlSystem in RaceControlSystems)
+            {
+                raceControlSystem.OnRaceStartRequest += () => RaceStartRequest?.Invoke();
+                raceControlSystem.OnRaceStopRequest += () => RaceStopRequest?.Invoke();
             }
 
             if (timingSystems.Length > 1)
@@ -184,6 +207,9 @@ namespace Timing
 
                 else if (settings is DummySettings)
                     timingSystem = new DummyTimingSystem();
+
+                else if (settings is ELRSSettings)
+                    timingSystem = new ELRSTimingSystem();
 
                 else if (settings is RotorHazardSettings)
                     timingSystem = new RotorHazardTimingSystem();
@@ -239,22 +265,25 @@ namespace Timing
                         Thread.Sleep(100);
                     }
 
-                    if (PrimeSystems == null || !PrimeSystems.Any() || disposing)
+                    if (!AllSystems.Any() || disposing)
                         continue;
 
                     int newlyConnected = 0;
 
-                    foreach (ITimingSystem timingSystem in TimingSystems)
+                    foreach (ITimingSystem timingSystem in AllSystems)
                     {
                         if (!timingSystem.Connected && !disposing)
                         {
                             if (timingSystem.Connect())
                             {
-                                newlyConnected++;
+                                if (!(timingSystem is IRaceControlTimingSystem))
+                                {
+                                    newlyConnected++;
+                                    lastLoopState = true;
+                                }
                                 Logger.TimingLog.Log(this, "Connected", timingSystem, Logger.LogType.Notice);
-                                lastLoopState = true;
 
-                                if (!detectionRunning)
+                                if (!detectionRunning && !(timingSystem is IRaceControlTimingSystem))
                                 {
                                     timingSystem.EndDetection(EndDetectionType.Normal);
                                 }
@@ -396,7 +425,7 @@ namespace Timing
         public void Disconnect()
         {
             OnDataSent?.Invoke();
-            foreach (ITimingSystem timingSystem in TimingSystems)
+            foreach (ITimingSystem timingSystem in AllSystems)
             {
                 try
                 {

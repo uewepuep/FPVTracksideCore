@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Timing;
+using Timing.ELRS;
 using Timing.ImmersionRC;
 using Timing.RotorHazard;
 using Timing.Velocidrone;
@@ -53,7 +54,7 @@ namespace UI.Nodes
         {
             Text = "Timing Settings";
 
-            ScanButton = new TextButtonNode("Scan Network", ButtonBackground, ButtonHover, TextColor);
+            ScanButton = new TextButtonNode("Scan", ButtonBackground, ButtonHover, TextColor);
             buttonContainer.AddChild(ScanButton);
 
             Node[] buttons = new Node[] { ScanButton, addButton, removeButton, cancelButton, okButton };
@@ -65,6 +66,15 @@ namespace UI.Nodes
         }
 
         private void ScanButton_OnClick(MouseInputEvent mie)
+        {
+            MouseMenu mouseMenu = new MouseMenu(ScanButton);
+            mouseMenu.AddItem("Scan Network", ScanNetwork);
+            mouseMenu.AddItem("Scan Serial", ScanSerial);
+            mouseMenu.TopToBottom = false;
+            mouseMenu.Show(ScanButton);
+        }
+
+        private void ScanNetwork()
         {
             LoadingLayer ll = GetLayer<LoadingLayer>();
             if (ll != null)
@@ -78,7 +88,6 @@ namespace UI.Nodes
                     int rhPort = (new RotorHazardSettings()).Port;
                     int vdPort = (new VelocidroneSettings()).Port;
 
-
                     MouseMenu mouseMenu = new MouseMenu(ScanButton);
                     foreach(SubnetScanner.OpenPortsStruct openPort in ss.AliveWithOpenPorts(lapRFPort, rhPort, vdPort))
                     {
@@ -88,7 +97,7 @@ namespace UI.Nodes
 
                             if (port == lapRFPort)
                             {
-                                mouseMenu.AddItem("Add LapRF 8way - " + copy, () => 
+                                mouseMenu.AddItem("Add LapRF 8way - " + copy, () =>
                                 {
                                     var laprf = new LapRFSettingsEthernet();
                                     laprf.HostName = copy.ToString();
@@ -98,7 +107,7 @@ namespace UI.Nodes
 
                             if (port == rhPort)
                             {
-                                mouseMenu.AddItem("Add RotorHazard - " + copy, () => 
+                                mouseMenu.AddItem("Add RotorHazard - " + copy, () =>
                                 {
                                     var rotorhazard = new RotorHazardSettings();
                                     rotorhazard.HostName = copy.ToString();
@@ -108,7 +117,7 @@ namespace UI.Nodes
 
                             if (port == vdPort)
                             {
-                                mouseMenu.AddItem("Add Velocidrone - " + copy, () => 
+                                mouseMenu.AddItem("Add Velocidrone - " + copy, () =>
                                 {
                                     var velocidrone = new VelocidroneSettings();
                                     velocidrone.HostName = copy.ToString();
@@ -120,7 +129,51 @@ namespace UI.Nodes
 
                     mouseMenu.TopToBottom = false;
                     mouseMenu.Show(ScanButton);
+                });
+            }
+        }
 
+        private void ScanSerial()
+        {
+            LoadingLayer ll = GetLayer<LoadingLayer>();
+            if (ll != null)
+            {
+                ll.WorkQueue.Enqueue("Scanning Serial", () =>
+                {
+                    MouseMenu mouseMenu = new MouseMenu(ScanButton);
+                    bool foundAny = false;
+
+                    string elrsPort = VRXCProtocol.DetectPort();
+                    if (!string.IsNullOrEmpty(elrsPort))
+                    {
+                        foundAny = true;
+                        mouseMenu.AddItem("Add ELRS Backpack - " + elrsPort, () =>
+                        {
+                            var elrs = new ELRSSettings();
+                            elrs.ComPort = elrsPort;
+                            AddNew(elrs);
+                        });
+                    }
+
+                    string lapRFPort = LapRFTimingUSB.DetectPort();
+                    if (!string.IsNullOrEmpty(lapRFPort))
+                    {
+                        foundAny = true;
+                        mouseMenu.AddItem("Add LapRF Puck - " + lapRFPort, () =>
+                        {
+                            var laprf = new LapRFSettingsUSB();
+                            laprf.ComPort = lapRFPort;
+                            AddNew(laprf);
+                        });
+                    }
+
+                    if (!foundAny)
+                    {
+                        mouseMenu.AddItem("No serial timing systems found", () => { });
+                    }
+
+                    mouseMenu.TopToBottom = false;
+                    mouseMenu.Show(ScanButton);
                 });
             }
         }
@@ -135,6 +188,7 @@ namespace UI.Nodes
             mouseMenu.AddItem("RotorHazard 4.0+", () => { AddNew(new Timing.RotorHazard.RotorHazardSettings()); });
             mouseMenu.AddItem("Velocidrone", () => { AddNew(new VelocidroneSettings()); });
             mouseMenu.AddItem("Chorus32", () => { AddNew(new Timing.Chorus.ChorusSettings()); });
+            mouseMenu.AddItem("ELRS Backpack (Race Control)", () => { AddNew(new ELRSSettings()); });
             
             if (Timing.Aruco.ArucoTimingSystem.IsNativeAvailable())
                 mouseMenu.AddItem("ArUco (Video Marker)", () => { AddNew(new Timing.Aruco.ArucoTimingSettings()); });
@@ -169,6 +223,9 @@ namespace UI.Nodes
 
             foreach (var pi in base.GetPropertyInfos(obj))
             {
+                if (obj is ELRSSettings && pi.Name == "Role")
+                    continue;
+
                 if (lockRoleForArucoSplit && pi.Name == "Role")
                     continue;
 
@@ -198,12 +255,13 @@ namespace UI.Nodes
         protected override string ItemToString(TimingSystemSettings item)
         {
             string extraInfo = "";
-            
-            if (Objects.Count > 1)
+
+            int lapTimingSystemCount = Objects.Count(obj => !(obj is ELRSSettings));
+            if (!(item is ELRSSettings) && lapTimingSystemCount > 1)
             {
                 if (item.Role == TimingSystemRole.Split)
                 {
-                    extraInfo = " (Split " + (Objects.Where(r => r.Role == TimingSystemRole.Split).ToList().IndexOf(item) + 1) + ")";
+                    extraInfo = " (Split " + (Objects.Where(r => !(r is ELRSSettings) && r.Role == TimingSystemRole.Split).ToList().IndexOf(item) + 1) + ")";
                 }
                 else
                 {
@@ -232,9 +290,17 @@ namespace UI.Nodes
         
         protected override void AddNew(TimingSystemSettings t)
         {
-            if (Objects.Any())
+            if (t is ELRSSettings)
             {
                 t.Role = TimingSystemRole.Split;
+            }
+            else if (Objects.Any(obj => !(obj is ELRSSettings)))
+            {
+                t.Role = TimingSystemRole.Split;
+            }
+            else
+            {
+                t.Role = TimingSystemRole.Primary;
             }
             base.AddNew(t);
         }
@@ -247,7 +313,7 @@ namespace UI.Nodes
 
         private void CheckVisible()
         {
-            bool multipleCategoryVisible = Objects.Count > 1;
+            bool multipleCategoryVisible = Objects.Count(obj => !(obj is ELRSSettings)) > 1;
 
             foreach (var propertyNode in PropertyNodes)
             {
