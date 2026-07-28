@@ -606,13 +606,23 @@ public void TestEventCreation()
 dotnet publish FPVTracksideCore/FPVTracksideCore.csproj -c Release -r win-x64 --self-contained
 
 # macOS Release Build (Apple Silicon / arm64)
-# -p:BundleMacDylibs=true is REQUIRED to bundle the OpenCV/ArUco native dylibs
-# (Timing/native/osx-arm64/*.dylib) into runtimes/osx-arm64/native/. It is a global
-# property so it propagates to the referenced Timing project; without it the ArUco
-# dylibs are NOT copied. Windows builds omit the flag so they are not bloated by the
-# ~280MB of Mac dylibs.
-dotnet publish FPVMacSideCore/FPVMacsideCore.csproj -c Release -r osx-arm64 --self-contained -p:BundleMacDylibs=true
+# The -r osx-arm64 RID alone bundles the OpenCV/ArUco native dylibs
+# (Timing/native/osx-arm64/*.dylib) into runtimes/osx-arm64/native/ — no extra flag needed.
+# Other RIDs and RID-less builds skip them, so nothing else is bloated by the ~280MB.
+dotnet publish FPVMacSideCore/FPVMacsideCore.csproj -c Release -r osx-arm64 --self-contained
 ```
+
+After publishing, confirm the natives actually made it into the output — if this folder is
+missing or empty, ArUco will fail at runtime with `DllNotFoundException` and everything else
+in the app will still look fine:
+
+```bash
+ls bin/Release-publish/osx-arm64/runtimes/osx-arm64/native/libOpenCvSharpExtern.dylib
+```
+
+The same check applies to a packaged `.dmg`: mount it and verify
+`FPVTrackside.app/Contents/.../runtimes/osx-arm64/native/` contains
+`libOpenCvSharpExtern.dylib` plus the `libopencv_*.dylib` set.
 
 > **ArUco detection is only supported on `osx-arm64` (Apple Silicon).**
 > Only arm64 OpenCV dylibs are bundled, so an Intel **`osx-x64` build CANNOT perform
