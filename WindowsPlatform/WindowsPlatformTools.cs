@@ -15,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Tools;
+using UI;
 using UI.Video;
 
 namespace WindowsPlatform
@@ -66,6 +67,11 @@ namespace WindowsPlatform
 
         public override ITextRenderer CreateTextRenderer()
         {
+            if (ApplicationProfileSettings.Instance.TextRenderer == ApplicationProfileSettings.TextRendererBackend.Skia)
+            {
+                return new TextRenderSkia();
+            }
+
             return new TextRenderWPF();
         }
 

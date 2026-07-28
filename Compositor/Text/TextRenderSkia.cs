@@ -41,6 +41,8 @@ namespace Composition.Text
 
         private SKTypeface cachedTypeface;
         private string cachedTypefaceText;
+        private bool cachedBold;
+        private bool cachedItalic;
 
         public TextRenderSkia()
         {
@@ -201,7 +203,7 @@ namespace Composition.Text
             };
 
             // Find a typeface that can render the text
-            SKTypeface typeface = FindTypefaceForText(this.text ?? "");
+            SKTypeface typeface = FindTypefaceForText(this.text ?? "", style.Bold, style.Italic);
 
             if (typeface != null)
             {
@@ -211,15 +213,18 @@ namespace Composition.Text
             return paint;
         }
 
-        private SKTypeface FindTypefaceForText(string text)
+        private SKTypeface FindTypefaceForText(string text, bool bold, bool italic)
         {
-            // Use cached typeface if text hasn't changed
-            if (cachedTypeface != null && cachedTypefaceText == text)
+            // Use cached typeface if text and style haven't changed
+            if (cachedTypeface != null && cachedTypefaceText == text && cachedBold == bold && cachedItalic == italic)
             {
                 return cachedTypeface;
             }
 
             SKFontManager fontManager = SKFontManager.Default;
+
+            SKFontStyleWeight weight = bold ? SKFontStyleWeight.Bold : SKFontStyleWeight.Normal;
+            SKFontStyleSlant slant = italic ? SKFontStyleSlant.Italic : SKFontStyleSlant.Upright;
 
             // Find a character that needs CJK support
             char testChar = 'A';
@@ -238,7 +243,7 @@ namespace Composition.Text
             if (testChar > 0x2E80)
             {
                 // Try to match a CJK character
-                typeface = fontManager.MatchCharacter(null, SKFontStyleWeight.Normal, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright, null, testChar);
+                typeface = fontManager.MatchCharacter(null, weight, SKFontStyleWidth.Normal, slant, null, testChar);
             }
 
             // If that didn't work, try explicit font names
@@ -262,7 +267,7 @@ namespace Composition.Text
 
                 foreach (string fontFamily in fontFamilies)
                 {
-                    SKTypeface testTypeface = SKTypeface.FromFamilyName(fontFamily);
+                    SKTypeface testTypeface = SKTypeface.FromFamilyName(fontFamily, weight, SKFontStyleWidth.Normal, slant);
                     if (testTypeface != null && CanRenderText(testTypeface, text))
                     {
                         typeface = testTypeface;
@@ -274,11 +279,13 @@ namespace Composition.Text
             // Final fallback - use system default
             if (typeface == null)
             {
-                typeface = SKTypeface.FromFamilyName(null);
+                typeface = SKTypeface.FromFamilyName(null, weight, SKFontStyleWidth.Normal, slant);
             }
 
             cachedTypeface = typeface;
             cachedTypefaceText = text;
+            cachedBold = bold;
+            cachedItalic = italic;
 
             return typeface;
         }

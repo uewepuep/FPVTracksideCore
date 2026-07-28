@@ -103,8 +103,8 @@ namespace WindowsPlatform
             DrawingVisual tempDrawingVisual = new DrawingVisual();
 
 
-            System.Windows.FontWeight fw = /*style.Bold ? System.Windows.FontWeights.Bold : */System.Windows.FontWeights.Medium;
-            System.Windows.FontStyle fs = /*style.Italic ? System.Windows.FontStyles.Italic : */System.Windows.FontStyles.Normal;
+            System.Windows.FontWeight fw = style.Bold ? System.Windows.FontWeights.Bold : System.Windows.FontWeights.Medium;
+            System.Windows.FontStyle fs = style.Italic ? System.Windows.FontStyles.Italic : System.Windows.FontStyles.Normal;
 
             FontFamily ff = new FontFamily(style.Font);
             Typeface tf = new Typeface(ff, fs, fw, System.Windows.FontStretches.Normal);

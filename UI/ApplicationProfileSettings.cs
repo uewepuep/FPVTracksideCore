@@ -73,6 +73,17 @@ namespace UI
         [NeedsRestart]
         public bool UseDirectX9 { get; set; }
 
+        public enum TextRendererBackend
+        {
+            WPF,
+            Skia
+        }
+
+        [Category("Performance")]
+        [DisplayName("Text Renderer")]
+        [NeedsRestart]
+        public TextRendererBackend TextRenderer { get; set; }
+
         [DisplayName("Video recordings to keep")]
         [Category("Video")]
         public int VideosToKeep { get; set; }
@@ -428,6 +439,7 @@ namespace UI
             ShownDecimalPlaces = 2;
             ExportDecimalPlaces = 3;
             UseDirectX9 = false;
+            TextRenderer = TextRendererBackend.WPF;
             ShowPositionDeltaTime = 6;
             Language = "English";
             ShowDownPilotLapTimes = true;
