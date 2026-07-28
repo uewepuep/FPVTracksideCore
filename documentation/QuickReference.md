@@ -238,8 +238,9 @@ dotnet run --configuration Release
 # Windows Release
 dotnet publish FPVTracksideCore/FPVTracksideCore.csproj -c Release -r win-x64 --self-contained
 
-# macOS Release
-dotnet publish FPVMacSideCore/FPVMacsideCore.csproj -c Release -r osx-x64 --self-contained
+# macOS Release (Apple Silicon — osx-arm64 also bundles the OpenCV/ArUco dylibs;
+# an osx-x64 build cannot do ArUco detection)
+dotnet publish FPVMacSideCore/FPVMacsideCore.csproj -c Release -r osx-arm64 --self-contained
 ```
 
 ### Package Creation
