@@ -119,7 +119,7 @@ namespace FPVMacsideCore
                     {
                         SKRect lineBounds = new SKRect();
                         paint.MeasureText(line, ref lineBounds);
-                        maxWidth = Math.Max(maxWidth, lineBounds.Width);
+                        maxWidth = Math.Max(maxWidth, lineBounds.Right);
                     }
 
                     // Check if we need to scale down to fit width
@@ -140,7 +140,7 @@ namespace FPVMacsideCore
                         {
                             SKRect lineBounds = new SKRect();
                             adjustedPaint.MeasureText(line, ref lineBounds);
-                            maxWidth = Math.Max(maxWidth, lineBounds.Width);
+                            maxWidth = Math.Max(maxWidth, lineBounds.Right);
 
                             // Calculate character bounds for hit testing
                             float x = 0;
