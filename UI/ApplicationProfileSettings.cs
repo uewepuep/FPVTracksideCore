@@ -91,6 +91,34 @@ namespace UI
         [NeedsRestart]
         public string EventStorageLocation { get; set; }
 
+        /// <summary>
+        /// EventStorageLocation resolved against IOTools.WorkingDirectory.
+        /// Use this everywhere the location is actually opened; the setting itself
+        /// stays relative so it remains portable between machines.
+        /// </summary>
+        [System.Xml.Serialization.XmlIgnore]
+        [Browsable(false)]
+        public string EventStoragePath
+        {
+            get
+            {
+                string location = EventStorageLocation;
+
+                // Trim off some legacy slashes.
+                if (!string.IsNullOrEmpty(location) && (location.EndsWith("/") || location.EndsWith("\\")))
+                {
+                    location = location.Substring(0, location.Length - 1);
+                }
+
+                if (string.IsNullOrEmpty(location))
+                {
+                    location = "events";
+                }
+
+                return IOTools.Resolve(location);
+            }
+        }
+
         [Category("Static Detector")]
         [NeedsRestart]
         public bool VideoStaticDetector { get; set; }
