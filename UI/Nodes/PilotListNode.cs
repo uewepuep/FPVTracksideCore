@@ -266,7 +266,9 @@ namespace UI.Nodes
                 List<string> names = new List<string>();
                 foreach (FileInfo fileInfo in eventManager.ProfilePictures.GetPilotProfileMedia())
                 {
-                    string name = fileInfo.Name.Replace(fileInfo.Extension, "");
+                    // The file name becomes the pilot's name, i.e. text rather than a path,
+                    // so compose it (macOS file names are decomposed unicode - NFD).
+                    string name = Maths.NormalizeUnicode(fileInfo.Name.Replace(fileInfo.Extension, ""));
                     if (!names.Contains(name))
                     {
                         names.Add(name);
