@@ -40,7 +40,7 @@ namespace RaceLib.Format
         }
 
         public SheetFormatManager(RoundManager roundManager)
-            :this(roundManager, new DirectoryInfo("formats"))
+            :this(roundManager, new DirectoryInfo(IOTools.Resolve("formats")))
         {
         }
 

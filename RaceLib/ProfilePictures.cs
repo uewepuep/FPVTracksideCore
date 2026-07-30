@@ -22,7 +22,7 @@ namespace RaceLib
 
         public IEnumerable<FileInfo> GetPilotProfileMedia()
         {
-            DirectoryInfo pilotProfileDirectory = new DirectoryInfo("pilots");
+            DirectoryInfo pilotProfileDirectory = new DirectoryInfo(IOTools.Resolve("pilots"));
 
             if (pilotProfileDirectory.Exists)
             {
