@@ -881,7 +881,10 @@ namespace UI.Video
                                 if (source.FrameTimes != null && source.FrameTimes.Any())
                                 {
                                     RecodingInfo vi = new RecodingInfo(source);
-                                    FileInfo videoFile = new FileInfo(vi.FilePath);
+                                    // FilePath is stored relative to the working directory, so it
+                                    // has to be resolved before the .recordinfo.xml is placed
+                                    // next to the video file.
+                                    FileInfo videoFile = new FileInfo(IOTools.Resolve(vi.FilePath));
                                     FileInfo recordingInfo = GetRecordingInfoFileName(videoFile);
                                     IOTools.Write(recordingInfo.Directory.FullName, recordingInfo.Name, vi);
                                     needsVideoInfoWrite.Remove((FrameSource)source);

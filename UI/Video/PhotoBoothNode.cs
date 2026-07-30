@@ -142,8 +142,9 @@ namespace UI.Video
 
             string filenameSafe = Maths.SafeFileNameFromString(Pilot.Name + "_temp.png");
 
+            // Kept absolute: everything downstream does file IO with it, and it is only
+            // made relative to the working directory when it is stored on the pilot.
             string newPath = Path.Combine(PilotsDirectory.FullName, filenameSafe);
-            newPath = Path.GetRelativePath(Directory.GetCurrentDirectory(), newPath);
             camNode.FrameNode.SaveImage(newPath);
 
             if (File.Exists(newPath))
@@ -462,7 +463,7 @@ namespace UI.Video
 
             if (!string.IsNullOrEmpty(existingFilename))
             {
-                existingPhoto = new FileInfo(existingFilename);
+                existingPhoto = new FileInfo(IOTools.Resolve(existingFilename));
             }
             newPhoto = new FileInfo(newFilename);
 
@@ -507,7 +508,7 @@ namespace UI.Video
 
                 newPhoto.MoveTo(newFileName.FullName);
 
-                pilot.PhotoPath = Path.GetRelativePath(Directory.GetCurrentDirectory(), newFileName.FullName);
+                pilot.PhotoPath = IOTools.Relativize(newFileName.FullName);
                 pilot.VideoFlipped = videoFlipped;
                 pilot.VideoMirrored = videoMirrored;
                 using (IDatabase db = DatabaseFactory.Open(eventId))

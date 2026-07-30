@@ -43,7 +43,7 @@ namespace RaceLib
 
         public void FindProfilePictures(Pilot[] pilots)
         {
-            string currentDirectory = Directory.GetCurrentDirectory();
+            string workingDirectory = IOTools.WorkingDirectory.FullName;
 
             List<string> listOfExt = extensions.ToList();
 
@@ -71,7 +71,7 @@ namespace RaceLib
                         }
                         if (!string.IsNullOrEmpty(p.PhotoPath))
                         {
-                            p.PhotoPath = Path.GetRelativePath(currentDirectory, p.PhotoPath);
+                            p.PhotoPath = Path.GetRelativePath(workingDirectory, IOTools.Resolve(p.PhotoPath));
                         }
                     }
                     catch (Exception ex)
