@@ -1606,7 +1606,7 @@ namespace UI
         {
             long lowSpace = 1024 * 1024 * 1024; //1gb
 
-            DriveInfo drive = new DriveInfo(Directory.GetCurrentDirectory());
+            DriveInfo drive = new DriveInfo(IOTools.WorkingDirectory.FullName);
             try
             {
                 if (drive.AvailableFreeSpace < lowSpace)
