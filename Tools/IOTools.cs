@@ -14,6 +14,33 @@ namespace Tools
     {
         public static DirectoryInfo WorkingDirectory { get; set; }
 
+        /// <summary>
+        /// Resolves a relative path to an absolute path based on WorkingDirectory.
+        /// Absolute paths are returned as-is. Falls back to the current directory, as before,
+        /// when WorkingDirectory is not yet set.
+        /// </summary>
+        public static string Resolve(string path)
+        {
+            string root = WorkingDirectory?.FullName ?? Directory.GetCurrentDirectory();
+
+            if (string.IsNullOrEmpty(path))
+                return root;
+
+            if (Path.IsPathRooted(path))
+                return path;
+
+            return Path.GetFullPath(Path.Combine(root, path));
+        }
+
+        /// <summary>
+        /// Converts an absolute path to a path relative to WorkingDirectory, for storage.
+        /// </summary>
+        public static string Relativize(string fullPath)
+        {
+            string root = WorkingDirectory?.FullName ?? Directory.GetCurrentDirectory();
+            return Path.GetRelativePath(root, fullPath);
+        }
+
         public static T[] Read<T>(Profile profile, string filename) where T : new()
         {
             return Read<T>(profile.GetPath(), filename, null);
