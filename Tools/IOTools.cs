@@ -29,7 +29,16 @@ namespace Tools
             if (Path.IsPathRooted(path))
                 return path;
 
-            return Path.GetFullPath(Path.Combine(root, path));
+            try
+            {
+                return Path.GetFullPath(Path.Combine(root, path));
+            }
+            catch (Exception)
+            {
+                // Not a usable path - a URL, or characters the platform rejects. Hand it back
+                // untouched so callers fail exactly the way they did before.
+                return path;
+            }
         }
 
         /// <summary>
