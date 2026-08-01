@@ -288,7 +288,10 @@ namespace ExternalData
 
         private HelloMessage BuildHello()
         {
-            string workingDir = NormalizeDir(Directory.GetCurrentDirectory());
+            // The data root, not the process's current directory. On macOS the two are
+            // deliberately different - the cwd is the app bundle, the data lives under the
+            // user's home - and every path below this describes where the data is.
+            string workingDir = NormalizeDir(IOTools.WorkingDirectory?.FullName ?? Directory.GetCurrentDirectory());
             string baseDir = NormalizeDir(AppDomain.CurrentDomain.BaseDirectory ?? workingDir);
             string eventsDirRaw = string.IsNullOrEmpty(eventStorageLocation) ? "events" : eventStorageLocation;
             string eventsDir = NormalizeDir(Path.IsPathRooted(eventsDirRaw)
