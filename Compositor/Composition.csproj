@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <Platforms>AnyCPU;x64</Platforms>
-    <Version>2.77.0.873</Version>
+    <Version>2.77.1.873</Version>
   </PropertyGroup>
 
 
@@ -12,6 +12,9 @@
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1">
 		  <PrivateAssets>all</PrivateAssets>
 	  </PackageReference>
+    <PackageReference Include="SkiaSharp" Version="2.88.8">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
 
 

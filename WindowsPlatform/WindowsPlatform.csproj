@@ -6,7 +6,7 @@
     <OutputType>Library</OutputType>
 		<TargetFramework>net9.0-windows</TargetFramework>
 		<Platforms>x64</Platforms>
-		<Version>2.77.0.873</Version>
+		<Version>2.77.1.873</Version>
 		<usewpf>true</usewpf>	
 	</PropertyGroup>
 
@@ -15,6 +15,7 @@
 		<PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.4.1" />
 		<PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
 	  <PackageReference Include="System.Speech" Version="6.0.0" />
+	  <PackageReference Include="SkiaSharp" Version="2.88.8" />
 	</ItemGroup>
 
 

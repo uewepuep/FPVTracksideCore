@@ -479,6 +479,18 @@ namespace UI.Nodes
             EnablePropertySearch();
         }
 
+        protected override IEnumerable<PropertyInfo> GetPropertyInfos(ApplicationProfileSettings obj)
+        {
+            IEnumerable<PropertyInfo> propertyInfos = base.GetPropertyInfos(obj);
+
+            if (!OperatingSystem.IsWindows())
+            {
+                propertyInfos = propertyInfos.Where(pi => pi.Name != nameof(ApplicationProfileSettings.TextRenderer));
+            }
+
+            return propertyInfos;
+        }
+
         protected override PropertyNode<ApplicationProfileSettings> CreatePropertyNode(ApplicationProfileSettings obj, PropertyInfo pi)
         {
             if (pi.Name == "Voice")

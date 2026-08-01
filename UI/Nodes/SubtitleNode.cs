@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace UI
+namespace UI.Nodes
 {
     public class SubtitleNode : AlphaAnimatedNode
     {
@@ -53,6 +53,7 @@ namespace UI
 
             textNode = new TextNode("", Theme.Current.SubtitleText.XNA);
             textNode.Scale(0.9f);
+            textNode.Style.Italic = true;
 
             AddChild(textNode);
         }
