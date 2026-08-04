@@ -23,6 +23,10 @@ namespace FPVMacsideCore
         // 0 means leave the rate alone and let the voice use its own default.
         private int wordsPerMinute;
 
+        // 1 is the voice's normal level, and emitting nothing at all produces
+        // byte-identical audio, so only attenuate when asked to.
+        private double volumeScale = 1;
+
         private Process speechProcess;
 
         public MacSpeaker()
@@ -55,8 +59,13 @@ namespace FPVMacsideCore
             wordsPerMinute = (int)Math.Round(BaseWordsPerMinute * Math.Pow(2, rate / 10.0));
         }
 
+        // 'say' has no volume flag, so attenuation goes through an embedded
+        // [[volm]] command instead. Its scale is logarithmic - amplitude halves
+        // every 0.25 - which puts a straight percentage close to linear in
+        // perceived loudness.
         public void SetVolume(int volume)
         {
+            volumeScale = Math.Clamp(volume, 0, 100) / 100.0;
         }
 
         public void Speak(string text)
@@ -67,6 +76,11 @@ namespace FPVMacsideCore
             {
                 psi.ArgumentList.Add("-r");
                 psi.ArgumentList.Add(wordsPerMinute.ToString(CultureInfo.InvariantCulture));
+            }
+
+            if (volumeScale < 1)
+            {
+                text = string.Format(CultureInfo.InvariantCulture, "[[volm {0:0.###}]] {1}", volumeScale, text);
             }
 
             psi.ArgumentList.Add(text);
