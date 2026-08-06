@@ -73,6 +73,11 @@ namespace Tools
             // mac compatibility.
             filename = filename.Replace("\\", "/");
 
+            // Relative paths (img/..., themes/... etc) are relative to the working
+            // directory, not to the current directory, which on macOS points inside
+            // the app bundle.
+            filename = IOTools.ResolveFromWorkingDirectory(filename);
+
             Texture2D texture;
             lock (stringToTexture)
             {

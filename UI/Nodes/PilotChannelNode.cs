@@ -98,7 +98,7 @@ namespace UI.Nodes
                 return;
             }
 
-            profileIcon.Visible = System.IO.File.Exists(Pilot.PhotoPath);
+            profileIcon.Visible = System.IO.File.Exists(IOTools.ResolveFromWorkingDirectory(Pilot.PhotoPath));
 
             if (profileIcon.Visible)
             {

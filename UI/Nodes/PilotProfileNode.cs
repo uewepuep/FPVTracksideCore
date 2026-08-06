@@ -166,6 +166,9 @@ namespace UI.Nodes
 
                 string repaired = System.Text.RegularExpressions.Regex.Replace(filename, @"[^\w\-. \/\\:]", "");
 
+                // Photo paths are stored relative to the working directory.
+                repaired = IOTools.ResolveFromWorkingDirectory(repaired);
+
                 FileInfo fileInfo = new FileInfo(repaired);
                 if (fileInfo.Exists)
                 {
@@ -186,11 +189,11 @@ namespace UI.Nodes
                         FileFrameNode videoPlayer;
                         if (ApplicationProfileSettings.Instance.PilotProfileChromaKey)
                         {
-                            source = new ChromaKeyCachedTextureFrameSource(CompositorLayer.GraphicsDevice, VideoFrameWorks.GetFramework(FrameWork.MediaFoundation), filename, ApplicationProfileSettings.Instance.PilotProfileChromaKeyColor, ApplicationProfileSettings.Instance.PilotProfileChromaKeyLimit);
+                            source = new ChromaKeyCachedTextureFrameSource(CompositorLayer.GraphicsDevice, VideoFrameWorks.GetFramework(FrameWork.MediaFoundation), repaired, ApplicationProfileSettings.Instance.PilotProfileChromaKeyColor, ApplicationProfileSettings.Instance.PilotProfileChromaKeyLimit);
                         }
                         else
                         {
-                            source = new CachedTextureFrameSource(CompositorLayer.GraphicsDevice, VideoFrameWorks.GetFramework(FrameWork.MediaFoundation), filename);
+                            source = new CachedTextureFrameSource(CompositorLayer.GraphicsDevice, VideoFrameWorks.GetFramework(FrameWork.MediaFoundation), repaired);
                         }
 
                         source.BounceRepeat = ApplicationProfileSettings.Instance.PilotProfileBoomerangRepeat;

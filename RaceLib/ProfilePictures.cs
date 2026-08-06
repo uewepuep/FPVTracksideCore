@@ -22,7 +22,7 @@ namespace RaceLib
 
         public IEnumerable<FileInfo> GetPilotProfileMedia()
         {
-            DirectoryInfo pilotProfileDirectory = new DirectoryInfo("pilots");
+            DirectoryInfo pilotProfileDirectory = new DirectoryInfo(IOTools.ResolveFromWorkingDirectory("pilots"));
 
             if (pilotProfileDirectory.Exists)
             {
@@ -43,7 +43,7 @@ namespace RaceLib
 
         public void FindProfilePictures(Pilot[] pilots)
         {
-            string currentDirectory = Directory.GetCurrentDirectory();
+            string workingDirectory = IOTools.WorkingDirectory.FullName;
 
             List<string> listOfExt = extensions.ToList();
 
@@ -71,7 +71,7 @@ namespace RaceLib
                         }
                         if (!string.IsNullOrEmpty(p.PhotoPath))
                         {
-                            p.PhotoPath = Path.GetRelativePath(currentDirectory, p.PhotoPath);
+                            p.PhotoPath = Path.GetRelativePath(workingDirectory, IOTools.ResolveFromWorkingDirectory(p.PhotoPath));
                         }
                     }
                     catch (Exception ex)

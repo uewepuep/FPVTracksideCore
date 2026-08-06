@@ -101,7 +101,7 @@ namespace UI
                 Logger.UI.LogException(this, ex);
             }
 
-            DirectoryInfo eventDirectory = new DirectoryInfo(Path.Combine(ApplicationProfileSettings.Instance.EventStorageLocation, eventManager.Event.ID.ToString()));
+            DirectoryInfo eventDirectory = new DirectoryInfo(Path.Combine(ApplicationProfileSettings.Instance.EventStoragePath, eventManager.Event.ID.ToString()));
 
             workQueueStartStopRace = new WorkQueue("Event Layer - Start Stop Race");
 
@@ -301,7 +301,7 @@ namespace UI
                 raceControl = this;
             }
 
-            eventWebServer = new EventWebServer(EventManager, SoundManager, raceControl, Theme.Current.ChannelColors, ApplicationProfileSettings.Instance.EventStorageLocation);
+            eventWebServer = new EventWebServer(EventManager, SoundManager, raceControl, Theme.Current.ChannelColors, ApplicationProfileSettings.Instance.EventStoragePath);
 
             if (ApplicationProfileSettings.Instance.HTTPServer)
             {
@@ -424,7 +424,7 @@ namespace UI
                     ApplicationProfileSettings.Instance.NotificationURL,
                     ApplicationProfileSettings.Instance.NotificationSerialPort,
                     Profile,
-                    ApplicationProfileSettings.Instance.EventStorageLocation,
+                    ApplicationProfileSettings.Instance.EventStoragePath,
                     ApplicationProfileSettings.Instance.ShownDecimalPlaces);
                     break;
             }
@@ -1606,7 +1606,7 @@ namespace UI
         {
             long lowSpace = 1024 * 1024 * 1024; //1gb
 
-            DriveInfo drive = new DriveInfo(Directory.GetCurrentDirectory());
+            DriveInfo drive = new DriveInfo(IOTools.WorkingDirectory.FullName);
             try
             {
                 if (drive.AvailableFreeSpace < lowSpace)

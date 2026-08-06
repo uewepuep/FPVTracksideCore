@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tools;
 
 namespace DB.JSON
 {
@@ -46,7 +47,7 @@ namespace DB.JSON
             Clubs = new JsonCollection<Club>(DataDirectory);
             Channels = new ChannelCollection();
 
-            DirectoryInfo trackDir = new DirectoryInfo("Tracks");
+            DirectoryInfo trackDir = new DirectoryInfo(IOTools.ResolveFromWorkingDirectory("Tracks"));
             if (!trackDir.Exists)
             {
                 trackDir.Create();

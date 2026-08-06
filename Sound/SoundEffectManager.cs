@@ -146,7 +146,7 @@ namespace Sound
         {
             if (!File.Exists(filename))
             {
-                filename = Directory.GetCurrentDirectory() + "\\" + filename;
+                filename = IOTools.ResolveFromWorkingDirectory(filename);
             }
 
             if (File.Exists(filename) && !effects.ContainsKey(filename))
