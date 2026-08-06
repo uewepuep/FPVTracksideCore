@@ -13,6 +13,10 @@ namespace FPVTuxsideCore
         // 0 means leave the rate alone and let espeak-ng use its own default.
         private int wordsPerMinute;
 
+        // espeak-ng's default amplitude is 100, so a full-volume request needs
+        // no flag at all.
+        private int amplitude = 100;
+
         private Process speechProcess;
 
         public void Dispose()
@@ -38,7 +42,10 @@ namespace FPVTuxsideCore
             wordsPerMinute = (int)Math.Round(BaseWordsPerMinute * Math.Pow(2, rate / 10.0));
         }
 
-        public void SetVolume(int volume) { }
+        public void SetVolume(int volume)
+        {
+            amplitude = Math.Clamp(volume, 0, 100);
+        }
 
         public void Speak(string text)
         {
@@ -48,6 +55,12 @@ namespace FPVTuxsideCore
             {
                 psi.ArgumentList.Add("-s");
                 psi.ArgumentList.Add(wordsPerMinute.ToString(CultureInfo.InvariantCulture));
+            }
+
+            if (amplitude < 100)
+            {
+                psi.ArgumentList.Add("-a");
+                psi.ArgumentList.Add(amplitude.ToString(CultureInfo.InvariantCulture));
             }
 
             psi.ArgumentList.Add(text);
