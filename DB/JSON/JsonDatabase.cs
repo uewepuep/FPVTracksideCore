@@ -47,7 +47,7 @@ namespace DB.JSON
             Clubs = new JsonCollection<Club>(DataDirectory);
             Channels = new ChannelCollection();
 
-            DirectoryInfo trackDir = new DirectoryInfo(IOTools.Resolve("Tracks"));
+            DirectoryInfo trackDir = new DirectoryInfo(IOTools.ResolveFromWorkingDirectory("Tracks"));
             if (!trackDir.Exists)
             {
                 trackDir.Create();

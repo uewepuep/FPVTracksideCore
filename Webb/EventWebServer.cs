@@ -43,7 +43,7 @@ namespace Webb
 
         public EventWebServer(EventManager eventManager, SoundManager soundManager, IRaceControl raceControl, IEnumerable<Tools.ToolColor> channelColors, string eventStorageLocation = null)
         {
-            CSSStyleSheet = new FileInfo(IOTools.Resolve(Path.Combine("httpfiles", "style.css")));
+            CSSStyleSheet = new FileInfo(IOTools.ResolveFromWorkingDirectory("httpfiles", "style.css"));
             this.eventManager = eventManager;
             this.soundManager = soundManager;
             this.raceControl = raceControl;
@@ -247,7 +247,7 @@ namespace Webb
             }
 
 
-            FileInfo file = new FileInfo(IOTools.Resolve(Path.Combine(requestPath)));
+            FileInfo file = new FileInfo(IOTools.ResolveFromWorkingDirectory(requestPath));
 
 #if DEBUG
             // Deliberately left relative to the current directory: this walks up out of the
@@ -267,7 +267,7 @@ namespace Webb
             if (!file.Exists)
             {
                 requestPath = new string[] { "httpfiles", "index.html" };
-                file = new FileInfo(IOTools.Resolve(Path.Combine(requestPath)));
+                file = new FileInfo(IOTools.ResolveFromWorkingDirectory(requestPath));
                 if (!file.Exists)
                 {
                     return new byte[0];

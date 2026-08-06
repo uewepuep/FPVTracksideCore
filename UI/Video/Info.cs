@@ -55,7 +55,7 @@ namespace UI.Video
 
         public RecodingInfo(ICaptureFrameSource captureFrameSource)
         {
-            FilePath = IOTools.Relativize(captureFrameSource.Filename);
+            FilePath = IOTools.RelativiseToWorkingDirectory(captureFrameSource.Filename);
             ChannelCoveragePercent = captureFrameSource.VideoConfig.ChannelCoveragePercent;
             FrameTimes = captureFrameSource.FrameTimes.ToArray();
             ChannelBounds = captureFrameSource.VideoConfig.VideoBounds;

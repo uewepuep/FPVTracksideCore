@@ -54,7 +54,7 @@ namespace UI.Video
             this.eventManager = eventManager;
             this.soundManager = soundManager;
 
-            PilotsDirectory = new DirectoryInfo(IOTools.Resolve("pilots"));
+            PilotsDirectory = new DirectoryInfo(IOTools.ResolveFromWorkingDirectory("pilots"));
             Timeout = TimeSpan.FromSeconds(10);
         }
 
@@ -463,7 +463,7 @@ namespace UI.Video
 
             if (!string.IsNullOrEmpty(existingFilename))
             {
-                existingPhoto = new FileInfo(IOTools.Resolve(existingFilename));
+                existingPhoto = new FileInfo(IOTools.ResolveFromWorkingDirectory(existingFilename));
             }
             newPhoto = new FileInfo(newFilename);
 
@@ -508,7 +508,7 @@ namespace UI.Video
 
                 newPhoto.MoveTo(newFileName.FullName);
 
-                pilot.PhotoPath = IOTools.Relativize(newFileName.FullName);
+                pilot.PhotoPath = IOTools.RelativiseToWorkingDirectory(newFileName.FullName);
                 pilot.VideoFlipped = videoFlipped;
                 pilot.VideoMirrored = videoMirrored;
                 using (IDatabase db = DatabaseFactory.Open(eventId))

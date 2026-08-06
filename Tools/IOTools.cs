@@ -19,12 +19,14 @@ namespace Tools
         /// Absolute paths are returned as-is. Falls back to the current directory, as before,
         /// when WorkingDirectory is not yet set.
         /// </summary>
-        public static string Resolve(string path)
+        public static string ResolveFromWorkingDirectory(params string[] pathsToCombine)
         {
             string root = WorkingDirectory?.FullName ?? Directory.GetCurrentDirectory();
 
-            if (string.IsNullOrEmpty(path))
+            if (pathsToCombine == null || pathsToCombine.Length == 0 || pathsToCombine.Any(string.IsNullOrEmpty))
                 return root;
+
+            string path = Path.Combine(pathsToCombine);
 
             if (Path.IsPathRooted(path))
                 return path;
@@ -44,7 +46,7 @@ namespace Tools
         /// <summary>
         /// Converts an absolute path to a path relative to WorkingDirectory, for storage.
         /// </summary>
-        public static string Relativize(string fullPath)
+        public static string RelativiseToWorkingDirectory(string fullPath)
         {
             string root = WorkingDirectory?.FullName ?? Directory.GetCurrentDirectory();
             return Path.GetRelativePath(root, fullPath);

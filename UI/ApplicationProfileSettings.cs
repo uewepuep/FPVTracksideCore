@@ -115,7 +115,7 @@ namespace UI
                     location = "events";
                 }
 
-                return IOTools.Resolve(location);
+                return IOTools.ResolveFromWorkingDirectory(location);
             }
         }
 

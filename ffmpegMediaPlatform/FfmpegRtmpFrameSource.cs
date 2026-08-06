@@ -137,7 +137,7 @@ namespace FfmpegMediaPlatform
 
         private byte[] LoadTestPattern(int width, int height)
         {
-            string path = Tools.IOTools.Resolve(System.IO.Path.Combine("img", "testpattern.png"));
+            string path = Tools.IOTools.ResolveFromWorkingDirectory("img", "testpattern.png");
             if (!System.IO.File.Exists(path))
                 return null;
 

@@ -167,7 +167,7 @@ namespace UI.Nodes
                 string repaired = System.Text.RegularExpressions.Regex.Replace(filename, @"[^\w\-. \/\\:]", "");
 
                 // Photo paths are stored relative to the working directory.
-                repaired = IOTools.Resolve(repaired);
+                repaired = IOTools.ResolveFromWorkingDirectory(repaired);
 
                 FileInfo fileInfo = new FileInfo(repaired);
                 if (fileInfo.Exists)

@@ -22,7 +22,7 @@ namespace RaceLib
 
         public IEnumerable<FileInfo> GetPilotProfileMedia()
         {
-            DirectoryInfo pilotProfileDirectory = new DirectoryInfo(IOTools.Resolve("pilots"));
+            DirectoryInfo pilotProfileDirectory = new DirectoryInfo(IOTools.ResolveFromWorkingDirectory("pilots"));
 
             if (pilotProfileDirectory.Exists)
             {
@@ -71,7 +71,7 @@ namespace RaceLib
                         }
                         if (!string.IsNullOrEmpty(p.PhotoPath))
                         {
-                            p.PhotoPath = Path.GetRelativePath(workingDirectory, IOTools.Resolve(p.PhotoPath));
+                            p.PhotoPath = Path.GetRelativePath(workingDirectory, IOTools.ResolveFromWorkingDirectory(p.PhotoPath));
                         }
                     }
                     catch (Exception ex)
