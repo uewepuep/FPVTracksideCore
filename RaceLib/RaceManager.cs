@@ -1881,10 +1881,25 @@ namespace RaceLib
 
         public string[][] GetRawLaps(int decimalPlaces)
         {
+            return GetRawLaps(Races, decimalPlaces);
+        }
+
+        public string[][] GetRawLaps(Stage stage, int decimalPlaces)
+        {
+            if (stage == null)
+            {
+                return GetRawLaps(decimalPlaces);
+            }
+
+            return GetRawLaps(GetRaces(stage), decimalPlaces);
+        }
+
+        public string[][] GetRawLaps(IEnumerable<Race> exportRaces, int decimalPlaces)
+        {
             List<string[]> output = new List<string[]>();
 
-            output.Add(new string[] { "Round", "Race", "Race Start", "Pilot", "Lap Number", "Length", "Race Time", "Valid" });
-            foreach (Race race in Races.OrderBy(r => r.Start))
+            output.Add(new string[] { "Stage", "Round", "Race", "Race Start", "Pilot", "Lap Number", "Length", "Race Time", "Valid" });
+            foreach (Race race in exportRaces.OrderBy(r => r.Start))
             {
                 foreach (Lap lap in race.Laps.OrderBy(l => l.End))
                 {
@@ -1893,6 +1908,8 @@ namespace RaceLib
                     if (pilot != null)
                     {
                         List<string> line = new List<string>();
+
+                        line.Add(race.Round?.Stage?.ToString() ?? "");
                         line.Add(race.RoundNumber.ToString());
                         line.Add(race.RaceNumber.ToString());
                         line.Add(race.Start.ToString());

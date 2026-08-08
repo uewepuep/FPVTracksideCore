@@ -97,6 +97,10 @@ namespace UI.Nodes.Rounds
             mm.AddItem("Copy to Clipboard", CopyToClipboard);
 
             FileTools.ExportMenu(mm, "Export", PlatformTools, "Save", MakeTable(), GetLayer<PopupLayer>());
+
+            int exportDecimalPlaces = ApplicationProfileSettings.Instance.ExportDecimalPlaces;
+            FileTools.ExportMenu(mm, "Export Raw Laps", PlatformTools, "Save Top Consecutive Laps", EventManager.RaceManager.GetRawLaps(Round?.Stage, exportDecimalPlaces), GetLayer<PopupLayer>());
+               
             mm.AddItemConfirm("Re-calculate", Recalculate);
         }
 
