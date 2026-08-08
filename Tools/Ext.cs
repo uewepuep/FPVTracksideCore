@@ -230,6 +230,32 @@ namespace Tools
             else
                 dict.Add(key, value);
         }
+
+        /// <summary>
+        /// Brings text to composed unicode form (NFC) so that names read from the file
+        /// system compare equal to the same text typed by the user. macOS stores file
+        /// names decomposed (NFD / UTF-8-MAC): a decomposed dakuten and a composed one
+        /// are different strings, and a compatibility ideograph (U+FA10 塚) differs from
+        /// its canonical form (U+585A 塚). NFC unifies both. Use for comparison and for
+        /// text that becomes data (e.g. a pilot name derived from a file name) - not for
+        /// paths used in file IO, where the on-disk bytes must be preserved for the
+        /// byte-exact file systems on Windows and Linux.
+        /// </summary>
+        public static string NormaliseUnicode(this string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return text;
+
+            try
+            {
+                return text.Normalize(NormalizationForm.FormC);
+            }
+            catch (ArgumentException)
+            {
+                // Invalid surrogate pairs - keep the original.
+                return text;
+            }
+        }
     }
 
     public class DateOnlyAttribute : Attribute

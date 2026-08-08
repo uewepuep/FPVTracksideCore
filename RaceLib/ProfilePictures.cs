@@ -66,8 +66,8 @@ namespace RaceLib
                             // macOS stores file names decomposed (NFD), so both sides are
                             // brought to NFC before comparing. The matched FileInfo keeps
                             // the on-disk name for the actual file access.
-                            string pilotName = Maths.NormalizeUnicode(p.Name).ToLower();
-                            IEnumerable<FileInfo> matches = media.Where(f => Maths.NormalizeUnicode(f.Name).ToLower().Contains(pilotName));
+                            string pilotName = p.Name.NormaliseUnicode().ToLower();
+                            IEnumerable<FileInfo> matches = media.Where(f => f.Name.NormaliseUnicode().ToLower().Contains(pilotName));
                             if (matches.Any())
                             {
                                 p.PhotoPath = matches.OrderByDescending(f => listOfExt.IndexOf(f.Extension)).FirstOrDefault().FullName;
@@ -87,7 +87,7 @@ namespace RaceLib
                     {
                         if (p.PhotoPath == null)
                         {
-                            Patreon match = patreonWithHandle.FirstOrDefault(pa => Maths.NormalizeUnicode(pa.Handle).ToLower() == Maths.NormalizeUnicode(p.Name).ToLower());
+                            Patreon match = patreonWithHandle.FirstOrDefault(pa => pa.Handle.NormaliseUnicode().ToLower() == p.Name.NormaliseUnicode().ToLower());
                             if (match != null)
                             {
                                 p.PhotoPath = match.ThumbFilename;

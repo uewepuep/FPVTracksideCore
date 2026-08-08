@@ -268,7 +268,7 @@ namespace UI.Nodes
                 {
                     // The file name becomes the pilot's name, i.e. text rather than a path,
                     // so compose it (macOS file names are decomposed unicode - NFD).
-                    string name = Maths.NormalizeUnicode(fileInfo.Name.Replace(fileInfo.Extension, ""));
+                    string name = fileInfo.Name.Replace(fileInfo.Extension, "").NormaliseUnicode();
                     if (!names.Contains(name))
                     {
                         names.Add(name);
