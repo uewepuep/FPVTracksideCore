@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <Platforms>AnyCPU;x64</Platforms>
-    <Version>2.77.1.873</Version>
+    <Version>2.77.2.885</Version>
   </PropertyGroup>
 
   <ItemGroup>
