@@ -39,6 +39,14 @@
     </None>
   </ItemGroup>
 
+  <!-- Native FFmpeg libraries for Linux (LGPL build, matches FFmpeg.AutoGen's pinned ABI) -->
+  <ItemGroup>
+    <None Include="ffmpeg-libs\linux\*.so*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>ffmpeg-libs\linux\%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
   <ItemGroup>
     <None Update="ffmpeg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

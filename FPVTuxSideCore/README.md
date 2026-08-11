@@ -4,7 +4,14 @@ The .NET runtime is bundled — no separate install needed.
 
 ## FFmpeg
 
-Required for video/replay. Uses system FFmpeg libraries (v7+ recommended).
+Recording and replay use a bundled FFmpeg 7.1.x (LGPL build, `ffmpeg-libs/linux`)
+matched to the app's `FFmpeg.AutoGen 7.1.1` bindings — no separate install needed
+for that part, same as Mac and Windows.
+
+Live camera capture still shells out to a system `ffmpeg` binary (for V4L2
+device/mode enumeration), so it's still worth having FFmpeg installed. Unlike
+the recording path, that one isn't ABI-sensitive — any reasonably recent
+version works, v7 or v8 both fine.
 
 ```
 # Fedora
