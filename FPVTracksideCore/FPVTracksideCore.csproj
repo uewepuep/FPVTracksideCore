@@ -6,7 +6,7 @@
     <ApplicationIcon>Icon.ico</ApplicationIcon>
     <Platforms>x64;AnyCPU</Platforms>
 	  <usewpf>true</usewpf>
-	  <Version>2.77.2.885</Version>
+	  <Version>2.77.3.888</Version>
 	  
 	  <PublishReadyToRun>false</PublishReadyToRun>
 	  <TieredCompilation>false</TieredCompilation>

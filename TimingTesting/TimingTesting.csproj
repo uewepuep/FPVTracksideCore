@@ -7,7 +7,7 @@
     <TargetFramework>net9.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <Platforms>x64;AnyCPU</Platforms>
-    <Version>2.77.2.885</Version>
+    <Version>2.77.3.888</Version>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>

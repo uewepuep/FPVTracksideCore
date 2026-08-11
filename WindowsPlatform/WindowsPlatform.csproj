@@ -6,7 +6,7 @@
     <OutputType>Library</OutputType>
 		<TargetFramework>net9.0-windows</TargetFramework>
 		<Platforms>x64</Platforms>
-		<Version>2.77.2.885</Version>
+		<Version>2.77.3.888</Version>
 		<usewpf>true</usewpf>	
 	</PropertyGroup>
 
