@@ -37,7 +37,7 @@ namespace FPVMacsideCore
             FfmpegMediaPlatform.FfmpegGlobalInitializer.Initialize();
 
             Theme.Initialise(GraphicsDevice, PlatformTools.WorkingDirectory, "Dark");
-            DirectoryInfo eventDir = new DirectoryInfo(ApplicationProfileSettings.Instance.EventStoragePath);
+            DirectoryInfo eventDir = ApplicationProfileSettings.Instance.EventStorageDirectory;
             DatabaseFactory.Init(new DB.DatabaseFactory(Data, eventDir));
 
 

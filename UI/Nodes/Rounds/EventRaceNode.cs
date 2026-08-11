@@ -309,7 +309,7 @@ namespace UI.Nodes.Rounds
                 mm.AddSubmenu("Set Race Bracket", SetBracket, Enum.GetValues(typeof(Brackets)).OfType<Brackets>().ToArray());
                 mm.AddItem("Open Race Folder", () =>
                 {
-                    string eventsPath = ApplicationProfileSettings.Instance.EventStoragePath;
+                    string eventsPath = ApplicationProfileSettings.Instance.EventStorageDirectory.FullName;
 
                     string racePath = Path.Combine(eventsPath, EventManager.EventId.ToString(), Race.ID.ToString());
                     PlatformTools.OpenFileManager(racePath);

@@ -245,6 +245,22 @@ namespace FfmpegMediaPlatform
                 height = 480;
                 Tools.Logger.VideoLog.LogCall(this, $"VideoConfig had invalid dimensions, using fallback 640x480");
             }
+
+            // Mode detection can fail (e.g. no modes returned), leaving VideoMode null. Every consumer
+            // downstream (Start() included) assumes VideoConfig.VideoMode is non-null once constructed,
+            // so give it a fallback here rather than let a null slip through.
+            if (videoConfig.VideoMode == null)
+            {
+                videoConfig.VideoMode = new Mode
+                {
+                    Width = width,
+                    Height = height,
+                    FrameRate = 30,
+                    FrameWork = FrameWork.FFmpeg,
+                    Index = -1,
+                    Format = "uyvy422"
+                };
+            }
             
             buffer = new byte[width * height * 4];
             rawTextures = new XBuffer<RawTexture>(5, width, height);

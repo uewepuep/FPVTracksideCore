@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -55,7 +56,7 @@ namespace FfmpegMediaPlatform
                             
                             // Parse frame rates like "15.000000 30.000000"
                             var frameRates = frameRatesStr.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                                .Select(fr => float.Parse(fr))
+                                .Select(fr => float.Parse(fr, CultureInfo.InvariantCulture))
                                 .ToList();
                             
                             foreach (var frameRate in frameRates)

@@ -639,7 +639,7 @@ namespace UI.Nodes
             // Special handling for "events" paths - use the same logic as HTTP service
             if (paths.Any() && paths[0] == "events")
             {
-                string eventsPath = ApplicationProfileSettings.Instance.EventStoragePath;
+                string eventsPath = ApplicationProfileSettings.Instance.EventStorageDirectory.FullName;
 
                 // Append any additional path components after "events"
                 if (paths.Length > 1)

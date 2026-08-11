@@ -53,7 +53,7 @@ namespace FPVTracksideCore
 
         protected override void LoadContent()
         {
-            DirectoryInfo eventDir = new DirectoryInfo(ApplicationProfileSettings.Instance.EventStoragePath);
+            DirectoryInfo eventDir = ApplicationProfileSettings.Instance.EventStorageDirectory;
             DatabaseFactory.Init(new DB.DatabaseFactory(Data, eventDir));
 
             Theme.Initialise(GraphicsDevice, PlatformTools.WorkingDirectory, "FPVTrackside");

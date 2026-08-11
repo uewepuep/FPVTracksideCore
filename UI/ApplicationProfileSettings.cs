@@ -4,6 +4,7 @@ using Composition.Nodes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -89,20 +90,22 @@ namespace UI
         public int VideosToKeep { get; set; }
 [Category("Data")]
         [NeedsRestart]
-        public string EventStorageLocation { get; set; }
+        [System.Xml.Serialization.XmlElement("EventStorageLocation")]
+        public string EventStorageLocationRelative { get; set; }
 
         /// <summary>
-        /// EventStorageLocation resolved against IOTools.WorkingDirectory.
+        /// EventStorageLocationRelative resolved against IOTools.WorkingDirectory.
         /// Use this everywhere the location is actually opened; the setting itself
-        /// stays relative so it remains portable between machines.
+        /// stays relative (or "~"-prefixed) so it remains portable between machines.
+        /// Absolute paths are used as-is.
         /// </summary>
         [System.Xml.Serialization.XmlIgnore]
         [Browsable(false)]
-        public string EventStoragePath
+        public DirectoryInfo EventStorageDirectory
         {
             get
             {
-                string location = EventStorageLocation;
+                string location = EventStorageLocationRelative;
 
                 // Trim off some legacy slashes.
                 if (!string.IsNullOrEmpty(location) && (location.EndsWith("/") || location.EndsWith("\\")))
@@ -115,7 +118,14 @@ namespace UI
                     location = "events";
                 }
 
-                return IOTools.ResolveFromWorkingDirectory(location);
+                // Expand a leading "~" to the user's home directory.
+                if (location == "~" || location.StartsWith("~/") || location.StartsWith("~\\"))
+                {
+                    string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                    location = location.Length == 1 ? home : Path.Combine(home, location.Substring(2));
+                }
+
+                return new DirectoryInfo(IOTools.ResolveFromWorkingDirectory(location));
             }
         }
 
@@ -458,7 +468,7 @@ namespace UI
             VideosToKeep = 50;
             HTTPServer = false;
 
-            EventStorageLocation = @"events";
+            EventStorageLocationRelative = @"events";
 
             VideoStaticDetector = true;
             StartDelaySeconds = 5;
