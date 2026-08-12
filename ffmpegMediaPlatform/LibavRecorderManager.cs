@@ -205,7 +205,8 @@ namespace FfmpegMediaPlatform
                     codec = ffmpeg.avcodec_find_encoder(AVCodecID.AV_CODEC_ID_H264);
                     if (codec != null)
                     {
-                        encoderName = "libx264 (software - CPU)";
+                        string name = Marshal.PtrToStringAnsi((IntPtr)codec->name);
+                        encoderName = $"{name} (software - CPU)";
                     }
                 }
 
