@@ -210,7 +210,9 @@ namespace Webb
                         string[] pathWithoutEvents = requestPath.Skip(1).ToArray(); // Remove "events" from the path
                         string target = Path.Combine(eventsPath, Path.Combine(pathWithoutEvents));
 
+#if DEBUG
                         Logger.HTTP.Log(this, "Request: " + path + " -> Target: " + target + " (EventsPath: " + eventsPath + ")");
+#endif
 
                         if (target == eventsPath || string.IsNullOrEmpty(target))
                             target = eventRoot.FullName;
@@ -224,10 +226,14 @@ namespace Webb
                                 {
                                     context.Response.ContentType = "application/json";
                                 }
+#if DEBUG
                                 Logger.HTTP.Log(this, "Serving file: " + target);
+#endif
                                 return File.ReadAllBytes(target);
                             }
+#if DEBUG
                             Logger.HTTP.Log(this, "File not found: " + target);
+#endif
                             return new byte[0];
                         }
                         else
