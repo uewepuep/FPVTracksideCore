@@ -195,10 +195,10 @@ namespace ExternalData
 
                 return os;
             }
-            catch (Exception e) 
+            catch (Exception)
             {
                 LastFailedResponse = response;
-                throw e;
+                throw;
             }
         }
     }
