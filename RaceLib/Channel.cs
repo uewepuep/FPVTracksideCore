@@ -447,7 +447,8 @@ namespace RaceLib
                     break;
 
                 case Band.LowBand:
-                    return 5333 + ((channel - 1) * 40);
+                    // Matches HDZero VTX V3 firmware L1-L8 (5362, 5399 ... 5621, 37 MHz spacing)
+                    return 5362 + ((channel - 1) * 37);
                 case Band.Diatone:
                     return 5362 + ((channel - 1) * 37);
 
