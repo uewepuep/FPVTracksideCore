@@ -133,6 +133,12 @@ namespace RaceLib
         {
             if (Band == Band.None) return "--";
 
+            // HDZero low band reads as plain L1-L8 on screen, matching the VTX/goggle menus.
+            if (Band == Band.HDZero && ChannelPrefix == 'L')
+            {
+                return ChannelPrefix + Number.ToString();
+            }
+
             if (ChannelPrefix != char.MinValue)
             {
                 string outa = Band.GetCharacter() + ChannelPrefix + Number.ToString();
