@@ -301,7 +301,28 @@ namespace RaceLib
             new Channel(55, 'R', 7, Band.HDZero),
             new Channel(56, 'R', 8, Band.HDZero),
             new Channel(57, 'F', 2, Band.HDZero),
-            new Channel(58, 'F', 4, Band.HDZero)
+            new Channel(58, 'F', 4, Band.HDZero),
+            new Channel(82, 'L', 1, Band.HDZero),
+            new Channel(83, 'L', 2, Band.HDZero),
+            new Channel(84, 'L', 3, Band.HDZero),
+            new Channel(85, 'L', 4, Band.HDZero),
+            new Channel(86, 'L', 5, Band.HDZero),
+            new Channel(87, 'L', 6, Band.HDZero),
+            new Channel(88, 'L', 7, Band.HDZero),
+            new Channel(89, 'L', 8, Band.HDZero)
+        };
+
+        // HDZero VTX low band L1-L8. Same frequencies as Diatone / D band (5362 + 37 MHz steps),
+        // kept as its own group so a race can mix HDZero and analogue ground stations.
+        public static Channel[] HDZeroLowBand = new Channel[] {
+            HDZero[10],
+            HDZero[11],
+            HDZero[12],
+            HDZero[13],
+            HDZero[14],
+            HDZero[15],
+            HDZero[16],
+            HDZero[17],
         };
 
         public static Channel[] HDZeroRace = new Channel[] {
@@ -443,12 +464,13 @@ namespace RaceLib
                             return FrequencyLookup(Band.Raceband, prefix, channel);
                         case 'F': 
                             return FrequencyLookup(Band.Fatshark, prefix, channel);
+                        case 'L':
+                            return FrequencyLookup(Band.Diatone, prefix, channel);
                     }
                     break;
 
                 case Band.LowBand:
-                    // Matches HDZero VTX V3 firmware L1-L8 (5362, 5399 ... 5621, 37 MHz spacing)
-                    return 5362 + ((channel - 1) * 37);
+                    return 5333 + ((channel - 1) * 40);
                 case Band.Diatone:
                     return 5362 + ((channel - 1) * 37);
 

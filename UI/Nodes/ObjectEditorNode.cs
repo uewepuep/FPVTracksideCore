@@ -363,6 +363,7 @@ namespace UI.Nodes
                 { "HDZero", Channel.HDZero },
                 { "HDZero Race", Channel.HDZeroRace },
                 { "HDZero IMD6C", Channel.HDZeroIMD6C },
+                { "HDZero Low Band", Channel.HDZeroLowBand },
                 { "DJI", Channel.DJIFPVHD },
                 { "DJIO3", Channel.DJIO3 },
                 { "DJIO4", Channel.DJIO4 },
