@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using OpenCvSharp;
@@ -160,6 +161,10 @@ namespace Timing.Aruco
             public bool InGate;
             public DateTime FlickerEndTime = DateTime.MinValue;
             public int LastPeak;
+
+            // Time of the last crossing reported for this channel. Used to guarantee the times we
+            // hand to RaceLib never repeat or go backwards - see ReportMarkerCount.
+            public DateTime LastDetectionTime = DateTime.MinValue;
         }
 
         public bool Connect() => true;
@@ -186,13 +191,23 @@ namespace Timing.Aruco
 
         public bool StartDetection(ref DateTime time, StartMetaData startMetaData)
         {
+            // Snapshot under stateLock, then take each channel lock separately. Never hold both at
+            // once: ReportMarkerCount raises OnDetectionEvent while holding a channel lock, so a
+            // stateLock -> channel lock nesting here could deadlock against it.
+            ChannelState[] states;
             lock (stateLock)
             {
-                foreach (var s in stateByFreq.Values)
+                states = stateByFreq.Values.ToArray();
+            }
+
+            foreach (var s in states)
+            {
+                lock (s)
                 {
                     s.InGate = false;
                     s.FlickerEndTime = DateTime.MinValue;
                     s.LastPeak = 0;
+                    s.LastDetectionTime = DateTime.MinValue;
                 }
             }
             detecting = true;
@@ -223,25 +238,50 @@ namespace Timing.Aruco
                     return;
             }
 
-            if (count >= markerThreshold)
+            // The whole state machine runs under the channel's own lock, not just the dictionary
+            // lookup above. InGate / FlickerEndTime are read-modify-written here, so an unlocked
+            // version lets two callers both pass the FlickerEndTime check before either clears
+            // InGate, emitting two crossings for a single gate pass. RaceLib cannot recover from
+            // that: Race.RecordLap looks for the previous lap with a strict "Detection.Time <"
+            // filter, so a duplicate carrying an identical or slightly earlier timestamp skips the
+            // lap it duplicates and gets measured from the one before it. The result is a
+            // full-length copy of a real lap that passes both RecordLap's <1ms guard and
+            // Lapalyser's MinLapTime check, handing the pilot a lap they never flew.
+            //
+            // The event is raised inside the lock deliberately: it is already raised synchronously
+            // on the caller's thread, and releasing first would let a preempted caller deliver an
+            // older detectionTime after a newer one - reintroducing the inversion this guards
+            // against. Contention is limited to callers reporting the same channel.
+            lock (state)
             {
-                state.InGate = true;
-                state.LastPeak = peak;
-                state.FlickerEndTime = DateTime.MinValue;
-                return;
-            }
+                if (count >= markerThreshold)
+                {
+                    state.InGate = true;
+                    state.LastPeak = peak;
+                    state.FlickerEndTime = DateTime.MinValue;
+                    return;
+                }
 
-            if (!state.InGate) return;
+                if (!state.InGate) return;
 
-            if (state.FlickerEndTime == DateTime.MinValue)
-                state.FlickerEndTime = captureTime.AddMilliseconds(flickerLengthMs);
+                if (state.FlickerEndTime == DateTime.MinValue)
+                    state.FlickerEndTime = captureTime.AddMilliseconds(flickerLengthMs);
 
-            if (captureTime >= state.FlickerEndTime)
-            {
+                if (captureTime < state.FlickerEndTime) return;
+
                 DateTime detectionTime = captureTime.AddMilliseconds(-flickerLengthMs);
-                OnDetectionEvent?.Invoke(this, frequency, detectionTime, state.LastPeak);
+
                 state.InGate = false;
                 state.FlickerEndTime = DateTime.MinValue;
+
+                // Never report a time at or before the previous crossing on this channel. Detection
+                // times are derived from the caller's captureTime, so anything that makes those
+                // non-monotonic - a second detection thread, or an OS clock step - would otherwise
+                // reach RaceLib as an out-of-order lap.
+                if (detectionTime <= state.LastDetectionTime) return;
+                state.LastDetectionTime = detectionTime;
+
+                OnDetectionEvent?.Invoke(this, frequency, detectionTime, state.LastPeak);
             }
         }
     }
