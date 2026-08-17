@@ -19,8 +19,8 @@ namespace RaceLib
         B = 4,
         E = 5,
         DJIFPVHD = 6,
-        SharkByte = 7,
         HDZero = 7,
+        SharkByte = 7,
         LowBand = 8,
         Diatone = 9,
 
