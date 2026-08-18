@@ -36,6 +36,7 @@ namespace UI.Video
 
         private volatile bool run;
         private Thread thread;
+        private volatile bool disposed;
 
         // FrameNodeThumb.renderTarget is private; we invalidate it via reflection after
         // enlarging Size, so PreProcess re-creates the RenderTarget at the new size.
@@ -53,11 +54,29 @@ namespace UI.Video
 
         public void Dispose()
         {
+            // Unsubscribe before cleaning up. ChannelsGridNode.InitVideoTimingSystems() disposes
+            // this instance and creates a replacement every time the Video Input Settings dialog
+            // closes (OK *and* Cancel both reach it via EventLayer's VideoSettingsExited handler).
+            // Without this the disposed instance stayed subscribed to OnInitialise, so the next
+            // InitialiseTimingSystems - e.g. pressing OK in Timing Settings - called Init() on it
+            // and restarted its detection thread. Every extra Video Input Settings round trip
+            // added another one, all driving the same ArucoTimingSystem.ChannelState from
+            // separate threads with independently sampled captureTimes.
+            disposed = true;
+            if (timingSystemManager != null)
+            {
+                timingSystemManager.OnInitialise -= Init;
+            }
             CleanUp();
         }
 
         public void Init()
         {
+            // A disposed instance must never resurrect its thread, even if something still holds
+            // a reference and re-raises OnInitialise.
+            if (disposed)
+                return;
+
             CleanUp();
 
             // Probe (and log) native availability up front so we always see the result, even when
