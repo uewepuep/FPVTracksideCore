@@ -22,6 +22,7 @@ namespace UI.Nodes
     class TimingSystemEditor : ObjectEditorNode<TimingSystemSettings>
     {
         public TextButtonNode ScanButton { get; private set; }
+        public TextButtonNode TestConnectionButton { get; private set; }
 
 
         public IEnumerable<string> Hostnames
@@ -57,12 +58,90 @@ namespace UI.Nodes
             ScanButton = new TextButtonNode("Scan", ButtonBackground, ButtonHover, TextColor);
             buttonContainer.AddChild(ScanButton);
 
-            Node[] buttons = new Node[] { ScanButton, addButton, removeButton, cancelButton, okButton };
+            TestConnectionButton = new TextButtonNode("Test Connection", ButtonBackground, ButtonHover, TextColor);
+            buttonContainer.AddChild(TestConnectionButton);
+
+            Node[] buttons = new Node[] { ScanButton, TestConnectionButton, addButton, removeButton, cancelButton, okButton };
             buttonContainer.SetOrder(buttons);
 
             ScanButton.OnClick += ScanButton_OnClick;
+            TestConnectionButton.OnClick += TestConnectionButton_OnClick;
 
             AlignVisibleButtons();
+        }
+
+        private void TestConnectionButton_OnClick(MouseInputEvent mie)
+        {
+            TimingSystemSettings settings = Selected;
+            if (settings == null)
+                return;
+
+            ITimingSystem timingSystem = CreateTestInstance(settings);
+            if (timingSystem == null)
+            {
+                GetLayer<PopupLayer>()?.PopupMessage("Test Connection isn't supported for this timing system type.");
+                return;
+            }
+
+            LoadingLayer ll = GetLayer<LoadingLayer>();
+            if (ll == null)
+                return;
+
+            ll.WorkQueue.Enqueue("Testing Connection", () =>
+            {
+                try
+                {
+                    bool connected;
+                    if (settings is DummySettings dummySettings)
+                    {
+                        // Dummy has no real connection to test, so simulate a result based on the configured failure rate.
+                        connected = Random.Shared.NextDouble() * 100 >= dummySettings.TestConnectionFailureRatePercent;
+                    }
+                    else
+                    {
+                        connected = timingSystem.Connect();
+                    }
+                    timingSystem.Disconnect();
+
+                    if (connected)
+                    {
+                        GetLayer<PopupLayer>()?.PopupMessage("Connected successfully to " + settings.ToString() + ".");
+                    }
+                    else
+                    {
+                        GetLayer<PopupLayer>()?.PopupMessage("Failed to connect to " + settings.ToString() + ".");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    GetLayer<PopupLayer>()?.PopupError("Failed to connect to " + settings.ToString() + ".", ex);
+                }
+                finally
+                {
+                    timingSystem.Dispose();
+                }
+            });
+        }
+
+        // Only settings types with a network connection worth testing (or, for Dummy, a simulated
+        // one) are offered here. USB/serial and camera-based systems (ELRS, Aruco, LapRF Puck) are
+        // excluded since triggering them from a settings-screen click could grab onto hardware
+        // that's already in use elsewhere.
+        private static bool IsTestable(TimingSystemSettings settings)
+        {
+            return settings is RotorHazardSettings
+                || settings is LapRFSettingsEthernet
+                || settings is VelocidroneSettings
+                || settings is Timing.Chorus.ChorusSettings
+                || settings is DummySettings;
+        }
+
+        private static ITimingSystem CreateTestInstance(TimingSystemSettings settings)
+        {
+            if (!IsTestable(settings))
+                return null;
+
+            return TimingSystemManager.CreateTimingSystem(settings);
         }
 
         private void ScanButton_OnClick(MouseInputEvent mie)

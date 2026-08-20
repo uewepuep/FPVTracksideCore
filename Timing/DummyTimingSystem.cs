@@ -302,6 +302,9 @@ namespace Timing
         [Category("Random number generation settings (for testing)")]
         public bool GenerateAlerts { get; set; }
 
+        [Category("Random number generation settings (for testing)")]
+        public double TestConnectionFailureRatePercent { get; set; }
+
         [Category("Virtual Hardware")]
         public int Receivers { get; set; }
 
@@ -324,6 +327,7 @@ namespace Timing
             RangeSeconds = 5;
             FakeFailureRatePercent = 0;
             FalseReadPercent = 10;
+            TestConnectionFailureRatePercent = 50;
             Receivers = 8;
             GenerateAlerts = false;
             GenerateFromKeyboardShortcuts = true;

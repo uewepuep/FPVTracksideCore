@@ -197,42 +197,48 @@ namespace Timing
             Logger.TimingLog.LogCall(this);
             foreach (TimingSystemSettings settings in TimingSystemsSettings)
             {
-                ITimingSystem timingSystem = null;
-
-                if (settings is LapRFSettingsEthernet)
-                    timingSystem = new LapRFTimingEthernet();
-
-                else if (settings is LapRFSettingsUSB)
-                    timingSystem = new LapRFTimingUSB();
-
-                else if (settings is DummySettings)
-                    timingSystem = new DummyTimingSystem();
-
-                else if (settings is ELRSSettings)
-                    timingSystem = new ELRSTimingSystem();
-
-                else if (settings is RotorHazardSettings)
-                    timingSystem = new RotorHazardTimingSystem();
-
-                else if (settings is ChorusSettings)
-                    timingSystem = new ChorusTiming();
-
-                else if (settings is VelocidroneSettings)
-                    timingSystem = new VelocidroneTimingSystem();
-                    
-                else if (settings is ArucoTimingSettings)
-                    timingSystem = new ArucoTimingSystem();
-
-                if (timingSystem != null)
-                {
-                    timingSystem.Settings = settings;
-                }
-
+                ITimingSystem timingSystem = CreateTimingSystem(settings);
                 if (timingSystem != null)
                 {
                     yield return timingSystem;
                 }
             }
+        }
+
+        public static ITimingSystem CreateTimingSystem(TimingSystemSettings settings)
+        {
+            ITimingSystem timingSystem = null;
+
+            if (settings is LapRFSettingsEthernet)
+                timingSystem = new LapRFTimingEthernet();
+
+            else if (settings is LapRFSettingsUSB)
+                timingSystem = new LapRFTimingUSB();
+
+            else if (settings is DummySettings)
+                timingSystem = new DummyTimingSystem();
+
+            else if (settings is ELRSSettings)
+                timingSystem = new ELRSTimingSystem();
+
+            else if (settings is RotorHazardSettings)
+                timingSystem = new RotorHazardTimingSystem();
+
+            else if (settings is ChorusSettings)
+                timingSystem = new ChorusTiming();
+
+            else if (settings is VelocidroneSettings)
+                timingSystem = new VelocidroneTimingSystem();
+
+            else if (settings is ArucoTimingSettings)
+                timingSystem = new ArucoTimingSystem();
+
+            if (timingSystem != null)
+            {
+                timingSystem.Settings = settings;
+            }
+
+            return timingSystem;
         }
 
         public virtual void Dispose()
