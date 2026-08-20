@@ -338,6 +338,11 @@ namespace UI.Nodes
                     eventManager.UnloadRaces(workSet, ll.WorkQueue);
                     eventManager.LoadRaces(workSet, ll.WorkQueue);
 
+                    ll.WorkQueue.Enqueue(workSet, "Recalculating Missing Results", () =>
+                    {
+                        eventManager.ResultManager.RecalculateMissingRaceResults();
+                    });
+
                     ll.WorkQueue.Enqueue(workSet, "Refreshing UI", () =>
                     {
                         DataDeleted?.Invoke();

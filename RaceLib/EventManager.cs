@@ -383,8 +383,7 @@ namespace RaceLib
 
             workQueue.Enqueue(workSet, "Unloading Results", () =>
             {
-                // Load points
-                ResultManager.Clear();
+                ResultManager.Unload();
             });
 
             workQueue.Enqueue(workSet, "Unloading Records", () =>
