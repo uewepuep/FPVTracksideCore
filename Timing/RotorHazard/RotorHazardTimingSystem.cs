@@ -176,7 +176,18 @@ namespace Timing.RotorHazard
                 bool result = false;
                 using (Waiter reponseWaiter = new Waiter())
                 {
-                    socket = new SocketIO("http://" + settings.HostName + ":" + settings.Port);
+                    SocketIOOptions options = new SocketIOOptions();
+                    if (!string.IsNullOrEmpty(settings.AdminUsername) || !string.IsNullOrEmpty(settings.AdminPassword))
+                    {
+                        string credentials = settings.AdminUsername + ":" + settings.AdminPassword;
+                        string basicAuth = Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials));
+                        options.ExtraHeaders = new Dictionary<string, string>
+                        {
+                            { "Authorization", "Basic " + basicAuth }
+                        };
+                    }
+
+                    socket = new SocketIO("http://" + settings.HostName + ":" + settings.Port, options);
                     socket.OnConnected += (object sender, EventArgs e) =>
                     {
                         if (reponseWaiter.IsDisposed)

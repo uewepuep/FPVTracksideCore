@@ -14,6 +14,11 @@ namespace Timing.RotorHazard
         [Category("Network")]
         public int Port { get; set; }
 
+        [Category("Admin Authentication (optional)")]
+        public string AdminUsername { get; set; }
+        [Category("Admin Authentication (optional)")]
+        public string AdminPassword { get; set; }
+
         public int VoltageWarning { get; set; }
         public int TemperatureWarning { get; set; }
 
@@ -23,6 +28,9 @@ namespace Timing.RotorHazard
         {
             HostName = "10.1.1.207";
             Port = 5000;
+
+            AdminUsername = "";
+            AdminPassword = "";
 
             VoltageWarning = 11;
             TemperatureWarning = 80;
