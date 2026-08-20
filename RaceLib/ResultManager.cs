@@ -909,6 +909,45 @@ namespace RaceLib
             }
         }
 
+        public void Unload()
+        {
+            lock (Results)
+            {
+                Results.Clear();
+            }
+        }
+
+        public int RecalculateMissingRaceResults()
+        {
+            HashSet<Guid> racesWithResults;
+            lock (Results)
+            {
+                racesWithResults = Results
+                    .Where(result => result.Race != null)
+                    .Select(result => result.Race.ID)
+                    .ToHashSet();
+            }
+
+            Race[] missingResults = EventManager.RaceManager.GetRaces(race =>
+                race.Valid &&
+                race.Ended &&
+                race.Round != null &&
+                race.Round.EventType.HasResult() &&
+                race.PilotCount > 0 &&
+                !racesWithResults.Contains(race.ID));
+
+            int recalculated = 0;
+            foreach (Race race in missingResults)
+            {
+                if (SaveResults(race))
+                {
+                    recalculated++;
+                }
+            }
+
+            return recalculated;
+        }
+
         public void Recalculate(Round endRound)
         {
             Round start = GetStartRound(endRound);
