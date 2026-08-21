@@ -11,7 +11,7 @@ namespace RaceLib
 {
     public class ProfilePictures
     {
-        private string[] extensions = new string[] { ".mp4", ".wmv", ".mkv", ".png", ".jpg" };
+        private string[] extensions = new string[] { ".mp4", ".wmv", ".mkv", ".png", ".jpg", ".jpeg" };
 
         private Guid EventId;
 
@@ -28,7 +28,7 @@ namespace RaceLib
             {
                 foreach (FileInfo file in pilotProfileDirectory.GetFiles())
                 {
-                    if (extensions.Contains(file.Extension))
+                    if (extensions.Contains(file.Extension, StringComparer.OrdinalIgnoreCase))
                     {
                         yield return file;
                     }
@@ -60,17 +60,21 @@ namespace RaceLib
                 {
                     try
                     {
-                        string oldPath = p.PhotoPath;
                         if (string.IsNullOrEmpty(p.PhotoPath))
                         {
                             // macOS stores file names decomposed (NFD), so both sides are
                             // brought to NFC before comparing. The matched FileInfo keeps
                             // the on-disk name for the actual file access.
-                            string pilotName = p.Name.NormaliseUnicode().ToLower();
-                            IEnumerable<FileInfo> matches = media.Where(f => f.Name.NormaliseUnicode().ToLower().Contains(pilotName));
+                            string pilotName = p.Name.NormaliseUnicode();
+                            IEnumerable<FileInfo> matches = media.Where(f =>
+                                Path.GetFileNameWithoutExtension(f.Name).NormaliseUnicode()
+                                    .Equals(pilotName, StringComparison.Ordinal));
                             if (matches.Any())
                             {
-                                p.PhotoPath = matches.OrderByDescending(f => listOfExt.IndexOf(f.Extension)).FirstOrDefault().FullName;
+                                p.PhotoPath = matches
+                                    .OrderByDescending(f => listOfExt.FindIndex(extension =>
+                                        extension.Equals(f.Extension, StringComparison.OrdinalIgnoreCase)))
+                                    .FirstOrDefault().FullName;
                             }
                         }
                         if (!string.IsNullOrEmpty(p.PhotoPath))

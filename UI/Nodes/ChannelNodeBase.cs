@@ -576,6 +576,8 @@ namespace UI.Nodes
         {
             bool snap = false;
 
+            PilotProfile.EnsureLoaded();
+
             if (!force && options != PilotProfileOptions.None)
             {
                 if (ApplicationProfileSettings.Instance.AlwaysSmallPilotProfile || AlwaysSmallPilotProfile)
@@ -586,13 +588,6 @@ namespace UI.Nodes
             }
 
             pilotProfileOptions = options;
-
-            // Don't do the small option if we're not a video node.
-            if (GetType() == typeof(ChannelNodeBase))
-            {
-                options = PilotProfileOptions.Large;
-                snap = true;
-            }
 
             if (!PilotProfile.HasProfileImage)
             {
