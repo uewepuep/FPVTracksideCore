@@ -153,6 +153,8 @@ namespace Timing.RotorHazard
         // '-' onward first, since RH's own release_version can carry a "-beta.1"-style suffix
         // System.Version can't parse; not needed for our own plugin_version today (plain
         // major.minor.patch), but keeps this safe to reuse for RH-core-version gating later.
+        // NOTE: must be fully qualified as System.Version - this namespace already has its own
+        // (unrelated) Version struct in Structures.cs, which shadows the unqualified name.
         private static bool VersionAtLeast(string actual, string minimum)
         {
             if (string.IsNullOrEmpty(actual))
@@ -161,7 +163,7 @@ namespace Timing.RotorHazard
             string actualCore = actual.Split('-')[0];
             string minimumCore = minimum.Split('-')[0];
 
-            if (Version.TryParse(actualCore, out Version actualVersion) && Version.TryParse(minimumCore, out Version minimumVersion))
+            if (System.Version.TryParse(actualCore, out System.Version actualVersion) && System.Version.TryParse(minimumCore, out System.Version minimumVersion))
             {
                 return actualVersion >= minimumVersion;
             }
