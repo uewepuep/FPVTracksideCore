@@ -189,5 +189,26 @@ namespace Timing.RotorHazard
         public double lap_time { get; set; }
         public double lap_time_stamp { get; set; }
     }
+
+    // Sent to ts_race_marshal_waveform to request the raw RSSI trace + calibration for a pilot
+    // run, so it can be plotted/recalculated locally before any correction is committed.
+    public struct RaceMarshalWaveformRequest
+    {
+        public Guid race_id { get; set; }
+        public Guid pilot_id { get; set; }
+    }
+
+    // Ack response to ts_race_marshal_waveform. history_times/race_start_time are both on RH's
+    // internal monotonic clock (see RHRace.py's start_time_monotonic) - history_times[i] -
+    // race_start_time gives a race-relative offset directly, with no wall-clock/epoch involved.
+    // null (all default values) when RH has no waveform for that race/pilot.
+    public struct RaceMarshalWaveformResponse
+    {
+        public double[] history_values { get; set; }
+        public double[] history_times { get; set; }
+        public int enter_at { get; set; }
+        public int exit_at { get; set; }
+        public double race_start_time { get; set; }
+    }
 }
 

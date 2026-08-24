@@ -689,10 +689,79 @@ namespace Timing.RotorHazard
 
         public RSSIWaveform GetWaveform(Guid raceId, Guid pilotId)
         {
-            // TODO: RH's ts_race_marshal broadcast doesn't include history_values/history_times/
-            // enter_at/exit_at yet - needs the plugin extended to send them (they're already
-            // readable RH-side off the same SavedPilotRace row via existing RHAPI calls).
-            return null;
+            SocketIO s = socket;
+            if (s == null || !Connected)
+                return null;
+
+            RaceMarshalWaveformRequest request = new RaceMarshalWaveformRequest
+            {
+                race_id = raceId,
+                pilot_id = pilotId
+            };
+
+            RaceMarshalWaveformResponse? waveformResponse = null;
+
+            try
+            {
+                using (Waiter responseWait = new Waiter())
+                {
+                    s.EmitAsync("ts_race_marshal_waveform", (SocketIOResponse response) =>
+                    {
+                        if (responseWait.IsDisposed)
+                            return;
+
+                        try
+                        {
+                            // RH returns None (no ack payload) when it has no waveform for this
+                            // race/pilot - leave waveformResponse null in that case.
+                            if (response.Count > 0)
+                            {
+                                waveformResponse = response.GetValue<RaceMarshalWaveformResponse>();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.TimingLog.LogException(this, ex);
+                        }
+
+                        responseWait.Set();
+                    }, request);
+
+                    if (!responseWait.WaitOne(TimeOut))
+                    {
+                        Logger.TimingLog.Log(this, "GetWaveform took too long");
+                        return null;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.TimingLog.LogException(this, e);
+                return null;
+            }
+
+            if (waveformResponse == null || waveformResponse.Value.history_values == null || waveformResponse.Value.history_times == null)
+                return null;
+
+            RaceMarshalWaveformResponse waveform = waveformResponse.Value;
+
+            int count = Math.Min(waveform.history_values.Length, waveform.history_times.Length);
+            TimeSpan[] times = new TimeSpan[count];
+            int[] values = new int[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                times[i] = TimeSpan.FromSeconds(waveform.history_times[i] - waveform.race_start_time);
+                values[i] = (int)Math.Round(waveform.history_values[i]);
+            }
+
+            return new RSSIWaveform
+            {
+                Times = times,
+                Values = values,
+                EnterAt = waveform.enter_at,
+                ExitAt = waveform.exit_at
+            };
         }
 
         public void PushMarshalUpdate(MarshalData marshalData)
