@@ -335,7 +335,7 @@ namespace UI.Nodes
                 mm.AddBlank();
 
                
-                if (EventManager.RaceManager.TimingSystemManager.AllSystems.OfType<IRemoteMarshalUpdatable>().Any(ts => ts.MarshalSupported))
+                if (!EventManager.RaceManager.RaceRunning && EventManager.RaceManager.TimingSystemManager.AllSystems.OfType<IRemoteMarshalUpdatable>().Any(ts => ts.MarshalSupported))
                 {
                     mm.AddItem("Edit Laps / Marshal", () =>
                     {
