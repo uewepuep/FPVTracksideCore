@@ -77,6 +77,17 @@ namespace Composition.Nodes
             return v2;
         }
 
+        // Inverse of ToPixel - maps a pixel-space point (e.g. mouse position) back to
+        // the graph's data (View) space.
+        public Vector2 FromPixel(Point pixel)
+        {
+            Vector2 v2 = new Vector2(pixel.X - Bounds.X, pixel.Y - Bounds.Y);
+            v2.X = (v2.X / Bounds.Width) * View.Width + View.X;
+            v2.Y = (v2.Y / Bounds.Height) * View.Height + View.Y;
+
+            return v2;
+        }
+
         private void DrawGrid(Drawer id)
         {
             Color color = Color.Gray;

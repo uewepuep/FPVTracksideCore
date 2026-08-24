@@ -11,7 +11,7 @@ using Tools;
 
 namespace Timing
 {
-    public class DummyTimingSystem : ITimingSystem
+    public class DummyTimingSystem : ITimingSystem, IRemoteMarshalUpdatable
     {
         public TimingSystemType Type { get { return TimingSystemType.Dummy; } }
 
@@ -275,6 +275,60 @@ namespace Timing
             OnDataReceived?.Invoke();
 
             return true;
+        }
+
+        // Last marshal correction accepted via PushMarshalUpdate, for tests/inspection - Dummy
+        // has nowhere real to persist it.
+        public MarshalData LastMarshalUpdate { get; private set; }
+
+        public void PushMarshalUpdate(MarshalData marshalData)
+        {
+            LastMarshalUpdate = marshalData;
+            Logger.TimingLog.Log(this, "Marshal update pushed for pilot: " + marshalData.PilotName + ", " + marshalData.Laps.Length + " laps");
+        }
+
+        // Fabricates a plausible RSSI trace, using the same lap-timing jitter GetTriggers()
+        // already uses for live detection, so the native marshal UI can be exercised end to end
+        // without needing a real RotorHazard connection.
+        public RSSIWaveform GetWaveform(Guid raceId, Guid pilotId)
+        {
+            const int enterAt = 190;
+            const int exitAt = 60;
+            const int baseline = 30;
+            const double sampleIntervalMs = 20;
+            const double peakWidthMs = 300;
+
+            List<DateTime> crossings = GetTriggers(DateTime.MinValue, 6).ToList();
+            TimeSpan duration = (crossings.LastOrDefault() - DateTime.MinValue) + TimeSpan.FromSeconds(DummingSettings.TypicalLapTimeSeconds);
+
+            List<TimeSpan> times = new List<TimeSpan>();
+            List<int> values = new List<int>();
+
+            for (double ms = 0; ms < duration.TotalMilliseconds; ms += sampleIntervalMs)
+            {
+                TimeSpan sampleTime = TimeSpan.FromMilliseconds(ms);
+
+                double nearestDistanceMs = crossings
+                    .Select(c => Math.Abs((c - DateTime.MinValue - sampleTime).TotalMilliseconds))
+                    .DefaultIfEmpty(double.MaxValue)
+                    .Min();
+
+                int noise = random.Next(-5, 5);
+                int peakBoost = (int)((enterAt - baseline + 40) * Math.Exp(-(nearestDistanceMs * nearestDistanceMs) / (2 * peakWidthMs * peakWidthMs)));
+
+                int rssi = Math.Clamp(baseline + noise + peakBoost, 0, 255);
+
+                times.Add(sampleTime);
+                values.Add(rssi);
+            }
+
+            return new RSSIWaveform
+            {
+                Times = times.ToArray(),
+                Values = values.ToArray(),
+                EnterAt = enterAt,
+                ExitAt = exitAt
+            };
         }
     }
 

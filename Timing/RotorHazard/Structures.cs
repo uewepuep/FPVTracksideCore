@@ -173,5 +173,21 @@ namespace Timing.RotorHazard
         public string lap_time_formatted { get; set; }
         public double lap_time_stamp { get; set; }
     }
+
+    // Outbound counterpart of RaceMarshalData/RaceMarshalLap, sent to ts_race_marshal_update.
+    // lap_time_formatted is omitted - the RH-side handler formats it itself from lap_time.
+    public struct RaceMarshalUpdate
+    {
+        public Guid race_id { get; set; }
+        public Guid pilot_id { get; set; }
+        public List<RaceMarshalUpdateLap> laps { get; set; }
+    }
+
+    public struct RaceMarshalUpdateLap
+    {
+        public bool deleted { get; set; }
+        public double lap_time { get; set; }
+        public double lap_time_stamp { get; set; }
+    }
 }
 

@@ -30,7 +30,7 @@ namespace Timing.RotorHazard
         }
     }
 
-    public class RotorHazardTimingSystem : ITimingSystemWithRSSI
+    public class RotorHazardTimingSystem : ITimingSystemWithRSSI, IRemoteMarshalUpdatable
     {
 
         private bool connected;
@@ -685,6 +685,36 @@ namespace Timing.RotorHazard
             {
                 Logger.TimingLog.LogException(this, ex);
             }
+        }
+
+        public RSSIWaveform GetWaveform(Guid raceId, Guid pilotId)
+        {
+            // TODO: RH's ts_race_marshal broadcast doesn't include history_values/history_times/
+            // enter_at/exit_at yet - needs the plugin extended to send them (they're already
+            // readable RH-side off the same SavedPilotRace row via existing RHAPI calls).
+            return null;
+        }
+
+        public void PushMarshalUpdate(MarshalData marshalData)
+        {
+            if (!Connected)
+                return;
+
+            RaceMarshalUpdate update = new RaceMarshalUpdate
+            {
+                race_id = marshalData.RaceID,
+                pilot_id = marshalData.PilotID,
+                laps = marshalData.Laps.Select(l => new RaceMarshalUpdateLap
+                {
+                    deleted = !l.Valid,
+                    lap_time = l.Length.TotalMilliseconds,
+                    lap_time_stamp = l.RaceTime.TotalMilliseconds
+                }).ToList()
+            };
+
+            Logger.TimingLog.Log(this, "Pushing marshal update for pilot: " + marshalData.PilotName);
+
+            socket?.EmitAsync("ts_race_marshal_update", update);
         }
 
         private RaceMarshalData ParseRaceMarshalData(JsonElement element)

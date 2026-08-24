@@ -21,26 +21,37 @@ namespace UI.Nodes
         public Race Race { get; private set; }
         public Pilot Pilot { get; private set; }
 
-        private Node raceNode;
-        private Node lapsNode;
-        private TextButtonNode okButton;
-        private TextButtonNode cancelButton;
-        private TextButtonNode addLapButton;
-        private TextButtonNode copyLapsButton;
-        private TextButtonNode pasteLapsButton;
+        protected Node raceNode;
+        protected Node lapsNode;
+        protected Node buttonContainer;
+        protected BorderPanelShadowNode background;
+
+        protected TextButtonNode okButton;
+        protected TextButtonNode cancelButton;
+        protected TextButtonNode addLapButton;
+        protected TextButtonNode copyLapsButton;
+        protected TextButtonNode pasteLapsButton;
 
         public event Action<Lap[]> OnOK;
         public event Action<Lap[]> OnCancel;
 
         public Color ChannelColor { get; private set; }
 
-        private List<LapEditorContainer> lapContainers;
+        protected List<LapEditorContainer> lapContainers;
 
-        private IEnumerable<LapEditorContainer> orderedLapContainers { get { return lapContainers.OrderBy(l => l.End); } }
+        protected IEnumerable<LapEditorContainer> orderedLapContainers { get { return lapContainers.OrderBy(l => l.End); } }
 
         public RaceManager RaceManager { get; private set; }
 
         public const float DisabledAlpha = 0.3f;
+
+        // Overridable layout regions, so a subclass (e.g. one that adds a graph above the
+        // race timeline) can shift things down without duplicating the whole constructor.
+        protected virtual string TitleText => "Lap Editor - " + Pilot.Name;
+        protected virtual RectangleF TitleBounds => new RectangleF(0, 0, 0.9f, 0.08f);
+        protected virtual RectangleF RaceNodeBounds => new RectangleF(0.01f, 0.09f, 0.98f, 0.1f);
+        protected virtual RectangleF LapsNodeBounds => new RectangleF(0.01f, 0.22f, 0.98f, 0.65f);
+        protected virtual float ButtonContainerTop => 1 - 0.10f;
 
         public LapEditorNode(RaceManager raceManager, Race race, Pilot pilot, IEnumerable<Lap> laps, Color channel)
         {
@@ -55,24 +66,26 @@ namespace UI.Nodes
 
             Laps = laps.Where(l => l.Race == race && l.Pilot == pilot).OrderBy(l => l.End).ToArray();
 
-            BorderPanelShadowNode background = new BorderPanelShadowNode(Theme.Current.Editor.Background, Theme.Current.Editor.Border.XNA);
+            background = new BorderPanelShadowNode(Theme.Current.Editor.Background, Theme.Current.Editor.Border.XNA);
             AddChild(background);
 
-            TextNode title = new TextNode("Lap Editor - " + Pilot.Name, Theme.Current.Editor.Text.XNA);
-            title.RelativeBounds = new RectangleF(0, 0, 0.9f, 0.08f);
+            TextNode title = new TextNode(TitleText, Theme.Current.Editor.Text.XNA);
+            title.RelativeBounds = TitleBounds;
             background.Inner.AddChild(title);
 
+            AddExtraContent(background.Inner);
+
             raceNode = new ColorNode(Theme.Current.Editor.Foreground.XNA);
-            raceNode.RelativeBounds = new RectangleF(0.01f, 0.09f, 0.98f, 0.1f);
+            raceNode.RelativeBounds = RaceNodeBounds;
             background.Inner.AddChild(raceNode);
 
             lapsNode = new ColorNode(Theme.Current.Editor.Foreground.XNA);
-            lapsNode.RelativeBounds = new RectangleF(0.01f, 0.22f, 0.98f, 0.65f);
+            lapsNode.RelativeBounds = LapsNodeBounds;
             background.Inner.AddChild(lapsNode);
 
-            float topOfButtonContainer = 1 - 0.10f;
+            float topOfButtonContainer = ButtonContainerTop;
 
-            Node buttonContainer = new Node();
+            buttonContainer = new Node();
             buttonContainer.RelativeBounds = new RectangleF(0, topOfButtonContainer, 1, 1 - topOfButtonContainer);
             background.Inner.AddChild(buttonContainer);
 
@@ -88,7 +101,7 @@ namespace UI.Nodes
             addLapButton.OnClick += AddLapButton_OnClick;
 
             copyLapsButton.OnClick += CopyLapsButton_OnClick;
-            pasteLapsButton.OnClick += PasteLapsButton_OnClick;  
+            pasteLapsButton.OnClick += PasteLapsButton_OnClick;
 
             buttonContainer.AddChild(cancelButton, addLapButton, copyLapsButton, pasteLapsButton, okButton);
             AlignHorizontally(0.05f, cancelButton, null, addLapButton, copyLapsButton, pasteLapsButton, null, okButton);
@@ -102,11 +115,26 @@ namespace UI.Nodes
                 lc.OnSplitLap += OnSplitLap;
                 lc.OnTimeChanged += () => { UpdateNumbersEtc(); };
                 lapContainers.Add(lc);
+                OnLapContainerCreated(lc);
             }
 
             Layout();
 
             UpdateRaceNode();
+        }
+
+        // No-op hook for a subclass to insert extra content (e.g. an RSSI waveform graph)
+        // between the title and the race timeline. Called before raceNode/lapsNode are laid
+        // out, so it has no dependency on them.
+        protected virtual void AddExtraContent(Node inner)
+        {
+        }
+
+        // No-op hook called whenever a new LapEditorContainer is created (initial load, manual
+        // add, split, or a subclass's own recalculate), so a subclass can wire up per-container
+        // events (e.g. MarshalEditorNode's row-select-highlights-graph behavior) in one place.
+        protected virtual void OnLapContainerCreated(LapEditorContainer lc)
+        {
         }
 
         private void PasteLapsButton_OnClick(MouseInputEvent mie)
@@ -157,12 +185,13 @@ namespace UI.Nodes
             newLC.OnSplitLap += OnSplitLap;
             newLC.OnTimeChanged += () => { UpdateNumbersEtc(); };
             lapContainers.Add(newLC);
+            OnLapContainerCreated(newLC);
 
             Layout();
             UpdateNumbersEtc();
         }
 
-        private void Layout()
+        protected void Layout()
         {
             foreach (LapEditorContainer lc in lapContainers)
             {
@@ -196,7 +225,7 @@ namespace UI.Nodes
             AlignVertically(0.01f, Math.Max(rowCount, rows.Count) , rows.ToArray());
         }
 
-        private void OnSplitLap(LapEditorContainer original, int splits)
+        protected void OnSplitLap(LapEditorContainer original, int splits)
         {
             TimeSpan newLength = TimeSpan.FromSeconds(original.Length.TotalSeconds / splits);
 
@@ -213,6 +242,7 @@ namespace UI.Nodes
                 newLC.OnSplitLap += OnSplitLap;
                 newLC.OnTimeChanged += () => { UpdateNumbersEtc(); };
                 lapContainers.Add(newLC);
+                OnLapContainerCreated(newLC);
 
                 lapStart = lapEnd;
 
@@ -225,7 +255,7 @@ namespace UI.Nodes
             UpdateNumbersEtc();
         }
 
-        private void UpdateNumbersEtc()
+        protected void UpdateNumbersEtc()
         {
             DateTime prev = Race.Start;
             int number = Race.Event.PrimaryTimingSystemLocation == PrimaryTimingSystemLocation.Holeshot ? 0 : 1;
@@ -246,7 +276,7 @@ namespace UI.Nodes
             UpdateRaceNode();
         }
 
-        private void UpdateRaceNode()
+        protected void UpdateRaceNode()
         {
             float textHeight = 0.8f;
 
@@ -282,7 +312,10 @@ namespace UI.Nodes
             {
                 TimeSpan sinceRaceStart = lve.End - raceStart;
 
-                float factor = (float)(sinceRaceStart.TotalSeconds / maxSeconds);
+                // Clamped defensively - a lap end past the race length (e.g. a spurious
+                // recalculated crossing from RSSI data that extends beyond the race) would
+                // otherwise place its tick outside raceNode's own bounds entirely.
+                float factor = Math.Clamp((float)(sinceRaceStart.TotalSeconds / maxSeconds), 0f, 1f);
 
                 ColorNode colorNode = new ColorNode(ChannelColor);
                 colorNode.Alpha = lve.Valid ? 1 : DisabledAlpha;
@@ -307,7 +340,7 @@ namespace UI.Nodes
             Dispose();
         }
 
-        private void OkButton_OnClick(Composition.Input.MouseInputEvent mie)
+        protected virtual void OkButton_OnClick(Composition.Input.MouseInputEvent mie)
         {
             LapEditorContainer focused = lapContainers.FirstOrDefault(lc => lc.TextEditorFocused);
             if (focused != null)
@@ -358,10 +391,19 @@ namespace UI.Nodes
         public event System.Action OnValidityChanged;
         public event Action<LapEditorContainer, int> OnSplitLap;
         public event System.Action OnTimeChanged;
+        public event Action<LapEditorContainer> OnSelected;
 
         public List<LapEditorContainer> Splits { get; set; }
 
         public bool TextEditorFocused { get { return lapTime.HasFocus; } }
+
+        private ColorNode selectionOverlay;
+
+        public bool IsSelected
+        {
+            get { return selectionOverlay.Visible; }
+            set { selectionOverlay.Visible = value; }
+        }
 
 
         public LapEditorContainer(Lap lap, Color channelColor)
@@ -398,6 +440,11 @@ namespace UI.Nodes
             float starts = lapNumber.RelativeBounds.Right + 0.05f;
 
             lapTime.RelativeBounds = new RectangleF(starts, 0, 1 - starts, 1);
+
+            selectionOverlay = new ColorNode(Color.Cyan);
+            selectionOverlay.Alpha = 0.35f;
+            selectionOverlay.Visible = false;
+            AddChild(selectionOverlay);
 
             Refresh();
         }
@@ -457,6 +504,11 @@ namespace UI.Nodes
                     lapTime.HasFocus = false;
                     ToggleValidity();
                     return true;
+                }
+
+                if (mouseInputEvent.ButtonState == ButtonStates.Released)
+                {
+                    OnSelected?.Invoke(this);
                 }
             }
             else if (mouseInputEvent.Button == MouseButtons.Right)

@@ -8,6 +8,7 @@ using RaceLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Timing;
 using Tools;
 
 namespace UI.Nodes
@@ -333,10 +334,21 @@ namespace UI.Nodes
 
                 mm.AddBlank();
 
-                mm.AddItem("Edit Laps", () =>
+               
+                if (EventManager.RaceManager.TimingSystemManager.AllSystems.OfType<IRemoteMarshalUpdatable>().Any())
                 {
-                    EditLaps();
-                });
+                    mm.AddItem("Edit Laps / Marshal", () =>
+                    {
+                        OpenMarshal();
+                    });
+                }
+                else
+                {
+                    mm.AddItem("Edit Laps", () =>
+                    {
+                        EditLaps();
+                    });
+                }
 
                 if (Laps.Any())
                 {
@@ -394,6 +406,41 @@ namespace UI.Nodes
             {
                 editor.AddManualLaps(lapsToAdd);
             }
+
+            GetLayer<PopupLayer>().Popup(editor);
+            editor.OnOK += (v) =>
+            {
+                using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                {
+                    db.Update(editLaps);
+                    currentRace.ReCalculateLaps(db, Pilot);
+                }
+
+                EventManager.LapRecordManager.ClearPilot(Pilot);
+                EventManager.LapRecordManager.UpdatePilot(Pilot);
+                EventManager.SpeedRecordManager.UpdatePilot(Pilot);
+                RefreshData();
+            };
+        }
+
+        private void OpenMarshal()
+        {
+            Race currentRace = EventManager.RaceManager.CurrentRace;
+            if (currentRace == null)
+                return;
+
+            Channel channel = currentRace.GetChannel(Pilot);
+            if (channel == null)
+                return;
+
+            Lap[] editLaps = currentRace.GetLaps(l => l.Pilot == Pilot).ToArray();
+
+            RSSIWaveform waveform = EventManager.RaceManager.TimingSystemManager.AllSystems
+                .OfType<IRemoteMarshalUpdatable>()
+                .Select(ts => ts.GetWaveform(currentRace.ID, Pilot.ID))
+                .FirstOrDefault(w => w != null);
+
+            MarshalEditorNode editor = new MarshalEditorNode(EventManager.RaceManager, currentRace, Pilot, editLaps, ChannelColor, waveform);
 
             GetLayer<PopupLayer>().Popup(editor);
             editor.OnOK += (v) =>

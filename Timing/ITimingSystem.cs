@@ -230,6 +230,22 @@ namespace Timing
     {
         IEnumerable<RSSI> GetRSSI();
     }
+
+    /// <summary>
+    /// Implemented by timing systems that can accept a marshal correction made locally in
+    /// FPVTrackside and push it back out, so the remote system stays the source of truth.
+    /// The mirror image of MarshallEventDelegate/OnMarshallEvent, which receives corrections.
+    /// </summary>
+    public interface IRemoteMarshalUpdatable : ITimingSystem
+    {
+        void PushMarshalUpdate(MarshalData marshalData);
+
+        /// <summary>
+        /// Returns the RSSI waveform/calibration for a pilot run, or null if unavailable (e.g.
+        /// RotorHazard hasn't sent it - its ts_race_marshal broadcast doesn't include this yet).
+        /// </summary>
+        RSSIWaveform GetWaveform(Guid raceId, Guid pilotId);
+    }
     public struct RSSI
     {
         public ITimingSystem TimingSystem { get; set; }
@@ -256,6 +272,21 @@ namespace Timing
         public bool Valid { get; set; }
         public TimeSpan Length { get; set; }
         public TimeSpan RaceTime { get; set; }
+    }
+
+    /// <summary>
+    /// Raw RSSI-over-time trace plus current enter/exit calibration for one pilot run, as used
+    /// by RotorHazard's own Marshal page to recompute lap crossings. Times are relative to race
+    /// start. Not yet populated by any ITimingSystem - RotorHazardTimingSystem will need the
+    /// ts_race_marshal broadcast extended (RH-side) to include history_values/history_times/
+    /// enter_at/exit_at before this can be filled in from a live race.
+    /// </summary>
+    public class RSSIWaveform
+    {
+        public TimeSpan[] Times { get; set; }
+        public int[] Values { get; set; }
+        public int EnterAt { get; set; }
+        public int ExitAt { get; set; }
     }
 }
 
