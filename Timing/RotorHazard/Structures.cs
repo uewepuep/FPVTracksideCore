@@ -142,6 +142,13 @@ namespace Timing.RotorHazard
         public string prog_start_time { get; set; }
     }
 
+    // Sent to ts_event_info, once whenever the event loads/changes (not per-race) - separate
+    // from RaceStartPilots, which carries per-race data on every ts_race_stage.
+    public struct EventInfo
+    {
+        public string name { get; set; }
+    }
+
     public struct RaceStartPilots
     {
         public double start_time_s { get; set; }

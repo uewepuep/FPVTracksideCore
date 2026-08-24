@@ -246,6 +246,17 @@ namespace Timing
         /// </summary>
         RSSIWaveform GetWaveform(Guid raceId, Guid pilotId);
     }
+
+    /// <summary>
+    /// Implemented by timing systems that want to know event-level metadata (e.g. the event's
+    /// display name), separate from the per-race StartMetaData sent on every race start -
+    /// set once, whenever the event is loaded or changed.
+    /// </summary>
+    public interface IEventAware : ITimingSystem
+    {
+        void SetEventMetaData(EventMetaData eventMetaData);
+    }
+
     public struct RSSI
     {
         public ITimingSystem TimingSystem { get; set; }

@@ -34,7 +34,7 @@ namespace Timing.RotorHazard
 
             VoltageWarning = 11;
             TemperatureWarning = 80;
-            SyncPilotNames = false;
+            SyncPilotNames = true;
         }
     }
 }

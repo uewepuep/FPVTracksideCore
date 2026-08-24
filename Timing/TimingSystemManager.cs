@@ -428,6 +428,14 @@ namespace Timing
             }
         }
 
+        public void SetEventMetaData(EventMetaData eventMetaData)
+        {
+            foreach (IEventAware timingSystem in AllSystems.OfType<IEventAware>())
+            {
+                timingSystem.SetEventMetaData(eventMetaData);
+            }
+        }
+
         public void Disconnect()
         {
             OnDataSent?.Invoke();

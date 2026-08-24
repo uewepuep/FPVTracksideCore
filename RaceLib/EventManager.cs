@@ -24,7 +24,20 @@ namespace RaceLib
         private Dictionary<Channel, Microsoft.Xna.Framework.Color> channelColour;
 
         private Event eventObj;
-        public Event Event { get { return eventObj; } set { eventObj = value; OnEventChange?.Invoke(); } }
+        public Event Event
+        {
+            get { return eventObj; }
+            set
+            {
+                eventObj = value;
+                OnEventChange?.Invoke();
+
+                if (value != null)
+                {
+                    RaceManager.TimingSystemManager.SetEventMetaData(new EventMetaData(value.Name));
+                }
+            }
+        }
         
         public Guid EventId { get; private set; }
 

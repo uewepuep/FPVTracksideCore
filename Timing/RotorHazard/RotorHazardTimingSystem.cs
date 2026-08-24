@@ -30,7 +30,7 @@ namespace Timing.RotorHazard
         }
     }
 
-    public class RotorHazardTimingSystem : ITimingSystemWithRSSI, IRemoteMarshalUpdatable
+    public class RotorHazardTimingSystem : ITimingSystemWithRSSI, IRemoteMarshalUpdatable, IEventAware
     {
 
         private bool connected;
@@ -212,6 +212,7 @@ namespace Timing.RotorHazard
                             Logger.TimingLog.Log(this, "Connected");
 
                             socket.EmitAsync("ts_server_info", OnServerInfo);
+                            SendEventMetaData();
 
                             connectionCount++;
                         }
@@ -812,5 +813,23 @@ namespace Timing.RotorHazard
             return raceData;
         }
 
+        private EventMetaData eventMetaData;
+
+        // Cached rather than sent immediately, since this can be called before the socket is
+        // connected (e.g. the event loads before RH does) - SendEventMetaData() re-sends
+        // whatever's cached here every time the socket (re)connects, covering both orderings.
+        public void SetEventMetaData(EventMetaData eventMetaData)
+        {
+            this.eventMetaData = eventMetaData;
+            SendEventMetaData();
+        }
+
+        private void SendEventMetaData()
+        {
+            if (!Connected || eventMetaData == null)
+                return;
+
+            socket?.EmitAsync("ts_event_info", new EventInfo { name = eventMetaData.Name });
+        }
     }
 }
