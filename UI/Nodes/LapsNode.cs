@@ -335,7 +335,7 @@ namespace UI.Nodes
                 mm.AddBlank();
 
                
-                if (EventManager.RaceManager.TimingSystemManager.AllSystems.OfType<IRemoteMarshalUpdatable>().Any())
+                if (EventManager.RaceManager.TimingSystemManager.AllSystems.OfType<IRemoteMarshalUpdatable>().Any(ts => ts.MarshalSupported))
                 {
                     mm.AddItem("Edit Laps / Marshal", () =>
                     {
@@ -437,6 +437,7 @@ namespace UI.Nodes
 
             RSSIWaveform waveform = EventManager.RaceManager.TimingSystemManager.AllSystems
                 .OfType<IRemoteMarshalUpdatable>()
+                .Where(ts => ts.MarshalSupported)
                 .Select(ts => ts.GetWaveform(currentRace.ID, Pilot.ID))
                 .FirstOrDefault(w => w != null);
 

@@ -139,6 +139,35 @@ namespace Timing.RotorHazard
 
         public ServerInfo ServerInfo { get; private set; }
 
+        // The Connector-FPVTrackSide plugin version that first shipped marshalling support
+        // (ts_race_marshal_waveform/ts_race_marshal_update/ts_event_info) - bump alongside
+        // manifest.json's "version" whenever a plugin-side feature needs gating like this.
+        private const string MarshalMinimumPluginVersion = "1.2.0";
+
+        public bool MarshalSupported
+        {
+            get { return VersionAtLeast(ServerInfo.plugin_version, MarshalMinimumPluginVersion); }
+        }
+
+        // Tolerant dotted-version comparison (e.g. "1.2.0" >= "1.2.0") - strips anything from a
+        // '-' onward first, since RH's own release_version can carry a "-beta.1"-style suffix
+        // System.Version can't parse; not needed for our own plugin_version today (plain
+        // major.minor.patch), but keeps this safe to reuse for RH-core-version gating later.
+        private static bool VersionAtLeast(string actual, string minimum)
+        {
+            if (string.IsNullOrEmpty(actual))
+                return false;
+
+            string actualCore = actual.Split('-')[0];
+            string minimumCore = minimum.Split('-')[0];
+
+            if (Version.TryParse(actualCore, out Version actualVersion) && Version.TryParse(minimumCore, out Version minimumVersion))
+            {
+                return actualVersion >= minimumVersion;
+            }
+
+            return false;
+        }
 
         private const int MaxTimeSamples = 20;
 
@@ -691,7 +720,7 @@ namespace Timing.RotorHazard
         public RSSIWaveform GetWaveform(Guid raceId, Guid pilotId)
         {
             SocketIO s = socket;
-            if (s == null || !Connected)
+            if (s == null || !Connected || !MarshalSupported)
                 return null;
 
             RaceMarshalWaveformRequest request = new RaceMarshalWaveformRequest
@@ -767,7 +796,7 @@ namespace Timing.RotorHazard
 
         public void PushMarshalUpdate(MarshalData marshalData)
         {
-            if (!Connected)
+            if (!Connected || !MarshalSupported)
                 return;
 
             RaceMarshalUpdate update = new RaceMarshalUpdate

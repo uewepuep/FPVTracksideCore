@@ -140,6 +140,12 @@ namespace Timing.RotorHazard
 
         public string prog_start_epoch { get; set; }
         public string prog_start_time { get; set; }
+
+        // The FPVTrackSide connector plugin's own version (manifest.json), not RH core's - what
+        // actually determines whether a given feature (e.g. marshalling) is supported, since
+        // that's plugin code we control independently of the RH release itself. Null on any
+        // plugin build predating this field.
+        public string plugin_version { get; set; }
     }
 
     // Sent to ts_event_info, once whenever the event loads/changes (not per-race) - separate

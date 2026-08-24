@@ -281,6 +281,10 @@ namespace Timing
         // has nowhere real to persist it.
         public MarshalData LastMarshalUpdate { get; private set; }
 
+        // Dummy is a local-only test harness with no remote plugin/version concept, so it
+        // always supports marshalling.
+        public bool MarshalSupported { get { return true; } }
+
         public void PushMarshalUpdate(MarshalData marshalData)
         {
             LastMarshalUpdate = marshalData;

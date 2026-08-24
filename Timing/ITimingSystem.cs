@@ -245,6 +245,17 @@ namespace Timing
         /// RotorHazard hasn't sent it - its ts_race_marshal broadcast doesn't include this yet).
         /// </summary>
         RSSIWaveform GetWaveform(Guid raceId, Guid pilotId);
+
+        /// <summary>
+        /// True if this specific connected instance is actually known to support marshalling -
+        /// distinct from "this class implements the interface", which just says the feature
+        /// exists in FPVTrackside's code. For a remote system (RotorHazard) this depends on
+        /// which version of its own connector plugin is deployed there, detected at connect
+        /// time - an old plugin predating marshalling should mean the UI doesn't offer it,
+        /// rather than silently failing/timing out when clicked. Local-only systems (Dummy)
+        /// have no such version concept and are always true.
+        /// </summary>
+        bool MarshalSupported { get; }
     }
 
     /// <summary>
