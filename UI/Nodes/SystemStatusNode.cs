@@ -1,6 +1,7 @@
 ﻿using Composition;
 using Composition.Input;
 using Composition.Nodes;
+using ExternalData;
 using ImageServer;
 using Microsoft.Xna.Framework;
 using Sound;
@@ -10,6 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Timing;
+using Timing.RotorHazard;
 using Tools;
 using UI.Video;
 using static UI.OBSRemoteControlManager;
@@ -270,6 +272,25 @@ namespace UI.Nodes
                 StatusItem chosen = statuses.GetFromCurrentTime(updateEverySeconds);
                 SetStatus(chosen.Value, TimingSystem.Connected);
             }
+        }
+
+        // RH's web UI splits its own public race/timer pages from a handful of admin/debug
+        // pages (settings, DB browser, hardware log, plugin manager) - all behind the same
+        // HTTP Basic Auth as the socket handshake (RotorHazardSettings.AdminUsername/Password).
+        // No separate login needed here, just links out to a browser.
+        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
+        {
+            if (mouseInputEvent.ButtonState == ButtonStates.Released && TimingSystem is RotorHazardTimingSystem && TimingSystem.Settings is RotorHazardSettings settings)
+            {
+                MouseMenu mm = new MouseMenu(this);
+
+                mm.AddItem("RotorHazard (Web)", () => DataTools.StartBrowser("http://" + settings.HostName + ":" + settings.Port));
+
+                mm.Show(this);
+                return true;
+            }
+
+            return base.OnMouseInput(mouseInputEvent);
         }
     }
 
