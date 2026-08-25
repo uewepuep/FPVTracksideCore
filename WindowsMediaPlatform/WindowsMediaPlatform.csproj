@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 		<Platforms>x64</Platforms>
-		<Version>2.77.4.891</Version>
+		<Version>2.78.0.893</Version>
 	  <usewpf>true</usewpf>
   </PropertyGroup>
 
