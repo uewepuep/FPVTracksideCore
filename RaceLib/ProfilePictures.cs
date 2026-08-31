@@ -64,11 +64,12 @@ namespace RaceLib
                         {
                             // macOS stores file names decomposed (NFD), so both sides are
                             // brought to NFC before comparing. The matched FileInfo keeps
-                            // the on-disk name for the actual file access.
+                            // the on-disk name for the actual file access. Case is ignored
+                            // so "john smith.jpg" still matches a pilot named "John Smith".
                             string pilotName = p.Name.NormaliseUnicode();
                             IEnumerable<FileInfo> matches = media.Where(f =>
                                 Path.GetFileNameWithoutExtension(f.Name).NormaliseUnicode()
-                                    .Equals(pilotName, StringComparison.Ordinal));
+                                    .Equals(pilotName, StringComparison.OrdinalIgnoreCase));
                             if (matches.Any())
                             {
                                 p.PhotoPath = matches

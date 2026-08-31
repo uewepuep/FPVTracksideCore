@@ -589,6 +589,13 @@ namespace UI.Nodes
 
             pilotProfileOptions = options;
 
+            // Don't do the small option if we're not a video node.
+            if (GetType() == typeof(ChannelNodeBase))
+            {
+                options = PilotProfileOptions.Large;
+                snap = true;
+            }
+
             if (!PilotProfile.HasProfileImage)
             {
                 options = PilotProfileOptions.None;
