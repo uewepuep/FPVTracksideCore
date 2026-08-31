@@ -114,13 +114,18 @@ namespace UI.Nodes
 
         public override void Layout(RectangleF parentBounds)
         {
-            if (needsLoadAttempt)
-            {
-                LoadProfile();
-                needsLoadAttempt = false;
-            }
+            EnsureLoaded();
 
             base.Layout(parentBounds);
+        }
+
+        public void EnsureLoaded()
+        {
+            if (!needsLoadAttempt || CompositorLayer == null)
+                return;
+
+            LoadProfile();
+            needsLoadAttempt = false;
         }
 
         private void LoadProfile()
@@ -182,7 +187,7 @@ namespace UI.Nodes
                         maskFilename = Theme.Current.PilotProfileMask.TextureFilename;
                     }
 
-                    if (videoFileTypes.Contains(fileInfo.Extension))
+                    if (videoFileTypes.Contains(fileInfo.Extension, StringComparer.OrdinalIgnoreCase))
                     {
                         CachedTextureFrameSource source = null;
 
@@ -226,7 +231,7 @@ namespace UI.Nodes
                         PilotPhoto = videoPlayer;
                         insideOutBorderRelativeNode.AddChild(PilotPhoto, 0);
                     }
-                    else if (imageFileTypes.Contains(fileInfo.Extension))
+                    else if (imageFileTypes.Contains(fileInfo.Extension, StringComparer.OrdinalIgnoreCase))
                     {
                         if (string.IsNullOrEmpty(maskFilename))
                         {
