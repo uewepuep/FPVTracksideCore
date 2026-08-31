@@ -39,6 +39,8 @@ namespace UI.Nodes
 
         protected List<LapEditorContainer> lapContainers;
 
+        private LapRowListNode lapRows;
+
         protected IEnumerable<LapEditorContainer> orderedLapContainers { get { return lapContainers.OrderBy(l => l.End); } }
 
         public RaceManager RaceManager { get; private set; }
@@ -52,6 +54,12 @@ namespace UI.Nodes
         protected virtual RectangleF RaceNodeBounds => new RectangleF(0.01f, 0.09f, 0.98f, 0.1f);
         protected virtual RectangleF LapsNodeBounds => new RectangleF(0.01f, 0.22f, 0.98f, 0.65f);
         protected virtual float ButtonContainerTop => 1 - 0.10f;
+
+        // Grid sizing. Rows are a fixed height, so more laps scroll rather than shrinking
+        // every time down to nothing. Fewer columns and rows than the area could hold means
+        // each lap gets more room, which is what makes the times readable.
+        protected virtual int LapsPerRow => 6;
+        protected virtual int VisibleLapRows => 6;
 
         public LapEditorNode(RaceManager raceManager, Race race, Pilot pilot, IEnumerable<Lap> laps, Color channel)
         {
@@ -198,10 +206,19 @@ namespace UI.Nodes
                 lc.Remove();
             }
 
-            lapsNode.ClearDisposeChildren();
+            if (lapRows == null)
+            {
+                lapRows = new LapRowListNode(Theme.Current.ScrollBar.XNA);
+                lapRows.VisibleRows = VisibleLapRows;
+                lapRows.ItemPadding = 2;
+                lapsNode.AddChild(lapRows);
+            }
+            else
+            {
+                lapRows.ClearDisposeChildren();
+            }
 
-            int perRow = 8;
-            int rowCount = 8;
+            int perRow = LapsPerRow;
             List<Node> rows = new List<Node>();
 
             foreach (LapEditorContainer lc in orderedLapContainers)
@@ -219,10 +236,10 @@ namespace UI.Nodes
             foreach (Node row in rows)
             {
                 AlignHorizontally(0.01f, perRow, row.Children.ToArray());
-                lapsNode.AddChild(row);
+                lapRows.AddChild(row);
             }
 
-            AlignVertically(0.01f, Math.Max(rowCount, rows.Count) , rows.ToArray());
+            lapRows.RequestLayout();
         }
 
         protected void OnSplitLap(LapEditorContainer original, int splits)
@@ -371,6 +388,30 @@ namespace UI.Nodes
 
             OnOK?.Invoke(Laps);
             Dispose();
+        }
+    }
+
+    // A list of lap rows that keeps every row the same readable height no matter how many
+    // there are, scrolling once they overflow. ItemHeight is in pixels, so it is derived from
+    // the laid out height rather than fixed, to hold up across resolutions and dialog sizes.
+    public class LapRowListNode : ListNode<Node>
+    {
+        public int VisibleRows { get; set; }
+
+        public LapRowListNode(Color scrollColor)
+            : base(scrollColor)
+        {
+            VisibleRows = 6;
+        }
+
+        public override void Layout(RectangleF parentBounds)
+        {
+            RectangleF bounds = CalculateRelativeBounds(parentBounds);
+
+            int rows = Math.Max(1, VisibleRows);
+            ItemHeight = Math.Max(1, (int)(bounds.Height / rows) - ItemPadding);
+
+            base.Layout(parentBounds);
         }
     }
 
