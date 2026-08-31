@@ -246,7 +246,7 @@ namespace UI.Video
             try
             {
                 CleanUp();
-                SeekNode.ClearFlags();
+                SeekNode.ClearRace();
 
                 this.race = race;
                 if (lap != null)
@@ -309,6 +309,8 @@ namespace UI.Video
                         cbn.LapsNode.OnAddLap = (pilot, time) => { EventManager.RaceManager.AddManualLapWithRace(race, pilot, time, 0); };
                         cbn.OnCloseClick += () => { Hide(cbn); };
                         cbn.OnCrashedOutClick += () => { Hide(cbn); };
+                        cbn.OnFullscreen += () => { FullScreen(cbn); };
+                        cbn.OnShowAll += () => { ShowAll(); };
 
                         cbn.AlwaysSmallPilotProfile = true;
                         cbn.SetProfileVisible(ChannelNodeBase.PilotProfileOptions.Small);
@@ -358,9 +360,22 @@ namespace UI.Video
             ChannelsGridNode.Reorder(true);
         }
 
+        private void FullScreen(ChannelNodeBase cbn)
+        {
+            // Only the full screened pilot's laps are of interest on the seek bar.
+            SeekNode.SetPilotFilter(cbn.Pilot);
+            SeekNode.ShowAll.Visible = true;
+        }
+
         private void ShowAll_OnClick(MouseInputEvent mie)
         {
+            ShowAll();
+        }
+
+        private void ShowAll()
+        {
             SeekNode.ShowAll.Visible = false;
+            SeekNode.SetPilotFilter(null);
 
             foreach (ChannelNodeBase cbn in ChannelsGridNode.ChannelNodes)
             {
