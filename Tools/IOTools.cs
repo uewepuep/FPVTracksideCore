@@ -14,6 +14,23 @@ namespace Tools
     {
         public static DirectoryInfo WorkingDirectory { get; set; }
 
+        // Building an XmlSerializer emits and compiles a serialization assembly, so keep one per type.
+        private static readonly Dictionary<Type, XmlSerializer> xmlSerializerCache = new Dictionary<Type, XmlSerializer>();
+
+        private static XmlSerializer GetXmlSerializer<T>()
+        {
+            Type arrayType = typeof(T[]);
+            lock (xmlSerializerCache)
+            {
+                if (!xmlSerializerCache.TryGetValue(arrayType, out XmlSerializer serializer))
+                {
+                    serializer = new XmlSerializer(arrayType);
+                    xmlSerializerCache[arrayType] = serializer;
+                }
+                return serializer;
+            }
+        }
+
         /// <summary>
         /// Resolves a relative path to an absolute path based on WorkingDirectory.
         /// Absolute paths are returned as-is. Falls back to the current directory, as before,
@@ -145,7 +162,7 @@ namespace Tools
 
                 if (ext == ".xml")
                 {
-                    XmlSerializer serializer = new XmlSerializer(typeof(T[]));
+                    XmlSerializer serializer = GetXmlSerializer<T>();
                     using (TextReader reader = new StringReader(contents))
                     {
                         return (T[])serializer.Deserialize(reader);
@@ -195,7 +212,7 @@ namespace Tools
 
                     if (file.Extension.ToLower() == ".xml")
                     {
-                        XmlSerializer serializer = new XmlSerializer(typeof(T[]));
+                        XmlSerializer serializer = GetXmlSerializer<T>();
                         using (TextWriter writer = new StreamWriter(file.FullName))
                         {
                             serializer.Serialize(writer, items);

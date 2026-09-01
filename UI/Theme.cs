@@ -136,118 +136,125 @@ namespace UI
             PilotProfileMask = null;
         }
 
-        public static List<Theme> Themes { get; private set; }
+        private static DirectoryInfo themesDir;
+        private static GraphicsDevice graphicsDeviceRef;
+        private static List<Theme> themes;
 
-        public static IEnumerable<Theme> Load(DirectoryInfo directoryInfo, GraphicsDevice graphicsDevice)
+        // Loading every theme is expensive (each one decodes its whole image set), and the only
+        // thing that needs the full list is the theme editor. Load them on demand.
+        public static List<Theme> Themes
         {
-            KeyValuePair<string, string>[] replacements = new KeyValuePair<string, string>[]
+            get
             {
-                new KeyValuePair<string, string>("PBPage", "InfoPanel"),
-            };
+                if (themes == null)
+                {
+                    themes = new List<Theme>();
+                    if (themesDir != null && graphicsDeviceRef != null)
+                    {
+                        themes.AddRange(LoadAll(themesDir, graphicsDeviceRef));
+                    }
+                }
+                return themes;
+            }
+            private set { themes = value; }
+        }
 
+        private static KeyValuePair<string, string>[] ThemeXmlReplacements = new KeyValuePair<string, string>[]
+        {
+            new KeyValuePair<string, string>("PBPage", "InfoPanel"),
+        };
 
+        private static Theme LoadFromDirectory(DirectoryInfo directory, GraphicsDevice graphicsDevice)
+        {
+            FileInfo themeFile = new FileInfo(Path.Combine(directory.FullName, "theme.xml"));
+            if (themeFile.Exists)
+            {
+                try
+                {
+                    Theme theme = IOTools.Read<Theme>(directory.FullName, themeFile.Name, ThemeXmlReplacements).FirstOrDefault();
+                    theme.Name = directory.Name;
+                    theme.Directory = directory;
+                    theme.Upgrade();
+                    theme.Repair();
+                    return theme;
+                }
+                catch
+                {
+                }
+            }
+
+            FileInfo theme2File = new FileInfo(Path.Combine(directory.FullName, "theme2.xml"));
+            if (theme2File.Exists)
+            {
+                try
+                {
+                    Theme2 theme2 = IOTools.Read<Theme2>(directory.FullName, theme2File.Name, ThemeXmlReplacements).FirstOrDefault();
+                    theme2.Name = directory.Name;
+                    theme2.Directory = directory;
+                    return theme2.ToTheme(graphicsDevice, new Theme());
+                }
+                catch
+                {
+                }
+            }
+
+            return null;
+        }
+
+        private static IEnumerable<Theme> LoadAll(DirectoryInfo directoryInfo, GraphicsDevice graphicsDevice)
+        {
             foreach (DirectoryInfo directory in directoryInfo.GetDirectories("*"))
             {
-                FileInfo themeFile = new FileInfo(Path.Combine(directory.FullName, "theme.xml"));
-                if (themeFile.Exists)
-                {
-                    Theme theme;
-                    try
-                    {
-                        theme = IOTools.Read<Theme>(directory.FullName, themeFile.Name, replacements).FirstOrDefault();
-                        theme.Name = directory.Name;
-                        theme.Directory = directory;
-
-                        theme.Upgrade();
-                        theme.Repair();
-
-                        IOTools.Write(directory.FullName, themeFile.Name, theme);
-
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-
+                Theme theme = LoadFromDirectory(directory, graphicsDevice);
+                if (theme != null)
                     yield return theme;
-                }
-
-                //if (directory.Name == "NewDark")
-                //{
-                //    Theme2 theme2 = new Theme2();
-                //    FileInfo theme2Fil2e = new FileInfo(directory.FullName + "/theme2.xml");
-                //    IOTools.Write(directory.FullName, theme2Fil2e.Name, theme2);
-                //}
-
-                FileInfo theme2File = new FileInfo(Path.Combine(directory.FullName,"theme2.xml"));
-                if (theme2File.Exists)
-                {
-                    Theme2 theme2;
-
-                    Theme theme = null;
-
-                    try
-                    {
-                        theme2 = IOTools.Read<Theme2>(directory.FullName, theme2File.Name, replacements).FirstOrDefault();
-                        theme2.Name = directory.Name;
-                        theme2.Directory = directory;
-
-                        IOTools.Write(directory.FullName, theme2File.Name, theme2);
-
-                        theme = theme2.ToTheme(graphicsDevice, new Theme());
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-
-                    if (theme != null)
-                    {
-                        yield return theme;
-                    }
-                }
             }
         }
 
         public static void Initialise(GraphicsDevice gd, DirectoryInfo workingDirectory, string name)
         {
-            List<Theme> themes = new List<Theme>();
+            string targetName = ApplicationProfileSettings.Instance?.Theme ?? name;
 
-            DirectoryInfo themesDirectory = new DirectoryInfo(Path.Combine(workingDirectory.FullName, "themes"));
+            if (Current != null && Current.Name == targetName)
+                return;
 
-            themes.AddRange(Load(themesDirectory, gd));
+            themesDir = new DirectoryInfo(Path.Combine(workingDirectory.FullName, "themes"));
+            graphicsDeviceRef = gd;
+            themes = null;
 
-            Themes = themes.ToList();
-
-            Theme oldCurrent = Current;
-
-            if (ApplicationProfileSettings.Instance != null)
+            if (themesDir.Exists)
             {
-                Current = Themes.FirstOrDefault(t => t.Name == ApplicationProfileSettings.Instance.Theme);
-            }
+                DirectoryInfo targetDir = new DirectoryInfo(Path.Combine(themesDir.FullName, targetName));
+                if (targetDir.Exists)
+                {
+                    Current = LoadFromDirectory(targetDir, gd);
+                }
 
-            if (Current == null)
-            {
-                Current = oldCurrent;
-            }
+                if (Current == null && targetName != name)
+                {
+                    targetDir = new DirectoryInfo(Path.Combine(themesDir.FullName, name));
+                    if (targetDir.Exists)
+                    {
+                        Current = LoadFromDirectory(targetDir, gd);
+                    }
+                }
 
-            if (Current == null)
-            {
-                Current = Themes.FirstOrDefault(t => t.Name == name);
-            }
+                if (Current == null)
+                {
+                    targetDir = new DirectoryInfo(Path.Combine(themesDir.FullName, "FPVTrackside"));
+                    if (targetDir.Exists)
+                    {
+                        Current = LoadFromDirectory(targetDir, gd);
+                    }
+                }
 
-            if (Current == null)
-            {
-                Current = Themes.FirstOrDefault(t => t.Name == "FPVTrackside");
-            }
-
-            if (Current == null)
-            {
-                Current = Themes.FirstOrDefault();
+                if (Current == null)
+                {
+                    Current = LoadAll(themesDir, gd).FirstOrDefault();
+                }
             }
 
             Logger.UI.LogCall(Current, "Theme.Init");
-
 
             if (Current == null)
             {
@@ -328,6 +335,9 @@ namespace UI
         {
             foreach (PropertyInfo propertyInfo in obj.GetType().GetProperties())
             {
+                if (propertyInfo.GetAccessors(true)[0].IsStatic)
+                    continue;
+
                 object value = propertyInfo.GetValue(obj, null);
                 if (value == null)
                     continue;
@@ -371,6 +381,11 @@ namespace UI
         {
             foreach (PropertyInfo propertyInfo in obj.GetType().GetProperties())
             {
+                // Theme's static properties (Current, Themes) are not part of a theme's own data,
+                // and reading Themes here would force every theme on disk to load.
+                if (propertyInfo.GetAccessors(true)[0].IsStatic)
+                    continue;
+
                 object value = propertyInfo.GetValue(obj, null);
                 if (value == null)
                     continue;
