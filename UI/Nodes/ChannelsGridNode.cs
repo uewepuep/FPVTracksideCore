@@ -86,6 +86,7 @@ namespace UI.Nodes
         private DateTime reOrderRequest;
 
         private bool extrasVisible;
+        private PilotProfileOptions pilotProfileOptions = PilotProfileOptions.Small;
 
         public event Action<Node> OnFullScreen;
 
@@ -458,6 +459,7 @@ namespace UI.Nodes
             if (channelNodeBase != null)
             {
                 channelNodeBase.SetPilot(pilotChannel.Pilot);
+                channelNodeBase.SetProfileVisible(pilotProfileOptions);
                 channelNodeBase.SetAnimationTime(CurrentAnimationTime);
                 channelNodeBase.SetAnimatedVisibility(true);
                 channelNodeBase.SetCrashedOutType(CrashState.AutoUp);
@@ -485,13 +487,7 @@ namespace UI.Nodes
 
         public void OnRaceManagerAddPilot(PilotChannel pilotChannel)
         {
-            ChannelNodeBase[] ps = AddPilots(pilotChannel);
-
-            foreach (ChannelNodeBase p in ps)
-            {
-                // Set this again incase changing the pilot has changed things.
-                p.SetProfileVisible(PilotProfileOptions.Large);
-            }
+            AddPilots(pilotChannel);
         }
 
         public ChannelNodeBase[] AddPilots(params PilotChannel[] pilotChannels)
@@ -670,6 +666,8 @@ namespace UI.Nodes
 
         public void SetProfileVisible(PilotProfileOptions options)
         {
+            pilotProfileOptions = options;
+
             foreach (ChannelNodeBase channelNode in ChannelNodes)
             {
                 channelNode.SetProfileVisible(options);

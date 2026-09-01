@@ -46,6 +46,12 @@ namespace UI.Video
 
         private EventManager eventManager;
 
+        private Race race;
+        private DateTime mediaStart;
+        private DateTime mediaEnd;
+
+        private Pilot filterPilot;
+
         public DateTime Start { get; set; }
         public DateTime End { get; set; }
 
@@ -100,6 +106,13 @@ namespace UI.Video
             progressBarLineContainer.ClearDisposeChildren();
         }
 
+        public void ClearRace()
+        {
+            ClearFlags();
+            race = null;
+            filterPilot = null;
+        }
+
         private DateTime FactorToTime(float factor)
         {
             TimeSpan length = End - Start;
@@ -116,15 +129,36 @@ namespace UI.Video
             return Math.Clamp(factor, 0, 1);
         }
 
+        // Limits the lap / game point markers to a single pilot. Null shows every pilot in the race.
+        public void SetPilotFilter(Pilot pilot)
+        {
+            if (filterPilot == pilot)
+                return;
+
+            filterPilot = pilot;
+
+            if (race != null)
+            {
+                SetRace(race, mediaStart, mediaEnd);
+            }
+        }
+
         public void SetRace(Race race, DateTime mediaStart, DateTime mediaEnd)
         {
             ClearFlags();
+
+            this.race = race;
+            this.mediaStart = mediaStart;
+            this.mediaEnd = mediaEnd;
 
             Start = race.Start > mediaStart ? mediaStart : race.Start;
             End = race.End < mediaEnd ? mediaEnd : race.End;
 
             foreach (PilotChannel pilotChannel in race.PilotChannelsSafe)
             {
+                if (filterPilot != null && pilotChannel.Pilot != filterPilot)
+                    continue;
+
                 Color tint = eventManager.GetRaceChannelColor(race, pilotChannel.Channel);
 
                 Lap[] laps = race.GetValidLaps(pilotChannel.Pilot, true);
@@ -158,6 +192,9 @@ namespace UI.Video
             {
                 foreach (GamePoint gamePoint in race.GamePoints)
                 {
+                    if (filterPilot != null && race.GetPilot(gamePoint.Channel) != filterPilot)
+                        continue;
+
                     Color tint = eventManager.GetRaceChannelColor(race, gamePoint.Channel);
 
                     AddTimeMarker(gamePoint.Time, tint, gamePoint.Channel.DisplayName);

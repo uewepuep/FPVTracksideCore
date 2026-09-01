@@ -576,6 +576,8 @@ namespace UI.Nodes
         {
             bool snap = false;
 
+            PilotProfile.EnsureLoaded();
+
             if (!force && options != PilotProfileOptions.None)
             {
                 if (ApplicationProfileSettings.Instance.AlwaysSmallPilotProfile || AlwaysSmallPilotProfile)
