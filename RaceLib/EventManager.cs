@@ -196,9 +196,9 @@ namespace RaceLib
                 db.Update(eventObj);
             }
 
-            OnPilotRefresh?.Invoke();
-
             ProfilePictures.FindProfilePicture(pc.Pilot);
+
+            OnPilotRefresh?.Invoke();
 
             return true;
         }
