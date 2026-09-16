@@ -314,9 +314,10 @@ namespace RaceLib
 
         public IEnumerable<Race> GenerateNewRound(Round callingRound, RoundFormat roundFormat, RoundPlan roundPlan)
         {
-            Round existingNext = GetStageRounds(roundFormat.Stage).FirstOrDefault(r => r.Valid && r.Order > callingRound.Order);
-            int newRoundNumber = existingNext?.RoundNumber ?? (RaceManager.GetMaxRoundNumber(callingRound.EventType) + 1);
-            Round newRound = GetCreateRound(newRoundNumber, callingRound.EventType, roundFormat.Stage, callingRound.Order);
+            // Use the stage's next round itself: looking it up again by number with the calling round's event type
+            // returns an unrelated round when the types differ (e.g. TimeTrial Round 1 for a stage whose next round is Race Round 1).
+            Round newRound = GetStageRounds(roundFormat.Stage).FirstOrDefault(r => r.Valid && r.Order > callingRound.Order)
+                ?? GetCreateRound(RaceManager.GetMaxRoundNumber(callingRound.EventType) + 1, callingRound.EventType, roundFormat.Stage, callingRound.Order);
             return GenerateFillRound(newRound, roundFormat, roundPlan);
         }
 
