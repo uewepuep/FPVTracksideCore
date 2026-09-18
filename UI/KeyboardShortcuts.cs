@@ -176,6 +176,11 @@ namespace Composition.Input
         [Category("Replay")]
         public ShortcutKey ReplayMinus5Seconds { get; set; }
 
+        // Mouse wheel scrubs the replay; holding Shift steps one frame per notch instead.
+        [Category("Replay")]
+        [DisplayName("Mouse Wheel Scrubbing (Shift = one frame)")]
+        public bool ReplayMouseWheelScrub { get; set; }
+
 
         [Category("Sound")]
         public ShortcutKey StopSound { get; set; }
@@ -277,6 +282,8 @@ namespace Composition.Input
 
             ReplayPlus5Seconds = new ShortcutKey(Keys.Right, false, true); // Shift+Right
             ReplayMinus5Seconds = new ShortcutKey(Keys.Left, false, true); // Shift+Left
+
+            ReplayMouseWheelScrub = false;
 
             AddLapChannelGroup1 = new ShortcutKey(Keys.D1, false, true);
             AddLapChannelGroup2 = new ShortcutKey(Keys.D2, false, true);
