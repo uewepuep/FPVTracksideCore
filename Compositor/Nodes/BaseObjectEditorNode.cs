@@ -1019,7 +1019,10 @@ namespace Composition.Nodes
                 }
             }
 
-            string translated = Translator.GetPropertyName<T>(pi.Name, name);
+            // pi can be null - PropertyNode's own constructor already tolerates it (this class
+            // is also used for rows with no backing PropertyInfo, e.g. RotorHazardLeanModePropertyNode,
+            // whose value lives on a remote server rather than a local settings property).
+            string translated = Translator.GetPropertyName<T>(pi?.Name, name);
 
             NameNode = new TextNode(translated, textColor);
             NameNode.Alignment = RectangleAlignment.BottomLeft;

@@ -281,9 +281,12 @@ namespace Timing
         // has nowhere real to persist it.
         public MarshalData LastMarshalUpdate { get; private set; }
 
-        // Dummy is a local-only test harness with no remote plugin/version concept, so it
-        // always supports marshalling.
-        public bool MarshalSupported { get { return true; } }
+        // Only claim marshal support while Dummy is actively simulating a race
+        // (GenerateRandomLaps), so the marshal UI can still be exercised end to end for
+        // testing. Otherwise Dummy is commonly added just to pad out extra channels alongside
+        // real hardware (e.g. a LapRF setup with fewer receivers than pilots), and those users
+        // have nothing to marshal - Dummy has no remote system to correct against.
+        public bool MarshalSupported { get { return DummingSettings.GenerateRandomLaps; } }
 
         public void PushMarshalUpdate(MarshalData marshalData)
         {
