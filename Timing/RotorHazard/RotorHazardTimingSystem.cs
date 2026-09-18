@@ -144,10 +144,28 @@ namespace Timing.RotorHazard
         // manifest.json's "version" whenever a plugin-side feature needs gating like this.
         private const string MarshalMinimumPluginVersion = "1.2.0";
 
+        // TODO: this is a placeholder - confirm the actual Connector-FPVTrackSide plugin
+        // version that ships ts_get_lean_mode/ts_set_lean_mode once Dan merges lean mode
+        // into his RH integration branch, then correct this cutoff.
+        private const string LeanModeMinimumPluginVersion = "1.3.0";
+
         public bool MarshalSupported
         {
-            get { return VersionAtLeast(ServerInfo.plugin_version, MarshalMinimumPluginVersion); }
+            // Lean mode reuses a single heat and never saves races, so RH has no persisted
+            // race for its own saved-race marshaling to act on - hide marshal correction
+            // whenever it's on, regardless of plugin version.
+            get { return VersionAtLeast(ServerInfo.plugin_version, MarshalMinimumPluginVersion) && !LeanMode; }
         }
+
+        public bool LeanModeSupported
+        {
+            get { return VersionAtLeast(ServerInfo.plugin_version, LeanModeMinimumPluginVersion); }
+        }
+
+        // Cached from the last ts_get_lean_mode/ts_set_lean_mode ack. Authoritative state
+        // lives server-side (RH's _ts_lean_mode) - this is just a local mirror for gating
+        // MarshalSupported, refreshed on every connect and every explicit Get/Set call.
+        public bool LeanMode { get; private set; }
 
         // Tolerant dotted-version comparison (e.g. "1.2.0" >= "1.2.0") - strips anything from a
         // '-' onward first, since RH's own release_version can carry a "-beta.1"-style suffix
@@ -348,6 +366,49 @@ namespace Timing.RotorHazard
         private void OnServerInfo(SocketIOResponse response)
         {
             ServerInfo = response.GetValue<ServerInfo>();
+
+            // Lean Mode is a plain staged setting now (RotorHazardSettings.LeanMode) - RH is
+            // pushed to converge on whatever's configured every time we (re)connect, rather
+            // than FPVTrackSide fetching and mirroring RH's own current value. Deferred until
+            // here (rather than fired alongside ts_server_info in OnConnected) because
+            // LeanModeSupported depends on plugin_version, which only exists once this ack
+            // has landed.
+            if (LeanModeSupported)
+            {
+                socket?.EmitAsync("ts_set_lean_mode", OnLeanModeAck, new LeanModeRequest { lean_mode = settings.LeanMode });
+            }
+        }
+
+        private struct LeanModeRequest
+        {
+            public bool lean_mode { get; set; }
+        }
+
+        private struct LeanModeResponse
+        {
+            public bool lean_mode { get; set; }
+            public string error { get; set; }
+        }
+
+        private void OnLeanModeAck(SocketIOResponse response)
+        {
+            try
+            {
+                LeanModeResponse state = response.GetValue<LeanModeResponse>();
+                LeanMode = state.lean_mode;
+
+                // RH only allows this to change between races (race must be READY) - failing
+                // to converge on reconnect isn't fatal (MarshalSupported just keeps gating off
+                // whatever RH last confirmed), but worth a log line since nothing else surfaces it.
+                if (!string.IsNullOrEmpty(state.error))
+                {
+                    Logger.TimingLog.Log(this, "Lean Mode not applied: " + state.error);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.TimingLog.LogException(this, ex);
+            }
         }
 
         public bool TimeSync()

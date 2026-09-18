@@ -214,8 +214,7 @@ namespace Tools
         public enum Overwrite
         {
             Never,
-            Always,
-            IfNewer
+            Always
         }
 
         public static void CopyDirectory(DirectoryInfo source, DirectoryInfo dest, Overwrite overwrite)
@@ -244,20 +243,6 @@ namespace Tools
                     case Overwrite.Always:
                         copy = true;
                         delete = true;
-                        break;
-
-                    case Overwrite.IfNewer:
-                        FileInfo newFile = new FileInfo(targetFilePath);
-
-                        if (newFile.Exists)
-                        {
-                            delete = copy = newFile.LastWriteTime > file.LastWriteTime;
-                        }
-                        else
-                        {
-                            copy = true;
-                        }
-
                         break;
                 }
 

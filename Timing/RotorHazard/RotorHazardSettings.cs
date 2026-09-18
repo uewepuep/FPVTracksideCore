@@ -24,6 +24,15 @@ namespace Timing.RotorHazard
 
         public bool SyncPilotNames { get; set; }
 
+        // Pushed to RH (ts_set_lean_mode) on every connect - RH is asked to converge on
+        // this rather than FPVTrackSide mirroring RH's own current value, so it behaves
+        // like every other setting here: takes effect on OK/reconnect, reverts cleanly
+        // on Cancel. Requires a Connector-FPVTrackSide plugin new enough to recognise
+        // ts_get_lean_mode/ts_set_lean_mode (see RotorHazardTimingSystem.LeanModeSupported) -
+        // older plugins simply never receive the push.
+        [Category("Lean Mode")]
+        public bool LeanMode { get; set; }
+
         public RotorHazardSettings()
         {
             HostName = "10.1.1.207";
@@ -35,6 +44,7 @@ namespace Timing.RotorHazard
             VoltageWarning = 11;
             TemperatureWarning = 80;
             SyncPilotNames = true;
+            LeanMode = false;
         }
     }
 }

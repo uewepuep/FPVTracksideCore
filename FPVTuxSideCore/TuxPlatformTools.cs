@@ -106,7 +106,12 @@ namespace FPVTuxsideCore
                         if (newDirectory == null)
                             newDirectory = workingDirectory.CreateSubdirectory(copy);
 
-                        IOTools.CopyDirectory(oldDirectory, newDirectory, IOTools.Overwrite.IfNewer);
+                        // Never overwrite - anything already in the user's copy (themes,
+                        // scripts, sounds, etc.) may have been hand-edited, and there's no
+                        // reliable way to tell an intentional user edit apart from a newer
+                        // release's file using timestamps alone. Only files missing entirely
+                        // get seeded from this release.
+                        IOTools.CopyDirectory(oldDirectory, newDirectory, IOTools.Overwrite.Never);
                     }
                 }
                 catch (Exception e)
