@@ -189,19 +189,7 @@ namespace WindowsMediaPlatform.MediaFoundation
 
                 if (request != null)
                 {
-                    DateTime? dateTime = request.DateTime;
-                    TimeSpan? mediaTime = request.MediaTime;
-                    long? frame = request.Frame;
-
-                    if (dateTime.HasValue)
-                    {
-                        mediaTime = FrameTimes.GetMediaTime(dateTime.Value, Latency);
-                    }
-
-                    if (mediaTime.HasValue)
-                    {
-                        frame = GetFrameTime(mediaTime.Value);
-                    }
+                    long? frame = ResolveFrame(request);
 
                     if (frame.HasValue)
                     {
@@ -235,18 +223,21 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         public bool CurrentlySeeking()
         {
-            if (seekingFrame.HasValue)
+            lock (seekLock)
             {
-                if (sampleFrame >= seekingFrame.Value)
+                if (seekingFrame.HasValue)
                 {
-                    //Logger.VideoLog.LogCall(this, sampleFrame, (int)(seek.Value / FrameRate), seek.Value % FrameRate);
-                    seekingFrame = null;
-                    return false;
-                }
+                    if (sampleFrame >= seekingFrame.Value)
+                    {
+                        //Logger.VideoLog.LogCall(this, sampleFrame, (int)(seek.Value / FrameRate), seek.Value % FrameRate);
+                        seekingFrame = null;
+                        return false;
+                    }
 
-                return true;
+                    return true;
+                }
+                return false;
             }
-            return false;
         }
 
         private void CreateMediaSource(string sURL)
@@ -385,11 +376,57 @@ namespace WindowsMediaPlatform.MediaFoundation
 
         public void PrevFrame()
         {
-            SetPosition(sampleFrame - 1);
+            StepFrames(-1);
         }
         public void NextFrame()
         {
-            SetPosition(sampleFrame + 1);
+            StepFrames(1);
+        }
+
+        // A seek lands on the keyframe before the target and decodes forward, updating
+        // sampleFrame as it goes. Stepping from sampleFrame mid-seek therefore stepped from
+        // somewhere near that keyframe and jumped the replay backwards. Step from the frame
+        // we're heading to instead: a queued request, then a seek in progress, then the frame
+        // on screen.
+        private void StepFrames(int count)
+        {
+            lock (seekLock)
+            {
+                long from;
+
+                long? pending = seekRequest != null ? ResolveFrame(seekRequest) : null;
+                if (pending.HasValue)
+                {
+                    from = pending.Value;
+                }
+                else if (seekingFrame.HasValue)
+                {
+                    from = seekingFrame.Value;
+                }
+                else
+                {
+                    from = sampleFrame;
+                }
+
+                seekRequest = new SeekRequest() { Frame = Math.Max(0, from + count) };
+            }
+        }
+
+        private long? ResolveFrame(SeekRequest request)
+        {
+            TimeSpan? mediaTime = request.MediaTime;
+
+            if (request.DateTime.HasValue)
+            {
+                mediaTime = FrameTimes.GetMediaTime(request.DateTime.Value, Latency);
+            }
+
+            if (mediaTime.HasValue)
+            {
+                return GetFrameTime(mediaTime.Value);
+            }
+
+            return request.Frame;
         }
 
         private class SeekRequest
