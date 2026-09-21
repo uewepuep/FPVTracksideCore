@@ -514,6 +514,7 @@ namespace Composition.Nodes
                 objectProperties.AddChild(newNode);
                 newNode.OnChanged += ChildValueChanged;
                 newNode.OnFocusNext += MoveFocusNext;
+                newNode.OnFocusPrevious += MoveFocusPrevious;
             }
         }
 
@@ -883,6 +884,36 @@ namespace Composition.Nodes
             }
         }
 
+        public void MoveFocusPrevious(PropertyNode<T> current)
+        {
+            bool found = false;
+
+            // Try and find the previous spot
+            foreach (PropertyNode<T> node in objectProperties.Children.OfType<PropertyNode<T>>().Reverse())
+            {
+                if (found)
+                {
+                    if (node.Focus())
+                    {
+                        return;
+                    }
+                }
+                else if (node == current)
+                {
+                    found = true;
+                }
+            }
+
+            // Now just find the last..
+            foreach (PropertyNode<T> node in objectProperties.Children.OfType<PropertyNode<T>>().Reverse())
+            {
+                if (node.Focus())
+                {
+                    return;
+                }
+            }
+        }
+
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
         {
             base.OnMouseInput(mouseInputEvent);
@@ -927,6 +958,7 @@ namespace Composition.Nodes
 
         public event Action<Change> OnChanged;
         public event Action<PropertyNode<T>> OnFocusNext;
+        public event Action<PropertyNode<T>> OnFocusPrevious;
 
         private object originalValue;
 
@@ -984,6 +1016,11 @@ namespace Composition.Nodes
         public void FocusNext()
         {
             OnFocusNext?.Invoke(this);
+        }
+
+        public void FocusPrevious()
+        {
+            OnFocusPrevious?.Invoke(this);
         }
     }
 
@@ -1146,6 +1183,7 @@ namespace Composition.Nodes
             TextValue.TextChanged += SetValue;
             TextValue.Alignment = RectangleAlignment.BottomLeft;
             TextValue.OnTab += FocusNext;
+            TextValue.OnShiftTab += FocusPrevious;
             TextValue.OnReturn += FocusNext;
             TextValue.AllowsUnicode = allowUnicode;
 
@@ -1201,6 +1239,7 @@ namespace Composition.Nodes
             Value.TextChanged += SetValue;
             Value.Alignment = RectangleAlignment.BottomLeft;
             Value.OnTab += FocusNext;
+            Value.OnShiftTab += FocusPrevious;
             Value.OnReturn += FocusNext;
 
             textBackgroundNode.AddChild(Value);
