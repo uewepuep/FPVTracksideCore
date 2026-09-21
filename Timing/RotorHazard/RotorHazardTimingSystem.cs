@@ -270,11 +270,16 @@ namespace Timing.RotorHazard
                             Logger.TimingLog.LogException(this, ex);
                             connected = false;
                         }
+                        finally
+                        {
+                            reponseWaiter.Set();
+                        }
                     };
 
                     lastBeatTime = DateTime.Now;
                     socket?.ConnectAsync();
-                    result = reponseWaiter.WaitOne(TimeOut);
+                    reponseWaiter.WaitOne(TimeOut);
+                    result = connected;
                 }
                 return result;
             }
