@@ -210,7 +210,7 @@ namespace Spreadsheets
                         if (!string.IsNullOrEmpty(pilotName))
                             hasData = true;
 
-                        if (pilots.Contains(pilotName))
+                        if (pilots.Any(p => string.Equals(p?.Trim(), pilotName?.Trim(), StringComparison.OrdinalIgnoreCase)))
                         {
                             sheetPilotChannels.Add(new SheetPilotChannel(pilotName, i));
                         }
