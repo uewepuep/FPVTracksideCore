@@ -24,6 +24,7 @@ namespace Composition.Nodes
 
         public event System.Action OnReturn;
         public event System.Action OnTab;
+        public event System.Action OnShiftTab;
 
         public bool CanEdit { get; set; }
 
@@ -264,7 +265,14 @@ namespace Composition.Nodes
                             break;
 
                         case Keys.Tab:
-                            OnTab?.Invoke();
+                            if (inputEvent.Shift)
+                            {
+                                OnShiftTab?.Invoke();
+                            }
+                            else
+                            {
+                                OnTab?.Invoke();
+                            }
                             HasFocus = false;
                             break;
 
