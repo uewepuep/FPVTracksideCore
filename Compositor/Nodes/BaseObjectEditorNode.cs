@@ -23,7 +23,7 @@ namespace Composition.Nodes
         private T selected;
         public T Selected { get { return selected; } set { SetSelected(value); } }
 
-        protected ListNode<ItemNode<T>> multiItemBox;
+        protected ListNode<DragReorderItemNode<T>> multiItemBox;
         protected ListNode<PropertyNode<T>> objectProperties;
         private TextEditNode propertySearchBox;
         private string propertySearchText;
@@ -131,7 +131,7 @@ namespace Composition.Nodes
             heading = new TextNode(TypeName, TextColor);
             mainDock.Top.AddChild(heading);
 
-            multiItemBox = new ListNode<ItemNode<T>>(scrollColor);
+            multiItemBox = new ListNode<DragReorderItemNode<T>>(scrollColor);
             multiItemBox.ItemHeight = 30;
             mainDock.Left.AddChild(multiItemBox);
 
@@ -277,6 +277,7 @@ namespace Composition.Nodes
             selectedHover?.Remove();
             multiItemBox.ClearDisposeChildren();
 
+            int number = 1;
             var grouped = Order(Objects).GroupBy(o => ItemToGroupString(o));
             foreach (var group in grouped)
             {
@@ -295,10 +296,10 @@ namespace Composition.Nodes
                     if (!IsVisible(t))
                         continue;
 
-                    ItemNode<T> tbn = new ItemNode<T>(t, ItemToString(t), ButtonBackground, ButtonHover, TextColor, CanReOrder && moreThanOne);
+                    DragReorderItemNode<T> tbn = new DragReorderItemNode<T>(t, new TextNode(ItemToString(t), TextColor), ButtonBackground, ButtonHover, CanReOrder && moreThanOne);
                     tbn.OnClick += (mie) => { SetSelected(t); };
-                    tbn.OnUpClick += (mie) => { MoveUp(tbn); };
-                    tbn.OnDownClick += (mie) => { MoveDown(tbn); };
+                    tbn.Number = number;
+                    number++;
                     multiItemBox.AddChild(tbn);
                 }
 
@@ -335,54 +336,7 @@ namespace Composition.Nodes
             return ts;
         }
 
-        private void MoveUp(ItemNode<T> tbn)
-        {
-            try
-            {
-                T item = tbn.Item;
-
-                int index = Objects.IndexOf(item);
-                index--;
-                if (index < 0)
-                    index = 0;
-
-                Objects.Remove(item);
-                Objects.Insert(index, item);
-                multiItemBox.RequestLayout();
-                RefreshList();
-            }
-            catch
-            {
-
-            }
-        }
-
-        private void MoveDown(ItemNode<T> tbn)
-        {
-            try
-            {
-                T item = tbn.Item;
-
-                int index = Objects.IndexOf(item);
-                index++;
-
-                if (index >= Objects.Count)
-                {
-                    index = Objects.Count - 1;
-                }
-
-                Objects.Remove(item);
-                Objects.Insert(index, item);
-
-                RefreshList();
-            }
-            catch
-            {
-
-            }
-        }
-
-        public ItemNode<T> GetItemNode(T t)
+        public DragReorderItemNode<T> GetItemNode(T t)
         {
             foreach (var tbi in multiItemBox.ChildrenOfType)
             {
@@ -432,7 +386,7 @@ namespace Composition.Nodes
 
             if (obj != null)
             {
-                ItemNode<T> node = GetItemNode(obj);
+                DragReorderItemNode<T> node = GetItemNode(obj);
                 if (node != null)
                 {
                     node.AddChild(selectedHover);
@@ -697,7 +651,7 @@ namespace Composition.Nodes
                 AddChange(newChange);
             }
 
-            foreach (ItemNode<T> text in multiItemBox.ChildrenOfType)
+            foreach (DragReorderItemNode<T> text in multiItemBox.ChildrenOfType)
             {
                 text.Text = ItemToString(text.Item);
             }
@@ -832,11 +786,11 @@ namespace Composition.Nodes
             Point adjustedMouse = finalInputEvent.Position;
             adjustedMouse.Y = y;
 
-            ItemNode<T> dropped = node as ItemNode<T>;
+            DragReorderItemNode<T> dropped = node as DragReorderItemNode<T>;
             if (dropped != null && mainDock.Left.Contains(finalInputEvent.Position))
             {
                 int index = Objects.Count - 1;
-                foreach (ItemNode<T> other in multiItemBox.ChildrenOfType)
+                foreach (DragReorderItemNode<T> other in multiItemBox.ChildrenOfType)
                 {
                     if (other.Bounds.Contains(adjustedMouse))
                     {
@@ -1836,75 +1790,6 @@ namespace Composition.Nodes
         public override void UpdateFromObject()
         {
             checkbox.Value = Array.Contains(Value);
-        }
-    }
-
-    public class ItemNode<T> : Node
-    {
-        public T Item { get; private set; }
-
-        private TextButtonNode textButtonNode;
-
-        private TextButtonNode up;
-        private TextButtonNode down;
-
-        public string Text { get { return textButtonNode.Text; } set { textButtonNode.Text = value; } }
-
-        public event MouseInputDelegate OnClick;
-        public event MouseInputDelegate OnUpClick;
-        public event MouseInputDelegate OnDownClick;
-
-        private bool canReorder;
-
-        public ItemNode(T t, string toString, Color background, Color hover, Color textColor, bool canReorder)
-        {
-            this.canReorder = canReorder;
-            textButtonNode = new TextButtonNode(toString, background, hover, textColor);
-            textButtonNode.OnClick += (mie) => 
-            {
-                OnClick(mie);
-            };
-            AddChild(textButtonNode);
-            Item = t;
-
-            textButtonNode.TextNode.Alignment = RectangleAlignment.CenterLeft;
-
-            if (canReorder)
-            {
-                up = new TextButtonNode("▲", background, hover, textColor);
-                up.OnClick += (mie) =>
-                {
-                    OnUpClick(mie);
-                };
-
-                down = new TextButtonNode("▼", background, hover, textColor);
-                down.OnClick += (mie) =>
-                {
-                    OnDownClick(mie);
-                };
-
-                AddChild(up);
-                AddChild(down);
-
-                textButtonNode.RelativeBounds = new RectangleF(0, 0, 0.95f, 1);
-                up.RelativeBounds = new RectangleF(textButtonNode.RelativeBounds.Right, 0, 1 - textButtonNode.RelativeBounds.Right, 0.5f);
-                down.RelativeBounds = new RectangleF(textButtonNode.RelativeBounds.Right, 0.5f, 1 - textButtonNode.RelativeBounds.Right, 0.5f);
-            }
-        }
-
-        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
-        {
-            if (base.OnMouseInput(mouseInputEvent))
-            {
-                return true;
-            }
-
-            if (canReorder && mouseInputEvent.Button == MouseButtons.Left && mouseInputEvent.ButtonState == ButtonStates.Pressed)
-            {
-                GetLayer<DragLayer>()?.RegisterDrag(this, mouseInputEvent);
-            }
-
-            return false;
         }
     }
 

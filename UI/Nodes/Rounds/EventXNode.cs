@@ -237,6 +237,8 @@ namespace UI.Nodes.Rounds
 
         protected void AddFormatMenu(MouseMenu menu, IEnumerable<Pilot> orderedPilots)
         {
+            menu.AddItem("Empty Stage", () => { ManualStage(orderedPilots); });
+
             foreach (StageTypes stageType in Enum.GetValues<StageTypes>().Except([StageTypes.Default]))
             {
                 string name = stageType.ToString().CamelCaseToHuman();
@@ -325,6 +327,18 @@ namespace UI.Nodes.Rounds
             });
         }
 
+        private void ManualStage(IEnumerable<Pilot> orderedPilots)
+        {
+            LoadingLayer ll = GetLayer<LoadingLayer>();
+            ll.WorkQueue.Enqueue("Generating", () =>
+            {
+                AddStage?.Invoke(Round, StageTypes.Default, orderedPilots, (stage) =>
+                {
+                    stage.AutoName(EventManager.RoundManager);
+                });
+            });
+        }
+
         private void SheetFormat(SheetFormatManager.SheetFile sheet, IEnumerable<Pilot> orderedPilots)
         {
             LoadingLayer ll = GetLayer<LoadingLayer>();
@@ -341,15 +355,24 @@ namespace UI.Nodes.Rounds
 
         private void ScriptFormat(RaceLib.Format.LuaFormatManager.ScriptFile script, IEnumerable<Pilot> orderedPilots)
         {
-            LoadingLayer ll = GetLayer<LoadingLayer>();
-            ll.WorkQueue.Enqueue("Loading Script", () =>
+            PilotSeedOrderNode popup = new PilotSeedOrderNode(orderedPilots,
+                Theme.Current.Editor.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Editor.Text.XNA,
+                "Seed Order - " + script.Name);
+
+            popup.OnOK += (seededPilots) =>
             {
-                AddStage?.Invoke(Round, StageTypes.Default, orderedPilots, (stage) => 
+                LoadingLayer ll = GetLayer<LoadingLayer>();
+                ll.WorkQueue.Enqueue("Loading Script", () =>
                 {
-                    stage.Name = script.Name;
-                    stage.ScriptFormatFilename = script.FileInfo.Name;
+                    AddStage?.Invoke(Round, StageTypes.Default, seededPilots, (stage) =>
+                    {
+                        stage.Name = script.Name;
+                        stage.ScriptFormatFilename = script.FileInfo.Name;
+                    });
                 });
-            });
+            };
+
+            GetLayer<PopupLayer>().Popup(popup);
         }
 
         protected void AddRace()

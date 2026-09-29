@@ -727,6 +727,8 @@ namespace UI.Nodes
 
         private IEnumerable<PropertyNode<RoundPlan>> AddPilotPropertyNodes(RoundPlan obj, PropertyInfo pi)
         {
+            yield return new SeedOrderButtonPropertyNode(obj, pi, ButtonBackground, ButtonHover, TextColor);
+
             foreach (Pilot pilot in EventManager.Event.Pilots)
             {
                 ArrayContainsPropertyNode<RoundPlan, Pilot> acpn = new ArrayContainsPropertyNode<RoundPlan, Pilot>(obj, pi, pilot, TextColor, ButtonHover);
@@ -777,6 +779,11 @@ namespace UI.Nodes
                 }
             }
 
+            if (propertyNode is SeedOrderButtonPropertyNode)
+            {
+                propertyNode.Visible = obj.PilotSeeding == PilotOrdering.Seeded;
+            }
+
             if (propertyNode is ArrayContainsPropertyNode<RoundPlan, Channel>)
             {
                 if (obj.ChannelChange == RoundPlan.ChannelChangeEnum.Change)
@@ -788,6 +795,85 @@ namespace UI.Nodes
                     propertyNode.Visible = false;
                 }
             }
+        }
+    }
+
+    public class SeedOrderButtonPropertyNode : PropertyNode<RoundPlan>
+    {
+        private TextButtonNode button;
+        private Color background;
+        private Color hover;
+        private Color textColor;
+
+        public SeedOrderButtonPropertyNode(RoundPlan obj, PropertyInfo pi, Color background, Color hover, Color textColor)
+            : base(obj, pi)
+        {
+            this.background = background;
+            this.hover = hover;
+            this.textColor = textColor;
+
+            button = new TextButtonNode("Set Seed Order...", background, hover, textColor);
+            button.RelativeBounds = new RectangleF(0, 0, 1, 1);
+            button.OnClick += (mie) => { OpenPopup(); };
+            AddChild(button);
+        }
+
+        private void OpenPopup()
+        {
+            PilotSeedOrderNode popup = new PilotSeedOrderNode(Object.Pilots ?? new Pilot[0], background, hover, textColor);
+            popup.OnOK += (ordered) =>
+            {
+                SetValue(ordered);
+            };
+
+            GetLayer<PopupLayer>().Popup(popup);
+        }
+    }
+
+    public class PilotSeedOrderNode : Node
+    {
+        private DragReorderListNode<Pilot> list;
+
+        public event Action<Pilot[]> OnOK;
+
+        public PilotSeedOrderNode(IEnumerable<Pilot> pilots, Color background, Color hover, Color textColor, string title = "Seed Order")
+        {
+            RelativeBounds = new RectangleF(0.35f, 0.1f, 0.3f, 0.8f);
+
+            BorderPanelShadowNode backgroundNode = new BorderPanelShadowNode();
+            AddChild(backgroundNode);
+
+            // Heading and buttons are pixel-fixed; the pilot list (Center) expands to fill
+            // whatever's left, instead of everything being a fraction of one fixed-size box.
+            DockNode dock = new DockNode(26, 42);
+            backgroundNode.Inner.AddChild(dock);
+
+            TextNode heading = new TextNode(title, textColor);
+            heading.Alignment = RectangleAlignment.Center;
+            heading.RelativeBounds = new RectangleF(0, 0.1f, 1, 0.8f);
+            dock.Top.AddChild(heading);
+
+            list = new DragReorderListNode<Pilot>(p => new TextNode(p.ToString(), textColor), background, hover, Theme.Current.ScrollBar.XNA);
+            list.RelativeBounds = new RectangleF(0.02f, 0, 0.96f, 1);
+            list.SetItems(pilots);
+            dock.Center.AddChild(list);
+
+            Node buttonContainer = new Node();
+            buttonContainer.RelativeBounds = new RectangleF(0, 0.1f, 1, 0.8f);
+
+            TextButtonNode cancel = new TextButtonNode("Cancel", background, hover, textColor);
+            cancel.OnClick += (mie) => { Dispose(); };
+
+            TextButtonNode ok = new TextButtonNode("Ok", background, hover, textColor);
+            ok.OnClick += (mie) =>
+            {
+                OnOK?.Invoke(list.Items.ToArray());
+                Dispose();
+            };
+
+            buttonContainer.AddChild(cancel, ok);
+            AlignHorizontally(0.05f, cancel, ok);
+            dock.Bottom.AddChild(buttonContainer);
         }
     }
 
