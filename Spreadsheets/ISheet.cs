@@ -9,7 +9,7 @@ namespace Spreadsheets
 {
     public interface ISheet : IDisposable
     {
-        bool Open(FileInfo file, string sheetname);
+        bool Open(FileInfo file, string sheetname, bool createIfMissing = true);
 
         string GetText(int r, int c);
         void SetValue(int r, int c, object value);

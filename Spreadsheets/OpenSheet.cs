@@ -28,7 +28,7 @@ namespace Spreadsheets
             sheet = null;
         }
 
-        public bool Open(FileInfo excelFile, string sheetname)
+        public bool Open(FileInfo excelFile, string sheetname, bool createIfMissing = true)
         {
             try
             {
@@ -36,14 +36,15 @@ namespace Spreadsheets
                 package.Workbook.CalcMode = ExcelCalcMode.Automatic;
                 sheet = package.Workbook.Worksheets.FirstOrDefault(s => s.Name.ToLower() == sheetname.ToLower());
 
-                if (sheet == null)
+                if (sheet == null && createIfMissing)
                 {
                     sheet = package.Workbook.Worksheets.Add(sheetname);
                 }
 
                 if (sheet == null)
                 {
-                    Logger.Sheets.Log(this, "Failed opening sheet", null, Logger.LogType.Error);
+                    string availableSheets = string.Join(", ", package.Workbook.Worksheets.Select(s => s.Name));
+                    Logger.Sheets.Log(this, $"Sheet '{sheetname}' not found in '{excelFile.Name}'. Available sheets: {availableSheets}", null, Logger.LogType.Error);
 
                     Dispose();
                     return false;

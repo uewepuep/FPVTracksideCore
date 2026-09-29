@@ -45,7 +45,11 @@ namespace Spreadsheets
             pilots = new List<string>();
 
             sheet = new OpenSheet();
-            sheet.Open(excelFile, sheetname);
+            if (!sheet.Open(excelFile, sheetname, createIfMissing: false))
+            {
+                Logger.AllLog.Log(this, $"Could not load sheet format '{file.Name}': no '{sheetname}' worksheet found.");
+                return;
+            }
             int i = 1;
             foreach (string heading in sheet.GetRowText(1))
             {
@@ -192,23 +196,24 @@ namespace Spreadsheets
         public IEnumerable<SheetRace> GetRaces(string eventType, int round)
         {
             int column = GetColumn(eventType, round);
-            if (column > 0)
+            if (column > 0 && Channels > 0)
             {
+                int totalRows, totalCols;
+                GetSize(out totalRows, out totalCols);
+
                 int raceStartIndex = 2;
                 int raceNumber = 1;
-                bool hasData = false;
-                List<SheetPilotChannel> sheetPilotChannels;
-                do
-                {
-                    hasData = false;
 
-                    sheetPilotChannels = new List<SheetPilotChannel>();
+                // Scan every block up to the sheet's real extent rather than stopping at the
+                // first empty block - a blank spacer row/block between groups of races would
+                // otherwise truncate everything after it.
+                while (raceStartIndex <= totalRows)
+                {
+                    List<SheetPilotChannel> sheetPilotChannels = new List<SheetPilotChannel>();
+
                     for (int i = 0; i < Channels; i++)
                     {
                         string pilotName = sheet.GetText(raceStartIndex + i, column);
-
-                        if (!string.IsNullOrEmpty(pilotName))
-                            hasData = true;
 
                         if (pilots.Any(p => string.Equals(p?.Trim(), pilotName?.Trim(), StringComparison.OrdinalIgnoreCase)))
                         {
@@ -216,20 +221,17 @@ namespace Spreadsheets
                         }
                     }
 
-                    if (hasData)
+                    // Only yield a race when at least one pilot in the block is recognized.
+                    // Blocks with none (blank spacer rows, or unfilled future-round templates)
+                    // are skipped without ending the scan.
+                    if (sheetPilotChannels.Any())
                     {
-                        // Only yield a race when at least one pilot in the block is recognized.
-                        if (sheetPilotChannels.Any())
-                        {
-                            yield return new SheetRace(eventType, round, raceNumber, sheetPilotChannels);
-                            raceNumber++;
-                        }
-
-                        // Advance to next block regardless so loop terminates properly.
-                        raceStartIndex += Channels;
+                        yield return new SheetRace(eventType, round, raceNumber, sheetPilotChannels);
+                        raceNumber++;
                     }
+
+                    raceStartIndex += Channels;
                 }
-                while (hasData);
             }
         }
 
@@ -384,7 +386,7 @@ namespace Spreadsheets
             excelFile.CopyTo(file.FullName);
 
             ISheet sheet2 = new OpenSheet();
-            sheet2.Open(file, "FPVTrackside");
+            sheet2.Open(file, "FPVTrackside", createIfMissing: false);
 
             foreach (var column in headingColumnMap)
             {
