@@ -28,8 +28,7 @@ namespace Timing.RotorHazard
         // this rather than FPVTrackSide mirroring RH's own current value, so it behaves
         // like every other setting here: takes effect on OK/reconnect, reverts cleanly
         // on Cancel. Requires a Connector-FPVTrackSide plugin new enough to recognise
-        // ts_get_lean_mode/ts_set_lean_mode (see RotorHazardTimingSystem.LeanModeSupported) -
-        // older plugins simply never receive the push.
+        // ts_get_lean_mode/ts_set_lean_mode - older plugins simply ignore the push.
         [Category("Lean Mode")]
         public bool LeanMode { get; set; }
 

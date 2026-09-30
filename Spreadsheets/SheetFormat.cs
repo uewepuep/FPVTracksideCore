@@ -215,7 +215,7 @@ namespace Spreadsheets
                     {
                         string pilotName = sheet.GetText(raceStartIndex + i, column);
 
-                        if (pilots.Any(p => string.Equals(p?.Trim(), pilotName?.Trim(), StringComparison.OrdinalIgnoreCase)))
+                        if (pilots.Contains(pilotName, SheetNameComparer.Instance))
                         {
                             sheetPilotChannels.Add(new SheetPilotChannel(pilotName, i));
                         }
@@ -318,7 +318,7 @@ namespace Spreadsheets
                 for (int i = 0; i < Channels; i++)
                 {
                     string sheetName = sheet.GetText(raceRowStart + i, nameColumn);
-                    if (sheetName == oldPilotSheetName)
+                    if (SheetNameComparer.Instance.Equals(sheetName, oldPilotSheetName))
                     {
                         sheet.SetValue(raceRowStart + i, nameColumn, newPilotSheetName);
                     }
@@ -481,6 +481,26 @@ namespace Spreadsheets
         public override string ToString()
         {
             return EventType + " " + Round + "-" + Number + " [" + PilotChannels.Count() + "]";
+        }
+    }
+
+    // Sheet pilot names are typed by hand, so "dan " in a race cell should still be the same
+    // pilot as "Dan" in the seed list. Used everywhere sheet names are compared or looked up.
+    public class SheetNameComparer : IEqualityComparer<string>
+    {
+        public static readonly SheetNameComparer Instance = new SheetNameComparer();
+
+        public bool Equals(string x, string y)
+        {
+            return string.Equals(x?.Trim(), y?.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        public int GetHashCode(string obj)
+        {
+            if (obj == null)
+                return 0;
+
+            return StringComparer.OrdinalIgnoreCase.GetHashCode(obj.Trim());
         }
     }
 

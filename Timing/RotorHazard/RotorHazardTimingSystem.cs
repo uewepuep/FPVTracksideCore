@@ -144,22 +144,12 @@ namespace Timing.RotorHazard
         // manifest.json's "version" whenever a plugin-side feature needs gating like this.
         private const string MarshalMinimumPluginVersion = "1.2.0";
 
-        // TODO: this is a placeholder - confirm the actual Connector-FPVTrackSide plugin
-        // version that ships ts_get_lean_mode/ts_set_lean_mode once Dan merges lean mode
-        // into his RH integration branch, then correct this cutoff.
-        private const string LeanModeMinimumPluginVersion = "1.3.0";
-
         public bool MarshalSupported
         {
             // Lean mode reuses a single heat and never saves races, so RH has no persisted
             // race for its own saved-race marshaling to act on - hide marshal correction
             // whenever it's on, regardless of plugin version.
             get { return VersionAtLeast(ServerInfo.plugin_version, MarshalMinimumPluginVersion) && !LeanMode; }
-        }
-
-        public bool LeanModeSupported
-        {
-            get { return VersionAtLeast(ServerInfo.plugin_version, LeanModeMinimumPluginVersion); }
         }
 
         // Cached from the last ts_get_lean_mode/ts_set_lean_mode ack. Authoritative state
@@ -374,14 +364,11 @@ namespace Timing.RotorHazard
 
             // Lean Mode is a plain staged setting now (RotorHazardSettings.LeanMode) - RH is
             // pushed to converge on whatever's configured every time we (re)connect, rather
-            // than FPVTrackSide fetching and mirroring RH's own current value. Deferred until
-            // here (rather than fired alongside ts_server_info in OnConnected) because
-            // LeanModeSupported depends on plugin_version, which only exists once this ack
-            // has landed.
-            if (LeanModeSupported)
-            {
-                socket?.EmitAsync("ts_set_lean_mode", OnLeanModeAck, new LeanModeRequest { lean_mode = settings.LeanMode });
-            }
+            // than FPVTrackSide fetching and mirroring RH's own current value. Always sent,
+            // not version gated: the first plugin to ship lean mode (upstream 1.1.2) doesn't
+            // report plugin_version at all. Plugins without ts_set_lean_mode never ack it, so
+            // LeanMode just stays false.
+            socket?.EmitAsync("ts_set_lean_mode", OnLeanModeAck, new LeanModeRequest { lean_mode = settings.LeanMode });
         }
 
         private struct LeanModeRequest

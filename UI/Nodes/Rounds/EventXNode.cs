@@ -237,6 +237,8 @@ namespace UI.Nodes.Rounds
 
         protected void AddFormatMenu(MouseMenu menu, IEnumerable<Pilot> orderedPilots)
         {
+            menu.AddItem("Empty Stage", () => { EmptyStage(); });
+
             foreach (StageTypes stageType in Enum.GetValues<StageTypes>().Except([StageTypes.Default]))
             {
                 string name = stageType.ToString().CamelCaseToHuman();
@@ -322,6 +324,19 @@ namespace UI.Nodes.Rounds
             ll.WorkQueue.Enqueue("Generating", () =>
             {
                 AddStage?.Invoke(Round, local, orderedPilots, null);
+            });
+        }
+
+        private void EmptyStage()
+        {
+            LoadingLayer ll = GetLayer<LoadingLayer>();
+            ll.WorkQueue.Enqueue("Generating", () =>
+            {
+                // No pilots, so the stage's round is created without any races to fill by hand.
+                AddStage?.Invoke(Round, StageTypes.Default, new Pilot[0], (stage) =>
+                {
+                    stage.AutoName(EventManager.RoundManager);
+                });
             });
         }
 

@@ -334,7 +334,7 @@ namespace RaceLib.Format
             Stage = stage;
             Rounds = new List<Round>();
             SheetFormat = new SheetFormat(file);
-            pilotMap = new Dictionary<string, Pilot>();
+            pilotMap = new Dictionary<string, Pilot>(SheetNameComparer.Instance);
         }
 
         public void Dispose()
@@ -806,13 +806,13 @@ namespace RaceLib.Format
                 string[] oldPilotSheetNames = sfRace.PilotChannels.Select(r => r.PilotSheetName).ToArray();
 
                 // foreach pilot that exists in the sheet, but not in the race.
-                foreach (string name in oldPilotSheetNames.Except(newPilotSheetNames))
+                foreach (string name in oldPilotSheetNames.Except(newPilotSheetNames, SheetNameComparer.Instance))
                 {
                     SheetFormat.SwapPilots(eventType, roundNumber, race.RaceNumber, name, "");
                 }
 
                 // foreach pilot that doesn't exist in the sheet but does in the race
-                foreach (string name in newPilotSheetNames.Except(oldPilotSheetNames))
+                foreach (string name in newPilotSheetNames.Except(oldPilotSheetNames, SheetNameComparer.Instance))
                 {
                     SheetFormat.SwapPilots(eventType, roundNumber, race.RaceNumber, "", name);
                 }
