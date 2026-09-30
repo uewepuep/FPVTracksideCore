@@ -329,7 +329,7 @@ namespace UI.Nodes.Rounds
                     });
                 });
 
-                mm.AddItemConfirm("Delete Stage", () =>
+                mm.AddItemConfirm("Remove Stage", () =>
                 {
                     EventManager.RoundManager.DeleteStage(Round.Stage);
                 });

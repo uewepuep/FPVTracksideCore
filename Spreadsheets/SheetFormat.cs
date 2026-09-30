@@ -198,22 +198,20 @@ namespace Spreadsheets
             int column = GetColumn(eventType, round);
             if (column > 0 && Channels > 0)
             {
-                int totalRows, totalCols;
-                GetSize(out totalRows, out totalCols);
-
                 int raceStartIndex = 2;
                 int raceNumber = 1;
-
-                // Scan every block up to the sheet's real extent rather than stopping at the
-                // first empty block - a blank spacer row/block between groups of races would
-                // otherwise truncate everything after it.
-                while (raceStartIndex <= totalRows)
+                bool hasData;
+                do
                 {
-                    List<SheetPilotChannel> sheetPilotChannels = new List<SheetPilotChannel>();
+                    hasData = false;
 
+                    List<SheetPilotChannel> sheetPilotChannels = new List<SheetPilotChannel>();
                     for (int i = 0; i < Channels; i++)
                     {
                         string pilotName = sheet.GetText(raceStartIndex + i, column);
+
+                        if (!string.IsNullOrEmpty(pilotName))
+                            hasData = true;
 
                         if (pilots.Contains(pilotName, SheetNameComparer.Instance))
                         {
@@ -221,17 +219,16 @@ namespace Spreadsheets
                         }
                     }
 
-                    // Only yield a race when at least one pilot in the block is recognized.
-                    // Blocks with none (blank spacer rows, or unfilled future-round templates)
-                    // are skipped without ending the scan.
-                    if (sheetPilotChannels.Any())
+                    // Yield every block with data, even if no pilots are known yet (eg "#N/A" from a formula
+                    // waiting on earlier results). Race numbers must match the block index, see GetRaceRow.
+                    if (hasData)
                     {
                         yield return new SheetRace(eventType, round, raceNumber, sheetPilotChannels);
                         raceNumber++;
+                        raceStartIndex += Channels;
                     }
-
-                    raceStartIndex += Channels;
                 }
+                while (hasData);
             }
         }
 
