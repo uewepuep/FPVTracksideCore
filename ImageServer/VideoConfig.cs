@@ -355,8 +355,11 @@ namespace ImageServer
                 return false;
 
             VideoConfig other = obj as VideoConfig;
+            if (other == null)
+                return false;
 
-            if (other.FrameWork != FrameWork)
+            // VideoMode can be null on configs saved before mode detection was fixed
+            if (other.VideoMode?.FrameWork != VideoMode?.FrameWork)
                 return false;
 
             if (!string.IsNullOrEmpty(other.FilePath) && other.FilePath != FilePath)

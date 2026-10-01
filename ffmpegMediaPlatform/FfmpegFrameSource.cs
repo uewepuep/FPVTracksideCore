@@ -217,7 +217,11 @@ namespace FfmpegMediaPlatform
 
             if (videoConfig.VideoMode == null || videoConfig.VideoMode.Index == -1)
             {
-                videoConfig.VideoMode = ffmpegMediaFramework.DetectOptimalMode(GetModes());    
+                Mode optimalMode = ffmpegMediaFramework.DetectOptimalMode(GetModes());
+                if (optimalMode != null)
+                {
+                    videoConfig.VideoMode = optimalMode;
+                }
             }
 
             // Calculate buffer size based on video mode

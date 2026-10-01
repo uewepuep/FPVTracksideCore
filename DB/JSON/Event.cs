@@ -120,7 +120,7 @@ namespace DB.JSON
             }
 
             if (obj.RemovedPilots != null)
-                RemovedPilots = obj.RemovedPilots.Select(c => c.ID).ToArray();
+                RemovedPilots = obj.RemovedPilots.Where(c => c != null).Select(c => c.ID).ToArray();
 
             if (obj.Club != null)
                 Club = obj.Club.ID;
@@ -160,7 +160,7 @@ namespace DB.JSON
             ev.Club = Club.Convert<RaceLib.Club>(database);
             ev.PilotChannels = PilotChannels.Convert(database).Where(pc => pc != null && pc.Pilot != null).ToList();
             ev.Rounds = Rounds.Convert<RaceLib.Round>(database).ToList();
-            ev.RemovedPilots = RemovedPilots.Convert<RaceLib.Pilot>(database).ToList();
+            ev.RemovedPilots = RemovedPilots.Convert<RaceLib.Pilot>(database).Where(p => p != null).ToList();
             ev.SyncWithFPVTrackside = SyncWithFPVTrackside;
             ev.SyncWithMultiGP = SyncWithMultiGP;
             ev.VisibleOnline = VisibleOnline;

@@ -311,7 +311,15 @@ namespace WindowsMediaPlatform.MediaFoundation
         {
             // Flush any in-progress ReadSample so imageProcessor exits cleanly before
             // base.CleanUp() releases the reader — otherwise SafeRelease races the read.
-            reader?.Flush((int)MF_SOURCE_READER.AllStreams);
+            try
+            {
+                reader?.Flush((int)MF_SOURCE_READER.AllStreams);
+            }
+            catch (Exception e)
+            {
+                // Reader can be half-initialised (e.g. SetupReader failed on an unsupported file)
+                Logger.VideoLog.LogException(this, e);
+            }
 
             base.CleanUp();
 
