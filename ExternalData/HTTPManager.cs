@@ -26,28 +26,27 @@ namespace ExternalData
         public string Response { get; private set; }
         public Exception Error { get; private set; }
 
-        private AutoResetEvent waitHandle;
+        // Manual reset and never disposed, so a response that lands before the caller waits isn't lost
+        private ManualResetEvent waitHandle;
 
         public HTTPResponseResult(string address, out ResponseDelegate callBack)
         {
             this.Address = address;
             this.IsCompleted = false;
-            waitHandle = new AutoResetEvent(false);
+            waitHandle = new ManualResetEvent(false);
 
             callBack = SetResponse;
         }
 
         private void SetResponse(string response, Exception e)
         {
+            if (IsCompleted)
+                return;
+
             this.Response = response;
             this.Error = e;
             IsCompleted = true;
-            if (waitHandle != null)
-            {
-                waitHandle.Set();
-                waitHandle.Dispose();
-                waitHandle = null;
-            }
+            waitHandle.Set();
         }
     }
 

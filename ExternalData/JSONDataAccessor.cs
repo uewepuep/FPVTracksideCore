@@ -25,6 +25,8 @@ namespace ExternalData
 
         public bool WriteToConsole { get; set; }
 
+        public TimeSpan Timeout { get; set; }
+
         public string RootURL { get; private set; }
 
         public Encodings Encoding { get; set; }
@@ -52,6 +54,7 @@ namespace ExternalData
         {
             Encoding = Encodings.JSON;
             WriteToConsole = false;
+            Timeout = TimeSpan.FromSeconds(10);
 
             serializerSettings = new JsonSerializerSettings
             {
@@ -151,16 +154,29 @@ namespace ExternalData
 
         public T GetObject<T>(IRequest request)
         {
+            return GetObject<T>(request, Timeout);
+        }
+
+        public T GetObject<T>(IRequest request, TimeSpan timeout)
+        {
             HTTPResponseResult result = PutObject(request);
 
-            if (result == null || result.AsyncWaitHandle == null)
+            if (result == null)
             {
                 return default(T);
             }
 
-            result.AsyncWaitHandle.WaitOne(10000);
+            if (!result.AsyncWaitHandle.WaitOne(timeout))
+            {
+                throw new TimeoutException("No response from " + result.Address + " after " + (int)timeout.TotalSeconds + "s");
+            }
 
             string response = result.Response;
+
+            if (string.IsNullOrEmpty(response) && result.Error != null)
+            {
+                throw new Exception(result.Error.Message, result.Error);
+            }
 
             if (WriteToConsole)
             {
