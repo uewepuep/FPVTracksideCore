@@ -18,7 +18,7 @@ namespace Timing.ImmersionRC
             {
                 if (GainAll == "59" && ThresholdAll == "800")
                     return CalibrationValues.Standard5Inch;
-                if (GainAll == "54" && ThresholdAll == "1110")
+                if (GainAll == "54" && ThresholdAll == "1220")
                     return CalibrationValues.WhoopsIndoors;
                 return CalibrationValues.Custom;
             }
@@ -65,7 +65,18 @@ namespace Timing.ImmersionRC
         }
 
 
+        // The LapRF's gain looks like a 6 bit value: 64 and up wraps around and deafens the receiver.
+        public const int MaxGain = 63;
+
+        private int[] gains = new int[8];
+
+        private void SetGain(int index, int value)
+        {
+            gains[index] = Math.Clamp(value, 0, MaxGain);
+        }
+
         [Category("Receiver All")]
+        [DisplayName("Gain All (0-63)")]
         public string GainAll
         {
             get
@@ -136,7 +147,8 @@ namespace Timing.ImmersionRC
         }
 
         [Category("Receiver 1")]
-        public int Gain1 { get; set; }
+        [DisplayName("Gain 1 (0-63)")]
+        public int Gain1 { get { return gains[0]; } set { SetGain(0, value); } }
 
         [Category("Receiver 1")]
         public int Threshold1 { get; set; }
@@ -146,7 +158,8 @@ namespace Timing.ImmersionRC
 
 
         [Category("Receiver 2")]
-        public int Gain2 { get; set; }
+        [DisplayName("Gain 2 (0-63)")]
+        public int Gain2 { get { return gains[1]; } set { SetGain(1, value); } }
 
         [Category("Receiver 2")]
         public int Threshold2 { get; set; }
@@ -156,7 +169,8 @@ namespace Timing.ImmersionRC
 
 
         [Category("Receiver 3")]
-        public int Gain3 { get; set; }
+        [DisplayName("Gain 3 (0-63)")]
+        public int Gain3 { get { return gains[2]; } set { SetGain(2, value); } }
 
         [Category("Receiver 3")]
         public int Threshold3 { get; set; }
@@ -166,7 +180,8 @@ namespace Timing.ImmersionRC
 
 
         [Category("Receiver 4")]
-        public int Gain4 { get; set; }
+        [DisplayName("Gain 4 (0-63)")]
+        public int Gain4 { get { return gains[3]; } set { SetGain(3, value); } }
 
         [Category("Receiver 4")]
         public int Threshold4 { get; set; }
@@ -176,7 +191,8 @@ namespace Timing.ImmersionRC
 
 
         [Category("Receiver 5")]
-        public int Gain5 { get; set; }
+        [DisplayName("Gain 5 (0-63)")]
+        public int Gain5 { get { return gains[4]; } set { SetGain(4, value); } }
 
         [Category("Receiver 5")]
         public int Threshold5 { get; set; }
@@ -186,7 +202,8 @@ namespace Timing.ImmersionRC
 
 
         [Category("Receiver 6")]
-        public int Gain6 { get; set; }
+        [DisplayName("Gain 6 (0-63)")]
+        public int Gain6 { get { return gains[5]; } set { SetGain(5, value); } }
         
         [Category("Receiver 6")]
         public int Threshold6 { get; set; }
@@ -196,7 +213,8 @@ namespace Timing.ImmersionRC
 
 
         [Category("Receiver 7")]
-        public int Gain7 { get; set; }
+        [DisplayName("Gain 7 (0-63)")]
+        public int Gain7 { get { return gains[6]; } set { SetGain(6, value); } }
 
         [Category("Receiver 7")]
         public int Threshold7 { get; set; }
@@ -206,7 +224,8 @@ namespace Timing.ImmersionRC
 
 
         [Category("Receiver 8")]
-        public int Gain8 { get; set; }
+        [DisplayName("Gain 8 (0-63)")]
+        public int Gain8 { get { return gains[7]; } set { SetGain(7, value); } }
 
         [Category("Receiver 8")]
         public int Threshold8 { get; set; }
