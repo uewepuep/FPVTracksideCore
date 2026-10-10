@@ -122,6 +122,7 @@ namespace UI.Nodes
                 lc.OnValidityChanged += UpdateNumbersEtc;
                 lc.OnSplitLap += OnSplitLap;
                 lc.OnTimeChanged += () => { UpdateNumbersEtc(); };
+                lc.RecordTint = GetRecordTint(lap);
                 lapContainers.Add(lc);
                 OnLapContainerCreated(lc);
             }
@@ -129,6 +130,26 @@ namespace UI.Nodes
             Layout();
 
             UpdateRaceNode();
+        }
+
+        // Personal / overall best colours, resolved the same way the lap bar under the pilot
+        // feed does it (LapsNode.RefreshData). Records come from saved race data, so this
+        // reflects the lap as stored, not any unsaved edit in this dialog.
+        protected Color? GetRecordTint(Lap lap)
+        {
+            if (lap == null)
+                return null;
+
+            LapRecordManager records = RaceManager?.EventManager?.LapRecordManager;
+            if (records == null)
+                return null;
+
+            int pbLaps = RaceManager.EventManager.Event.PBLaps;
+
+            if (!records.IsRecord(lap, pbLaps, out bool overallBest))
+                return null;
+
+            return overallBest ? Theme.Current.OverallBestTime.XNA : Theme.Current.NewPersonalBest.XNA;
         }
 
         // No-op hook for a subclass to insert extra content (e.g. an RSSI waveform graph)
@@ -440,10 +461,34 @@ namespace UI.Nodes
 
         private ColorNode selectionOverlay;
 
+        // Personal / overall best highlight. Null means this lap isn't a record. Matches the
+        // lap bar under the pilot feed, which tints the text rather than the channel-coloured
+        // background (see LapNode.Tint).
+        private Color? recordTint;
+
+        public Color? RecordTint
+        {
+            get { return recordTint; }
+            set
+            {
+                recordTint = value;
+                ApplyTextTint();
+            }
+        }
+
         public bool IsSelected
         {
             get { return selectionOverlay.Visible; }
             set { selectionOverlay.Visible = value; }
+        }
+
+        private void ApplyTextTint()
+        {
+            // An invalidated lap is no longer a record, so drop the highlight until it's valid again.
+            Color tint = (Valid && recordTint.HasValue) ? recordTint.Value : Theme.Current.Editor.Text.XNA;
+
+            lapNumber.Tint = tint;
+            lapTime.Tint = tint;
         }
 
 
@@ -521,6 +566,8 @@ namespace UI.Nodes
         public void Refresh()
         {
             Alpha = Valid ? 1 : LapEditorNode.DisabledAlpha;
+
+            ApplyTextTint();
 
             if (Valid)
             {
