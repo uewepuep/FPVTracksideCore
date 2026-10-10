@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FPVTrackside API</title>
+<link rel="stylesheet" href="console/console.css">
+<script>
+  // Theme before first paint: a saved choice wins, else the OS setting.
+  try { var t = localStorage.getItem('fpvapi.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+</head>
+<body>
+<header class="top">
+  <button class="icon-btn menu-btn" id="menuBtn" aria-label="Show endpoints" aria-controls="side" aria-expanded="false">☰</button>
+  <a class="brand" href="#/"><span class="brand-mark">⏱</span> FPVTrackside <b>API</b></a>
+  <div class="status" id="status">
+    <span class="pill" id="eventPill">Connecting…</span>
+    <span class="pill" id="racePill" hidden></span>
+    <span class="pill" id="writePill" hidden></span>
+  </div>
+  <div class="top-actions">
+    <button class="btn ghost" id="tokenBtn" title="API token for changes from another machine">🔑 <span class="tok-label">Token</span></button>
+    <button class="icon-btn" id="themeBtn" title="Light / dark" aria-label="Toggle light or dark theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="side" id="side">
+    <div class="search">
+      <input id="search" type="search" placeholder="Search endpoints  ( / )" autocomplete="off" aria-label="Search endpoints">
+    </div>
+    <nav id="nav" aria-label="Endpoints"></nav>
+  </aside>
+  <main id="main" tabindex="-1"><div class="loading">Loading the API description…</div></main>
+</div>
+
+<dialog id="tokenDialog">
+  <form method="dialog" class="dialog">
+    <h3>API token</h3>
+    <p>Only needed to make <b>changes</b> from another computer. Reading works without one, and changes
+      made from the FPVTrackside machine itself never need one.</p>
+    <p>The token is whatever <code>FPV_API_TOKEN</code> is set to on the FPVTrackside machine. It is kept in
+      this browser only and sent as <code>Authorization: Bearer …</code>.</p>
+    <input id="tokenInput" type="password" autocomplete="off" placeholder="paste the token">
+    <label class="check"><input type="checkbox" id="tokenShow"> Show</label>
+    <div class="dialog-actions">
+      <button class="btn ghost" value="clear" id="tokenClear">Clear</button>
+      <button class="btn" value="save" id="tokenSave">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="console/console.js"></script>
+</body>
+</html>

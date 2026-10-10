@@ -21,6 +21,7 @@ namespace RaceLib
         public event Action<Round> OnRoundAdded;
         public event Action<Round> OnRoundRemoved;
         public event Action OnStageChanged;
+        public event Action<Round> OnRoundRenamed;
 
         public Round[] Rounds
         {
@@ -550,6 +551,17 @@ namespace RaceLib
             OnRoundAdded?.Invoke(newRound);
 
             return newRound;
+        }
+
+        // A custom name for the round (empty restores the default "Round N").
+        public void RenameRound(Round round, string name)
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                round.Name = name ?? "";
+                db.Update(round);
+            }
+            OnRoundRenamed?.Invoke(round);
         }
 
         public void RemoveRound(Round round)

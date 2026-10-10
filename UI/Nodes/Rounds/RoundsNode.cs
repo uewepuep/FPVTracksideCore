@@ -71,6 +71,7 @@ namespace UI.Nodes.Rounds
             RoundManager.OnRoundAdded += Em_OnRoundAdded;
             RoundManager.OnRoundRemoved += Refresh;
             RoundManager.OnStageChanged += Refresh;
+            RoundManager.OnRoundRenamed += Refresh;
             EventManager.RaceManager.OnPilotAdded += RaceManager_OnPilotAdded;
             EventManager.RaceManager.OnPilotRemoved += OnPilotRemoved;
             EventManager.RaceManager.OnRaceEnd += RaceManager_OnRaceEnd; ;
@@ -95,6 +96,7 @@ namespace UI.Nodes.Rounds
             RoundManager.OnRoundAdded -= Em_OnRoundAdded;
             RoundManager.OnRoundRemoved -= Refresh;
             RoundManager.OnStageChanged -= Refresh;
+            RoundManager.OnRoundRenamed -= Refresh;
             EventManager.RaceManager.OnPilotAdded -= RaceManager_OnPilotAdded;
             EventManager.RaceManager.OnPilotRemoved -= OnPilotRemoved;
             EventManager.RaceManager.OnRaceEnd -= RaceManager_OnRaceEnd;

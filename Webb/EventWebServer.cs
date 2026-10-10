@@ -31,7 +31,7 @@ namespace Webb
 
         private HttpListener listener;
 
-        public string Url { get; private set; }
+        public string Url { get; set; }
 
         public FileInfo CSSStyleSheet { get; private set; }
 
@@ -41,7 +41,14 @@ namespace Webb
 
         public ToolColor[] ChannelColors { get; private set; }
 
-        public EventWebServer(EventManager eventManager, SoundManager soundManager, IRaceControl raceControl, IEnumerable<Tools.ToolColor> channelColors, string eventStorageLocation = null)
+        // The REST API under /api/v1 (see documentation/REST_API.md).
+        public Api.RestApi RestApi { get; private set; }
+
+        // invokeOnUIThread runs an action on the app's UI/game-loop thread. The
+        // REST API runs every call through it, because RaceLib isn't safe to
+        // touch from the web server's thread. Without one (tests, tools) calls
+        // run inline.
+        public EventWebServer(EventManager eventManager, SoundManager soundManager, IRaceControl raceControl, IEnumerable<Tools.ToolColor> channelColors, string eventStorageLocation = null, Action<Action> invokeOnUIThread = null)
         {
             CSSStyleSheet = new FileInfo(IOTools.ResolveFromWorkingDirectory("httpfiles", "style.css"));
             this.eventManager = eventManager;
@@ -57,6 +64,7 @@ namespace Webb
             }
 
             ChannelColors = channelColors.ToArray();
+            RestApi = new Api.RestApi(eventManager, raceControl, invokeOnUIThread);
         }
 
         public void Dispose() 
@@ -99,16 +107,30 @@ namespace Webb
                     CreateListener();
                 }
 
+                HttpListenerContext context;
                 try
                 {
-                    HttpListenerContext context = listener.GetContext();
-                    HandleRequest(context);
+                    context = listener.GetContext();
                 }
                 catch (Exception ex)
                 {
                     Logger.HTTP.LogException(this, ex);
                     listener.Abort();
                     listener = null;
+                    continue;
+                }
+
+                // One bad request (a client that hung up, a framework-rejected
+                // request such as a POST without Content-Length, a handler bug)
+                // must not tear down the listener for everyone else.
+                try
+                {
+                    HandleRequest(context);
+                }
+                catch (Exception ex)
+                {
+                    Logger.HTTP.LogException(this, ex);
+                    try { context.Response.Abort(); } catch { }
                 }
             }
         }
@@ -142,8 +164,8 @@ namespace Webb
 
             if (context.Request.HttpMethod == "OPTIONS")
             {
-                response.AddHeader("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With");
-                response.AddHeader("Access-Control-Allow-Methods", "GET, POST");
+                response.AddHeader("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, Authorization, X-Api-Token");
+                response.AddHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE");
                 response.AddHeader("Access-Control-Max-Age", "1728000");
             }
             response.AppendHeader("Access-Control-Allow-Origin", "*");
@@ -163,13 +185,28 @@ namespace Webb
             string[] requestPath = path.Split('/').Where(s => !string.IsNullOrEmpty(s)).ToArray();
 
             NameValueCollection nameValueCollection;
+            string requestBody;
             using (Stream receiveStream = context.Request.InputStream)
             {
                 using (StreamReader readStream = new StreamReader(receiveStream, System.Text.Encoding.UTF8))
                 {
                     string documentContents = readStream.ReadToEnd();
+                    requestBody = documentContents;
                     nameValueCollection = HttpUtility.ParseQueryString(documentContents);
                 }
+            }
+
+            if (context.Request.HttpMethod == "OPTIONS")
+            {
+                // CORS preflight: the headers were added in HandleRequest.
+                context.Response.StatusCode = 204;
+                return new byte[0];
+            }
+
+            byte[] apiResponse;
+            if (RestApi.TryHandle(context, requestPath, requestBody, out apiResponse))
+            {
+                return apiResponse;
             }
 
             if (requestPath.Length > 0)
@@ -205,6 +242,7 @@ namespace Webb
                             context.Response.ContentType = "application/json";
                             return Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new { CurrentRace = curId }));
                         }
+
                     case "events":
                         // Build the full path: replace "events" prefix with the actual event storage location
                         string[] pathWithoutEvents = requestPath.Skip(1).ToArray(); // Remove "events" from the path

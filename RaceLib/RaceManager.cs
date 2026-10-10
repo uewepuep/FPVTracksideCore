@@ -2205,6 +2205,132 @@ namespace RaceLib
             OnLapsRecalculated?.Invoke(race);
         }
 
+        // Applies a lap-timing correction for one pilot in one race, typically
+        // worked out from split-gate crossings by an external lap-review tool:
+        // lap-line crossings that were false are marked invalid (as Marshall) and
+        // missed ones are added as manual lap-end detections at anchor time +
+        // offset, the anchor being another crossing of the same pilot (so clock
+        // differences between machines don't matter). Works on any race of the
+        // open event, not just the current one. Everything is validated before
+        // anything changes; adding is idempotent (a valid lap end already within
+        // 250 ms of the target means it was applied before).
+        public bool ApplyLapCorrection(Guid raceId, Guid pilotId, IEnumerable<Guid> invalidate, IEnumerable<KeyValuePair<Guid, long>> add, out string error)
+        {
+            error = null;
+            Race race = GetRaceByRaceId(raceId);
+            if (race == null)
+            {
+                error = "race not found in the open event";
+                return false;
+            }
+            Pilot pilot = race.Pilots.FirstOrDefault(p => p != null && p.ID == pilotId);
+            if (pilot == null)
+            {
+                error = "pilot is not in that race";
+                return false;
+            }
+
+            Detection[] detections;
+            lock (race.Detections)
+            {
+                detections = race.Detections.ToArray();
+            }
+
+            List<Detection> toInvalidate = new List<Detection>();
+            foreach (Guid id in invalidate ?? Enumerable.Empty<Guid>())
+            {
+                Detection d = detections.FirstOrDefault(x => x.ID == id);
+                if (d == null || d.Pilot != pilot)
+                {
+                    error = "detection " + id + " not found for that pilot";
+                    return false;
+                }
+                if (!d.IsLapEnd)
+                {
+                    error = "detection " + id + " is not a lap-line crossing";
+                    return false;
+                }
+                toInvalidate.Add(d);
+            }
+
+            List<DateTime> toAdd = new List<DateTime>();
+            foreach (KeyValuePair<Guid, long> a in add ?? Enumerable.Empty<KeyValuePair<Guid, long>>())
+            {
+                Detection anchor = detections.FirstOrDefault(x => x.ID == a.Key);
+                if (anchor == null || anchor.Pilot != pilot)
+                {
+                    error = "anchor detection " + a.Key + " not found for that pilot";
+                    return false;
+                }
+                if (a.Value <= 0 || a.Value > 600000)
+                {
+                    error = "offset out of range";
+                    return false;
+                }
+                toAdd.Add(anchor.Time.AddMilliseconds(a.Value));
+            }
+
+            foreach (Detection d in toInvalidate)
+            {
+                SetDetectionValidity(race, d, false, Detection.ValidityTypes.Marshall);
+            }
+
+            if (toAdd.Any())
+            {
+                AddLapsToRace(race, pilot, toAdd);
+            }
+            else if (toInvalidate.Any())
+            {
+                RefreshPilotRecords(race, pilot);
+            }
+
+            Logger.RaceLog.LogCall(this, race, pilot, "lap correction", toInvalidate.Count, toAdd.Count);
+            return true;
+        }
+
+        // Adds manual lap-line crossings to ANY race of the open event — unlike
+        // AddLap/AddManualLap, which only act on the current race — then rebuilds
+        // the pilot's laps, results and lap records. Idempotent: a valid lap end
+        // already within 250 ms of a requested time is left alone. Returns the
+        // detections actually created.
+        public List<Detection> AddLapsToRace(Race race, Pilot pilot, IEnumerable<DateTime> times)
+        {
+            List<Detection> created = new List<Detection>();
+            Channel channel = race.GetChannel(pilot);
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                foreach (DateTime time in times)
+                {
+                    bool already = race.GetValidDetections(pilot).Any(x => x.IsLapEnd && Math.Abs((x.Time - time).TotalMilliseconds) < 250);
+                    if (already)
+                        continue;
+
+                    Detection d = new Detection(TimingSystemType.Manual, 0, pilot, channel, time, 0, true, 0);
+                    race.RecordLap(db, d);
+                    created.Add(d);
+                }
+                race.ReCalculateLaps(db, pilot);
+                db.Update(race);
+            }
+            OnLapsRecalculated?.Invoke(race);
+            RefreshPilotRecords(race, pilot);
+            return created;
+        }
+
+        // After laps change outside the live timing path (an edit to a finished
+        // race), the pilot's lap and speed records must be rebuilt or the "best
+        // lap" shown in the UI and exports keeps the old value. Results are
+        // already rebuilt by ResultManager's OnLapsRecalculated handler.
+        public void RefreshPilotRecords(Race race, Pilot pilot)
+        {
+            if (pilot == null)
+                return;
+
+            EventManager.LapRecordManager.ClearPilot(pilot);
+            EventManager.LapRecordManager.UpdatePilot(pilot);
+            EventManager.SpeedRecordManager.UpdatePilot(pilot);
+        }
+
         public Race GetPreviousRace(Pilot pilot, Race race)
         {
             return GetRaces(pilot).Where(r => r.RaceOrder < race.RaceOrder).OrderByDescending(r => r.RaceOrder).FirstOrDefault();
@@ -2350,6 +2476,7 @@ namespace RaceLib
                         EventManager.SpeedRecordManager.UpdatePilot(toAdd);
                         EventManager.ResultManager.SaveResults(race);
                     }
+                    OnRacePilotsSet?.Invoke(race);
                     return true;
                 }
                 return false;
@@ -2373,6 +2500,7 @@ namespace RaceLib
                     EventManager.SpeedRecordManager.UpdatePilot(pilot);
                     EventManager.ResultManager.SaveResults(race);
                 }
+                OnRacePilotsSet?.Invoke(race);
                 return result;
             }
         }

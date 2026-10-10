@@ -27,6 +27,11 @@ Welcome to the FPVTrackside documentation! This folder contains comprehensive te
 
 ### 🎥 Specialized Documentation
 
+- **[REST API](REST_API.md)** - Read and drive FPVTrackside over HTTP
+  - Pilots, rounds, races, laps, timing crossings, results, race control
+  - Interactive console at `/api/v1/docs`; OpenAPI at `/api/v1/openapi.json`
+  - `ApiSandbox` to try it without a venue setup
+
 - **[Video System Documentation](VideoSystemDocumentation.md)** - Video processing system
   - FFmpeg integration details
   - Camera capture and processing

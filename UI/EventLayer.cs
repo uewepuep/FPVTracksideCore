@@ -301,7 +301,7 @@ namespace UI
                 raceControl = this;
             }
 
-            eventWebServer = new EventWebServer(EventManager, SoundManager, raceControl, Theme.Current.ChannelColors, ApplicationProfileSettings.Instance.EventStorageDirectory.FullName);
+            eventWebServer = new EventWebServer(EventManager, SoundManager, raceControl, Theme.Current.ChannelColors, ApplicationProfileSettings.Instance.EventStorageDirectory.FullName, a => PlatformTools.Invoke(a));
 
             if (ApplicationProfileSettings.Instance.HTTPServer)
             {

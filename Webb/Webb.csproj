@@ -22,6 +22,11 @@
   <ItemGroup>
     <None Remove="MonoGame.Framework.DesktopGL" />
   </ItemGroup>
+
+  <!-- The API console (/api/v1/docs) ships inside the DLL so it needs no install step. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Api\Console\*.*" LogicalName="Webb.Api.Console.%(Filename)%(Extension)" />
+  </ItemGroup>
   <ItemGroup>
     <None Update="httpfiles\Accessor.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

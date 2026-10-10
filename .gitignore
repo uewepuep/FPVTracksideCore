@@ -18,3 +18,6 @@ ffmpegMediaPlatform/ffmpeg
 Webb/httpfiles/Channels.json
 /UI/~$Translations.xlsx
 /UI/.~lock.Translations.xlsx#
+
+# ApiSandbox demo data (dotnet run --project ApiSandbox)
+sandbox-data/

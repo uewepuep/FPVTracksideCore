@@ -266,6 +266,31 @@ namespace RaceLib
             OnEventChange?.Invoke();
         }
 
+        public void SetEventName(string name)
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventId))
+            {
+                Event.Name = name;
+                db.Update(Event);
+            }
+
+            OnEventChange?.Invoke();
+        }
+
+        public void SetPBLaps(int laps)
+        {
+            if (Event.RulesLocked)
+                return;
+
+            using (IDatabase db = DatabaseFactory.Open(EventId))
+            {
+                Event.PBLaps = laps;
+                db.Update(Event);
+            }
+
+            OnEventChange?.Invoke();
+        }
+
         public void SetRaceLength(int seconds)
         {
             using (IDatabase db = DatabaseFactory.Open(EventId))
