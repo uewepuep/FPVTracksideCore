@@ -64,12 +64,30 @@ namespace Webb
             }
 
             ChannelColors = channelColors.ToArray();
-            RestApi = new Api.RestApi(eventManager, raceControl, invokeOnUIThread);
+            RestApi = new Api.RestApi(eventManager, raceControl, invokeOnUIThread,
+                () => eventManager.EventId == Guid.Empty ? null : Path.Combine(EventsPath(), eventManager.EventId.ToString()));
         }
 
         public void Dispose() 
         {
             Stop();
+            RestApi?.Dispose();
+        }
+
+        // The event storage location (passed in the constructor), falling back to
+        // the working directory's events folder; always absolute.
+        private string EventsPath()
+        {
+            string eventsPath = eventStorageLocation;
+            if (string.IsNullOrEmpty(eventsPath))
+            {
+                eventsPath = Path.Combine(IOTools.WorkingDirectory?.FullName ?? "", "events");
+            }
+            else if (!Path.IsPathRooted(eventsPath))
+            {
+                eventsPath = Path.Combine(IOTools.WorkingDirectory?.FullName ?? "", eventsPath);
+            }
+            return eventsPath;
         }
 
         public bool Start()
@@ -209,6 +227,12 @@ namespace Webb
                 return apiResponse;
             }
 
+            byte[] bracketsPage;
+            if (Brackets.BracketsUi.TryHandle(context, requestPath, out bracketsPage))
+            {
+                return bracketsPage;
+            }
+
             if (requestPath.Length > 0)
             {
                 string action = requestPath[0];
@@ -216,17 +240,7 @@ namespace Webb
 
                 string content = "";
                 // Get the event storage location (passed in constructor or fall back to working directory)
-                string eventsPath = eventStorageLocation;
-                if (string.IsNullOrEmpty(eventsPath))
-                {
-                    // Fallback: use working directory + events
-                    eventsPath = Path.Combine(IOTools.WorkingDirectory?.FullName ?? "", "events");
-                }
-                else if (!Path.IsPathRooted(eventsPath))
-                {
-                    // Make relative paths absolute
-                    eventsPath = Path.Combine(IOTools.WorkingDirectory?.FullName ?? "", eventsPath);
-                }
+                string eventsPath = EventsPath();
                 DirectoryInfo eventRoot = new DirectoryInfo(Path.Combine(eventsPath, eventManager.Event.ID.ToString()));
                 switch (action)
                 {

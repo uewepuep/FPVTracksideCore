@@ -12,6 +12,7 @@
     <ProjectReference Include="..\DB\DB.csproj" />
     <ProjectReference Include="..\RaceLib\RaceLib.csproj" />
     <ProjectReference Include="..\Sound\Sound.csproj" />
+    <ProjectReference Include="..\Brackets\Brackets.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -26,6 +27,14 @@
   <!-- The API console (/api/v1/docs) ships inside the DLL so it needs no install step. -->
   <ItemGroup>
     <EmbeddedResource Include="Api\Console\*.*" LogicalName="Webb.Api.Console.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- The bracket web app (/brackets): BracketsUI's Nuxt build, written to Brackets\UI
+       by `npm run generate`. Not committed; a build without it serves a "not built" page. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Brackets\UI\**\*.*" LogicalName="Webb.BracketsUI/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Remove="Brackets\UI\**" />
+    <None Remove="Brackets\UI\**" />
   </ItemGroup>
   <ItemGroup>
     <None Update="httpfiles\Accessor.js">

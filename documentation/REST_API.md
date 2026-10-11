@@ -191,6 +191,29 @@ Invalidations are recorded as `Marshall`. This is the call external lap-review t
 
 All of these need *HTTP Server race controls enabled*. Start can be refused (409) for the same reasons the Start button would be: no race selected, the race already ran (reset it first), no timing system ready. If FPVTrackside asks the race director to confirm something (e.g. more pilots than the timer supports), the question appears on the FPVTrackside screen and the API returns 409.
 
+### Brackets
+Race brackets run inside FPVTrackside: the same formats and bracket logic as the AUFPV platform, with each heat flown as a normal FPVTrackside race. Brackets are saved with the event (`Brackets.json` in the event folder). The **bracket web app** at `/brackets` (e.g. `http://localhost:8080/brackets`) is built entirely on these endpoints.
+
+| | | |
+|---|---|---|
+| `GET /brackets/formats` | | The formats (`elimination`, `qualifier`, `mainsprogression`, `ladder`, `mains`) and which `setup` fields each reads |
+| `GET /brackets/seeding` | | Pilots ranked by best consecutive laps in the time-trial rounds. `?laps=3`, `?round=<id>`, `?pilots=all` to include pilots with no time |
+| `GET /brackets` | | The event's brackets |
+| `POST /brackets` | W | Create: `{"name": "Open Class Finals", "format": "elimination", "pilots": [top seed first…], "setup": {…}, "seatChannels": ["R1","R3","R6","R8"]}`. Anything left out of `setup` uses a default. A setup the engine can't build is refused with 409 and the reason |
+| `GET /brackets/{id}` | | Every heat (state, line-up, channels, result, linked FPVTrackside race), standings, champion and the diagram |
+| `PATCH /brackets/{id}` | W | Rename, change seat channels, switch automatic results on or off |
+| `DELETE /brackets/{id}` | W | Delete. Races already sent stay in FPVTrackside |
+| `POST /brackets/{id}/send` | W | Create every *ready* heat as a race in FPVTrackside, one round per bracket round |
+| `POST /brackets/{id}/sync` | W | Take finished results from FPVTrackside's timing for every linked heat; reports any that couldn't be applied and why |
+| `POST /brackets/{id}/heats/{heat}/send` | W | Send one heat; `{"makeCurrent": true}` also selects it on the race-director screen |
+| `POST /brackets/{id}/heats/{heat}/result` | W | Record a finishing order by hand: `{"placement": [pilot IDs or names…], "lock": true}`. Only the pilots who advance are required |
+| `POST /brackets/{id}/heats/{heat}/reset` | W | Clear a result; its pilots are taken back out of later heats. Refused (409) once a later heat that depends on it has run |
+| `POST /brackets/{id}/heats/{heat}/lock` | W | `{"locked": true}` keeps a result against timing; `false` hands it back to timing |
+
+Heat ids are the bracket's own (`W1-1`, `L2-1`, `CTA-3`, `A:W1-1` for a mains-progression main) — URL-encode them. A heat's `state` is `waiting` (line-up not known), `ready`, `sent` (in FPVTrackside, not run), `running`, `flown` (finished in FPVTrackside, result not applied), `finished` or `void` (not needed).
+
+**Results from timing.** With automatic results on (the default), when a linked race ends — or its results change — the finishing order from FPVTrackside's timing is applied to the bracket and the next heats fill in. A result entered by hand is locked so a later timing change can't overwrite it. Channels: a pilot keeps the channel from their previous heat when it's free; otherwise seats fill in `seatChannels` order, then FPVTrackside's free channels.
+
 ## 6. How changes reach the screen
 
 The web server runs on its own thread, but FPVTrackside's race engine and screens run on the game loop. Every API call — reads included — is handed to the game loop and runs there, between frames, through the same RaceLib calls the screen's own buttons use. So:

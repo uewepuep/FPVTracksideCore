@@ -21,3 +21,10 @@ Webb/httpfiles/Channels.json
 
 # ApiSandbox demo data (dotnet run --project ApiSandbox)
 sandbox-data/
+
+# Bracket web app: source in BracketsUI/, build output embedded from Webb/Brackets/UI
+BracketsUI/node_modules/
+BracketsUI/.nuxt/
+BracketsUI/.output/
+BracketsUI/dist
+Webb/Brackets/UI/

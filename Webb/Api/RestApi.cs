@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
+using Webb.Brackets;
 
 namespace Webb.Api
 {
@@ -19,7 +20,7 @@ namespace Webb.Api
     // thread (through the invoke delegate the app passes in) and this thread
     // waits for it — reads included, since RaceLib's lists are not safe to walk
     // while the game loop edits them.
-    public class RestApi
+    public partial class RestApi : IDisposable
     {
         public const string Prefix = "api/v1";
         public const int Version = 1;
@@ -36,12 +37,19 @@ namespace Webb.Api
         // How long a call waits for the UI thread before answering 503.
         public static TimeSpan UIThreadTimeout = TimeSpan.FromSeconds(15);
 
-        public RestApi(EventManager eventManager, IRaceControl raceControl, Action<Action> invokeOnUIThread)
+        // eventDirectory: the open event's folder (brackets are saved in it).
+        public RestApi(EventManager eventManager, IRaceControl raceControl, Action<Action> invokeOnUIThread, Func<string> eventDirectory = null)
         {
             this.eventManager = eventManager;
             this.raceControl = raceControl;
             this.invokeOnUIThread = invokeOnUIThread;
+            brackets = new BracketService(eventManager, eventDirectory ?? (() => null));
             Register();
+        }
+
+        public void Dispose()
+        {
+            brackets?.Dispose();
         }
 
         // ───────────────────────── dispatch ─────────────────────────
@@ -256,6 +264,8 @@ namespace Webb.Api
                 "Same as pressing Start: runs the start countdown and sounds. Needs \"Race control over HTTP\" switched on in FPVTrackside's settings (403 race_control_disabled otherwise).");
             Write("POST", "race-control/stop", "Race control", "End the running race", null, typeof(RaceControlDto), r => RaceAction(() => RaceManager.EndRace(), "no race is running"));
             Write("POST", "race-control/cancel", "Race control", "Cancel a start countdown", null, typeof(RaceControlDto), r => RaceAction(() => RaceManager.CancelRaceStart(false), "no start is counting down"));
+
+            RegisterBrackets();
 
             Examples(new Dictionary<string, string>
             {

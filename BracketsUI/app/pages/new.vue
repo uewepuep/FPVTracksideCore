@@ -1,0 +1,331 @@
+<script setup lang="ts">
+import type { BracketFormat } from '~/composables/types'
+
+// New bracket: format → pilots & seeding → settings. Everything is posted to
+// POST /api/v1/brackets, which generates the whole structure at once.
+
+interface SeedPilot { id: string; name: string; use: boolean; time: number | null }
+
+const onError = useApiErrors()
+const toast = useToast()
+const router = useRouter()
+
+const step = ref(0)
+const steps = [
+  { title: 'Format', description: 'How the bracket runs', icon: 'i-lucide-git-fork', value: 0 },
+  { title: 'Pilots', description: 'Who races, in seed order', icon: 'i-lucide-users', value: 1 },
+  { title: 'Settings', description: 'Heats, finals, channels', icon: 'i-lucide-sliders-horizontal', value: 2 },
+]
+
+const formats = ref<BracketFormat[]>([])
+const channels = ref<{ label: string }[]>([])
+const rounds = ref<{ id: string; name: string; eventType: string; number: number }[]>([])
+const pilots = ref<SeedPilot[]>([])
+
+const format = ref('elimination')
+const name = ref('')
+const setup = reactive({
+  eliminationType: 'double',
+  finalsFormat: 'chase-the-ace',
+  pilotsPerRace: 4,
+  pilotsToAdvance: 2,
+  aceWinsRequired: 2,
+  qualifierCta: false,
+  qualifierSeed: 'snake',
+  pilotsPerMain: 16,
+  bumpUp: 4,
+  ctaMainsText: '',
+  mainsText: 'A, B',
+  rounds: 3,
+  direction: 'descending',
+  pointsText: '',
+  dropWorst: 0,
+})
+const seats = ref<string[]>([])
+const seedLaps = ref<number | undefined>()
+const seedRound = ref<string>('all')
+const seeding = ref(false)
+const creating = ref(false)
+const error = ref('')
+
+const current = computed(() => formats.value.find(f => f.kind === format.value))
+const uses = (k: string) => !!current.value?.uses.includes(k)
+const chosen = computed(() => pilots.value.filter(p => p.use))
+const seatCount = computed(() => (format.value === 'mains' ? 0 : Math.max(2, Math.min(8, setup.pilotsPerRace || 4))))
+
+const formatIcons: Record<string, string> = {
+  elimination: 'i-lucide-git-fork',
+  qualifier: 'i-lucide-medal',
+  mainsprogression: 'i-lucide-layers',
+  ladder: 'i-lucide-arrow-up-narrow-wide',
+  mains: 'i-lucide-table-2',
+}
+
+onMounted(async () => {
+  try {
+    const [f, p, c, r] = await Promise.all([get('/brackets/formats'), get('/pilots'), get('/channels'), get('/rounds')])
+    formats.value = f
+    channels.value = c
+    rounds.value = r
+    pilots.value = p.map((x: any) => ({ id: x.id, name: x.name, use: true, time: null }))
+  } catch (e) {
+    onError(e)
+  }
+})
+
+watch(() => setup.pilotsPerRace, (n) => {
+  if (setup.pilotsToAdvance >= n) setup.pilotsToAdvance = Math.max(1, n - 1)
+  seats.value = seats.value.slice(0, n)
+})
+
+async function seedFromQualifying() {
+  seeding.value = true
+  try {
+    const q = new URLSearchParams({ pilots: 'all' })
+    if (seedLaps.value) q.set('laps', String(seedLaps.value))
+    if (seedRound.value !== 'all') q.set('round', seedRound.value)
+    const rows = await get<any[]>(`/brackets/seeding?${q}`)
+    const was = new Map(pilots.value.map(p => [p.id, p.use]))
+    pilots.value = rows.map(r => ({ id: r.pilotId, name: r.name, use: was.get(r.pilotId) !== false && r.races > 0, time: r.bestSeconds }))
+    toast.add({ title: 'Seeded from qualifying', description: `${rows.filter(r => r.bestSeconds != null).length} pilots have a time`, icon: 'i-lucide-timer', color: 'success' })
+  } catch (e) {
+    onError(e)
+  } finally {
+    seeding.value = false
+  }
+}
+
+function move(i: number, d: number) {
+  const j = i + d
+  if (j < 0 || j >= pilots.value.length) return
+  const list = pilots.value
+  ;[list[i], list[j]] = [list[j]!, list[i]!]
+}
+
+// Pointer drag from the grip: works with mouse and touch.
+const dragging = ref<number | null>(null)
+function startDrag(i: number, ev: PointerEvent) {
+  const grip = ev.currentTarget as HTMLElement
+  const row = grip.closest('li') as HTMLElement
+  const h = row.getBoundingClientRect().height + 6
+  const startY = ev.clientY
+  let to = i
+  dragging.value = i
+  grip.setPointerCapture(ev.pointerId)
+  const onMove = (e: PointerEvent) => {
+    const dy = e.clientY - startY
+    row.style.transform = `translateY(${dy}px)`
+    to = Math.max(0, Math.min(pilots.value.length - 1, i + Math.round(dy / h)))
+  }
+  const onUp = () => {
+    grip.removeEventListener('pointermove', onMove)
+    grip.removeEventListener('pointerup', onUp)
+    grip.removeEventListener('pointercancel', onUp)
+    row.style.transform = ''
+    dragging.value = null
+    const [item] = pilots.value.splice(i, 1)
+    pilots.value.splice(to, 0, item!)
+  }
+  grip.addEventListener('pointermove', onMove)
+  grip.addEventListener('pointerup', onUp)
+  grip.addEventListener('pointercancel', onUp)
+}
+
+const list = (s: string) => s.split(',').map(x => x.trim().toUpperCase()).filter(Boolean)
+
+function body() {
+  const points = setup.pointsText.split(',').map(x => x.trim()).filter(Boolean).map(Number)
+  const pointsTable = points.length && points.every(n => !Number.isNaN(n))
+    ? Object.fromEntries(points.map((n, i) => [i + 1, n]))
+    : null
+  const seatList = seats.value.filter(x => x && x !== 'auto')
+  return {
+    name: name.value.trim(),
+    format: format.value,
+    pilots: chosen.value.map(p => p.id),
+    seatChannels: seatList.length === seatCount.value ? seatList : [],
+    setup: {
+      eliminationType: setup.eliminationType,
+      finalsFormat: setup.finalsFormat,
+      pilotsPerRace: setup.pilotsPerRace,
+      pilotsToAdvance: setup.pilotsToAdvance,
+      aceWinsRequired: setup.aceWinsRequired,
+      qualifierCta: setup.qualifierCta,
+      qualifierSeed: setup.qualifierSeed,
+      pilotsPerMain: setup.pilotsPerMain,
+      bumpUp: setup.bumpUp,
+      ctaMains: list(setup.ctaMainsText),
+      mains: list(setup.mainsText),
+      rounds: setup.rounds,
+      direction: setup.direction,
+      pointsTable,
+      dropWorst: setup.dropWorst,
+    },
+  }
+}
+
+async function create() {
+  error.value = ''
+  if (!name.value.trim()) {
+    error.value = 'Give the bracket a name.'
+    return
+  }
+  if (chosen.value.length < 2) {
+    error.value = 'Pick at least 2 pilots.'
+    step.value = 1
+    return
+  }
+  creating.value = true
+  try {
+    const b = await post('/brackets', body())
+    toast.add({ title: 'Bracket created', description: b.name, icon: 'i-lucide-check', color: 'success' })
+    router.push(`/b/${b.id}`)
+  } catch (e: any) {
+    error.value = e.message
+  } finally {
+    creating.value = false
+  }
+}
+</script>
+
+<template>
+  <UContainer class="py-8">
+    <UButton to="/" variant="link" color="neutral" icon="i-lucide-arrow-left" label="Brackets" class="mb-4 px-0" />
+    <h1 class="text-3xl font-bold">New bracket</h1>
+
+    <UStepper v-model="step" :items="steps" class="my-8" />
+
+    <!-- 1 · Format -->
+    <div v-if="step === 0" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <button
+        v-for="f in formats"
+        :key="f.kind"
+        type="button"
+        class="group overflow-hidden rounded-xl border text-left transition"
+        :class="f.kind === format ? 'border-primary ring-2 ring-primary' : 'border-default hover:border-primary/60'"
+        :aria-pressed="f.kind === format"
+        @click="format = f.kind"
+      >
+        <ArtImage :name="`format-${f.kind}`" class="h-32">
+          <div class="absolute inset-0 bg-gradient-to-t from-[var(--ui-bg-elevated)] to-transparent" />
+          <UIcon :name="formatIcons[f.kind] ?? 'i-lucide-git-fork'" class="absolute bottom-3 left-4 size-7 text-primary" />
+        </ArtImage>
+        <div class="bg-elevated p-4">
+          <h2 class="font-display text-lg font-bold">{{ f.name }}</h2>
+          <p class="mt-1 text-sm text-muted">{{ f.description }}</p>
+        </div>
+      </button>
+    </div>
+
+    <!-- 2 · Pilots -->
+    <UCard v-else-if="step === 1">
+      <template #header>
+        <div class="flex flex-wrap items-end gap-3">
+          <div class="min-w-0 flex-1">
+            <h2 class="text-lg font-bold">Pilots and seeding</h2>
+            <p class="text-sm text-muted">Top seed first. Seed from the qualifying times, or drag to order. Untick anyone not in this bracket.</p>
+          </div>
+          <UFormField label="Best consecutive laps">
+            <UInputNumber v-model="seedLaps" :min="1" :max="20" placeholder="PB laps" class="w-32" />
+          </UFormField>
+          <UFormField label="From">
+            <USelect v-model="seedRound" :items="[{ label: 'All time-trial rounds', value: 'all' }, ...rounds.map(r => ({ label: r.name || `${r.eventType} round ${r.number}`, value: r.id }))]" class="w-56" />
+          </UFormField>
+          <UButton icon="i-lucide-timer" label="Seed from qualifying" :loading="seeding" @click="seedFromQualifying" />
+        </div>
+      </template>
+
+      <p class="mb-3 text-sm text-muted">{{ chosen.length }} pilots in this bracket</p>
+      <ol class="grid gap-1.5">
+        <li
+          v-for="(p, i) in pilots"
+          :key="p.id"
+          class="grid grid-cols-[2rem_3rem_minmax(0,1fr)_auto_auto] items-center gap-3 rounded-lg border border-default bg-elevated/50 px-3 py-2 transition"
+          :class="{ 'opacity-50': !p.use, 'z-10 shadow-lg ring-2 ring-primary': dragging === i }"
+        >
+          <span class="cursor-grab touch-none select-none text-center text-muted" aria-hidden="true" @pointerdown="startDrag(i, $event)">⠿</span>
+          <span class="font-mono text-sm font-bold text-muted">{{ p.use ? `#${pilots.slice(0, i + 1).filter(x => x.use).length}` : '—' }}</span>
+          <UCheckbox v-model="p.use" :label="p.name" />
+          <span class="font-mono text-xs text-muted">{{ p.time != null ? `${p.time.toFixed(3)}s` : '' }}</span>
+          <span class="flex gap-1">
+            <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-chevron-up" :aria-label="`Move ${p.name} up`" @click="move(i, -1)" />
+            <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-chevron-down" :aria-label="`Move ${p.name} down`" @click="move(i, 1)" />
+          </span>
+        </li>
+      </ol>
+    </UCard>
+
+    <!-- 3 · Settings -->
+    <UCard v-else>
+      <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <UFormField label="Name" required class="sm:col-span-2 lg:col-span-3">
+          <UInput v-model="name" placeholder="e.g. Open Class Finals" size="lg" class="w-full" />
+        </UFormField>
+
+        <UFormField v-if="uses('eliminationType')" label="Elimination">
+          <USelect v-model="setup.eliminationType" :items="[{ label: 'Double (redemption bracket)', value: 'double' }, { label: 'Single', value: 'single' }]" class="w-full" />
+        </UFormField>
+        <UFormField v-if="uses('finalsFormat')" label="Finals">
+          <USelect v-model="setup.finalsFormat" :items="[{ label: 'Chase the ace', value: 'chase-the-ace' }, { label: 'Grand final', value: 'double-elimination' }]" class="w-full" />
+        </UFormField>
+        <UFormField v-if="uses('pilotsPerRace')" label="Pilots per heat">
+          <UInputNumber v-model="setup.pilotsPerRace" :min="2" :max="8" class="w-full" />
+        </UFormField>
+        <UFormField v-if="uses('pilotsToAdvance')" label="Advance per heat">
+          <UInputNumber v-model="setup.pilotsToAdvance" :min="1" :max="setup.pilotsPerRace - 1" class="w-full" />
+        </UFormField>
+        <UFormField v-if="uses('qualifierCta')" label="Final">
+          <USwitch v-model="setup.qualifierCta" label="Run it as chase the ace" />
+        </UFormField>
+        <UFormField v-if="uses('aceWinsRequired') && (format !== 'elimination' || setup.finalsFormat === 'chase-the-ace')" label="Chase-the-ace wins needed" help="First to win this many final heats is champion.">
+          <UInputNumber v-model="setup.aceWinsRequired" :min="1" :max="5" class="w-full" />
+        </UFormField>
+        <UFormField v-if="uses('qualifierSeed')" label="Round-1 seeding (16 pilots)">
+          <USelect v-model="setup.qualifierSeed" :items="[{ label: 'MultiGP snake', value: 'snake' }, { label: 'Standard seed sheet', value: 'photo' }]" class="w-full" />
+        </UFormField>
+        <UFormField v-if="uses('pilotsPerMain')" label="Pilots per main">
+          <UInputNumber v-model="setup.pilotsPerMain" :min="2" :max="64" class="w-full" />
+        </UFormField>
+        <UFormField v-if="uses('bumpUp')" label="Bump up per main" help="How many move up to the next main.">
+          <UInputNumber v-model="setup.bumpUp" :min="1" :max="16" class="w-full" />
+        </UFormField>
+        <UFormField v-if="uses('ctaMains')" label="Chase the ace in mains" help="e.g. A, B — or * for all. Blank = A Main only.">
+          <UInput v-model="setup.ctaMainsText" class="w-full" />
+        </UFormField>
+        <UFormField v-if="uses('mains')" label="Mains" help="Comma list, e.g. A, B, C.">
+          <UInput v-model="setup.mainsText" class="w-full" />
+        </UFormField>
+        <UFormField v-if="uses('rounds')" label="Rounds">
+          <UInputNumber v-model="setup.rounds" :min="1" :max="20" class="w-full" />
+        </UFormField>
+        <UFormField v-if="uses('direction')" label="Points">
+          <USelect v-model="setup.direction" :items="[{ label: 'High points win', value: 'descending' }, { label: 'Low points win (position = points)', value: 'ascending' }]" class="w-full" />
+        </UFormField>
+        <UFormField v-if="uses('pointsTable')" label="Points for 1st, 2nd, …" help="e.g. 10, 8, 6, 4. Blank = default.">
+          <UInput v-model="setup.pointsText" class="w-full" />
+        </UFormField>
+        <UFormField v-if="uses('dropWorst')" label="Drop worst rounds">
+          <UInputNumber v-model="setup.dropWorst" :min="0" :max="10" class="w-full" />
+        </UFormField>
+      </div>
+
+      <USeparator v-if="seatCount" class="my-6" />
+      <div v-if="seatCount">
+        <h3 class="font-bold">Channel per seat</h3>
+        <p class="mb-3 text-sm text-muted">Optional. A pilot keeps the channel they flew in their last heat when it's free; otherwise seats fill in this order.</p>
+        <div class="flex flex-wrap gap-3">
+          <UFormField v-for="i in seatCount" :key="i" :label="`Seat ${i}`">
+            <USelect :model-value="seats[i - 1] || 'auto'" @update:model-value="(v: any) => (seats[i - 1] = v)" :items="[{ label: 'Auto', value: 'auto' }, ...channels.map(c => ({ label: c.label, value: c.label }))]" class="w-24" />
+          </UFormField>
+        </div>
+      </div>
+    </UCard>
+
+    <div class="mt-6 flex flex-wrap items-center gap-3">
+      <UButton v-if="step > 0" color="neutral" variant="outline" icon="i-lucide-arrow-left" label="Back" @click="step--" />
+      <UButton v-if="step < 2" trailing-icon="i-lucide-arrow-right" label="Next" @click="step++" />
+      <UButton v-else size="lg" icon="i-lucide-rocket" label="Create bracket" :loading="creating" @click="create" />
+      <p v-if="error" class="text-sm text-error" role="alert">{{ error }}</p>
+    </div>
+  </UContainer>
+</template>
