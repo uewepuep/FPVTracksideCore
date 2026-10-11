@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Brackets
+namespace BracketEngine
 {
     /// <summary>
     /// EliminationFormat wraps the existing bracket engine whole. Every method
@@ -35,7 +35,7 @@ namespace Brackets
 
         public static EliminationFormat New(FormatConfig cfg)
         {
-            return new EliminationFormat(Brackets.Bracket.New(EliminationConfig(cfg)));
+            return new EliminationFormat(BracketEngine.Bracket.New(EliminationConfig(cfg)));
         }
 
         public static EliminationFormat FromState(FormatConfig cfg, string raw)
@@ -45,7 +45,7 @@ namespace Brackets
                 return New(cfg);
             }
             BracketState st = DecodeState(raw);
-            return new EliminationFormat(Brackets.Bracket.FromState(EliminationConfig(cfg), st));
+            return new EliminationFormat(BracketEngine.Bracket.FromState(EliminationConfig(cfg), st));
         }
 
         internal static BracketState DecodeState(string raw)
@@ -100,7 +100,7 @@ namespace Brackets
                 return;
             }
             BracketState st = DecodeState(raw);
-            b = Brackets.Bracket.FromState(b.Config(), st);
+            b = BracketEngine.Bracket.FromState(b.Config(), st);
         }
 
         public void ApplyPlacement(string raceId, IList<string> placement)

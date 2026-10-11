@@ -228,7 +228,7 @@ namespace Webb
             }
 
             byte[] bracketsPage;
-            if (Brackets.BracketsUi.TryHandle(context, requestPath, out bracketsPage))
+            if (Bracketing.BracketsUi.TryHandle(context, requestPath, out bracketsPage))
             {
                 return bracketsPage;
             }

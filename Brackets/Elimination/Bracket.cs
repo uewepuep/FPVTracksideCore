@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Brackets
+namespace BracketEngine
 {
     /// <summary>
     /// Bracket couples a BracketConfig with its mutable BracketState. Port of

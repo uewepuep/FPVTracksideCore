@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Brackets
+namespace BracketEngine
 {
     // Port of the diagram flow logic from the AUFPV platform's race-bracket handlers
     // (race_bracket_preview.go: pilotSlot, computeSlotChart, bracketConnector,

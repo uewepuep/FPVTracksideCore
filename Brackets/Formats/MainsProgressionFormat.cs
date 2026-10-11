@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using MainsEngine = Brackets.Mains;
+using MainsEngine = BracketEngine.Mains;
 
-namespace Brackets
+namespace BracketEngine
 {
     /// <summary>
     /// MainsProgressionFormat wraps the Mains engine: a bump-up stack of "Top 4

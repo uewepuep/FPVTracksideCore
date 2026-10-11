@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
-namespace Brackets.Tests
+namespace BracketEngine.Tests
 {
     /// <summary>
     /// Port of internal/platform/bracket/bracket_test.go. Go's t.Errorf (record and

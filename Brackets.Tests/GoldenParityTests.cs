@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
-namespace Brackets.Tests
+namespace BracketEngine.Tests
 {
     /// <summary>
     /// Golden parity: replays every scenario recorded from the AUFPV platform's Go

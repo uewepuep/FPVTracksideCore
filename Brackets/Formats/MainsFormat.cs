@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Text;
 using Newtonsoft.Json;
 
-namespace Brackets
+namespace BracketEngine
 {
     /// <summary>MainsConfig holds the mains setup parameters (persisted in format_config).</summary>
     public class MainsConfig

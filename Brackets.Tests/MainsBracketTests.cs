@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
-namespace Brackets.Tests
+namespace BracketEngine.Tests
 {
     // Port of internal/platform/mainsbracket/mainsbracket_test.go.
     public class MainsBracketTests

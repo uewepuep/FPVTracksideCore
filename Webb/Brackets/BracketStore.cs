@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Webb.Brackets
+namespace Webb.Bracketing
 {
     // The setup a bracket was created with: everything the engine needs to
     // rebuild its format, in the same shape (and JSON names) as the AUFPV
@@ -29,7 +29,7 @@ namespace Webb.Brackets
         [JsonProperty("direction")] public string Direction { get; set; } = "descending";
         [JsonProperty("pointsTable")] public Dictionary<int, int> PointsTable { get; set; }
         [JsonProperty("dropWorst")] public int DropWorst { get; set; }
-        [JsonProperty("divisions")] public List<global::Brackets.MainsDivision> Divisions { get; set; }
+        [JsonProperty("divisions")] public List<global::BracketEngine.MainsDivision> Divisions { get; set; }
         // Explicit pilot → main assignment (pilot IDs), mains format only.
         [JsonProperty("mainsRosters")] public Dictionary<string, List<string>> MainsRosters { get; set; }
     }

@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using QualEngine = Brackets.Qual;
+using QualEngine = BracketEngine.Qual;
 
-namespace Brackets
+namespace BracketEngine
 {
     // Port of internal/platform/mainsbracket.
     //

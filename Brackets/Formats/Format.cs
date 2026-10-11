@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace Brackets
+namespace BracketEngine
 {
     // Port of internal/platform/raceformat — a pluggable abstraction over
     // drone-racing event formats.

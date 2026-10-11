@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace Brackets
+namespace BracketEngine
 {
     // Port of internal/platform/bracket (bracket.go) — MultiGP-style drone-racing
     // tournament brackets.

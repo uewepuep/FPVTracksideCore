@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Xunit;
 
-namespace Brackets.Tests
+namespace BracketEngine.Tests
 {
     // Port of raceformat/ladder_test.go.
     public class RaceFormatLadderTests

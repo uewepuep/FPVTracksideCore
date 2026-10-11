@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using QualEngine = Brackets.Qual;
+using QualEngine = BracketEngine.Qual;
 
-namespace Brackets
+namespace BracketEngine
 {
     /// <summary>
     /// QualifierFormat wraps the Qual interpreter (the "Double Elimination — Top 4

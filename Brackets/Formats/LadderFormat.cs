@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace Brackets
+namespace BracketEngine
 {
     /// <summary>LadderState is the persisted state blob for a ladder.</summary>
     public class LadderState

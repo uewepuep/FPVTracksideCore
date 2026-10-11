@@ -5,7 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 
-namespace Webb.Brackets
+namespace Webb.Bracketing
 {
     // Serves the bracket web app (BracketsUI, a Nuxt build) at /brackets. The
     // build is embedded in this DLL, so FPVTrackside needs no install step and

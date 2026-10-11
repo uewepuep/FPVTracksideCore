@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace Brackets
+namespace BracketEngine
 {
     /// <summary>
     /// A string-keyed map that serializes its keys in byte (ordinal) order, the way

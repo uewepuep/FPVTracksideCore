@@ -3,9 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Tools;
-using Engine = global::Brackets;
+using Engine = global::BracketEngine;
 
-namespace Webb.Brackets
+namespace Webb.Bracketing
 {
     // Race brackets on top of FPVTrackside: the same engine as the AUFPV
     // platform (the Brackets project is a port of it, pinned by tests generated

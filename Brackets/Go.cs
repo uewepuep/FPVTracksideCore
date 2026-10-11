@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
-namespace Brackets
+namespace BracketEngine
 {
     /// <summary>
     /// Small helpers that reproduce Go semantics the engine depends on, so the

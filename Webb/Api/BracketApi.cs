@@ -2,7 +2,7 @@ using RaceLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Webb.Brackets;
+using Webb.Bracketing;
 
 namespace Webb.Api
 {
@@ -18,31 +18,31 @@ namespace Webb.Api
         {
             new BracketFormatDto
             {
-                Kind = global::Brackets.FormatKinds.Elimination, Name = "Double elimination",
+                Kind = global::BracketEngine.FormatKinds.Elimination, Name = "Double elimination",
                 Description = "Winners and redemption brackets: a pilot is out after a second loss. Finals are a chase-the-ace series (first to N heat wins) or a grand final. Single elimination is the same with no redemption side.",
                 Uses = new List<string> { "eliminationType", "finalsFormat", "pilotsPerRace", "pilotsToAdvance", "aceWinsRequired" },
             },
             new BracketFormatDto
             {
-                Kind = global::Brackets.FormatKinds.Qualifier, Name = "Double elimination — top 4 advance",
+                Kind = global::BracketEngine.FormatKinds.Qualifier, Name = "Double elimination — top 4 advance",
                 Description = "MultiGP-style double elimination that ends in a final ranking the top four (or top N with wider heats) rather than one champion. 16 pilots at 4-up follows the MultiGP sheet exactly. Optional chase-the-ace final.",
                 Uses = new List<string> { "pilotsPerRace", "pilotsToAdvance", "qualifierCta", "aceWinsRequired", "qualifierSeed" },
             },
             new BracketFormatDto
             {
-                Kind = global::Brackets.FormatKinds.MainsProgression, Name = "Mains progression",
+                Kind = global::BracketEngine.FormatKinds.MainsProgression, Name = "Mains progression",
                 Description = "A stack of top-4 qualifier brackets, one per main (A = championship). Racing starts in the lowest main; its top finishers bump up into the next main, seeded by original qualifying position, until the A Main crowns the champion.",
                 Uses = new List<string> { "pilotsPerMain", "bumpUp", "pilotsPerRace", "pilotsToAdvance", "qualifierCta", "ctaMains", "aceWinsRequired", "qualifierSeed" },
             },
             new BracketFormatDto
             {
-                Kind = global::Brackets.FormatKinds.Ladder, Name = "Seeded ladder",
+                Kind = global::BracketEngine.FormatKinds.Ladder, Name = "Seeded ladder",
                 Description = "Lowest seeds race first; the top finishers carry up into the next bout against the next seeds, and the top seed enters last.",
                 Uses = new List<string> { "pilotsPerRace", "pilotsToAdvance" },
             },
             new BracketFormatDto
             {
-                Kind = global::Brackets.FormatKinds.Mains, Name = "Points mains",
+                Kind = global::BracketEngine.FormatKinds.Mains, Name = "Points mains",
                 Description = "Pilots are split into A/B/C… mains by seed (or by hand) and every main races several rounds for points; best total wins, optionally dropping each pilot's worst rounds.",
                 Uses = new List<string> { "mains", "rounds", "direction", "pointsTable", "dropWorst", "divisions", "mainsRosters" },
             },
@@ -113,7 +113,7 @@ namespace Webb.Api
             {
                 return f();
             }
-            catch (global::Brackets.BracketException e)
+            catch (global::BracketEngine.BracketException e)
             {
                 throw ApiException.Conflict(e.Message);
             }
@@ -155,7 +155,7 @@ namespace Webb.Api
             BracketCreateRequest body = r.BodyAs<BracketCreateRequest>();
             if (string.IsNullOrWhiteSpace(body.Name))
                 throw ApiException.BadRequest("name is required");
-            string format = string.IsNullOrWhiteSpace(body.Format) ? global::Brackets.FormatKinds.Elimination : body.Format.Trim().ToLowerInvariant();
+            string format = string.IsNullOrWhiteSpace(body.Format) ? global::BracketEngine.FormatKinds.Elimination : body.Format.Trim().ToLowerInvariant();
             if (!BracketFormats.Any(f => f.Kind == format))
                 throw ApiException.BadRequest("unknown format '" + body.Format + "'; use one of " + string.Join(", ", BracketFormats.Select(f => f.Kind)));
             if (body.Pilots == null || body.Pilots.Count < 2)
@@ -223,12 +223,12 @@ namespace Webb.Api
         {
             BracketRecord rec = BracketRef(r);
             HeatSendRequest body = r.BodyAs<HeatSendRequest>();
-            global::Brackets.IRaceFormat f = brackets.Format(rec);
+            global::BracketEngine.IRaceFormat f = brackets.Format(rec);
 
             List<string> sent = new List<string>();
             Dictionary<string, string> problems = new Dictionary<string, string>();
             Race first = null;
-            foreach (global::Brackets.RaceView rv in BracketService.Views(f).Where(BracketService.Ready))
+            foreach (global::BracketEngine.RaceView rv in BracketService.Views(f).Where(BracketService.Ready))
             {
                 Race existing = brackets.LinkedRace(rec, rv.Id);
                 if (existing != null && existing.Started)
@@ -239,7 +239,7 @@ namespace Webb.Api
                     first = first ?? race;
                     sent.Add(rv.Id);
                 }
-                catch (global::Brackets.BracketException e)
+                catch (global::BracketEngine.BracketException e)
                 {
                     problems[rv.Id] = e.Message;
                 }
@@ -346,14 +346,14 @@ namespace Webb.Api
 
         // ───────────────────────── mapping ─────────────────────────
 
-        private BracketSummaryDto Summary(BracketRecord rec, global::Brackets.IRaceFormat f)
+        private BracketSummaryDto Summary(BracketRecord rec, global::BracketEngine.IRaceFormat f)
         {
             return Fill(new BracketSummaryDto(), rec, f);
         }
 
-        private T Fill<T>(T dto, BracketRecord rec, global::Brackets.IRaceFormat f) where T : BracketSummaryDto
+        private T Fill<T>(T dto, BracketRecord rec, global::BracketEngine.IRaceFormat f) where T : BracketSummaryDto
         {
-            List<global::Brackets.RaceView> races = BracketService.Views(f).Where(x => !x.IsVoid).ToList();
+            List<global::BracketEngine.RaceView> races = BracketService.Views(f).Where(x => !x.IsVoid).ToList();
             string champion = f.Champion();
             dto.Id = rec.Id;
             dto.Name = rec.Name;
@@ -370,7 +370,7 @@ namespace Webb.Api
 
         private BracketDto Full(BracketRecord rec)
         {
-            global::Brackets.IRaceFormat f = brackets.Format(rec);
+            global::BracketEngine.IRaceFormat f = brackets.Format(rec);
             Dictionary<string, int> seed = rec.Pilots.Select((p, i) => new { p, i }).ToDictionary(x => x.p, x => x.i + 1);
             Func<string, string> name = id => brackets.PilotName(rec, id);
 
@@ -381,7 +381,7 @@ namespace Webb.Api
             dto.Layout = f.LayoutKind;
             dto.Pilots = rec.Pilots.Select(p => new HeatPilotDto { PilotId = p, Name = name(p), Seed = seed[p] }).ToList();
             dto.Heats = BracketService.Views(f).Select(rv => Heat(rec, f, rv, seed, name)).ToList();
-            dto.Standings = global::Brackets.RaceFormats.FinalOrdering(f, seed).Select(s => new BracketStandingDto
+            dto.Standings = global::BracketEngine.RaceFormats.FinalOrdering(f, seed).Select(s => new BracketStandingDto
             {
                 Rank = s.Rank,
                 PilotId = s.Pilot,
@@ -393,7 +393,7 @@ namespace Webb.Api
             return dto;
         }
 
-        private HeatDto Heat(BracketRecord rec, global::Brackets.IRaceFormat f, global::Brackets.RaceView rv, Dictionary<string, int> seed, Func<string, string> name)
+        private HeatDto Heat(BracketRecord rec, global::BracketEngine.IRaceFormat f, global::BracketEngine.RaceView rv, Dictionary<string, int> seed, Func<string, string> name)
         {
             Race race = brackets.LinkedRace(rec, rv.Id);
             Dictionary<string, string> channels = new Dictionary<string, string>();

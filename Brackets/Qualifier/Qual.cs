@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Brackets
+namespace BracketEngine
 {
     // Port of internal/platform/qualbracket (qualbracket.go).
 
