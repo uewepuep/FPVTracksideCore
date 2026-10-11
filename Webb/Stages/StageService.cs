@@ -5,39 +5,39 @@ using System.Linq;
 using Tools;
 using Engine = global::BracketEngine;
 
-namespace Webb.Bracketing
+namespace Webb.Stages
 {
-    // Race brackets on top of FPVTrackside: the same engine as the AUFPV
-    // platform (the Brackets project is a port of it, pinned by tests generated
-    // from the original), stored in the event folder, with each bracket heat
+    // Race stages on top of FPVTrackside: the same engine as the AUFPV
+    // platform (the Stages project is a port of it, pinned by tests generated
+    // from the original), stored in the event folder, with each stage race
     // run as a real FPVTrackside race.
     //
     // Pilots are identified to the engine by their FPVTrackside pilot ID.
     //
     // Everything here runs on the UI thread: the REST API hands its calls to it,
     // and the race events it listens to fire there.
-    public class BracketService : IDisposable
+    public class StageService : IDisposable
     {
         private readonly EventManager eventManager;
-        private readonly BracketStore store;
+        private readonly StageStore store;
 
         private RaceManager RaceManager { get { return eventManager.RaceManager; } }
 
-        public BracketStore Store { get { return store; } }
+        public StageStore Store { get { return store; } }
 
-        // Raised after a bracket changes (a result recorded, a heat sent…), with its ID.
-        public event Action<int> OnBracketChanged;
+        // Raised after a stage changes (a result recorded, a race sent…), with its ID.
+        public event Action<int> OnStageChanged;
 
         // Runs work after the current FPVTrackside callback returns (next frame),
         // so auto-send never adds races from inside RaceLib's own race-end handling.
         private readonly Action<Action> defer;
         private readonly HashSet<int> autoSendQueued = new HashSet<int>();
 
-        public BracketService(EventManager eventManager, Func<string> eventDirectory, Action<Action> defer = null)
+        public StageService(EventManager eventManager, Func<string> eventDirectory, Action<Action> defer = null)
         {
             this.eventManager = eventManager;
             this.defer = defer ?? (a => a());
-            store = new BracketStore(eventDirectory);
+            store = new StageStore(eventDirectory);
 
             eventManager.RaceManager.OnRaceEnd += OnRaceFinished;
             eventManager.ResultManager.RaceResultsChanged += OnRaceFinished;
@@ -51,9 +51,9 @@ namespace Webb.Bracketing
 
         // ───────────────────────── engine ─────────────────────────
 
-        public static Engine.FormatConfig ToConfig(BracketRecord rec)
+        public static Engine.FormatConfig ToConfig(StageRecord rec)
         {
-            BracketSetup s = rec.Setup ?? new BracketSetup();
+            StageSetup s = rec.Setup ?? new StageSetup();
             Engine.FormatConfig cfg = new Engine.FormatConfig
             {
                 PilotCount = rec.Pilots.Count,
@@ -102,7 +102,7 @@ namespace Webb.Bracketing
                 cfg.PointsTable = DefaultPoints.Select((pts, i) => new { pts, i }).ToDictionary(x => x.i + 1, x => x.pts);
         }
 
-        public Engine.IRaceFormat Format(BracketRecord rec)
+        public Engine.IRaceFormat Format(StageRecord rec)
         {
             Engine.FormatConfig cfg = ToConfig(rec);
             if (string.IsNullOrEmpty(rec.State))
@@ -110,23 +110,23 @@ namespace Webb.Bracketing
             return Engine.RaceFormats.FromState(rec.Format, cfg, rec.State);
         }
 
-        private void Persist(BracketRecord rec, Engine.IRaceFormat format)
+        private void Persist(StageRecord rec, Engine.IRaceFormat format)
         {
             rec.State = format.StateJson();
             store.Save(rec);
-            OnBracketChanged?.Invoke(rec.Id);
+            OnStageChanged?.Invoke(rec.Id);
             QueueAutoSend(rec);
         }
 
         // ───────────────────────── create / edit ─────────────────────────
 
-        public BracketRecord Create(string name, string format, BracketSetup setup, IList<Pilot> seededPilots, IList<string> seatChannels)
+        public StageRecord Create(string name, string format, StageSetup setup, IList<Pilot> seededPilots, IList<string> seatChannels)
         {
-            BracketRecord rec = new BracketRecord
+            StageRecord rec = new StageRecord
             {
                 Name = name,
                 Format = string.IsNullOrEmpty(format) ? Engine.FormatKinds.Elimination : format,
-                Setup = setup ?? new BracketSetup(),
+                Setup = setup ?? new StageSetup(),
                 Pilots = seededPilots.Select(p => p.ID.ToString()).ToList(),
                 PilotNames = seededPilots.ToDictionary(p => p.ID.ToString(), p => p.Name),
                 SeatChannels = (seatChannels ?? new List<string>()).ToList(),
@@ -136,43 +136,52 @@ namespace Webb.Bracketing
             Engine.IRaceFormat f = Engine.RaceFormats.Create(rec.Format, ToConfig(rec));
             rec.State = f.StateJson();
             store.Add(rec);
-            Logger.HTTP.Log(this, "Bracket created: " + rec.Name + " (" + rec.Format + ", " + rec.Pilots.Count + " pilots)");
-            OnBracketChanged?.Invoke(rec.Id);
+            Logger.HTTP.Log(this, "Stage created: " + rec.Name + " (" + rec.Format + ", " + rec.Pilots.Count + " pilots)");
+            OnStageChanged?.Invoke(rec.Id);
             QueueAutoSend(rec);
             return rec;
         }
 
-        public void Rename(BracketRecord rec, string name)
+        public void Rename(StageRecord rec, string name)
         {
             rec.Name = name;
             store.Save(rec);
-            OnBracketChanged?.Invoke(rec.Id);
+            Stage stage = eventManager.RoundManager.GetStages().FirstOrDefault(s => s.ID == rec.TracksideStageId);
+            if (stage != null)
+            {
+                using (IDatabase db = DatabaseFactory.Open(eventManager.EventId))
+                {
+                    stage.Name = name;
+                    db.Update(stage);
+                }
+            }
+            OnStageChanged?.Invoke(rec.Id);
         }
 
-        public void SetSeatChannels(BracketRecord rec, IList<string> seats)
+        public void SetSeatChannels(StageRecord rec, IList<string> seats)
         {
             rec.SeatChannels = seats.ToList();
             store.Save(rec);
-            OnBracketChanged?.Invoke(rec.Id);
+            OnStageChanged?.Invoke(rec.Id);
         }
 
-        public void SetAutoResults(BracketRecord rec, bool on)
+        public void SetAutoResults(StageRecord rec, bool on)
         {
             rec.AutoResults = on;
             store.Save(rec);
-            OnBracketChanged?.Invoke(rec.Id);
+            OnStageChanged?.Invoke(rec.Id);
         }
 
-        public void SetAutoSend(BracketRecord rec, bool on)
+        public void SetAutoSend(StageRecord rec, bool on)
         {
             rec.AutoSend = on;
             store.Save(rec);
-            OnBracketChanged?.Invoke(rec.Id);
+            OnStageChanged?.Invoke(rec.Id);
             QueueAutoSend(rec);
         }
 
-        // Auto-send: after a change, create every newly ready heat in FPVTrackside.
-        private void QueueAutoSend(BracketRecord rec)
+        // Auto-send: after a change, create every newly ready race in FPVTrackside.
+        private void QueueAutoSend(StageRecord rec)
         {
             if (!rec.AutoSend || !autoSendQueued.Add(rec.Id))
                 return;
@@ -182,16 +191,16 @@ namespace Webb.Bracketing
                 autoSendQueued.Remove(id);
                 try
                 {
-                    BracketRecord current = store.Get(id);
+                    StageRecord current = store.Get(id);
                     if (current != null && current.AutoSend)
                     {
                         RemoveUnneeded(current);
                         Dictionary<string, string> problems;
                         List<Race> sent = SendReady(current, true, out problems);
                         foreach (KeyValuePair<string, string> p in problems)
-                            Logger.HTTP.Log(this, "Bracket " + current.Name + " auto-send " + p.Key + ": " + p.Value);
+                            Logger.HTTP.Log(this, "Stage " + current.Name + " auto-send " + p.Key + ": " + p.Value);
                         if (sent.Count > 0)
-                            Logger.HTTP.Log(this, "Bracket " + current.Name + " auto-sent " + sent.Count + " heat(s)");
+                            Logger.HTTP.Log(this, "Stage " + current.Name + " auto-sent " + sent.Count + " race(s)");
                     }
                 }
                 catch (Exception e)
@@ -201,10 +210,10 @@ namespace Webb.Bracketing
             });
         }
 
-        // Auto-send created races for heats the bracket then didn't need (e.g. the
+        // Auto-send created races for races the stage then didn't need (e.g. the
         // rest of a chase-the-ace series once the champion is decided): take
         // them back out of FPVTrackside, as long as they haven't been flown.
-        private void RemoveUnneeded(BracketRecord rec)
+        private void RemoveUnneeded(StageRecord rec)
         {
             bool changed = false;
             foreach (Engine.RaceView rv in Views(Format(rec)).Where(x => x.IsVoid))
@@ -215,19 +224,19 @@ namespace Webb.Bracketing
                 RaceManager.RemoveRace(race, true);
                 rec.Links.Remove(rv.Id);
                 changed = true;
-                Logger.HTTP.Log(this, "Bracket " + rec.Name + " removed " + race.RaceName + " (" + rv.Id + " not needed)");
+                Logger.HTTP.Log(this, "Stage " + rec.Name + " removed " + race.RaceName + " (" + rv.Id + " not needed)");
             }
             if (changed)
             {
                 store.Save(rec);
-                OnBracketChanged?.Invoke(rec.Id);
+                OnStageChanged?.Invoke(rec.Id);
             }
         }
 
-        public void Delete(BracketRecord rec)
+        public void Delete(StageRecord rec)
         {
             store.Delete(rec.Id);
-            OnBracketChanged?.Invoke(rec.Id);
+            OnStageChanged?.Invoke(rec.Id);
         }
 
         // ───────────────────────── results ─────────────────────────
@@ -236,13 +245,13 @@ namespace Webb.Bracketing
         {
             Engine.RaceView rv = Views(f).FirstOrDefault(r => r.Id == raceId);
             if (rv == null)
-                throw new Engine.BracketException("heat " + raceId + " is not in this bracket");
+                throw new Engine.BracketException("race " + raceId + " is not in this stage");
             return rv;
         }
 
-        // A result entered by the race director. Locks the heat so a later
+        // A result entered by the race director. Locks the race so a later
         // timing sync can't overwrite it (unlock to hand it back to timing).
-        public void RecordResult(BracketRecord rec, string raceId, IList<string> placement, bool lockIt)
+        public void RecordResult(StageRecord rec, string raceId, IList<string> placement, bool lockIt)
         {
             Engine.IRaceFormat f = Format(rec);
             Engine.RaceView rv = View(f, raceId);
@@ -255,7 +264,7 @@ namespace Webb.Bracketing
             Persist(rec, f);
         }
 
-        public void ResetResult(BracketRecord rec, string raceId)
+        public void ResetResult(StageRecord rec, string raceId)
         {
             Engine.IRaceFormat f = Format(rec);
             View(f, raceId);
@@ -264,37 +273,37 @@ namespace Webb.Bracketing
             Persist(rec, f);
         }
 
-        public void Lock(BracketRecord rec, string raceId, bool locked)
+        public void Lock(StageRecord rec, string raceId, bool locked)
         {
             View(Format(rec), raceId);
             SetLock(rec, raceId, locked);
             store.Save(rec);
-            OnBracketChanged?.Invoke(rec.Id);
+            OnStageChanged?.Invoke(rec.Id);
         }
 
-        private static void SetLock(BracketRecord rec, string raceId, bool locked)
+        private static void SetLock(StageRecord rec, string raceId, bool locked)
         {
             rec.Locked.Remove(raceId);
             if (locked)
                 rec.Locked.Add(raceId);
         }
 
-        // The finishing order FPVTrackside recorded for a race, as bracket pilot
-        // IDs: its own results (DNFs last), then anyone in the heat it has no
+        // The finishing order FPVTrackside recorded for a race, as stage pilot
+        // IDs: its own results (DNFs last), then anyone in the race it has no
         // result for. Null when the race hasn't finished.
-        public List<string> TimingOrder(Race race, IEnumerable<string> heatPilots)
+        public List<string> TimingOrder(Race race, IEnumerable<string> stageRacePilots)
         {
             if (race == null || !race.Ended)
                 return null;
 
-            HashSet<string> inHeat = new HashSet<string>(heatPilots);
+            HashSet<string> inStageRace = new HashSet<string>(stageRacePilots);
             List<string> order = eventManager.ResultManager.GetOrderedResults(race)
                 .Where(r => r.Pilot != null)
                 .Select(r => r.Pilot.ID.ToString())
-                .Where(inHeat.Contains)
+                .Where(inStageRace.Contains)
                 .Distinct()
                 .ToList();
-            foreach (string p in heatPilots)
+            foreach (string p in stageRacePilots)
             {
                 if (!order.Contains(p))
                     order.Add(p);
@@ -304,12 +313,12 @@ namespace Webb.Bracketing
 
         public enum TimingOutcome { NotLinked, NotFinished, Locked, Unchanged, Applied, Updated, Blocked, Failed }
 
-        // Applies a linked FPVTrackside race's result to its bracket heat, the
-        // same way the AUFPV platform applies a finished heat from timing: a
-        // locked heat is left alone, an unchanged result is ignored, and a
-        // changed one (a re-run) is only applied while no later heat that
+        // Applies a linked FPVTrackside race's result to its stage race, the
+        // same way the AUFPV platform applies a finished race from timing: a
+        // locked race is left alone, an unchanged result is ignored, and a
+        // changed one (a re-run) is only applied while no later race that
         // received these pilots has been run.
-        public TimingOutcome ApplyFromTiming(BracketRecord rec, string raceId, out string detail)
+        public TimingOutcome ApplyFromTiming(StageRecord rec, string raceId, out string detail)
         {
             detail = null;
             Guid ftId;
@@ -337,7 +346,7 @@ namespace Webb.Bracketing
                 {
                     f.ApplyPlacement(raceId, order);
                     Persist(rec, f);
-                    Logger.HTTP.Log(this, "Bracket " + rec.Name + " heat " + raceId + " recorded from timing");
+                    Logger.HTTP.Log(this, "Stage " + rec.Name + " race " + raceId + " recorded from timing");
                     return TimingOutcome.Applied;
                 }
 
@@ -350,27 +359,27 @@ namespace Webb.Bracketing
                 string reason;
                 if (!f.CanEditRace(raceId, out reason))
                 {
-                    detail = "the re-run's result differs but " + reason + " — edit it on the bracket page if it needs changing";
-                    Logger.HTTP.Log(this, "Bracket " + rec.Name + " heat " + raceId + " re-run NOT applied: " + reason);
+                    detail = "the re-run's result differs but " + reason + " — edit it on the stage page if it needs changing";
+                    Logger.HTTP.Log(this, "Stage " + rec.Name + " race " + raceId + " re-run NOT applied: " + reason);
                     return TimingOutcome.Blocked;
                 }
                 f.EditRace(raceId, order);
                 Persist(rec, f);
-                Logger.HTTP.Log(this, "Bracket " + rec.Name + " heat " + raceId + " updated from a re-run");
+                Logger.HTTP.Log(this, "Stage " + rec.Name + " race " + raceId + " updated from a re-run");
                 return TimingOutcome.Updated;
             }
             catch (Engine.BracketException e)
             {
-                detail = e.Message;
-                Logger.HTTP.Log(this, "Bracket " + rec.Name + " heat " + raceId + ": " + e.Message);
+                detail = Terms.Trackside(e.Message);
+                Logger.HTTP.Log(this, "Stage " + rec.Name + " race " + raceId + ": " + e.Message);
                 return TimingOutcome.Failed;
             }
         }
 
-        // Pulls every linked, finished race's result into the bracket. Heats are
+        // Pulls every linked, finished race's result into the stage. Races are
         // processed in order and repeated until nothing changes, because one
-        // result can make the next heat's line-up (and so its result) resolvable.
-        public Dictionary<string, TimingOutcome> Sync(BracketRecord rec)
+        // result can make the next race's line-up (and so its result) resolvable.
+        public Dictionary<string, TimingOutcome> Sync(StageRecord rec)
         {
             Dictionary<string, TimingOutcome> outcome = new Dictionary<string, TimingOutcome>();
             for (int pass = 0; pass < 20; pass++)
@@ -395,7 +404,7 @@ namespace Webb.Bracketing
                 return;
             try
             {
-                foreach (BracketRecord rec in store.All())
+                foreach (StageRecord rec in store.All())
                 {
                     if (!rec.AutoResults)
                         continue;
@@ -408,14 +417,14 @@ namespace Webb.Bracketing
             }
             catch (Exception e)
             {
-                // Never let a bracket problem break the race flow on screen.
+                // Never let a stage problem break the race flow on screen.
                 Logger.HTTP.LogException(this, e);
             }
         }
 
-        // ───────────────────────── sending heats to FPVTrackside ─────────────────────────
+        // ───────────────────────── sending races to FPVTrackside ─────────────────────────
 
-        public Race LinkedRace(BracketRecord rec, string raceId)
+        public Race LinkedRace(StageRecord rec, string raceId)
         {
             Guid id;
             if (!rec.Links.TryGetValue(raceId, out id))
@@ -424,28 +433,117 @@ namespace Webb.Bracketing
             return race != null && race.Valid ? race : null;
         }
 
-        // The FPVTrackside round a bracket round's heats go in, created on first
-        // use. Mains progression keeps each main's rounds apart.
-        private Round RoundFor(BracketRecord rec, Engine.RaceView rv)
+        // The FPVTrackside round a stage round's races go in, created on first
+        // use. Bracket progression keeps each bracket's rounds apart.
+        private Round RoundFor(StageRecord rec, Engine.IRaceFormat f, Engine.RaceView rv)
         {
-            string main = rv.Id.Contains(":") ? rv.Id.Substring(0, rv.Id.IndexOf(':')) : "";
-            string key = (main.Length > 0 ? main + ":" : "") + rv.Round;
+            string key = RoundKey(rv);
+            string name = RoundName(f, key);
 
             Guid id;
             if (rec.RoundLinks.TryGetValue(key, out id))
             {
                 Round existing = eventManager.Event.Rounds.FirstOrDefault(r => r.ID == id && r.Valid);
                 if (existing != null)
+                {
+                    if (existing.Name != name)
+                        eventManager.RoundManager.RenameRound(existing, name);
                     return existing;
+                }
             }
 
             Round round = eventManager.RoundManager.CreateEmptyRound(EventTypes.Race);
-            eventManager.RoundManager.RenameRound(round, rec.Name + " — " + (main.Length > 0 ? main + " Main " : "") + "Round " + rv.Round);
+            eventManager.RoundManager.RenameRound(round, name);
             rec.RoundLinks[key] = round.ID;
+            PutInTracksideStage(rec, round);
             return round;
         }
 
-        // The format's heats with empty lists as empty rather than null (the
+        private static string RoundKey(Engine.RaceView rv)
+        {
+            string main = rv.Id.Contains(":") ? rv.Id.Substring(0, rv.Id.IndexOf(':')) : "";
+            return (main.Length > 0 ? main + ":" : "") + rv.Round;
+        }
+
+        private static readonly System.Text.RegularExpressions.Regex raceSuffix =
+            new System.Text.RegularExpressions.Regex(@"\s+—\s+Race \d+$");
+
+        // A round named after the stage rounds in it, e.g. "Winners Round 2 ·
+        // Losers Round 2" or "Chase the Ace", rather than a bare "Round 2".
+        public static string RoundName(Engine.IRaceFormat f, string key)
+        {
+            List<string> parts = new List<string>();
+            foreach (Engine.RaceView v in Views(f).Where(x => RoundKey(x) == key))
+            {
+                string title = raceSuffix.Replace(Terms.Trackside(v.Title ?? ""), "");
+                if (title.Length > 0 && !parts.Contains(title))
+                    parts.Add(title);
+            }
+            if (parts.Count == 0)
+                return "Round " + key;
+
+            // Bracket progression titles all start "Bracket A · "; say it once.
+            string prefix = "";
+            int dot = parts[0].IndexOf(" · ");
+            if (dot > 0 && parts.All(p => p.StartsWith(parts[0].Substring(0, dot + 3))))
+            {
+                prefix = parts[0].Substring(0, dot + 3);
+                parts = parts.Select(p => p.Substring(prefix.Length)).ToList();
+            }
+            return prefix + string.Join(" · ", parts);
+        }
+
+        // Groups the stage's rounds under an FPVTrackside stage of the same
+        // name, so the Rounds view shows them together. Its type stays Default:
+        // the other types make FPVTrackside generate rounds itself.
+        private void PutInTracksideStage(StageRecord rec, Round round)
+        {
+            RoundManager rm = eventManager.RoundManager;
+            Stage stage = rm.GetStages().FirstOrDefault(s => s.ID == rec.TracksideStageId);
+            if (stage != null)
+            {
+                rm.SetStage(round, stage);
+                return;
+            }
+
+            using (IDatabase db = DatabaseFactory.Open(eventManager.EventId))
+            {
+                stage = rm.CreateStage(db, round, false);
+                stage.Name = rec.Name;
+                stage.Order = round.Order;
+                db.Update(stage);
+            }
+            rec.TracksideStageId = stage.ID;
+        }
+
+        // The FPVTrackside race bracket for a stage race: Winners or Losers in
+        // the elimination formats, the bracket letter (A, B, …) for the mains.
+        public static Brackets TracksideBracket(Engine.RaceView rv)
+        {
+            string id = rv.Id;
+            int colon = id.IndexOf(':');
+            if (colon > 0)
+                return Letter(id.Substring(0, colon));
+
+            string group = rv.GroupLabel ?? "";
+            if (group.StartsWith("Winners", StringComparison.OrdinalIgnoreCase))
+                return Brackets.Winners;
+            if (group.StartsWith("Redemption", StringComparison.OrdinalIgnoreCase) || group.StartsWith("Losers", StringComparison.OrdinalIgnoreCase))
+                return Brackets.Losers;
+            System.Text.RegularExpressions.Match m = System.Text.RegularExpressions.Regex.Match(group, @"^([A-Z]) Main\b");
+            if (m.Success)
+                return Letter(m.Groups[1].Value);
+            return Brackets.None;
+        }
+
+        private static Brackets Letter(string label)
+        {
+            if (label.Length == 1 && label[0] >= 'A' && label[0] <= 'Z')
+                return Brackets.A + (label[0] - 'A');
+            return Brackets.None;
+        }
+
+        // The format's races with empty lists as empty rather than null (the
         // engine mirrors Go, where an empty slice is nil). Use this, not
         // f.Races(), everywhere outside the engine.
         public static List<Engine.RaceView> Views(Engine.IRaceFormat f)
@@ -460,11 +558,11 @@ namespace Webb.Bracketing
             return views;
         }
 
-        // Heats whose line-up still has seats another heat decides, with which
-        // heats. Elimination keeps a heat's known pilots while it waits (W2-1
+        // Races whose line-up still has seats another race decides, with which
+        // races. Elimination keeps a race's known pilots while it waits (W2-1
         // holds W1-1's winners until W1-2 is run), so "has pilots" is not
         // "ready": this reads the same projection the diagram draws, where an
-        // undecided seat is a "from heat X" placeholder. Ladder bouts lock
+        // undecided seat is a "from race X" placeholder. Ladder bouts lock
         // themselves and points mains know every line-up from the start.
         public static Dictionary<string, string> WaitingOn(Engine.IRaceFormat f)
         {
@@ -481,7 +579,7 @@ namespace Webb.Bracketing
                         .Select(slot => slot.SourceRaceId)
                         .Where(x => !string.IsNullOrEmpty(x))
                         .Distinct().OrderBy(x => x).ToList();
-                    waiting[prefix + race.Key] = from.Count > 0 ? string.Join(", ", from) : "earlier heats";
+                    waiting[prefix + race.Key] = from.Count > 0 ? string.Join(", ", from) : "earlier races";
                 }
             };
             try
@@ -504,17 +602,17 @@ namespace Webb.Bracketing
             return waiting;
         }
 
-        // Heats that are ready to be flown: whole line-up known, not run, not
-        // void, not waiting on another heat.
+        // Races that are ready to be flown: whole line-up known, not run, not
+        // void, not waiting on another race.
         public static bool Ready(Engine.RaceView rv, Dictionary<string, string> waiting)
         {
             return !rv.IsComplete && !rv.IsVoid && !rv.Locked && rv.Pilots.Count > 0 && !waiting.ContainsKey(rv.Id);
         }
 
-        // Sends every ready heat. onlyNew: just heats not yet in FPVTrackside
+        // Sends every ready race. onlyNew: just races not yet in FPVTrackside
         // (auto-send — never re-seats a race the race director may have edited);
         // otherwise unstarted linked races are refreshed too.
-        public List<Race> SendReady(BracketRecord rec, bool onlyNew, out Dictionary<string, string> problems)
+        public List<Race> SendReady(StageRecord rec, bool onlyNew, out Dictionary<string, string> problems)
         {
             problems = new Dictionary<string, string>();
             List<Race> sent = new List<Race>();
@@ -531,15 +629,15 @@ namespace Webb.Bracketing
                 }
                 catch (Engine.BracketException e)
                 {
-                    problems[rv.Id] = e.Message;
+                    problems[rv.Id] = Terms.Trackside(e.Message);
                 }
             }
             return sent;
         }
 
         // Creates (or refreshes the line-up of) the FPVTrackside race for a
-        // bracket heat. A race that has already started is left alone.
-        public Race Send(BracketRecord rec, string raceId)
+        // stage race. A race that has already started is left alone.
+        public Race Send(StageRecord rec, string raceId)
         {
             Engine.IRaceFormat f = Format(rec);
             Engine.RaceView rv = View(f, raceId);
@@ -559,16 +657,21 @@ namespace Webb.Bracketing
 
             if (race == null)
             {
-                race = RaceManager.AddRaceToRound(RoundFor(rec, rv));
+                race = RaceManager.AddRaceToRound(RoundFor(rec, f, rv));
                 rec.Links[raceId] = race.ID;
+                using (IDatabase db = DatabaseFactory.Open(eventManager.EventId))
+                {
+                    race.Bracket = TracksideBracket(rv);
+                    db.Update(race);
+                }
             }
             RaceManager.SetRacePilots(race, lineup, false);
             if (race == RaceManager.CurrentRace)
                 RaceManager.SetRace(race);
 
             store.Save(rec);
-            OnBracketChanged?.Invoke(rec.Id);
-            Logger.HTTP.Log(this, "Bracket " + rec.Name + " heat " + raceId + " sent as " + race.RaceName);
+            OnStageChanged?.Invoke(rec.Id);
+            Logger.HTTP.Log(this, "Stage " + rec.Name + " race " + raceId + " sent as " + race.RaceName);
             return race;
         }
 
@@ -586,7 +689,7 @@ namespace Webb.Bracketing
             }
         }
 
-        public string PilotName(BracketRecord rec, string id)
+        public string PilotName(StageRecord rec, string id)
         {
             Guid g;
             Pilot p = Guid.TryParse(id, out g) ? eventManager.GetPilot(g) : null;
@@ -596,11 +699,11 @@ namespace Webb.Bracketing
             return rec.PilotNames.TryGetValue(id, out name) ? name : id;
         }
 
-        // Channels for a heat. A pilot keeps the channel they flew in their
-        // previous heat of this bracket when it's free, so nobody re-tunes
+        // Channels for a race. A pilot keeps the channel they flew in their
+        // previous race of this stage when it's free, so nobody re-tunes
         // between rounds; otherwise the seat channels are filled in order (or,
         // with none set, the pilot's usual channel, then any free one).
-        public List<Tuple<Pilot, Channel>> Lineup(BracketRecord rec, Engine.IRaceFormat f, Engine.RaceView rv)
+        public List<Tuple<Pilot, Channel>> Lineup(StageRecord rec, Engine.IRaceFormat f, Engine.RaceView rv)
         {
             Channel[] eventChannels = eventManager.Channels ?? new Channel[0];
             List<Channel> seats = rec.SeatChannels
@@ -623,7 +726,7 @@ namespace Webb.Bracketing
                 pilots.Add(p);
             }
 
-            // Pass 1: keep last heat's channel.
+            // Pass 1: keep last race's channel.
             List<Pilot> unplaced = new List<Pilot>();
             foreach (Pilot p in pilots)
             {
@@ -652,13 +755,13 @@ namespace Webb.Bracketing
                 lineup.Add(Tuple.Create(p, c));
             }
 
-            // Seat order matches the bracket's line-up order.
+            // Seat order matches the stage's line-up order.
             return pilots.Select(p => lineup.First(x => x.Item1 == p)).ToList();
         }
 
-        // Each pilot's channel in the most recent earlier heat of this bracket
+        // Each pilot's channel in the most recent earlier race of this stage
         // that was sent to FPVTrackside.
-        private Dictionary<string, Channel> PreviousChannels(BracketRecord rec, Engine.IRaceFormat f, Engine.RaceView current)
+        private Dictionary<string, Channel> PreviousChannels(StageRecord rec, Engine.IRaceFormat f, Engine.RaceView current)
         {
             Dictionary<string, Channel> result = new Dictionary<string, Channel>();
             List<Engine.RaceView> earlier = Views(f).Where(r => r.Id != current.Id && r.Round <= current.Round).OrderBy(r => r.Round).ToList();

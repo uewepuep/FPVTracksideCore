@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { Heat, HeatPilot } from '~/composables/types'
+import type { Race, RacePilot } from '~/composables/types'
 
 // Click-to-rank: tap the pilots in finishing order.
-const props = defineProps<{ heat: Heat | null }>()
+const props = defineProps<{ race: Race | null }>()
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ save: [placement: string[], lock: boolean] }>()
 
-const order = ref<HeatPilot[]>([])
+const order = ref<RacePilot[]>([])
 const lock = ref(true)
 const saving = ref(false)
 const error = ref('')
@@ -20,8 +20,8 @@ watch(open, (o) => {
   }
 })
 
-const left = computed(() => (props.heat?.pilots ?? []).filter(p => !order.value.includes(p)))
-const need = computed(() => Math.min(props.heat?.expectedWinners ?? 0, props.heat?.pilots.length ?? 0))
+const left = computed(() => (props.race?.pilots ?? []).filter(p => !order.value.includes(p)))
+const need = computed(() => Math.min(props.race?.expectedWinners ?? 0, props.race?.pilots.length ?? 0))
 
 function fail(msg: string) {
   error.value = msg
@@ -37,7 +37,7 @@ function save() {
 </script>
 
 <template>
-  <UModal v-model:open="open" :title="`${heat?.title || heat?.id} — result`" :description="need < (heat?.pilots.length ?? 0) ? `Tap pilots in finishing order. The top ${need} advance, so you need at least them; the rest are optional.` : 'Tap the pilots in finishing order.'">
+  <UModal v-model:open="open" :title="`${race?.title || race?.id} — result`" :description="need < (race?.pilots.length ?? 0) ? `Tap pilots in finishing order. The top ${need} advance, so you need at least them; the rest are optional.` : 'Tap the pilots in finishing order.'">
     <template #body>
       <ol class="mb-4 grid gap-1.5">
         <li v-for="(p, i) in order" :key="p.pilotId" class="flex items-center gap-3 rounded-lg bg-elevated px-3 py-2">

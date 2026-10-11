@@ -146,6 +146,8 @@ namespace Webb.Api
                 case "raceId": return "Race ID.";
                 case "roundId": return "Round ID.";
                 case "detectionId": return "Detection (crossing) ID.";
+                case "stageId": return "Stage ID.";
+                case "stageRaceId": return "The race's ID within the stage, e.g. W1-2 or A:L2-1 (URL-encode it).";
                 default: return p;
             }
         }

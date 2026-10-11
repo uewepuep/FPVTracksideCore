@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
-using Webb.Bracketing;
+using Webb.Stages;
 
 namespace Webb.Api
 {
@@ -37,7 +37,7 @@ namespace Webb.Api
         // How long a call waits for the UI thread before answering 503.
         public static TimeSpan UIThreadTimeout = TimeSpan.FromSeconds(15);
 
-        // eventDirectory: the open event's folder (brackets are saved in it).
+        // eventDirectory: the open event's folder (stages are saved in it).
         // appControl: the FPVTrackside window (tabs, scenes, OBS, settings…);
         // null when there is none, e.g. the API sandbox.
         public RestApi(EventManager eventManager, IRaceControl raceControl, Action<Action> invokeOnUIThread, Func<string> eventDirectory = null, IAppControl appControl = null)
@@ -46,13 +46,13 @@ namespace Webb.Api
             this.raceControl = raceControl;
             this.app = appControl;
             this.invokeOnUIThread = invokeOnUIThread;
-            brackets = new BracketService(eventManager, eventDirectory ?? (() => null), invokeOnUIThread);
+            stages = new StageService(eventManager, eventDirectory ?? (() => null), invokeOnUIThread);
             Register();
         }
 
         public void Dispose()
         {
-            brackets?.Dispose();
+            stages?.Dispose();
         }
 
         // ───────────────────────── dispatch ─────────────────────────
@@ -301,7 +301,7 @@ namespace Webb.Api
                 "Same as pressing Stop: ends the race (or cancels a start countdown) and stops the video recording.");
             Write("POST", "race-control/cancel", "Race control", "Cancel a start countdown", null, typeof(RaceControlDto), r => RaceAction(() => RaceManager.CancelRaceStart(false), "no start is counting down"));
 
-            RegisterBrackets();
+            RegisterStages();
             RegisterSync();
             RegisterApp();
 

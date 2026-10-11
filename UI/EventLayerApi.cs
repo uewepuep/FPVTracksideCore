@@ -734,7 +734,7 @@ namespace UI
 
             // Web pages, opened in the browser on the FPVTrackside machine
             Cmd("open-web-page", "Web", "Open the local web page", () => MenuButton.OpenWebServer());
-            Cmd("open-brackets", "Web", "Open the bracket web app", () => MenuButton.OpenWebServer("brackets/"));
+            Cmd("open-stages", "Web", "Open the stages web app", () => MenuButton.OpenWebServer("stages/"));
             Cmd("open-api-console", "Web", "Open the API console", () => MenuButton.OpenWebServer("api/v1/docs"));
 
             // New windows

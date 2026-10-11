@@ -1,8 +1,8 @@
 {
-  "name": "fpvtrackside-brackets",
+  "name": "fpvtrackside-stages",
   "private": true,
   "type": "module",
-  "description": "FPVTrackside race-bracket UI (Nuxt UI). `npm run generate` writes static files to ../Webb/Brackets/UI, which Webb embeds and serves at /brackets.",
+  "description": "FPVTrackside race-stage UI (Nuxt UI). `npm run generate` writes static files to ../Webb/Stages/UI, which Webb embeds and serves at /stages.",
   "scripts": {
     "dev": "nuxt dev",
     "generate": "nuxt generate",

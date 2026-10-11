@@ -22,7 +22,7 @@ const raceColor = computed(() => ({ running: 'error', starting: 'warning', finis
         <span class="grid size-8 place-items-center rounded-lg bg-primary text-inverted">
           <UIcon name="i-lucide-trophy" class="size-5" />
         </span>
-        <span>Brackets</span>
+        <span>Stages</span>
         <span class="hidden text-sm font-normal text-muted sm:inline">· FPVTrackside</span>
       </NuxtLink>
 

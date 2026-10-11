@@ -316,7 +316,7 @@ namespace UI
 
             MenuButton.BackToEventSelector += BackToEventSelector;
             if (TabbedMultiNode is TracksideTabbedMultiNode trackside)
-                trackside.OpenBrackets += () => MenuButton.OpenWebServer("brackets/");
+                trackside.OpenStages += () => MenuButton.OpenWebServer("stages/");
             MenuButton.ChannelsChanged += () =>
             {
                 if (LayerStack.Game is UI.BaseGame)
@@ -451,28 +451,28 @@ namespace UI
                 Popuper.PopupMessage("Warning / Reminder: Dummy timer is active");
             }
 
-            if (ApplicationProfileSettings.Instance.BracketsTip && eventWebServer != null)
+            if (ApplicationProfileSettings.Instance.StagesTip && eventWebServer != null)
             {
                 // The popup sizes itself to its longest line and doesn't wrap.
                 LayerStack.GetLayer<PopupLayer>().PopupConfirmation(string.Join("\n", new[]
                     {
-                        "NEW: RACE BRACKETS",
+                        "NEW: STAGES IN YOUR BROWSER",
                         "",
                         "Double elimination, MultiGP top 4 qualifiers,",
                         "mains progression, ladders and points mains.",
                         "",
-                        "Set a bracket up in your browser. Every heat runs",
-                        "as a normal race and the results fill in by themselves.",
+                        "Set a stage up in your browser. Every race runs as a",
+                        "normal race and the results fill in by themselves.",
                         "",
-                        "Ok opens Brackets now. Later: the Brackets tab.",
+                        "Ok opens Stages now. Later: the Stages tab.",
                     }),
-                    () => MenuButton.OpenWebServer("brackets/"),
+                    () => MenuButton.OpenWebServer("stages/"),
                     "Don't show this again",
                     dontShowAgain =>
                     {
                         if (dontShowAgain)
                         {
-                            ApplicationProfileSettings.Instance.BracketsTip = false;
+                            ApplicationProfileSettings.Instance.StagesTip = false;
                             ApplicationProfileSettings.Write();
                         }
                     });

@@ -227,10 +227,10 @@ namespace Webb
                 return apiResponse;
             }
 
-            byte[] bracketsPage;
-            if (Bracketing.BracketsUi.TryHandle(context, requestPath, out bracketsPage))
+            byte[] stagesPage;
+            if (Stages.StagesUi.TryHandle(context, requestPath, out stagesPage))
             {
-                return bracketsPage;
+                return stagesPage;
             }
 
             if (requestPath.Length > 0)

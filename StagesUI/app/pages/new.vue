@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { BracketFormat } from '~/composables/types'
+import type { StageFormat } from '~/composables/types'
 
-// New bracket: format → pilots & seeding → settings. Everything is posted to
-// POST /api/v1/brackets, which generates the whole structure at once.
+// New stage: format → pilots & seeding → settings. Everything is posted to
+// POST /api/v1/stages, which generates the whole structure at once.
 
 // added: not in the event yet — from FPVTrackside's pilot database, or a new
-// name. Creating the bracket adds them to the event.
+// name. Creating the stage adds them to the event.
 interface SeedPilot { id: string; name: string; use: boolean; time: number | null; added?: 'database' | 'new' }
 
 const onError = useApiErrors()
@@ -14,12 +14,12 @@ const router = useRouter()
 
 const step = ref(0)
 const steps = [
-  { title: 'Format', description: 'How the bracket runs', icon: 'i-lucide-git-fork', value: 0 },
+  { title: 'Format', description: 'How the stage runs', icon: 'i-lucide-git-fork', value: 0 },
   { title: 'Pilots', description: 'Who races, in seed order', icon: 'i-lucide-users', value: 1 },
-  { title: 'Settings', description: 'Heats, finals, channels', icon: 'i-lucide-sliders-horizontal', value: 2 },
+  { title: 'Settings', description: 'Races, finals, channels', icon: 'i-lucide-sliders-horizontal', value: 2 },
 ]
 
-const formats = ref<BracketFormat[]>([])
+const formats = ref<StageFormat[]>([])
 const channels = ref<{ label: string }[]>([])
 const rounds = ref<{ id: string; name: string; eventType: string; number: number }[]>([])
 const pilots = ref<SeedPilot[]>([])
@@ -68,7 +68,7 @@ const formatIcons: Record<string, string> = {
 
 onMounted(async () => {
   try {
-    const [f, p, c, r] = await Promise.all([get('/brackets/formats'), get('/pilots'), get('/channels'), get('/rounds')])
+    const [f, p, c, r] = await Promise.all([get('/stages/formats'), get('/pilots'), get('/channels'), get('/rounds')])
     formats.value = f
     channels.value = c
     rounds.value = r
@@ -94,7 +94,7 @@ async function seedFromQualifying() {
     const q = new URLSearchParams({ pilots: 'all' })
     if (seedLaps.value) q.set('laps', String(seedLaps.value))
     if (seedRound.value !== 'all') q.set('round', seedRound.value)
-    const rows = await get<any[]>(`/brackets/seeding?${q}`)
+    const rows = await get<any[]>(`/stages/seeding?${q}`)
     const was = new Map(pilots.value.map(p => [p.id, p.use]))
     const seeded = new Set(rows.map(r => r.pilotId))
     // Pilots added from the database (no qualifying in this event) keep their place after the seeded ones.
@@ -252,7 +252,7 @@ function body() {
 async function create() {
   error.value = ''
   if (!name.value.trim()) {
-    error.value = 'Give the bracket a name.'
+    error.value = 'Give the stage a name.'
     return
   }
   if (chosen.value.length < 2) {
@@ -262,9 +262,9 @@ async function create() {
   }
   creating.value = true
   try {
-    const b = await post('/brackets', body())
-    toast.add({ title: 'Bracket created', description: b.name, icon: 'i-lucide-check', color: 'success' })
-    router.push(`/b/${b.id}`)
+    const b = await post('/stages', body())
+    toast.add({ title: 'Stage created', description: b.name, icon: 'i-lucide-check', color: 'success' })
+    router.push(`/s/${b.id}`)
   } catch (e: any) {
     error.value = e.message
   } finally {
@@ -275,8 +275,8 @@ async function create() {
 
 <template>
   <UContainer class="py-8">
-    <UButton to="/" variant="link" color="neutral" icon="i-lucide-arrow-left" label="Brackets" class="mb-4 px-0" />
-    <h1 class="text-3xl font-bold">New bracket</h1>
+    <UButton to="/" variant="link" color="neutral" icon="i-lucide-arrow-left" label="Stages" class="mb-4 px-0" />
+    <h1 class="text-3xl font-bold">New stage</h1>
 
     <UStepper v-model="step" :items="steps" class="my-8" />
 
@@ -308,7 +308,7 @@ async function create() {
         <div class="flex flex-wrap items-end gap-3">
           <div class="min-w-0 flex-1">
             <h2 class="text-lg font-bold">Pilots and seeding</h2>
-            <p class="text-sm text-muted">Top seed first. Seed from the qualifying times, then drag a pilot by its handle (or use the arrows) to change their position. Untick anyone not in this bracket.</p>
+            <p class="text-sm text-muted">Top seed first. Seed from the qualifying times, then drag a pilot by its handle (or use the arrows) to change their position. Untick anyone not in this stage.</p>
           </div>
           <UFormField label="Best consecutive laps">
             <UInputNumber v-model="seedLaps" :min="1" :max="20" placeholder="PB laps" class="w-32" />
@@ -321,7 +321,7 @@ async function create() {
       </template>
 
       <div class="mb-4 flex flex-wrap items-start gap-2">
-        <UFormField label="Add pilots from FPVTrackside" :help="database.length ? 'Pick from every pilot FPVTrackside knows, or type a new name. Anyone not in this event is added to it when the bracket is created.' : 'Type a name to add a pilot.'" class="min-w-0 flex-1">
+        <UFormField label="Add pilots from FPVTrackside" :help="database.length ? 'Pick from every pilot FPVTrackside knows, or type a new name. Anyone not in this event is added to it when the stage is created.' : 'Type a name to add a pilot.'" class="min-w-0 flex-1">
           <USelectMenu
             v-model="toAdd"
             :items="addable"
@@ -338,7 +338,7 @@ async function create() {
         <UButton icon="i-lucide-user-round-plus" label="New pilot" color="neutral" variant="outline" class="mt-6" @click="openNewPilot" />
       </div>
 
-      <p class="mb-3 text-sm text-muted">{{ chosen.length }} pilots in this bracket</p>
+      <p class="mb-3 text-sm text-muted">{{ chosen.length }} pilots in this stage</p>
       <UEmpty
         v-if="!pilots.length"
         icon="i-lucide-users"
@@ -377,36 +377,36 @@ async function create() {
         </UFormField>
 
         <UFormField v-if="uses('eliminationType')" label="Elimination">
-          <USelect v-model="setup.eliminationType" :items="[{ label: 'Double (redemption bracket)', value: 'double' }, { label: 'Single', value: 'single' }]" class="w-full" />
+          <USelect v-model="setup.eliminationType" :items="[{ label: 'Double (with a Losers bracket)', value: 'double' }, { label: 'Single', value: 'single' }]" class="w-full" />
         </UFormField>
         <UFormField v-if="uses('finalsFormat')" label="Finals">
           <USelect v-model="setup.finalsFormat" :items="[{ label: 'Chase the ace', value: 'chase-the-ace' }, { label: 'Grand final', value: 'double-elimination' }]" class="w-full" />
         </UFormField>
-        <UFormField v-if="uses('pilotsPerRace')" label="Pilots per heat">
+        <UFormField v-if="uses('pilotsPerRace')" label="Pilots per race">
           <UInputNumber v-model="setup.pilotsPerRace" :min="2" :max="8" class="w-full" />
         </UFormField>
-        <UFormField v-if="uses('pilotsToAdvance')" label="Advance per heat">
+        <UFormField v-if="uses('pilotsToAdvance')" label="Advance per race">
           <UInputNumber v-model="setup.pilotsToAdvance" :min="1" :max="setup.pilotsPerRace - 1" class="w-full" />
         </UFormField>
         <UFormField v-if="uses('qualifierCta')" label="Final">
           <USwitch v-model="setup.qualifierCta" label="Run it as chase the ace" />
         </UFormField>
-        <UFormField v-if="uses('aceWinsRequired') && (format !== 'elimination' || setup.finalsFormat === 'chase-the-ace')" label="Chase-the-ace wins needed" help="First to win this many final heats is champion.">
+        <UFormField v-if="uses('aceWinsRequired') && (format !== 'elimination' || setup.finalsFormat === 'chase-the-ace')" label="Chase-the-ace wins needed" help="First to win this many final races is champion.">
           <UInputNumber v-model="setup.aceWinsRequired" :min="1" :max="5" class="w-full" />
         </UFormField>
         <UFormField v-if="uses('qualifierSeed')" label="Round-1 seeding (16 pilots)">
           <USelect v-model="setup.qualifierSeed" :items="[{ label: 'MultiGP snake', value: 'snake' }, { label: 'Standard seed sheet', value: 'photo' }]" class="w-full" />
         </UFormField>
-        <UFormField v-if="uses('pilotsPerMain')" label="Pilots per main">
+        <UFormField v-if="uses('pilotsPerMain')" label="Pilots per bracket">
           <UInputNumber v-model="setup.pilotsPerMain" :min="2" :max="64" class="w-full" />
         </UFormField>
-        <UFormField v-if="uses('bumpUp')" label="Bump up per main" help="How many move up to the next main.">
+        <UFormField v-if="uses('bumpUp')" label="Move up per bracket" help="How many move up to the next bracket.">
           <UInputNumber v-model="setup.bumpUp" :min="1" :max="16" class="w-full" />
         </UFormField>
-        <UFormField v-if="uses('ctaMains')" label="Chase the ace in mains" help="e.g. A, B — or * for all. Blank = A Main only.">
+        <UFormField v-if="uses('ctaMains')" label="Chase the ace in brackets" help="e.g. A, B — or * for all. Blank = bracket A only.">
           <UInput v-model="setup.ctaMainsText" class="w-full" />
         </UFormField>
-        <UFormField v-if="uses('mains')" label="Mains" help="Comma list, e.g. A, B, C.">
+        <UFormField v-if="uses('mains')" label="Brackets" help="Comma list, e.g. A, B, C.">
           <UInput v-model="setup.mainsText" class="w-full" />
         </UFormField>
         <UFormField v-if="uses('rounds')" label="Rounds">
@@ -426,14 +426,14 @@ async function create() {
       <USeparator class="my-6" />
       <USwitch
         v-model="autoSend"
-        label="Send heats to FPVTrackside automatically"
-        description="Each heat is created in FPVTrackside as soon as its pilots are known: round 1 straight away, later heats as results come in. You can switch this on or off later."
+        label="Send races to FPVTrackside automatically"
+        description="Each race is created in FPVTrackside as soon as its pilots are known: round 1 straight away, later races as results come in. You can switch this on or off later."
       />
 
       <USeparator v-if="seatCount" class="my-6" />
       <div v-if="seatCount">
         <h3 class="font-bold">Channel per seat</h3>
-        <p class="mb-3 text-sm text-muted">Optional. A pilot keeps the channel they flew in their last heat when it's free; otherwise seats fill in this order.</p>
+        <p class="mb-3 text-sm text-muted">Optional. A pilot keeps the channel they flew in their last race when it's free; otherwise seats fill in this order.</p>
         <div class="flex flex-wrap gap-3">
           <UFormField v-for="i in seatCount" :key="i" :label="`Seat ${i}`">
             <USelect :model-value="seats[i - 1] || 'auto'" @update:model-value="(v: any) => (seats[i - 1] = v)" :items="[{ label: 'Auto', value: 'auto' }, ...channels.map(c => ({ label: c.label, value: c.label }))]" class="w-24" />
@@ -445,10 +445,10 @@ async function create() {
     <div class="mt-6 flex flex-wrap items-center gap-3">
       <UButton v-if="step > 0" color="neutral" variant="outline" icon="i-lucide-arrow-left" label="Back" @click="step--" />
       <UButton v-if="step < 2" trailing-icon="i-lucide-arrow-right" label="Next" @click="step++" />
-      <UButton v-else size="lg" icon="i-lucide-rocket" label="Create bracket" :loading="creating" @click="create" />
+      <UButton v-else size="lg" icon="i-lucide-rocket" label="Create stage" :loading="creating" @click="create" />
       <p v-if="error" class="text-sm text-error" role="alert">{{ error }}</p>
     
-    <UModal v-model:open="newOpen" title="New pilot" description="Adds the pilot to this event in FPVTrackside, and to this bracket.">
+    <UModal v-model:open="newOpen" title="New pilot" description="Adds the pilot to this event in FPVTrackside, and to this stage.">
       <template #body>
         <form id="new-pilot-form" class="grid gap-4" @submit.prevent="saveNewPilot">
           <UFormField label="Callsign" required :error="newError || undefined">

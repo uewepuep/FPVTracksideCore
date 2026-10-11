@@ -5,11 +5,11 @@ using Engine = global::BracketEngine;
 
 namespace Webb.Api
 {
-    // The bracket diagram as data: the engine's public-diagram projection
+    // The stage diagram as data: the engine's public-diagram projection
     // (the same one the AUFPV platform draws — live results where they exist,
     // seeds-always-win placeholders where they don't) turned into nodes, seats
     // and edges. The page draws it; nothing here knows about pixels.
-    public static class BracketDiagrams
+    public static class StageDiagrams
     {
         public static List<DiagramDto> Build(Engine.IRaceFormat f, Func<string, string> name)
         {
@@ -34,7 +34,7 @@ namespace Webb.Api
             {
                 foreach (var main in Engine.BracketDiagram.MainsProgression(mains.Mains()))
                 {
-                    diagrams.Add(FromProjection(main.Label + " Main", main.Label + ":", main.P, name));
+                    diagrams.Add(FromProjection("Bracket " + main.Label, main.Label + ":", main.P, name));
                 }
                 return diagrams;
             }
@@ -43,8 +43,8 @@ namespace Webb.Api
             return diagrams;
         }
 
-        // prefix: heat ids in the projection are a main's inner ids ("W1-1");
-        // the bracket's heats are addressed "A:W1-1".
+        // prefix: race ids in the projection are a main's inner ids ("W1-1");
+        // the stage's races are addressed "A:W1-1".
         private static DiagramDto FromProjection(string title, string prefix, Engine.BracketProjection p, Func<string, string> name)
         {
             List<Engine.Race> races = p.Projected.State().Races
@@ -54,8 +54,8 @@ namespace Webb.Api
             Dictionary<string, Dictionary<string, Engine.PilotSlot>> predicted = p.PredictedSlots ?? new Dictionary<string, Dictionary<string, Engine.PilotSlot>>();
             Func<string, string> id = raw => raw.StartsWith(prefix) ? raw : prefix + raw;
 
-            // A chase-the-ace series is a run of re-races, not a bracket round:
-            // lay its heats across the page (as the platform does) instead of
+            // A chase-the-ace series is a run of re-races, not a stage round:
+            // lay its races across the page (as the platform does) instead of
             // stacking identical boxes down one column.
             Dictionary<string, int> column = new Dictionary<string, int>();
             int ctaIndex = 0;
@@ -83,7 +83,7 @@ namespace Webb.Api
                     Engine.PilotSlot slot;
                     if (slots != null && slots.TryGetValue(pilot, out slot))
                     {
-                        seats.Add(new DiagramSeatDto { FromHeat = id(slot.SourceRaceId), FromRank = slot.SourceRank });
+                        seats.Add(new DiagramSeatDto { FromRace = id(slot.SourceRaceId), FromRank = slot.SourceRank });
                         continue;
                     }
                     int pos = order.IndexOf(pilot);

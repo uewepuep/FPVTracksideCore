@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import type { Diagram, Heat } from '~/composables/types'
+import type { Diagram, Race } from '~/composables/types'
 
-// Draws one bracket diagram from /brackets/{id} `diagrams[]`: heats in
-// columns, winners above redemption, the finals centred against both (as on
-// the AUFPV platform), and the flow between heats as elbow lines.
-const props = defineProps<{ diagram: Diagram; heats: Heat[]; liveRaceId: string | null }>()
-const emit = defineEmits<{ open: [heatId: string] }>()
+// Draws one stage diagram from /stages/{id} `diagrams[]`: races in
+// columns, winners above losers, the finals centred against both (as on
+// the AUFPV platform), and the flow between races as elbow lines.
+const props = defineProps<{ diagram: Diagram; races: Race[]; liveRaceId: string | null }>()
+const emit = defineEmits<{ open: [raceId: string] }>()
 
 const W = 176, GAP = 52, ROW = 19, HEAD = 24, PAD = 14, LANE_GAP = 40, NODE_GAP = 12
 const LANE_ORDER = ['winners', 'losers']
 const FINALS = ['grand-final', 'chase-the-ace']
-const LANE_NAME: Record<string, string> = { winners: 'Winners', losers: 'Redemption', 'grand-final': 'Grand final', 'chase-the-ace': 'Chase the ace' }
+const LANE_NAME: Record<string, string> = { winners: 'Winners', losers: 'Losers', 'grand-final': 'Grand final', 'chase-the-ace': 'Chase the ace' }
 
-const heatById = computed(() => new Map(props.heats.map(h => [h.id, h])))
+const raceById = computed(() => new Map(props.races.map(h => [h.id, h])))
 
 const layout = computed(() => {
   const nodes = props.diagram.nodes
@@ -39,7 +39,7 @@ const layout = computed(() => {
   }
   const bodyBottom = y - LANE_GAP
 
-  // Finals sit in columns nothing else races in: centre them on the bracket.
+  // Finals sit in columns nothing else races in: centre them on the stage.
   const finals = nodes.filter(n => FINALS.includes(n.lane))
   if (finals.length) {
     const tallest = Math.max(...finals.map(height))
@@ -71,7 +71,7 @@ const clip = (s: string, n = 21) => (s.length > n ? `${s.slice(0, n - 1)}…` : 
 
 <template>
   <div class="overflow-auto">
-    <svg :width="layout.width" :height="layout.height" :viewBox="`0 0 ${layout.width} ${layout.height}`" role="img" :aria-label="diagram.title ?? 'Bracket diagram'" class="block">
+    <svg :width="layout.width" :height="layout.height" :viewBox="`0 0 ${layout.width} ${layout.height}`" role="img" :aria-label="diagram.title ?? 'Stage diagram'" class="block">
       <text v-for="l in layout.labels" :key="l.text + l.x" :x="l.x" :y="l.y" class="fill-[var(--ui-text-muted)] text-[11px] font-bold uppercase tracking-widest">{{ l.text }}</text>
       <path v-for="e in diagram.edges" :key="e.from + e.to" :d="edgePath(e.from, e.to)" fill="none" class="stroke-[var(--ui-border-accented)]" stroke-width="1.5" />
       <g
@@ -80,14 +80,14 @@ const clip = (s: string, n = 21) => (s.length > n ? `${s.slice(0, n - 1)}…` : 
         class="cursor-pointer"
         role="button"
         tabindex="0"
-        :aria-label="`Heat ${n.label}`"
+        :aria-label="`Race ${n.label}`"
         @click="emit('open', n.id)"
         @keydown.enter="emit('open', n.id)"
       >
         <rect
           :x="layout.pos.get(n.id)!.x" :y="layout.pos.get(n.id)!.y" :width="W" :height="layout.pos.get(n.id)!.h" rx="9"
           class="fill-[var(--ui-bg-elevated)]"
-          :class="heatById.get(n.id)?.fpvRaceId && heatById.get(n.id)?.fpvRaceId === liveRaceId ? 'stroke-[var(--ui-error)] is-live' : heatById.get(n.id)?.state === 'finished' ? 'stroke-[var(--ui-success)]' : 'stroke-[var(--ui-border)]'"
+          :class="raceById.get(n.id)?.fpvRaceId && raceById.get(n.id)?.fpvRaceId === liveRaceId ? 'stroke-[var(--ui-error)] is-live' : raceById.get(n.id)?.state === 'finished' ? 'stroke-[var(--ui-success)]' : 'stroke-[var(--ui-border)]'"
           stroke-width="1.5"
         />
         <rect :x="layout.pos.get(n.id)!.x" :y="layout.pos.get(n.id)!.y" width="4" :height="layout.pos.get(n.id)!.h" rx="2"
@@ -98,7 +98,7 @@ const clip = (s: string, n = 21) => (s.length > n ? `${s.slice(0, n - 1)}…` : 
           :x="layout.pos.get(n.id)!.x + 12" :y="layout.pos.get(n.id)!.y + HEAD + (i + 1) * ROW - 5"
           class="text-[12.5px]"
           :class="s.name ? (s.advanced ? 'fill-[var(--ui-success)] font-semibold' : 'fill-[var(--ui-text)]') : 'fill-[var(--ui-text-dimmed)] italic'"
-        >{{ s.name ? clip((s.position ? `${s.position}. ` : '') + s.name) : s.fromHeat ? `${ordinal(s.fromRank)} of ${s.fromHeat.replace(/^\w+:/, '')}` : 'TBD' }}</text>
+        >{{ s.name ? clip((s.position ? `${s.position}. ` : '') + s.name) : s.fromRace ? `${ordinal(s.fromRank)} of ${s.fromRace.replace(/^\w+:/, '')}` : 'TBD' }}</text>
       </g>
     </svg>
   </div>

@@ -150,8 +150,8 @@ namespace UI
         public bool HTTPServerRaceControl { get; set; }
 
         [Category("Web")]
-        [DisplayName("Show the race brackets tip when an event opens")]
-        public bool BracketsTip { get; set; }
+        [DisplayName("Show the stages tip when an event opens")]
+        public bool StagesTip { get; set; }
 
 
         [Category("Layout")]
@@ -471,7 +471,7 @@ namespace UI
 
             VideosToKeep = 50;
             HTTPServer = false;
-            BracketsTip = true;
+            StagesTip = true;
 
             EventStorageLocationRelative = @"events";
 

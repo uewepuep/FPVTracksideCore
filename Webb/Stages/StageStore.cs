@@ -4,12 +4,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Webb.Bracketing
+namespace Webb.Stages
 {
-    // The setup a bracket was created with: everything the engine needs to
+    // The setup a stage was created with: everything the engine needs to
     // rebuild its format, in the same shape (and JSON names) as the AUFPV
     // platform's format_config, so a setup can be copied between the two.
-    public class BracketSetup
+    public class StageSetup
     {
         [JsonProperty("eliminationType")] public string EliminationType { get; set; } = "double";
         [JsonProperty("finalsFormat")] public string FinalsFormat { get; set; } = "chase-the-ace";
@@ -34,16 +34,16 @@ namespace Webb.Bracketing
         [JsonProperty("mainsRosters")] public Dictionary<string, List<string>> MainsRosters { get; set; }
     }
 
-    // One bracket as stored in the event folder.
-    public class BracketRecord
+    // One stage as stored in the event folder.
+    public class StageRecord
     {
         [JsonProperty("id")] public int Id { get; set; }
         [JsonProperty("name")] public string Name { get; set; }
         [JsonProperty("format")] public string Format { get; set; }
-        [JsonProperty("setup")] public BracketSetup Setup { get; set; } = new BracketSetup();
+        [JsonProperty("setup")] public StageSetup Setup { get; set; } = new StageSetup();
 
         // Pilots in seed order (seed 1 first), as FPVTrackside pilot IDs — the
-        // engine works on these strings, so renaming a pilot never breaks a bracket.
+        // engine works on these strings, so renaming a pilot never breaks a stage.
         [JsonProperty("pilots")] public List<string> Pilots { get; set; } = new List<string>();
         // Names at creation, for pilots later removed from the event.
         [JsonProperty("pilotNames")] public Dictionary<string, string> PilotNames { get; set; } = new Dictionary<string, string>();
@@ -51,33 +51,38 @@ namespace Webb.Bracketing
         // The engine's own state, verbatim (same JSON as the AUFPV platform's bracket_state).
         [JsonProperty("state")] public string State { get; set; }
 
-        // Bracket heat ID → the FPVTrackside race it was sent to.
+        // Stage race ID → the FPVTrackside race it was sent to.
         [JsonProperty("links")] public Dictionary<string, Guid> Links { get; set; } = new Dictionary<string, Guid>();
-        // Bracket round key → the FPVTrackside round its heats go in.
+        // Stage round key → the FPVTrackside round its races go in.
         [JsonProperty("roundLinks")] public Dictionary<string, Guid> RoundLinks { get; set; } = new Dictionary<string, Guid>();
-        // Heats whose result was set by hand: FPVTrackside's timing never overwrites them.
+        // The FPVTrackside stage those rounds are grouped under (empty until the first race is sent).
+        [JsonProperty("tracksideStage")] public Guid TracksideStageId { get; set; }
+        // Races whose result was set by hand: FPVTrackside's timing never overwrites them.
         [JsonProperty("locked")] public List<string> Locked { get; set; } = new List<string>();
         // Channel per seat (seat 1 first), e.g. ["R1","R2","R7","R8"]. Empty = pick free channels.
         [JsonProperty("seatChannels")] public List<string> SeatChannels { get; set; } = new List<string>();
         // Apply results from FPVTrackside automatically when a linked race finishes.
         [JsonProperty("autoResults")] public bool AutoResults { get; set; } = true;
-        // Create each heat in FPVTrackside as soon as its line-up is known.
+        // Create each race in FPVTrackside as soon as its line-up is known.
         [JsonProperty("autoSend")] public bool AutoSend { get; set; }
 
         [JsonProperty("created")] public DateTime Created { get; set; }
         [JsonProperty("updated")] public DateTime Updated { get; set; }
     }
 
-    // Brackets.json in the event's folder. Small and read whole; every write
+    // StagePlans.json in the event's folder. Small and read whole; every write
     // goes to a temp file first so a crash mid-save can't leave a half file.
-    public class BracketStore
+    public class StageStore
     {
-        public const string FileName = "Brackets.json";
+        // Not "Stages.json": FPVTrackside keeps its own Stage objects in that file.
+        public const string FileName = "StagePlans.json";
+        // What the file was called before stages took FPVTrackside's names.
+        private const string LegacyFileName = "Brackets.json";
 
         private readonly Func<string> eventDirectory;
         private readonly object sync = new object();
 
-        public BracketStore(Func<string> eventDirectory)
+        public StageStore(Func<string> eventDirectory)
         {
             this.eventDirectory = eventDirectory;
         }
@@ -85,7 +90,9 @@ namespace Webb.Bracketing
         private class FileShape
         {
             [JsonProperty("version")] public int Version { get; set; } = 1;
-            [JsonProperty("brackets")] public List<BracketRecord> Brackets { get; set; } = new List<BracketRecord>();
+            [JsonProperty("stages")] public List<StageRecord> Stages { get; set; } = new List<StageRecord>();
+            // Brackets.json kept its list under "brackets"; read only.
+            [JsonProperty("brackets")] public List<StageRecord> Legacy { set { if (value != null) Stages.AddRange(value); } }
         }
 
         private string Path()
@@ -96,42 +103,42 @@ namespace Webb.Bracketing
             return System.IO.Path.Combine(dir, FileName);
         }
 
-        public List<BracketRecord> All()
+        public List<StageRecord> All()
         {
             lock (sync)
             {
-                return Read().Brackets;
+                return Read().Stages;
             }
         }
 
-        public BracketRecord Get(int id)
+        public StageRecord Get(int id)
         {
             return All().FirstOrDefault(b => b.Id == id);
         }
 
-        public BracketRecord Add(BracketRecord record)
+        public StageRecord Add(StageRecord record)
         {
             lock (sync)
             {
                 FileShape file = Read();
-                record.Id = file.Brackets.Count == 0 ? 1 : file.Brackets.Max(b => b.Id) + 1;
+                record.Id = file.Stages.Count == 0 ? 1 : file.Stages.Max(b => b.Id) + 1;
                 record.Created = record.Updated = DateTime.Now;
-                file.Brackets.Add(record);
+                file.Stages.Add(record);
                 Write(file);
                 return record;
             }
         }
 
-        public void Save(BracketRecord record)
+        public void Save(StageRecord record)
         {
             lock (sync)
             {
                 FileShape file = Read();
-                int i = file.Brackets.FindIndex(b => b.Id == record.Id);
+                int i = file.Stages.FindIndex(b => b.Id == record.Id);
                 if (i < 0)
-                    throw new InvalidOperationException("bracket " + record.Id + " no longer exists");
+                    throw new InvalidOperationException("stage " + record.Id + " no longer exists");
                 record.Updated = DateTime.Now;
-                file.Brackets[i] = record;
+                file.Stages[i] = record;
                 Write(file);
             }
         }
@@ -141,7 +148,7 @@ namespace Webb.Bracketing
             lock (sync)
             {
                 FileShape file = Read();
-                int removed = file.Brackets.RemoveAll(b => b.Id == id);
+                int removed = file.Stages.RemoveAll(b => b.Id == id);
                 if (removed > 0)
                     Write(file);
                 return removed > 0;
@@ -152,7 +159,13 @@ namespace Webb.Bracketing
         {
             string path = Path();
             if (!File.Exists(path))
-                return new FileShape();
+            {
+                // An event set up before the rename: read Brackets.json; the
+                // next save writes StagePlans.json.
+                path = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(path), LegacyFileName);
+                if (!File.Exists(path))
+                    return new FileShape();
+            }
             return JsonConvert.DeserializeObject<FileShape>(File.ReadAllText(path)) ?? new FileShape();
         }
 

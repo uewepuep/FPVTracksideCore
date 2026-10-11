@@ -134,7 +134,7 @@ namespace UI.Nodes
 
             if (eventWebServer != null)
             {
-                root.AddItem("Race Brackets", () => OpenWebServer("brackets/"));
+                root.AddItem("Stages", () => OpenWebServer("stages/"));
                 root.AddBlank();
             }
 
@@ -173,7 +173,7 @@ namespace UI.Nodes
                 if (eventWebServer != null)
                 {
                     webMenu.AddItem("Open Local Web page", () => OpenWebServer());
-                    webMenu.AddItem("Open Brackets", () => OpenWebServer("brackets/"));
+                    webMenu.AddItem("Open Stages", () => OpenWebServer("stages/"));
                     webMenu.AddItem("Open API console", () => OpenWebServer("api/v1/docs"));
                 }
                 if (OpenFPVTracksideSite != null)
@@ -679,7 +679,7 @@ namespace UI.Nodes
             PlatformTools.OpenFileManager(path);
         }
 
-        // path: a page on the local web server, relative to its root (e.g. "brackets/").
+        // path: a page on the local web server, relative to its root (e.g. "stages/").
         public void OpenWebServer(string path = "")
         {
             if (eventWebServer != null)

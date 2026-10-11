@@ -5,23 +5,24 @@ using System.Linq;
 using System.Net;
 using System.Text;
 
-namespace Webb.Bracketing
+namespace Webb.Stages
 {
-    // Serves the bracket web app (BracketsUI, a Nuxt build) at /brackets. The
+    // Serves the stage web app (StagesUI, a Nuxt build) at /stages. The
     // build is embedded in this DLL, so FPVTrackside needs no install step and
-    // any phone or laptop on the network can open http://<machine>:8080/brackets.
+    // any phone or laptop on the network can open http://<machine>:8080/stages.
     // Every action the page takes goes through /api/v1 — this only hands out files.
-    public static class BracketsUi
+    public static class StagesUi
     {
-        public const string Prefix = "brackets";
-        private const string ResourcePrefix = "Webb.BracketsUI/";
+        public const string Prefix = "stages";
+        private const string LegacyPrefix = "brackets";
+        private const string ResourcePrefix = "Webb.StagesUI/";
 
         private static readonly Lazy<Dictionary<string, string>> files = new Lazy<Dictionary<string, string>>(() =>
         {
             // LogicalName carries the path relative to the build folder; MSBuild
             // writes it with the host OS's separator.
             Dictionary<string, string> map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (string name in typeof(BracketsUi).Assembly.GetManifestResourceNames())
+            foreach (string name in typeof(StagesUi).Assembly.GetManifestResourceNames())
             {
                 if (name.StartsWith(ResourcePrefix, StringComparison.Ordinal))
                     map[name.Substring(ResourcePrefix.Length).Replace('\\', '/')] = name;
@@ -34,12 +35,24 @@ namespace Webb.Bracketing
         public static bool TryHandle(HttpListenerContext context, string[] path, out byte[] response)
         {
             response = null;
-            if (path.Length == 0 || !path[0].Equals(Prefix, StringComparison.OrdinalIgnoreCase))
+            if (path.Length == 0)
                 return false;
 
             HttpListenerResponse res = context.Response;
 
-            // "/brackets" → "/brackets/" so the app's relative routing resolves.
+            // The page used to live at /brackets; keep old links and bookmarks working.
+            if (path[0].Equals(LegacyPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                res.StatusCode = 301;
+                res.RedirectLocation = "/" + Prefix + "/";
+                response = new byte[0];
+                return true;
+            }
+
+            if (!path[0].Equals(Prefix, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            // "/stages" → "/stages/" so the app's relative routing resolves.
             if (path.Length == 1 && !context.Request.Url.AbsolutePath.EndsWith("/"))
             {
                 res.StatusCode = 301;
@@ -53,12 +66,12 @@ namespace Webb.Bracketing
                 res.StatusCode = 503;
                 res.ContentType = "text/html; charset=utf-8";
                 response = Encoding.UTF8.GetBytes(
-                    "<!doctype html><meta charset=utf-8><title>Brackets</title>" +
+                    "<!doctype html><meta charset=utf-8><title>Stages</title>" +
                     "<body style=\"font:16px system-ui;max-width:640px;margin:60px auto;padding:0 20px\">" +
-                    "<h1>Brackets page not built</h1>" +
-                    "<p>This FPVTrackside build doesn't include the bracket web app. Run <code>npm ci &amp;&amp; npm run generate</code> " +
-                    "in <code>BracketsUI/</code> and rebuild, or use a release build.</p>" +
-                    "<p>The brackets API itself works: see <a href=\"/api/v1/docs\">/api/v1/docs</a>.</p>");
+                    "<h1>Stages page not built</h1>" +
+                    "<p>This FPVTrackside build doesn't include the stage web app. Run <code>npm ci &amp;&amp; npm run generate</code> " +
+                    "in <code>StagesUI/</code> and rebuild, or use a release build.</p>" +
+                    "<p>The stages API itself works: see <a href=\"/api/v1/docs\">/api/v1/docs</a>.</p>");
                 return true;
             }
 
@@ -72,7 +85,7 @@ namespace Webb.Bracketing
                 && !files.Value.TryGetValue(rel.Length == 0 ? "index.html" : rel.TrimEnd('/') + "/index.html", out resource))
             {
                 // A file-looking miss is a real 404; anything else is a page
-                // route (/brackets/b/3) the app resolves itself.
+                // route (/stages/s/3) the app resolves itself.
                 if (Path.HasExtension(rel))
                 {
                     res.StatusCode = 404;
@@ -83,7 +96,7 @@ namespace Webb.Bracketing
                 fallback = true;
             }
 
-            using (Stream s = typeof(BracketsUi).Assembly.GetManifestResourceStream(resource))
+            using (Stream s = typeof(StagesUi).Assembly.GetManifestResourceStream(resource))
             using (MemoryStream ms = new MemoryStream())
             {
                 s.CopyTo(ms);

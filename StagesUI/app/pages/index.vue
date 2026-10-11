@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import type { BracketSummary } from '~/composables/types'
+import type { StageSummary } from '~/composables/types'
 
 const onError = useApiErrors()
-const brackets = ref<BracketSummary[] | null>(null)
+const stages = ref<StageSummary[] | null>(null)
 
 async function load() {
   try {
-    brackets.value = await get<BracketSummary[]>('/brackets')
+    stages.value = await get<StageSummary[]>('/stages')
   } catch (e) {
     onError(e)
-    brackets.value = []
+    stages.value = []
   }
 }
 onMounted(load)
@@ -21,34 +21,34 @@ onMounted(load)
       <div class="absolute inset-0 bg-gradient-to-r from-[var(--ui-bg)] via-[var(--ui-bg)]/70 to-transparent" />
       <UContainer class="relative py-14 sm:py-20">
         <p class="font-display text-sm font-semibold uppercase tracking-[0.2em] text-primary">Race day</p>
-        <h1 class="mt-2 max-w-xl text-4xl font-bold sm:text-5xl">Brackets that run themselves</h1>
+        <h1 class="mt-2 max-w-xl text-4xl font-bold sm:text-5xl">Stages that run themselves</h1>
         <p class="mt-3 max-w-xl text-muted">
-          Elimination, top-4 qualifiers, mains progression, ladders and points mains. Each heat runs as a normal
-          FPVTrackside race, and its result lands here the moment the race ends.
+          Double elimination, top-4 qualifiers, bracket progression, ladders and points brackets. Each race is a
+          normal FPVTrackside race, and its result lands here the moment it ends.
         </p>
         <div class="mt-6 flex flex-wrap gap-3">
-          <UButton to="/new" size="lg" icon="i-lucide-plus" label="New bracket" />
+          <UButton to="/new" size="lg" icon="i-lucide-plus" label="New stage" />
           <UButton to="/api/v1/docs" external target="_blank" size="lg" color="neutral" variant="outline" icon="i-lucide-braces" label="Run it from code" />
         </div>
       </UContainer>
     </ArtImage>
 
     <UContainer class="py-8">
-      <div v-if="brackets === null" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div v-if="stages === null" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <USkeleton v-for="i in 3" :key="i" class="h-56 rounded-xl" />
       </div>
 
       <UEmpty
-        v-else-if="brackets.length === 0"
+        v-else-if="stages.length === 0"
         icon="i-lucide-git-fork"
-        title="No brackets for this event yet"
-        description="Create one from the qualifying results, then send its heats to FPVTrackside."
-        :actions="[{ label: 'New bracket', icon: 'i-lucide-plus', to: '/new' }]"
+        title="No stages for this event yet"
+        description="Create one from the qualifying results, then send its races to FPVTrackside."
+        :actions="[{ label: 'New stage', icon: 'i-lucide-plus', to: '/new' }]"
         class="py-16"
       />
 
       <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <NuxtLink v-for="b in brackets" :key="b.id" :to="`/b/${b.id}`" class="group">
+        <NuxtLink v-for="b in stages" :key="b.id" :to="`/s/${b.id}`" class="group">
           <UCard :ui="{ root: 'overflow-hidden transition group-hover:ring-primary group-hover:-translate-y-0.5', header: 'p-0 sm:p-0' }">
             <template #header>
               <ArtImage :name="`format-${b.format}`" class="h-28">
@@ -57,8 +57,8 @@ onMounted(load)
               </ArtImage>
             </template>
             <h2 class="truncate text-lg font-bold">{{ b.name }}</h2>
-            <p class="text-sm text-muted">{{ b.pilotCount }} pilots · {{ b.heatsDone }} of {{ b.heatCount }} heats run</p>
-            <UProgress :model-value="b.heatCount ? (100 * b.heatsDone) / b.heatCount : 0" size="sm" class="mt-3" />
+            <p class="text-sm text-muted">{{ b.pilotCount }} pilots · {{ b.racesDone }} of {{ b.raceCount }} races run</p>
+            <UProgress :model-value="b.raceCount ? (100 * b.racesDone) / b.raceCount : 0" size="sm" class="mt-3" />
             <p v-if="b.champion" class="mt-3 flex items-center gap-1.5 font-semibold text-warning">
               <UIcon name="i-lucide-trophy" /> {{ b.champion }}
             </p>

@@ -1,5 +1,5 @@
-// FPVTrackside race-bracket UI. A client-only Nuxt UI app, generated to static
-// files in ../Webb/Brackets/UI, which Webb embeds and serves at /brackets. It
+// FPVTrackside race-stage UI. A client-only Nuxt UI app, generated to static
+// files in ../Webb/Stages/UI, which Webb embeds and serves at /stages. It
 // talks to FPVTrackside only through the REST API (/api/v1), so the same app
 // works in dev (proxied to a running FPVTrackside) and embedded.
 //
@@ -14,9 +14,9 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   app: {
-    baseURL: '/brackets/',
+    baseURL: '/stages/',
     head: {
-      title: 'Brackets · FPVTrackside',
+      title: 'Stages · FPVTrackside',
       meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
     },
   },
@@ -39,7 +39,7 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    output: { publicDir: '../Webb/Brackets/UI' },
+    output: { publicDir: '../Webb/Stages/UI' },
   },
 
   vite: {

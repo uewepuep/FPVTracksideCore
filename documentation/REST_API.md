@@ -197,7 +197,7 @@ All of these need *HTTP Server race controls enabled*. Start can be refused (409
 ### Meeting sync (driving FPVTrackside from another system)
 For a system that owns the meeting — the AUFPV platform through its dd-pits venue agent, a club database, a spreadsheet script — and wants FPVTrackside to match it.
 
-**External IDs.** Pilots, rounds and races carry an `externalId` (an integer, 0 = none): the other system's own ID for them. Set it when creating (`POST /pilots`, `/rounds`, `/races`) or later (`PATCH`), filter by it (`?externalId=` on `GET /pilots`, `/rounds`, `/races`), and address anything by it wherever an ID goes: `/races/ext:5001`, `/rounds/ext:9001/races`, a line-up seat `{"pilot": "ext:101"}`. A pilot's externalId is the same field FPVTrackside shows as *MultiGP ID*, and a race's is *External Race ID* — the one bracket pastes already fill, so results of a finished race can be routed back by it.
+**External IDs.** Pilots, rounds and races carry an `externalId` (an integer, 0 = none): the other system's own ID for them. Set it when creating (`POST /pilots`, `/rounds`, `/races`) or later (`PATCH`), filter by it (`?externalId=` on `GET /pilots`, `/rounds`, `/races`), and address anything by it wherever an ID goes: `/races/ext:5001`, `/rounds/ext:9001/races`, a line-up seat `{"pilot": "ext:101"}`. A pilot's externalId is the same field FPVTrackside shows as *MultiGP ID*, and a race's is *External Race ID* — the one AUFPV round pastes already fill, so results of a finished race can be routed back by it.
 
 | | | |
 |---|---|---|
@@ -224,8 +224,8 @@ A **meeting plan** lists pilots, then rounds each with their races in running or
 * The whole plan is checked first; a bad plan changes nothing (400 with the reason).
 * Pilots are matched by externalId, then by name (the match then takes the externalId); missing ones are created and added to the event; names, details and default channels are updated.
 * Rounds and races are matched by externalId and created when missing; a pending race's line-up and target laps are updated when they differ.
-* **A race that has started or finished is never changed** — it comes back as `locked`. So the plan can be re-sent at any time during the meeting, e.g. after every bracket result, and only the races not yet run follow it.
-* `removeMissing: true` deletes races that have an externalId, haven't been run and aren't in the plan (a bracket heat that's no longer needed). Races without an externalId — ones the race director added by hand — are never touched.
+* **A race that has started or finished is never changed** — it comes back as `locked`. So the plan can be re-sent at any time during the meeting, e.g. after every result, and only the races not yet run follow it.
+* `removeMissing: true` deletes races that have an externalId, haven't been run and aren't in the plan (e.g. a race the other system no longer needs). Races without an externalId — ones the race director added by hand — are never touched.
 * `dryRun: true` reports what would change and changes nothing.
 
 The response lists every pilot, round and race with its FPVTrackside `id` and what happened: `created`, `updated`, `unchanged`, `removed`, `locked` or `conflict` (with a `message`), plus a `changed` count. Sending the same plan twice gives `changed: 0`.
@@ -294,30 +294,30 @@ Timing, channel, points, sound, theme and video settings have their own editors:
 |---|---|---|
 | `GET /export/pbs` · `/export/raw-laps` · `/export/race-results` | | The tables behind the Export menu, as `{columns, rows}`. `?decimals=` |
 
-### Brackets
-Race brackets run inside FPVTrackside: the same formats and bracket logic as the AUFPV platform, with each heat flown as a normal FPVTrackside race. Brackets are saved with the event (`Brackets.json` in the event folder). The **bracket web app** at `/brackets` (e.g. `http://localhost:8080/brackets`) is built entirely on these endpoints.
+### Stages
+A stage is a set of rounds run as one competition: double elimination, MultiGP top-4 qualifiers, bracket progression, ladders and points brackets, with the same logic as the AUFPV platform. Each race in a stage is flown as a normal FPVTrackside race. When the first race is sent, its rounds are grouped under an FPVTrackside stage of the same name, and each race gets its FPVTrackside race bracket (`Winners`, `Losers`, or `A`, `B`, … for the bracket formats). Stages are saved with the event (`StagePlans.json` in the event folder). The **stages web app** at `/stages` (e.g. `http://localhost:8080/stages`) is built entirely on these endpoints.
 
-| | | |
+| Endpoint | | |
 |---|---|---|
-| `GET /brackets/formats` | | The formats (`elimination`, `qualifier`, `mainsprogression`, `ladder`, `mains`) and which `setup` fields each reads |
-| `GET /brackets/seeding` | | Pilots ranked by best consecutive laps in the time-trial rounds. `?laps=3`, `?round=<id>`, `?pilots=all` to include pilots with no time |
-| `GET /brackets` | | The event's brackets |
-| `POST /brackets` | W | Create: `{"name": "Open Class Finals", "format": "elimination", "pilots": [top seed first…], "setup": {…}, "seatChannels": ["R1","R3","R6","R8"]}`. Anything left out of `setup` uses a default. A setup the engine can't build is refused with 409 and the reason |
-| `GET /brackets/{id}` | | Every heat (state, line-up, channels, result, linked FPVTrackside race), standings, champion and the diagram |
-| `PATCH /brackets/{id}` | W | Rename, change seat channels, switch automatic results or automatic sending on or off |
-| `DELETE /brackets/{id}` | W | Delete. Races already sent stay in FPVTrackside |
-| `POST /brackets/{id}/send` | W | Create every *ready* heat as a race in FPVTrackside, one round per bracket round |
-| `POST /brackets/{id}/sync` | W | Take finished results from FPVTrackside's timing for every linked heat; reports any that couldn't be applied and why |
-| `POST /brackets/{id}/heats/{heat}/send` | W | Send one heat; `{"makeCurrent": true}` also selects it on the race-director screen |
-| `POST /brackets/{id}/heats/{heat}/result` | W | Record a finishing order by hand: `{"placement": [pilot IDs or names…], "lock": true}`. Only the pilots who advance are required |
-| `POST /brackets/{id}/heats/{heat}/reset` | W | Clear a result; its pilots are taken back out of later heats. Refused (409) once a later heat that depends on it has run |
-| `POST /brackets/{id}/heats/{heat}/lock` | W | `{"locked": true}` keeps a result against timing; `false` hands it back to timing |
+| `GET /stages/formats` | | The formats (`elimination`, `qualifier`, `mainsprogression` = bracket progression, `ladder`, `mains` = points brackets) and which `setup` fields each reads |
+| `GET /stages/seeding` | | Pilots ranked by best consecutive laps in the time-trial rounds. `?laps=3`, `?round=<id>`, `?pilots=all` to include pilots with no time |
+| `GET /stages` | | The event's stages |
+| `POST /stages` | W | Create: `{"name": "Open Class Finals", "format": "elimination", "pilots": [top seed first…], "setup": {…}, "seatChannels": ["R1","R3","R6","R8"]}`. Anything left out of `setup` uses a default. A setup the engine can't build is refused with 409 and the reason |
+| `GET /stages/{id}` | | Every race (state, line-up, channels, result, linked FPVTrackside race), standings, champion and the diagram |
+| `PATCH /stages/{id}` | W | Rename, change seat channels, switch automatic results or automatic sending on or off |
+| `DELETE /stages/{id}` | W | Delete. Races already sent stay in FPVTrackside |
+| `POST /stages/{id}/send` | W | Create every *ready* race in FPVTrackside, one round per stage round |
+| `POST /stages/{id}/sync` | W | Take finished results from FPVTrackside's timing for every linked race; reports any that couldn't be applied and why |
+| `POST /stages/{id}/races/{race}/send` | W | Send one race; `{"makeCurrent": true}` also selects it on the race-director screen |
+| `POST /stages/{id}/races/{race}/result` | W | Record a finishing order by hand: `{"placement": [pilot IDs or names…], "lock": true}`. Only the pilots who advance are required |
+| `POST /stages/{id}/races/{race}/reset` | W | Clear a result; its pilots are taken back out of later races. Refused (409) once a later race that depends on it has run |
+| `POST /stages/{id}/races/{race}/lock` | W | `{"locked": true}` keeps a result against timing; `false` hands it back to timing |
 
-Heat ids are the bracket's own (`W1-1`, `L2-1`, `CTA-3`, `A:W1-1` for a mains-progression main) — URL-encode them. A heat's `state` is `waiting` (line-up not known), `ready`, `sent` (in FPVTrackside, not run), `running`, `flown` (finished in FPVTrackside, result not applied), `finished` or `void` (not needed).
+Race ids here are the stage's own (`W1-1` = Winners round 1 race 1, `L2-1` = Losers round 2 race 1, `CTA-3`, `A:W1-1` for bracket A in bracket progression) — URL-encode them. A race's `state` is `waiting` (line-up not known), `ready`, `sent` (in FPVTrackside, not run), `running`, `flown` (finished in FPVTrackside, result not applied), `finished` or `void` (not needed).
 
-**Sending automatically.** With `autoSend` on (a switch on the bracket page, or `"autoSend": true` when creating or patching), each heat is created in FPVTrackside the moment its whole line-up is known: round 1 straight away, later heats as results come in. It only creates new races; it never re-seats one already sent. A heat the bracket then doesn't need (the rest of a chase-the-ace series once the champion is decided) is taken back out if it hasn't been flown. A heat still waiting on another heat's result is never sent, automatically or by hand.
+**Sending automatically.** With `autoSend` on (a switch on the stage page, or `"autoSend": true` when creating or patching), each race is created in FPVTrackside the moment its whole line-up is known: round 1 straight away, later races as results come in. It only creates new races; it never re-seats one already sent. A race the stage then doesn't need (the rest of a chase-the-ace series once the champion is decided) is taken back out if it hasn't been flown. A race still waiting on another race's result is never sent, automatically or by hand.
 
-**Results from timing.** With automatic results on (the default), when a linked race ends — or its results change — the finishing order from FPVTrackside's timing is applied to the bracket and the next heats fill in. A result entered by hand is locked so a later timing change can't overwrite it. Channels: a pilot keeps the channel from their previous heat when it's free; otherwise seats fill in `seatChannels` order, then FPVTrackside's free channels.
+**Results from timing.** With automatic results on (the default), when a linked race ends — or its results change — the finishing order from FPVTrackside's timing is applied to the stage and the next races fill in. A result entered by hand is locked so a later timing change can't overwrite it. Channels: a pilot keeps the channel from their previous race when it's free; otherwise seats fill in `seatChannels` order, then FPVTrackside's free channels.
 
 ## 6. How changes reach the screen
 

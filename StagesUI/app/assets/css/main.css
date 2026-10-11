@@ -54,7 +54,7 @@ h1, h2, h3, .font-display {
     linear-gradient(180deg, #f8fafc, #eef2f7);
 }
 
-/* A heat that is on the race-director's screen right now. */
+/* A race that is on the race-director's screen right now. */
 @keyframes live-ring {
   0%, 100% { box-shadow: 0 0 0 0 rgb(244 63 94 / 0.55); }
   50% { box-shadow: 0 0 0 6px rgb(244 63 94 / 0); }
