@@ -73,7 +73,18 @@ namespace RaceLib
 
         public string RoundToStringShort(Round round)
         {
-            return GetEventTypeText(round.EventType).Substring(0, 1) + round.RoundNumber;
+            string eventTypeText = GetEventTypeText(round.EventType);
+            if (string.IsNullOrEmpty(eventTypeText))
+            {
+                return round.RoundNumber.ToString();
+            }
+
+            return eventTypeText.Substring(0, 1) + round.RoundNumber;
+        }
+
+        public string RaceToStringShort(Race race)
+        {
+            return RoundToStringShort(race.Round) + "-" + race.RaceNumber;
         }
     }
 }
