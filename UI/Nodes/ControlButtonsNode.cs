@@ -221,12 +221,7 @@ namespace UI.Nodes
 
                 int height = ItemHeight;
 
-                if (n == AutoRunnerControls && AutoRunnerControls.LargeMode)
-                {
-                    height = (int)(1.7 * ItemHeight);
-                }
-
-                RectangleF newBounds = new RectangleF(left, 
+                RectangleF newBounds = new RectangleF(left,
                                                     prevTop - (ItemPaddingVertical + height),
                                                     width,
                                                     height);

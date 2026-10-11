@@ -22,7 +22,7 @@ namespace UI.Nodes
 
         public override void Draw(Drawer id, float parentAlpha)
         {
-            if (!autoRunner.Paused && autoRunner.State != AutoRunner.States.None && autoRunner.ShowText)
+            if (!autoRunner.Paused && autoRunner.State != AutoRunner.States.None && autoRunner.ShowText && autoRunner.Config.ShowOnScreenCountdown)
             {
                 TimeSpan time = autoRunner.Timer;
 

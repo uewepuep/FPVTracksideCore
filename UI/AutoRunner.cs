@@ -98,7 +98,7 @@ namespace UI
         {
             get
             {
-                return false;
+                return true;
             }
         }
 
@@ -469,6 +469,10 @@ namespace UI
         [DisplayName("Seconds to finish lap after timer runs out")]
         public int SecondsToFinishFinalLapAfterTimesUp { get; set; }
 
+        [Category("Auto Runner")]
+        [DisplayName("Show on screen countdown")]
+        public bool ShowOnScreenCountdown { get; set; }
+
 
         [Category("Video")]
         public bool CheckPilotsVideo { get; set; }
@@ -503,6 +507,7 @@ namespace UI
             SecondsToNextRace = 300;
             SecondsToShowResults = 60;
             SecondsToFinishFinalLapAfterTimesUp = 10;
+            ShowOnScreenCountdown = true;
 
             NextRaceInAnnounceSeconds = new int[] { 10, 20, 30, 45, 60, 90, 120, 180, 240, 300 };
             AnnounceNextRaceIn = false;
