@@ -133,6 +133,38 @@ function createPilot(name: string) {
   pilots.value.push({ id: n, name: n, use: true, time: null, added: 'new' })
 }
 
+// New pilot form: saved to FPVTrackside right away (POST /pilots adds them to
+// the event and its pilot database), then listed here.
+const newOpen = ref(false)
+const newPilot = reactive({ name: '', firstName: '', lastName: '' })
+const newSaving = ref(false)
+const newError = ref('')
+function openNewPilot() {
+  Object.assign(newPilot, { name: '', firstName: '', lastName: '' })
+  newError.value = ''
+  newOpen.value = true
+}
+async function saveNewPilot() {
+  const n = newPilot.name.trim()
+  if (!n) {
+    newError.value = 'Enter the pilot\'s callsign.'
+    return
+  }
+  newSaving.value = true
+  newError.value = ''
+  try {
+    const p = await post<{ id: string; name: string }>('/pilots', { name: n, firstName: newPilot.firstName.trim() || null, lastName: newPilot.lastName.trim() || null })
+    pilots.value.push({ id: p.id, name: p.name, use: true, time: null })
+    database.value.push({ id: p.id, name: p.name, inEvent: true })
+    newOpen.value = false
+    toast.add({ title: `${p.name} added to the event`, icon: 'i-lucide-user-plus', color: 'success' })
+  } catch (e: any) {
+    newError.value = e.message
+  } finally {
+    newSaving.value = false
+  }
+}
+
 function move(i: number, d: number) {
   const j = i + d
   if (j < 0 || j >= pilots.value.length) return
@@ -140,20 +172,34 @@ function move(i: number, d: number) {
   ;[list[i], list[j]] = [list[j]!, list[i]!]
 }
 
-// Pointer drag from the grip: works with mouse and touch.
+// Pointer drag from the grip (mouse and touch). The list reorders live as
+// the row passes its neighbours, so you can see where it will land.
 const dragging = ref<number | null>(null)
 function startDrag(i: number, ev: PointerEvent) {
   const grip = ev.currentTarget as HTMLElement
   const row = grip.closest('li') as HTMLElement
   const h = row.getBoundingClientRect().height + 6
-  const startY = ev.clientY
-  let to = i
+  let originY = ev.clientY
+  let at = i
   dragging.value = i
   grip.setPointerCapture(ev.pointerId)
   const onMove = (e: PointerEvent) => {
-    const dy = e.clientY - startY
+    let dy = e.clientY - originY
+    // Step one place each time the row is dragged half a row past a neighbour.
+    while (dy > h / 2 && at < pilots.value.length - 1) {
+      const [item] = pilots.value.splice(at, 1)
+      pilots.value.splice(++at, 0, item!)
+      originY += h
+      dy -= h
+    }
+    while (dy < -h / 2 && at > 0) {
+      const [item] = pilots.value.splice(at, 1)
+      pilots.value.splice(--at, 0, item!)
+      originY -= h
+      dy += h
+    }
+    dragging.value = at
     row.style.transform = `translateY(${dy}px)`
-    to = Math.max(0, Math.min(pilots.value.length - 1, i + Math.round(dy / h)))
   }
   const onUp = () => {
     grip.removeEventListener('pointermove', onMove)
@@ -161,13 +207,12 @@ function startDrag(i: number, ev: PointerEvent) {
     grip.removeEventListener('pointercancel', onUp)
     row.style.transform = ''
     dragging.value = null
-    const [item] = pilots.value.splice(i, 1)
-    pilots.value.splice(to, 0, item!)
   }
   grip.addEventListener('pointermove', onMove)
   grip.addEventListener('pointerup', onUp)
   grip.addEventListener('pointercancel', onUp)
 }
+
 
 const list = (s: string) => s.split(',').map(x => x.trim().toUpperCase()).filter(Boolean)
 
@@ -261,7 +306,7 @@ async function create() {
         <div class="flex flex-wrap items-end gap-3">
           <div class="min-w-0 flex-1">
             <h2 class="text-lg font-bold">Pilots and seeding</h2>
-            <p class="text-sm text-muted">Top seed first. Seed from the qualifying times, or drag to order. Untick anyone not in this bracket.</p>
+            <p class="text-sm text-muted">Top seed first. Seed from the qualifying times, then drag a pilot by its handle (or use the arrows) to change their position. Untick anyone not in this bracket.</p>
           </div>
           <UFormField label="Best consecutive laps">
             <UInputNumber v-model="seedLaps" :min="1" :max="20" placeholder="PB laps" class="w-32" />
@@ -288,6 +333,7 @@ async function create() {
           />
         </UFormField>
         <UButton icon="i-lucide-plus" :label="toAdd.length ? `Add ${toAdd.length}` : 'Add'" :disabled="!toAdd.length" class="mt-6" @click="addPilots" />
+        <UButton icon="i-lucide-user-round-plus" label="New pilot" color="neutral" variant="outline" class="mt-6" @click="openNewPilot" />
       </div>
 
       <p class="mb-3 text-sm text-muted">{{ chosen.length }} pilots in this bracket</p>
@@ -295,7 +341,7 @@ async function create() {
         v-if="!pilots.length"
         icon="i-lucide-users"
         title="No pilots yet"
-        description="This event has no pilots. Add them above from FPVTrackside's pilots, or add them to the event in FPVTrackside."
+        description="This event has no pilots yet. Add them above from FPVTrackside's pilots, or create one with New pilot."
         class="mb-2"
       />
       <ol class="grid gap-1.5">
@@ -305,7 +351,7 @@ async function create() {
           class="grid grid-cols-[2rem_3rem_minmax(0,1fr)_auto_auto] items-center gap-3 rounded-lg border border-default bg-elevated/50 px-3 py-2 transition"
           :class="{ 'opacity-50': !p.use, 'z-10 shadow-lg ring-2 ring-primary': dragging === i }"
         >
-          <span class="cursor-grab touch-none select-none text-center text-muted" aria-hidden="true" @pointerdown="startDrag(i, $event)">⠿</span>
+          <span class="flex cursor-grab touch-none select-none items-center justify-center rounded text-muted hover:bg-accented hover:text-default active:cursor-grabbing" title="Drag to change the seed" aria-hidden="true" @pointerdown="startDrag(i, $event)"><UIcon name="i-lucide-grip-vertical" class="size-5" /></span>
           <span class="font-mono text-sm font-bold text-muted">{{ p.use ? `#${pilots.slice(0, i + 1).filter(x => x.use).length}` : '—' }}</span>
           <span class="flex min-w-0 items-center gap-2">
             <UCheckbox v-model="p.use" :label="p.name" />
@@ -392,6 +438,26 @@ async function create() {
       <UButton v-if="step < 2" trailing-icon="i-lucide-arrow-right" label="Next" @click="step++" />
       <UButton v-else size="lg" icon="i-lucide-rocket" label="Create bracket" :loading="creating" @click="create" />
       <p v-if="error" class="text-sm text-error" role="alert">{{ error }}</p>
-    </div>
+    
+    <UModal v-model:open="newOpen" title="New pilot" description="Adds the pilot to this event in FPVTrackside, and to this bracket.">
+      <template #body>
+        <form id="new-pilot-form" class="grid gap-4" @submit.prevent="saveNewPilot">
+          <UFormField label="Callsign" required :error="newError || undefined">
+            <UInput v-model="newPilot.name" placeholder="e.g. Wheelzfpv" autofocus class="w-full" />
+          </UFormField>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <UFormField label="First name"><UInput v-model="newPilot.firstName" class="w-full" /></UFormField>
+            <UFormField label="Last name"><UInput v-model="newPilot.lastName" class="w-full" /></UFormField>
+          </div>
+        </form>
+      </template>
+      <template #footer>
+        <div class="flex w-full justify-end gap-2">
+          <UButton color="neutral" variant="ghost" label="Cancel" @click="newOpen = false" />
+          <UButton type="submit" form="new-pilot-form" icon="i-lucide-user-round-plus" label="Add pilot" :loading="newSaving" />
+        </div>
+      </template>
+    </UModal>
+  </div>
   </UContainer>
 </template>
