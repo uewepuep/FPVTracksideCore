@@ -156,11 +156,28 @@ namespace FPVTuxsideCore
 
         public void Do()
         {
+            // Take the queue and run it outside the lock: an action may queue
+            // more work (the REST API does), which would otherwise modify the
+            // list mid-loop and crash. New work runs next frame.
+            List<Action> actions;
             lock (todo)
             {
-                foreach (Action action in todo)
-                    action();
+                if (todo.Count == 0)
+                    return;
+                actions = new List<Action>(todo);
                 todo.Clear();
+            }
+
+            foreach (Action action in actions)
+            {
+                try
+                {
+                    action();
+                }
+                catch (Exception e)
+                {
+                    Logger.AllLog.LogException(this, e);
+                }
             }
         }
 

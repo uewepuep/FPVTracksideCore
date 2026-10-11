@@ -159,13 +159,28 @@ namespace FPVMacsideCore
 
         public void Do()
         {
+            // Take the queue and run it outside the lock: an action may queue
+            // more work (the REST API does), which would otherwise modify the
+            // list mid-loop and crash. New work runs next frame.
+            List<Action> actions;
             lock (todo)
             {
-                foreach (Action action in todo)
+                if (todo.Count == 0)
+                    return;
+                actions = new List<Action>(todo);
+                todo.Clear();
+            }
+
+            foreach (Action action in actions)
+            {
+                try
                 {
                     action();
                 }
-                todo.Clear();
+                catch (Exception e)
+                {
+                    Logger.AllLog.LogException(this, e);
+                }
             }
         }
 
