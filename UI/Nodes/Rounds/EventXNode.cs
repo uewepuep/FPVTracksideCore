@@ -349,7 +349,7 @@ namespace UI.Nodes.Rounds
                 {
                     stage.Name = sheet.Name;
                     stage.SheetFormatFilename = sheet.FileInfo.Name;
-                    EventManager.RoundManager.SheetFormatManager.LoadSheet(stage, orderedPilots.ToArray(), true);
+                    EventManager.RoundManager.SheetFormatManager.LoadSheet(stage, orderedPilots.ToArray(), true, Round);
                 });
             });
         }
