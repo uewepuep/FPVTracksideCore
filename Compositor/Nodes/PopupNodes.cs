@@ -20,6 +20,10 @@ namespace Composition.Nodes
         protected Node buttonsContainer;
         protected TextNode messageNode;
 
+        // An optional row between the message and the buttons (e.g. a
+        // "Don't show this again" tick box). Set by subclasses.
+        protected Node footer;
+
         private System.Action onOk;
 
         public MessageNode(string message, Color background, Color buttonBackground, Color hover, Color text, System.Action onOk)
@@ -64,9 +68,10 @@ namespace Composition.Nodes
             int length = Math.Max(30, lines.Max(l => l.Length));
 
             int targetButtonHeight = 50;
+            int footerHeight = footer != null ? 30 : 0;
 
             int width = 10 + (length * 10);
-            int height = targetButtonHeight + 10 + lines.Length * 20;
+            int height = targetButtonHeight + footerHeight + 10 + lines.Length * 20;
 
             SetAspectRatio(width, height);
 
@@ -77,8 +82,15 @@ namespace Composition.Nodes
 
             float relButtonHeight = targetButtonHeight / (float)height;
 
+            float relFooterHeight = footerHeight / (float)height;
+
             buttonsContainer.RelativeBounds = new RectangleF(0, 1 - relButtonHeight, 1, relButtonHeight);
-            messageNode.RelativeBounds = new RectangleF(0, 0, 1, 1 - relButtonHeight);
+            messageNode.RelativeBounds = new RectangleF(0, 0, 1, 1 - relButtonHeight - relFooterHeight);
+
+            if (footer != null)
+            {
+                footer.RelativeBounds = new RectangleF(0, 1 - relButtonHeight - relFooterHeight, 1, relFooterHeight);
+            }
 
             buttonsContainer.Scale(0.7f);
             messageNode.Scale(0.9f);
@@ -146,6 +158,66 @@ namespace Composition.Nodes
             }
             
             return false;
+        }
+    }
+
+    // A confirmation with a "Don't show this again" tick box. onDontShowAgain
+    // is called with the tick box's state when the popup closes, whichever
+    // button closed it.
+    public class DontShowAgainConfirmationNode : ConfirmationNode
+    {
+        public CheckboxNode Checkbox { get; private set; }
+
+        private Action<bool> onClose;
+        private bool closed;
+
+        public DontShowAgainConfirmationNode(string question, string checkboxText, Color background, Color buttonBG, Color hover, Color text, System.Action onOk, Action<bool> onDontShowAgain)
+            : base(question, background, buttonBG, hover, text, onOk)
+        {
+            onClose = onDontShowAgain;
+
+            footer = new Node();
+            Node backgroundNode = Children.OfType<ColorNode>().First();
+            backgroundNode.AddChild(footer);
+
+            Checkbox = new CheckboxNode(hover);
+            Checkbox.Tint = text;
+            Checkbox.RelativeBounds = new RectangleF(0.05f, 0.15f, 0.1f, 0.7f);
+            footer.AddChild(Checkbox);
+
+            TextButtonNode label = new TextButtonNode(checkboxText, Color.Transparent, Color.Transparent, text);
+            label.TextNode.Alignment = RectangleAlignment.CenterLeft;
+            label.RelativeBounds = new RectangleF(0.05f + 30 / 400f, 0, 0.8f, 1);
+            label.OnClick += (mie) => { Checkbox.Value = !Checkbox.Value; };
+            footer.AddChild(label);
+        }
+
+        public override void Layout(RectangleF parentBounds)
+        {
+            base.Layout(parentBounds);
+
+            // Keep the box at a fixed 20px with the label just after it,
+            // whatever width the popup sized itself to.
+            if (footer.BoundsF.Width > 0)
+            {
+                float boxLeft = footer.BoundsF.X + 15;
+                float rel = (boxLeft - footer.BoundsF.X) / footer.BoundsF.Width;
+                float relBox = 24 / footer.BoundsF.Width;
+                Checkbox.RelativeBounds = new RectangleF(rel, Checkbox.RelativeBounds.Y, relBox, Checkbox.RelativeBounds.Height);
+                Node label = footer.Children.OfType<TextButtonNode>().First();
+                label.RelativeBounds = new RectangleF(rel + relBox + (8 / footer.BoundsF.Width), 0, 1 - (rel + relBox), 1);
+                footer.Layout(footer.Parent.BoundsF);
+            }
+        }
+
+        public override void Dispose()
+        {
+            if (!closed)
+            {
+                closed = true;
+                onClose?.Invoke(Checkbox.Value);
+            }
+            base.Dispose();
         }
     }
 

@@ -84,6 +84,12 @@ namespace Composition.Layers
             Popup(cfn);
         }
 
+        public void PopupConfirmation(string question, Action onOk, string checkboxText, Action<bool> onDontShowAgain)
+        {
+            DontShowAgainConfirmationNode cfn = new DontShowAgainConfirmationNode(question, checkboxText, PopupBackground, PopupButtonBackground, PopupHover, PopupText, onOk, onDontShowAgain);
+            Popup(cfn);
+        }
+
         public void PopupMessage(string message, Action onOk = null)
         {
             if (onOk == null)

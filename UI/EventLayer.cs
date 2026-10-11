@@ -454,7 +454,7 @@ namespace UI
             if (ApplicationProfileSettings.Instance.BracketsTip && eventWebServer != null)
             {
                 // The popup sizes itself to its longest line and doesn't wrap.
-                Popuper.PopupConfirmation(string.Join("\n", new[]
+                LayerStack.GetLayer<PopupLayer>().PopupConfirmation(string.Join("\n", new[]
                     {
                         "NEW: RACE BRACKETS",
                         "",
@@ -465,9 +465,17 @@ namespace UI
                         "as a normal race and the results fill in by themselves.",
                         "",
                         "Ok opens Brackets now. Later: the Brackets tab.",
-                        "(Turn this tip off in Settings, Web.)",
                     }),
-                    () => MenuButton.OpenWebServer("brackets/"));
+                    () => MenuButton.OpenWebServer("brackets/"),
+                    "Don't show this again",
+                    dontShowAgain =>
+                    {
+                        if (dontShowAgain)
+                        {
+                            ApplicationProfileSettings.Instance.BracketsTip = false;
+                            ApplicationProfileSettings.Write();
+                        }
+                    });
             }
 
             raceStartNode = new RaceStartNode();
