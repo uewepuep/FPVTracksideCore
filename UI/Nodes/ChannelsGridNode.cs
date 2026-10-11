@@ -645,8 +645,11 @@ namespace UI.Nodes
             }
         }
 
+        public bool LapsVisible { get; private set; } = true;
+
         public void SetLapsVisiblity(bool visible)
         {
+            LapsVisible = visible;
             if (visible)
             {
                 SingleSize = withLaps;

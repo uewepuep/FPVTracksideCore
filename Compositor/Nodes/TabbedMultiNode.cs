@@ -34,6 +34,18 @@ namespace Composition.Nodes
             }
         }
 
+        // Every tab with content, enabled or not, in the order they were added.
+        public IEnumerable<KeyValuePair<TextButtonNode, Node>> AllTabs
+        {
+            get
+            {
+                foreach (var kvp in mapBack)
+                {
+                    yield return new KeyValuePair<TextButtonNode, Node>(kvp.Value, kvp.Key);
+                }
+            }
+        }
+
         public TabbedMultiNode(TimeSpan animation, TabButtonsNode tabButtons)
         {
             mapBack = new Dictionary<Node, TextButtonNode>();

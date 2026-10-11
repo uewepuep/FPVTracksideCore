@@ -48,7 +48,7 @@ namespace Webb
         // REST API runs every call through it, because RaceLib isn't safe to
         // touch from the web server's thread. Without one (tests, tools) calls
         // run inline.
-        public EventWebServer(EventManager eventManager, SoundManager soundManager, IRaceControl raceControl, IEnumerable<Tools.ToolColor> channelColors, string eventStorageLocation = null, Action<Action> invokeOnUIThread = null)
+        public EventWebServer(EventManager eventManager, SoundManager soundManager, IRaceControl raceControl, IEnumerable<Tools.ToolColor> channelColors, string eventStorageLocation = null, Action<Action> invokeOnUIThread = null, IAppControl appControl = null)
         {
             CSSStyleSheet = new FileInfo(IOTools.ResolveFromWorkingDirectory("httpfiles", "style.css"));
             this.eventManager = eventManager;
@@ -65,7 +65,7 @@ namespace Webb
 
             ChannelColors = channelColors.ToArray();
             RestApi = new Api.RestApi(eventManager, raceControl, invokeOnUIThread,
-                () => eventManager.EventId == Guid.Empty ? null : Path.Combine(EventsPath(), eventManager.EventId.ToString()));
+                () => eventManager.EventId == Guid.Empty ? null : Path.Combine(EventsPath(), eventManager.EventId.ToString()), appControl);
         }
 
         public void Dispose() 

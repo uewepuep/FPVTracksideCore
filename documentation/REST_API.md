@@ -42,7 +42,7 @@ Then open `http://localhost:8080/api/v1/docs`. Options: `--data DIR` (where the 
 |---|---|
 | Base URL | `http://<fpvtrackside machine>:8080/api/v1` |
 | Format | JSON in and out, UTF-8, camelCase field names |
-| IDs | GUIDs |
+| IDs | GUIDs, or `ext:<n>` for an external system's ID (see *Meeting sync*) |
 | Pilots | anywhere a pilot is expected you may use the pilot's ID **or** exact name (`Wheelzfpv`) |
 | Channels | ID, label as FPVTrackside shows it (`R1`, `F4`, `L3`), or frequency (`5658`) |
 | Times | ISO 8601 in the FPVTrackside machine's local time, with its UTC offset: `2026-10-11T09:14:05.123+10:00` |
@@ -64,6 +64,8 @@ Every error is a JSON body plus an HTTP status:
 | 403 | `forbidden` | A change from another machine, and no token is configured. |
 | 403 | `race_control_disabled` | Race control over HTTP is switched off in settings. |
 | 404 | `not_found` | No such race / pilot / round / detection, or no such endpoint. |
+| 501 | `not_available` | Needs the FPVTrackside window, which this server doesn't have (the sandbox). |
+| 502 | `obs_unavailable` | OBS didn't answer. |
 | 405 | `method_not_allowed` | Wrong HTTP method; the `Allow` header lists the right ones. |
 | 409 | `conflict` | Not possible right now (the race is running, a channel is taken, rules are locked…). |
 | 503 | `busy` | FPVTrackside didn't get to the request within 15 s. Safe to retry. |
@@ -191,6 +193,106 @@ Invalidations are recorded as `Marshall`. This is the call external lap-review t
 | `POST /race-control/cancel` | W | Cancel a start countdown |
 
 All of these need *HTTP Server race controls enabled*. Start can be refused (409) for the same reasons the Start button would be: no race selected, the race already ran (reset it first), no timing system ready. If FPVTrackside asks the race director to confirm something (e.g. more pilots than the timer supports), the question appears on the FPVTrackside screen and the API returns 409.
+
+### Meeting sync (driving FPVTrackside from another system)
+For a system that owns the meeting — the AUFPV platform through its dd-pits venue agent, a club database, a spreadsheet script — and wants FPVTrackside to match it.
+
+**External IDs.** Pilots, rounds and races carry an `externalId` (an integer, 0 = none): the other system's own ID for them. Set it when creating (`POST /pilots`, `/rounds`, `/races`) or later (`PATCH`), filter by it (`?externalId=` on `GET /pilots`, `/rounds`, `/races`), and address anything by it wherever an ID goes: `/races/ext:5001`, `/rounds/ext:9001/races`, a line-up seat `{"pilot": "ext:101"}`. A pilot's externalId is the same field FPVTrackside shows as *MultiGP ID*, and a race's is *External Race ID* — the one bracket pastes already fill, so results of a finished race can be routed back by it.
+
+| | | |
+|---|---|---|
+| `GET /meeting` | | Everything in one read: event, channels, pilots, rounds, every race with line-up, laps and results, the selected race and race-control state. `?laps=false` for just the schedule |
+| `POST /meeting/sync` | W | Make FPVTrackside match a plan (below). Idempotent |
+| `PATCH /races/{id}` | W | Set a race's `externalId` or `targetLaps` |
+| `PUT /event/channels` | W | Set the event's channels in order (`["R1","R3","R6","R8"]`). FPVTrackside reloads the event to apply them, so the API is away for a few seconds |
+| `PATCH /event` | W | Also takes `eventType`, `minLapTimeSeconds`, `packLimit`, `start` |
+
+A **meeting plan** lists pilots, then rounds each with their races in running order, all keyed by externalId:
+
+```json
+{
+  "pilots": [ { "externalId": 101, "name": "Wheelzfpv", "channel": "R1" } ],
+  "rounds": [
+    { "externalId": 9001, "eventType": "Race", "name": "Winners Round 1",
+      "races": [ { "externalId": 5001, "pilots": [ { "pilot": "ext:101", "channel": "R1" } ], "targetLaps": 3 } ] }
+  ],
+  "removeMissing": false,
+  "dryRun": false
+}
+```
+
+* The whole plan is checked first; a bad plan changes nothing (400 with the reason).
+* Pilots are matched by externalId, then by name (the match then takes the externalId); missing ones are created and added to the event; names, details and default channels are updated.
+* Rounds and races are matched by externalId and created when missing; a pending race's line-up and target laps are updated when they differ.
+* **A race that has started or finished is never changed** — it comes back as `locked`. So the plan can be re-sent at any time during the meeting, e.g. after every bracket result, and only the races not yet run follow it.
+* `removeMissing: true` deletes races that have an externalId, haven't been run and aren't in the plan (a bracket heat that's no longer needed). Races without an externalId — ones the race director added by hand — are never touched.
+* `dryRun: true` reports what would change and changes nothing.
+
+The response lists every pilot, round and race with its FPVTrackside `id` and what happened: `created`, `updated`, `unchanged`, `removed`, `locked` or `conflict` (with a `message`), plus a `changed` count. Sending the same plan twice gives `changed: 0`.
+
+To pull results back, read `GET /meeting` (or `GET /races?state=finished`) and match races by `externalId`.
+
+### Interface
+Everything on the FPVTrackside screen. These need the FPVTrackside window (the sandbox answers `501 not_available`).
+
+| | | |
+|---|---|---|
+| `GET /app` | | The tab and live scene showing, every tab (enabled or not) and scene, the pilot list / worm / laps / subtitles / mute switches, auto-runner state and timer, which race-director buttons are showing, timing systems and OBS |
+| `PUT /app/tab` | W | Switch tab: `Rounds`, `Live`, `Replay`, `Lap Records`, `Lap Count`, `Points`, `Channel List`, `RSSI Analyser`, `Photo Booth`, `Patreons` |
+| `PUT /app/scene` | W | Show the Live tab on a scene: `PreRace`, `VideoCheck`, `Race`, `FinishLine`, `RaceResults`, `EventStatus`, `Commentators`, `Clear`, or `Auto` |
+| `PATCH /app/view` | W | Pilot list, worm, laps, subtitles, TTS/WAV mute, auto-runner pause / add seconds, channel tiles (`channelVisibility` ±n), re-order tiles |
+| `POST /app/replay` | W | Open a race on the Replay tab |
+| `POST /app/channel-groups/{n}/crashed-out` | W | Toggle a channel group's tile |
+| `GET /app/commands` | | Every command by name: race buttons, tabs, scenes, view switches, sounds, OBS, settings dialogs, new windows, web pages, data actions |
+| `POST /app/commands/{name}` | W | Run one (e.g. `tab-lapcount`, `scene-raceresults`, `announce-race`, `open-timing-settings`, `window-replay`). Handy for a Stream Deck: one URL, no body |
+| `GET /app/events` | | The events FPVTrackside has |
+| `POST /app/events/{id}/open` | W | Switch to another event |
+| `POST /app/event-selector` · `/app/restart` | W | Back to event selection / reload the event |
+
+The commands marked `raceControl` in the list (start, stop, reset, delete…) need *HTTP Server race controls enabled*, like `/race-control/*`.
+
+### More race control
+| | | |
+|---|---|---|
+| `POST /race-control/start` | W | Also takes `{"videoCheck": true}` to go through the video-check scene, as the Start button does |
+| `POST /race-control/stop` | W | Now the Stop button exactly: ends the race or cancels the countdown, and stops the recording |
+| `POST /race-control/emergency-stop` | W | Emergency stop |
+| `POST /race-control/clear` | W | The Clear button |
+| `POST /race-control/resume` | W | Resume a finished race |
+| `POST /race-control/start-stop-next` | W | Whatever the start/stop shortcut would do now |
+
+### Sound
+| | | |
+|---|---|---|
+| `GET /sound` | | The sounds `play` accepts |
+| `POST /sound/play` | W | `{"sound": "announceRace"}` — also `announceResults`, `hurryUp`, `untilRaceStart`, `timeRemaining`, `raceOver`, `flag`, `custom1`…`custom5`, any sound name, or `{"sound": "say", "text": "…"}` to speak any words |
+| `POST /sound/stop` | W | Stop the current sound |
+
+### OBS
+FPVTrackside's OBS remote control (obs-websocket), set up in *OBS Remote Control Settings* or here.
+
+| | | |
+|---|---|---|
+| `GET /obs` · `PATCH /obs` | ·W | Connected / active, the triggers; pause or resume automatic OBS changes, reconnect |
+| `GET /obs/scenes` · `/sources` · `/filters` · `/hotkeys` | | Ask OBS |
+| `PUT /obs/scene` | W | Switch OBS's program scene |
+| `POST /obs/trigger` | W | Fire one of FPVTrackside's triggers (`PreRaceScene`, `RaceEnd`, `PointsTab`…): runs every rule set for it |
+| `POST /obs/hotkey` · `/obs/filter` | W | Press an OBS hotkey by name; switch a source filter |
+| `GET /obs/config` · `PUT /obs/config` | ·W | Host, port, password (never returned) and the trigger → action rules; saved and applied at once |
+
+### Settings
+| | | |
+|---|---|---|
+| `GET /settings` | | Settings groups (`application`, `auto-runner`) and every field: type, allowed values, category, whether it needs a restart |
+| `GET /settings/{group}` | | Current values. Secrets come back as `********` |
+| `PATCH /settings/{group}` | W | Change just the fields sent; saved as the dialog's OK does. `needsRestart` says whether `POST /app/restart` is needed |
+
+Timing, channel, points, sound, theme and video settings have their own editors: open them on screen with the `open-…` commands.
+
+### Export
+| | | |
+|---|---|---|
+| `GET /export/pbs` · `/export/raw-laps` · `/export/race-results` | | The tables behind the Export menu, as `{columns, rows}`. `?decimals=` |
 
 ### Brackets
 Race brackets run inside FPVTrackside: the same formats and bracket logic as the AUFPV platform, with each heat flown as a normal FPVTrackside race. Brackets are saved with the event (`Brackets.json` in the event folder). The **bracket web app** at `/brackets` (e.g. `http://localhost:8080/brackets`) is built entirely on these endpoints.

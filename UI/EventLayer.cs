@@ -21,7 +21,7 @@ using Composition;
 
 namespace UI
 {
-    public class EventLayer : CompositorLayer, IRaceControl
+    public partial class EventLayer : CompositorLayer, IRaceControl
     {
         public EventManager EventManager { get; private set; }
 
@@ -301,7 +301,7 @@ namespace UI
                 raceControl = this;
             }
 
-            eventWebServer = new EventWebServer(EventManager, SoundManager, raceControl, Theme.Current.ChannelColors, ApplicationProfileSettings.Instance.EventStorageDirectory.FullName, a => PlatformTools.Invoke(a));
+            eventWebServer = new EventWebServer(EventManager, SoundManager, raceControl, Theme.Current.ChannelColors, ApplicationProfileSettings.Instance.EventStorageDirectory.FullName, a => PlatformTools.Invoke(a), this);
 
             if (ApplicationProfileSettings.Instance.HTTPServer)
             {

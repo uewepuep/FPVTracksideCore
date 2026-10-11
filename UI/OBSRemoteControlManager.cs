@@ -100,6 +100,10 @@ namespace UI
 
         public bool Active { get; set; }
 
+        public OBSRemoteControl RemoteControl { get { return remoteControl; } }
+
+        public OBSRemoteControlConfig Config { get { return config; } }
+
         public IEnumerable<Triggers> ChannelGrids
         {
             get
@@ -217,13 +221,20 @@ namespace UI
 
         public void Trigger(Triggers type)
         {
+            Trigger(type, false);
+        }
+
+        // force: run it even if the same trigger fired in the last few seconds
+        // (the REST API asks for a trigger on purpose).
+        public void Trigger(Triggers type, bool force)
+        {
             if (!Active)
                 return;
 
             if (remoteControl == null)
                 return;
 
-            if (type == lastTrigger && lastTriggerTime + doubleTriggerTimeout > DateTime.Now)
+            if (!force && type == lastTrigger && lastTriggerTime + doubleTriggerTimeout > DateTime.Now)
                 return;
 
             lastTrigger = type;

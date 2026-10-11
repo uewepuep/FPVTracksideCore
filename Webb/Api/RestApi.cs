@@ -38,10 +38,13 @@ namespace Webb.Api
         public static TimeSpan UIThreadTimeout = TimeSpan.FromSeconds(15);
 
         // eventDirectory: the open event's folder (brackets are saved in it).
-        public RestApi(EventManager eventManager, IRaceControl raceControl, Action<Action> invokeOnUIThread, Func<string> eventDirectory = null)
+        // appControl: the FPVTrackside window (tabs, scenes, OBS, settings…);
+        // null when there is none, e.g. the API sandbox.
+        public RestApi(EventManager eventManager, IRaceControl raceControl, Action<Action> invokeOnUIThread, Func<string> eventDirectory = null, IAppControl appControl = null)
         {
             this.eventManager = eventManager;
             this.raceControl = raceControl;
+            this.app = appControl;
             this.invokeOnUIThread = invokeOnUIThread;
             brackets = new BracketService(eventManager, eventDirectory ?? (() => null), invokeOnUIThread);
             Register();
@@ -118,7 +121,19 @@ namespace Webb.Api
                     ApiAuth.RequireWrite(context);
 
                 result = OnUIThread(() => route.Handler(req));
+
+                // A handler that has to wait on something slow (OBS) returns a
+                // task; it is waited on here, off the UI thread.
+                Task<object> pending = result as Task<object>;
+                if (pending != null)
+                    result = Await(pending);
+
                 res.StatusCode = req.Status;
+            }
+            catch (AppControlException e)
+            {
+                res.StatusCode = e.Status;
+                result = new ApiErrorDto { Ok = false, Code = e.Code, Error = e.Message };
             }
             catch (ApiException e)
             {
@@ -165,9 +180,26 @@ namespace Webb.Api
             catch (AggregateException ae)
             {
                 Exception inner = ae.Flatten().InnerExceptions.FirstOrDefault() ?? ae;
-                if (inner is ApiException)
+                if (inner is ApiException || inner is AppControlException)
                     throw inner;
                 throw new Exception(inner.Message, inner);
+            }
+        }
+
+        private static object Await(Task<object> task)
+        {
+            try
+            {
+                if (!task.Wait(UIThreadTimeout))
+                    throw new ApiException(503, "busy", "no answer in time; try again");
+                return task.Result;
+            }
+            catch (AggregateException ae)
+            {
+                Exception inner = ae.Flatten().InnerExceptions.FirstOrDefault() ?? ae;
+                if (inner is ApiException || inner is AppControlException)
+                    throw inner;
+                throw new ApiException(502, "upstream", inner.Message);
             }
         }
 
@@ -202,7 +234,8 @@ namespace Webb.Api
             Get("channels", "Event", "List the event's channels", typeof(ChannelDto), r => eventManager.Channels.Select(ToDto).ToList(), array: true);
 
             // Pilots
-            Get("pilots", "Pilots", "List the event's pilots", typeof(PilotDto), r => eventManager.Event.Pilots.OrderBy(p => p.Name).Select(ToDto).ToList(), array: true);
+            Get("pilots", "Pilots", "List the event's pilots", typeof(PilotDto), r => eventManager.Event.Pilots.Where(p => ExternalIdFilter(r) == null || p.ExternalID == ExternalIdFilter(r)).OrderBy(p => p.Name).Select(ToDto).ToList(),
+                "Filter with ?externalId=.", array: true, query: new[] { "externalId" });
             Get("pilots/database", "Pilots", "List every pilot FPVTrackside knows (its pilot database), with whether each is in the event", typeof(PilotDto), PilotDatabase, array: true);
             Write("POST", "pilots", "Pilots", "Add a pilot to the event", typeof(PilotCreateRequest), typeof(PilotDto), CreatePilot, status: 201);
             Get("pilots/{pilotId}", "Pilots", "Get a pilot", typeof(PilotDto), r => ToDto(PilotRef(r.Param("pilotId"))),
@@ -213,7 +246,8 @@ namespace Webb.Api
             Get("pilots/{pilotId}/races", "Pilots", "List a pilot's races", typeof(RaceSummaryDto), r => RaceManager.GetRaces(PilotRef(r.Param("pilotId"))).Where(x => x.Valid).OrderBy(x => x.Round.Order).ThenBy(x => x.RaceOrder).Select(ToSummary).ToList(), array: true);
 
             // Rounds
-            Get("rounds", "Rounds", "List rounds in running order", typeof(RoundDto), r => Rounds().Select(ToDto).ToList(), array: true);
+            Get("rounds", "Rounds", "List rounds in running order", typeof(RoundDto), r => Rounds().Where(x => ExternalIdFilter(r) == null || x.ExternalID == ExternalIdFilter(r)).Select(ToDto).ToList(),
+                "Filter with ?externalId=.", array: true, query: new[] { "externalId" });
             Write("POST", "rounds", "Rounds", "Add an empty round", typeof(RoundCreateRequest), typeof(RoundDto), CreateRound, status: 201);
             Get("rounds/{roundId}", "Rounds", "Get a round", typeof(RoundDto), r => ToDto(RoundRef(r)));
             Write("PATCH", "rounds/{roundId}", "Rounds", "Rename a round", typeof(RoundPatchRequest), typeof(RoundDto), PatchRound);
@@ -223,7 +257,7 @@ namespace Webb.Api
 
             // Races
             Get("races", "Races", "List races in running order", typeof(RaceSummaryDto), ListRaces,
-                "Filter with ?state=pending|running|finished, ?round=<round ID> and ?pilot=<pilot ID or name>.", array: true, query: new[] { "state", "round", "pilot" });
+                "Filter with ?state=pending|running|finished, ?round=<round ID>, ?pilot=<pilot ID or name> and ?externalId=.", array: true, query: new[] { "state", "round", "pilot", "externalId" });
             Write("POST", "races", "Races", "Create a race", typeof(RaceCreateRequest), typeof(RaceDto), CreateRace, status: 201);
             Get("races/current", "Races", "Get the race selected in FPVTrackside", typeof(RaceDto), r => ToDto(CurrentRaceOr404()));
             Get("races/{raceId}", "Races", "Get a race with its laps and results", typeof(RaceDto), r => ToDto(RaceRef(r)));
@@ -261,12 +295,15 @@ namespace Webb.Api
                 "Refused (409) while the selected race is running.");
             Write("POST", "race-control/next", "Race control", "Select the next race", null, typeof(RaceControlDto), r => Step(true));
             Write("POST", "race-control/previous", "Race control", "Select the previous race", null, typeof(RaceControlDto), r => Step(false));
-            Write("POST", "race-control/start", "Race control", "Start the selected race", null, typeof(RaceControlDto), StartRace,
-                "Same as pressing Start: runs the start countdown and sounds. Needs \"Race control over HTTP\" switched on in FPVTrackside's settings (403 race_control_disabled otherwise).");
-            Write("POST", "race-control/stop", "Race control", "End the running race", null, typeof(RaceControlDto), r => RaceAction(() => RaceManager.EndRace(), "no race is running"));
+            Write("POST", "race-control/start", "Race control", "Start the selected race", typeof(StartRaceRequest), typeof(RaceControlDto), StartRace,
+                "Same as pressing Start: runs the start countdown and sounds. `videoCheck: true` goes through the video-check scene first when that is switched on in settings, as the Start button does. Needs \"Race control over HTTP\" switched on in FPVTrackside's settings (403 race_control_disabled otherwise).");
+            Write("POST", "race-control/stop", "Race control", "End the running race", null, typeof(RaceControlDto), StopRace,
+                "Same as pressing Stop: ends the race (or cancels a start countdown) and stops the video recording.");
             Write("POST", "race-control/cancel", "Race control", "Cancel a start countdown", null, typeof(RaceControlDto), r => RaceAction(() => RaceManager.CancelRaceStart(false), "no start is counting down"));
 
             RegisterBrackets();
+            RegisterSync();
+            RegisterApp();
 
             Examples(new Dictionary<string, string>
             {
@@ -303,7 +340,16 @@ namespace Webb.Api
                 throw ApiException.BadRequest("a pilot is required");
 
             Guid id;
-            Pilot p = Guid.TryParse(reference, out id)
+            int ext;
+            Pilot p;
+            if (TryExternalRef(reference, out ext))
+            {
+                p = eventManager.Event.Pilots.FirstOrDefault(x => x.ExternalID == ext);
+                if (p == null)
+                    throw ApiException.NotFound("pilot with externalId " + ext);
+                return p;
+            }
+            p = Guid.TryParse(reference, out id)
                 ? eventManager.GetPilot(id)
                 : eventManager.Event.Pilots.FirstOrDefault(x => string.Equals(x.Name, reference.Trim(), StringComparison.OrdinalIgnoreCase));
 
@@ -403,9 +449,26 @@ namespace Webb.Api
             return ResolveChannel(reference, eventManager.Channels);
         }
 
+        // "ext:123" — an external system's ID (ExternalID), e.g. the AUFPV
+        // platform's, so a caller can address what it created without keeping
+        // FPVTrackside's GUIDs.
+        public static bool TryExternalRef(string reference, out int ext)
+        {
+            ext = 0;
+            if (reference == null)
+                return false;
+            string s = reference.Trim();
+            return s.StartsWith("ext:", StringComparison.OrdinalIgnoreCase) && int.TryParse(s.Substring(4), out ext) && ext != 0;
+        }
+
         private Race RaceRef(ApiRequest r)
         {
-            Race race = RaceManager.GetRaceByRaceId(r.GuidParam("raceId"));
+            int ext;
+            Race race;
+            if (TryExternalRef(r.Param("raceId"), out ext))
+                race = RaceManager.Races.FirstOrDefault(x => x.Valid && x.ExternalID == ext);
+            else
+                race = RaceManager.GetRaceByRaceId(r.GuidParam("raceId"));
             if (race == null || !race.Valid)
                 throw ApiException.NotFound("race");
             return race;
@@ -429,8 +492,15 @@ namespace Webb.Api
 
         private Round RoundRef(ApiRequest r)
         {
-            Guid id = r.GuidParam("roundId");
-            Round round = Rounds().FirstOrDefault(x => x.ID == id);
+            int ext;
+            Round round;
+            if (TryExternalRef(r.Param("roundId"), out ext))
+                round = Rounds().FirstOrDefault(x => x.ExternalID == ext);
+            else
+            {
+                Guid id = r.GuidParam("roundId");
+                round = Rounds().FirstOrDefault(x => x.ID == id);
+            }
             if (round == null)
                 throw ApiException.NotFound("round");
             return round;
@@ -485,6 +555,24 @@ namespace Webb.Api
                 throw ApiException.BadRequest("raceLengthSeconds must be 0-86400");
             if (body.Name != null && body.Name.Trim().Length == 0)
                 throw ApiException.BadRequest("name can't be empty");
+            if (body.MinLapTimeSeconds.HasValue && (body.MinLapTimeSeconds < 0 || body.MinLapTimeSeconds > 3600))
+                throw ApiException.BadRequest("minLapTimeSeconds must be 0-3600");
+            if (body.PackLimit.HasValue && (body.PackLimit < 0 || body.PackLimit > 1000))
+                throw ApiException.BadRequest("packLimit must be 0-1000");
+            EventTypes? eventType = body.EventType != null ? ParseEventType(body.EventType, ev.EventType) : (EventTypes?)null;
+
+            if (eventType.HasValue && eventType.Value != ev.EventType)
+                eventManager.SetEventType(eventType.Value);
+            if (body.MinLapTimeSeconds.HasValue || body.PackLimit.HasValue || body.Start.HasValue)
+            {
+                using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open(eventManager.EventId))
+                {
+                    if (body.MinLapTimeSeconds.HasValue) ev.MinLapTime = TimeSpan.FromSeconds(body.MinLapTimeSeconds.Value);
+                    if (body.PackLimit.HasValue) ev.PackLimit = body.PackLimit.Value;
+                    if (body.Start.HasValue) ev.Start = body.Start.Value;
+                    db.Update(ev);
+                }
+            }
 
             if (body.Name != null)
                 eventManager.SetEventName(body.Name.Trim());
@@ -508,15 +596,24 @@ namespace Webb.Api
             string name = body.Name.Trim();
             if (eventManager.Event.Pilots.Any(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)))
                 throw ApiException.Conflict("a pilot named '" + name + "' is already in the event");
+            if (body.ExternalId.HasValue && body.ExternalId != 0 && eventManager.Event.Pilots.Any(p => p.ExternalID == body.ExternalId))
+                throw ApiException.Conflict("a pilot with externalId " + body.ExternalId + " is already in the event");
 
             Channel channel = ChannelRef(body.Channel);
             Pilot pilot = eventManager.GetCreatePilot(name);
             if (body.FirstName != null) pilot.FirstName = body.FirstName;
             if (body.LastName != null) pilot.LastName = body.LastName;
 
+            if (body.ExternalId.HasValue) pilot.ExternalID = body.ExternalId.Value;
+
             bool added = channel != null ? eventManager.AddPilot(pilot, channel) : eventManager.AddPilot(pilot);
             if (!added)
                 throw ApiException.Conflict("the pilot is already in the event");
+            if (body.ExternalId.HasValue)
+            {
+                using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open(eventManager.EventId))
+                    db.Update(pilot);
+            }
 
             Log("pilot added " + name);
             return ToDto(pilot);
@@ -545,6 +642,12 @@ namespace Webb.Api
             if (body.CatchPhrase != null) pilot.CatchPhrase = body.CatchPhrase;
             if (body.PracticePilot.HasValue) pilot.PracticePilot = body.PracticePilot.Value;
             if (body.VelocidroneUid != null) pilot.VelocidroneUID = body.VelocidroneUid;
+            if (body.ExternalId.HasValue)
+            {
+                if (body.ExternalId != 0 && eventManager.Event.Pilots.Any(p => p != pilot && p.ExternalID == body.ExternalId))
+                    throw ApiException.Conflict("another pilot has externalId " + body.ExternalId);
+                pilot.ExternalID = body.ExternalId.Value;
+            }
 
             using (RaceLib.IDatabase db = RaceLib.DatabaseFactory.Open(eventManager.EventId))
             {
@@ -577,7 +680,10 @@ namespace Webb.Api
         {
             RoundCreateRequest body = r.BodyAs<RoundCreateRequest>();
             EventTypes type = ParseEventType(body.EventType, eventManager.Event.EventType);
+            if (body.ExternalId.HasValue && body.ExternalId != 0 && Rounds().Any(x => x.ExternalID == body.ExternalId))
+                throw ApiException.Conflict("a round with externalId " + body.ExternalId + " already exists");
             Round round = eventManager.RoundManager.CreateEmptyRound(type);
+            ApplyRound(round, body.Name, body.ExternalId);
             Log("round added " + round);
             return ToDto(round);
         }
@@ -586,8 +692,9 @@ namespace Webb.Api
         {
             Round round = RoundRef(r);
             RoundPatchRequest body = r.BodyAs<RoundPatchRequest>();
-            if (body.Name != null)
-                eventManager.RoundManager.RenameRound(round, body.Name.Trim());
+            if (body.ExternalId.HasValue && body.ExternalId != 0 && Rounds().Any(x => x != round && x.ExternalID == body.ExternalId))
+                throw ApiException.Conflict("another round has externalId " + body.ExternalId);
+            ApplyRound(round, body.Name, body.ExternalId);
             return ToDto(round);
         }
 
@@ -628,6 +735,10 @@ namespace Webb.Api
             if (pilot != null)
                 races = races.Where(x => x.HasPilot(pilot));
 
+            int? ext = ExternalIdFilter(r);
+            if (ext.HasValue)
+                races = races.Where(x => x.ExternalID == ext.Value);
+
             return races.OrderBy(x => x.Round?.Order ?? 0).ThenBy(x => x.RaceOrder).Select(ToSummary).ToList();
         }
 
@@ -650,10 +761,15 @@ namespace Webb.Api
             if (body.MakeCurrent && RaceManager.CurrentRace != null && RaceManager.CurrentRace.Running)
                 throw ApiException.Conflict("another race is running, so the new race can't be selected");
 
+            if (body.ExternalId.HasValue && body.ExternalId != 0 && RaceManager.Races.Any(x => x.Valid && x.ExternalID == body.ExternalId))
+                throw ApiException.Conflict("a race with externalId " + body.ExternalId + " already exists");
+
             List<Tuple<Pilot, Channel>> lineup = Lineup(body.Pilots);
             Race race = RaceManager.AddRaceToRound(round);
             if (lineup.Any())
                 RaceManager.SetRacePilots(race, lineup, false);
+            if (body.ExternalId.HasValue || body.TargetLaps.HasValue)
+                ApplyRace(race, body.ExternalId, body.TargetLaps);
 
             if (body.MakeCurrent)
                 RaceManager.SetRace(race);
@@ -984,9 +1100,23 @@ namespace Webb.Api
                 throw ApiException.Conflict("the race is already running");
             if (current.Ended)
                 throw ApiException.Conflict("the selected race has already been run; reset it first");
-            if (!raceControl.StartRace())
+            if (r.BodyAs<StartRaceRequest>().VideoCheck && app != null)
+                app.StartRace(true);
+            else if (!raceControl.StartRace())
                 throw ApiException.Conflict("FPVTrackside refused to start the race");
             Log("race started " + current.RaceName);
+            return RaceControlState();
+        }
+
+        private object StopRace(ApiRequest r)
+        {
+            RequireRaceControl();
+            if (app == null)
+                return RaceAction(() => RaceManager.EndRace(), "no race is running");
+            if (!RaceManager.RaceRunning && !RaceManager.PreRaceStartDelay)
+                throw ApiException.Conflict("no race is running");
+            app.StopRace(false);
+            Log("race stopped");
             return RaceControlState();
         }
 
@@ -1057,6 +1187,7 @@ namespace Webb.Api
                 CatchPhrase = p.CatchPhrase,
                 PracticePilot = p.PracticePilot,
                 VelocidroneUid = p.VelocidroneUID,
+                ExternalId = p.ExternalID,
                 Channel = ToDto(eventManager.GetChannel(p)),
             };
         }
@@ -1071,6 +1202,7 @@ namespace Webb.Api
                 EventType = round.EventType.ToString(),
                 Order = round.Order,
                 Stage = round.Stage?.Name,
+                ExternalId = round.ExternalID,
                 RaceCount = RaceManager.GetRaces(round).Length,
             };
         }
@@ -1089,6 +1221,7 @@ namespace Webb.Api
             dto.End = Time(race.End);
             dto.TargetLaps = race.TargetLaps;
             dto.Bracket = race.Bracket.ToString();
+            dto.ExternalId = race.ExternalID;
             dto.Pilots = race.PilotChannelsSafe.Where(pc => pc.Pilot != null)
                 .Select(pc => new RacePilotDto { PilotId = pc.Pilot.ID, Name = pc.Pilot.Name, Channel = ToDto(pc.Channel) })
                 .ToList();

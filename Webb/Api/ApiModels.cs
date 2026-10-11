@@ -114,6 +114,7 @@ namespace Webb.Api
         [Doc("Velocidrone user ID.")] public string VelocidroneUid { get; set; }
         [Doc("The pilot's default channel for this event.")] public ChannelDto Channel { get; set; }
         [Doc("Only in GET /pilots/database: whether the pilot is in the open event.")] public bool? InEvent { get; set; }
+        [Doc("An external system's ID for the pilot (0 = none). Shared with FPVTrackside's MultiGP ID field and the bracket paste. Address the pilot as `ext:<id>`.")] public int ExternalId { get; set; }
     }
 
     [Doc("A round: a group of races of one type.")]
@@ -126,6 +127,7 @@ namespace Webb.Api
         [Doc("Running order of the round in the event (the order FPVTrackside shows).")] public int Order { get; set; }
         [Doc("Stage name, if the round belongs to one.")] public string Stage { get; set; }
         [Doc("Number of races in the round.")] public int RaceCount { get; set; }
+        [Doc("An external system's ID for the round (0 = none). Address the round as `ext:<id>`.")] public int ExternalId { get; set; }
     }
 
     [Doc("A pilot's seat in a race.")]
@@ -151,6 +153,7 @@ namespace Webb.Api
         [Doc("When the race ended (null if it hasn't).")] public DateTime? End { get; set; }
         [Doc("Laps to finish.")] public int TargetLaps { get; set; }
         [Doc("Bracket, for double-elimination formats.", Example = "None")] public string Bracket { get; set; }
+        [Doc("An external system's ID for the race (0 = none), e.g. the AUFPV platform's bracket race. Address the race as `ext:<id>`.")] public int ExternalId { get; set; }
         [Doc("Pilots and channels.")] public List<RacePilotDto> Pilots { get; set; }
     }
 
@@ -243,6 +246,10 @@ namespace Webb.Api
         [Doc("Laps per race (refused when rules are locked).")] public int? Laps { get; set; }
         [Doc("Consecutive laps used for personal bests (refused when rules are locked).")] public int? PbLaps { get; set; }
         [Doc("Race length in seconds (refused when rules are locked).")] public int? RaceLengthSeconds { get; set; }
+        [Doc("Default race type for new rounds.", Example = "Race")] public string EventType { get; set; }
+        [Doc("Laps shorter than this are ignored, in seconds.")] public double? MinLapTimeSeconds { get; set; }
+        [Doc("Packs a pilot may fly before FPVTrackside warns (0 = no limit).")] public int? PackLimit { get; set; }
+        [Doc("Event start date.")] public DateTime? Start { get; set; }
     }
 
     [Doc("A pilot to add to the event. An existing pilot of the same name (in the event or FPVTrackside's pilot list) is reused.")]
@@ -252,6 +259,7 @@ namespace Webb.Api
         [Doc("Default channel (label like \"R1\", a frequency, or a channel ID). Leave out to use the least-used channel.")] public string Channel { get; set; }
         [Doc("First name.")] public string FirstName { get; set; }
         [Doc("Last name.")] public string LastName { get; set; }
+        [Doc("An external system's ID for the pilot. Must be unique in the event.")] public int? ExternalId { get; set; }
     }
 
     [Doc("Changes to a pilot. Leave out anything you aren't changing.")]
@@ -266,18 +274,22 @@ namespace Webb.Api
         [Doc("Practice pilot (not scored).")] public bool? PracticePilot { get; set; }
         [Doc("Velocidrone user ID.")] public string VelocidroneUid { get; set; }
         [Doc("Default channel for the event (label, frequency or ID).")] public string Channel { get; set; }
+        [Doc("An external system's ID (0 clears it).")] public int? ExternalId { get; set; }
     }
 
     [Doc("A new, empty round.")]
     public class RoundCreateRequest
     {
         [Doc("Race type. Defaults to the event's type.", Example = "Race")] public string EventType { get; set; }
+        [Doc("Custom name.")] public string Name { get; set; }
+        [Doc("An external system's ID for the round.")] public int? ExternalId { get; set; }
     }
 
     [Doc("Changes to a round.")]
     public class RoundPatchRequest
     {
         [Doc("Custom name (empty string clears it).")] public string Name { get; set; }
+        [Doc("An external system's ID (0 clears it).")] public int? ExternalId { get; set; }
     }
 
     [Doc("A pilot to seat in a race.")]
@@ -294,6 +306,8 @@ namespace Webb.Api
         [Doc("Race type of the new round, when roundId is left out. Defaults to the event's type.")] public string EventType { get; set; }
         [Doc("Pilots to seat.")] public List<RacePilotRequest> Pilots { get; set; }
         [Doc("Select the race in FPVTrackside once it's created (refused while another race is running).")] public bool MakeCurrent { get; set; }
+        [Doc("An external system's ID for the race, e.g. the AUFPV platform's bracket race (finished results are linked back by it).")] public int? ExternalId { get; set; }
+        [Doc("Laps to finish, if not the event's.")] public int? TargetLaps { get; set; }
     }
 
     [Doc("A lap-line crossing to add. Give exactly one of: time; raceTimeMs; or anchorDetectionId with offsetMs.")]
@@ -326,6 +340,11 @@ namespace Webb.Api
         [Doc("Pilot ID.", Required = true)] public Guid PilotId { get; set; }
         [Doc("Lap-line detection IDs to mark invalid (recorded as Marshall).")] public List<Guid> Invalidate { get; set; }
         [Doc("Missed lap lines to add.")] public List<LapCorrectionAdd> Add { get; set; }
+    }
+
+    public class StartRaceRequest
+    {
+        [Doc("Show the video-check scene first, as the Start button does when \"Auto race start video check\" is on.")] public bool VideoCheck { get; set; }
     }
 
     [Doc("The race to select in FPVTrackside.")]

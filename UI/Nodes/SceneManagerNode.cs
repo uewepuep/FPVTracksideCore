@@ -824,6 +824,17 @@ namespace UI.Nodes
             FullScreen(commentatorsAndSummary);
         }
 
+        public bool WormVisible { get { return showWorm; } }
+
+        // Used by the REST API: set the worm on or off whatever the scene; it
+        // shows when the Race scene does.
+        public void SetWorm(bool show)
+        {
+            showWorm = show;
+            if (Scene == Scenes.Race)
+                UpdateDockSizes();
+        }
+
         public void ToggleWorm()
         {
             if (Scene == Scenes.Race)
