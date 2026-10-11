@@ -105,6 +105,7 @@ All paths are under `/api/v1`. **W** = changes data.
 | | | |
 |---|---|---|
 | `GET /pilots` | | Every pilot in the event, with their default channel |
+| `GET /pilots/database` | | Every pilot FPVTrackside knows (its pilot database, across events), each with `inEvent` |
 | `POST /pilots` | W | Add a pilot (`name`, optional `channel`). An existing pilot of that name is reused |
 | `GET /pilots/{pilot}` | | One pilot (ID or name) |
 | `PATCH /pilots/{pilot}` | W | Name, first/last name, Discord ID, aircraft, catch phrase, practice pilot, Velocidrone ID, default channel |

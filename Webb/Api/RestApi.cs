@@ -203,6 +203,7 @@ namespace Webb.Api
 
             // Pilots
             Get("pilots", "Pilots", "List the event's pilots", typeof(PilotDto), r => eventManager.Event.Pilots.OrderBy(p => p.Name).Select(ToDto).ToList(), array: true);
+            Get("pilots/database", "Pilots", "List every pilot FPVTrackside knows (its pilot database), with whether each is in the event", typeof(PilotDto), PilotDatabase, array: true);
             Write("POST", "pilots", "Pilots", "Add a pilot to the event", typeof(PilotCreateRequest), typeof(PilotDto), CreatePilot, status: 201);
             Get("pilots/{pilotId}", "Pilots", "Get a pilot", typeof(PilotDto), r => ToDto(PilotRef(r.Param("pilotId"))),
                 "pilotId may be the pilot's ID or exact name.");
@@ -306,6 +307,14 @@ namespace Webb.Api
                 ? eventManager.GetPilot(id)
                 : eventManager.Event.Pilots.FirstOrDefault(x => string.Equals(x.Name, reference.Trim(), StringComparison.OrdinalIgnoreCase));
 
+            if (p == null && createIfMissing && id != Guid.Empty)
+            {
+                // A pilot from FPVTrackside's pilot database who isn't in the
+                // event yet: add them, as the pilot list's Add button does.
+                p = AllPilots().FirstOrDefault(x => x.ID == id);
+                if (p != null)
+                    eventManager.AddPilot(p);
+            }
             if (p == null && createIfMissing && id == Guid.Empty)
             {
                 p = eventManager.GetCreatePilot(reference.Trim());
@@ -314,6 +323,38 @@ namespace Webb.Api
             if (p == null)
                 throw ApiException.NotFound("pilot '" + reference + "'");
             return p;
+        }
+
+        // FPVTrackside's pilot database: every pilot from every event on this
+        // machine, plus the open event's own (which may not be saved there yet).
+        private List<Pilot> AllPilots()
+        {
+            Dictionary<Guid, Pilot> all = new Dictionary<Guid, Pilot>();
+            using (IDatabase db = DatabaseFactory.Open(eventManager.EventId))
+            {
+                foreach (Pilot p in db.All<Pilot>())
+                    if (p != null && !string.IsNullOrWhiteSpace(p.Name))
+                        all[p.ID] = p;
+            }
+            foreach (Pilot p in eventManager.Event.Pilots)
+                if (p != null)
+                    all[p.ID] = p;
+            return all.Values.ToList();
+        }
+
+        private object PilotDatabase(ApiRequest r)
+        {
+            HashSet<Guid> inEvent = new HashSet<Guid>(eventManager.Event.Pilots.Where(p => p != null).Select(p => p.ID));
+            return AllPilots()
+                .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(p =>
+                {
+                    PilotDto dto = ToDto(p);
+                    dto.InEvent = inEvent.Contains(p.ID);
+                    if (dto.InEvent != true) dto.Channel = null;
+                    return dto;
+                })
+                .ToList();
         }
 
         private Pilot PilotFilter(ApiRequest r)

@@ -4,7 +4,9 @@ import type { BracketFormat } from '~/composables/types'
 // New bracket: format → pilots & seeding → settings. Everything is posted to
 // POST /api/v1/brackets, which generates the whole structure at once.
 
-interface SeedPilot { id: string; name: string; use: boolean; time: number | null }
+// added: not in the event yet — from FPVTrackside's pilot database, or a new
+// name. Creating the bracket adds them to the event.
+interface SeedPilot { id: string; name: string; use: boolean; time: number | null; added?: 'database' | 'new' }
 
 const onError = useApiErrors()
 const toast = useToast()
@@ -21,6 +23,8 @@ const formats = ref<BracketFormat[]>([])
 const channels = ref<{ label: string }[]>([])
 const rounds = ref<{ id: string; name: string; eventType: string; number: number }[]>([])
 const pilots = ref<SeedPilot[]>([])
+const database = ref<{ id: string; name: string; inEvent: boolean }[]>([])
+const toAdd = ref<string[]>([])
 
 const format = ref('elimination')
 const name = ref('')
@@ -71,6 +75,11 @@ onMounted(async () => {
   } catch (e) {
     onError(e)
   }
+  try {
+    database.value = await get('/pilots/database')
+  } catch {
+    // Older FPVTrackside without the pilot database endpoint: event pilots only.
+  }
 })
 
 watch(() => setup.pilotsPerRace, (n) => {
@@ -86,13 +95,42 @@ async function seedFromQualifying() {
     if (seedRound.value !== 'all') q.set('round', seedRound.value)
     const rows = await get<any[]>(`/brackets/seeding?${q}`)
     const was = new Map(pilots.value.map(p => [p.id, p.use]))
+    const seeded = new Set(rows.map(r => r.pilotId))
+    // Pilots added from the database (no qualifying in this event) keep their place after the seeded ones.
     pilots.value = rows.map(r => ({ id: r.pilotId, name: r.name, use: was.get(r.pilotId) !== false && r.races > 0, time: r.bestSeconds }))
+      .concat(pilots.value.filter(p => !seeded.has(p.id) && p.added))
     toast.add({ title: 'Seeded from qualifying', description: `${rows.filter(r => r.bestSeconds != null).length} pilots have a time`, icon: 'i-lucide-timer', color: 'success' })
   } catch (e) {
     onError(e)
   } finally {
     seeding.value = false
   }
+}
+
+// FPVTrackside's pilots not already on the list, for the picker.
+const addable = computed(() => {
+  const listed = new Set(pilots.value.map(p => p.id))
+  return database.value.filter(d => !listed.has(d.id)).map(d => ({ label: d.name, value: d.id }))
+})
+
+function addPilots() {
+  for (const id of toAdd.value) {
+    const d = database.value.find(x => x.id === id)
+    if (d && !pilots.value.some(p => p.id === id)) pilots.value.push({ id, name: d.name, use: true, time: null, added: d.inEvent ? undefined : 'database' })
+  }
+  toAdd.value = []
+}
+
+function createPilot(name: string) {
+  const n = name.trim()
+  if (!n || pilots.value.some(p => p.name.toLowerCase() === n.toLowerCase())) return
+  const known = database.value.find(d => d.name.toLowerCase() === n.toLowerCase())
+  if (known) {
+    toAdd.value = [...toAdd.value, known.id]
+    return
+  }
+  // A brand-new pilot: sent by name, FPVTrackside creates them.
+  pilots.value.push({ id: n, name: n, use: true, time: null, added: 'new' })
 }
 
 function move(i: number, d: number) {
@@ -235,7 +273,31 @@ async function create() {
         </div>
       </template>
 
+      <div class="mb-4 flex flex-wrap items-start gap-2">
+        <UFormField label="Add pilots from FPVTrackside" :help="database.length ? 'Pick from every pilot FPVTrackside knows, or type a new name. Anyone not in this event is added to it when the bracket is created.' : 'Type a name to add a pilot.'" class="min-w-0 flex-1">
+          <USelectMenu
+            v-model="toAdd"
+            :items="addable"
+            value-key="value"
+            multiple
+            create-item
+            placeholder="Search pilots…"
+            icon="i-lucide-user-plus"
+            class="w-full"
+            @create="createPilot"
+          />
+        </UFormField>
+        <UButton icon="i-lucide-plus" :label="toAdd.length ? `Add ${toAdd.length}` : 'Add'" :disabled="!toAdd.length" class="mt-6" @click="addPilots" />
+      </div>
+
       <p class="mb-3 text-sm text-muted">{{ chosen.length }} pilots in this bracket</p>
+      <UEmpty
+        v-if="!pilots.length"
+        icon="i-lucide-users"
+        title="No pilots yet"
+        description="This event has no pilots. Add them above from FPVTrackside's pilots, or add them to the event in FPVTrackside."
+        class="mb-2"
+      />
       <ol class="grid gap-1.5">
         <li
           v-for="(p, i) in pilots"
@@ -245,7 +307,11 @@ async function create() {
         >
           <span class="cursor-grab touch-none select-none text-center text-muted" aria-hidden="true" @pointerdown="startDrag(i, $event)">⠿</span>
           <span class="font-mono text-sm font-bold text-muted">{{ p.use ? `#${pilots.slice(0, i + 1).filter(x => x.use).length}` : '—' }}</span>
-          <UCheckbox v-model="p.use" :label="p.name" />
+          <span class="flex min-w-0 items-center gap-2">
+            <UCheckbox v-model="p.use" :label="p.name" />
+            <UBadge v-if="p.added" size="sm" color="neutral" variant="subtle" :label="p.added === 'new' ? 'new pilot' : 'joins the event'" />
+            <UButton v-if="p.added" size="xs" color="neutral" variant="ghost" icon="i-lucide-x" :aria-label="`Remove ${p.name}`" @click="pilots.splice(i, 1)" />
+          </span>
           <span class="font-mono text-xs text-muted">{{ p.time != null ? `${p.time.toFixed(3)}s` : '' }}</span>
           <span class="flex gap-1">
             <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-chevron-up" :aria-label="`Move ${p.name} up`" @click="move(i, -1)" />

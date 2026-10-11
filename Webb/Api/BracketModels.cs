@@ -152,7 +152,7 @@ namespace Webb.Api
         [Doc("Name.", Required = true, Example = "Open Class Finals")] public string Name { get; set; }
         [Doc("Format kind (see GET /brackets/formats).", Example = "elimination")] public string Format { get; set; }
         [Doc("Format settings. Leave out anything to use the default.")] public BracketSetup Setup { get; set; }
-        [Doc("Pilots in seed order, top seed first (IDs or names). GET /brackets/seeding gives the qualifying order.", Required = true)] public List<string> Pilots { get; set; }
+        [Doc("Pilots in seed order, top seed first (IDs or names). Pilots from FPVTrackside's pilot database (GET /pilots/database) who aren't in the event are added to it; a new name creates a pilot. GET /brackets/seeding gives the qualifying order.", Required = true)] public List<string> Pilots { get; set; }
         [Doc("Channel per seat, e.g. [\"R1\",\"R2\",\"R7\",\"R8\"]. Leave out to let FPVTrackside pick free channels.")] public List<string> SeatChannels { get; set; }
     }
 

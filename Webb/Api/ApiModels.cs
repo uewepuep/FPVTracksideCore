@@ -113,6 +113,7 @@ namespace Webb.Api
         [Doc("Practice pilot (not scored).")] public bool PracticePilot { get; set; }
         [Doc("Velocidrone user ID.")] public string VelocidroneUid { get; set; }
         [Doc("The pilot's default channel for this event.")] public ChannelDto Channel { get; set; }
+        [Doc("Only in GET /pilots/database: whether the pilot is in the open event.")] public bool? InEvent { get; set; }
     }
 
     [Doc("A round: a group of races of one type.")]
