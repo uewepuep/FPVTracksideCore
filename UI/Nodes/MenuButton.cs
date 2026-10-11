@@ -165,7 +165,11 @@ namespace UI.Nodes
             {
                 MouseMenu webMenu = root.AddSubmenu("Open Web");
                 if (eventWebServer != null)
-                    webMenu.AddItem("Open Local Web page", OpenWebServer);
+                {
+                    webMenu.AddItem("Open Local Web page", () => OpenWebServer());
+                    webMenu.AddItem("Open Brackets", () => OpenWebServer("brackets/"));
+                    webMenu.AddItem("Open API console", () => OpenWebServer("api/v1/docs"));
+                }
                 if (OpenFPVTracksideSite != null)
                     webMenu.AddItem("Open FPVTrackside.com event page", () => { OpenFPVTracksideSite(); });
                 if (OpenMultiGPSite != null)
@@ -669,7 +673,8 @@ namespace UI.Nodes
             PlatformTools.OpenFileManager(path);
         }
 
-        public void OpenWebServer()
+        // path: a page on the local web server, relative to its root (e.g. "brackets/").
+        public void OpenWebServer(string path = "")
         {
             if (eventWebServer != null)
             {
@@ -683,7 +688,7 @@ namespace UI.Nodes
                     eventWebServer.Start();
                 }
 
-                DataTools.StartBrowser(eventWebServer.Url);
+                DataTools.StartBrowser(eventWebServer.Url.TrimEnd('/') + "/" + path);
             }
         }
 
