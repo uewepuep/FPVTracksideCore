@@ -28,9 +28,15 @@ namespace Webb.Bracketing
         // Raised after a bracket changes (a result recorded, a heat sent…), with its ID.
         public event Action<int> OnBracketChanged;
 
-        public BracketService(EventManager eventManager, Func<string> eventDirectory)
+        // Runs work after the current FPVTrackside callback returns (next frame),
+        // so auto-send never adds races from inside RaceLib's own race-end handling.
+        private readonly Action<Action> defer;
+        private readonly HashSet<int> autoSendQueued = new HashSet<int>();
+
+        public BracketService(EventManager eventManager, Func<string> eventDirectory, Action<Action> defer = null)
         {
             this.eventManager = eventManager;
+            this.defer = defer ?? (a => a());
             store = new BracketStore(eventDirectory);
 
             eventManager.RaceManager.OnRaceEnd += OnRaceFinished;
@@ -109,6 +115,7 @@ namespace Webb.Bracketing
             rec.State = format.StateJson();
             store.Save(rec);
             OnBracketChanged?.Invoke(rec.Id);
+            QueueAutoSend(rec);
         }
 
         // ───────────────────────── create / edit ─────────────────────────
@@ -131,6 +138,7 @@ namespace Webb.Bracketing
             store.Add(rec);
             Logger.HTTP.Log(this, "Bracket created: " + rec.Name + " (" + rec.Format + ", " + rec.Pilots.Count + " pilots)");
             OnBracketChanged?.Invoke(rec.Id);
+            QueueAutoSend(rec);
             return rec;
         }
 
@@ -153,6 +161,67 @@ namespace Webb.Bracketing
             rec.AutoResults = on;
             store.Save(rec);
             OnBracketChanged?.Invoke(rec.Id);
+        }
+
+        public void SetAutoSend(BracketRecord rec, bool on)
+        {
+            rec.AutoSend = on;
+            store.Save(rec);
+            OnBracketChanged?.Invoke(rec.Id);
+            QueueAutoSend(rec);
+        }
+
+        // Auto-send: after a change, create every newly ready heat in FPVTrackside.
+        private void QueueAutoSend(BracketRecord rec)
+        {
+            if (!rec.AutoSend || !autoSendQueued.Add(rec.Id))
+                return;
+            int id = rec.Id;
+            defer(() =>
+            {
+                autoSendQueued.Remove(id);
+                try
+                {
+                    BracketRecord current = store.Get(id);
+                    if (current != null && current.AutoSend)
+                    {
+                        RemoveUnneeded(current);
+                        Dictionary<string, string> problems;
+                        List<Race> sent = SendReady(current, true, out problems);
+                        foreach (KeyValuePair<string, string> p in problems)
+                            Logger.HTTP.Log(this, "Bracket " + current.Name + " auto-send " + p.Key + ": " + p.Value);
+                        if (sent.Count > 0)
+                            Logger.HTTP.Log(this, "Bracket " + current.Name + " auto-sent " + sent.Count + " heat(s)");
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logger.HTTP.LogException(this, e);
+                }
+            });
+        }
+
+        // Auto-send created races for heats the bracket then didn't need (e.g. the
+        // rest of a chase-the-ace series once the champion is decided): take
+        // them back out of FPVTrackside, as long as they haven't been flown.
+        private void RemoveUnneeded(BracketRecord rec)
+        {
+            bool changed = false;
+            foreach (Engine.RaceView rv in Views(Format(rec)).Where(x => x.IsVoid))
+            {
+                Race race = LinkedRace(rec, rv.Id);
+                if (race == null || race.Started || race == RaceManager.CurrentRace)
+                    continue;
+                RaceManager.RemoveRace(race, true);
+                rec.Links.Remove(rv.Id);
+                changed = true;
+                Logger.HTTP.Log(this, "Bracket " + rec.Name + " removed " + race.RaceName + " (" + rv.Id + " not needed)");
+            }
+            if (changed)
+            {
+                store.Save(rec);
+                OnBracketChanged?.Invoke(rec.Id);
+            }
         }
 
         public void Delete(BracketRecord rec)
@@ -391,11 +460,81 @@ namespace Webb.Bracketing
             return views;
         }
 
-        // Heats that are ready to be flown: line-up known, not run, not void,
-        // not waiting on another heat.
-        public static bool Ready(Engine.RaceView rv)
+        // Heats whose line-up still has seats another heat decides, with which
+        // heats. Elimination keeps a heat's known pilots while it waits (W2-1
+        // holds W1-1's winners until W1-2 is run), so "has pilots" is not
+        // "ready": this reads the same projection the diagram draws, where an
+        // undecided seat is a "from heat X" placeholder. Ladder bouts lock
+        // themselves and points mains know every line-up from the start.
+        public static Dictionary<string, string> WaitingOn(Engine.IRaceFormat f)
         {
-            return !rv.IsComplete && !rv.IsVoid && !rv.Locked && rv.Pilots.Count > 0;
+            Dictionary<string, string> waiting = new Dictionary<string, string>();
+            Action<string, Engine.BracketProjection> add = (prefix, p) =>
+            {
+                if (p == null || p.PredictedSlots == null)
+                    return;
+                foreach (KeyValuePair<string, Dictionary<string, Engine.PilotSlot>> race in p.PredictedSlots)
+                {
+                    if (race.Value == null || race.Value.Count == 0)
+                        continue;
+                    List<string> from = race.Value.Values
+                        .Select(slot => slot.SourceRaceId)
+                        .Where(x => !string.IsNullOrEmpty(x))
+                        .Distinct().OrderBy(x => x).ToList();
+                    waiting[prefix + race.Key] = from.Count > 0 ? string.Join(", ", from) : "earlier heats";
+                }
+            };
+            try
+            {
+                Engine.EliminationFormat elim = f as Engine.EliminationFormat;
+                Engine.QualifierFormat qual = f as Engine.QualifierFormat;
+                Engine.MainsProgressionFormat mains = f as Engine.MainsProgressionFormat;
+                if (elim != null)
+                    add("", Engine.BracketDiagram.Elimination(elim.Bracket()));
+                else if (qual != null)
+                    add("", Engine.BracketDiagram.Qualifier(qual.Qual()));
+                else if (mains != null)
+                    foreach (var m in Engine.BracketDiagram.MainsProgression(mains.Mains()))
+                        add(m.Label + ":", m.P);
+            }
+            catch (Engine.BracketException)
+            {
+                // No projection: fall back to the engine's own Locked flags.
+            }
+            return waiting;
+        }
+
+        // Heats that are ready to be flown: whole line-up known, not run, not
+        // void, not waiting on another heat.
+        public static bool Ready(Engine.RaceView rv, Dictionary<string, string> waiting)
+        {
+            return !rv.IsComplete && !rv.IsVoid && !rv.Locked && rv.Pilots.Count > 0 && !waiting.ContainsKey(rv.Id);
+        }
+
+        // Sends every ready heat. onlyNew: just heats not yet in FPVTrackside
+        // (auto-send — never re-seats a race the race director may have edited);
+        // otherwise unstarted linked races are refreshed too.
+        public List<Race> SendReady(BracketRecord rec, bool onlyNew, out Dictionary<string, string> problems)
+        {
+            problems = new Dictionary<string, string>();
+            List<Race> sent = new List<Race>();
+            Engine.IRaceFormat f = Format(rec);
+            Dictionary<string, string> waiting = WaitingOn(f);
+            foreach (Engine.RaceView rv in Views(f).Where(x => Ready(x, waiting)))
+            {
+                Race existing = LinkedRace(rec, rv.Id);
+                if (existing != null && (onlyNew || existing.Started))
+                    continue;
+                try
+                {
+                    sent.Add(Send(rec, rv.Id));
+                }
+                catch (Engine.BracketException e)
+                {
+                    problems[rv.Id] = e.Message;
+                }
+            }
+            return sent;
         }
 
         // Creates (or refreshes the line-up of) the FPVTrackside race for a
@@ -408,6 +547,9 @@ namespace Webb.Bracketing
                 throw new Engine.BracketException(raceId + " isn't needed (the champion is already decided)");
             if (rv.Pilots.Count == 0)
                 throw new Engine.BracketException(raceId + "'s line-up isn't known yet");
+            string waitingOn;
+            if (WaitingOn(f).TryGetValue(raceId, out waitingOn))
+                throw new Engine.BracketException(raceId + " is still waiting on " + waitingOn + " for the rest of its line-up");
 
             List<Tuple<Pilot, Channel>> lineup = Lineup(rec, f, rv);
 

@@ -43,7 +43,7 @@ namespace Webb.Api
             this.eventManager = eventManager;
             this.raceControl = raceControl;
             this.invokeOnUIThread = invokeOnUIThread;
-            brackets = new BracketService(eventManager, eventDirectory ?? (() => null));
+            brackets = new BracketService(eventManager, eventDirectory ?? (() => null), invokeOnUIThread);
             Register();
         }
 

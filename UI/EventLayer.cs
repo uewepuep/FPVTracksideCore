@@ -315,6 +315,8 @@ namespace UI
 
 
             MenuButton.BackToEventSelector += BackToEventSelector;
+            if (TabbedMultiNode is TracksideTabbedMultiNode trackside)
+                trackside.OpenBrackets += () => MenuButton.OpenWebServer("brackets/");
             MenuButton.ChannelsChanged += () =>
             {
                 if (LayerStack.Game is UI.BaseGame)
@@ -447,6 +449,25 @@ namespace UI
             if (eventManager.RaceManager.TimingSystemManager.HasDummyTiming)
             {
                 Popuper.PopupMessage("Warning / Reminder: Dummy timer is active");
+            }
+
+            if (ApplicationProfileSettings.Instance.BracketsTip && eventWebServer != null)
+            {
+                // The popup sizes itself to its longest line and doesn't wrap.
+                Popuper.PopupConfirmation(string.Join("\n", new[]
+                    {
+                        "NEW: RACE BRACKETS",
+                        "",
+                        "Double elimination, MultiGP top 4 qualifiers,",
+                        "mains progression, ladders and points mains.",
+                        "",
+                        "Set a bracket up in your browser. Every heat runs",
+                        "as a normal race and the results fill in by themselves.",
+                        "",
+                        "Ok opens Brackets now. Later: the Brackets tab.",
+                        "(Turn this tip off in Settings, Web.)",
+                    }),
+                    () => MenuButton.OpenWebServer("brackets/"));
             }
 
             raceStartNode = new RaceStartNode();

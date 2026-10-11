@@ -89,6 +89,12 @@ function sync() {
     setBracket(r.bracket)
   })
 }
+function setAutoSend(v: boolean) {
+  act('autosend', () => api('PATCH', `/brackets/${id.value}`, { autoSend: v }), (b: Bracket) => {
+    setBracket(b)
+    if (v) toast.add({ title: 'Heats will be sent to FPVTrackside automatically', description: 'Each heat is created as soon as its pilots are known.', icon: 'i-lucide-send', color: 'success' })
+  })
+}
 function setAuto(v: boolean) {
   act('auto', () => api('PATCH', `/brackets/${id.value}`, { autoResults: v }), setBracket)
 }
@@ -180,6 +186,7 @@ const standingColumns = [
       <div class="mb-5 flex flex-wrap items-center gap-2">
         <UButton icon="i-lucide-send" :label="`Send ${ready} ready heat${ready === 1 ? '' : 's'} to FPVTrackside`" :disabled="!ready" :loading="busy === 'send'" @click="sendAll" />
         <UButton color="neutral" variant="outline" icon="i-lucide-refresh-cw" label="Sync results" :loading="busy === 'sync'" @click="sync" />
+        <USwitch :model-value="bracket.autoSend" label="Send heats to FPVTrackside automatically" class="ml-1" @update:model-value="setAutoSend" />
         <USwitch :model-value="bracket.autoResults" label="Results from FPVTrackside automatically" class="ml-1" @update:model-value="setAuto" />
         <span class="flex-1" />
         <UButton color="error" variant="ghost" icon="i-lucide-trash-2" label="Delete" :loading="busy === 'delete'" @click="remove" />

@@ -46,6 +46,7 @@ export interface Bracket extends BracketSummary {
   pilots: HeatPilot[]
   seatChannels: string[]
   autoResults: boolean
+  autoSend: boolean
   layout: string
   heats: Heat[]
   standings: Standing[]

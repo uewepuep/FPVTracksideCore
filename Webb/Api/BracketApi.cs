@@ -78,7 +78,7 @@ namespace Webb.Api
             Examples(new Dictionary<string, string>
             {
                 ["POST brackets"] = "{\n  \"name\": \"Open Class Finals\",\n  \"format\": \"elimination\",\n  \"setup\": { \"eliminationType\": \"double\", \"finalsFormat\": \"chase-the-ace\", \"pilotsPerRace\": 4, \"pilotsToAdvance\": 2, \"aceWinsRequired\": 2 },\n  \"pilots\": [\"{{pilot.name}}\"],\n  \"seatChannels\": [\"R1\", \"R3\", \"R5\", \"R7\"]\n}",
-                ["PATCH brackets/{bracketId}"] = "{ \"seatChannels\": [\"R1\", \"R3\", \"R5\", \"R7\"], \"autoResults\": true }",
+                ["PATCH brackets/{bracketId}"] = "{ \"seatChannels\": [\"R1\", \"R3\", \"R5\", \"R7\"], \"autoResults\": true, \"autoSend\": true }",
                 ["POST brackets/{bracketId}/heats/{heatId}/result"] = "{ \"placement\": [\"{{pilot.name}}\"], \"lock\": true }",
                 ["POST brackets/{bracketId}/heats/{heatId}/lock"] = "{ \"locked\": false }",
                 ["POST brackets/{bracketId}/send"] = "{ \"makeCurrent\": false }",
@@ -182,6 +182,8 @@ namespace Webb.Api
             }
 
             BracketRecord rec = EngineCall(() => brackets.Create(body.Name.Trim(), format, setup, pilots, body.SeatChannels));
+            if (body.AutoSend)
+                brackets.SetAutoSend(rec, true);
             Log("bracket created " + rec.Name);
             return Full(rec);
         }
@@ -202,6 +204,8 @@ namespace Webb.Api
                     ChannelRef(seat);
                 brackets.SetSeatChannels(rec, body.SeatChannels);
             }
+            if (body.AutoSend.HasValue)
+                brackets.SetAutoSend(rec, body.AutoSend.Value);
             if (body.AutoResults.HasValue)
             {
                 brackets.SetAutoResults(rec, body.AutoResults.Value);
@@ -223,27 +227,11 @@ namespace Webb.Api
         {
             BracketRecord rec = BracketRef(r);
             HeatSendRequest body = r.BodyAs<HeatSendRequest>();
-            global::BracketEngine.IRaceFormat f = brackets.Format(rec);
 
-            List<string> sent = new List<string>();
-            Dictionary<string, string> problems = new Dictionary<string, string>();
-            Race first = null;
-            foreach (global::BracketEngine.RaceView rv in BracketService.Views(f).Where(BracketService.Ready))
-            {
-                Race existing = brackets.LinkedRace(rec, rv.Id);
-                if (existing != null && existing.Started)
-                    continue;
-                try
-                {
-                    Race race = brackets.Send(rec, rv.Id);
-                    first = first ?? race;
-                    sent.Add(rv.Id);
-                }
-                catch (global::BracketEngine.BracketException e)
-                {
-                    problems[rv.Id] = e.Message;
-                }
-            }
+            Dictionary<string, string> problems;
+            List<Race> races = brackets.SendReady(rec, false, out problems);
+            Race first = races.FirstOrDefault();
+            List<string> sent = races.Select(x => rec.Links.First(l => l.Value == x.ID).Key).ToList();
             if (body.MakeCurrent && first != null)
                 SelectRace(first);
 
@@ -378,9 +366,11 @@ namespace Webb.Api
             dto.Setup = rec.Setup;
             dto.SeatChannels = rec.SeatChannels;
             dto.AutoResults = rec.AutoResults;
+            dto.AutoSend = rec.AutoSend;
             dto.Layout = f.LayoutKind;
             dto.Pilots = rec.Pilots.Select(p => new HeatPilotDto { PilotId = p, Name = name(p), Seed = seed[p] }).ToList();
-            dto.Heats = BracketService.Views(f).Select(rv => Heat(rec, f, rv, seed, name)).ToList();
+            Dictionary<string, string> waiting = BracketService.WaitingOn(f);
+            dto.Heats = BracketService.Views(f).Select(rv => Heat(rec, f, rv, seed, name, waiting)).ToList();
             dto.Standings = global::BracketEngine.RaceFormats.FinalOrdering(f, seed).Select(s => new BracketStandingDto
             {
                 Rank = s.Rank,
@@ -393,7 +383,7 @@ namespace Webb.Api
             return dto;
         }
 
-        private HeatDto Heat(BracketRecord rec, global::BracketEngine.IRaceFormat f, global::BracketEngine.RaceView rv, Dictionary<string, int> seed, Func<string, string> name)
+        private HeatDto Heat(BracketRecord rec, global::BracketEngine.IRaceFormat f, global::BracketEngine.RaceView rv, Dictionary<string, int> seed, Func<string, string> name, Dictionary<string, string> waiting)
         {
             Race race = brackets.LinkedRace(rec, rv.Id);
             Dictionary<string, string> channels = new Dictionary<string, string>();
@@ -420,6 +410,7 @@ namespace Webb.Api
             else if (race != null) state = "sent";
             else if (rv.Locked) { state = "waiting"; note = rv.LockedReason; }
             else if (pilots.Count == 0) { state = "waiting"; note = "line-up not known yet"; }
+            else if (waiting.ContainsKey(rv.Id)) { state = "waiting"; note = "waiting on " + waiting[rv.Id] + " for the rest of the line-up"; }
             else state = "ready";
 
             string why;

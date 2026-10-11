@@ -46,6 +46,7 @@ const setup = reactive({
   dropWorst: 0,
 })
 const seats = ref<string[]>([])
+const autoSend = ref(false)
 const seedLaps = ref<number | undefined>()
 const seedRound = ref<string>('all')
 const seeding = ref(false)
@@ -227,6 +228,7 @@ function body() {
     format: format.value,
     pilots: chosen.value.map(p => p.id),
     seatChannels: seatList.length === seatCount.value ? seatList : [],
+    autoSend: autoSend.value,
     setup: {
       eliminationType: setup.eliminationType,
       finalsFormat: setup.finalsFormat,
@@ -420,6 +422,13 @@ async function create() {
           <UInputNumber v-model="setup.dropWorst" :min="0" :max="10" class="w-full" />
         </UFormField>
       </div>
+
+      <USeparator class="my-6" />
+      <USwitch
+        v-model="autoSend"
+        label="Send heats to FPVTrackside automatically"
+        description="Each heat is created in FPVTrackside as soon as its pilots are known: round 1 straight away, later heats as results come in. You can switch this on or off later."
+      />
 
       <USeparator v-if="seatCount" class="my-6" />
       <div v-if="seatCount">

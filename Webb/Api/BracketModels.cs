@@ -122,6 +122,7 @@ namespace Webb.Api
         [Doc("Pilots in seed order.")] public List<HeatPilotDto> Pilots { get; set; }
         [Doc("Channel per seat (empty = FPVTrackside picks free channels).")] public List<string> SeatChannels { get; set; }
         [Doc("Apply results from FPVTrackside automatically when a sent heat finishes.")] public bool AutoResults { get; set; }
+        [Doc("Create each heat in FPVTrackside automatically as soon as its line-up is known.")] public bool AutoSend { get; set; }
         [Doc("How the page lays it out.", Values = new[] { "bracket-grid", "ladder-grid", "mains-table", "mains-progression-tabs" })] public string Layout { get; set; }
         [Doc("Every heat, in running order.")] public List<HeatDto> Heats { get; set; }
         [Doc("Running order / final standings.")] public List<BracketStandingDto> Standings { get; set; }
@@ -154,6 +155,7 @@ namespace Webb.Api
         [Doc("Format settings. Leave out anything to use the default.")] public BracketSetup Setup { get; set; }
         [Doc("Pilots in seed order, top seed first (IDs or names). Pilots from FPVTrackside's pilot database (GET /pilots/database) who aren't in the event are added to it; a new name creates a pilot. GET /brackets/seeding gives the qualifying order.", Required = true)] public List<string> Pilots { get; set; }
         [Doc("Channel per seat, e.g. [\"R1\",\"R2\",\"R7\",\"R8\"]. Leave out to let FPVTrackside pick free channels.")] public List<string> SeatChannels { get; set; }
+        [Doc("Create heats in FPVTrackside automatically as their line-ups become known (round 1 straight away).")] public bool AutoSend { get; set; }
     }
 
     [Doc("Changes to a bracket. Leave out anything you aren't changing.")]
@@ -162,6 +164,7 @@ namespace Webb.Api
         [Doc("New name.")] public string Name { get; set; }
         [Doc("Channel per seat.")] public List<string> SeatChannels { get; set; }
         [Doc("Apply results from FPVTrackside automatically.")] public bool? AutoResults { get; set; }
+        [Doc("Create heats in FPVTrackside automatically as their line-ups become known. Switching it on sends the heats that are ready now.")] public bool? AutoSend { get; set; }
     }
 
     [Doc("A heat's result, entered by hand.")]

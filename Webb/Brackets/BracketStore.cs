@@ -61,6 +61,8 @@ namespace Webb.Bracketing
         [JsonProperty("seatChannels")] public List<string> SeatChannels { get; set; } = new List<string>();
         // Apply results from FPVTrackside automatically when a linked race finishes.
         [JsonProperty("autoResults")] public bool AutoResults { get; set; } = true;
+        // Create each heat in FPVTrackside as soon as its line-up is known.
+        [JsonProperty("autoSend")] public bool AutoSend { get; set; }
 
         [JsonProperty("created")] public DateTime Created { get; set; }
         [JsonProperty("updated")] public DateTime Updated { get; set; }

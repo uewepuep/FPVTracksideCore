@@ -132,6 +132,12 @@ namespace UI.Nodes
                 root.AddBlank();
             }
 
+            if (eventWebServer != null)
+            {
+                root.AddItem("Race Brackets", () => OpenWebServer("brackets/"));
+                root.AddBlank();
+            }
+
             root.AddItem("Online Manual", () =>
             {
                 ShowOnlineManual();
