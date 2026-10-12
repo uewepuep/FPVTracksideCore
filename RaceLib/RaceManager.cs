@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using RaceLib.Format;
 using System;
 using System.Collections.Generic;
@@ -2330,7 +2330,7 @@ namespace RaceLib
             }
         }
 
-        public bool SetPilot(Race race, Channel channel, Pilot toAdd)
+        public bool SetPilot(Race race, Channel channel, Pilot toAdd, bool revalidateLaps = true)
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
             {
@@ -2341,9 +2341,13 @@ namespace RaceLib
                         Lap[] laps = race.GetLaps(l => l.Detection.Channel == channel);
                         foreach (Lap lap in laps)
                         {
-                            lap.Detection.Valid = true;
+                            if (revalidateLaps)
+                            {
+                                lap.Detection.Valid = true;
+                            }
                             lap.Detection.Pilot = toAdd;
                         }
+                        db.Update(race);
 
                         EventManager.LapRecordManager.ClearPilot(toAdd);
                         EventManager.LapRecordManager.UpdatePilot(toAdd);
@@ -2355,6 +2359,35 @@ namespace RaceLib
                 return false;
             }
         }
+
+        // Replaces a pilot in a race on the same channel. If the race has ended, their laps go to the new pilot.
+        public bool ChangePilot(Race race, Pilot oldPilot, Pilot newPilot)
+        {
+            Logger.RaceLog.LogCall(this, race, oldPilot, newPilot);
+
+            Channel channel = race.GetChannel(oldPilot);
+            if (channel == null || race.Pilots.Contains(newPilot))
+                return false;
+
+            // Remove without invalidating the laps, so any lap validity changes (marshalling etc) are kept
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                if (race.RemovePilot(db, oldPilot, true) == null)
+                    return false;
+            }
+
+            if (!SetPilot(race, channel, newPilot, false))
+                return false;
+
+            if (race.Ended)
+            {
+                EventManager.LapRecordManager.ClearPilot(oldPilot);
+                EventManager.LapRecordManager.UpdatePilot(oldPilot);
+                EventManager.SpeedRecordManager.UpdatePilot(oldPilot);
+            }
+            return true;
+        }
+
         public PilotChannel RemovePilot(Race race, Pilot pilot, bool force = false)
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
@@ -2367,6 +2400,7 @@ namespace RaceLib
                     {
                         lap.Detection.Valid = false;
                     }
+                    db.Update(race);
 
                     EventManager.LapRecordManager.ClearPilot(pilot);
                     EventManager.LapRecordManager.UpdatePilot(pilot);

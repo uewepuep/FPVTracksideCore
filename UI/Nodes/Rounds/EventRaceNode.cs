@@ -348,6 +348,38 @@ namespace UI.Nodes.Rounds
                         Refresh();
                     });
 
+                    Pilot[] otherPilots = EventManager.Event.Pilots.Except(Race.Pilots).OrderBy(p => p.Name).ToArray();
+                    if (otherPilots.Any())
+                    {
+                        string changeMenuName = "Change Pilot";
+                        if (lapCount > 0)
+                        {
+                            changeMenuName += " (keeps " + lapCount + " laps)";
+                        }
+
+                        mm.AddSubmenu(changeMenuName,
+                        (toAdd) =>
+                        {
+                            Action changePilot = () =>
+                            {
+                                if (EventManager.RaceManager.ChangePilot(Race, pilot, toAdd))
+                                {
+                                    SyncSheetChange();
+                                    Refresh();
+                                }
+                            };
+
+                            if (Race.Ended)
+                            {
+                                GetLayer<PopupLayer>().PopupConfirmation("Race has ended! Are you sure you want to change " + pilot.Name + " to " + toAdd.Name + "?", changePilot);
+                            }
+                            else
+                            {
+                                changePilot();
+                            }
+                        }, otherPilots);
+                    }
+
                     if (Race.Ended)
                     {
                         mm.AddItemConfirm("Remove Pilot", "Race has ended! Are you sure you want to remove " + pilot.Name,
