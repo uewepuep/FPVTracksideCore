@@ -408,7 +408,17 @@ namespace WindowsMediaPlatform.MediaFoundation
                     from = sampleFrame;
                 }
 
-                seekRequest = new SeekRequest() { Frame = Math.Max(0, from + count) };
+                long target = from + count;
+
+                // A seek past the end never completes, so seekingFrame would stay set and each
+                // further step would climb from there. Keep it on the last frame.
+                long lastFrame = GetFrameTime(Length) - 1;
+                if (lastFrame > 0)
+                {
+                    target = Math.Min(target, lastFrame);
+                }
+
+                seekRequest = new SeekRequest() { Frame = Math.Max(0, target) };
             }
         }
 
