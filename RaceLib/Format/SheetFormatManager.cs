@@ -717,6 +717,10 @@ namespace RaceLib.Format
             bool optimiseChannels = !SheetFormat.LockChannels;
             SheetFormatManager.EventManager.RaceManager.SetRacePilots(race, toSet, optimiseChannels);
 
+            string sheetSlots = string.Join(", ", pilotChannels.Select(pc => pc.ToString()));
+            string finalChannels = string.Join(", ", race.PilotChannelsSafe.Select(pc => pc.Pilot?.Name + "=" + pc.Channel?.GetBandChannelText()));
+            Logger.Sheets.Log(this, $"{race} LockChannels={SheetFormat.LockChannels} Sheet [{sheetSlots}] Final [{finalChannels}]");
+
             return race;
         }
 
