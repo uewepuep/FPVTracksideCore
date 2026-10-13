@@ -288,6 +288,7 @@ namespace UI.Nodes
             }
 
             original.Splits = newLapConts;
+            original.RecordTint = null;
 
             Layout();
             UpdateNumbersEtc();
@@ -485,7 +486,8 @@ namespace UI.Nodes
         private void ApplyTextTint()
         {
             // An invalidated lap is no longer a record, so drop the highlight until it's valid again.
-            Color tint = (Valid && recordTint.HasValue) ? recordTint.Value : Theme.Current.Editor.Text.XNA;
+            // Tint multiplies the text colour, so White leaves it as Editor.Text (same as LapsNode).
+            Color tint = (Valid && recordTint.HasValue) ? recordTint.Value : Color.White;
 
             lapNumber.Tint = tint;
             lapTime.Tint = tint;
@@ -552,6 +554,9 @@ namespace UI.Nodes
                     }
 
                     End = Start + TimeSpan.FromSeconds(seconds);
+
+                    // Record status was for the saved time, not this edited one.
+                    recordTint = null;
                 }
             }
             catch
