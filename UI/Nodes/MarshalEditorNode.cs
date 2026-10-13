@@ -23,6 +23,12 @@ namespace UI.Nodes
         private RSSIWaveform waveform;
         private LapEditorContainer selectedLapContainer;
 
+        // Laps that a recalculation replaced. Their rows are already in the database, and
+        // LapEditorNode.OkButton_OnClick only writes what is still in lapContainers, so without
+        // this they would survive alongside the recalculated set. Disqualified on Ok, the same
+        // way OnRaceMarshal disqualifies a lap the incoming marshal data does not account for.
+        private readonly List<Lap> replacedLaps = new List<Lap>();
+
         protected override string TitleText => "Marshal / Lap Editor - " + Pilot.Name;
         protected override RectangleF TitleBounds => new RectangleF(0, 0, 0.9f, 0.045f);
 
@@ -152,7 +158,16 @@ namespace UI.Nodes
             // pass; worth revisiting if that distinction turns out to matter in practice.
             foreach (LapEditorContainer lc in lapContainers.ToArray())
             {
+                // Remove() only detaches the node - it is the same call LapEditorNode.Layout
+                // uses to re-flow the grid - so a container backed by a real Lap has to be
+                // remembered here and disqualified on Ok. One created by an earlier
+                // recalculation in this session was never written, so dropping it is enough.
                 lc.Remove();
+
+                if (lc.Lap != null)
+                {
+                    replacedLaps.Add(lc.Lap);
+                }
             }
             lapContainers.Clear();
             selectedLapContainer = null;
@@ -189,6 +204,14 @@ namespace UI.Nodes
 
         protected override void OkButton_OnClick(MouseInputEvent mie)
         {
+            // Before the base creates the recalculated laps and renumbers, so that its
+            // ReCalculateLaps does not count the replaced ones among the valid detections.
+            foreach (Lap replaced in replacedLaps)
+            {
+                RaceManager.DisqualifyLap(replaced, Detection.ValidityTypes.Marshall);
+            }
+            replacedLaps.Clear();
+
             base.OkButton_OnClick(mie);
             PushMarshalUpdate();
         }
