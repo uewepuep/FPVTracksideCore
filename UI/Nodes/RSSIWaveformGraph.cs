@@ -16,8 +16,14 @@ namespace UI.Nodes
     // to the cursor, and a tap (click without dragging) selects the nearest lap crossing.
     public class RSSIWaveformGraph : GraphNode
     {
-        public int EnterAt { get; private set; }
-        public int ExitAt { get; private set; }
+        public int EnterAt { get; protected set; }
+        public int ExitAt { get; protected set; }
+
+        /// <summary>
+        /// False in a subclass whose crossings cannot be re-derived from the thresholds, which
+        /// makes dragging them meaningless. Tapping to select a lap is unaffected.
+        /// </summary>
+        protected virtual bool ThresholdsDraggable => true;
 
         // Fired continuously while the user drags a threshold line, with the live values.
         public event Action<int, int> ThresholdsDragged;
@@ -25,19 +31,19 @@ namespace UI.Nodes
         // Fired when the user taps (clicks without dragging) near a lap crossing.
         public event Action<TimeSpan> LapTapped;
 
-        private IReadOnlyList<TimeSpan> times;
-        private List<TimeSpan> lapCrossingTimes;
+        protected IReadOnlyList<TimeSpan> times;
+        protected List<TimeSpan> lapCrossingTimes;
 
-        private int minRssiBound;
-        private int maxRssiBound;
+        protected int minRssiBound;
+        protected int maxRssiBound;
 
         private bool dragging;
         private bool draggingEnter;
         private bool hasDragged;
         private Point pressPosition;
 
-        private readonly TextNode enterLabel;
-        private readonly TextNode exitLabel;
+        protected readonly TextNode enterLabel;
+        protected readonly TextNode exitLabel;
 
         public RSSIWaveformGraph()
         {
@@ -50,7 +56,7 @@ namespace UI.Nodes
             AddChild(exitLabel);
         }
 
-        public void SetWaveform(IReadOnlyList<TimeSpan> times, IReadOnlyList<int> values, int enterAt, int exitAt, IEnumerable<TimeSpan> lapCrossings)
+        public virtual void SetWaveform(IReadOnlyList<TimeSpan> times, IReadOnlyList<int> values, int enterAt, int exitAt, IEnumerable<TimeSpan> lapCrossings)
         {
             Clear();
 
@@ -76,17 +82,28 @@ namespace UI.Nodes
 
             DrawThresholds(minTime, maxTime);
 
+            DrawLapCrossings();
+
+            View = new RectangleF(minTime, maxRssiBound, maxTime - minTime, minRssiBound - maxRssiBound);
+        }
+
+        /// <summary>
+        /// Draws a vertical marker at each time in <see cref="lapCrossingTimes"/>. Split out of
+        /// SetWaveform so a subclass can refresh the markers alone.
+        /// </summary>
+        protected void DrawLapCrossings()
+        {
             int lapIndex = 0;
             foreach (TimeSpan crossing in lapCrossingTimes)
             {
                 GraphSeries marker = GetCreateSeries("Lap" + lapIndex, Color.White);
+                marker.Clear();
+
                 float x = (float)crossing.TotalSeconds;
                 marker.AddPoint(x, minRssiBound);
                 marker.AddPoint(x, maxRssiBound);
                 lapIndex++;
             }
-
-            View = new RectangleF(minTime, maxRssiBound, maxTime - minTime, minRssiBound - maxRssiBound);
         }
 
         // Highlights (or clears, when crossingTime is null) the lap at the given time, so a
@@ -105,7 +122,7 @@ namespace UI.Nodes
             }
         }
 
-        private void DrawThresholds(float minTime, float maxTime)
+        protected virtual void DrawThresholds(float minTime, float maxTime)
         {
             GraphSeries enterSeries = GetCreateSeries("Enter", Color.OrangeRed);
             enterSeries.Clear();
@@ -127,7 +144,7 @@ namespace UI.Nodes
             base.Draw(id, parentAlpha);
         }
 
-        private void PositionThresholdLabels()
+        protected virtual void PositionThresholdLabels()
         {
             if (times == null || times.Count == 0 || Bounds.Width == 0 || Bounds.Height == 0)
                 return;
@@ -176,7 +193,7 @@ namespace UI.Nodes
                 }
             }
 
-            if (dragging && Mouse.GetState().LeftButton == ButtonState.Pressed)
+            if (dragging && ThresholdsDraggable && Mouse.GetState().LeftButton == ButtonState.Pressed)
             {
                 Point change = mouseInputEvent.Position - pressPosition;
                 if (!hasDragged && (Math.Abs(change.X) > 3 || Math.Abs(change.Y) > 3))

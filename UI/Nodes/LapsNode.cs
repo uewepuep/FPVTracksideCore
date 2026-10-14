@@ -441,7 +441,11 @@ namespace UI.Nodes
                 .Select(ts => ts.GetWaveform(currentRace.ID, Pilot.ID))
                 .FirstOrDefault(w => w != null);
 
-            MarshalEditorNode editor = new MarshalEditorNode(EventManager.RaceManager, currentRace, Pilot, editLaps, ChannelColor, waveform);
+            // An ArUco trace is a marker count, not a receiver RSSI, and its editor adds the
+            // zoom bar and axis that go with that - see UI.Nodes.Aruco.
+            MarshalEditorNode editor = waveform is Timing.Aruco.ArucoWaveform
+                ? new UI.Nodes.Aruco.ArucoMarshalEditorNode(EventManager.RaceManager, currentRace, Pilot, editLaps, ChannelColor, waveform)
+                : new MarshalEditorNode(EventManager.RaceManager, currentRace, Pilot, editLaps, ChannelColor, waveform);
 
             GetLayer<PopupLayer>().Popup(editor);
             editor.OnOK += (v) =>
