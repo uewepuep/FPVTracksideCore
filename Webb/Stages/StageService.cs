@@ -383,6 +383,7 @@ namespace Webb.Stages
                 case TimingOutcome.Updated:
                 case TimingOutcome.Unchanged:
                 case TimingOutcome.Locked:
+                case TimingOutcome.NotLinked:
                     problems.Remove(ProblemKey(rec, raceId));
                     break;
             }

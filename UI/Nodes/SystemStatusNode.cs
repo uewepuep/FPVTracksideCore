@@ -15,6 +15,7 @@ using Timing.RotorHazard;
 using Tools;
 using UI.Video;
 using Webb;
+using Webb.Api;
 using Webb.Stages;
 using static UI.OBSRemoteControlManager;
 
@@ -649,13 +650,15 @@ namespace UI.Nodes
 
     // The event's stages, most important first: Check (red) when a timing
     // result couldn't be applied, Done, N ready to send, then races run of the
-    // total. Blank when there are none yet. Always shown; click opens the
-    // stages web app, starting the web server if it isn't running.
+    // total. Blank when there are none yet. While web users are signed in, it
+    // alternates with "N users". Always shown; click opens the stages web
+    // app, starting the web server if it isn't running.
     public class StageStatusNode : StatusNode
     {
         private StageService stages;
         private Action onClick;
         private bool loggedError;
+        private bool showUsers;
 
         public StageStatusNode(StageService stages, Action onClick)
             : base(@"img/trophy.png")
@@ -698,16 +701,32 @@ namespace UI.Nodes
                 return;
             }
 
+            string status;
+            bool ok = true;
             if (summary.Stages == 0)
-                SetStatus("", true);
+                status = "";
             else if (summary.Problems > 0)
-                SetStatus("Check", false);
+            {
+                status = "Check";
+                ok = false;
+            }
             else if (summary.AllComplete)
-                SetStatus("Done", true);
+                status = "Done";
             else if (summary.ReadyToSend > 0)
-                SetStatus(summary.ReadyToSend + " ready", true);
+                status = summary.ReadyToSend + " ready";
             else
-                SetStatus(summary.RacesDone + "/" + summary.RacesTotal, true);
+                status = summary.RacesDone + "/" + summary.RacesTotal;
+
+            // Signed-in web users take turns with the stage status, every update.
+            int users = ApiUsers.ActiveUsers(TimeSpan.FromMinutes(1));
+            if (users > 0)
+            {
+                showUsers = !showUsers || status == "";
+                if (showUsers)
+                    status = users == 1 ? "1 user" : users + " users";
+            }
+
+            SetStatus(status, ok);
         }
 
         public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
