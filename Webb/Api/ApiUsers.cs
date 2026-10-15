@@ -122,6 +122,7 @@ namespace Webb.Api
         {
             public Guid UserId;
             public DateTime Expires;
+            public DateTime LastSeen;
         }
 
         private static readonly Dictionary<string, Session> sessions = new Dictionary<string, Session>();
@@ -477,7 +478,7 @@ namespace Webb.Api
 
                 string token = SessionPrefix + RandomToken();
                 expires = now + SessionLength;
-                sessions[Sha256(token)] = new Session { UserId = found.Id, Expires = expires };
+                sessions[Sha256(token)] = new Session { UserId = found.Id, Expires = expires, LastSeen = now };
                 user = found;
                 return token;
             }
@@ -497,6 +498,17 @@ namespace Webb.Api
         {
             foreach (string k in sessions.Where(s => s.Value.UserId == userId).Select(s => s.Key).ToList())
                 sessions.Remove(k);
+        }
+
+        // Signed-in users who have made a request within the window. The
+        // stages app polls every few seconds, so an open tab counts.
+        public static int ActiveUsers(TimeSpan within)
+        {
+            DateTime since = DateTime.UtcNow - within;
+            lock (sync)
+            {
+                return sessions.Values.Where(s => s.LastSeen >= since && s.Expires > DateTime.UtcNow).Select(s => s.UserId).Distinct().Count();
+            }
         }
 
         private static void PruneSessionsLocked(DateTime now)
@@ -528,6 +540,7 @@ namespace Webb.Api
                     ApiUser u = Data.Users.FirstOrDefault(x => x.Id == s.UserId);
                     if (u == null || u.Disabled)
                         return null;
+                    s.LastSeen = DateTime.UtcNow;
                     return new ApiCaller { Role = u.Role, Via = "session", User = Copy(u) };
                 }
 

@@ -33,6 +33,53 @@ namespace Webb.Stages
         private readonly Action<Action> defer;
         private readonly HashSet<int> autoSendQueued = new HashSet<int>();
 
+        // Stage races whose timing result couldn't be applied (Blocked/Failed),
+        // as "stageId:raceId". Cleared once the race is applied, entered by
+        // hand, reset or locked.
+        private readonly HashSet<string> problems = new HashSet<string>();
+
+        private static string ProblemKey(StageRecord rec, string raceId)
+        {
+            return rec.Id + ":" + raceId;
+        }
+
+        public class StatusSummary
+        {
+            public int Stages;
+            public int Problems;
+            public int ReadyToSend;
+            public int RacesDone;
+            public int RacesTotal;
+            public bool AllComplete;
+        }
+
+        // Every stage at a glance, for the status bar.
+        public StatusSummary Summary()
+        {
+            StatusSummary summary = new StatusSummary();
+            List<StageRecord> all = store.All();
+            summary.Stages = all.Count;
+            summary.Problems = problems.Count;
+            summary.AllComplete = all.Count > 0;
+
+            foreach (StageRecord rec in all)
+            {
+                Engine.IRaceFormat f = Format(rec);
+                Dictionary<string, string> waiting = WaitingOn(f);
+                foreach (Engine.RaceView rv in Views(f).Where(r => !r.IsVoid))
+                {
+                    summary.RacesTotal++;
+                    if (rv.IsComplete)
+                        summary.RacesDone++;
+                    else if (Ready(rv, waiting) && LinkedRace(rec, rv.Id) == null)
+                        summary.ReadyToSend++;
+                }
+                if (!f.IsComplete())
+                    summary.AllComplete = false;
+            }
+            return summary;
+        }
+
         public StageService(EventManager eventManager, Func<string> eventDirectory, Action<Action> defer = null)
         {
             this.eventManager = eventManager;
@@ -236,6 +283,7 @@ namespace Webb.Stages
         public void Delete(StageRecord rec)
         {
             store.Delete(rec.Id);
+            problems.RemoveWhere(k => k.StartsWith(rec.Id + ":"));
             OnStageChanged?.Invoke(rec.Id);
         }
 
@@ -261,6 +309,7 @@ namespace Webb.Stages
                 f.ApplyPlacement(raceId, placement);
 
             SetLock(rec, raceId, lockIt);
+            problems.Remove(ProblemKey(rec, raceId));
             Persist(rec, f);
         }
 
@@ -270,6 +319,7 @@ namespace Webb.Stages
             View(f, raceId);
             f.ResetRace(raceId);
             SetLock(rec, raceId, false);
+            problems.Remove(ProblemKey(rec, raceId));
             Persist(rec, f);
         }
 
@@ -277,6 +327,8 @@ namespace Webb.Stages
         {
             View(Format(rec), raceId);
             SetLock(rec, raceId, locked);
+            if (locked)
+                problems.Remove(ProblemKey(rec, raceId));
             store.Save(rec);
             OnStageChanged?.Invoke(rec.Id);
         }
@@ -319,6 +371,25 @@ namespace Webb.Stages
         // changed one (a re-run) is only applied while no later race that
         // received these pilots has been run.
         public TimingOutcome ApplyFromTiming(StageRecord rec, string raceId, out string detail)
+        {
+            TimingOutcome outcome = ApplyFromTimingCore(rec, raceId, out detail);
+            switch (outcome)
+            {
+                case TimingOutcome.Blocked:
+                case TimingOutcome.Failed:
+                    problems.Add(ProblemKey(rec, raceId));
+                    break;
+                case TimingOutcome.Applied:
+                case TimingOutcome.Updated:
+                case TimingOutcome.Unchanged:
+                case TimingOutcome.Locked:
+                    problems.Remove(ProblemKey(rec, raceId));
+                    break;
+            }
+            return outcome;
+        }
+
+        private TimingOutcome ApplyFromTimingCore(StageRecord rec, string raceId, out string detail)
         {
             detail = null;
             Guid ftId;

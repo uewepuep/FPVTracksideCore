@@ -55,10 +55,6 @@ namespace UI.Nodes
         public TextButtonNode PhotoBoothButton { get; private set; }
 
 
-        // Raised by the Stages tab: opens the stages web app in the browser
-        // (it is a web page, not a panel, so the tab doesn't switch content).
-        public event Action OpenStages;
-
         public TracksideTabbedMultiNode(EventManager eventManager, VideoManager videoManager, SoundManager soundManager, RoundsNode rounds, SceneManagerNode sceneManagerContent, TabButtonsNode tabButtons, KeyboardShortcuts keyMapper)
             : base(TimeSpan.FromSeconds(0.6f), tabButtons)
         {
@@ -109,7 +105,6 @@ namespace UI.Nodes
         public virtual void Init(PlatformTools platformTools)
         {
             AddTab("Rounds", rounds, ShowRounds);
-            TabButtonsNode.AddTab("Stages", (mie) => { OpenStages?.Invoke(); });
             liveButton = AddTab("Live", sceneManagerNode, ShowLive);
             replayButton = AddTab("Replay", ReplayNode, (mie) => { ShowReplay(); });
 

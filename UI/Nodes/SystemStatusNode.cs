@@ -14,6 +14,8 @@ using Timing;
 using Timing.RotorHazard;
 using Tools;
 using UI.Video;
+using Webb;
+using Webb.Stages;
 using static UI.OBSRemoteControlManager;
 
 namespace UI.Nodes
@@ -29,7 +31,7 @@ namespace UI.Nodes
         {
         }
 
-        public void SetupStatuses(TimingSystemManager timingSystemManager, VideoManager videoManager, SoundManager soundManager, OBSRemoteControlManager oBSRemoteControlManager, SubtitleNode subtitleNode)
+        public void SetupStatuses(TimingSystemManager timingSystemManager, VideoManager videoManager, SoundManager soundManager, OBSRemoteControlManager oBSRemoteControlManager, SubtitleNode subtitleNode, EventWebServer eventWebServer, Action<string> openWebPage)
         {
             ClearDisposeChildren();
 
@@ -41,6 +43,10 @@ namespace UI.Nodes
 
             AddChild(new FrameRateStatusNode());
 
+            if (eventWebServer?.RestApi?.Stages != null)
+            {
+                AddChild(new StageStatusNode(eventWebServer.RestApi.Stages, () => openWebPage?.Invoke("stages/")));
+            }
 
             Subtitles = new SubTitleStatusNode(subtitleNode);
             AddChild(Subtitles);
@@ -638,6 +644,79 @@ namespace UI.Nodes
         private void Cbn_ValueChanged(bool obj)
         {
             SetMute(!obj);
+        }
+    }
+
+    // The event's stages, most important first: Check (red) when a timing
+    // result couldn't be applied, Done, N ready to send, then races run of the
+    // total. Blank when there are none yet. Always shown; click opens the
+    // stages web app, starting the web server if it isn't running.
+    public class StageStatusNode : StatusNode
+    {
+        private StageService stages;
+        private Action onClick;
+        private bool loggedError;
+
+        public StageStatusNode(StageService stages, Action onClick)
+            : base(@"img/trophy.png")
+        {
+            // Set directly: the Name setter cuts names to 5 characters.
+            name.Text = "Stages";
+            this.stages = stages;
+            this.onClick = onClick;
+            stages.OnStageChanged += Stages_OnStageChanged;
+        }
+
+        public override void Dispose()
+        {
+            stages.OnStageChanged -= Stages_OnStageChanged;
+            base.Dispose();
+        }
+
+        private void Stages_OnStageChanged(int id)
+        {
+            OnDataRecv();
+        }
+
+        public override void StatusUpdate()
+        {
+            base.StatusUpdate();
+
+            StageService.StatusSummary summary;
+            try
+            {
+                summary = stages.Summary();
+            }
+            catch (Exception e)
+            {
+                if (!loggedError)
+                {
+                    Logger.UI.LogException(this, e);
+                    loggedError = true;
+                }
+                SetStatus("Error", false);
+                return;
+            }
+
+            if (summary.Stages == 0)
+                SetStatus("", true);
+            else if (summary.Problems > 0)
+                SetStatus("Check", false);
+            else if (summary.AllComplete)
+                SetStatus("Done", true);
+            else if (summary.ReadyToSend > 0)
+                SetStatus(summary.ReadyToSend + " ready", true);
+            else
+                SetStatus(summary.RacesDone + "/" + summary.RacesTotal, true);
+        }
+
+        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
+        {
+            if (mouseInputEvent.ButtonState == ButtonStates.Released)
+            {
+                onClick?.Invoke();
+            }
+            return true;
         }
     }
 }

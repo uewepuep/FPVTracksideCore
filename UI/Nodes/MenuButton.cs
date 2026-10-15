@@ -132,12 +132,6 @@ namespace UI.Nodes
                 root.AddBlank();
             }
 
-            if (eventWebServer != null)
-            {
-                root.AddItem("Stages", () => OpenWebServer("stages/"));
-                root.AddBlank();
-            }
-
             root.AddItem("Online Manual", () =>
             {
                 ShowOnlineManual();
