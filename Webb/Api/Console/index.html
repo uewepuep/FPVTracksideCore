@@ -20,7 +20,7 @@
     <span class="pill" id="writePill" hidden></span>
   </div>
   <div class="top-actions">
-    <button class="btn ghost" id="tokenBtn" title="API token for changes from another machine">🔑 <span class="tok-label">Token</span></button>
+    <button class="btn ghost" id="tokenBtn" title="Sign in, or use an API key, to make changes">🔑 <span class="tok-label">Sign in</span></button>
     <button class="icon-btn" id="themeBtn" title="Light / dark" aria-label="Toggle light or dark theme">◐</button>
   </div>
 </header>
@@ -37,16 +37,25 @@
 
 <dialog id="tokenDialog">
   <form method="dialog" class="dialog">
-    <h3>API token</h3>
-    <p>Only needed to make <b>changes</b> from another computer. Reading works without one, and changes
-      made from the FPVTrackside machine itself never need one.</p>
-    <p>The token is whatever <code>FPV_API_TOKEN</code> is set to on the FPVTrackside machine. It is kept in
+    <h3>Sign in</h3>
+    <p id="whoami" class="muted"></p>
+    <p>Reading works without signing in. Making <b>changes</b> needs a web user (set up on the
+      <a href="/stages/users" target="_blank">Users page</a>) or one of their API keys. On the FPVTrackside
+      machine itself you are usually Admin already.</p>
+    <input id="loginName" type="text" autocomplete="username" placeholder="name">
+    <input id="loginPassword" type="password" autocomplete="current-password" placeholder="password">
+    <p id="loginError" class="err" role="alert" hidden></p>
+    <div class="dialog-actions">
+      <button class="btn" type="button" id="loginBtn">Sign in</button>
+    </div>
+    <h3>Or use an API key</h3>
+    <p>For a key made on the Users page, or the <code>FPV_API_TOKEN</code> environment variable. Kept in
       this browser only and sent as <code>Authorization: Bearer …</code>.</p>
-    <input id="tokenInput" type="password" autocomplete="off" placeholder="paste the token">
+    <input id="tokenInput" type="password" autocomplete="off" placeholder="paste the key">
     <label class="check"><input type="checkbox" id="tokenShow"> Show</label>
     <div class="dialog-actions">
-      <button class="btn ghost" value="clear" id="tokenClear">Clear</button>
-      <button class="btn" value="save" id="tokenSave">Save</button>
+      <button class="btn ghost" value="clear" id="tokenClear">Sign out / clear</button>
+      <button class="btn" value="save" id="tokenSave">Use this key</button>
     </div>
   </form>
 </dialog>

@@ -736,6 +736,7 @@ namespace UI
             Cmd("open-web-page", "Web", "Open the local web page", () => MenuButton.OpenWebServer());
             Cmd("open-stages", "Web", "Open the stages web app", () => MenuButton.OpenWebServer("stages/"));
             Cmd("open-api-console", "Web", "Open the API console", () => MenuButton.OpenWebServer("api/v1/docs"));
+            Cmd("open-web-users", "Web", "Open the web users page", () => MenuButton.OpenWebServer("stages/users"));
 
             // New windows
             if (PlatformTools.HasFeature(PlatformFeature.SecondaryWindow) && LayerStack.Game is BaseGame game)

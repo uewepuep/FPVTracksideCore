@@ -46,7 +46,7 @@ namespace Webb.Api
     public class ApiErrorDto
     {
         [Doc("Always false.")] public bool Ok { get; set; }
-        [Doc("Machine-readable code.", Values = new[] { "bad_request", "unauthorized", "forbidden", "not_found", "method_not_allowed", "conflict", "race_control_disabled", "busy", "internal" })]
+        [Doc("Machine-readable code.", Values = new[] { "bad_request", "unauthorized", "forbidden", "too_many_attempts", "not_found", "method_not_allowed", "conflict", "race_control_disabled", "busy", "internal" })]
         public string Code { get; set; }
         [Doc("What went wrong, in words.")] public string Error { get; set; }
     }
@@ -66,7 +66,10 @@ namespace Webb.Api
         [Doc("API version. Breaking changes get a new /api/vN prefix.")] public int ApiVersion { get; set; }
         [Doc("ID of the event open in FPVTrackside.")] public Guid EventId { get; set; }
         [Doc("Name of the open event.")] public string EventName { get; set; }
-        [Doc("Whether this caller may make changes (local machine, or a valid API token).")] public bool CanWrite { get; set; }
+        [Doc("Whether this caller may make any changes.")] public bool CanWrite { get; set; }
+        [Doc("What this caller may change: none (read only), stages, operator or admin. See /auth/me.", Values = new[] { "none", "stages", "operator", "admin" })] public string Role { get; set; }
+        [Doc("Who this caller is: a user's name, \"This computer\" or FPV_API_TOKEN. Empty when not signed in.")] public string SignedInAs { get; set; }
+        [Doc("How this caller was recognised.", Values = new[] { "this-computer", "session", "key", "environment-token", "anonymous" })] public string SignedInVia { get; set; }
         [Doc("Whether race start/stop over HTTP is switched on in FPVTrackside's settings.")] public bool RaceControlEnabled { get; set; }
         [Doc("Human-readable documentation page.")] public string Docs { get; set; }
         [Doc("Machine-readable OpenAPI 3 document.")] public string OpenApi { get; set; }

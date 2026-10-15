@@ -117,10 +117,9 @@ namespace Webb.Api
 
                 req.Params = captured;
                 req.Status = route.SuccessStatus;
-                if (route.Writes)
-                    ApiAuth.RequireWrite(context);
+                req.Caller = route.Role > ApiRole.None ? ApiAuth.Require(context, route.Role) : ApiAuth.Identify(context);
 
-                result = OnUIThread(() => route.Handler(req));
+                result = route.OffUIThread ? route.Handler(req) : OnUIThread(() => route.Handler(req));
 
                 // A handler that has to wait on something slow (OBS) returns a
                 // task; it is waited on here, off the UI thread.
@@ -211,14 +210,28 @@ namespace Webb.Api
 
         // ───────────────────────── routes ─────────────────────────
 
-        private void Get(string template, string tag, string summary, Type response, Func<ApiRequest, object> handler, string description = null, bool array = false, params string[] query)
+        private ApiRoute Get(string template, string tag, string summary, Type response, Func<ApiRequest, object> handler, string description = null, bool array = false, params string[] query)
         {
-            router.Add(new ApiRoute { Method = "GET", Template = template, Tag = tag, Summary = summary, Description = description, ResponseType = response, ResponseIsArray = array, QueryParams = query, Handler = handler });
+            return router.Add(new ApiRoute { Method = "GET", Template = template, Tag = tag, Summary = summary, Description = description, ResponseType = response, ResponseIsArray = array, QueryParams = query, Handler = handler });
         }
 
-        private void Write(string method, string template, string tag, string summary, Type request, Type response, Func<ApiRequest, object> handler, string description = null, int status = 200, bool requestArray = false, bool responseArray = false)
+        // role: who may make this change; by default the role for its tag (DefaultRole).
+        private ApiRoute Write(string method, string template, string tag, string summary, Type request, Type response, Func<ApiRequest, object> handler, string description = null, int status = 200, bool requestArray = false, bool responseArray = false, ApiRole? role = null)
         {
-            router.Add(new ApiRoute { Method = method, Template = template, Tag = tag, Summary = summary, Description = description, RequestType = request, RequestIsArray = requestArray, ResponseType = response, ResponseIsArray = responseArray, SuccessStatus = status, Writes = true, Handler = handler });
+            return router.Add(new ApiRoute { Method = method, Template = template, Tag = tag, Summary = summary, Description = description, RequestType = request, RequestIsArray = requestArray, ResponseType = response, ResponseIsArray = responseArray, SuccessStatus = status, Writes = true, Role = role ?? DefaultRole(tag), Handler = handler });
+        }
+
+        // Stage changes need Stages; settings, OBS setup, the window and users
+        // need Admin; every other change to the event needs Operator.
+        public static ApiRole DefaultRole(string tag)
+        {
+            switch (tag)
+            {
+                case "Stages": return ApiRole.Stages;
+                case "Settings":
+                case "Access": return ApiRole.Admin;
+                default: return ApiRole.Operator;
+            }
         }
 
         private void Register()
@@ -304,6 +317,21 @@ namespace Webb.Api
             RegisterStages();
             RegisterSync();
             RegisterApp();
+            RegisterAccess();
+
+            // Admin only: the machine's setup, rather than running the event.
+            HashSet<string> adminOnly = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "GET settings", "GET settings/{group}",
+                "GET obs/config", "PUT obs/config",
+                "POST app/commands/{name}",
+                "POST app/events/{eventId}/open", "POST app/event-selector", "POST app/restart",
+            };
+            foreach (ApiRoute route in router.Routes)
+            {
+                if (adminOnly.Contains(route.Method + " " + route.Template))
+                    route.Role = ApiRole.Admin;
+            }
 
             Examples(new Dictionary<string, string>
             {
@@ -533,7 +561,10 @@ namespace Webb.Api
                 ApiVersion = Version,
                 EventId = eventManager.EventId,
                 EventName = eventManager.Event?.Name,
-                CanWrite = ApiAuth.CanWrite(r.Context),
+                CanWrite = r.Caller.Role > ApiRole.None,
+                Role = ApiAuth.RoleKey(r.Caller.Role),
+                SignedInAs = r.Caller.Name,
+                SignedInVia = r.Caller.Via,
                 RaceControlEnabled = raceControl != null,
                 Docs = "/" + Prefix + "/docs",
                 OpenApi = "/" + Prefix + "/openapi.json",

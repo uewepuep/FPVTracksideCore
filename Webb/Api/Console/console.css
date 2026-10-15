@@ -156,6 +156,9 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
 .dialog h3 { margin-top: 0; }
 .dialog p { color: var(--muted); font-size: 14px; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.dialog h3 + p, .dialog h3:not(:first-child) { margin-top: 18px; }
+.dialog input:not([type=checkbox]) { display: block; width: 100%; margin-top: 8px; }
+.dialog .err { color: var(--bad, #e5484d); }
 .check { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); margin-top: 6px; }
 
 @media (max-width: 1100px) { .op-grid { grid-template-columns: minmax(0, 1fr); } }

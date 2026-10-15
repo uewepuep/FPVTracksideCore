@@ -36,8 +36,8 @@ namespace Webb.Api
                     };
 
                     string description = route.Description ?? "";
-                    if (route.Writes)
-                        description = (description + "\n\nChanges data: accepted from the FPVTrackside machine itself, or with the API token.").Trim();
+                    if (route.Role > ApiRole.None)
+                        description = (description + "\n\nNeeds the **" + ApiAuth.RoleName(route.Role) + "** role" + (route.Role < ApiRole.Admin ? " or higher" : "") + ": sign in, send an API key, or call from the FPVTrackside machine.").Trim();
                     if (description.Length > 0)
                         op["description"] = description;
 
@@ -85,7 +85,7 @@ namespace Webb.Api
                     };
                     op["responses"] = responses;
 
-                    if (route.Writes)
+                    if (route.Role > ApiRole.None)
                         op["security"] = new JArray(new JObject(), new JObject { ["bearer"] = new JArray() });
 
                     item[route.Method.ToLowerInvariant()] = op;
@@ -102,7 +102,7 @@ namespace Webb.Api
                     {
                         ["type"] = "http",
                         ["scheme"] = "bearer",
-                        ["description"] = "The value of the " + ApiAuth.TokenVariable + " environment variable on the FPVTrackside machine. Only needed for changes made from another machine.",
+                        ["description"] = "A session token from POST /auth/login, a web user's API key, or the " + ApiAuth.TokenVariable + " environment variable. Not needed on the FPVTrackside machine itself while it is trusted.",
                     },
                 },
             };
@@ -117,7 +117,9 @@ namespace Webb.Api
                     ["description"] = "Read and run the event open in FPVTrackside: pilots, rounds, races, laps, timing crossings, results and race control.\n\n"
                         + "Times are ISO 8601 in the FPVTrackside machine's local time with its UTC offset. IDs are GUIDs. "
                         + "Pilots may be referred to by ID or exact name, channels by ID, label (\"R1\") or frequency (\"5658\").\n\n"
-                        + "Reads are open to anyone who can reach the web server. Changes are accepted from the FPVTrackside machine itself, or from another machine with `Authorization: Bearer <token>` where the token is the " + ApiAuth.TokenVariable + " environment variable.",
+                        + "Reads are open to anyone who can reach the web server, except settings and OBS setup. Changes need a role: **Stages** (run stages), **Operator** (run the event) or **Admin** (everything, including web users). "
+                        + "Sign in with POST /auth/login and send `Authorization: Bearer <token>`, or send a web user's API key the same way. "
+                        + "The FPVTrackside machine itself acts as Admin unless that is switched off; pages from other websites open in its browser don't count. The " + ApiAuth.TokenVariable + " environment variable still works as an Admin key.",
                 },
                 ["servers"] = new JArray(new JObject { ["url"] = baseUrl }),
                 ["tags"] = new JArray(routes.Select(r => r.Tag).Distinct().Select(t => new JObject { ["name"] = t })),
@@ -148,6 +150,8 @@ namespace Webb.Api
                 case "detectionId": return "Detection (crossing) ID.";
                 case "stageId": return "Stage ID.";
                 case "stageRaceId": return "The race's ID within the stage, e.g. W1-2 or A:L2-1 (URL-encode it).";
+                case "userId": return "User ID, or the user's name.";
+                case "keyId": return "Key ID (from GET /users).";
                 default: return p;
             }
         }

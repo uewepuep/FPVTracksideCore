@@ -175,6 +175,7 @@ namespace UI.Nodes
                     webMenu.AddItem("Open Local Web page", () => OpenWebServer());
                     webMenu.AddItem("Open Stages", () => OpenWebServer("stages/"));
                     webMenu.AddItem("Open API console", () => OpenWebServer("api/v1/docs"));
+                    webMenu.AddItem("Web users (who can change things)", () => OpenWebServer("stages/users"));
                 }
                 if (OpenFPVTracksideSite != null)
                     webMenu.AddItem("Open FPVTrackside.com event page", () => { OpenFPVTracksideSite(); });

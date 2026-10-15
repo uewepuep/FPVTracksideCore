@@ -12,6 +12,17 @@ const raceLabel = computed(() => {
   }
   return `${name} · ${c.state}`
 })
+const { role, name, via, signOut, askSignIn } = useAuth()
+const roleLabel = computed(() => ({ stages: 'Stages', operator: 'Operator', admin: 'Admin' } as Record<string, string>)[role.value] ?? 'Read only')
+const userMenu = computed(() => [
+  [{ type: 'label' as const, label: `${name.value} · ${roleLabel.value}` }],
+  [
+    ...(role.value === 'admin' ? [{ label: 'Users', icon: 'i-lucide-users', to: '/users' }] : []),
+    ...(via.value === 'session' ? [{ label: 'Sign out', icon: 'i-lucide-log-out', onSelect: () => signOut() }] : []),
+    ...(via.value === 'this-computer' ? [{ label: 'Sign in as someone else', icon: 'i-lucide-log-in', onSelect: () => askSignIn() }] : []),
+  ],
+])
+
 const raceColor = computed(() => ({ running: 'error', starting: 'warning', finished: 'success' } as const)[control.value?.state as 'running'] ?? 'neutral')
 </script>
 
@@ -33,6 +44,10 @@ const raceColor = computed(() => ({ running: 'error', starting: 'warning', finis
       </div>
 
       <UButton to="/api/v1/docs" external target="_blank" variant="ghost" color="neutral" icon="i-lucide-braces" label="API" class="hidden sm:inline-flex" />
+      <UButton v-if="role === 'none'" color="neutral" variant="outline" icon="i-lucide-log-in" label="Sign in" @click="askSignIn()" />
+      <UDropdownMenu v-else :items="userMenu">
+        <UButton color="neutral" variant="ghost" :icon="via === 'this-computer' ? 'i-lucide-monitor' : 'i-lucide-user-round'" :label="name" class="max-w-40 truncate" />
+      </UDropdownMenu>
       <UColorModeButton />
     </UContainer>
   </header>

@@ -34,6 +34,9 @@ namespace Webb.Api
         public NameValueCollection Query { get; set; }
         public string Body { get; set; }
 
+        // Who is calling (set before the handler runs).
+        public ApiCaller Caller { get; set; }
+
         // Response status for a successful call (200 unless the handler sets 201 etc).
         public int Status { get; set; } = 200;
 
@@ -116,8 +119,16 @@ namespace Webb.Api
         // (pilot.id, pilot.name, race.id, round.id, split.id, lapLine.id).
         public string Example { get; set; }
 
-        // Changes something (needs the write permission, runs on the UI thread).
+        // Changes something.
         public bool Writes { get; set; }
+
+        // The role a caller needs (ApiRole.None = anyone who can reach the server).
+        public ApiRole Role { get; set; }
+
+        // The handler doesn't touch the event, so it runs on the web server's
+        // thread instead of waiting for the UI thread (signing in hashes a
+        // password, which must not stall the race screen).
+        public bool OffUIThread { get; set; }
 
         public Func<ApiRequest, object> Handler { get; set; }
 

@@ -102,8 +102,9 @@
         }
         write.hidden = false;
         write.className = 'pill ' + (info.canWrite ? 'ok' : 'warn');
-        write.innerHTML = '<span class="dot"></span>' + (info.canWrite ? 'Changes allowed' : 'Read only — add a token');
-        write.title = info.canWrite ? 'This browser may make changes.' : 'Reads work. To make changes from this computer, add the API token (🔑).';
+        var roleName = { stages: 'Stages', operator: 'Operator', admin: 'Admin' }[info.role] || '';
+        write.innerHTML = '<span class="dot"></span>' + (info.canWrite ? esc((info.signedInAs || '') + ' · ' + roleName) : 'Read only — sign in');
+        write.title = info.canWrite ? 'This browser may make changes allowed for the ' + roleName + ' role.' : 'Reads work. To make changes, sign in (🔑).';
         if (changed) refreshLists().then(refreshPickers);
       });
   }
@@ -241,8 +242,8 @@
       + '<div class="fact"><b>JSON in and out</b>camelCase fields; errors are <code>{"ok":false,"code":"…","error":"…"}</code> with an HTTP status.</div>'
       + '<div class="fact"><b>IDs</b>GUIDs. Pilots can also be named (<code>Wheelzfpv</code>), channels by label (<code>R1</code>) or frequency (<code>5658</code>).</div>'
       + '<div class="fact"><b>Times</b>ISO 8601 in the FPVTrackside machine\'s local time with its offset. <code>raceTimeMs</code> counts from the race start.</div>'
-      + '<div class="fact"><b>Reading</b>Open to anyone who can reach this machine on the network.</div>'
-      + '<div class="fact"><b>Changing</b>Allowed from this machine, or from elsewhere with <code>Authorization: Bearer &lt;FPV_API_TOKEN&gt;</code> (🔑 above).</div>'
+      + '<div class="fact"><b>Reading</b>Open to anyone who can reach this machine on the network (settings and OBS setup need Admin).</div>'
+      + '<div class="fact"><b>Changing</b>Needs a role — Stages, Operator or Admin. Sign in (🔑 above) or send a user\'s API key as <code>Authorization: Bearer &lt;key&gt;</code>. The FPVTrackside machine itself is Admin.</div>'
       + '</div>'
 
       + '<h2>Recipes</h2><div class="cards">'
@@ -570,7 +571,8 @@
     try { pretty = JSON.stringify(JSON.parse(r.text), null, 2); isJSON = true; } catch (e) {}
     var size = new Blob([r.text]).size;
     var hint = '';
-    if (r.status === 401 || r.status === 403) hint = '<p class="muted">Changes from another computer need the API token — press 🔑 Token at the top.</p>';
+    if (r.status === 401) hint = '<p class="muted">Sign in first — press 🔑 Sign in at the top.</p>';
+    if (r.status === 403) hint = '<p class="muted">Your role doesn\'t allow this; an Admin can change it on the Users page.</p>';
     if (r.status === 0) hint = '<p class="muted">FPVTrackside didn\'t answer. Is it still running?</p>';
     $('[data-pane="res"]').innerHTML =
       '<div class="res-meta"><span class="code-status ' + cls + '">' + (r.status || 'ERR') + '</span><span>' + esc(r.statusText) + '</span>'
@@ -747,7 +749,8 @@
   }
 
   function setTokenLabel() {
-    $('#tokenBtn').innerHTML = '🔑 <span class="tok-label">' + (token() ? 'Token set' : 'Token') + '</span>';
+    var label = token() ? (token().indexOf('fts_') === 0 ? 'Signed in' : 'Key set') : 'Sign in';
+    $('#tokenBtn').innerHTML = '🔑 <span class="tok-label">' + label + '</span>';
   }
 
   function wireChrome() {
@@ -772,11 +775,43 @@
       try { localStorage.setItem('fpvapi.theme', next); } catch (e) {}
     });
     var dlg = $('#tokenDialog');
-    $('#tokenBtn').addEventListener('click', function () { $('#tokenInput').value = token(); dlg.showModal(); });
+    $('#tokenBtn').addEventListener('click', function () {
+      var t = token();
+      $('#tokenInput').value = t.indexOf('fts_') === 0 ? '' : t;
+      $('#loginError').hidden = true;
+      var info = live.info;
+      $('#whoami').textContent = info && info.signedInAs ? 'Now: ' + info.signedInAs + ' (' + (info.role === 'none' ? 'read only' : info.role) + ')' : 'Now: not signed in (read only)';
+      dlg.showModal();
+    });
+    $('#loginBtn').addEventListener('click', function () {
+      var err = $('#loginError');
+      err.hidden = true;
+      fetch(API + '/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ name: $('#loginName').value.trim(), password: $('#loginPassword').value }),
+      }).then(function (res) {
+        return res.json().then(function (j) {
+          if (!res.ok) throw new Error(j && j.error ? j.error : res.status + ' ' + res.statusText);
+          return j;
+        });
+      }).then(function (j) {
+        store.set('token', j.token);
+        $('#loginPassword').value = '';
+        dlg.close('signed-in');
+      }).catch(function (e) {
+        err.textContent = e.message;
+        err.hidden = false;
+      });
+    });
     $('#tokenShow').addEventListener('change', function (e) { $('#tokenInput').type = e.target.checked ? 'text' : 'password'; });
     dlg.addEventListener('close', function () {
       if (dlg.returnValue === 'save') store.set('token', $('#tokenInput').value.trim());
-      if (dlg.returnValue === 'clear') store.set('token', '');
+      if (dlg.returnValue === 'clear') {
+        var old = token();
+        if (old.indexOf('fts_') === 0) fetch(API + '/auth/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + old } }).catch(function () {});
+        store.set('token', '');
+      }
       setTokenLabel();
       pollStatus();
       if (current) renderCode();

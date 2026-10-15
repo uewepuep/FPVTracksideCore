@@ -2,7 +2,7 @@ import type { RaceControl } from './types'
 
 // The event + race-director state, polled while the page is visible and shared
 // by every component (the header pills, the "on screen now" race highlight).
-const info = ref<{ eventName: string; version: string; canWrite: boolean } | null>(null)
+const info = ref<{ eventName: string; version: string; canWrite: boolean; role: string; signedInAs?: string; signedInVia: string } | null>(null)
 const control = ref<RaceControl | null>(null)
 const reachable = ref(true)
 let started = false

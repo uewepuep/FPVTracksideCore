@@ -60,8 +60,9 @@ Every error is a JSON body plus an HTTP status:
 | Status | `code` | Meaning |
 |---|---|---|
 | 400 | `bad_request` | The request is wrong; `error` says how. Nothing was changed. |
-| 401 | `unauthorized` | A change from another machine without the right token. |
-| 403 | `forbidden` | A change from another machine, and no token is configured. |
+| 401 | `unauthorized` | Not signed in, or the session/key is no longer valid. Sign in (section 4). |
+| 403 | `forbidden` | Signed in, but the role doesn't allow this (e.g. an Operator changing settings). |
+| 429 | `too_many_attempts` | Too many wrong passwords from this address; wait a minute. |
 | 403 | `race_control_disabled` | Race control over HTTP is switched off in settings. |
 | 404 | `not_found` | No such race / pilot / round / detection, or no such endpoint. |
 | 501 | `not_available` | Needs the FPVTrackside window, which this server doesn't have (the sandbox). |
@@ -77,19 +78,49 @@ Send `{}` or at least `Content-Length: 0`. .NET's HTTP server rejects a POST tha
 
 ## 4. Who can change things
 
-* **Reading** is open to anyone who can reach the machine on the network — the same as the event files the web server has always served.
-* **Changes** are accepted from the FPVTrackside machine itself without any token.
-* **Changes from another machine** need a token. Set the environment variable `FPV_API_TOKEN` on the FPVTrackside machine to a long random value and restart FPVTrackside, then send it with each request:
+**Reading** is open to anyone who can reach the machine on the network — the same as the event files the web server has always served. The exceptions are settings and OBS setup (`GET /settings…`, `GET /obs/config`), which need Admin.
+
+**Changes** need a role. Each role includes the ones before it:
+
+| Role | May change |
+|---|---|
+| **Stages** | Stages: create them, send their races to FPVTrackside, enter, reset and lock stage results. |
+| **Operator** | The event: pilots, rounds, races, laps and lap corrections, race control, sound, OBS scenes/triggers, the on-screen view, meeting sync — plus everything Stages can do. |
+| **Admin** | Everything: also settings, OBS setup, menu commands, opening other events, and web users. |
+
+Each endpoint's role is listed in the console (`/api/v1/docs`).
+
+A caller gets a role in one of these ways:
+
+* **Web users.** An Admin adds people on the **Users** page (FPVTrackside menu → Web → *Web users*, or `/stages/users`), each with a name, a password and a role. They sign in from any browser on the network — the Stages app and the API console both have a *Sign in* button. Programs sign in with:
 
   ```
-  Authorization: Bearer <token>
+  POST /api/v1/auth/login   { "name": "Alex", "password": "…" }
   ```
 
-  `X-Api-Token: <token>` also works. With no token set, other machines can only read.
+  and send the returned token on every request as `Authorization: Bearer <token>`. Sessions last 24 hours and end when FPVTrackside closes. After 5 wrong passwords from one address, sign-ins from it are refused for a minute.
+* **API keys**, for scripts and other systems (a club dashboard, a timing agent). Made per user on the Users page or with `POST /users/{userId}/keys`; the key is shown once and acts with that user's role. Send it the same way: `Authorization: Bearer <key>`. A user with no password can only use keys.
+* **The FPVTrackside machine itself** is Admin without signing in, so nothing changes for a single-laptop setup. This can be switched off on the Users page (*People on the FPVTrackside machine are Admin…*) when other people use the race laptop's browser; it needs an Admin user first, so nobody is locked out. A web page from **another website** open in that browser never counts as this machine (FPVTrackside checks the browser's `Origin`/`Sec-Fetch-Site` headers and that the address names this machine), so a malicious page can't drive the API from the race laptop.
+* **`FPV_API_TOKEN`**, the environment variable from before there were users, still works as an Admin key. Prefer a user's API key: it can be removed without restarting FPVTrackside and shows up by name in the log.
 
-`GET /api/v1` tells you whether the caller may make changes (`canWrite`).
+`GET /api/v1` and `GET /api/v1/auth/me` say who the caller is (`signedInAs`, `role`). Passwords are stored as PBKDF2 hashes and keys as SHA-256 hashes in `WebUsers.json` in FPVTrackside's folder; neither can be read back. Sign-ins, failed sign-ins and user changes are written to the HTTP log.
 
-There is no HTTPS: FPVTrackside's web server is plain HTTP, so keep it on the venue network.
+Tokens and keys are only ever sent in the `Authorization` header (or `X-Api-Token`), never in a cookie, so another website can't make a browser send them.
+
+There is no HTTPS: FPVTrackside's web server is plain HTTP, so passwords and tokens cross the network unencrypted. Keep it on the venue network; for access from outside, put it behind a VPN or an HTTPS reverse proxy.
+
+### Access endpoints
+
+| | |
+|---|---|
+| `GET /auth/me` | Who am I, and the roles there are. |
+| `POST /auth/login` | Sign in: `{name, password}` → `{token, expires, user, role}`. |
+| `POST /auth/logout` | End the session whose token is sent. |
+| `POST /auth/password` | Change my own password: `{currentPassword, newPassword}`. |
+| `GET /users` · `POST /users` | List / add web users (Admin). |
+| `PATCH /users/{userId}` · `DELETE /users/{userId}` | Change name, role, password or `disabled`; remove (Admin). A new password, a lower role or disabling signs the user out everywhere. |
+| `POST /users/{userId}/keys` · `DELETE /users/{userId}/keys/{keyId}` | Make / remove an API key (Admin). |
+| `GET /access` · `PATCH /access` | Whether the FPVTrackside machine is trusted (`trustThisMachine`) (Admin). |
 
 ## 5. Endpoints
 

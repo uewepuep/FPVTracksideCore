@@ -1,6 +1,6 @@
 // Every call the page makes goes through FPVTrackside's REST API (/api/v1) —
-// nothing here that a script couldn't do too. The optional API token is the
-// one saved by the API console (only needed for changes from another machine).
+// nothing here that a script couldn't do too. The sign-in token is shared with
+// the API console (same localStorage key), so signing in on either signs in both.
 
 export class ApiError extends Error {
   constructor(message: string, public status: number, public code?: string) {
@@ -8,11 +8,22 @@ export class ApiError extends Error {
   }
 }
 
-function token(): string {
+const TOKEN_KEY = 'fpvapi.token'
+
+export function token(): string {
   try {
-    return JSON.parse(localStorage.getItem('fpvapi.token') || '""') || ''
+    return JSON.parse(localStorage.getItem(TOKEN_KEY) || '""') || ''
   } catch {
     return ''
+  }
+}
+
+export function setToken(t: string) {
+  try {
+    if (t) localStorage.setItem(TOKEN_KEY, JSON.stringify(t))
+    else localStorage.removeItem(TOKEN_KEY)
+  } catch {
+    // private window: the sign-in lasts until the page closes
   }
 }
 
@@ -44,18 +55,28 @@ export async function api<T = any>(method: string, path: string, body?: unknown)
 
 export const get = <T = any>(path: string) => api<T>('GET', path)
 export const post = <T = any>(path: string, body?: unknown) => api<T>('POST', path, body)
+export const patch = <T = any>(path: string, body?: unknown) => api<T>('PATCH', path, body)
+export const del = <T = any>(path: string) => api<T>('DELETE', path)
 
 // Surface an API failure as a toast, with the fix for the common case.
 export function useApiErrors() {
   const toast = useToast()
+  const { askSignIn } = useAuth()
   return (e: unknown) => {
     const err = e as ApiError
-    const auth = err?.status === 401 || err?.status === 403
+    if (err?.status === 401) {
+      toast.add({
+        title: 'Sign in to do that',
+        description: err.message,
+        color: 'warning',
+        icon: 'i-lucide-lock',
+        actions: [{ label: 'Sign in', icon: 'i-lucide-log-in', onClick: () => askSignIn() }],
+      })
+      return
+    }
     toast.add({
-      title: auth ? 'Changes need permission' : 'Couldn\'t do that',
-      description: auth
-        ? `${err.message}. Open this page on the FPVTrackside machine, or add the API token in the API console.`
-        : err?.message || String(e),
+      title: err?.status === 403 ? 'Your role doesn\'t allow that' : 'Couldn\'t do that',
+      description: err?.status === 403 ? `${err.message}. Ask an Admin to change your role.` : err?.message || String(e),
       color: 'error',
       icon: 'i-lucide-triangle-alert',
     })
