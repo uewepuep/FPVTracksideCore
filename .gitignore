@@ -19,3 +19,13 @@ Webb/httpfiles/Channels.json
 /UI/~$Translations.xlsx
 /UI/.~lock.Translations.xlsx#
 /.claude
+
+# ApiSandbox demo data (dotnet run --project ApiSandbox)
+sandbox-data/
+
+# Stages web app: source in StagesUI/, build output embedded from Webb/Stages/UI
+StagesUI/node_modules/
+StagesUI/.nuxt/
+StagesUI/.output/
+StagesUI/dist
+Webb/Stages/UI/
