@@ -27,6 +27,8 @@ namespace UI.Nodes
 
         public AutoRunnerControls AutoRunnerControls { get; private set; }
 
+        private TextNode nextRaceNameNode;
+
         private EventManager eventManager;
         private TracksideTabbedMultiNode tracksideMultiNode;
         private ChannelsGridNode channelsGridNode;
@@ -68,6 +70,13 @@ namespace UI.Nodes
             
             NextButton = new IconButtonNode(@"img\next.png", "Next", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
             AddChild(NextButton);
+
+            // White text, coloured via Tint so it can change without re-rendering
+            nextRaceNameNode = new TextNode("", Color.White);
+            nextRaceNameNode.Tint = Theme.Current.RightControls.Text.XNA;
+            nextRaceNameNode.Alignment = RectangleAlignment.Center;
+            nextRaceNameNode.RelativeBounds = new RectangleF(0.05f, 0.75f, 0.9f, 0.22f);
+            NextButton.AddChild(nextRaceNameNode);
 
             ResumeButton = new IconButtonNode(@"img\resume.png", "Resume", Theme.Current.RightControls.Foreground, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
             ResumeButton.NodeName = "ResumeRace";
@@ -186,14 +195,18 @@ namespace UI.Nodes
                               && nextRace != null 
                               && nextRace != eventManager.RaceManager.CurrentRace;
 
-            if (!NextButton.Visible)
+            // If we're mid event but have no current race, the next button loads the last finished race.
+            if (eventManager.RaceManager.CurrentRace == null)
             {
-                // If we're mid event but have no current race.
-                if (eventManager.RaceManager.CurrentRace == null && eventManager.RaceManager.LastFinishedRace() != null)
+                Race lastFinished = eventManager.RaceManager.LastFinishedRace();
+                if (lastFinished != null)
                 {
                     NextButton.Visible = true;
+                    nextRace = lastFinished;
                 }
             }
+
+            SetNextRaceName(nextRace);
 
             WormButton.Visible = eventManager.RaceManager.RaceRunning;
 
@@ -202,6 +215,32 @@ namespace UI.Nodes
             OnControlButtonsUpdate?.Invoke();
 
             LayoutChildren(BoundsF);
+        }
+
+        private void SetNextRaceName(Race nextRace)
+        {
+            if (nextRace == null)
+            {
+                nextRaceNameNode.Text = "";
+                nextRaceNameNode.Visible = false;
+                NextButton.ImageNode.RelativeBounds = new RectangleF(0, 0, 1, 0.7f);
+                NextButton.TextNode.RelativeBounds = new RectangleF(0.05f, 0.7f, 0.9f, 0.3f);
+            }
+            else
+            {
+                nextRaceNameNode.Text = RaceStringFormatter.Instance.RaceToStringShort(nextRace);
+
+                // Yellow when the next race is earlier than the current one (races have been run out of order)
+                Race currentRace = eventManager.RaceManager.CurrentRace;
+                bool outOfOrder = currentRace != null && currentRace.Round != null && nextRace.Round != null
+                               && (nextRace.Round.Order < currentRace.Round.Order
+                                  || (nextRace.Round.Order == currentRace.Round.Order && nextRace.RaceOrder < currentRace.RaceOrder));
+
+                nextRaceNameNode.Tint = outOfOrder ? Color.Yellow : Theme.Current.RightControls.Text.XNA;
+                nextRaceNameNode.Visible = true;
+                NextButton.ImageNode.RelativeBounds = new RectangleF(0, 0, 1, 0.5f);
+                NextButton.TextNode.RelativeBounds = new RectangleF(0.05f, 0.5f, 0.9f, 0.25f);
+            }
         }
 
         protected override void LayoutChildren(RectangleF bounds)
@@ -220,6 +259,11 @@ namespace UI.Nodes
                 n.RelativeBounds = new RectangleF(0, 0, 1, 1);
 
                 int height = ItemHeight;
+
+                if (n == NextButton && nextRaceNameNode.Visible)
+                {
+                    height = (int)(1.4f * ItemHeight);
+                }
 
                 RectangleF newBounds = new RectangleF(left,
                                                     prevTop - (ItemPaddingVertical + height),

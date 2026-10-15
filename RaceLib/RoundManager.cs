@@ -315,9 +315,10 @@ namespace RaceLib
 
         public IEnumerable<Race> GenerateNewRound(Round callingRound, RoundFormat roundFormat, RoundPlan roundPlan)
         {
-            Round existingNext = GetStageRounds(roundFormat.Stage).FirstOrDefault(r => r.Valid && r.Order > callingRound.Order);
-            int newRoundNumber = existingNext?.RoundNumber ?? (RaceManager.GetMaxRoundNumber(callingRound.EventType) + 1);
-            Round newRound = GetCreateRound(newRoundNumber, callingRound.EventType, roundFormat.Stage, callingRound.Order);
+            // Use the stage's next round itself: looking it up again by number with the calling round's event type
+            // returns an unrelated round when the types differ (e.g. TimeTrial Round 1 for a stage whose next round is Race Round 1).
+            Round newRound = GetStageRounds(roundFormat.Stage).FirstOrDefault(r => r.Valid && r.Order > callingRound.Order)
+                ?? GetCreateRound(RaceManager.GetMaxRoundNumber(callingRound.EventType) + 1, callingRound.EventType, roundFormat.Stage, callingRound.Order);
             return GenerateFillRound(newRound, roundFormat, roundPlan);
         }
 
@@ -333,6 +334,12 @@ namespace RaceLib
 
             if (onSetup != null)
                 needsStage = true;
+
+            // Snapshot this before onSetup runs: for sheet-format stages, onSetup calls
+            // SheetFormatManager.LoadSheet, which may itself fill callingRound with races,
+            // making IsEmpty(callingRound) unreliable as a "was this round free to use" check
+            // afterwards.
+            bool callingRoundWasEmpty = IsEmpty(callingRound);
 
             Stage stage = null;
             // Don't create a stage if default
@@ -360,6 +367,29 @@ namespace RaceLib
             else
             {
                 stage = callingRound.Stage;
+            }
+
+            if (stage != null && stage.HasSheetFormat)
+            {
+                // Sheet-format stages fully generate their own rounds/races inside onSetup
+                // (via SheetFormatManager.LoadSheet) and keep generating them as results come
+                // in (via SheetFormatManager.OnRaceResultChange). Running the generic
+                // fill-or-new-round logic below as well would duplicate that with unrelated
+                // generic heats - e.g. a double-elim bracket's calling round ending up filled
+                // with random AutoFormat heats while the real bracket silently landed on the
+                // next round number instead. Only claim callingRound for this stage if it was
+                // actually free to use - if it already had races (eg leftover from an earlier
+                // stage), LoadSheet will have started the bracket on a later round instead, and
+                // callingRound should be left alone rather than mislabelled as this stage's.
+                if (callingRoundWasEmpty && callingRound.Stage != stage)
+                {
+                    using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+                    {
+                        callingRound.Stage = stage;
+                        db.Update(callingRound);
+                    }
+                }
+                return;
             }
 
             if (stage != null)

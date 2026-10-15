@@ -393,6 +393,67 @@ namespace UI.Video
             ChannelsGridNode.Reorder();
         }
 
+        // Mouse wheel scrubbing, enabled from the Replay section of the keyboard shortcuts.
+        // One wheel notch seeks by wheelScrubStep; with Shift held it steps one frame instead.
+        private static readonly TimeSpan wheelScrubStep = TimeSpan.FromSeconds(0.5);
+        private const int wheelNotch = 120;
+        private int wheelRemainder;
+
+        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
+        {
+            if (base.OnMouseInput(mouseInputEvent))
+                return true;
+
+            if (mouseInputEvent.EventType == MouseInputEvent.EventTypes.Wheel && keyMapper.ReplayMouseWheelScrub)
+            {
+                return WheelScrub(mouseInputEvent.WheelChange);
+            }
+
+            return false;
+        }
+
+        private bool WheelScrub(int wheelChange)
+        {
+            if (primary == null || wheelChange == 0)
+                return false;
+
+            // Precision touchpads and free-spinning wheels report fractions of a notch, so bank
+            // the remainder rather than dropping it.
+            wheelRemainder += wheelChange;
+            int notches = wheelRemainder / wheelNotch;
+            wheelRemainder -= notches * wheelNotch;
+
+            if (notches == 0)
+                return true;
+
+            // Wheel down moves forward, like scrolling down a timeline.
+            int steps = -notches;
+
+            bool frameStep = CompositorLayer?.InputEventFactory.AreShiftKeysDown() == true;
+            if (frameStep)
+            {
+                // Frame stepping only makes sense on a still image, same as the arrow keys.
+                if (!SeekNode.PlayButton.Visible)
+                {
+                    Stop();
+                }
+
+                for (int i = 0; i < Math.Abs(steps); i++)
+                {
+                    if (steps > 0)
+                        NextFrame();
+                    else
+                        PrevFrame();
+                }
+            }
+            else
+            {
+                Seek(primary.CurrentTime + TimeSpan.FromTicks(wheelScrubStep.Ticks * steps));
+            }
+
+            return true;
+        }
+
         public override bool OnKeyboardInput(KeyboardInputEvent inputEvent)
         {
             if (inputEvent.ButtonState == ButtonStates.Pressed)

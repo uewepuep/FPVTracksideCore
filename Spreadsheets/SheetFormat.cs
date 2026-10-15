@@ -89,6 +89,8 @@ namespace Spreadsheets
 
             LockChannels = GetBoolSetting(settings, "lock channels");
             CreateBrackets = GetBoolSetting(settings, "create brackets");
+
+            Logger.Sheets.Log(this, $"Loaded '{file.Name}': Channels={Channels} (raw '{channels}'), LockChannels={LockChannels} (raw '{GetSetting(settings, "lock channels")}'), CreateBrackets={CreateBrackets}, Pilots={pilots.Count}");
         }
 
         public bool GetBoolSetting(List<string> settings, string name)

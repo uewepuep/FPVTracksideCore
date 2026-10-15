@@ -276,6 +276,9 @@ namespace UI.Video
                     ArucoDetectMode sharedMode = primarySettings?.DetectMode ?? ArucoDetectMode.Original;
                     double sharedEcRate = primarySettings?.ErrorCorrectionRate ?? 0.0;
                     int sharedHybridDist = primarySettings?.HybridDistanceThreshold ?? 0;
+                    // Reject sub-threshold candidates inside the detector (perimeter filter) so small
+                    // noise squares never reach decoding. Shared from the reference, like the others.
+                    double sharedMinMarkerPercent = primarySettings?.MinMarkerPercent ?? 0.0;
 
                     // Ignore lost-signal frames on racing pilots' channels (shared from the reference).
                     bool ignoreLostSignal = primarySettings?.IgnoreLostSignal ?? false;
@@ -373,7 +376,7 @@ namespace UI.Video
                         if (input.bgra == null) return;
                         if (!channelDetectors.TryGetValue(input.cvn, out var det)) return;
                         channelResults[ch] = det.Detect(input.bgra, FrameWidth, FrameHeight,
-                            sharedMode, sharedEcRate, sharedHybridDist);
+                            sharedMode, sharedEcRate, sharedHybridDist, sharedMinMarkerPercent);
                     }
 
                     if (multiThread && channelNodes.Length > 1)

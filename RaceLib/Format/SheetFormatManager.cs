@@ -100,7 +100,7 @@ namespace RaceLib.Format
 
                 if (r.Stage.HasSheetFormat)
                 {
-                    LoadSheet(r.Stage, null, false);
+                    LoadSheet(r.Stage, null, false, r);
                 }
             }
         }
@@ -200,7 +200,7 @@ namespace RaceLib.Format
         }
 
 
-        public void LoadSheet(Stage stage, Pilot[] assignedPilots, bool generate)
+        public void LoadSheet(Stage stage, Pilot[] assignedPilots, bool generate, Round callingRound = null)
         {
             if (stage != null && stage.HasSheetFormat)
             {
@@ -210,6 +210,18 @@ namespace RaceLib.Format
                 if (stageRounds.Any())
                 {
                     offset = stageRounds.OrderBy(r => r.Order).FirstOrDefault().RoundNumber - 1;
+                }
+                else if (callingRound != null && !EventManager.RaceManager.GetRaces(callingRound).Any())
+                {
+                    // First time this stage is generated: the sheet's own "round 1" needs to land
+                    // on the round the caller is actually filling (callingRound), not one past
+                    // whatever round happens to be last - callingRound itself is frequently that
+                    // "last" round (e.g. a fresh event's auto-created Round 1), which previously
+                    // made GetLastRound() below push the whole sheet one round too far forward.
+                    // Only do this when callingRound is actually empty though - if it already has
+                    // races (eg leftover from an earlier stage/attempt), don't dump the bracket's
+                    // results-sync pass onto unrelated races; fall through and start fresh after it.
+                    offset = callingRound.RoundNumber - 1;
                 }
                 else
                 {
@@ -704,6 +716,10 @@ namespace RaceLib.Format
 
             bool optimiseChannels = !SheetFormat.LockChannels;
             SheetFormatManager.EventManager.RaceManager.SetRacePilots(race, toSet, optimiseChannels);
+
+            string sheetSlots = string.Join(", ", pilotChannels.Select(pc => pc.ToString()));
+            string finalChannels = string.Join(", ", race.PilotChannelsSafe.Select(pc => pc.Pilot?.Name + "=" + pc.Channel?.GetBandChannelText()));
+            Logger.Sheets.Log(this, $"{race} LockChannels={SheetFormat.LockChannels} Sheet [{sheetSlots}] Final [{finalChannels}]");
 
             return race;
         }
