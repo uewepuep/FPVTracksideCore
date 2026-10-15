@@ -149,10 +149,6 @@ namespace UI
         [DisplayName("HTTP Server race controls enabled")]
         public bool HTTPServerRaceControl { get; set; }
 
-        [Category("Web")]
-        [DisplayName("Show the stages tip when an event opens")]
-        public bool StagesTip { get; set; }
-
 
         [Category("Layout")]
         [Browsable(false)]
@@ -471,7 +467,6 @@ namespace UI
 
             VideosToKeep = 50;
             HTTPServer = false;
-            StagesTip = true;
 
             EventStorageLocationRelative = @"events";
 
