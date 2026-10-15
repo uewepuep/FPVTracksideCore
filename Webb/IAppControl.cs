@@ -1,82 +1,121 @@
+using RaceLib;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Webb
 {
-    // Everything the REST API can make the FPVTrackside window do beyond the
-    // race data itself: which tab and scene is showing, the race-director
-    // buttons, sounds, OBS, settings, dialogs and windows. Implemented by
-    // UI.EventLayer; every member is called on the UI thread.
-    //
-    // Failures are reported by throwing AppControlException, whose status and
-    // code the API passes straight back to the caller.
+    // What the REST API needs from the FPVTrackside window: the things only the
+    // UI can do. Implemented in UI by EventLayerAppControl; every member is
+    // called on the UI thread and does what the matching button, menu item or
+    // shortcut does. Name matching, checks and errors are the API's job
+    // (Webb/Api/AppApi.cs), so names passed in here are exact.
     public interface IAppControl
     {
-        AppState GetState();
-
-        // Tabs and scenes. Names are the ones listed in AppState.
+        // Tabs, by their button text, in order.
+        IEnumerable<AppTabInfo> Tabs { get; }
+        string CurrentTab { get; }
         void ShowTab(string tab);
+
+        // The Live tab's scenes (SceneManagerNode.Scenes names).
+        IEnumerable<string> Scenes { get; }
+        string CurrentScene { get; }
+        void ShowLive();
         void ShowScene(string scene);
+        void ShowCommentators();
+
+        AppView View { get; }
         void SetView(AppViewChange change);
 
-        // The race-director buttons, exactly as if they had been pressed.
-        void StartRace(bool videoCheck);
-        void StopRace(bool emergency);
+        // The race-director buttons currently shown (start, stop, clear…).
+        IEnumerable<string> Buttons { get; }
+
+        void StartRaceWithVideoCheck();
+        void StopRace();
+        void EmergencyStop();
         void ClearRace();
         void ResumeRace();
         void StartStopNext();
-        void NextRace(bool unfinishedOnly);
+        void NextRace();
+        // The Next button: back to the last finished race when none is
+        // selected, otherwise the next race that hasn't been run.
+        void NextButton();
+        void VideoCheck();
 
-        void ShowReplay(Guid raceId);
+        bool HasReplay(Race race);
+        void ShowReplay(Race race);
         void ToggleCrashedOut(int channelGroup);
 
-        void PlaySound(string sound, string text);
+        // When the auto runner will start the next race (null without one).
+        DateTime? NextRaceStartTime { get; }
 
-        // OBS. Listing talks to OBS over the network, so it returns a task the
-        // API waits on outside the UI thread.
-        AppObsState GetObs();
-        void SetObs(AppObsChange change);
+        // OBS remote control. ObsAvailable is false when it's switched off.
+        bool ObsEnabled { get; }
+        bool ObsConnected { get; }
+        bool ObsAvailable { get; }
+        bool ObsActive { get; set; }
+        IEnumerable<string> ObsTriggers { get; }
+        void ObsReconnect();
         Task<string[]> ObsList(string what);
         void ObsSetScene(string scene);
         void ObsTrigger(string trigger);
         void ObsHotkey(string name);
         void ObsSourceFilter(string source, string filter, bool enabled);
         AppObsConfig GetObsConfig();
+        // Throws ArgumentException for a rule it can't use.
         void SetObsConfig(AppObsConfig config);
 
-        // Settings groups: whole objects in and out (JSON-compatible).
-        IEnumerable<AppSettingsInfo> SettingsGroups();
-        object GetSettings(string group);
-        AppSettingsResult SetSettings(string group, Newtonsoft.Json.Linq.JObject values);
+        IEnumerable<AppSettingsGroup> SettingsGroups { get; }
 
-        // Anything else on screen: the generic command catalogue (menu items,
-        // keyboard-shortcut actions, dialogs, windows).
-        IEnumerable<AppCommandInfo> Commands();
-        void RunCommand(string name);
+        // Commands only the window can run: dialogs, new windows, web pages
+        // and data. The API adds race, tab, scene, view and sound commands.
+        IEnumerable<AppCommand> Commands { get; }
 
-        // Leaving the event. Both tear down the web server, so they run after
-        // the response has gone.
+        // Leaving the event. These dispose the web server, so the API calls
+        // them after the response has gone.
         void OpenEvent(Guid eventId);
         void BackToEventSelector();
         void Restart();
     }
 
-    public class AppControlException : Exception
+    public class AppView
     {
-        public int Status { get; private set; }
-        public string Code { get; private set; }
+        public bool PilotListVisible { get; set; }
+        public bool WormVisible { get; set; }
+        public bool LapsVisible { get; set; }
+        public bool SubtitlesEnabled { get; set; }
+        public bool AutoRunnerPaused { get; set; }
+        public string AutoRunnerState { get; set; }
+        public double? AutoRunnerTimerSeconds { get; set; }
+    }
 
-        public AppControlException(int status, string code, string message)
-            : base(message)
+    public class AppSettingsGroup
+    {
+        public string Name { get; set; }
+        public string Summary { get; set; }
+        public Type Type { get; set; }
+        public Func<object> Load { get; set; }
+        public Action<object> Save { get; set; }
+        public Func<PropertyInfo, bool> NeedsRestart { get; set; }
+    }
+
+    public class AppCommand
+    {
+        public string Name { get; set; }
+        public string Group { get; set; }
+        public string Summary { get; set; }
+        public bool RaceControl { get; set; }
+        public Action Run { get; set; }
+
+        public AppCommand(string name, string group, string summary, Action run, bool raceControl = false)
         {
-            Status = status;
-            Code = code;
+            Name = name;
+            Group = group;
+            Summary = summary;
+            Run = run;
+            RaceControl = raceControl;
         }
-
-        public static AppControlException NotFound(string what) { return new AppControlException(404, "not_found", what + " not found"); }
-        public static AppControlException Conflict(string message) { return new AppControlException(409, "conflict", message); }
-        public static AppControlException BadRequest(string message) { return new AppControlException(400, "bad_request", message); }
     }
 
     public class AppState

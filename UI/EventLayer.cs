@@ -21,13 +21,13 @@ using Composition;
 
 namespace UI
 {
-    public partial class EventLayer : CompositorLayer, IRaceControl
+    public class EventLayer : CompositorLayer, IRaceControl
     {
         public EventManager EventManager { get; private set; }
 
         public ControlButtonsNode ControlButtons { get; private set; }
 
-        protected VideoManager videoManager;
+        protected internal VideoManager videoManager;
 
         protected PilotListNode pilotList;
         public MenuButton MenuButton { get; private set; }
@@ -45,7 +45,7 @@ namespace UI
 
         public TracksideTabbedMultiNode TabbedMultiNode { get; private set; }
 
-        protected SceneManagerNode sceneManagerNode;
+        protected internal SceneManagerNode sceneManagerNode;
 
         private RaceStartNode raceStartNode;
 
@@ -59,12 +59,13 @@ namespace UI
         private float leftContainerWidth = 0.15f;
 
         private bool showPilotList;
+        internal bool PilotListVisible { get { return showPilotList; } }
 
         private ExternalData.RemoteNotifier RemoteNotifier;
         private ExternalData.ExtensionNotifier ExtensionNotifier;
         private WorkQueue workQueueStartStopRace;
 
-        private SystemStatusNode systemStatusNode;
+        internal SystemStatusNode systemStatusNode;
         
         private DateTime videoCheckEnd;
         private bool hasReportedNoVideo;
@@ -301,7 +302,7 @@ namespace UI
                 raceControl = this;
             }
 
-            eventWebServer = new EventWebServer(EventManager, SoundManager, raceControl, Theme.Current.ChannelColors, ApplicationProfileSettings.Instance.EventStorageDirectory.FullName, a => PlatformTools.Invoke(a), this);
+            eventWebServer = new EventWebServer(EventManager, SoundManager, raceControl, Theme.Current.ChannelColors, ApplicationProfileSettings.Instance.EventStorageDirectory.FullName, a => PlatformTools.Invoke(a), new EventLayerAppControl(this));
 
             if (ApplicationProfileSettings.Instance.HTTPServer)
             {
@@ -489,7 +490,7 @@ namespace UI
             return new MenuButton(Profile, EventManager, videoManager, SoundManager, eventWebServer, TabbedMultiNode, KeyMapper, Theme.Current.Hover.XNA, Theme.Current.RightControls.Text.XNA);
         }
 
-        protected virtual void EventEditor()
+        protected internal virtual void EventEditor()
         {
             EventEditor editor = new EventEditor(EventManager.Event);
             ShowEventEditor(editor);
@@ -590,12 +591,19 @@ namespace UI
             }
         }
 
-        private void ReloadAutoRunnerConfig()
+        internal void ReloadAutoRunnerConfig()
         {
             AutoRunner.LoadConfig(Profile);
         }
 
         private void NextButton_OnClick(MouseInputEvent mie)
+        {
+            NextButton();
+        }
+
+        // Back to the last finished race when none is selected, otherwise the
+        // next race that hasn't been run.
+        internal void NextButton()
         {
             if (EventManager.RaceManager.CurrentRace == null)
             {
@@ -649,7 +657,7 @@ namespace UI
                 TabbedMultiNode.Snap();
             }
         }
-        private void ReloadOBSRemoteControl()
+        internal void ReloadOBSRemoteControl()
         {
             OBSRemoteControlManager?.Dispose();
             OBSRemoteControlManager = new OBSRemoteControlManager(sceneManagerNode, TabbedMultiNode, EventManager);
@@ -776,7 +784,7 @@ namespace UI
             }
         }
 
-        protected virtual void BackToEventSelector()
+        protected internal virtual void BackToEventSelector()
         {
             if (LayerStack.Game is UI.BaseGame)
             {
@@ -789,7 +797,7 @@ namespace UI
             ShowPilotList(!showPilotList);
         }
 
-        private void ShowPilotList(bool show)
+        internal void ShowPilotList(bool show)
         {
             if (show)
             {
@@ -1481,7 +1489,7 @@ namespace UI
             return false;
         }
 
-        private void StartStopNext()
+        internal void StartStopNext()
         {
             if (TabbedMultiNode.IsOnLive)
             {
@@ -1508,7 +1516,7 @@ namespace UI
         }
 
 
-        private void StartRaceWithVideoCheck()
+        internal void StartRaceWithVideoCheck()
         {
             if (sceneManagerNode.Scene == SceneManagerNode.Scenes.PreRace && ApplicationProfileSettings.Instance.AutoRaceStartVideoCheck)
             {
@@ -1521,7 +1529,7 @@ namespace UI
         }
 
 
-        private void VideoCheck()
+        internal void VideoCheck()
         {
             if (sceneManagerNode == null)
                 return;

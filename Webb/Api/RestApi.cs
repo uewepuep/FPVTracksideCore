@@ -1,4 +1,5 @@
 using RaceLib;
+using Sound;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,12 +40,14 @@ namespace Webb.Api
 
         // eventDirectory: the open event's folder (stages are saved in it).
         // appControl: the FPVTrackside window (tabs, scenes, OBS, settings…);
-        // null when there is none, e.g. the API sandbox.
-        public RestApi(EventManager eventManager, IRaceControl raceControl, Action<Action> invokeOnUIThread, Func<string> eventDirectory = null, IAppControl appControl = null)
+        // null when there is none, e.g. the API sandbox. soundManager: null
+        // when there's no sound.
+        public RestApi(EventManager eventManager, IRaceControl raceControl, Action<Action> invokeOnUIThread, Func<string> eventDirectory = null, IAppControl appControl = null, SoundManager soundManager = null)
         {
             this.eventManager = eventManager;
             this.raceControl = raceControl;
             this.app = appControl;
+            this.soundManager = soundManager;
             this.invokeOnUIThread = invokeOnUIThread;
             stages = new StageService(eventManager, eventDirectory ?? (() => null), invokeOnUIThread);
             Register();
@@ -129,11 +132,6 @@ namespace Webb.Api
 
                 res.StatusCode = req.Status;
             }
-            catch (AppControlException e)
-            {
-                res.StatusCode = e.Status;
-                result = new ApiErrorDto { Ok = false, Code = e.Code, Error = e.Message };
-            }
             catch (ApiException e)
             {
                 res.StatusCode = e.Status;
@@ -179,7 +177,7 @@ namespace Webb.Api
             catch (AggregateException ae)
             {
                 Exception inner = ae.Flatten().InnerExceptions.FirstOrDefault() ?? ae;
-                if (inner is ApiException || inner is AppControlException)
+                if (inner is ApiException)
                     throw inner;
                 throw new Exception(inner.Message, inner);
             }
@@ -196,7 +194,7 @@ namespace Webb.Api
             catch (AggregateException ae)
             {
                 Exception inner = ae.Flatten().InnerExceptions.FirstOrDefault() ?? ae;
-                if (inner is ApiException || inner is AppControlException)
+                if (inner is ApiException)
                     throw inner;
                 throw new ApiException(502, "upstream", inner.Message);
             }
@@ -1132,7 +1130,7 @@ namespace Webb.Api
             if (current.Ended)
                 throw ApiException.Conflict("the selected race has already been run; reset it first");
             if (r.BodyAs<StartRaceRequest>().VideoCheck && app != null)
-                app.StartRace(true);
+                app.StartRaceWithVideoCheck();
             else if (!raceControl.StartRace())
                 throw ApiException.Conflict("FPVTrackside refused to start the race");
             Log("race started " + current.RaceName);
@@ -1146,7 +1144,7 @@ namespace Webb.Api
                 return RaceAction(() => RaceManager.EndRace(), "no race is running");
             if (!RaceManager.RaceRunning && !RaceManager.PreRaceStartDelay)
                 throw ApiException.Conflict("no race is running");
-            app.StopRace(false);
+            app.StopRace();
             Log("race stopped");
             return RaceControlState();
         }

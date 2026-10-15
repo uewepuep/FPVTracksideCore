@@ -65,7 +65,7 @@ namespace Webb
 
             ChannelColors = channelColors.ToArray();
             RestApi = new Api.RestApi(eventManager, raceControl, invokeOnUIThread,
-                () => eventManager.EventId == Guid.Empty ? null : Path.Combine(EventsPath(), eventManager.EventId.ToString()), appControl);
+                () => eventManager.EventId == Guid.Empty ? null : Path.Combine(EventsPath(), eventManager.EventId.ToString()), appControl, soundManager);
         }
 
         public void Dispose() 
