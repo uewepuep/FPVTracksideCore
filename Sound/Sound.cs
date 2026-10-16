@@ -64,6 +64,7 @@ namespace Sound
         NameTest,
         HurryUp,
         AnnouncePilotChannel,
+        AnnounceSpotters,
         PilotResult,
 
         StaggeredStart,
@@ -99,6 +100,13 @@ namespace Sound
         InvalidQR
     }
 
+
+    public enum SpotterModes
+    {
+        None,
+        PilotsSpotBeforeTheirHeat,
+        PilotsSpotAfterTheirHeat
+    }
 
     public class Sound
     {

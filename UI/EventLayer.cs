@@ -140,6 +140,7 @@ namespace UI
             SoundManager.SillyNameChance = ApplicationProfileSettings.Instance.SillyNameChance;
             SoundManager.Units = ApplicationProfileSettings.Instance.Units;
             SoundManager.PilotAnnounceTime = TimeSpan.FromSeconds(ApplicationProfileSettings.Instance.PilotProfileHoldLengthSeconds);
+            SoundManager.SpotterMode = ApplicationProfileSettings.Instance.AnnounceSpotters;
 
             KeyMapper = KeyboardShortcuts.Read(Profile);
 

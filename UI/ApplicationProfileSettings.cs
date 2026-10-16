@@ -235,6 +235,10 @@ namespace UI
         [DisplayName("Subtitle Timeout (seconds)")]
         public float SubtitleTimeoutSeconds { get; set; }
 
+        [Category("Sound")]
+        [DisplayName("Announce spotters")]
+        public Sound.SpotterModes AnnounceSpotters { get; set; }
+
         [Category("Start Rules")]
         public bool TimeTrialStaggeredStart { get; set; }
 
