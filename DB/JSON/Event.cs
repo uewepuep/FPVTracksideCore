@@ -98,6 +98,8 @@ namespace DB.JSON
         public string GameTypeName { get; set; }
         public string TimeZone { get; set; }
 
+        public FinalResultPin[] FinalResultPins { get; set; }
+
         public Event()
         {
         }

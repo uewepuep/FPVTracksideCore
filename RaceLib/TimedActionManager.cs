@@ -13,7 +13,8 @@ namespace RaceLib
         {
             Default,
             NextRaceStarts,
-            NextRaceCallout
+            NextRaceCallout,
+            SaveFinalResults
         }
 
         private List<Tuple<DateTime, ActionTypes, System.Action>> actionList;

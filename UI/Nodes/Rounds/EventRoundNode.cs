@@ -311,7 +311,24 @@ namespace UI.Nodes.Rounds
             }
 
             mm.AddItem("Edit Round", EditRound);
-            if (Round.Stage != null)
+            if (Round.Stage == null)
+            {
+                Stage[] deletedStages = EventManager.RoundManager.GetDeletedStages();
+                if (deletedStages.Any())
+                {
+                    MouseMenu restoreMenu = mm.AddSubmenu("Restore Stage");
+                    foreach (Stage stage in deletedStages)
+                    {
+                        Stage local = stage;
+                        restoreMenu.AddItem(string.IsNullOrEmpty(local.Name) ? "(no name)" : local.Name, () =>
+                        {
+                            EventManager.RoundManager.RestoreStage(Round, local);
+                            Refresh(true);
+                        });
+                    }
+                }
+            }
+            else
             {
                 mm.AddItem("Edit Stage", EditStage);
 

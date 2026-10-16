@@ -7,12 +7,13 @@ using Tools;
 
 namespace UI.Nodes
 {
-    // The Results tab: Lap Records, Lap Count and Points as sub-tabs.
+    // The Results tab: Lap Records, Lap Count, Points and Final Results as sub-tabs.
     public class ResultsNode : Node
     {
         public PointsSummaryNode PointsSummaryNode { get; private set; }
         public LapCountSummaryNode LapCountSummaryNode { get; private set; }
         public LapRecordsSummaryNode LapRecordsSummaryNode { get; private set; }
+        public FinalResultsNode FinalResultsNode { get; private set; }
 
         public Node Showing { get { return tabs.Showing; } }
 
@@ -26,6 +27,7 @@ namespace UI.Nodes
             PointsSummaryNode = new PointsSummaryNode(eventManager);
             LapCountSummaryNode = new LapCountSummaryNode(eventManager);
             LapRecordsSummaryNode = new LapRecordsSummaryNode(eventManager);
+            FinalResultsNode = new FinalResultsNode(eventManager);
 
             // No bar behind them, and plain panel-coloured buttons, so the sub-tabs
             // read as buttons rather than a second tab bar.
@@ -46,6 +48,7 @@ namespace UI.Nodes
             tabs.AddTab("Lap Records", LapRecordsSummaryNode, (mie) => { ShowLapRecords(); });
             tabs.AddTab("Lap Count", LapCountSummaryNode, (mie) => { ShowLapCount(); });
             tabs.AddTab("Points", PointsSummaryNode, (mie) => { ShowPoints(); });
+            tabs.AddTab("Final Results", FinalResultsNode, (mie) => { ShowFinalResults(); });
 
             // Start on Lap Records. A first show raises no tab change.
             tabs.Show(LapRecordsSummaryNode);
@@ -58,8 +61,16 @@ namespace UI.Nodes
                 ShowLapCount();
             else if (Showing == PointsSummaryNode)
                 ShowPoints();
+            else if (Showing == FinalResultsNode)
+                ShowFinalResults();
             else
                 ShowLapRecords();
+        }
+
+        public void ShowFinalResults()
+        {
+            FinalResultsNode.Refresh();
+            tabs.Show(FinalResultsNode);
         }
 
         public void ShowPoints()

@@ -399,9 +399,14 @@ namespace UI.Nodes.Rounds
 
             foreach (EventResultNode eventResultNode in EventResultNodes.ToArray())
             {
-                Round lastOrDefault = EventManager.RoundManager.GetLastStageRound(eventResultNode.Stage);
+                // The node's round may have left the stage it was made for (eg dragged out), in which case
+                // its Stage is null or a different one and it no longer belongs at the end of anything
+                Stage stage = eventResultNode.Stage;
+                bool stageChanged = stage == null || !stage.Valid || stage != eventResultNode.StageNode.Stage;
 
-                if (!eventResultNode.HasResult() || eventResultNode.Round != lastOrDefault)
+                Round lastOrDefault = stageChanged ? null : EventManager.RoundManager.GetLastStageRound(stage);
+
+                if (stageChanged || !eventResultNode.HasResult() || eventResultNode.Round != lastOrDefault)
                 {
                     eventResultNode.Dispose();
                 }
@@ -459,11 +464,18 @@ namespace UI.Nodes.Rounds
 
         private void RemoveResultStage(Round callingRound)
         {
-            if (callingRound.Stage != null)
+            Stage stage = callingRound.Stage;
+            if (stage == null)
             {
-                EventManager.RoundManager.DeleteStage(callingRound.Stage);
+                Refresh();
+                return;
             }
-            Refresh();
+
+            GetLayer<PopupLayer>().PopupConfirmation("Delete stage \"" + stage.Name + "\"?", () =>
+            {
+                EventManager.RoundManager.DeleteStage(stage);
+                Refresh();
+            });
         }
 
         private void AddSumPoints(Round callingRound)

@@ -835,6 +835,30 @@ namespace RaceLib
             OnStageChanged?.Invoke();
         }
 
+        // Stages that have been deleted but are still in the database
+        public Stage[] GetDeletedStages()
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                return db.All<Stage>().Where(s => !s.Valid).OrderBy(s => s.Name).ToArray();
+            }
+        }
+
+        // Brings a deleted stage back, with round in it
+        public void RestoreStage(Round round, Stage stage)
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                stage.Valid = true;
+                db.Update(stage);
+
+                round.Stage = stage;
+                db.Update(round);
+            }
+
+            OnStageChanged?.Invoke();
+        }
+
         public void RemoveStage(Round round)
         {
             using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))

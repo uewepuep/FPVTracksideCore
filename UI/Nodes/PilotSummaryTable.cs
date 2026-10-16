@@ -136,6 +136,13 @@ namespace UI.Nodes
             {
                 needsRefresh = false;
                 DoRefresh();
+
+                // Lay out now rather than on the next update, otherwise this frame draws the new rows unordered
+                // and unpositioned, and the next frame (rendering all the new text) can take a while
+                if (Parent != null)
+                {
+                    Layout(Parent.BoundsF);
+                }
             }
 
             base.Draw(id, parentAlpha);
@@ -340,6 +347,8 @@ namespace UI.Nodes
 
             private TextNode positionNode;
             private TextNode bracketNode;
+            private ImageNode pinNode;
+            private ImageNode gripNode;
 
             private int position;
             public int Position
@@ -395,6 +404,38 @@ namespace UI.Nodes
                 AddChild(cont);
             }
 
+            // A pin icon beside the position, for a pilot placed by hand
+            public void SetPinned(bool pinned)
+            {
+                if (pinned && pinNode == null)
+                {
+                    pinNode = new ImageNode(@"img/pin.png", Theme.Current.InfoPanel.Text.XNA);
+                    pinNode.RelativeBounds = new RectangleF(0.075f, 0.15f, 0.025f, 0.6f);
+                    AddChild(pinNode);
+                }
+
+                if (pinNode != null)
+                {
+                    pinNode.Visible = pinned;
+                }
+            }
+
+            // A grip icon at the left edge, for rows that can be dragged to reorder them
+            public void SetDraggable(bool draggable)
+            {
+                if (draggable && gripNode == null)
+                {
+                    gripNode = new ImageNode(@"img/grip.png", Theme.Current.InfoPanel.Text.XNA);
+                    gripNode.RelativeBounds = new RectangleF(0.005f, 0.15f, 0.02f, 0.6f);
+                    AddChild(gripNode);
+                }
+
+                if (gripNode != null)
+                {
+                    gripNode.Visible = draggable;
+                }
+            }
+
             public void SetPosition(int value, int? oldPosition = null)
             {
                 position = value;
@@ -408,6 +449,10 @@ namespace UI.Nodes
 
             private string GetPositionText(int position)
             {
+                // No position (eg not ranked in Final Results)
+                if (position <= 0)
+                    return "-";
+
                 string output = position.ToStringPosition();
                 if (oldPosition != null)
                 {
