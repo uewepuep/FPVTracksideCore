@@ -22,6 +22,8 @@ namespace UI.Nodes
         public bool IsOnLive { get { return sceneManagerNode == Showing; } }
         public bool IsOnRounds { get { return rounds == Showing; } }
         public bool IsOnReplay { get { return ReplayNode == Showing; } }
+        public bool ReplayAvailable { get { return replayButton.Enabled; } }
+        public bool RSSIAvailable { get { return rssiButton.Visible; } }
         public bool IsOnChanelList { get { return pilotChanelList == Showing; } }
         public bool IsOnResults { get { return ResultsNode == Showing; } }
         public bool IsOnLapCount { get { return IsOnResults && ResultsNode.Showing == ResultsNode.LapCountSummaryNode; } }
@@ -150,6 +152,11 @@ namespace UI.Nodes
 
         public void ShowAnalyser(MouseInputEvent mie)
         {
+            ShowAnalyser();
+        }
+
+        public void ShowAnalyser()
+        {
             Show(rssiNode);
 
             if (!eventManager.RaceManager.RaceRunning)
@@ -186,6 +193,24 @@ namespace UI.Nodes
             ShowResults();
         }
 
+        public void ShowLapRecords()
+        {
+            Show(ResultsNode);
+            ResultsNode.ShowLapRecords();
+        }
+
+        public void ShowLapCount()
+        {
+            Show(ResultsNode);
+            ResultsNode.ShowLapCount();
+        }
+
+        public void ShowPoints()
+        {
+            Show(ResultsNode);
+            ResultsNode.ShowPoints();
+        }
+
         public void ShowResults()
         {
             // Results first, so a sub-tab change is passed on with Results showing.
@@ -218,6 +243,11 @@ namespace UI.Nodes
         }
         public void ShowPhotoBooth(MouseInputEvent mie)
         {
+            ShowPhotoBooth();
+        }
+
+        public void ShowPhotoBooth()
+        {
             Show(PhotoBooth);
             PhotoBooth.Load();
         }
@@ -231,7 +261,18 @@ namespace UI.Nodes
             //    return;
             //}
 
+            ShowPilotChannelList();
+        }
+
+        public void ShowPilotChannelList()
+        {
             Show(pilotChanelList);
+        }
+
+        // The Track tab lives in FPVTrackside (TracksideTabbedMultiNodeExtra),
+        // which overrides this; core has no track.
+        public virtual void ShowTrack()
+        {
         }
 
         public void ShowCommentators()

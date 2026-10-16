@@ -1257,6 +1257,81 @@ namespace UI
                     return true;
                 }
 
+                if (KeyMapper.ShowRounds.Match(inputEvent))
+                {
+                    TabbedMultiNode.ShowRounds();
+                    return true;
+                }
+
+                if (KeyMapper.ShowLive.Match(inputEvent))
+                {
+                    TabbedMultiNode.ShowLive();
+                    return true;
+                }
+
+                if (KeyMapper.ShowReplay.Match(inputEvent))
+                {
+                    if (TabbedMultiNode.ReplayAvailable)
+                    {
+                        TabbedMultiNode.ShowReplay();
+                    }
+                    return true;
+                }
+
+                if (KeyMapper.ShowLapRecords.Match(inputEvent))
+                {
+                    TabbedMultiNode.ShowLapRecords();
+                    return true;
+                }
+
+                if (KeyMapper.ShowLapCount.Match(inputEvent))
+                {
+                    TabbedMultiNode.ShowLapCount();
+                    return true;
+                }
+
+                if (KeyMapper.ShowPoints.Match(inputEvent))
+                {
+                    TabbedMultiNode.ShowPoints();
+                    return true;
+                }
+
+                if (KeyMapper.ShowPhotoBooth.Match(inputEvent))
+                {
+                    if (TabbedMultiNode.PhotoBoothButton.Visible)
+                    {
+                        TabbedMultiNode.ShowPhotoBooth();
+                    }
+                    return true;
+                }
+
+                if (KeyMapper.ShowTrack.Match(inputEvent))
+                {
+                    TabbedMultiNode.ShowTrack();
+                    return true;
+                }
+
+                if (KeyMapper.ShowChannelList.Match(inputEvent))
+                {
+                    TabbedMultiNode.ShowPilotChannelList();
+                    return true;
+                }
+
+                if (KeyMapper.ShowRSSIAnalyser.Match(inputEvent))
+                {
+                    if (TabbedMultiNode.RSSIAvailable)
+                    {
+                        TabbedMultiNode.ShowAnalyser();
+                    }
+                    return true;
+                }
+
+                if (KeyMapper.ShowPatreons.Match(inputEvent))
+                {
+                    TabbedMultiNode.ShowPatreons();
+                    return true;
+                }
+
                 Race race = EventManager.RaceManager.CurrentRace;
                 if (KeyMapper.AnnounceRace.Match(inputEvent))
                 {

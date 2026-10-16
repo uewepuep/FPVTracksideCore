@@ -47,8 +47,8 @@ namespace UI.Nodes
             tabs.AddTab("Lap Count", LapCountSummaryNode, (mie) => { ShowLapCount(); });
             tabs.AddTab("Points", PointsSummaryNode, (mie) => { ShowPoints(); });
 
-            // Start on Points. A first show raises no tab change.
-            tabs.Show(PointsSummaryNode);
+            // Start on Lap Records. A first show raises no tab change.
+            tabs.Show(LapRecordsSummaryNode);
         }
 
         // Shows whichever sub-tab was last open, refreshed.
@@ -56,10 +56,10 @@ namespace UI.Nodes
         {
             if (Showing == LapCountSummaryNode)
                 ShowLapCount();
-            else if (Showing == LapRecordsSummaryNode)
-                ShowLapRecords();
-            else
+            else if (Showing == PointsSummaryNode)
                 ShowPoints();
+            else
+                ShowLapRecords();
         }
 
         public void ShowPoints()

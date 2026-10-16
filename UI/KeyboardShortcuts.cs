@@ -49,6 +49,29 @@ namespace Composition.Input
         [Category("Live Video")]
         public ShortcutKey ShowWorm { get; set; }
 
+        [Category("Tabs")]
+        public ShortcutKey ShowRounds { get; set; }
+        [Category("Tabs")]
+        public ShortcutKey ShowLive { get; set; }
+        [Category("Tabs")]
+        public ShortcutKey ShowReplay { get; set; }
+        [Category("Tabs")]
+        public ShortcutKey ShowLapRecords { get; set; }
+        [Category("Tabs")]
+        public ShortcutKey ShowLapCount { get; set; }
+        [Category("Tabs")]
+        public ShortcutKey ShowPoints { get; set; }
+        [Category("Tabs")]
+        public ShortcutKey ShowPhotoBooth { get; set; }
+        [Category("Tabs")]
+        public ShortcutKey ShowTrack { get; set; }
+        [Category("Tabs")]
+        public ShortcutKey ShowChannelList { get; set; }
+        [Category("Tabs")]
+        public ShortcutKey ShowRSSIAnalyser { get; set; }
+        [Category("Tabs")]
+        public ShortcutKey ShowPatreons { get; set; }
+
         [Category("Race Control")]
         public ShortcutKey StartStopRace { get; set; }
         [Category("Race Control")]
@@ -275,6 +298,18 @@ namespace Composition.Input
             ScenePostRace = new ShortcutKey(Keys.F4);
             SceneCommentators = new ShortcutKey(Keys.F5);
             SceneEventStatus = new ShortcutKey(Keys.F6);
+
+            ShowRounds = new ShortcutKey(Keys.R, true, true);
+            ShowLive = new ShortcutKey(Keys.V, true, true);
+            ShowReplay = new ShortcutKey(Keys.Y, true, true);
+            ShowLapRecords = new ShortcutKey(Keys.L, true, true);
+            ShowLapCount = new ShortcutKey(Keys.C, true, true);
+            ShowPoints = new ShortcutKey(Keys.P, true, true);
+            ShowPhotoBooth = new ShortcutKey(Keys.B, true, true);
+            ShowTrack = new ShortcutKey(Keys.K, true, true);
+            ShowChannelList = new ShortcutKey(Keys.N, true, true);
+            ShowRSSIAnalyser = new ShortcutKey(Keys.S, true, true);
+            ShowPatreons = new ShortcutKey(Keys.E, true, true);
 
             ReplayPlayStop = new ShortcutKey(Keys.Space);
             ReplayNextFrame = new ShortcutKey(Keys.Right);
