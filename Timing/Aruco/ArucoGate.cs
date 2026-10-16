@@ -16,7 +16,11 @@ namespace Timing.Aruco
         private bool inGate;
         private DateTime flickerEndTime = DateTime.MinValue;
 
-        /// <summary>Marker count on the frame that put the gate in view.</summary>
+        /// <summary>
+        /// Most markers seen on any one frame of the latest pass. Kept after the crossing, which
+        /// is only reported once the count has dropped, so the caller can read it alongside the
+        /// crossing; cleared when the next pass begins.
+        /// </summary>
         public int LastPeak { get; private set; }
 
         /// <summary>
@@ -49,8 +53,8 @@ namespace Timing.Aruco
 
             if (count >= markerThreshold)
             {
+                LastPeak = inGate ? Math.Max(LastPeak, count) : count;
                 inGate = true;
-                LastPeak = count;
                 flickerEndTime = DateTime.MinValue;
                 return false;
             }

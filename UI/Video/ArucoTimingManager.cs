@@ -513,7 +513,6 @@ namespace UI.Video
 
                             var wantedIds = s.EffectiveMarkerIds;
                             int matching = 0;
-                            double maxArea = 0;
                             double minAreaPx = (double)FrameWidth * FrameHeight * (effective.MinMarkerPercent / 100.0);
 
                             foreach (var d in detections)
@@ -521,10 +520,9 @@ namespace UI.Video
                                 if (!wantedIds.Contains(d.Id)) continue;
                                 if (d.AreaPx < minAreaPx) continue;
                                 matching++;
-                                if (d.AreaPx > maxArea) maxArea = d.AreaPx;
                             }
 
-                            sys.ReportMarkerCount(cvn.Channel.Frequency, matching, (int)maxArea, captureTime,
+                            sys.ReportMarkerCount(cvn.Channel.Frequency, matching, captureTime,
                                 effective.MarkerThreshold, effective.FlickerLengthMs);
                         }
                     }

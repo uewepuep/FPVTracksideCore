@@ -98,14 +98,18 @@ namespace UI.Nodes.Aruco
         }
 
         /// <summary>
-        /// Brings the lap list into line with a recalculation by validating and disqualifying
-        /// the laps that are already there, rather than replacing them.
+        /// Brings the lap list into line with a recalculation by disqualifying the laps that are
+        /// already there, rather than replacing them.
         ///
         /// A longer flicker can only ever merge passes, never split one, so its crossings are
         /// the timer's own crossings with some dropped. Re-using the rows keeps the times the
         /// timer actually measured, keeps any manual edit or split made since, and leaves no
         /// replaced laps to dispose of. A crossing with no lap to match - only possible when
         /// recalculating with a shorter flicker than the race ran with - is added.
+        ///
+        /// Recalculating only ever takes laps away: a lap that is already disqualified - by
+        /// hand, or by the timer's own checks - stays that way even when a crossing claims it.
+        /// It still claims the crossing, so the pass is not added back as a new lap.
         /// </summary>
         private void ApplyCrossings(IEnumerable<TimeSpan> crossings)
         {
@@ -128,10 +132,10 @@ namespace UI.Nodes.Aruco
                 }
 
                 // Each crossing claims its nearest lap and no other crossing can take it, so two
-                // passes close together still map one to one.
+                // passes close together still map one to one. The claimed lap keeps the
+                // validity it has.
                 if (nearest != null && nearestDistance <= MatchToleranceSeconds)
                 {
-                    nearest.Valid = true;
                     unclaimed.Remove(nearest);
                 }
                 else
@@ -140,10 +144,18 @@ namespace UI.Nodes.Aruco
                 }
             }
 
-            // Whatever no crossing claimed was a flicker the longer window swallows.
+            // Whatever no crossing claimed was a flicker the longer window swallows. Only laps the
+            // timer produced can be explained that way - a lap added by hand, or with Manual
+            // timing, has no crossing in the waveform to claim it, so leave its validity alone.
             foreach (LapEditorContainer lc in unclaimed)
             {
-                lc.Valid = false;
+                bool fromTimer = lc.Lap != null && lc.Lap.Detection != null
+                    && lc.Lap.Detection.TimingSystemType != TimingSystemType.Manual;
+
+                if (fromTimer)
+                {
+                    lc.Valid = false;
+                }
             }
 
             foreach (TimeSpan crossing in unmatched)

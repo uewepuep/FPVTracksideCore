@@ -278,7 +278,7 @@ namespace Timing.Aruco
         /// markerThreshold / flickerLengthMs are supplied by the manager so Split instances can
         /// inherit the Primary's values (keeping the Split UI limited to MarkerIds only).
         /// </summary>
-        public void ReportMarkerCount(int frequency, int count, int peak, DateTime captureTime,
+        public void ReportMarkerCount(int frequency, int count, DateTime captureTime,
             int markerThreshold, int flickerLengthMs)
         {
             if (!detecting || settings == null) return;
@@ -315,8 +315,11 @@ namespace Timing.Aruco
                                        out DateTime detectionTime))
                     return;
 
-                // Peak is reported as the largest marker area seen while the gate was in view.
-                OnDetectionEvent?.Invoke(this, frequency, detectionTime, peak);
+                // Peak is the most markers seen during the pass, on the same x10 scale as the
+                // marshal waveform, so a lap's Peak reads straight off the graph. The count is
+                // also what the gate itself decides on.
+                OnDetectionEvent?.Invoke(this, frequency, detectionTime,
+                                         state.Gate.LastPeak * ArucoWaveformRecorder.Scale);
             }
         }
 

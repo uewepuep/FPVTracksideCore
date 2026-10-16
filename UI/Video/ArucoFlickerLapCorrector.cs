@@ -30,7 +30,11 @@ namespace UI.Video
 
         // SetLapValidity raises OnLapDisqualified again, for both of the calls below, so without
         // this the first correction would re-enter and a run of short laps could cascade.
-        private bool correcting;
+        // Per thread: each channel detects on its own thread, so a shared flag would make one
+        // channel's correction skip another's that happened at the same time, while the
+        // re-entry it guards against always comes back on the thread that started it.
+        [ThreadStatic]
+        private static bool correcting;
 
         public ArucoFlickerLapCorrector(EventManager eventManager, TimingSystemManager timingSystemManager)
         {
