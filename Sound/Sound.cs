@@ -104,8 +104,8 @@ namespace Sound
     public enum SpotterModes
     {
         None,
-        PilotsSpotBeforeTheirHeat,
-        PilotsSpotAfterTheirHeat
+        PilotsSpotBeforeTheirRace,
+        PilotsSpotAfterTheirRace
     }
 
     public class Sound

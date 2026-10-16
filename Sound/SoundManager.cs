@@ -283,7 +283,7 @@ namespace Sound
                     new Sound() { Key = SoundKey.RaceAnnounceResults, TextToSpeech = "Results of Round {round} {type} {race} {bracket}. ", Category = Sound.SoundCategories.Announcements },
 
                     new Sound() { Key = SoundKey.AnnouncePilotChannel, TextToSpeech = "{pilot} on {band}{channel}", Category = Sound.SoundCategories.Announcements },
-                    new Sound() { Key = SoundKey.AnnounceSpotters, TextToSpeech = "Spotting this heat {pilots}", Category = Sound.SoundCategories.Announcements },
+                    new Sound() { Key = SoundKey.AnnounceSpotters, TextToSpeech = "Spotting this race {pilots}", Category = Sound.SoundCategories.Announcements },
                     new Sound() { Key = SoundKey.PilotResult, TextToSpeech = "{pilot} {position}", Category = Sound.SoundCategories.Announcements },
 
                     new Sound() { Key = SoundKey.NameTest, TextToSpeech = "{pilot}", Category = Sound.SoundCategories.Announcements },
@@ -593,16 +593,16 @@ namespace Sound
             if (race == null || race.Round == null || SpotterMode == SpotterModes.None)
                 return null;
 
-            // Spotting rotates within the heats of this round (and bracket), wrapping around at either end.
-            Race[] heats = eventManager.RaceManager.GetRaces(race.Round).Where(r => r.Bracket == race.Bracket && r.PilotChannels.Any()).ToArray();
-            int index = Array.IndexOf(heats, race);
-            if (index < 0 || heats.Length < 2)
+            // Spotting rotates within the races of this round (and bracket), wrapping around at either end.
+            Race[] races = eventManager.RaceManager.GetRaces(race.Round).Where(r => r.Bracket == race.Bracket && r.PilotChannels.Any()).ToArray();
+            int index = Array.IndexOf(races, race);
+            if (index < 0 || races.Length < 2)
                 return null;
 
-            // If pilots spot before their heat, this heat's spotters are the pilots in the next heat.
-            // If pilots spot after their heat, this heat's spotters are the pilots in the previous heat.
-            int offset = SpotterMode == SpotterModes.PilotsSpotBeforeTheirHeat ? 1 : -1;
-            return heats[(index + offset + heats.Length) % heats.Length];
+            // If pilots spot before their race, this race's spotters are the pilots in the next race.
+            // If pilots spot after their race, this race's spotters are the pilots in the previous race.
+            int offset = SpotterMode == SpotterModes.PilotsSpotBeforeTheirRace ? 1 : -1;
+            return races[(index + offset + races.Length) % races.Length];
         }
 
         private void PlaySpotters(Race race)
