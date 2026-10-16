@@ -22,8 +22,13 @@ namespace Composition.Nodes
             set
             {
                 texture = value;
+                hasContent = false;
             }
         }
+
+        // A new render target holds whatever was in that memory before (on OpenGL at least),
+        // so don't show it until something has been drawn into it
+        private bool hasContent;
 
         private object renderTargetLock;
         protected Drawer drawer;
@@ -205,7 +210,7 @@ namespace Composition.Nodes
 
             lock (renderTargetLock)
             {
-                if (renderTarget != null)
+                if (renderTarget != null && hasContent)
                 {
                     Rectangle sourceBounds = new Rectangle(0, 0, renderTarget.Width, renderTarget.Height);
                     Rectangle destBounds = Bounds;
@@ -373,6 +378,7 @@ namespace Composition.Nodes
                         //#endif
 
                         DrawContent(id);
+                        hasContent = true;
                     }
                 }
                 catch

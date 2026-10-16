@@ -35,6 +35,7 @@ namespace DB.JSON
 
         public SplitJsonCollection<Race> Races { get; private set; }
         public ResultCollection Results { get; private set; }
+        public JsonCollection<FinalResult> FinalResults { get; private set; }
 
         public Guid EventId { get; private set; }
 
@@ -74,6 +75,7 @@ namespace DB.JSON
 
                 Races = new SplitJsonCollection<Race>(eventDirectory);
                 Results = new ResultCollection(eventDirectory);
+                FinalResults = new JsonCollection<FinalResult>(eventDirectory);
             }
         }
         public void Dispose()
@@ -119,6 +121,9 @@ namespace DB.JSON
 
             if (typeof(T) == typeof(RaceLib.Result))
                 return new ConvertedCollection<RaceLib.Result, Result>(Results, this) as IDatabaseCollection<T>;
+
+            if (typeof(T) == typeof(RaceLib.FinalResult))
+                return new ConvertedCollection<RaceLib.FinalResult, FinalResult>(FinalResults, this) as IDatabaseCollection<T>;
 
             if (typeof(T) == typeof(RaceLib.Detection))
                 return new ConvertedCollection<RaceLib.Detection, Detection>(new DetectionCollection(Races), this) as IDatabaseCollection<T>;

@@ -85,6 +85,7 @@ namespace RaceLib
             RaceManager = new RaceManager(this);
             LapRecordManager = new LapRecordManager(RaceManager);
             ResultManager = new ResultManager(this);
+            ResultManager.RaceResultsChanged += (race) => { QueueSaveFinalResults(); };
             TimedActionManager = new TimedActionManager();
             RoundManager = new RoundManager(this);
             SpeedRecordManager = new SpeedRecordManager(RaceManager);
@@ -220,6 +221,69 @@ namespace RaceLib
             }
 
             return false;
+        }
+
+        // Places a pilot by hand in Final Results, taking the place from anyone pinned there.
+        public void PinFinalResult(Pilot pilot, int position)
+        {
+            List<FinalResultPin> pins = (Event.FinalResultPins ?? new FinalResultPin[0])
+                .Where(p => p.Pilot != pilot.ID && p.Position != position).ToList();
+            pins.Add(new FinalResultPin() { Pilot = pilot.ID, Position = position });
+            SetFinalResultPins(pins);
+        }
+
+        public void UnpinFinalResult(Pilot pilot)
+        {
+            SetFinalResultPins((Event.FinalResultPins ?? new FinalResultPin[0]).Where(p => p.Pilot != pilot.ID));
+        }
+
+        public void ClearFinalResultPins()
+        {
+            SetFinalResultPins(new FinalResultPin[0]);
+        }
+
+        private void SetFinalResultPins(IEnumerable<FinalResultPin> pins)
+        {
+            using (IDatabase db = DatabaseFactory.Open(EventId))
+            {
+                Event.FinalResultPins = pins.OrderBy(p => p.Position).ToArray();
+                db.Update(Event);
+            }
+            QueueSaveFinalResults();
+        }
+
+        // Saves the final results a moment after the last change, so a burst of changes
+        // (eg every race's results being recalculated) only saves once.
+        private void QueueSaveFinalResults()
+        {
+            TimedActionManager.Cancel(TimedActionManager.ActionTypes.SaveFinalResults);
+            TimedActionManager.Enqueue(DateTime.Now.AddSeconds(2), TimedActionManager.ActionTypes.SaveFinalResults, SaveFinalResults);
+        }
+
+        public FinalResult[] GetFinalResults()
+        {
+            return new EventRanking(this).Calculate(ResultModes.Auto)
+                .Select(p => new FinalResult() { ID = Guid.NewGuid(), Pilot = p.Pilot, Position = p.Position, Stage = p.Stage, Pinned = p.Pinned })
+                .ToArray();
+        }
+
+        // Rewrites FinalResults.json from the current ranking.
+        public void SaveFinalResults()
+        {
+            try
+            {
+                FinalResult[] results = GetFinalResults();
+
+                using (IDatabase db = DatabaseFactory.Open(EventId))
+                {
+                    db.Delete(db.All<FinalResult>().ToArray());
+                    db.Insert(results);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.AllLog.LogException(this, e);
+            }
         }
 
         public void SetEventLaps(int laps)
@@ -406,7 +470,8 @@ namespace RaceLib
             {
                 Guid[] stageIds = RoundManager.Rounds.Where(r => r.Stage != null).Select(r => r.Stage.ID).ToArray();
 
-                Stage[] toDelete = db.All<Stage>().Where(s => !stageIds.Contains(s.ID)).ToArray();
+                // Deleted (invalid) stages are kept so they can be restored
+                Stage[] toDelete = db.All<Stage>().Where(s => s.Valid && !stageIds.Contains(s.ID)).ToArray();
                 db.Delete(toDelete);
             }
         }
@@ -461,6 +526,9 @@ namespace RaceLib
             workQueue.Enqueue(workSet, "Loading Sheets", () =>
             {
                 RoundManager.SheetFormatManager.Load();
+
+                // Brings FinalResults.json up to date, including for events from before it existed
+                QueueSaveFinalResults();
             });
         }
 

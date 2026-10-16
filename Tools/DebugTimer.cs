@@ -1,40 +1,43 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Tools
 {
+    // Times use Stopwatch timestamps: a monotonic, high resolution counter that's much cheaper to read than
+    // DateTime.Now (which converts to local time) and doesn't jump when the clock is adjusted.
     public class DebugTimer
     {
-        public DateTime Start { get; private set; }
+        public long Start { get; private set; }
 
-        private Dictionary<string, DateTime> points;
+        private Dictionary<string, long> points;
 
         public DebugTimer()
         {
-            Start = DateTime.Now;
-            points = new Dictionary<string, DateTime>();
+            Start = Stopwatch.GetTimestamp();
+            points = new Dictionary<string, long>();
         }
 
         public void Record(string name)
         {
-            points.Add(name, DateTime.Now);
+            points.Add(name, Stopwatch.GetTimestamp());
         }
 
         public string Report()
         {
             string data = "";
-            DateTime last = Start;
+            long last = Start;
 
             foreach (var kvp in points)
             {
-                data += kvp.Key + " " + (kvp.Value - Start).TotalMilliseconds.ToString("0.00") + ",  ";
+                data += kvp.Key + " " + Stopwatch.GetElapsedTime(Start, kvp.Value).TotalMilliseconds.ToString("0.00") + ",  ";
                 last = kvp.Value;
             }
 
-            data += "Total " + (last - Start).TotalMilliseconds.ToString("0.00") + ",  ";
+            data += "Total " + Stopwatch.GetElapsedTime(Start, last).TotalMilliseconds.ToString("0.00") + ",  ";
 
             return data;
         }
@@ -44,7 +47,7 @@ namespace Tools
 
         private static Dictionary<string, TimeSpan> total = new Dictionary<string, TimeSpan>();
         private static Dictionary<string, TimeSpan> max = new Dictionary<string, TimeSpan>();
-        private static Dictionary<string, DateTime> start = new Dictionary<string, DateTime>();
+        private static Dictionary<string, long> start = new Dictionary<string, long>();
 #endif
 
         public static void DebugStartTime(object obj)
@@ -57,16 +60,10 @@ namespace Tools
         public static void DebugStartTime(string name)
         {
 #if DEBUG
+            long now = Stopwatch.GetTimestamp();
             lock (start)
             {
-                if (start.ContainsKey(name))
-                {
-                    start[name] = DateTime.Now;
-                }
-                else
-                {
-                    start.Add(name, DateTime.Now);
-                }
+                start[name] = now;
             }
 #endif
         }
@@ -81,11 +78,17 @@ namespace Tools
         public static void DebugEndTime(string name)
         {
 #if DEBUG
-            DateTime last;
-            if (start.TryGetValue(name, out last))
+            long now = Stopwatch.GetTimestamp();
+            long last;
+            bool found;
+            lock (start)
             {
-                DateTime now = DateTime.Now;
-                TimeSpan time = now - last;
+                found = start.TryGetValue(name, out last);
+            }
+
+            if (found)
+            {
+                TimeSpan time = Stopwatch.GetElapsedTime(last, now);
                 lock (total)
                 {
                     if (total.ContainsKey(name))

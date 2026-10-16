@@ -74,6 +74,10 @@ namespace RaceLib
         
         public int PackLimit { get; set; }
 
+        // Pilots placed by hand in Final Results
+        [System.ComponentModel.Browsable(false)]
+        public FinalResultPin[] FinalResultPins { get; set; }
+
         public TimeSpan RaceLength { get; set; }
 
         public TimeSpan MinStartDelay { get; set; }
