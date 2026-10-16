@@ -524,11 +524,31 @@ namespace Webb.Seeder
                 }
             }
 
-            Round round = eventManager.RoundManager.CreateEmptyRound(EventTypes.Race);
+            Round round = EmptyLastRound() ?? eventManager.RoundManager.CreateEmptyRound(EventTypes.Race);
             eventManager.RoundManager.RenameRound(round, name);
             rec.RoundLinks[key] = round.ID;
             PutInTracksideStage(rec, round);
             return round;
+        }
+
+        // The event's last round, if it's empty and not part of a stage: typically the round Seeder was opened
+        // from, so use it rather than adding another after it. Made a Race round if it wasn't one.
+        private Round EmptyLastRound()
+        {
+            RoundManager rm = eventManager.RoundManager;
+            Round last = rm.GetLastRound();
+            if (last == null || last.Stage != null || !rm.IsEmpty(last))
+                return null;
+
+            if (last.EventType != EventTypes.Race)
+            {
+                last.EventType = EventTypes.Race;
+                using (IDatabase db = DatabaseFactory.Open(eventManager.EventId))
+                {
+                    db.Update(last);
+                }
+            }
+            return last;
         }
 
         private static string RoundKey(Engine.RaceView rv)

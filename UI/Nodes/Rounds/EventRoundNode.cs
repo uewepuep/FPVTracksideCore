@@ -149,8 +149,7 @@ namespace UI.Nodes.Rounds
 
             // Races from an outside system (eg MultiGP / ZippyQ), same as the round menu: only on the last round
             ExternalRaceProvider[] providers = EventManager.ExternalRaceProviders ?? new ExternalRaceProvider[0];
-            bool showSyncAlways = true; // TEMP: show the tile without a linked provider, to check the layout
-            if (showSyncAlways || (providers.Any() && EventManager.RoundManager.GetLastRound(Round.EventType, Round.Stage) == Round))
+            if (providers.Any() && EventManager.RoundManager.GetLastRound(Round.EventType, Round.Stage) == Round)
             {
                 IconButtonNode sync = FormatTileButton(@"img\format-sync.png", "Sync Down");
                 sync.OnClick += (mie) =>
@@ -166,10 +165,6 @@ namespace UI.Nodes.Rounds
                     {
                         ExternalRaceProvider p = provider;
                         menu.AddItem("Add " + p.Name, () => { p.TriggerCreateRaces(Round); });
-                    }
-                    if (!providers.Any())
-                    {
-                        menu.AddItem(Translator.Get("Label.NoSync", "No sync linked to this event"), () => { });
                     }
                     ShowBelow(menu, sync, mie);
                 };

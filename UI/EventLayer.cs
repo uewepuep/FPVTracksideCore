@@ -332,7 +332,7 @@ namespace UI
 
             MenuButton.TimingChanged += () =>
             {
-                systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager, sceneManagerNode.SubtitleNode);
+                systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager, sceneManagerNode.SubtitleNode, eventWebServer, menu => MenuButton.AddServerMenuItems(menu));
             };
 
             MenuButton.VideoSettingsExited += (bool changed) =>
@@ -368,7 +368,7 @@ namespace UI
             float width = 0.95f;
 
             systemStatusNode = new SystemStatusNode();
-            systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager, sceneManagerNode.SubtitleNode);
+            systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager, sceneManagerNode.SubtitleNode, eventWebServer, menu => MenuButton.AddServerMenuItems(menu));
             systemStatusNode.RelativeBounds = new RectangleF((1 - width) / 2, MenuButton.RelativeBounds.Bottom + 0.01f, width, 1);
             rightSideColor.AddChild(systemStatusNode);
 
@@ -668,7 +668,7 @@ namespace UI
             OBSRemoteControlManager?.Dispose();
             OBSRemoteControlManager = new OBSRemoteControlManager(sceneManagerNode, TabbedMultiNode, EventManager);
 
-            systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager, sceneManagerNode.SubtitleNode);
+            systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager, sceneManagerNode.SubtitleNode, eventWebServer, menu => MenuButton.AddServerMenuItems(menu));
         }
 
         public void ResumeRace()
@@ -715,7 +715,7 @@ namespace UI
                     ChannelsGridNode.FillChannelNodes();
 
                     sceneManagerNode.SetupCams();
-                    systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager, sceneManagerNode.SubtitleNode);
+                    systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager, sceneManagerNode.SubtitleNode, eventWebServer, menu => MenuButton.AddServerMenuItems(menu));
 
                     if (current != null)
                     {

@@ -160,27 +160,19 @@ namespace UI.Nodes
                 }
             }
 
-            bool hasLocalWebServer = eventWebServer != null;
-            if (hasLocalWebServer || OpenFPVTracksideSite != null || OpenMultiGPSite != null)
+            if (eventWebServer != null || OpenFPVTracksideSite != null || OpenMultiGPSite != null)
             {
                 MouseMenu webMenu = root.AddSubmenu("Open Web");
-                if (eventWebServer != null)
-                {
-                    webMenu.AddItem("Open Local Web page", () => OpenWebServer());
-                    webMenu.AddItem("Open Seeder", () => OpenWebServer("seeder/"));
-                    webMenu.AddItem("Open API console", () => OpenWebServer("api/v1/docs"));
-                    webMenu.AddItem("Web users (who can change things)", () => OpenWebServer("seeder/users"));
-                }
+                AddLocalWebMenuItems(webMenu);
                 if (OpenFPVTracksideSite != null)
-                    webMenu.AddItem("Open FPVTrackside.com event page", () => { OpenFPVTracksideSite(); });
+                    webMenu.AddItem("FPVTrackside.com Event Page", () => { OpenFPVTracksideSite(); });
                 if (OpenMultiGPSite != null)
-                    webMenu.AddItem("Open MultiGP.com event page", () => { OpenMultiGPSite(); });
+                    webMenu.AddItem("MultiGP.com Event Page", () => { OpenMultiGPSite(); });
             }
 
             if (PlatformTools.HasFeature(PlatformFeature.SecondaryWindow))
             {
                 MouseMenu openWindow = root.AddSubmenu("Open New Window");
-                root.AddBlank();
 
                 openWindow.AddItem("Log", () =>
                 {
@@ -228,7 +220,9 @@ namespace UI.Nodes
                     });
                 }
             }
-            
+
+            // Ends the "Open ..." group on every platform, not only those with secondary windows
+            root.AddBlank();
 
             root.AddItem("Application Settings", () =>
             {
@@ -672,6 +666,43 @@ namespace UI.Nodes
             }
 
             PlatformTools.OpenFileManager(path);
+        }
+
+        // The local server's pages: in Open Web, and on the Server status icon.
+        public void AddLocalWebMenuItems(MouseMenu webMenu)
+        {
+            if (eventWebServer != null)
+            {
+                webMenu.AddItem("Local Web Page", () => OpenWebServer());
+                webMenu.AddItem("Seeder", () => OpenWebServer("seeder/"));
+                webMenu.AddItem("API Console", () => OpenWebServer("api/v1/docs"));
+                webMenu.AddItem("Web users (who can change things)", () => OpenWebServer("seeder/users"));
+            }
+        }
+
+        // The Server status icon's menu: the local pages (opening one brings the server online), then taking it offline.
+        public void AddServerMenuItems(MouseMenu menu)
+        {
+            if (eventWebServer == null)
+                return;
+
+            AddLocalWebMenuItems(menu);
+
+            if (eventWebServer.Running)
+            {
+                menu.AddBlank();
+                menu.AddItem("Take Server Offline", StopWebServer);
+            }
+        }
+
+        // Like OpenWebServer, changes the setting for this session only
+        public void StopWebServer()
+        {
+            if (eventWebServer != null && eventWebServer.Running)
+            {
+                ApplicationProfileSettings.Instance.HTTPServer = false;
+                eventWebServer.Stop();
+            }
         }
 
         // path: a page on the local web server, relative to its root (e.g. "seeder/").

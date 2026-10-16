@@ -29,6 +29,9 @@ namespace Webb
         private volatile bool running;
         public bool Running => running;
 
+        // Every request, on the listener thread. Status displays flash on it.
+        public event Action OnRequest;
+
         private HttpListener listener;
 
         public string Url { get; set; }
@@ -94,13 +97,13 @@ namespace Webb
         {
             try
             {
-                running = true;
-
+                // Stop any previous thread first: Stop clears running, which would end the new one straight away
                 if (thread != null)
                 {
                     Stop();
                 }
-                
+
+                running = true;
                 thread = new Thread(Run);
 
                 thread.Name = "Webb Thread";
@@ -143,6 +146,7 @@ namespace Webb
                 // must not tear down the listener for everyone else.
                 try
                 {
+                    OnRequest?.Invoke();
                     HandleRequest(context);
                 }
                 catch (Exception ex)

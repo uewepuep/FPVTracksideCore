@@ -14,6 +14,8 @@ using Timing;
 using Timing.RotorHazard;
 using Tools;
 using UI.Video;
+using Webb;
+using Webb.Api;
 using static UI.OBSRemoteControlManager;
 
 namespace UI.Nodes
@@ -29,7 +31,7 @@ namespace UI.Nodes
         {
         }
 
-        public void SetupStatuses(TimingSystemManager timingSystemManager, VideoManager videoManager, SoundManager soundManager, OBSRemoteControlManager oBSRemoteControlManager, SubtitleNode subtitleNode)
+        public void SetupStatuses(TimingSystemManager timingSystemManager, VideoManager videoManager, SoundManager soundManager, OBSRemoteControlManager oBSRemoteControlManager, SubtitleNode subtitleNode, EventWebServer eventWebServer, Action<MouseMenu> addWebMenuItems)
         {
             ClearDisposeChildren();
 
@@ -40,6 +42,11 @@ namespace UI.Nodes
             AddChild(MuteWAV);
 
             AddChild(new FrameRateStatusNode());
+
+            if (eventWebServer != null)
+            {
+                AddChild(new WebServerStatusNode(eventWebServer, addWebMenuItems));
+            }
 
 
             Subtitles = new SubTitleStatusNode(subtitleNode);
@@ -638,6 +645,65 @@ namespace UI.Nodes
         private void Cbn_ValueChanged(bool obj)
         {
             SetMute(!obj);
+        }
+    }
+
+    // The local server (web page, API, Seeder): flashes on every request, and shows how many users are signed in.
+    // Grey while offline. Click lists the local server's pages (opening one starts the server) and takes it on or offline.
+    public class WebServerStatusNode : StatusNode
+    {
+        private EventWebServer eventWebServer;
+        private Action<MouseMenu> addWebMenuItems;
+
+        public WebServerStatusNode(EventWebServer eventWebServer, Action<MouseMenu> addWebMenuItems)
+            : base(@"img/webserver.png")
+        {
+            // Set directly: the Name setter cuts names to 5 characters
+            name.Text = "Server";
+            this.eventWebServer = eventWebServer;
+            this.addWebMenuItems = addWebMenuItems;
+            eventWebServer.OnRequest += OnDataRecv;
+        }
+
+        public override void Dispose()
+        {
+            eventWebServer.OnRequest -= OnDataRecv;
+            base.Dispose();
+        }
+
+        public override void StatusUpdate()
+        {
+            base.StatusUpdate();
+
+            if (!eventWebServer.Running)
+            {
+                Tint = Color.Gray;
+                SetStatus("Offline", true);
+                return;
+            }
+
+            Tint = Theme.Current.RightControls.Text.XNA;
+
+            int users = ApiUsers.ActiveUsers(TimeSpan.FromMinutes(1));
+            if (users > 0)
+            {
+                SetStatus(users == 1 ? "1 user" : users + " users", true);
+            }
+            else
+            {
+                SetStatus("Online", true);
+            }
+        }
+
+        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
+        {
+            if (mouseInputEvent.ButtonState == ButtonStates.Released)
+            {
+                MouseMenu menu = new MouseMenu(this);
+                addWebMenuItems?.Invoke(menu);
+                menu.Show(mouseInputEvent);
+            }
+            return true;
         }
     }
 }
