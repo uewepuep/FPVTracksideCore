@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Tools;
-using Webb.Stages;
+using Webb.Seeder;
 
 namespace Webb.Api
 {
@@ -219,13 +219,13 @@ namespace Webb.Api
             return router.Add(new ApiRoute { Method = method, Template = template, Tag = tag, Summary = summary, Description = description, RequestType = request, RequestIsArray = requestArray, ResponseType = response, ResponseIsArray = responseArray, SuccessStatus = status, Writes = true, Role = role ?? DefaultRole(tag), Handler = handler });
         }
 
-        // Stage changes need Stages; settings, OBS setup, the window and users
+        // Stage changes need Seeder; settings, OBS setup, the window and users
         // need Admin; every other change to the event needs Operator.
         public static ApiRole DefaultRole(string tag)
         {
             switch (tag)
             {
-                case "Stages": return ApiRole.Stages;
+                case "Stages": return ApiRole.Seeder;
                 case "Settings":
                 case "Access": return ApiRole.Admin;
                 default: return ApiRole.Operator;

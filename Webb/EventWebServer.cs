@@ -227,10 +227,10 @@ namespace Webb
                 return apiResponse;
             }
 
-            byte[] stagesPage;
-            if (Stages.StagesUi.TryHandle(context, requestPath, out stagesPage))
+            byte[] seederPage;
+            if (Seeder.SeederUi.TryHandle(context, requestPath, out seederPage))
             {
-                return stagesPage;
+                return seederPage;
             }
 
             if (requestPath.Length > 0)

@@ -401,9 +401,9 @@ namespace UI
 
                 // Web pages, opened in the browser on the FPVTrackside machine
                 list.Add(new AppCommand("open-web-page", "Web", "Open the local web page", () => menu.OpenWebServer()));
-                list.Add(new AppCommand("open-stages", "Web", "Open the stages web app", () => menu.OpenWebServer("stages/")));
+                list.Add(new AppCommand("open-seeder", "Web", "Open the Seeder web app", () => menu.OpenWebServer("seeder/")));
                 list.Add(new AppCommand("open-api-console", "Web", "Open the API console", () => menu.OpenWebServer("api/v1/docs")));
-                list.Add(new AppCommand("open-web-users", "Web", "Open the web users page", () => menu.OpenWebServer("stages/users")));
+                list.Add(new AppCommand("open-web-users", "Web", "Open the web users page", () => menu.OpenWebServer("seeder/users")));
 
                 // New windows
                 if (platformTools.HasFeature(PlatformFeature.SecondaryWindow) && layer.LayerStack.Game is BaseGame game)

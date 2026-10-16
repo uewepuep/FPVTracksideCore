@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Webb.Stages
+namespace Webb.Seeder
 {
     // The setup a stage was created with: everything the engine needs to
     // rebuild its format, in the same shape (and JSON names) as the AUFPV
@@ -70,14 +70,14 @@ namespace Webb.Stages
         [JsonProperty("updated")] public DateTime Updated { get; set; }
     }
 
-    // StagePlans.json in the event's folder. Small and read whole; every write
+    // SeederPlan.json in the event's folder. Small and read whole; every write
     // goes to a temp file first so a crash mid-save can't leave a half file.
     public class StageStore
     {
         // Not "Stages.json": FPVTrackside keeps its own Stage objects in that file.
-        public const string FileName = "StagePlans.json";
-        // What the file was called before stages took FPVTrackside's names.
-        private const string LegacyFileName = "Brackets.json";
+        public const string FileName = "SeederPlan.json";
+        // What the file was called before, newest first. Read only; the next save writes FileName.
+        private static readonly string[] LegacyFileNames = { "StagePlans.json", "Brackets.json" };
 
         private readonly Func<string> eventDirectory;
         private readonly object sync = new object();
@@ -160,10 +160,10 @@ namespace Webb.Stages
             string path = Path();
             if (!File.Exists(path))
             {
-                // An event set up before the rename: read Brackets.json; the
-                // next save writes StagePlans.json.
-                path = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(path), LegacyFileName);
-                if (!File.Exists(path))
+                // An event set up before the rename: read the old file; the next save writes SeederPlan.json
+                string dir = System.IO.Path.GetDirectoryName(path);
+                path = LegacyFileNames.Select(n => System.IO.Path.Combine(dir, n)).FirstOrDefault(File.Exists);
+                if (path == null)
                     return new FileShape();
             }
             return JsonConvert.DeserializeObject<FileShape>(File.ReadAllText(path)) ?? new FileShape();

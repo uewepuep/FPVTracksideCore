@@ -167,9 +167,9 @@ namespace UI.Nodes
                 if (eventWebServer != null)
                 {
                     webMenu.AddItem("Open Local Web page", () => OpenWebServer());
-                    webMenu.AddItem("Open Stages", () => OpenWebServer("stages/"));
+                    webMenu.AddItem("Open Seeder", () => OpenWebServer("seeder/"));
                     webMenu.AddItem("Open API console", () => OpenWebServer("api/v1/docs"));
-                    webMenu.AddItem("Web users (who can change things)", () => OpenWebServer("stages/users"));
+                    webMenu.AddItem("Web users (who can change things)", () => OpenWebServer("seeder/users"));
                 }
                 if (OpenFPVTracksideSite != null)
                     webMenu.AddItem("Open FPVTrackside.com event page", () => { OpenFPVTracksideSite(); });
@@ -674,7 +674,7 @@ namespace UI.Nodes
             PlatformTools.OpenFileManager(path);
         }
 
-        // path: a page on the local web server, relative to its root (e.g. "stages/").
+        // path: a page on the local web server, relative to its root (e.g. "seeder/").
         public void OpenWebServer(string path = "")
         {
             if (eventWebServer != null)

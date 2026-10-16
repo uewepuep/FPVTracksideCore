@@ -70,25 +70,22 @@ namespace UI.Nodes.Rounds
             MenuButton.OnClick += (mie) => { ShowMenu(mie, MenuButton.Bounds.Location); };
             buttonContainer.AddChild(MenuButton, 0);
 
-            instructionNode = new Node();
-            instructionNode.RelativeBounds = new RectangleF(0.1f, 0.3f, 0.8f, 0.2f);
-
-            string instructionText;
-
             switch (round.StageType)
             {
                 case StageTypes.DoubleElimination:
                 case StageTypes.Final:
-                    instructionText = Translator.Get("Label.RoundEmptyFinal", "Races will be automatically\nadded as more results come in.");
+                    instructionNode = new Node();
+                    instructionNode.RelativeBounds = new RectangleF(0.1f, 0.3f, 0.8f, 0.2f);
+
+                    TextNode instructions = new TextNode(Translator.Get("Label.RoundEmptyFinal", "Races will be automatically\nadded as more results come in."), Theme.Current.Rounds.Text.XNA);
+                    instructions.Alignment = RectangleAlignment.Center;
+                    instructionNode.AddChild(instructions);
                     break;
+
                 default:
-                    instructionText = Translator.Get("Label.RoundEmpty", "Right click here to add a races.\nDrag and drop pilots to fill the race.\nAuto-Fill to generate a new round\nPaste pilots from clipboard");
+                    instructionNode = CreateEmptyRoundOptions();
                     break;
             }
-
-            TextNode instructions = new TextNode(instructionText, Theme.Current.Rounds.Text.XNA);
-            instructions.Alignment = RectangleAlignment.Center;
-            instructionNode.AddChild(instructions);
             AddChild(instructionNode);
 
             EventManager.OnEventChange += Refresh;
@@ -98,6 +95,175 @@ namespace UI.Nodes.Rounds
             EventManager.RaceManager.OnPilotRemoved += OnCurrentRacePilotChange;
 
             UpdateTitle();
+        }
+
+        // What an empty round offers: fill it by hand, or give it a format that generates the races.
+        private Node CreateEmptyRoundOptions()
+        {
+            Node options = new Node();
+            options.RelativeBounds = new RectangleF(0.06f, 0.12f, 0.88f, 0.8f);
+
+            Color textColor = Theme.Current.Rounds.Text.XNA;
+            Color hover = Theme.Current.Hover.XNA;
+            ToolTexture background = Theme.Current.Rounds.RaceTitle;
+
+            TextNode manual = new TextNode(Translator.Get("Label.RoundEmptyManual", "Fill it yourself"), textColor);
+            manual.RelativeBounds = new RectangleF(0, 0.01f, 1, 0.035f);
+            manual.Alignment = RectangleAlignment.Center;
+            options.AddChild(manual);
+
+            // Filling it by hand: each action with what it does beside it
+            TextButtonNode addRace = ManualAction(options, 0, Translator.Get("Button.AddRace", "Add Race"),
+                Translator.Get("Label.RoundEmptyAddRace", "Adds an empty race. Drag\npilots into it from the list."));
+            addRace.OnClick += (mie) => { AddRace(); };
+
+            TextButtonNode autoFill = ManualAction(options, 1, Translator.Get("Button.AutoFill", "Auto-Fill"),
+                Translator.Get("Label.RoundEmptyAutoFill", "Races for every pilot not yet\nin the round, on their channels."));
+            autoFill.OnClick += (mie) => { FillRound?.Invoke(Round); };
+
+            TextButtonNode paste = ManualAction(options, 2, Translator.Get("Button.PastePilots", "Paste"),
+                Translator.Get("Label.RoundEmptyPaste", "Pilot names copied as text,\none per line, or a copied round."));
+            paste.OnClick += (mie) => { PastePilot?.Invoke(Round); };
+
+            ColorNode divider = new ColorNode(new Color(textColor, 0.25f));
+            divider.RelativeBounds = new RectangleF(0.05f, 0.296f, 0.9f, 0.003f);
+            options.AddChild(divider);
+
+            TextNode formatsHeading = new TextNode(Translator.Get("Label.RoundEmptyFormats", "Or use a format"), textColor);
+            formatsHeading.RelativeBounds = new RectangleF(0, 0.343f, 1, 0.035f);
+            formatsHeading.Alignment = RectangleAlignment.Center;
+            options.AddChild(formatsHeading);
+
+            // Formats generate the races. Each opens its list, Seeder opens its web app.
+            List<IconButtonNode> formats = new List<IconButtonNode>();
+            formats.Add(FormatTile(@"img\format-builtin.png", "Built-in", (menu, pilots) => AddBuiltInFormats(menu, pilots)));
+            formats.Add(FormatTile(@"img\format-script.png", "Script", (menu, pilots) => AddScriptFormats(menu, pilots)));
+            formats.Add(FormatTile(@"img\format-sheet.png", "Sheet", (menu, pilots) => AddSheetFormats(menu, pilots)));
+
+            if (RoundsNode.OpenSeeder != null)
+            {
+                IconButtonNode seeder = FormatTileButton(@"img\seeder.png", "Seeder");
+                seeder.OnClick += (mie) => { RoundsNode.OpenSeeder?.Invoke(); };
+                formats.Add(seeder);
+            }
+
+            // Races from an outside system (eg MultiGP / ZippyQ), same as the round menu: only on the last round
+            ExternalRaceProvider[] providers = EventManager.ExternalRaceProviders ?? new ExternalRaceProvider[0];
+            bool showSyncAlways = true; // TEMP: show the tile without a linked provider, to check the layout
+            if (showSyncAlways || (providers.Any() && EventManager.RoundManager.GetLastRound(Round.EventType, Round.Stage) == Round))
+            {
+                IconButtonNode sync = FormatTileButton(@"img\format-sync.png", "Sync Down");
+                sync.OnClick += (mie) =>
+                {
+                    if (providers.Length == 1)
+                    {
+                        providers[0].TriggerCreateRaces(Round);
+                        return;
+                    }
+
+                    MouseMenu menu = new MouseMenu(this);
+                    foreach (ExternalRaceProvider provider in providers)
+                    {
+                        ExternalRaceProvider p = provider;
+                        menu.AddItem("Add " + p.Name, () => { p.TriggerCreateRaces(Round); });
+                    }
+                    if (!providers.Any())
+                    {
+                        menu.AddItem(Translator.Get("Label.NoSync", "No sync linked to this event"), () => { });
+                    }
+                    ShowBelow(menu, sync, mie);
+                };
+                formats.Add(sync);
+            }
+
+            IconButtonNode search = FormatTileButton(@"img\format-search.png", "Search");
+            search.OnClick += (mie) => { ShowFormatSelector(EventManager.Event.Pilots); };
+            formats.Add(search);
+
+            // About the size of the control buttons (Next etc)
+            const int perRow = 3;
+            const float tileHeight = 0.11f;
+            const float rowGap = 0.02f;
+            const float tileGap = 0.05f;
+            const float tileWidth = 0.26f;
+            for (int i = 0; i < formats.Count; i += perRow)
+            {
+                Node row = new Node();
+                row.RelativeBounds = new RectangleF(0, 0.398f + (i / perRow) * (tileHeight + rowGap), 1, tileHeight);
+                options.AddChild(row);
+
+                // A short last row is centred
+                IconButtonNode[] tiles = formats.Skip(i).Take(perRow).ToArray();
+                float x = (1 - (tiles.Length * tileWidth + (tiles.Length - 1) * tileGap)) / 2;
+                foreach (IconButtonNode tile in tiles)
+                {
+                    tile.RelativeBounds = new RectangleF(x, 0, tileWidth, 1);
+                    row.AddChild(tile);
+                    x += tileWidth + tileGap;
+                }
+            }
+
+            return options;
+        }
+
+        // One manual action row: a button, with a short description of what it does beside it
+        private TextButtonNode ManualAction(Node options, int index, string text, string description)
+        {
+            const float rowHeight = 0.06f;
+            const float rowGap = 0.012f;
+            float y = 0.06f + index * (rowHeight + rowGap);
+
+            Color textColor = Theme.Current.Rounds.Text.XNA;
+
+            TextButtonNode button = new TextButtonNode(text, Theme.Current.Rounds.RaceTitle, Theme.Current.Hover.XNA, textColor);
+            button.RelativeBounds = new RectangleF(0, y, 0.3f, rowHeight);
+
+            // Same share of the height each, so short labels don't come out bigger than long ones
+            button.TextNode.RelativeBounds = new RectangleF(0.06f, 0.25f, 0.88f, 0.5f);
+            options.AddChild(button);
+
+            TextNode descriptionNode = new TextNode(description, new Color(textColor, 0.75f));
+            descriptionNode.RelativeBounds = new RectangleF(0.34f, y + rowHeight * 0.1f, 0.66f, rowHeight * 0.8f);
+            descriptionNode.Alignment = RectangleAlignment.CenterLeft;
+            options.AddChild(descriptionNode);
+
+            return button;
+        }
+
+        // A format tile that opens a menu of that kind of format
+        private IconButtonNode FormatTile(string icon, string name, Action<MouseMenu, IEnumerable<Pilot>> fillMenu)
+        {
+            IconButtonNode tile = FormatTileButton(icon, name);
+            tile.OnClick += (mie) =>
+            {
+                MouseMenu menu = new MouseMenu(this);
+                fillMenu(menu, EventManager.Event.Pilots);
+                if (!menu.Items.Any())
+                {
+                    menu.AddItem(Translator.Get("Label.NoFormats", "None found"), () => { });
+                }
+                ShowBelow(menu, tile, mie);
+            };
+            return tile;
+        }
+
+        // The round is drawn through a render target; Translation takes the node back to screen space
+        private static void ShowBelow(MouseMenu menu, Node node, MouseInputEvent mie)
+        {
+            Rectangle bounds = node.Bounds;
+            bounds.Location -= mie.Translation;
+            menu.Show(new Point(bounds.X, bounds.Bottom));
+        }
+
+        private IconButtonNode FormatTileButton(string icon, string name)
+        {
+            IconButtonNode tile = new IconButtonNode(icon, Translator.Get("Button." + name, name), Theme.Current.Rounds.RaceTitle, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
+
+            // Keep the icon's own colours; padded above so it sits evenly in the tile
+            tile.ImageNode.Tint = Color.White;
+            tile.ImageNode.RelativeBounds = new RectangleF(0, 0.1f, 1, 0.56f);
+            tile.TextNode.RelativeBounds = new RectangleF(0.05f, 0.7f, 0.9f, 0.24f);
+            return tile;
         }
 
         private void OnCurrentRacePilotChange(PilotChannel pilot)

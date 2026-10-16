@@ -176,7 +176,7 @@ namespace Webb.Api
         {
             switch (role)
             {
-                case ApiRole.Stages: return "Stages";
+                case ApiRole.Seeder: return "Seeder";
                 case ApiRole.Operator: return "Operator";
                 case ApiRole.Admin: return "Admin";
                 default: return "read only";
@@ -192,10 +192,10 @@ namespace Webb.Api
         {
             switch ((value ?? "").Trim().ToLowerInvariant())
             {
-                case "stages": return ApiRole.Stages;
+                case "seeder": return ApiRole.Seeder;
                 case "operator": return ApiRole.Operator;
                 case "admin": return ApiRole.Admin;
-                default: throw ApiException.BadRequest("role must be stages, operator or admin");
+                default: throw ApiException.BadRequest("role must be seeder, operator or admin");
             }
         }
 

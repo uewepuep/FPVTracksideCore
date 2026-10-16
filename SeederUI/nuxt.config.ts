@@ -1,5 +1,5 @@
-// FPVTrackside race-stage UI. A client-only Nuxt UI app, generated to static
-// files in ../Webb/Stages/UI, which Webb embeds and serves at /stages. It
+// Seeder, FPVTrackside's stage runner. A client-only Nuxt UI app, generated to static
+// files in ../Webb/Seeder/UI, which Webb embeds and serves at /seeder. It
 // talks to FPVTrackside only through the REST API (/api/v1), so the same app
 // works in dev (proxied to a running FPVTrackside) and embedded.
 //
@@ -14,10 +14,11 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   app: {
-    baseURL: '/stages/',
+    baseURL: '/seeder/',
     head: {
-      title: 'Stages · FPVTrackside',
+      title: 'Seeder · FPVTrackside',
       meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
+      link: [{ rel: 'icon', href: '/seeder/favicon.ico' }],
     },
   },
 
@@ -39,7 +40,7 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    output: { publicDir: '../Webb/Stages/UI' },
+    output: { publicDir: '../Webb/Seeder/UI' },
   },
 
   vite: {

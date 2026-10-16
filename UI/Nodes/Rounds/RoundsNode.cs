@@ -45,6 +45,9 @@ namespace UI.Nodes.Rounds
         private RoundControl roundControl;
 
         public int RacesPerColumn { get; private set; }
+
+        // Opens Seeder (its web app). Null when this FPVTrackside has no web server, so empty rounds don't offer it.
+        public Action OpenSeeder { get; set; }
         
         
         private TextButtonNode filterButton;

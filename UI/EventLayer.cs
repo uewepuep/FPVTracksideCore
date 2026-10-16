@@ -309,6 +309,12 @@ namespace UI
                 eventWebServer.Start();
             }
 
+            if (eventWebServer.RestApi?.Stages != null)
+            {
+                // Offered on empty rounds. Opening it starts the web server if it isn't running.
+                RoundsNode.OpenSeeder = () => { MenuButton.OpenWebServer("seeder/"); };
+            }
+
             MenuButton = CreateMenuButton();
             MenuButton.RelativeBounds = new RectangleF(0.7f, 0, 0.3f, 0.03f);
             MenuButton.ImageNode.Tint = Theme.Current.RightControls.Text.XNA;
@@ -326,7 +332,7 @@ namespace UI
 
             MenuButton.TimingChanged += () =>
             {
-                systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager, sceneManagerNode.SubtitleNode, eventWebServer, path => MenuButton.OpenWebServer(path));
+                systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager, sceneManagerNode.SubtitleNode);
             };
 
             MenuButton.VideoSettingsExited += (bool changed) =>
@@ -362,7 +368,7 @@ namespace UI
             float width = 0.95f;
 
             systemStatusNode = new SystemStatusNode();
-            systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager, sceneManagerNode.SubtitleNode, eventWebServer, path => MenuButton.OpenWebServer(path));
+            systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager, sceneManagerNode.SubtitleNode);
             systemStatusNode.RelativeBounds = new RectangleF((1 - width) / 2, MenuButton.RelativeBounds.Bottom + 0.01f, width, 1);
             rightSideColor.AddChild(systemStatusNode);
 
@@ -662,7 +668,7 @@ namespace UI
             OBSRemoteControlManager?.Dispose();
             OBSRemoteControlManager = new OBSRemoteControlManager(sceneManagerNode, TabbedMultiNode, EventManager);
 
-            systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager, sceneManagerNode.SubtitleNode, eventWebServer, path => MenuButton.OpenWebServer(path));
+            systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager, sceneManagerNode.SubtitleNode);
         }
 
         public void ResumeRace()
@@ -709,7 +715,7 @@ namespace UI
                     ChannelsGridNode.FillChannelNodes();
 
                     sceneManagerNode.SetupCams();
-                    systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager, sceneManagerNode.SubtitleNode, eventWebServer, path => MenuButton.OpenWebServer(path));
+                    systemStatusNode.SetupStatuses(EventManager.RaceManager.TimingSystemManager, videoManager, SoundManager, OBSRemoteControlManager, sceneManagerNode.SubtitleNode);
 
                     if (current != null)
                     {

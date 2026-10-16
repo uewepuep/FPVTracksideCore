@@ -1,8 +1,8 @@
 {
-  "name": "fpvtrackside-stages",
+  "name": "fpvtrackside-seeder",
   "private": true,
   "type": "module",
-  "description": "FPVTrackside race-stage UI (Nuxt UI). `npm run generate` writes static files to ../Webb/Stages/UI, which Webb embeds and serves at /stages.",
+  "description": "Seeder, FPVTrackside's stage runner (Nuxt UI). `npm run generate` writes static files to ../Webb/Seeder/UI, which Webb embeds and serves at /seeder.",
   "scripts": {
     "dev": "nuxt dev",
     "generate": "nuxt generate",

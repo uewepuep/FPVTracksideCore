@@ -84,15 +84,15 @@ Send `{}` or at least `Content-Length: 0`. .NET's HTTP server rejects a POST tha
 
 | Role | May change |
 |---|---|
-| **Stages** | Stages: create them, send their races to FPVTrackside, enter, reset and lock stage results. |
-| **Operator** | The event: pilots, rounds, races, laps and lap corrections, race control, sound, OBS scenes/triggers, the on-screen view, meeting sync — plus everything Stages can do. |
+| **Seeder** | Seeder's stages: create them, send their races to FPVTrackside, enter, reset and lock stage results. |
+| **Operator** | The event: pilots, rounds, races, laps and lap corrections, race control, sound, OBS scenes/triggers, the on-screen view, meeting sync — plus everything Seeder can do. |
 | **Admin** | Everything: also settings, OBS setup, menu commands, opening other events, and web users. |
 
 Each endpoint's role is listed in the console (`/api/v1/docs`).
 
 A caller gets a role in one of these ways:
 
-* **Web users.** An Admin adds people on the **Users** page (FPVTrackside menu → Web → *Web users*, or `/stages/users`), each with a name, a password and a role. They sign in from any browser on the network — the Stages app and the API console both have a *Sign in* button. Programs sign in with:
+* **Web users.** An Admin adds people on the **Users** page (FPVTrackside menu → Web → *Web users*, or `/seeder/users`), each with a name, a password and a role. They sign in from any browser on the network — the Seeder app and the API console both have a *Sign in* button. Programs sign in with:
 
   ```
   POST /api/v1/auth/login   { "name": "Alex", "password": "…" }
@@ -325,8 +325,8 @@ Timing, channel, points, sound, theme and video settings have their own editors:
 |---|---|---|
 | `GET /export/pbs` · `/export/raw-laps` · `/export/race-results` | | The tables behind the Export menu, as `{columns, rows}`. `?decimals=` |
 
-### Stages
-A stage is a set of rounds run as one competition: double elimination, MultiGP top-4 qualifiers, bracket progression, ladders and points brackets, with the same logic as the AUFPV platform. Each race in a stage is flown as a normal FPVTrackside race. When the first race is sent, its rounds are grouped under an FPVTrackside stage of the same name, and each race gets its FPVTrackside race bracket (`Winners`, `Losers`, or `A`, `B`, … for the bracket formats). Stages are saved with the event (`StagePlans.json` in the event folder). The **stages web app** at `/stages` (e.g. `http://localhost:8080/stages`) is built entirely on these endpoints.
+### Stages (Seeder)
+Seeder runs stages. A stage is a set of rounds run as one competition: double elimination, MultiGP top-4 qualifiers, bracket progression, ladders and points brackets, with the same logic as the AUFPV platform. Each race in a stage is flown as a normal FPVTrackside race. When the first race is sent, its rounds are grouped under an FPVTrackside stage of the same name, and each race gets its FPVTrackside race bracket (`Winners`, `Losers`, or `A`, `B`, … for the bracket formats). Stages are saved with the event (`SeederPlan.json` in the event folder). The **Seeder web app** at `/seeder` (e.g. `http://localhost:8080/seeder`) is built entirely on these endpoints.
 
 | Endpoint | | |
 |---|---|---|

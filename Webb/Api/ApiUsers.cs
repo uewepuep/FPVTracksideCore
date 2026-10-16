@@ -16,11 +16,11 @@ namespace Webb.Api
         // Read only. Anyone who can reach the web server, and anyone not signed in.
         None = 0,
 
-        // Run stages: create, send, result, reset and lock stage races.
-        Stages = 1,
+        // Run Seeder: create, send, result, reset and lock stage races.
+        Seeder = 1,
 
         // Run the event: pilots, rounds, races, laps, race control, sound,
-        // OBS scenes and triggers, meeting sync, and everything Stages can do.
+        // OBS scenes and triggers, meeting sync, and everything Seeder can do.
         Operator = 2,
 
         // Everything: also settings, OBS setup, opening other events, menu

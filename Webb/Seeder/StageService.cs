@@ -5,7 +5,7 @@ using System.Linq;
 using Tools;
 using Engine = global::BracketEngine;
 
-namespace Webb.Stages
+namespace Webb.Seeder
 {
     // Race stages on top of FPVTrackside: the same engine as the AUFPV
     // platform (the Stages project is a port of it, pinned by tests generated

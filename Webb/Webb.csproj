@@ -29,12 +29,12 @@
     <EmbeddedResource Include="Api\Console\*.*" LogicalName="Webb.Api.Console.%(Filename)%(Extension)" />
   </ItemGroup>
 
-  <!-- The stages web app (/stages): StagesUI's Nuxt build, written to Stages\UI
+  <!-- The Seeder web app (/seeder): SeederUI's Nuxt build, written to Seeder\UI
        by `npm run generate`. Not committed; a build without it serves a "not built" page. -->
   <ItemGroup>
-    <EmbeddedResource Include="Stages\UI\**\*.*" LogicalName="Webb.StagesUI/%(RecursiveDir)%(Filename)%(Extension)" />
-    <Compile Remove="Stages\UI\**" />
-    <None Remove="Stages\UI\**" />
+    <EmbeddedResource Include="Seeder\UI\**\*.*" LogicalName="Webb.SeederUI/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Remove="Seeder\UI\**" />
+    <None Remove="Seeder\UI\**" />
   </ItemGroup>
   <ItemGroup>
     <None Update="httpfiles\Accessor.js">

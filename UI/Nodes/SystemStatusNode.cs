@@ -14,9 +14,6 @@ using Timing;
 using Timing.RotorHazard;
 using Tools;
 using UI.Video;
-using Webb;
-using Webb.Api;
-using Webb.Stages;
 using static UI.OBSRemoteControlManager;
 
 namespace UI.Nodes
@@ -32,7 +29,7 @@ namespace UI.Nodes
         {
         }
 
-        public void SetupStatuses(TimingSystemManager timingSystemManager, VideoManager videoManager, SoundManager soundManager, OBSRemoteControlManager oBSRemoteControlManager, SubtitleNode subtitleNode, EventWebServer eventWebServer, Action<string> openWebPage)
+        public void SetupStatuses(TimingSystemManager timingSystemManager, VideoManager videoManager, SoundManager soundManager, OBSRemoteControlManager oBSRemoteControlManager, SubtitleNode subtitleNode)
         {
             ClearDisposeChildren();
 
@@ -44,10 +41,6 @@ namespace UI.Nodes
 
             AddChild(new FrameRateStatusNode());
 
-            if (eventWebServer?.RestApi?.Stages != null)
-            {
-                AddChild(new StageStatusNode(eventWebServer.RestApi.Stages, () => openWebPage?.Invoke("stages/")));
-            }
 
             Subtitles = new SubTitleStatusNode(subtitleNode);
             AddChild(Subtitles);
@@ -645,97 +638,6 @@ namespace UI.Nodes
         private void Cbn_ValueChanged(bool obj)
         {
             SetMute(!obj);
-        }
-    }
-
-    // The event's stages, most important first: Check (red) when a timing
-    // result couldn't be applied, Done, N ready to send, then races run of the
-    // total. Blank when there are none yet. While web users are signed in, it
-    // alternates with "N users". Always shown; click opens the stages web
-    // app, starting the web server if it isn't running.
-    public class StageStatusNode : StatusNode
-    {
-        private StageService stages;
-        private Action onClick;
-        private bool loggedError;
-        private bool showUsers;
-
-        public StageStatusNode(StageService stages, Action onClick)
-            : base(@"img/trophy.png")
-        {
-            // Set directly: the Name setter cuts names to 5 characters.
-            name.Text = "Stages";
-            this.stages = stages;
-            this.onClick = onClick;
-            stages.OnStageChanged += Stages_OnStageChanged;
-        }
-
-        public override void Dispose()
-        {
-            stages.OnStageChanged -= Stages_OnStageChanged;
-            base.Dispose();
-        }
-
-        private void Stages_OnStageChanged(int id)
-        {
-            OnDataRecv();
-        }
-
-        public override void StatusUpdate()
-        {
-            base.StatusUpdate();
-
-            StageService.StatusSummary summary;
-            try
-            {
-                summary = stages.Summary();
-            }
-            catch (Exception e)
-            {
-                if (!loggedError)
-                {
-                    Logger.UI.LogException(this, e);
-                    loggedError = true;
-                }
-                SetStatus("Error", false);
-                return;
-            }
-
-            string status;
-            bool ok = true;
-            if (summary.Stages == 0)
-                status = "";
-            else if (summary.Problems > 0)
-            {
-                status = "Check";
-                ok = false;
-            }
-            else if (summary.AllComplete)
-                status = "Done";
-            else if (summary.ReadyToSend > 0)
-                status = summary.ReadyToSend + " ready";
-            else
-                status = summary.RacesDone + "/" + summary.RacesTotal;
-
-            // Signed-in web users take turns with the stage status, every update.
-            int users = ApiUsers.ActiveUsers(TimeSpan.FromMinutes(1));
-            if (users > 0)
-            {
-                showUsers = !showUsers || status == "";
-                if (showUsers)
-                    status = users == 1 ? "1 user" : users + " users";
-            }
-
-            SetStatus(status, ok);
-        }
-
-        public override bool OnMouseInput(MouseInputEvent mouseInputEvent)
-        {
-            if (mouseInputEvent.ButtonState == ButtonStates.Released)
-            {
-                onClick?.Invoke();
-            }
-            return true;
         }
     }
 }

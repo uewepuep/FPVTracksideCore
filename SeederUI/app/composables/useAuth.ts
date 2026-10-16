@@ -10,8 +10,8 @@ export function useAuth() {
   const role = computed(() => info.value?.role ?? 'none')
   const name = computed(() => info.value?.signedInAs ?? '')
   const via = computed(() => info.value?.signedInVia ?? 'anonymous')
-  const rank = (r: string) => ({ none: 0, stages: 1, operator: 2, admin: 3 } as Record<string, number>)[r] ?? 0
-  const can = (needed: 'stages' | 'operator' | 'admin') => rank(role.value) >= rank(needed)
+  const rank = (r: string) => ({ none: 0, seeder: 1, operator: 2, admin: 3 } as Record<string, number>)[r] ?? 0
+  const can = (needed: 'seeder' | 'operator' | 'admin') => rank(role.value) >= rank(needed)
 
   async function signIn(user: string, password: string) {
     const res = await post<{ token: string }>('/auth/login', { name: user, password })

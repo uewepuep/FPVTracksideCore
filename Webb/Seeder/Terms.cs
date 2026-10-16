@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Webb.Stages
+namespace Webb.Seeder
 {
     // The stage engine came from the AUFPV platform and names things its way:
     // a "Redemption" side, "A Main", "heats". FPVTrackside calls those the

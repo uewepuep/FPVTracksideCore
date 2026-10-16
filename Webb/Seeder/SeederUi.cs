@@ -5,24 +5,23 @@ using System.Linq;
 using System.Net;
 using System.Text;
 
-namespace Webb.Stages
+namespace Webb.Seeder
 {
-    // Serves the stage web app (StagesUI, a Nuxt build) at /stages. The
+    // Serves the Seeder web app (SeederUI, a Nuxt build) at /seeder. The
     // build is embedded in this DLL, so FPVTrackside needs no install step and
-    // any phone or laptop on the network can open http://<machine>:8080/stages.
+    // any phone or laptop on the network can open http://<machine>:8080/seeder.
     // Every action the page takes goes through /api/v1 — this only hands out files.
-    public static class StagesUi
+    public static class SeederUi
     {
-        public const string Prefix = "stages";
-        private const string LegacyPrefix = "brackets";
-        private const string ResourcePrefix = "Webb.StagesUI/";
+        public const string Prefix = "seeder";
+        private const string ResourcePrefix = "Webb.SeederUI/";
 
         private static readonly Lazy<Dictionary<string, string>> files = new Lazy<Dictionary<string, string>>(() =>
         {
             // LogicalName carries the path relative to the build folder; MSBuild
             // writes it with the host OS's separator.
             Dictionary<string, string> map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (string name in typeof(StagesUi).Assembly.GetManifestResourceNames())
+            foreach (string name in typeof(SeederUi).Assembly.GetManifestResourceNames())
             {
                 if (name.StartsWith(ResourcePrefix, StringComparison.Ordinal))
                     map[name.Substring(ResourcePrefix.Length).Replace('\\', '/')] = name;
@@ -40,19 +39,10 @@ namespace Webb.Stages
 
             HttpListenerResponse res = context.Response;
 
-            // The page used to live at /brackets; keep old links and bookmarks working.
-            if (path[0].Equals(LegacyPrefix, StringComparison.OrdinalIgnoreCase))
-            {
-                res.StatusCode = 301;
-                res.RedirectLocation = "/" + Prefix + "/";
-                response = new byte[0];
-                return true;
-            }
-
             if (!path[0].Equals(Prefix, StringComparison.OrdinalIgnoreCase))
                 return false;
 
-            // "/stages" → "/stages/" so the app's relative routing resolves.
+            // "/seeder" → "/seeder/" so the app's relative routing resolves.
             if (path.Length == 1 && !context.Request.Url.AbsolutePath.EndsWith("/"))
             {
                 res.StatusCode = 301;
@@ -66,11 +56,11 @@ namespace Webb.Stages
                 res.StatusCode = 503;
                 res.ContentType = "text/html; charset=utf-8";
                 response = Encoding.UTF8.GetBytes(
-                    "<!doctype html><meta charset=utf-8><title>Stages</title>" +
+                    "<!doctype html><meta charset=utf-8><title>Seeder</title>" +
                     "<body style=\"font:16px system-ui;max-width:640px;margin:60px auto;padding:0 20px\">" +
-                    "<h1>Stages page not built</h1>" +
-                    "<p>This FPVTrackside build doesn't include the stage web app. Run <code>npm ci &amp;&amp; npm run generate</code> " +
-                    "in <code>StagesUI/</code> and rebuild, or use a release build.</p>" +
+                    "<h1>Seeder page not built</h1>" +
+                    "<p>This FPVTrackside build doesn't include the Seeder web app. Run <code>npm ci &amp;&amp; npm run generate</code> " +
+                    "in <code>SeederUI/</code> and rebuild, or use a release build.</p>" +
                     "<p>The stages API itself works: see <a href=\"/api/v1/docs\">/api/v1/docs</a>.</p>");
                 return true;
             }
@@ -96,7 +86,7 @@ namespace Webb.Stages
                 fallback = true;
             }
 
-            using (Stream s = typeof(StagesUi).Assembly.GetManifestResourceStream(resource))
+            using (Stream s = typeof(SeederUi).Assembly.GetManifestResourceStream(resource))
             using (MemoryStream ms = new MemoryStream())
             {
                 s.CopyTo(ms);

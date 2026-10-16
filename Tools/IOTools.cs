@@ -214,7 +214,10 @@ namespace Tools
         public enum Overwrite
         {
             Never,
-            Always
+            Always,
+
+            // When the source file is newer. The copy is given the source's time, so a later, newer source replaces it.
+            IfNewer
         }
 
         public static void CopyDirectory(DirectoryInfo source, DirectoryInfo dest, Overwrite overwrite)
@@ -244,6 +247,11 @@ namespace Tools
                         copy = true;
                         delete = true;
                         break;
+
+                    case Overwrite.IfNewer:
+                        copy = !File.Exists(targetFilePath) || file.LastWriteTimeUtc > File.GetLastWriteTimeUtc(targetFilePath);
+                        delete = copy;
+                        break;
                 }
 
                 if (delete && File.Exists(targetFilePath))
@@ -254,6 +262,11 @@ namespace Tools
                 if (copy)
                 {
                     file.CopyTo(targetFilePath);
+
+                    if (overwrite == Overwrite.IfNewer)
+                    {
+                        File.SetLastWriteTimeUtc(targetFilePath, file.LastWriteTimeUtc);
+                    }
                 }
             }
 

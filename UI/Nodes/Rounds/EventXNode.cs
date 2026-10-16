@@ -237,6 +237,17 @@ namespace UI.Nodes.Rounds
 
         protected void AddFormatMenu(MouseMenu menu, IEnumerable<Pilot> orderedPilots)
         {
+            AddBuiltInFormats(menu, orderedPilots);
+            menu.AddBlank();
+
+            AddScriptFormats(menu.AddSubmenu("From Scripts"), orderedPilots);
+            AddSheetFormats(menu.AddSubmenu("From Spreadsheet"), orderedPilots);
+
+            menu.AddItem("Search Formats...", () => ShowFormatSelector(orderedPilots));
+        }
+
+        protected void AddBuiltInFormats(MouseMenu menu, IEnumerable<Pilot> orderedPilots)
+        {
             menu.AddItem("Empty Stage", () => { EmptyStage(); });
 
             foreach (StageTypes stageType in Enum.GetValues<StageTypes>().Except([StageTypes.Default]))
@@ -245,26 +256,25 @@ namespace UI.Nodes.Rounds
                 StageTypes local = stageType;
                 menu.AddItem(name, () => { AddStageTypeStage(Round, local, orderedPilots, null); });
             }
-            menu.AddBlank();
+        }
 
-            MouseMenu scripts = menu.AddSubmenu("From Scripts");
+        protected void AddScriptFormats(MouseMenu menu, IEnumerable<Pilot> orderedPilots)
+        {
             foreach (LuaFormatManager.ScriptFile script in EventManager.RoundManager.LuaFormatManager.GetScriptFiles())
             {
                 LuaFormatManager.ScriptFile script2 = script;
-                scripts.AddItem(script.Name, () => { ScriptFormat(script2, orderedPilots); });
+                menu.AddItem(script.Name, () => { ScriptFormat(script2, orderedPilots); });
             }
+        }
 
-            MouseMenu sheets = menu.AddSubmenu("From Spreadsheet");
-            if (EventManager.RoundManager.SheetFormatManager.Sheets.Any())
+        protected void AddSheetFormats(MouseMenu menu, IEnumerable<Pilot> orderedPilots)
+        {
+            foreach (SheetFormatManager.SheetFile sheet in EventManager.RoundManager.SheetFormatManager.Sheets)
             {
-                foreach (SheetFormatManager.SheetFile sheet in EventManager.RoundManager.SheetFormatManager.Sheets)
-                {
-                    string name = sheet.Name + " (" + sheet.Pilots + " pilots)";
-                    SheetFormatManager.SheetFile sheet2 = sheet;
-                    sheets.AddItem(name, () => { SheetFormat(sheet2, orderedPilots); });
-                }
+                string name = sheet.Name + " (" + sheet.Pilots + " pilots)";
+                SheetFormatManager.SheetFile sheet2 = sheet;
+                menu.AddItem(name, () => { SheetFormat(sheet2, orderedPilots); });
             }
-            menu.AddItem("Search Formats...", () => ShowFormatSelector(orderedPilots));
         }
 
         protected void ShowFormatSelector(IEnumerable<Pilot> orderedPilots)

@@ -67,7 +67,7 @@ namespace Webb.Api
         [Doc("ID of the event open in FPVTrackside.")] public Guid EventId { get; set; }
         [Doc("Name of the open event.")] public string EventName { get; set; }
         [Doc("Whether this caller may make any changes.")] public bool CanWrite { get; set; }
-        [Doc("What this caller may change: none (read only), stages, operator or admin. See /auth/me.", Values = new[] { "none", "stages", "operator", "admin" })] public string Role { get; set; }
+        [Doc("What this caller may change: none (read only), seeder, operator or admin. See /auth/me.", Values = new[] { "none", "seeder", "operator", "admin" })] public string Role { get; set; }
         [Doc("Who this caller is: a user's name, \"This computer\" or FPV_API_TOKEN. Empty when not signed in.")] public string SignedInAs { get; set; }
         [Doc("How this caller was recognised.", Values = new[] { "this-computer", "session", "key", "environment-token", "anonymous" })] public string SignedInVia { get; set; }
         [Doc("Whether race start/stop over HTTP is switched on in FPVTrackside's settings.")] public bool RaceControlEnabled { get; set; }

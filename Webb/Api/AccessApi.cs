@@ -25,7 +25,7 @@ namespace Webb.Api
             {
                 Method = "POST", Template = "auth/password", Tag = tag, Summary = "Change my password",
                 Description = "For a signed-in user (session or API key). Ends every other session of that user.",
-                RequestType = typeof(PasswordChangeRequest), ResponseType = typeof(OkDto), Writes = true, Role = ApiRole.Stages, OffUIThread = true,
+                RequestType = typeof(PasswordChangeRequest), ResponseType = typeof(OkDto), Writes = true, Role = ApiRole.Seeder, OffUIThread = true,
                 Handler = ChangeOwnPassword,
             });
 
@@ -172,7 +172,7 @@ namespace Webb.Api
         {
             return new List<RoleDto>
             {
-                new RoleDto { Key = "stages", Name = "Stages", Description = "Run stages: create them, send races to FPVTrackside, enter, reset and lock stage results." },
+                new RoleDto { Key = "seeder", Name = "Seeder", Description = "Run Seeder stages: create them, send races to FPVTrackside, enter, reset and lock stage results." },
                 new RoleDto { Key = "operator", Name = "Operator", Description = "Run the event: pilots, rounds, races, laps, race control, sound, OBS scenes and the on-screen view, plus everything Stages can do." },
                 new RoleDto { Key = "admin", Name = "Admin", Description = "Everything: also settings, OBS setup, menu commands, opening other events, and web users." },
             };
@@ -206,7 +206,7 @@ namespace Webb.Api
     [Doc("Who the caller is.")]
     public class AccessMeDto
     {
-        [Doc("What the caller may change.", Values = new[] { "none", "stages", "operator", "admin" })] public string Role { get; set; }
+        [Doc("What the caller may change.", Values = new[] { "none", "seeder", "operator", "admin" })] public string Role { get; set; }
         [Doc("The user's name, \"This computer\" or FPV_API_TOKEN; empty when not signed in.")] public string Name { get; set; }
         [Doc("How the caller was recognised.", Values = new[] { "this-computer", "session", "key", "environment-token", "anonymous" })] public string Via { get; set; }
         [Doc("The signed-in user's ID.")] public Guid? UserId { get; set; }
@@ -236,7 +236,7 @@ namespace Webb.Api
         [Doc("Send as 'Authorization: Bearer <token>'. Keep it private.")] public string Token { get; set; }
         [Doc("When the session ends.")] public DateTime Expires { get; set; }
         [Doc("The signed-in user.")] public UserDto User { get; set; }
-        [Doc("The user's role.", Values = new[] { "stages", "operator", "admin" })] public string Role { get; set; }
+        [Doc("The user's role.", Values = new[] { "seeder", "operator", "admin" })] public string Role { get; set; }
     }
 
     [Doc("Change your own password.")]
@@ -251,7 +251,7 @@ namespace Webb.Api
     {
         [Doc("User ID.")] public Guid Id { get; set; }
         [Doc("Name, used to sign in.")] public string Name { get; set; }
-        [Doc("Role.", Values = new[] { "stages", "operator", "admin" })] public string Role { get; set; }
+        [Doc("Role.", Values = new[] { "seeder", "operator", "admin" })] public string Role { get; set; }
         [Doc("A disabled user can't sign in and their keys don't work.")] public bool Disabled { get; set; }
         [Doc("Whether the user can sign in with a password (otherwise API keys only).")] public bool HasPassword { get; set; }
         [Doc("When the user was added.")] public DateTime Created { get; set; }
@@ -271,7 +271,7 @@ namespace Webb.Api
     public class UserCreateRequest
     {
         [Doc("Name, used to sign in.", Required = true)] public string Name { get; set; }
-        [Doc("Role.", Required = true, Values = new[] { "stages", "operator", "admin" })] public string Role { get; set; }
+        [Doc("Role.", Required = true, Values = new[] { "seeder", "operator", "admin" })] public string Role { get; set; }
         [Doc("Password, at least 8 characters. Leave out for a user who only uses API keys.")] public string Password { get; set; }
     }
 
@@ -279,7 +279,7 @@ namespace Webb.Api
     public class UserPatchRequest
     {
         [Doc("New name.")] public string Name { get; set; }
-        [Doc("New role.", Values = new[] { "stages", "operator", "admin" })] public string Role { get; set; }
+        [Doc("New role.", Values = new[] { "seeder", "operator", "admin" })] public string Role { get; set; }
         [Doc("New password, at least 8 characters.")] public string Password { get; set; }
         [Doc("Disable or re-enable the user.")] public bool? Disabled { get; set; }
     }

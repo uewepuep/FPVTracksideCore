@@ -13,7 +13,7 @@ const raceLabel = computed(() => {
   return `${name} · ${c.state}`
 })
 const { role, name, via, signOut, askSignIn } = useAuth()
-const roleLabel = computed(() => ({ stages: 'Stages', operator: 'Operator', admin: 'Admin' } as Record<string, string>)[role.value] ?? 'Read only')
+const roleLabel = computed(() => ({ seeder: 'Seeder', operator: 'Operator', admin: 'Admin' } as Record<string, string>)[role.value] ?? 'Read only')
 const userMenu = computed(() => [
   [{ type: 'label' as const, label: `${name.value} · ${roleLabel.value}` }],
   [
@@ -30,10 +30,8 @@ const raceColor = computed(() => ({ running: 'error', starting: 'warning', finis
   <header class="sticky top-0 z-40 border-b border-default bg-default/80 backdrop-blur">
     <UContainer class="flex h-14 items-center gap-3">
       <NuxtLink to="/" class="flex items-center gap-2 font-display text-lg font-bold">
-        <span class="grid size-8 place-items-center rounded-lg bg-primary text-inverted">
-          <UIcon name="i-lucide-trophy" class="size-5" />
-        </span>
-        <span>Stages</span>
+        <img :src="`${useRuntimeConfig().app.baseURL}seeder.png`" alt="" class="size-8">
+        <span>Seeder</span>
         <span class="hidden text-sm font-normal text-muted sm:inline">· FPVTrackside</span>
       </NuxtLink>
 
