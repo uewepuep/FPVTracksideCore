@@ -252,7 +252,8 @@ namespace Composition
             {
                 lock (preProcessForced)
                 {
-                    for (int i = 0; i < preProcessForced.Count; i++)
+                    // Not a for loop on Count, Dequeue shrinks it so that would only do half the queue
+                    while (preProcessForced.Count > 0)
                     {
                         try
                         {
@@ -274,10 +275,10 @@ namespace Composition
 
             if (preProcessOptional.Count > 0)
             {
-                DateTime last = DateTime.Now + PreProcessLimit;
+                System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
                 lock (preProcessOptional)
                 {
-                    for (int i = 0; i < preProcessOptional.Count && DateTime.Now < last; i++)
+                    while (preProcessOptional.Count > 0 && stopwatch.Elapsed < PreProcessLimit)
                     {
                         try
                         {

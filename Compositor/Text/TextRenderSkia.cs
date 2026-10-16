@@ -37,17 +37,14 @@ namespace Composition.Text
         private float offsetX;
         private float offsetY;
 
+        // Worked out on demand, only text editing needs them
         private List<SKRect> characterBounds;
 
-        private SKTypeface cachedTypeface;
-        private string cachedTypefaceText;
-        private bool cachedBold;
-        private bool cachedItalic;
+        private SKTypeface typeface;
 
         public TextRenderSkia()
         {
             locker = new object();
-            characterBounds = new List<SKRect>();
 
             CanCreateTextures = false;
             MinPoint = 8;
@@ -105,66 +102,27 @@ namespace Composition.Text
 
             lock (locker)
             {
-                characterBounds.Clear();
+                characterBounds = null;
+                typeface = GetTypeface(style, this.text);
+
+                string[] textLines = this.text.Split('\n');
 
                 using (SKPaint paint = CreatePaint(style, FontPoint))
                 {
-                    // Measure the text
-                    SKRect bounds = new SKRect();
-                    paint.MeasureText(text, ref bounds);
+                    float maxWidth = MeasureWidth(paint, textLines);
 
-                    // Handle multi-line text
-                    string[] textLines = text.Split('\n');
-                    float totalHeight = textLines.Length * FontPoint * lineHeightMultiplier;
-                    float maxWidth = 0;
-
-                    foreach (string line in textLines)
-                    {
-                        SKRect lineBounds = new SKRect();
-                        paint.MeasureText(line, ref lineBounds);
-                        maxWidth = Math.Max(maxWidth, lineBounds.Right);
-                    }
-
-                    // Check if we need to scale down to fit width
+                    // Scale down to fit the width
                     if (width > 0 && maxWidth > width)
                     {
-                        float ratio = width / maxWidth;
-                        FontPoint *= ratio;
+                        FontPoint *= width / maxWidth;
+                        paint.TextSize = FontPoint;
+                        maxWidth = MeasureWidth(paint, textLines);
                     }
 
-                    // Re-measure with potentially adjusted font size
-                    using (SKPaint adjustedPaint = CreatePaint(style, FontPoint))
-                    {
-                        maxWidth = 0;
-                        totalHeight = 0;
-                        float y = 0;
-
-                        foreach (string line in textLines)
-                        {
-                            SKRect lineBounds = new SKRect();
-                            adjustedPaint.MeasureText(line, ref lineBounds);
-                            maxWidth = Math.Max(maxWidth, lineBounds.Right);
-
-                            // Calculate character bounds for hit testing
-                            float x = 0;
-                            foreach (char c in line)
-                            {
-                                float charWidth = adjustedPaint.MeasureText(c.ToString());
-                                characterBounds.Add(new SKRect(x, y, x + charWidth, y + FontPoint));
-                                x += charWidth;
-                            }
-                            // Add newline character bounds
-                            characterBounds.Add(new SKRect(x, y, x, y + FontPoint));
-
-                            y += FontPoint * lineHeightMultiplier;
-                        }
-                        totalHeight = y;
-
-                        newTextSize = new Size(
-                            Math.Max(1, (int)Math.Ceiling(maxWidth)),
-                            Math.Max(1, (int)Math.Ceiling(totalHeight))
-                        );
-                    }
+                    newTextSize = new Size(
+                        Math.Max(1, (int)Math.Ceiling(maxWidth)),
+                        Math.Max(1, (int)Math.Ceiling(textLines.Length * FontPoint * lineHeightMultiplier))
+                    );
                 }
 
                 // Limit size
@@ -191,123 +149,100 @@ namespace Composition.Text
             }
         }
 
+        private static float MeasureWidth(SKPaint paint, string[] textLines)
+        {
+            float maxWidth = 0;
+            foreach (string line in textLines)
+            {
+                SKRect lineBounds = new SKRect();
+                paint.MeasureText(line, ref lineBounds);
+                maxWidth = Math.Max(maxWidth, lineBounds.Right);
+            }
+            return maxWidth;
+        }
+
         private SKPaint CreatePaint(Style style, float fontSize)
         {
-            SKPaint paint = new SKPaint
+            return new SKPaint
             {
                 TextSize = fontSize,
                 IsAntialias = true,
                 Color = new SKColor(style.TextColor.R, style.TextColor.G, style.TextColor.B, style.TextColor.A),
                 IsStroke = false,
-                TextAlign = SKTextAlign.Left
+                TextAlign = SKTextAlign.Left,
+                Typeface = typeface
             };
-
-            // Find a typeface that can render the text
-            SKTypeface typeface = FindTypefaceForText(this.text ?? "", style.Bold, style.Italic);
-
-            if (typeface != null)
-            {
-                paint.Typeface = typeface;
-            }
-
-            return paint;
         }
 
-        private SKTypeface FindTypefaceForText(string text, bool bold, bool italic)
+        // Typefaces by font / bold / italic, shared by every renderer as looking one up is slow
+        private static Dictionary<(string, bool, bool), SKTypeface> typefaces = new Dictionary<(string, bool, bool), SKTypeface>();
+
+        // Like the WPF renderer: the style's font (but Normal weight, Medium looks heavy here). If that font can't draw
+        // some of the text (eg CJK), use one the system says can.
+        private static SKTypeface GetTypeface(Style style, string text)
         {
-            // Use cached typeface if text and style haven't changed
-            if (cachedTypeface != null && cachedTypefaceText == text && cachedBold == bold && cachedItalic == italic)
+            SKFontStyleWeight weight = style.Bold ? SKFontStyleWeight.Bold : SKFontStyleWeight.Normal;
+            SKFontStyleSlant slant = style.Italic ? SKFontStyleSlant.Italic : SKFontStyleSlant.Upright;
+
+            SKTypeface typeface;
+            lock (typefaces)
             {
-                return cachedTypeface;
+                var key = (style.Font, style.Bold, style.Italic);
+                if (!typefaces.TryGetValue(key, out typeface))
+                {
+                    typeface = SKTypeface.FromFamilyName(style.Font, weight, SKFontStyleWidth.Normal, slant) ?? SKTypeface.Default;
+                    typefaces[key] = typeface;
+                }
             }
 
-            SKFontManager fontManager = SKFontManager.Default;
-
-            SKFontStyleWeight weight = bold ? SKFontStyleWeight.Bold : SKFontStyleWeight.Normal;
-            SKFontStyleSlant slant = italic ? SKFontStyleSlant.Italic : SKFontStyleSlant.Upright;
-
-            // Find a character that needs CJK support
-            char testChar = 'A';
             foreach (char c in text)
             {
-                if (c > 0x2E80) // CJK character range starts around here
+                if (char.IsWhiteSpace(c) || char.IsControl(c) || char.IsSurrogate(c))
+                    continue;
+
+                if (typeface.GetGlyph(c) == 0)
                 {
-                    testChar = c;
+                    SKTypeface fallback = SKFontManager.Default.MatchCharacter(null, weight, SKFontStyleWidth.Normal, slant, null, c);
+                    if (fallback != null)
+                    {
+                        return fallback;
+                    }
                     break;
                 }
             }
 
-            // Use MatchCharacter to find a font that can render this character
-            SKTypeface typeface = null;
-
-            if (testChar > 0x2E80)
-            {
-                // Try to match a CJK character
-                typeface = fontManager.MatchCharacter(null, weight, SKFontStyleWidth.Normal, slant, null, testChar);
-            }
-
-            // If that didn't work, try explicit font names
-            if (typeface == null || !CanRenderText(typeface, text))
-            {
-                string[] fontFamilies = new string[]
-                {
-                    "Hiragino Kaku Gothic ProN",  // Japanese
-                    "Hiragino Sans",              // Japanese
-                    "PingFang SC",                // Chinese Simplified
-                    "PingFang TC",                // Chinese Traditional
-                    "Apple SD Gothic Neo",        // Korean
-                    "Noto Sans CJK JP",           // Japanese
-                    "Noto Sans CJK SC",           // Chinese
-                    "Yu Gothic",                  // Japanese
-                    "MS Gothic",                  // Japanese
-                    "Arial Unicode MS",
-                    "Helvetica Neue",
-                    "Roboto"
-                };
-
-                foreach (string fontFamily in fontFamilies)
-                {
-                    SKTypeface testTypeface = SKTypeface.FromFamilyName(fontFamily, weight, SKFontStyleWidth.Normal, slant);
-                    if (testTypeface != null && CanRenderText(testTypeface, text))
-                    {
-                        typeface = testTypeface;
-                        break;
-                    }
-                }
-            }
-
-            // Final fallback - use system default
-            if (typeface == null)
-            {
-                typeface = SKTypeface.FromFamilyName(null, weight, SKFontStyleWidth.Normal, slant);
-            }
-
-            cachedTypeface = typeface;
-            cachedTypefaceText = text;
-            cachedBold = bold;
-            cachedItalic = italic;
-
             return typeface;
         }
 
-        private bool CanRenderText(SKTypeface typeface, string text)
+        private List<SKRect> GetCharacterBounds()
         {
-            if (typeface == null || string.IsNullOrEmpty(text))
-                return false;
+            if (characterBounds != null)
+                return characterBounds;
 
-            // Check if the typeface has glyphs for all CJK characters in the text
-            foreach (char c in text)
+            List<SKRect> bounds = new List<SKRect>();
+            if (!string.IsNullOrEmpty(text) && style != null)
             {
-                if (c > 0x2E80) // CJK range
+                using (SKPaint paint = CreatePaint(style, FontPoint))
                 {
-                    ushort glyphId = typeface.GetGlyph(c);
-                    if (glyphId == 0)
+                    float y = 0;
+                    foreach (string line in text.Split('\n'))
                     {
-                        return false;
+                        float x = 0;
+                        foreach (char c in line)
+                        {
+                            float charWidth = paint.MeasureText(c.ToString());
+                            bounds.Add(new SKRect(x, y, x + charWidth, y + FontPoint));
+                            x += charWidth;
+                        }
+                        // Add newline character bounds
+                        bounds.Add(new SKRect(x, y, x, y + FontPoint));
+
+                        y += FontPoint * lineHeightMultiplier;
                     }
                 }
             }
-            return true;
+            characterBounds = bounds;
+            return bounds;
         }
 
         private bool Render()
@@ -463,6 +398,7 @@ namespace Composition.Text
         {
             lock (locker)
             {
+                List<SKRect> characterBounds = GetCharacterBounds();
                 float adjustedX = (point.X + offsetX) / scaleFactor;
                 float adjustedY = (point.Y + offsetY) / scaleFactor;
 
@@ -488,6 +424,7 @@ namespace Composition.Text
         {
             lock (locker)
             {
+                List<SKRect> characterBounds = GetCharacterBounds();
                 if (characterBounds.Count == 0)
                     return Point.Zero;
 

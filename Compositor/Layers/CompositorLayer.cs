@@ -259,6 +259,15 @@ namespace Composition.Layers
         public override void DoBackground()
         {
             base.DoBackground();
+
+            // Without a background thread this runs at the start of each frame. Texture uploads there can stall
+            // (Mesa waits for the GPU on every SetData), but once the first has stalled the rest are cheap, so
+            // allow a bigger slice rather than doing one upload per frame.
+            if (!PlatformTools.ThreadedDrawing)
+            {
+                drawer.PreProcessLimit = TimeSpan.FromMilliseconds(30);
+            }
+
             drawer.DoPreProcess();
         }
 
