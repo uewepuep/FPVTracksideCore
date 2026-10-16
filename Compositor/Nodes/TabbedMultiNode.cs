@@ -85,6 +85,12 @@ namespace Composition.Nodes
             return textButtonNode;
         }
 
+        public TextButtonNode InsertTabAfter(TextButtonNode after, string text, Node node, MouseInputDelegate action)
+        {
+            int index = Array.IndexOf(after.Parent.Children.ToArray(), after);
+            return InsertTab(index + 1, text, node, action);
+        }
+
         private void MultiNode_OnShowChange(Node obj)
         {
             if (mapBack.TryGetValue(obj, out TextButtonNode textButtonNode)) 
@@ -125,6 +131,12 @@ namespace Composition.Nodes
         public Color HoverCover { get; private set; }
         private Color textColor;
 
+        // Lay the buttons out as if there were at least this many, so a few
+        // buttons stay button-sized and sit on the left instead of stretching.
+        public int MinimumSlots { get; set; }
+
+        public float Padding { get; set; } = 0.01f;
+
 
         public TabButtonsNode(ToolTexture tabBackground, ToolTexture tabButtonBackground, Color hover, Color text) 
         {
@@ -154,7 +166,8 @@ namespace Composition.Nodes
 
         public override void Layout(RectangleF parentBounds)
         {
-            AlignHorizontally(0.01f, tabBack.VisibleChildren.ToArray());
+            Node[] buttons = tabBack.VisibleChildren.ToArray();
+            AlignHorizontally(Padding, Math.Max(MinimumSlots, buttons.Length), buttons);
             base.Layout(parentBounds);
         }
     }

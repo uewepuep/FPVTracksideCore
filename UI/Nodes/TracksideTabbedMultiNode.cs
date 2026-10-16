@@ -23,9 +23,10 @@ namespace UI.Nodes
         public bool IsOnRounds { get { return rounds == Showing; } }
         public bool IsOnReplay { get { return ReplayNode == Showing; } }
         public bool IsOnChanelList { get { return pilotChanelList == Showing; } }
-        public bool IsOnLapCount { get { return LapCountSummaryNode == Showing; } }
-        public bool IsOnLapRecords { get { return LapRecordsSummaryNode == Showing; } }
-        public bool IsOnPoints { get { return PointsSummaryNode == Showing; } }
+        public bool IsOnResults { get { return ResultsNode == Showing; } }
+        public bool IsOnLapCount { get { return IsOnResults && ResultsNode.Showing == ResultsNode.LapCountSummaryNode; } }
+        public bool IsOnLapRecords { get { return IsOnResults && ResultsNode.Showing == ResultsNode.LapRecordsSummaryNode; } }
+        public bool IsOnPoints { get { return IsOnResults && ResultsNode.Showing == ResultsNode.PointsSummaryNode; } }
         public bool IsOnPatreons { get { return patreonsNode == Showing; } }
         public bool IsOnPhotoBooth { get { return PhotoBooth == Showing; } }
         public bool IsOnRSSI { get { return rssiNode == Showing; } }
@@ -38,9 +39,8 @@ namespace UI.Nodes
 
         public ReplayNode ReplayNode { get; private set; }
 
-        public LapRecordsSummaryNode LapRecordsSummaryNode { get; private set; }
-        public PointsSummaryNode PointsSummaryNode { get; private set; }
-        public LapCountSummaryNode LapCountSummaryNode { get; private set; }
+        public ResultsNode ResultsNode { get; private set; }
+        public TextButtonNode ResultsButton { get; private set; }
 
         private RSSIAnalyserNode rssiNode;
 
@@ -66,9 +66,9 @@ namespace UI.Nodes
             sceneManagerNode = sceneManagerContent;
             rssiNode = new RSSIAnalyserNode(eventManager);
             patreonsNode = new PatreonsNode();
-            PointsSummaryNode = new PointsSummaryNode(eventManager);
-            LapCountSummaryNode = new LapCountSummaryNode(eventManager);
-            LapRecordsSummaryNode = new LapRecordsSummaryNode(eventManager);
+            ResultsNode = new ResultsNode(eventManager);
+            // Switching sub-tab counts as a tab change (OBS triggers, pilot list).
+            ResultsNode.OnTabChange += (text, node) => { OnTabChange?.Invoke(text, node); };
             pilotChanelList = new PilotChanelList(eventManager);
             PhotoBooth = new PhotoBoothNode(videoManager, eventManager, soundManager);
 
@@ -108,9 +108,7 @@ namespace UI.Nodes
             liveButton = AddTab("Live", sceneManagerNode, ShowLive);
             replayButton = AddTab("Replay", ReplayNode, (mie) => { ShowReplay(); });
 
-            AddTab("Lap Records", LapRecordsSummaryNode, ShowTopLaps);
-            AddTab("Lap Count", LapCountSummaryNode, ShowLaps);
-            AddTab("Points", PointsSummaryNode, ShowPoints);
+            ResultsButton = AddTab("Results", ResultsNode, ShowResults);
             AddTab("Channel List", pilotChanelList, ShowPilotChannelList);
             rssiButton = AddTab("RSSI Analyser", rssiNode, ShowAnalyser);
             PhotoBoothButton = AddTab("Photo Booth", PhotoBooth, ShowPhotoBooth);
@@ -183,49 +181,16 @@ namespace UI.Nodes
             patreonsNode.Refresh();
         }
 
-        public void ShowTopLaps(MouseInputEvent mie)
+        public void ShowResults(MouseInputEvent mie)
         {
-            //if (mie != null && mie.Button == MouseButtons.Middle)
-            //{
-            //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
-            //    baseGame.QuickLaunchWindow<LapRecordsSummaryNode>(eventManager, keyMapper);
-            //    return;
-            //}
-
-            if (LapRecordsSummaryNode.Visible)
-            {
-                LapRecordsSummaryNode.Refresh();
-            }
-            Show(LapRecordsSummaryNode);
-            LapRecordsSummaryNode.Scale(0.9f);
+            ShowResults();
         }
 
-        public void ShowPoints(MouseInputEvent mie)
+        public void ShowResults()
         {
-            //if (mie != null && mie.Button == MouseButtons.Middle)
-            //{
-            //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
-            //    baseGame.QuickLaunchWindow<PointsSummaryNode>(eventManager, keyMapper);
-            //    return;
-            //}
-
-            PointsSummaryNode.OrderByLast();
-            PointsSummaryNode.Refresh();
-            Show(PointsSummaryNode);
-        }
-
-        public void ShowLaps(MouseInputEvent mie)
-        {
-            //if (mie != null && mie.Button == MouseButtons.Middle)
-            //{
-            //    BaseGame baseGame = CompositorLayer.Game as BaseGame;
-            //    baseGame.QuickLaunchWindow<LapCountSummaryNode>(eventManager, keyMapper);
-            //    return;
-            //}
-
-            LapCountSummaryNode.OrderByLast();
-            LapCountSummaryNode.Refresh();
-            Show(LapCountSummaryNode);
+            // Results first, so a sub-tab change is passed on with Results showing.
+            Show(ResultsNode);
+            ResultsNode.Show();
         }
 
         public void ShowRounds(MouseInputEvent mie)
