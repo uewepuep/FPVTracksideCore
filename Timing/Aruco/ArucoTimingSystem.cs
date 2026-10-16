@@ -10,7 +10,7 @@ using Tools;
 
 namespace Timing.Aruco
 {
-    public class ArucoTimingSystem : ITimingSystem
+    public class ArucoTimingSystem : ITimingSystem, IRemoteMarshalUpdatable
     {
         private static bool nativeProbed;
         private static bool nativeAvailable;
@@ -156,23 +156,52 @@ namespace Timing.Aruco
         private readonly Dictionary<int, ChannelState> stateByFreq = new Dictionary<int, ChannelState>();
         private readonly object stateLock = new object();
 
+        // The gate rule itself lives in ArucoGate, so that recalculating laps from a recorded
+        // waveform runs the same code the timer ran live rather than a second copy of it.
         private class ChannelState
         {
-            public bool InGate;
-            public DateTime FlickerEndTime = DateTime.MinValue;
-            public int LastPeak;
-
-            // Time of the last crossing reported for this channel. Used to guarantee the times we
-            // hand to RaceLib never repeat or go backwards - see ReportMarkerCount.
-            public DateTime LastDetectionTime = DateTime.MinValue;
+            public readonly ArucoGate Gate = new ArucoGate();
         }
+
+        // --- Marshal waveform ----------------------------------------------------------------
+        // Everything below is ArUco's own: the marker-count trace behind the marshal graph, which
+        // ArucoWaveformRecorder owns end to end. RotorHazard's marshalling is untouched by any of
+        // it - it answers GetWaveform from its own server and shares no state with this.
+
+        private readonly ArucoWaveformRecorder waveforms = new ArucoWaveformRecorder();
+
+        /// <summary>
+        /// events/&lt;EventID&gt;/aruco_waveform, set by ArucoTimingManager - the ArUco-only code
+        /// that already re-runs on every timing-system rebuild. Null means memory only.
+        /// </summary>
+        public string WaveformDirectory
+        {
+            get => waveforms.Directory;
+            set => waveforms.Directory = value;
+        }
+
+        // Only the reference instance records. Splits see the same frames but time a different
+        // gate, and the marshal UI takes the first non-null waveform it is offered, so letting a
+        // Split answer would put the wrong gate's trace behind the lap times.
+        // ArucoTimingManager.EnforceSinglePrimary guarantees there is at most one.
+        private bool IsPrimary => settings != null && settings.Role == TimingSystemRole.Primary;
+
+        // Opt-in, from the ArUco settings. Off, nothing is captured and nothing is written, so
+        // the marshal graph has nothing to draw for races run that way - reading a file an
+        // earlier race left behind still works, which is why GetWaveform does not test this.
+        private bool RecordsWaveform => IsPrimary && settings.RecordMarkerCountLog;
+
+        // Frequency -> pilot for the race being set up. SetListeningFrequencies runs once per
+        // race before its start, so StartDetection can hand this to the recorder.
+        private readonly Dictionary<int, Guid> pilotByFrequency = new Dictionary<int, Guid>();
 
         public bool Connect() => true;
         public bool Disconnect() => true;
 
         public void Dispose()
         {
-            lock (stateLock) { stateByFreq.Clear(); }
+            lock (stateLock) { stateByFreq.Clear(); pilotByFrequency.Clear(); }
+            waveforms.Clear();
         }
 
         public bool SetListeningFrequencies(IEnumerable<ListeningFrequency> frequencies)
@@ -180,10 +209,15 @@ namespace Timing.Aruco
             lock (stateLock)
             {
                 stateByFreq.Clear();
+                pilotByFrequency.Clear();
                 foreach (var f in frequencies)
                 {
                     if (!stateByFreq.ContainsKey(f.Frequency))
                         stateByFreq[f.Frequency] = new ChannelState();
+
+                    // Channels with no pilot in this race come through with an empty id.
+                    if (f.PilotId != Guid.Empty)
+                        pilotByFrequency[f.Frequency] = f.PilotId;
                 }
             }
             return true;
@@ -204,12 +238,24 @@ namespace Timing.Aruco
             {
                 lock (s)
                 {
-                    s.InGate = false;
-                    s.FlickerEndTime = DateTime.MinValue;
-                    s.LastPeak = 0;
-                    s.LastDetectionTime = DateTime.MinValue;
+                    s.Gate.Reset();
                 }
             }
+            if (RecordsWaveform)
+            {
+                Dictionary<int, Guid> pilots;
+                lock (stateLock)
+                {
+                    pilots = new Dictionary<int, Guid>(pilotByFrequency);
+                }
+
+                waveforms.Start(startMetaData?.RaceId ?? Guid.Empty, time, pilots);
+            }
+            else if (IsPrimary)
+            {
+                Logger.TimingLog?.Log(this, "[ArUco] waveform: not recording, Record Marker Count Log is off");
+            }
+
             detecting = true;
             return true;
         }
@@ -217,6 +263,12 @@ namespace Timing.Aruco
         public bool EndDetection(EndDetectionType type)
         {
             detecting = false;
+
+            if (RecordsWaveform)
+            {
+                waveforms.Finish(settings?.MarkerThreshold ?? 0);
+            }
+
             return true;
         }
 
@@ -226,7 +278,7 @@ namespace Timing.Aruco
         /// markerThreshold / flickerLengthMs are supplied by the manager so Split instances can
         /// inherit the Primary's values (keeping the Split UI limited to MarkerIds only).
         /// </summary>
-        public void ReportMarkerCount(int frequency, int count, int peak, DateTime captureTime,
+        public void ReportMarkerCount(int frequency, int count, DateTime captureTime,
             int markerThreshold, int flickerLengthMs)
         {
             if (!detecting || settings == null) return;
@@ -236,6 +288,11 @@ namespace Timing.Aruco
             {
                 if (!stateByFreq.TryGetValue(frequency, out state))
                     return;
+            }
+
+            if (RecordsWaveform)
+            {
+                waveforms.Record(frequency, count, captureTime);
             }
 
             // The whole state machine runs under the channel's own lock, not just the dictionary
@@ -254,35 +311,46 @@ namespace Timing.Aruco
             // against. Contention is limited to callers reporting the same channel.
             lock (state)
             {
-                if (count >= markerThreshold)
-                {
-                    state.InGate = true;
-                    state.LastPeak = peak;
-                    state.FlickerEndTime = DateTime.MinValue;
+                if (!state.Gate.Update(count, captureTime, markerThreshold, flickerLengthMs,
+                                       out DateTime detectionTime))
                     return;
-                }
 
-                if (!state.InGate) return;
-
-                if (state.FlickerEndTime == DateTime.MinValue)
-                    state.FlickerEndTime = captureTime.AddMilliseconds(flickerLengthMs);
-
-                if (captureTime < state.FlickerEndTime) return;
-
-                DateTime detectionTime = captureTime.AddMilliseconds(-flickerLengthMs);
-
-                state.InGate = false;
-                state.FlickerEndTime = DateTime.MinValue;
-
-                // Never report a time at or before the previous crossing on this channel. Detection
-                // times are derived from the caller's captureTime, so anything that makes those
-                // non-monotonic - a second detection thread, or an OS clock step - would otherwise
-                // reach RaceLib as an out-of-order lap.
-                if (detectionTime <= state.LastDetectionTime) return;
-                state.LastDetectionTime = detectionTime;
-
-                OnDetectionEvent?.Invoke(this, frequency, detectionTime, state.LastPeak);
+                // Peak is the most markers seen during the pass, on the same x10 scale as the
+                // marshal waveform, so a lap's Peak reads straight off the graph. The count is
+                // also what the gate itself decides on.
+                OnDetectionEvent?.Invoke(this, frequency, detectionTime,
+                                         state.Gate.LastPeak * ArucoWaveformRecorder.Scale);
             }
+        }
+
+        // --- IRemoteMarshalUpdatable ---------------------------------------------------------
+
+        public bool MarshalSupported => IsPrimary;
+
+        /// <summary>
+        /// Drop the capture for a race that has been reset, so a re-run starts from nothing
+        /// rather than showing the previous run's trace. Driven by ArucoTimingManager.
+        /// </summary>
+        public void DiscardWaveform(Guid raceId)
+        {
+            if (IsPrimary)
+            {
+                waveforms.Discard(raceId);
+            }
+        }
+
+        public RSSIWaveform GetWaveform(Guid raceId, Guid pilotId)
+        {
+            return IsPrimary ? waveforms.Get(raceId, pilotId, settings?.MarkerThreshold ?? 0) : null;
+        }
+
+        // ArUco keeps its laps in FPVTrackside's own database - by the time the marshal editor
+        // calls this, it has already written them. Nothing to push anywhere; the interface is
+        // implemented so the editor, and its waveform graph, is offered for ArUco at all.
+        public void PushMarshalUpdate(MarshalData marshalData)
+        {
+            Logger.TimingLog?.Log(this, "[ArUco] marshal update (local only) for "
+                + marshalData.PilotName + ", " + marshalData.Laps.Length + " laps");
         }
     }
 }

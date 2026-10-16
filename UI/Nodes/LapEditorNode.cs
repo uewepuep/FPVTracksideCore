@@ -294,7 +294,7 @@ namespace UI.Nodes
             UpdateNumbersEtc();
         }
 
-        protected void UpdateNumbersEtc()
+        protected virtual void UpdateNumbersEtc()
         {
             DateTime prev = Race.Start;
             int number = Race.Event.PrimaryTimingSystemLocation == PrimaryTimingSystemLocation.Holeshot ? 0 : 1;

@@ -76,6 +76,16 @@ namespace Timing.Aruco
         [Description("Signal ratio below which a frame is treated as lost signal (0.0 - 1.0). RF snow ~0.01-0.07, live video ~0.6-0.85. Lower = less aggressive. Only used when Ignore Lost-Signal Frames is enabled.")]
         public float LostSignalThreshold { get; set; }
 
+        [Category("Detection")]
+        [DisplayName("Correct Flicker Laps")]
+        [Description("During a race, when a crossing arrives less than the event's Min Lap Time after the previous one, keep the new one and disqualify the previous one instead of the other way round. A gate pass ends when the marker leaves view, so if it drops out on the way through, the later crossing is the real one - but the automatic check assumes the earlier is. This applies the same rule live that the Marshal / Lap Editor's recalculate button applies afterwards. Only the reference (Primary) instance's setting is used, and only while ArUco is doing the timing.")]
+        public bool CorrectFlickerLaps { get; set; }
+
+        [Category("Marshal")]
+        [DisplayName("Record Marker Count Log")]
+        [Description("Record the number of markers seen on each pilot's channel, every frame, for the whole race. This is what the Marshal / Lap Editor plots behind the lap times, and what its recalculate button reads, so a race recorded without it can only be marshalled by hand afterwards. Written to events/<EventID>/aruco_waveform/<RaceID>.json - roughly 100KB per pilot per minute - and kept until the event folder is deleted. Only the reference (Primary) instance records; Split instances ignore this.")]
+        public bool RecordMarkerCountLog { get; set; }
+
         [Category("Overlay")]
         [DisplayName("Show Marker Box")]
         [Description("Draw the detected marker outline on both live video and Replay recording.")]
@@ -118,6 +128,8 @@ namespace Timing.Aruco
             UseMultiThreadDetection = true;
             IgnoreLostSignal = false;
             LostSignalThreshold = 0.4f;
+            CorrectFlickerLaps = false;
+            RecordMarkerCountLog = false;
             ShowMarkerBox = true;
             ShowMarkerId = true;
             ShowMarkerSizePercent = true;
