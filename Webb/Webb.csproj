@@ -30,12 +30,44 @@
   </ItemGroup>
 
   <!-- The Seeder web app (/seeder): SeederUI's Nuxt build, written to Seeder\UI
-       by `npm run generate`. Not committed; a build without it serves a "not built" page. -->
+       by `npm run generate`. Not committed. The BuildSeederUI target below runs
+       npm as part of the build; a build without npm serves a "not built" page.
+       Pass -p:SkipSeederUI=true to skip the npm step. -->
+  <PropertyGroup>
+    <SeederUIDir>$(MSBuildThisFileDirectory)..\SeederUI\</SeederUIDir>
+    <SeederUIOutDir>$(MSBuildThisFileDirectory)Seeder\UI\</SeederUIOutDir>
+  </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Seeder\UI\**\*.*" LogicalName="Webb.SeederUI/%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Remove="Seeder\UI\**" />
     <None Remove="Seeder\UI\**" />
+    <SeederUISource Include="$(SeederUIDir)app\**\*.*;$(SeederUIDir)public\**\*.*;$(SeederUIDir)nuxt.config.ts;$(SeederUIDir)package.json;$(SeederUIDir)package-lock.json" />
   </ItemGroup>
+
+  <!-- npm ci only when node_modules is missing or older than the lockfile. -->
+  <Target Name="SeederUINpmCi" Condition="'$(SkipSeederUI)' != 'true' And Exists('$(SeederUIDir)package.json')"
+          Inputs="$(SeederUIDir)package-lock.json" Outputs="$(SeederUIDir)node_modules\.package-lock.json">
+    <Exec Command="npm --version" StandardOutputImportance="low" ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="SeederNpmExitCode" />
+    </Exec>
+    <Warning Condition="'$(SeederNpmExitCode)' != '0'" Text="npm not found: the Seeder web app (/seeder) won't be built. Install Node.js, or pass -p:SkipSeederUI=true." />
+    <Exec Condition="'$(SeederNpmExitCode)' == '0'" Command="npm ci" WorkingDirectory="$(SeederUIDir)" />
+  </Target>
+
+  <!-- npm run generate only when the SeederUI source is newer than the output. -->
+  <Target Name="SeederUIGenerate"
+          Condition="'$(SkipSeederUI)' != 'true' And Exists('$(SeederUIDir)node_modules')"
+          Inputs="@(SeederUISource)" Outputs="$(SeederUIOutDir)index.html">
+    <Exec Command="npm run generate" WorkingDirectory="$(SeederUIDir)" />
+  </Target>
+
+  <!-- Embed after generating: a glob at evaluation time would miss files the
+       generate step just wrote, so the items are added inside a target. -->
+  <Target Name="BuildSeederUI" BeforeTargets="BeforeBuild" DependsOnTargets="SeederUINpmCi;SeederUIGenerate">
+    <ItemGroup>
+      <_SeederUIFile Include="Seeder\UI\**\*.*" />
+      <EmbeddedResource Include="@(_SeederUIFile)" LogicalName="Webb.SeederUI/%(_SeederUIFile.RecursiveDir)%(_SeederUIFile.Filename)%(_SeederUIFile.Extension)" />
+    </ItemGroup>
+  </Target>
   <ItemGroup>
     <None Update="httpfiles\Accessor.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
