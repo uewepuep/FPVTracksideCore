@@ -30,12 +30,45 @@
   </ItemGroup>
 
   <!-- The Seeder web app (/seeder): SeederUI's Nuxt build, written to Seeder\UI
-       by `npm run generate`. Not committed. The BuildSeederUI target below runs
-       npm as part of the build; a build without npm serves a "not built" page.
-       Pass -p:SkipSeederUI=true to skip the npm step. -->
+       by `npm run generate` and embedded in this DLL. Not committed.
+
+       The build does it all itself: it downloads a pinned Node.js into
+       SeederUI\.node (once, checksum-verified, no system install), runs npm ci
+       and npm run generate with it, and fails if the page doesn't come out, so
+       no build ships without /seeder. Every step is skipped when up to date.
+       Pass -p:SkipSeederUI=true to build without it (serves a "not built" page). -->
   <PropertyGroup>
-    <SeederUIDir>$(MSBuildThisFileDirectory)..\SeederUI\</SeederUIDir>
-    <SeederUIOutDir>$(MSBuildThisFileDirectory)Seeder\UI\</SeederUIOutDir>
+    <SeederUIDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..\SeederUI'))</SeederUIDir>
+    <SeederUIOutDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)Seeder\UI'))</SeederUIOutDir>
+
+    <!-- To upgrade Node: change the version and the hashes, from
+         https://nodejs.org/dist/v<version>/SHASUMS256.txt -->
+    <SeederNodeVersion>24.21.0</SeederNodeVersion>
+    <SeederNodeArch Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'X64'">x64</SeederNodeArch>
+    <SeederNodeArch Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'Arm64'">arm64</SeederNodeArch>
+    <SeederNodeOS Condition="$([MSBuild]::IsOSPlatform('Windows'))">win</SeederNodeOS>
+    <SeederNodeOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">darwin</SeederNodeOS>
+    <SeederNodeOS Condition="$([MSBuild]::IsOSPlatform('Linux'))">linux</SeederNodeOS>
+    <SeederNodeExt Condition="'$(SeederNodeOS)' == 'win'">zip</SeederNodeExt>
+    <SeederNodeExt Condition="'$(SeederNodeOS)' != 'win'">tar.gz</SeederNodeExt>
+    <SeederNodeName>node-v$(SeederNodeVersion)-$(SeederNodeOS)-$(SeederNodeArch)</SeederNodeName>
+    <SeederNodeArchive>$(SeederNodeName).$(SeederNodeExt)</SeederNodeArchive>
+    <SeederNodeRoot>$(SeederUIDir).node$([System.IO.Path]::DirectorySeparatorChar)</SeederNodeRoot>
+    <SeederNodeBin Condition="'$(SeederNodeOS)' == 'win'">$([MSBuild]::NormalizeDirectory('$(SeederNodeRoot)$(SeederNodeName)'))</SeederNodeBin>
+    <SeederNodeBin Condition="'$(SeederNodeOS)' != 'win'">$([MSBuild]::NormalizeDirectory('$(SeederNodeRoot)$(SeederNodeName)', 'bin'))</SeederNodeBin>
+    <SeederNodeExe Condition="'$(SeederNodeOS)' == 'win'">$(SeederNodeBin)node.exe</SeederNodeExe>
+    <SeederNodeExe Condition="'$(SeederNodeOS)' != 'win'">$(SeederNodeBin)node</SeederNodeExe>
+    <SeederNpm Condition="'$(SeederNodeOS)' == 'win'">"$(SeederNodeBin)npm.cmd"</SeederNpm>
+    <SeederNpm Condition="'$(SeederNodeOS)' != 'win'">"$(SeederNodeBin)npm"</SeederNpm>
+    <!-- npm's scripts start node by name, so the pinned node goes first on PATH. -->
+    <SeederNpmPath>$(SeederNodeBin)$([System.IO.Path]::PathSeparator)$(PATH)</SeederNpmPath>
+
+    <SeederNodeSha256 Condition="'$(SeederNodeArchive)' == 'node-v24.21.0-win-x64.zip'">158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541</SeederNodeSha256>
+    <SeederNodeSha256 Condition="'$(SeederNodeArchive)' == 'node-v24.21.0-win-arm64.zip'">8779b1bde1d39f8d420e3b57aa657b39891af434d3de44a919044cec06785921</SeederNodeSha256>
+    <SeederNodeSha256 Condition="'$(SeederNodeArchive)' == 'node-v24.21.0-darwin-x64.tar.gz'">1462cb3b3046b815cf8ea436d3da450ec1a9f11dac7e5a46b0ada5305d7e8097</SeederNodeSha256>
+    <SeederNodeSha256 Condition="'$(SeederNodeArchive)' == 'node-v24.21.0-darwin-arm64.tar.gz'">bed7eea5325e1108f32ce5228ddd6a5f0f08a499ee42aa7442aea583702f6057</SeederNodeSha256>
+    <SeederNodeSha256 Condition="'$(SeederNodeArchive)' == 'node-v24.21.0-linux-x64.tar.gz'">6e1db87ef58b8819e5d5402eff1536491b18edd8eb7bee5ef7897876e88dc5ff</SeederNodeSha256>
+    <SeederNodeSha256 Condition="'$(SeederNodeArchive)' == 'node-v24.21.0-linux-arm64.tar.gz'">724282c3b43aec998aa9527380465b45d229e021b58035f5f4f63095eabfe5d5</SeederNodeSha256>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Seeder\UI\**" />
@@ -43,26 +76,34 @@
     <SeederUISource Include="$(SeederUIDir)app\**\*.*;$(SeederUIDir)public\**\*.*;$(SeederUIDir)nuxt.config.ts;$(SeederUIDir)package.json;$(SeederUIDir)package-lock.json" />
   </ItemGroup>
 
+  <!-- Download the pinned Node.js once, verify it against the official checksum, unpack it. -->
+  <Target Name="SeederUINode" Condition="'$(SkipSeederUI)' != 'true' And !Exists('$(SeederNodeExe)')">
+    <Error Condition="'$(SeederNodeSha256)' == ''" Text="No pinned Node.js for this platform ($(SeederNodeArchive)). Add it in Webb.csproj, or pass -p:SkipSeederUI=true to build without the Seeder page." />
+    <Message Importance="high" Text="Downloading Node.js $(SeederNodeVersion) for the Seeder web app..." />
+    <DownloadFile SourceUrl="https://nodejs.org/dist/v$(SeederNodeVersion)/$(SeederNodeArchive)" DestinationFolder="$(SeederNodeRoot)" Retries="3" />
+    <VerifyFileHash File="$(SeederNodeRoot)$(SeederNodeArchive)" Hash="$(SeederNodeSha256)" Algorithm="SHA256" />
+    <Unzip Condition="'$(SeederNodeExt)' == 'zip'" SourceFiles="$(SeederNodeRoot)$(SeederNodeArchive)" DestinationFolder="$(SeederNodeRoot)" />
+    <Exec Condition="'$(SeederNodeExt)' != 'zip'" Command="tar -xzf &quot;$(SeederNodeArchive)&quot;" WorkingDirectory="$(SeederNodeRoot)" />
+    <Delete Files="$(SeederNodeRoot)$(SeederNodeArchive)" />
+    <Error Condition="!Exists('$(SeederNodeExe)')" Text="Node.js unpacked, but $(SeederNodeExe) is missing." />
+  </Target>
+
   <!-- npm ci only when node_modules is missing or older than the lockfile. -->
-  <Target Name="SeederUINpmCi" Condition="'$(SkipSeederUI)' != 'true' And Exists('$(SeederUIDir)package.json')"
+  <Target Name="SeederUINpmCi" Condition="'$(SkipSeederUI)' != 'true'"
           Inputs="$(SeederUIDir)package-lock.json" Outputs="$(SeederUIDir)node_modules\.package-lock.json">
-    <Exec Command="npm --version" StandardOutputImportance="low" ContinueOnError="true">
-      <Output TaskParameter="ExitCode" PropertyName="SeederNpmExitCode" />
-    </Exec>
-    <Warning Condition="'$(SeederNpmExitCode)' != '0'" Text="npm not found: the Seeder web app (/seeder) won't be built. Install Node.js, or pass -p:SkipSeederUI=true." />
-    <Exec Condition="'$(SeederNpmExitCode)' == '0'" Command="npm ci" WorkingDirectory="$(SeederUIDir)" />
+    <Exec Command="$(SeederNpm) ci" WorkingDirectory="$(SeederUIDir)" EnvironmentVariables="PATH=$(SeederNpmPath)" />
   </Target>
 
   <!-- npm run generate only when the SeederUI source is newer than the output. -->
-  <Target Name="SeederUIGenerate"
-          Condition="'$(SkipSeederUI)' != 'true' And Exists('$(SeederUIDir)node_modules')"
+  <Target Name="SeederUIGenerate" Condition="'$(SkipSeederUI)' != 'true'"
           Inputs="@(SeederUISource)" Outputs="$(SeederUIOutDir)index.html">
-    <Exec Command="npm run generate" WorkingDirectory="$(SeederUIDir)" />
+    <Exec Command="$(SeederNpm) run generate" WorkingDirectory="$(SeederUIDir)" EnvironmentVariables="PATH=$(SeederNpmPath)" />
   </Target>
 
   <!-- Embed after generating: a glob at evaluation time would miss files the
        generate step just wrote, so the items are added inside a target. -->
-  <Target Name="BuildSeederUI" BeforeTargets="BeforeBuild" DependsOnTargets="SeederUINpmCi;SeederUIGenerate">
+  <Target Name="BuildSeederUI" BeforeTargets="BeforeBuild" DependsOnTargets="SeederUINode;SeederUINpmCi;SeederUIGenerate">
+    <Error Condition="'$(SkipSeederUI)' != 'true' And !Exists('$(SeederUIOutDir)index.html')" Text="The Seeder web app wasn't generated: $(SeederUIOutDir)index.html is missing. Check the npm output above, or pass -p:SkipSeederUI=true to build without it." />
     <ItemGroup>
       <_SeederUIFile Include="Seeder\UI\**\*.*" />
       <EmbeddedResource Include="@(_SeederUIFile)" LogicalName="Webb.SeederUI/%(_SeederUIFile.RecursiveDir)%(_SeederUIFile.Filename)%(_SeederUIFile.Extension)" />
