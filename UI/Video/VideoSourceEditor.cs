@@ -163,7 +163,7 @@ namespace UI.Video
                     foreach (FrameWork toInstall in needInstall)
                     {
                         FrameWork local = toInstall;
-                        install.AddItem("Install " + local, () => { Install(local); });
+                        install.AddItem(Translator.Format("Menu.InstallFramework", "Install {0}", local), () => { Install(local); });
                     }
                 }
 
@@ -852,7 +852,7 @@ namespace UI.Video
                 if (split == Splits.Custom || split == Splits.SingleChannel)
                     continue;
 
-                splitMenu.AddItem("Split " + split.ToHumanString(), () =>
+                splitMenu.AddItem(Translator.Format("Menu.SplitInto", "Split {0}", Translator.Get("Splits." + split, split.ToHumanString())), () =>
                 {
                     Split(channelVideoInfo, split);
                 });
@@ -873,7 +873,7 @@ namespace UI.Video
                 Channel channel = eventChannels.GetOthersInChannelGroup(c).FirstOrDefault();
                 if (channel != null)
                 {
-                    mouseMenu.AddItem("Duplicate to " + channel.UIDisplayName, () => { Duplicate(channelVideoInfo, channel); });
+                    mouseMenu.AddItem(Translator.Format("Menu.DuplicateToChannel", "Duplicate to {0}", channel.UIDisplayName), () => { Duplicate(channelVideoInfo, channel); });
                 }
             }
 

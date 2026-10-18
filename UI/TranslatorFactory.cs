@@ -12,6 +12,9 @@ namespace UI
 {
     public class TranslatorFactory
     {
+        // Core's sheet first, then the outer repo's (UIExtra), merged by language. A key in both uses the Extra text.
+        public static readonly string[] Filenames = new string[] { "Translations.xlsx", "TranslationsExtra.xlsx" };
+
         public static IEnumerable<string> TranslatorNames()
         {
             foreach (Translator translator in Load())
@@ -23,7 +26,27 @@ namespace UI
 
         public static IEnumerable<Translator> Load()
         {
-            string filename = "Translations.xlsx";
+            List<Translator> translators = new List<Translator>();
+            foreach (string filename in Filenames)
+            {
+                FileInfo file = Find(filename);
+                if (file == null)
+                    continue;
+
+                foreach (Translator loaded in Load(file))
+                {
+                    Translator existing = translators.FirstOrDefault(t => t.Language == loaded.Language);
+                    if (existing == null)
+                        translators.Add(loaded);
+                    else
+                        existing.Merge(loaded);
+                }
+            }
+            return translators;
+        }
+
+        private static FileInfo Find(string filename)
+        {
             FileInfo file = null;
 
             // Try multiple locations
@@ -54,12 +77,9 @@ namespace UI
             }
 
             if (file == null || !file.Exists)
-            {
-                // Return empty if file not found
-                return Enumerable.Empty<Translator>();
-            }
+                return null;
 
-            return Load(file);
+            return file;
         }
 
         public static IEnumerable<Translator> Load(FileInfo excelFile, string sheetname = "Sheet1")
@@ -88,6 +108,9 @@ namespace UI
                             // Surrounding quotes are stripped so e.g. "" = empty string, " " = literal space
                             if (replacement.Length >= 2 && replacement[0] == '"' && replacement[replacement.Length - 1] == '"')
                                 replacement = replacement.Substring(1, replacement.Length - 2);
+
+                            // The sheet stores line breaks as \n
+                            replacement = replacement.Replace("\\n", "\n");
 
                             string name = translationItemNames[i];
                             translator.Set(name, replacement);

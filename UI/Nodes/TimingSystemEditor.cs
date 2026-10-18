@@ -1,3 +1,4 @@
+using Composition;
 using Composition.Input;
 using Composition.Layers;
 using Composition.Nodes;
@@ -176,7 +177,7 @@ namespace UI.Nodes
 
                             if (port == lapRFPort)
                             {
-                                mouseMenu.AddItem("Add LapRF 8way - " + copy, () =>
+                                mouseMenu.AddItem(Translator.Format("Menu.AddLapRF8wayAddress", "Add LapRF 8way - {0}", copy), () =>
                                 {
                                     var laprf = new LapRFSettingsEthernet();
                                     laprf.HostName = copy.ToString();
@@ -186,7 +187,7 @@ namespace UI.Nodes
 
                             if (port == rhPort)
                             {
-                                mouseMenu.AddItem("Add RotorHazard - " + copy, () =>
+                                mouseMenu.AddItem(Translator.Format("Menu.AddRotorHazardAddress", "Add RotorHazard - {0}", copy), () =>
                                 {
                                     var rotorhazard = new RotorHazardSettings();
                                     rotorhazard.HostName = copy.ToString();
@@ -196,7 +197,7 @@ namespace UI.Nodes
 
                             if (port == vdPort)
                             {
-                                mouseMenu.AddItem("Add Velocidrone - " + copy, () =>
+                                mouseMenu.AddItem(Translator.Format("Menu.AddVelocidroneAddress", "Add Velocidrone - {0}", copy), () =>
                                 {
                                     var velocidrone = new VelocidroneSettings();
                                     velocidrone.HostName = copy.ToString();
@@ -226,7 +227,7 @@ namespace UI.Nodes
                     if (!string.IsNullOrEmpty(elrsPort))
                     {
                         foundAny = true;
-                        mouseMenu.AddItem("Add ELRS Backpack - " + elrsPort, () =>
+                        mouseMenu.AddItem(Translator.Format("Menu.AddELRSBackpackPort", "Add ELRS Backpack - {0}", elrsPort), () =>
                         {
                             var elrs = new ELRSSettings();
                             elrs.ComPort = elrsPort;
@@ -238,7 +239,7 @@ namespace UI.Nodes
                     if (!string.IsNullOrEmpty(lapRFPort))
                     {
                         foundAny = true;
-                        mouseMenu.AddItem("Add LapRF Puck - " + lapRFPort, () =>
+                        mouseMenu.AddItem(Translator.Format("Menu.AddLapRFPuckPort", "Add LapRF Puck - {0}", lapRFPort), () =>
                         {
                             var laprf = new LapRFSettingsUSB();
                             laprf.ComPort = lapRFPort;

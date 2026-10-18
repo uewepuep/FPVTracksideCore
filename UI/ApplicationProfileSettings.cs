@@ -91,6 +91,7 @@ namespace UI
 [Category("Data")]
         [NeedsRestart]
         [System.Xml.Serialization.XmlElement("EventStorageLocation")]
+        [DisplayName("Event Storage Location")]
         public string EventStorageLocationRelative { get; set; }
 
         /// <summary>

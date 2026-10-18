@@ -11,6 +11,7 @@ namespace Timing.ImmersionRC
     public class LapRFSettingsUSB : LapRFSettings
     {
         [Category("USB")]
+        [DisplayName("COM Port")]
         public string ComPort { get; set; }
 
         public LapRFSettingsUSB()

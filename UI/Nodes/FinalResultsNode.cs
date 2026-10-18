@@ -127,7 +127,7 @@ namespace UI.Nodes
             MouseMenu menu = new MouseMenu(this);
             if (pinned)
             {
-                menu.AddItem("Unpin " + pilot.Name, () =>
+                menu.AddItem(Translator.Format("Menu.UnpinPilot", "Unpin {0}", pilot.Name), () =>
                 {
                     eventManager.UnpinFinalResult(pilot);
                     Refresh();

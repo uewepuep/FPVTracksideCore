@@ -27,6 +27,7 @@ namespace Composition.Input
         [Category("Live Video")]
         public ShortcutKey HideLaps { get; set; }
         [Category("Live Video")] 
+        [DisplayName("Reorder Channels Now")]
         public ShortcutKey ReOrderChannelsNow { get; set; }
 
         [Category("Live Video")]
@@ -68,17 +69,20 @@ namespace Composition.Input
         [Category("Tabs")]
         public ShortcutKey ShowChannelList { get; set; }
         [Category("Tabs")]
+        [DisplayName("Show RSSI Analyser")]
         public ShortcutKey ShowRSSIAnalyser { get; set; }
         [Category("Tabs")]
         public ShortcutKey ShowPatreons { get; set; }
 
         [Category("Race Control")]
+        [DisplayName("Start / Stop Race")]
         public ShortcutKey StartStopRace { get; set; }
         [Category("Race Control")]
         public ShortcutKey ResumeRace { get; set; }
         [Category("Race Control")]
         public ShortcutKey NextRace { get; set; }
         [Category("Race Control")]
+        [DisplayName("Previous Race")]
         public ShortcutKey PrevRace { get; set; }
         [Category("Race Control")]
         public ShortcutKey ClearRace { get; set; }
@@ -188,15 +192,19 @@ namespace Composition.Input
 
 
         [Category("Replay")]
+        [DisplayName("Replay Play / Stop")]
         public ShortcutKey ReplayPlayStop { get; set; }
         [Category("Replay")]
+        [DisplayName("Replay Previous Frame")]
         public ShortcutKey ReplayPrevFrame { get; set; }
         [Category("Replay")]
         public ShortcutKey ReplayNextFrame { get; set; }
 
         [Category("Replay")]
+        [DisplayName("Replay Plus 5 Seconds")]
         public ShortcutKey ReplayPlus5Seconds { get; set; }
         [Category("Replay")]
+        [DisplayName("Replay Minus 5 Seconds")]
         public ShortcutKey ReplayMinus5Seconds { get; set; }
 
         // Mouse wheel scrubs the replay; holding Shift steps one frame per notch instead.
@@ -209,16 +217,20 @@ namespace Composition.Input
         public ShortcutKey StopSound { get; set; }
 
         [Category("Sound")]
+        [DisplayName("Enable WAV Audio")]
         public ShortcutKey EnableWAVAudio { get; set; }
 
         [Category("Sound")]
+        [DisplayName("Disable WAV Audio")]
         public ShortcutKey DisableWAVAudio { get; set; }
 
 
         [Category("Sound")]
+        [DisplayName("Enable TTS Audio")]
         public ShortcutKey EnableTTSAudio { get; set; }
 
         [Category("Sound")]
+        [DisplayName("Disable TTS Audio")]
         public ShortcutKey DisableTTSAudio { get; set; }
 
 
@@ -253,17 +265,21 @@ namespace Composition.Input
 
 
         [Category("OBS Remote")]
+        [DisplayName("OBS Pause Notifications")]
         public ShortcutKey OBSPauseNotifications { get; set; }
         [Category("OBS Remote")]
+        [DisplayName("OBS Resume Notifications")]
         public ShortcutKey OBSResumeNotifications { get; set; }
 
         [Category("Global / Unfocused")]
+        [DisplayName("Global Start / Stop Race")]
         public ShortcutKey GlobalStartStopRace { get; set; }
 
         [Category("Global / Unfocused")]
         public ShortcutKey GlobalNextRace { get; set; }
 
         [Category("Global / Unfocused")]
+        [DisplayName("Global Previous Race")]
         public ShortcutKey GlobalPrevRace { get; set; }
 
         [Category("Global / Unfocused")]

@@ -346,24 +346,30 @@ namespace Timing
         public bool GenerateRandomLaps { get; set; }
 
         [Category("Random number generation settings (for testing)")]
+        [DisplayName("Typical Lap Time (seconds)")]
         public double TypicalLapTimeSeconds { get; set; }
       
         [Category("Random number generation settings (for testing)")]
+        [DisplayName("Range (seconds)")]
         public double RangeSeconds { get; set; }
 
         [Category("Random number generation settings (for testing)")]
+        [DisplayName("Offset (seconds)")]
         public double OffsetSeconds { get; set; }
 
         [Category("Random number generation settings (for testing)")]
+        [DisplayName("Fake Failure Rate (%)")]
         public double FakeFailureRatePercent { get; set; }
 
         [Category("Random number generation settings (for testing)")]
+        [DisplayName("False Read Rate (%)")]
         public double FalseReadPercent { get; set; }
 
         [Category("Random number generation settings (for testing)")]
         public bool GenerateAlerts { get; set; }
 
         [Category("Random number generation settings (for testing)")]
+        [DisplayName("Test Connection Failure Rate (%)")]
         public double TestConnectionFailureRatePercent { get; set; }
 
         [Category("Virtual Hardware")]

@@ -39,7 +39,7 @@ namespace UI.Nodes
             Stage stage = Round.Stage;
             if (stage != null && stage.GeneratesRounds)
             {
-                TextButtonNode continueRound = new TextButtonNode("Continue " + round.Stage.Name, Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
+                TextButtonNode continueRound = new TextButtonNode(Translator.Format("Button.ContinueStage", "Continue {0}", round.Stage.Name), Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
                 continueRound.OnClick += ContinueRound_OnClick;
                 nextItems.AddChild(continueRound);
             }
@@ -71,7 +71,7 @@ namespace UI.Nodes
                 foreach (var external in eventManager.ExternalRaceProviders)
                 {
                     var t = external;
-                    TextButtonNode externalButton = new TextButtonNode("Next " + external.Name, Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
+                    TextButtonNode externalButton = new TextButtonNode(Translator.Format("Button.NextFromProvider", "Next {0}", external.Name), Theme.Current.Rounds.Foreground.XNA, Theme.Current.Hover.XNA, Theme.Current.Rounds.Text.XNA);
                     externalButton.OnClick += (m) => { t.TriggerCreateRaces(Round); };
                     nextItems.AddChild(externalButton);
                 }

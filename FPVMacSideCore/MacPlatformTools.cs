@@ -121,7 +121,7 @@ namespace FPVMacsideCore
             }
 
             // Copy individual files (like Translations.xlsx)
-            string[] filesToCopy = new string[] { "Translations.xlsx" };
+            string[] filesToCopy = UI.TranslatorFactory.Filenames;
             foreach (string fileName in filesToCopy)
             {
                 try

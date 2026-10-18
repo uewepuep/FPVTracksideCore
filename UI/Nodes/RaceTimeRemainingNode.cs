@@ -58,7 +58,7 @@ namespace UI.Nodes
                 for (int i = inc; i <= 600; i += inc)
                 {
                     int t = i;
-                    mouseMenu.AddItem("Set Race Length " + i + " seconds", () => { EventManager.SetRaceLength(t); });
+                    mouseMenu.AddItem(Translator.Format("Menu.SetRaceLengthSeconds", "Set Race Length {0} seconds", i), () => { EventManager.SetRaceLength(t); });
                 }
 
                 mouseMenu.Show(Bounds.X, Bounds.Bottom);

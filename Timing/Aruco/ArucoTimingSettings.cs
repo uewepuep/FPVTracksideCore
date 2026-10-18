@@ -47,6 +47,7 @@ namespace Timing.Aruco
 
         [Category("Detection")]
         [Description("Milliseconds the marker must stay out of view before a lap/sector crossing is emitted.")]
+        [DisplayName("Flicker Length (ms)")]
         public int FlickerLengthMs { get; set; }
 
         [Category("Detection")]

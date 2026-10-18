@@ -142,7 +142,7 @@ namespace UI.Nodes
                 for (int laps = 1; laps <= 6; laps ++)
                 {
                     int thisLaps = laps;
-                    mouseMenu.AddItem("Set Laps " + laps, () =>
+                    mouseMenu.AddItem(Translator.Format("Menu.SetLapsCount", "Set Laps {0}", laps), () =>
                     {
                         EventManager.SetEventLaps(thisLaps);
                     });

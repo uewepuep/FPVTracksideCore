@@ -258,8 +258,8 @@ namespace UI.Nodes.Rounds
                             int localTop = topi;
                             int localBottom = bottomi;
 
-                            top.AddItem("Copy Top " + (topi > 1 ? topi + " pilots" : "pilot"), () => { CopyTop(localTop); });
-                            bottom.AddItem("Copy Bottom " + (bottomi > 1 ? bottomi + " pilots" : "pilot"), () => { CopyBottom(localBottom); });
+                            top.AddItem(topi > 1 ? Translator.Format("Menu.CopyTopNPilots", "Copy Top {0} pilots", topi) : Translator.Get("Menu.CopyTopPilot", "Copy Top pilot"), () => { CopyTop(localTop); });
+                            bottom.AddItem(bottomi > 1 ? Translator.Format("Menu.CopyBottomNPilots", "Copy Bottom {0} pilots", bottomi) : Translator.Get("Menu.CopyBottomPilot", "Copy Bottom pilot"), () => { CopyBottom(localBottom); });
                             bottomi--;
                             topi++;
                         }

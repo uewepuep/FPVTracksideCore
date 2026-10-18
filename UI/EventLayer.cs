@@ -111,13 +111,14 @@ namespace UI
             EventManager = eventManager;
             EventManager.SetChannelColors(Theme.Current.ChannelColors.XNA());
 
-            RaceStringFormatter.Instance.Practice = Translator.Get("EventTypes.Practice", "Practice");
-            RaceStringFormatter.Instance.TimeTrial = Translator.Get("EventTypes.TimeTrial", "Time Trial");
-            RaceStringFormatter.Instance.Race = Translator.Get("EventTypes.Race", "Race");
-            RaceStringFormatter.Instance.Freestyle = Translator.Get("EventTypes.Freestyle", "Freestyle");
-            RaceStringFormatter.Instance.Endurance = Translator.Get("EventTypes.Enduro", "Endurance");
-            RaceStringFormatter.Instance.CasualPractice = Translator.Get("EventTypes.CasualPractice", "Casual Practice");
-            RaceStringFormatter.Instance.Game = Translator.Get("EventTypes.Game", "Game");
+            RaceStringFormatter.Instance.EventTypePractice = Translator.Get("EventTypes.Practice", "Practice");
+            RaceStringFormatter.Instance.EventTypeTimeTrial = Translator.Get("EventTypes.TimeTrial", "Time Trial");
+            RaceStringFormatter.Instance.EventTypeRace = Translator.Get("EventTypes.Race", "Race");
+            RaceStringFormatter.Instance.EventTypeFreestyle = Translator.Get("EventTypes.Freestyle", "Freestyle");
+            RaceStringFormatter.Instance.EventTypeEndurance = Translator.Get("EventTypes.Enduro", "Endurance");
+            RaceStringFormatter.Instance.EventTypeCasualPractice = Translator.Get("EventTypes.CasualPractice", "Casual Practice");
+            RaceStringFormatter.Instance.EventTypeGame = Translator.Get("EventTypes.Game", "Game");
+            RaceStringFormatter.Instance.EventTypeTraining = Translator.Get("EventTypes.Training", "Training");
             RaceStringFormatter.Instance.Round = Translator.Get("Label.Round", "Round");
 
             EventManager.RaceManager.RemainingTimesToAnnounce = ApplicationProfileSettings.Instance.RemainingSecondsToAnnounce;

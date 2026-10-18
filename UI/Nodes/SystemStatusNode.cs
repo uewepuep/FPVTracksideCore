@@ -377,7 +377,7 @@ namespace UI.Nodes
                 {
                     if (source.VideoConfig == VideoConfig)
                     {
-                        mm.AddItem("Repair " + source.VideoConfig.DeviceName, () =>
+                        mm.AddItem(Translator.Format("Menu.RepairDevice", "Repair {0}", source.VideoConfig.DeviceName), () =>
                         {
                             VideoManager.Initialize(source);
                         });

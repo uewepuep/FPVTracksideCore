@@ -1,4 +1,5 @@
-﻿using Composition.Input;
+﻿using Composition;
+using Composition.Input;
 using Composition.Layers;
 using Composition.Nodes;
 using Microsoft.Xna.Framework;
@@ -53,7 +54,7 @@ namespace UI.Nodes
                 };
                 GetLayer<PopupLayer>().Popup(textPopupNode);
             });
-            mouseMenu.AddItem("Edit Name '" + profile.Name + "'", () =>
+            mouseMenu.AddItem(Translator.Format("Menu.EditProfileName", "Edit Name '{0}'", profile.Name), () =>
             {
                 TextPopupNode textPopupNode = new TextPopupNode("Edit Profile Name", "New Name", profile.Name);
                 textPopupNode.OnOK += (string name) =>
@@ -68,7 +69,7 @@ namespace UI.Nodes
                 };
                 GetLayer<PopupLayer>().Popup(textPopupNode);
             });
-            mouseMenu.AddItem("Clone Profile '" + profile.Name + "'", () =>
+            mouseMenu.AddItem(Translator.Format("Menu.CloneProfileName", "Clone Profile '{0}'", profile.Name), () =>
             {
                 TextPopupNode textPopupNode = new TextPopupNode("Clone Profile " + profile.Name, "New Name", "");
                 textPopupNode.OnOK += (string name) =>

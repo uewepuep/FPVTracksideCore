@@ -11,12 +11,14 @@ namespace Timing.Chorus
     public class ChorusSettings : TimingSystemSettings
     {
         [Category("Communication")]
+        [DisplayName("COM Port")]
         public string ComPort { get; set; }
 
         [Category("Communication")]
         public bool UseTCP { get; set; }
 
         [Category("Communication")]
+        [DisplayName("IP Address")]
         public string IPAddress { get; set; }
 
         [Category("Communication")]

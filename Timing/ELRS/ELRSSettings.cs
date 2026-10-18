@@ -15,6 +15,7 @@ namespace Timing.ELRS
 
         [Category("Race Control")]
         [Description("Minimum time between race start/stop commands in milliseconds (debounce)")]
+        [DisplayName("Debounce (ms)")]
         public int DebounceMs { get; set; }
 
         public ELRSSettings()

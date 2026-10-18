@@ -263,6 +263,14 @@ namespace UI
         public void LoadTranslations()
         {
             Translator[] translators = TranslatorFactory.Load().ToArray();
+
+            // Translation sweep: FPVTRACKSIDE_TRANSLATION_SWEEP=1 records every key the app asks for that the file is missing
+            Translator english = translators.FirstOrDefault(t => t.Language == "English");
+            if (english != null && Environment.GetEnvironmentVariable("FPVTRACKSIDE_TRANSLATION_SWEEP") == "1")
+            {
+                Translator.RecordMissing(english.ItemNames, Path.Combine(IOTools.WorkingDirectory.FullName, "TranslationsMissing.tsv"));
+            }
+
             Translator t = translators.FirstOrDefault(t => t.Language == ApplicationProfileSettings.Instance.Language);
             if (t != null)
             {

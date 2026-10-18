@@ -43,6 +43,7 @@ namespace Timing.ImmersionRC
         [Category("Trigger Time Limits")]
         public double MinimumTriggerSeconds { get { return minimumTriggerSeconds; } set { minimumTriggerSeconds = Math.Max(0.1, value); } }
         [Category("Trigger Time Limits")]
+        [DisplayName("Race Start Minimum (seconds)")]
         public double RaceStartMinimumSeconds { get; set; }
 
         [Browsable(false)]
@@ -52,6 +53,7 @@ namespace Timing.ImmersionRC
         public TimeSpan RaceStartMinTime { get { return TimeSpan.FromSeconds(RaceStartMinimumSeconds); } }
         
         [Category("Trigger Time Limits")]
+        [DisplayName("Detection Report Delay (seconds)")]
         public double DetectionReportDelaySeconds { get; set; }
 
         [Category("Alerts")]

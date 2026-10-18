@@ -164,7 +164,7 @@ namespace UI.Nodes.Rounds
                     foreach (ExternalRaceProvider provider in providers)
                     {
                         ExternalRaceProvider p = provider;
-                        menu.AddItem("Add " + p.Name, () => { p.TriggerCreateRaces(Round); });
+                        menu.AddItem(Translator.Format("Menu.AddFromProvider", "Add {0}", p.Name), () => { p.TriggerCreateRaces(Round); });
                     }
                     ShowBelow(menu, sync, mie);
                 };
@@ -440,7 +440,7 @@ namespace UI.Nodes.Rounds
                     foreach (var external in EventManager.ExternalRaceProviders)
                     {
                         var t = external;
-                        mm.AddItem("Add " + external.Name, () => { t.TriggerCreateRaces(Round); });
+                        mm.AddItem(Translator.Format("Menu.AddFromProvider", "Add {0}", external.Name), () => { t.TriggerCreateRaces(Round); });
                     }
                 }
             }

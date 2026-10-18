@@ -29,3 +29,7 @@ SeederUI/.nuxt/
 SeederUI/.output/
 SeederUI/dist
 Webb/Seeder/UI/
+
+# Python
+__pycache__/
+*.pyc

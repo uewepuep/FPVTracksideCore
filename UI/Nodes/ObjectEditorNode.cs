@@ -1,4 +1,5 @@
-﻿using Composition.Input;
+﻿using Composition;
+using Composition.Input;
 using Composition.Layers;
 using Composition.Nodes;
 using ExternalData;
@@ -392,7 +393,7 @@ namespace UI.Nodes
                 }
 
                 MouseMenu submenu = mouseMenu.AddSubmenu(name, AddNew, channels.ToArray());
-                submenu.AddItem("All " + name, () => { AddAll(channels); });
+                submenu.AddItem(Translator.Format("Menu.AllOfType", "All {0}", name), () => { AddAll(channels); });
             }
 
             mouseMenu.Show(addButton);

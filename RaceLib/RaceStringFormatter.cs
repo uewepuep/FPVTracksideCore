@@ -11,14 +11,14 @@ namespace RaceLib
     {
         public static RaceStringFormatter Instance { get; private set; }
 
-        public string Practice { get; set; }
-        public string TimeTrial { get; set; }
-        public string Race { get; set; }
-        public string Freestyle { get; set; }
-        public string Endurance { get; set; }
-        public string CasualPractice { get; set; }
-        public string Game { get; set; }
-        public string Training { get; set; }
+        public string EventTypePractice { get; set; }
+        public string EventTypeTimeTrial { get; set; }
+        public string EventTypeRace { get; set; }
+        public string EventTypeFreestyle { get; set; }
+        public string EventTypeEndurance { get; set; }
+        public string EventTypeCasualPractice { get; set; }
+        public string EventTypeGame { get; set; }
+        public string EventTypeTraining { get; set; }
 
         public EventManager EventManager { get; set; }
 
@@ -30,30 +30,31 @@ namespace RaceLib
 
             EventManager = eventManager;
 
-            Practice = "Practice";
-            TimeTrial = "Time Trial";
-            Race = "Race";
-            Freestyle = "Freestyle";
-            Endurance = "Endurance";
-            Game = "Game";
+            EventTypePractice = "Practice";
+            EventTypeTimeTrial = "Time Trial";
+            EventTypeRace = "Race";
+            EventTypeFreestyle = "Freestyle";
+            EventTypeEndurance = "Endurance";
+            EventTypeCasualPractice = "Casual Practice";
+            EventTypeGame = "Game";
             Round = "Round";
-            Training = "Training";
+            EventTypeTraining = "Training";
         }
 
         public virtual string GetEventTypeText(EventTypes eventType)
         {
             switch (eventType)
             {
-                case EventTypes.Practice: return Practice;
-                case EventTypes.TimeTrial: return TimeTrial;
-                case EventTypes.Race: return Race;
-                case EventTypes.Freestyle: return Freestyle;
-                case EventTypes.Endurance: return Endurance;
-                case EventTypes.CasualPractice: return CasualPractice;
-                case EventTypes.Training: return Training;
+                case EventTypes.Practice: return EventTypePractice;
+                case EventTypes.TimeTrial: return EventTypeTimeTrial;
+                case EventTypes.Race: return EventTypeRace;
+                case EventTypes.Freestyle: return EventTypeFreestyle;
+                case EventTypes.Endurance: return EventTypeEndurance;
+                case EventTypes.CasualPractice: return EventTypeCasualPractice;
+                case EventTypes.Training: return EventTypeTraining;
                 case EventTypes.Game:
                     if (EventManager.GameManager.GameType == null)
-                        return Game;
+                        return EventTypeGame;
                     return EventManager.GameManager.GameType.Name;
             }
             return "Unknown";
