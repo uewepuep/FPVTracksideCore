@@ -658,8 +658,7 @@ namespace UI.Nodes
         public WebServerStatusNode(EventWebServer eventWebServer, Action<MouseMenu> addWebMenuItems)
             : base(@"img/webserver.png")
         {
-            // Set directly: the Name setter cuts names to 5 characters
-            name.Text = "Server";
+            Name = "Local";
             this.eventWebServer = eventWebServer;
             this.addWebMenuItems = addWebMenuItems;
             eventWebServer.OnRequest += OnDataRecv;

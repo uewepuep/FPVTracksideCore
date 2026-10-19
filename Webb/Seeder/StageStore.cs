@@ -29,7 +29,7 @@ namespace Webb.Seeder
         [JsonProperty("direction")] public string Direction { get; set; } = "descending";
         [JsonProperty("pointsTable")] public Dictionary<int, int> PointsTable { get; set; }
         [JsonProperty("dropWorst")] public int DropWorst { get; set; }
-        [JsonProperty("divisions")] public List<global::BracketEngine.MainsDivision> Divisions { get; set; }
+        [JsonProperty("divisions")] public List<global::SeederEngine.MainsDivision> Divisions { get; set; }
         // Explicit pilot → main assignment (pilot IDs), mains format only.
         [JsonProperty("mainsRosters")] public Dictionary<string, List<string>> MainsRosters { get; set; }
     }

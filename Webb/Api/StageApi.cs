@@ -18,31 +18,31 @@ namespace Webb.Api
         {
             new StageFormatDto
             {
-                Kind = global::BracketEngine.FormatKinds.Elimination, Name = "Double elimination",
+                Kind = global::SeederEngine.FormatKinds.Elimination, Name = "Double elimination",
                 Description = "Winners and Losers brackets: a pilot is out after a second loss. Finals are a chase-the-ace series (first to N race wins) or a grand final. Single elimination is the same with no Losers bracket.",
                 Uses = new List<string> { "eliminationType", "finalsFormat", "pilotsPerRace", "pilotsToAdvance", "aceWinsRequired" },
             },
             new StageFormatDto
             {
-                Kind = global::BracketEngine.FormatKinds.Qualifier, Name = "Double elimination — top 4 advance",
+                Kind = global::SeederEngine.FormatKinds.Qualifier, Name = "Double elimination — top 4 advance",
                 Description = "MultiGP-style double elimination that ends in a final ranking the top four (or top N with wider races) rather than one champion. 16 pilots at 4-up follows the MultiGP sheet exactly. Optional chase-the-ace final.",
                 Uses = new List<string> { "pilotsPerRace", "pilotsToAdvance", "qualifierCta", "aceWinsRequired", "qualifierSeed" },
             },
             new StageFormatDto
             {
-                Kind = global::BracketEngine.FormatKinds.MainsProgression, Name = "Bracket progression",
+                Kind = global::SeederEngine.FormatKinds.MainsProgression, Name = "Bracket progression",
                 Description = "Brackets A, B, C…, each a top-4 double elimination (A = championship). Racing starts in the lowest bracket; its top finishers move up into the next bracket, seeded by original qualifying position, until Bracket A decides the champion.",
                 Uses = new List<string> { "pilotsPerMain", "bumpUp", "pilotsPerRace", "pilotsToAdvance", "qualifierCta", "ctaMains", "aceWinsRequired", "qualifierSeed" },
             },
             new StageFormatDto
             {
-                Kind = global::BracketEngine.FormatKinds.Ladder, Name = "Seeded ladder",
+                Kind = global::SeederEngine.FormatKinds.Ladder, Name = "Seeded ladder",
                 Description = "Lowest seeds race first; the top finishers carry up into the next bout against the next seeds, and the top seed enters last.",
                 Uses = new List<string> { "pilotsPerRace", "pilotsToAdvance" },
             },
             new StageFormatDto
             {
-                Kind = global::BracketEngine.FormatKinds.Mains, Name = "Points brackets",
+                Kind = global::SeederEngine.FormatKinds.Mains, Name = "Points brackets",
                 Description = "Pilots are split into brackets A, B, C… by seed (or by hand) and every bracket races several rounds for points; best total wins, optionally dropping each pilot's worst rounds.",
                 Uses = new List<string> { "mains", "rounds", "direction", "pointsTable", "dropWorst", "divisions", "mainsRosters" },
             },
@@ -113,7 +113,7 @@ namespace Webb.Api
             {
                 return f();
             }
-            catch (global::BracketEngine.BracketException e)
+            catch (global::SeederEngine.BracketException e)
             {
                 throw ApiException.Conflict(Terms.Trackside(e.Message));
             }
@@ -155,7 +155,7 @@ namespace Webb.Api
             StageCreateRequest body = r.BodyAs<StageCreateRequest>();
             if (string.IsNullOrWhiteSpace(body.Name))
                 throw ApiException.BadRequest("name is required");
-            string format = string.IsNullOrWhiteSpace(body.Format) ? global::BracketEngine.FormatKinds.Elimination : body.Format.Trim().ToLowerInvariant();
+            string format = string.IsNullOrWhiteSpace(body.Format) ? global::SeederEngine.FormatKinds.Elimination : body.Format.Trim().ToLowerInvariant();
             if (!StageFormats.Any(f => f.Kind == format))
                 throw ApiException.BadRequest("unknown format '" + body.Format + "'; use one of " + string.Join(", ", StageFormats.Select(f => f.Kind)));
             if (body.Pilots == null || body.Pilots.Count < 2)
@@ -334,14 +334,14 @@ namespace Webb.Api
 
         // ───────────────────────── mapping ─────────────────────────
 
-        private StageSummaryDto Summary(StageRecord rec, global::BracketEngine.IRaceFormat f)
+        private StageSummaryDto Summary(StageRecord rec, global::SeederEngine.IRaceFormat f)
         {
             return Fill(new StageSummaryDto(), rec, f);
         }
 
-        private T Fill<T>(T dto, StageRecord rec, global::BracketEngine.IRaceFormat f) where T : StageSummaryDto
+        private T Fill<T>(T dto, StageRecord rec, global::SeederEngine.IRaceFormat f) where T : StageSummaryDto
         {
-            List<global::BracketEngine.RaceView> races = StageService.Views(f).Where(x => !x.IsVoid).ToList();
+            List<global::SeederEngine.RaceView> races = StageService.Views(f).Where(x => !x.IsVoid).ToList();
             string champion = f.Champion();
             dto.Id = rec.Id;
             dto.Name = rec.Name;
@@ -358,7 +358,7 @@ namespace Webb.Api
 
         private StageDto Full(StageRecord rec)
         {
-            global::BracketEngine.IRaceFormat f = stages.Format(rec);
+            global::SeederEngine.IRaceFormat f = stages.Format(rec);
             Dictionary<string, int> seed = rec.Pilots.Select((p, i) => new { p, i }).ToDictionary(x => x.p, x => x.i + 1);
             Func<string, string> name = id => stages.PilotName(rec, id);
 
@@ -371,7 +371,7 @@ namespace Webb.Api
             dto.Pilots = rec.Pilots.Select(p => new StagePilotDto { PilotId = p, Name = name(p), Seed = seed[p] }).ToList();
             Dictionary<string, string> waiting = StageService.WaitingOn(f);
             dto.Races = StageService.Views(f).Select(rv => StageRace(rec, f, rv, seed, name, waiting)).ToList();
-            dto.Standings = global::BracketEngine.RaceFormats.FinalOrdering(f, seed).Select(s => new StageStandingDto
+            dto.Standings = global::SeederEngine.RaceFormats.FinalOrdering(f, seed).Select(s => new StageStandingDto
             {
                 Rank = s.Rank,
                 PilotId = s.Pilot,
@@ -383,7 +383,7 @@ namespace Webb.Api
             return dto;
         }
 
-        private StageRaceDto StageRace(StageRecord rec, global::BracketEngine.IRaceFormat f, global::BracketEngine.RaceView rv, Dictionary<string, int> seed, Func<string, string> name, Dictionary<string, string> waiting)
+        private StageRaceDto StageRace(StageRecord rec, global::SeederEngine.IRaceFormat f, global::SeederEngine.RaceView rv, Dictionary<string, int> seed, Func<string, string> name, Dictionary<string, string> waiting)
         {
             Race race = stages.LinkedRace(rec, rv.Id);
             Dictionary<string, string> channels = new Dictionary<string, string>();

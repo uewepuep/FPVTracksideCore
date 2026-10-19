@@ -12,7 +12,7 @@
     <ProjectReference Include="..\DB\DB.csproj" />
     <ProjectReference Include="..\RaceLib\RaceLib.csproj" />
     <ProjectReference Include="..\Sound\Sound.csproj" />
-    <ProjectReference Include="..\Brackets\Brackets.csproj" />
+    <ProjectReference Include="..\Seeder\Seeder.csproj" />
   </ItemGroup>
 
   <ItemGroup>

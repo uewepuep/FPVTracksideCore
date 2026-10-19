@@ -668,7 +668,7 @@ namespace UI.Nodes
             PlatformTools.OpenFileManager(path);
         }
 
-        // The local server's pages: in Open Web, and on the Server status icon.
+        // The local server's pages: in Open Web, and on the Local Server status icon.
         public void AddLocalWebMenuItems(MouseMenu webMenu)
         {
             if (eventWebServer != null)
@@ -680,7 +680,7 @@ namespace UI.Nodes
             }
         }
 
-        // The Server status icon's menu: the local pages (opening one brings the server online), then taking it offline.
+        // The Local Server status icon's menu: the local pages (opening one brings the server online), then taking it offline.
         public void AddServerMenuItems(MouseMenu menu)
         {
             if (eventWebServer == null)
@@ -691,7 +691,7 @@ namespace UI.Nodes
             if (eventWebServer.Running)
             {
                 menu.AddBlank();
-                menu.AddItem("Take Server Offline", StopWebServer);
+                menu.AddItem("Take Local Server Offline", StopWebServer);
             }
         }
 
