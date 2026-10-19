@@ -60,8 +60,9 @@
     <SeederNodeExe Condition="'$(SeederNodeOS)' != 'win'">$(SeederNodeBin)node</SeederNodeExe>
     <SeederNpm Condition="'$(SeederNodeOS)' == 'win'">"$(SeederNodeBin)npm.cmd"</SeederNpm>
     <SeederNpm Condition="'$(SeederNodeOS)' != 'win'">"$(SeederNodeBin)npm"</SeederNpm>
-    <!-- npm's scripts start node by name, so the pinned node goes first on PATH. -->
-    <SeederNpmPath>$(SeederNodeBin)$([System.IO.Path]::PathSeparator)$(PATH)</SeederNpmPath>
+    <!-- npm's scripts start node by name, so the pinned node goes first on PATH.
+         Escaped because Exec's EnvironmentVariables splits on ';', which is Windows' PATH separator. -->
+    <SeederNpmPath>$([MSBuild]::Escape('$(SeederNodeBin)$([System.IO.Path]::PathSeparator)$(PATH)'))</SeederNpmPath>
 
     <SeederNodeSha256 Condition="'$(SeederNodeArchive)' == 'node-v24.21.0-win-x64.zip'">158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541</SeederNodeSha256>
     <SeederNodeSha256 Condition="'$(SeederNodeArchive)' == 'node-v24.21.0-win-arm64.zip'">8779b1bde1d39f8d420e3b57aa657b39891af434d3de44a919044cec06785921</SeederNodeSha256>
