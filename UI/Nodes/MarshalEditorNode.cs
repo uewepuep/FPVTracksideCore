@@ -17,11 +17,11 @@ namespace UI.Nodes
     // rather than staying purely local.
     public class MarshalEditorNode : LapEditorNode
     {
-        private ColorNode graphBackground;
-        private RSSIWaveformGraph waveformGraph;
+        protected ColorNode graphBackground;
+        protected RSSIWaveformGraph waveformGraph;
 
-        private RSSIWaveform waveform;
-        private LapEditorContainer selectedLapContainer;
+        protected RSSIWaveform waveform;
+        protected LapEditorContainer selectedLapContainer;
 
         // Laps that a recalculation replaced. Their rows are already in the database, and
         // LapEditorNode.OkButton_OnClick only writes what is still in lapContainers, so without
@@ -63,14 +63,23 @@ namespace UI.Nodes
             graphBackground.RelativeBounds = new RectangleF(0.01f, 0.06f, 0.98f, 0.45f);
             inner.AddChild(graphBackground);
 
-            waveformGraph = new RSSIWaveformGraph();
+            waveformGraph = CreateWaveformGraph();
             waveformGraph.RelativeBounds = new RectangleF(0, 0, 1, 1);
             waveformGraph.ThresholdsDragged += WaveformGraph_ThresholdsDragged;
             waveformGraph.LapTapped += WaveformGraph_LapTapped;
             graphBackground.AddChild(waveformGraph);
         }
 
-        public void SetWaveform(RSSIWaveform waveform)
+        /// <summary>
+        /// The graph node to plot into. A subclass whose trace is not a receiver RSSI returns its
+        /// own here rather than this class growing to know about it.
+        /// </summary>
+        protected virtual RSSIWaveformGraph CreateWaveformGraph()
+        {
+            return new RSSIWaveformGraph();
+        }
+
+        public virtual void SetWaveform(RSSIWaveform waveform)
         {
             this.waveform = waveform;
 
@@ -88,8 +97,12 @@ namespace UI.Nodes
             if (waveform == null)
                 return;
 
-            IEnumerable<TimeSpan> crossings = lapContainers.Where(lc => lc.Valid).Select(lc => lc.End - Race.Start);
-            waveformGraph.SetWaveform(waveform.Times, waveform.Values, enterAt, exitAt, crossings);
+            waveformGraph.SetWaveform(waveform.Times, waveform.Values, enterAt, exitAt, CurrentCrossings());
+        }
+
+        protected IEnumerable<TimeSpan> CurrentCrossings()
+        {
+            return lapContainers.Where(lc => lc.Valid).Select(lc => lc.End - Race.Start);
         }
 
         // Bidirectional selection: clicking a lap row highlights it on the graph (this hook,
@@ -105,7 +118,26 @@ namespace UI.Nodes
             SelectLapContainer(lc);
         }
 
-        private void SelectLapContainer(LapEditorContainer lc)
+        /// <summary>
+        /// Adds a lap ending at the given time from the race start, wired up like every other
+        /// container. For a subclass that adds a crossing the timer did not record.
+        /// </summary>
+        protected LapEditorContainer AddLapContainer(TimeSpan crossing)
+        {
+            DateTime end = Race.Start + crossing;
+
+            LapEditorContainer newLC = new LapEditorContainer(Race.Start, end, ChannelColor);
+            newLC.OnValidityChanged += UpdateNumbersEtc;
+            newLC.OnSplitLap += OnSplitLap;
+            newLC.OnTimeChanged += () => { UpdateNumbersEtc(); };
+
+            lapContainers.Add(newLC);
+            OnLapContainerCreated(newLC);
+
+            return newLC;
+        }
+
+        protected void SelectLapContainer(LapEditorContainer lc)
         {
             if (selectedLapContainer != null)
             {
@@ -152,10 +184,21 @@ namespace UI.Nodes
 
             List<RSSICrossingCalculator.Crossing> crossings = RSSICrossingCalculator.Calculate(waveform.Times, waveform.Values, enterAt, exitAt);
 
-            // NOTE: this replaces all laps with the recalculated set - unlike RotorHazard's own
-            // Recalculate, it doesn't yet preserve manually-added laps separately, since
-            // LapEditorContainer doesn't currently track a lap's source. Good enough for a first
-            // pass; worth revisiting if that distinction turns out to matter in practice.
+            RebuildLapsFromCrossings(crossings.Select(c => c.LapTime));
+            RefreshGraph(enterAt, exitAt);
+        }
+
+        /// <summary>
+        /// Replaces every lap with one ending at each of the given times, measured from the race
+        /// start. The laps that go are remembered in replacedLaps and disqualified on Ok.
+        ///
+        /// NOTE: this replaces all laps with the recalculated set - unlike RotorHazard's own
+        /// Recalculate, it doesn't yet preserve manually-added laps separately, since
+        /// LapEditorContainer doesn't currently track a lap's source. Good enough for a first
+        /// pass; worth revisiting if that distinction turns out to matter in practice.
+        /// </summary>
+        private void RebuildLapsFromCrossings(IEnumerable<TimeSpan> crossings)
+        {
             foreach (LapEditorContainer lc in lapContainers.ToArray())
             {
                 // Remove() only detaches the node - it is the same call LapEditorNode.Layout
@@ -174,19 +217,20 @@ namespace UI.Nodes
 
             DateTime raceStart = Race.Start;
             DateTime prevEnd = raceStart;
-            foreach (RSSICrossingCalculator.Crossing crossing in crossings.OrderBy(c => c.LapTime))
+
+            foreach (TimeSpan crossing in crossings.OrderBy(c => c))
             {
-                DateTime end = raceStart + crossing.LapTime;
+                DateTime end = raceStart + crossing;
                 LapEditorContainer newLC = new LapEditorContainer(prevEnd, end, ChannelColor);
                 newLC.OnValidityChanged += UpdateNumbersEtc;
                 newLC.OnSplitLap += OnSplitLap;
                 newLC.OnTimeChanged += () => { UpdateNumbersEtc(); };
 
                 // Mirrors RotorHazard's own "auto-delete late laps" in marshal.js - a crossing
-                // found past the race's actual length is almost always RSSI noise from the
-                // capture window extending beyond the race (e.g. the pilot re-crossing the gate
-                // after the race ended), not a real lap.
-                if (crossing.LapTime > Race.Length)
+                // found past the race's actual length is almost always noise from the capture
+                // window extending beyond the race (e.g. the pilot re-crossing the gate after
+                // the race ended), not a real lap.
+                if (crossing > Race.Length)
                 {
                     newLC.Valid = false;
                     newLC.Refresh();
@@ -199,7 +243,6 @@ namespace UI.Nodes
 
             Layout();
             UpdateNumbersEtc();
-            RefreshGraph(enterAt, exitAt);
         }
 
         protected override void OkButton_OnClick(MouseInputEvent mie)

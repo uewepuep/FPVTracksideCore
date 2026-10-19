@@ -1,5 +1,6 @@
 using ImageServer;
 using Microsoft.Xna.Framework;
+using RaceLib;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
@@ -33,6 +34,8 @@ namespace UI.Video
 
         private readonly TimingSystemManager timingSystemManager;
         private readonly ChannelsGridNode channelsGridNode;
+        private readonly RaceManager raceManager;
+        private readonly ArucoFlickerLapCorrector flickerLapCorrector;
 
         private volatile bool run;
         private Thread thread;
@@ -50,6 +53,34 @@ namespace UI.Video
 
             Init();
             timingSystemManager.OnInitialise += Init;
+
+            // Subscribed here rather than in Init, which runs again on every timing-system
+            // rebuild - see the Dispose comment for what repeated subscription costs.
+            raceManager = grid?.EventManager?.RaceManager;
+            if (raceManager != null)
+            {
+                raceManager.OnRaceReset += RaceManager_OnRaceReset;
+            }
+
+            // Owned here so it lives and dies with the rest of the ArUco machinery. It checks
+            // the ArUco settings itself, so it costs nothing when the setting is off.
+            if (grid?.EventManager != null)
+            {
+                flickerLapCorrector = new ArucoFlickerLapCorrector(grid.EventManager, tsm);
+            }
+        }
+
+        // A reset keeps the race's id and clears its laps, so the waveform captured for it is
+        // now describing a run that no longer exists. Throw it away with the laps.
+        private void RaceManager_OnRaceReset(Race race)
+        {
+            if (race == null)
+                return;
+
+            foreach (ArucoTimingSystem sys in timingSystemManager.TimingSystems.OfType<ArucoTimingSystem>())
+            {
+                sys.DiscardWaveform(race.ID);
+            }
         }
 
         public void Dispose()
@@ -67,6 +98,11 @@ namespace UI.Video
             {
                 timingSystemManager.OnInitialise -= Init;
             }
+            if (raceManager != null)
+            {
+                raceManager.OnRaceReset -= RaceManager_OnRaceReset;
+            }
+            flickerLapCorrector?.Dispose();
             CleanUp();
         }
 
@@ -114,6 +150,7 @@ namespace UI.Video
             }
 
             EnforceSinglePrimary();
+            SetWaveformDirectory();
 
             run = true;
             thread = new Thread(Process)
@@ -123,6 +160,43 @@ namespace UI.Video
             };
             thread.Start();
             Logger.TimingLog.Log(this, "[ArUco-Debug] Init: detection thread started.");
+        }
+
+        /// <summary>
+        /// Tells each ArUco system where to keep its marshal waveform. Only the UI knows the
+        /// event's folder, and this runs on every InitialiseTimingSystems (see the OnInitialise
+        /// subscription), so a settings change that rebuilds the timing systems re-supplies it.
+        ///
+        /// Deliberately done here rather than through EventMetaData/IEventAware: that path fans
+        /// out to every timing system, including RotorHazard, and nothing about ArUco's storage
+        /// should reach it.
+        /// </summary>
+        private void SetWaveformDirectory()
+        {
+            try
+            {
+                Guid eventId = channelsGridNode?.EventManager?.EventId ?? Guid.Empty;
+                if (eventId == Guid.Empty)
+                    return;
+
+                string directory = Path.Combine(
+                    ApplicationProfileSettings.Instance.EventStorageDirectory.FullName,
+                    eventId.ToString(),
+                    "aruco_waveform");
+
+                foreach (ArucoTimingSystem sys in timingSystemManager.TimingSystems.OfType<ArucoTimingSystem>())
+                {
+                    sys.WaveformDirectory = directory;
+                }
+
+                Logger.TimingLog.Log(this, "[ArUco-Debug] Init: waveform directory=" + directory);
+            }
+            catch (Exception ex)
+            {
+                // Without a directory the waveform simply stays in memory - never a reason to
+                // stop detection starting.
+                Logger.TimingLog.LogException(this, ex);
+            }
         }
 
         /// <summary>
@@ -442,7 +516,6 @@ namespace UI.Video
 
                             var wantedIds = s.EffectiveMarkerIds;
                             int matching = 0;
-                            double maxArea = 0;
                             double minAreaPx = (double)FrameWidth * FrameHeight * (effective.MinMarkerPercent / 100.0);
 
                             foreach (var d in detections)
@@ -450,10 +523,9 @@ namespace UI.Video
                                 if (!wantedIds.Contains(d.Id)) continue;
                                 if (d.AreaPx < minAreaPx) continue;
                                 matching++;
-                                if (d.AreaPx > maxArea) maxArea = d.AreaPx;
                             }
 
-                            sys.ReportMarkerCount(cvn.Channel.Frequency, matching, (int)maxArea, captureTime,
+                            sys.ReportMarkerCount(cvn.Channel.Frequency, matching, captureTime,
                                 effective.MarkerThreshold, effective.FlickerLengthMs);
                         }
                     }
