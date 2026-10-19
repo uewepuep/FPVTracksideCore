@@ -25,6 +25,7 @@ sandbox-data/
 
 # Seeder web app: source in SeederUI/, build output embedded from Webb/Seeder/UI
 SeederUI/node_modules/
+SeederUI/.node/
 SeederUI/.nuxt/
 SeederUI/.output/
 SeederUI/dist
