@@ -332,7 +332,7 @@ namespace UI.Nodes
 
         protected override PropertyNode<SimpleEvent> CreatePropertyNode(SimpleEvent obj, PropertyInfo pi)
         {
-            if (pi.Name == "VisibleOnline")
+            if (pi.Name == "VisibleOnline" || pi.Name == "Ranked")
             {
                 if (!obj.SyncWithFPVTrackside)
                     return null;

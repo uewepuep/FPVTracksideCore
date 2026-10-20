@@ -89,6 +89,9 @@ namespace DB.JSON
         public bool VisibleOnline { get; set; }
         public bool RulesLocked { get; set; }
 
+        // Older event files don't have it, they count
+        public bool Ranked { get; set; } = true;
+
         public Guid Track { get; set; }
         public Sector[] Sectors { get; set; }
 

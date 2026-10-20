@@ -108,6 +108,9 @@ namespace RaceLib
 
         public bool VisibleOnline { get; set; }
 
+        // Counts towards pilot stats and leaderboards on FPVTrackside.com. Off for practice nights, fun events etc.
+        public bool Ranked { get; set; }
+
         public MultiGPRaceFormat MultiGPRaceFormat { get; set; }
         public int[] MultiGPDisabledSlots  { get; set; }
 
@@ -133,6 +136,7 @@ namespace RaceLib
             SyncWithFPVTrackside = false;
             SyncWithMultiGP = false;
             VisibleOnline = true;
+            Ranked = true;
             Enabled = true;
             PrimaryTimingSystemLocation = PrimaryTimingSystemLocation.Holeshot;
             RaceStartIgnoreDetections = TimeSpan.FromSeconds(0.5);
@@ -289,6 +293,10 @@ namespace RaceLib
         [Category("Cloud")]
         [DisplayName("Visible on FPVTrackside.com")]
         public bool VisibleOnline { get; set; }
+
+        [Category("Cloud")]
+        [DisplayName("Ranked (counts for pilot stats)")]
+        public bool Ranked { get; set; }
 
         [System.ComponentModel.Browsable(false)]
         public MultiGPRaceFormat MultiGPRaceFormat { get; set; }
