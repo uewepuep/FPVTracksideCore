@@ -182,6 +182,8 @@ namespace ImageServer
             return new FrameTextureSample(graphicsDevice, FrameWidth, FrameHeight, SurfaceFormat);
         }
 
+        public override bool HasUnreadFrame => rawTextures?.HasUnread ?? false;
+
         public override bool UpdateTexture(GraphicsDevice graphicsDevice, int drawFrameCount, ref Texture2D texture2D)
         {
             if (rawTextures == null || textures == null)

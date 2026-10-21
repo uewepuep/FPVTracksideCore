@@ -59,6 +59,20 @@ namespace Tools
             }
         }
 
+        /// <summary>True while a written frame is still waiting to be read.</summary>
+        public bool HasUnread
+        {
+            get
+            {
+                for (int i = 0; i < writtenNotRead.Length; i++)
+                {
+                    if (writtenNotRead[i])
+                        return true;
+                }
+                return false;
+            }
+        }
+
         public bool GetWritable(out T t)
         {
             t = buffers[writeIndex];

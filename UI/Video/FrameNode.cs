@@ -92,6 +92,18 @@ namespace UI.Video
             if (Source != null)
             {
                 Source.DrawnThisGraphicsFrame = true;
+
+                // Two frames inside one draw raise one PreProcess, which takes only the older,
+                // and nothing raises another until the next frame arrives - by then the buffer
+                // is a frame behind for good and drops whenever the timing wobbles. Asking for
+                // the next pass here takes the waiting frame in the draw that would otherwise
+                // repeat the last one. (Not from PreProcess: that pass reruns its queue until
+                // empty, and within one pass the source hands out the same frame.)
+                if (Source.HasUnreadFrame && CompositorLayer != null)
+                {
+                    CompositorLayer.PreProcess(this, true);
+                    RequestRedraw();
+                }
             }
         }
 
