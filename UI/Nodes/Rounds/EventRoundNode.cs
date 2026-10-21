@@ -107,8 +107,18 @@ namespace UI.Nodes.Rounds
             Color hover = Theme.Current.Hover.XNA;
             ToolTexture background = Theme.Current.Rounds.RaceTitle;
 
+            TextNode title = new TextNode(Translator.Get("Label.RoundEmptyTitle", "Empty Round"), textColor);
+            title.RelativeBounds = new RectangleF(0, 0.01f, 1, 0.035f);
+            title.Alignment = RectangleAlignment.Center;
+            options.AddChild(title);
+
+            TextNode instructions = new TextNode(Translator.Get("Label.RoundEmptyInstructions", "This round has no races yet. Fill it yourself,\nor pick a format to generate the races for you."), new Color(textColor, 0.75f));
+            instructions.RelativeBounds = new RectangleF(0, 0.06f, 1, 0.055f);
+            instructions.Alignment = RectangleAlignment.Center;
+            options.AddChild(instructions);
+
             TextNode manual = new TextNode(Translator.Get("Label.RoundEmptyManual", "Fill it yourself"), textColor);
-            manual.RelativeBounds = new RectangleF(0, 0.01f, 1, 0.035f);
+            manual.RelativeBounds = new RectangleF(0, 0.15f, 1, 0.035f);
             manual.Alignment = RectangleAlignment.Center;
             options.AddChild(manual);
 
@@ -126,11 +136,11 @@ namespace UI.Nodes.Rounds
             paste.OnClick += (mie) => { PastePilot?.Invoke(Round); };
 
             ColorNode divider = new ColorNode(new Color(textColor, 0.25f));
-            divider.RelativeBounds = new RectangleF(0.05f, 0.296f, 0.9f, 0.003f);
+            divider.RelativeBounds = new RectangleF(0.05f, 0.436f, 0.9f, 0.003f);
             options.AddChild(divider);
 
             TextNode formatsHeading = new TextNode(Translator.Get("Label.RoundEmptyFormats", "Or use a format"), textColor);
-            formatsHeading.RelativeBounds = new RectangleF(0, 0.343f, 1, 0.035f);
+            formatsHeading.RelativeBounds = new RectangleF(0, 0.483f, 1, 0.035f);
             formatsHeading.Alignment = RectangleAlignment.Center;
             options.AddChild(formatsHeading);
 
@@ -184,7 +194,7 @@ namespace UI.Nodes.Rounds
             for (int i = 0; i < formats.Count; i += perRow)
             {
                 Node row = new Node();
-                row.RelativeBounds = new RectangleF(0, 0.398f + (i / perRow) * (tileHeight + rowGap), 1, tileHeight);
+                row.RelativeBounds = new RectangleF(0, 0.538f + (i / perRow) * (tileHeight + rowGap), 1, tileHeight);
                 options.AddChild(row);
 
                 // A short last row is centred
@@ -206,7 +216,7 @@ namespace UI.Nodes.Rounds
         {
             const float rowHeight = 0.06f;
             const float rowGap = 0.012f;
-            float y = 0.06f + index * (rowHeight + rowGap);
+            float y = 0.2f + index * (rowHeight + rowGap);
 
             Color textColor = Theme.Current.Rounds.Text.XNA;
 
