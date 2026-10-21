@@ -40,6 +40,13 @@ namespace ImageServer
         public virtual States State { get; private set; }
 
         public abstract bool UpdateTexture(GraphicsDevice graphicsDevice, int drawFrameId, ref Texture2D texture);
+
+        /// <summary>
+        /// A frame has arrived that UpdateTexture has not taken yet. Frame notifications coalesce
+        /// (two frames inside one draw raise one PreProcess), so the display asks for another
+        /// pass while this holds rather than waiting for the next frame to arrive.
+        /// </summary>
+        public virtual bool HasUnreadFrame => false;
         public abstract int FrameWidth { get; }
         public abstract int FrameHeight { get; }
         public abstract SurfaceFormat FrameFormat { get; }
