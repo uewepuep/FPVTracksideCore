@@ -201,31 +201,18 @@ namespace UI.Video
 
         /// <summary>
         /// Keeps at most one ArUco timing system as Primary (the first in iteration order).
-        /// Any additional Primary instances are demoted to Split so that only the start/finish
-        /// sector closes laps; the others record split times.
         /// </summary>
         private void EnforceSinglePrimary()
         {
-            var arucoSystems = timingSystemManager.TimingSystems
+            var demoted = ArucoRoles.KeepSinglePrimary(timingSystemManager.TimingSystems
                 .OfType<ArucoTimingSystem>()
-                .ToArray();
+                .Select(sys => sys.ArucoSettings));
 
-            bool seenPrimary = false;
-            foreach (var sys in arucoSystems)
+            foreach (var s in demoted)
             {
-                if (sys.Settings == null) continue;
-                if (sys.Settings.Role != TimingSystemRole.Primary) continue;
-
-                if (!seenPrimary)
-                {
-                    seenPrimary = true;
-                    continue;
-                }
-
-                string ids = sys.ArucoSettings?.MarkerIds ?? "-";
+                string ids = s.MarkerIds ?? "-";
                 Logger.TimingLog.Log(this,
                     "[ArUco-Debug] only one Primary is allowed; demoting Marker(s) " + ids + " to Split.");
-                sys.Settings.Role = TimingSystemRole.Split;
             }
         }
 
@@ -383,20 +370,12 @@ namespace UI.Video
         }
 
         /// <summary>
-        /// The reference settings: the Primary's if one exists, otherwise the first Split. All
-        /// other instances inherit shared thresholds from the reference so the per-instance UI
-        /// can stay limited to MarkerIds. Null when no instance has settings.
+        /// The reference settings (see <see cref="ArucoRoles.Reference"/>). Null when no
+        /// instance has settings.
         /// </summary>
         private static ArucoTimingSettings GetReferenceSettings(ArucoTimingSystem[] systems)
         {
-            return systems
-                .Where(sys => sys.Settings != null && sys.Settings.Role == TimingSystemRole.Primary)
-                .Select(sys => sys.ArucoSettings)
-                .FirstOrDefault()
-                ?? systems
-                    .Where(sys => sys.Settings != null)
-                    .Select(sys => sys.ArucoSettings)
-                    .FirstOrDefault();
+            return ArucoRoles.Reference(systems.Select(sys => sys.ArucoSettings));
         }
 
         /// <summary>

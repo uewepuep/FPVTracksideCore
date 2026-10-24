@@ -289,13 +289,11 @@ namespace UI.Nodes
                 obj is Timing.Aruco.ArucoTimingSettings &&
                 obj.Role == TimingSystemRole.Split;
 
-            // Find the reference ArUco instance — Primary if present, otherwise the lowest-index
-            // Split. The reference keeps ALL its settings editable; every other Split only
+            // The reference ArUco instance keeps ALL its settings editable; every other Split only
             // exposes MarkerIds because it inherits shared parameters from the reference.
             var arucoInstances = Objects.OfType<Timing.Aruco.ArucoTimingSettings>().ToList();
-            var arucoPrimary = arucoInstances.FirstOrDefault(x => x.Role == TimingSystemRole.Primary);
-            var arucoReference = arucoPrimary
-                ?? arucoInstances.FirstOrDefault(x => x.Role == TimingSystemRole.Split);
+            var arucoPrimary = Timing.Aruco.ArucoRoles.Primary(arucoInstances);
+            var arucoReference = Timing.Aruco.ArucoRoles.Reference(arucoInstances);
             bool isArucoReference = ReferenceEquals(obj, arucoReference);
 
             // Role is locked to Split only when a real Primary already exists elsewhere.
