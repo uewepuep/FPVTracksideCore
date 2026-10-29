@@ -212,10 +212,17 @@ namespace Timing.RotorHazard
         {
             try
             {
+                // Never leave a previous socket alive behind a new one
+                Disconnect();
+
                 bool result = false;
                 using (Waiter reponseWaiter = new Waiter())
                 {
                     SocketIOOptions options = new SocketIOOptions();
+
+                    // TimingSystemManager.MaintainConnection handles reconnecting. SocketIOClient's own retry would leave orphaned sockets connecting in the background.
+                    options.Reconnection = false;
+
                     if (!string.IsNullOrEmpty(settings.AdminUsername) || !string.IsNullOrEmpty(settings.AdminPassword))
                     {
                         string credentials = settings.AdminUsername + ":" + settings.AdminPassword;
@@ -226,31 +233,32 @@ namespace Timing.RotorHazard
                         };
                     }
 
-                    socket = new SocketIO("http://" + settings.HostName + ":" + settings.Port, options);
-                    socket.OnConnected += (object sender, EventArgs e) =>
+                    SocketIO newSocket = new SocketIO("http://" + settings.HostName + ":" + settings.Port, options);
+                    socket = newSocket;
+                    newSocket.OnConnected += (object sender, EventArgs e) =>
                     {
                         if (reponseWaiter.IsDisposed)
                             return;
 
                         try
                         {
-                            socket.On("ts_lap_data", OnLapData);
-                            socket.On("stage_ready", OnStageReady);
-                            socket.On("frequency_set", (a) => { });
-                            socket.On("frequency_data", OnFrequencyData);
-                            socket.On("environmental_data", OnEnvironmentData);
-                            socket.On("node_data", OnNodeData);
-                            socket.On("heartbeat", HeartBeat);
-                            socket.On("load_all", e =>
+                            newSocket.On("ts_lap_data", OnLapData);
+                            newSocket.On("stage_ready", OnStageReady);
+                            newSocket.On("frequency_set", (a) => { });
+                            newSocket.On("frequency_data", OnFrequencyData);
+                            newSocket.On("environmental_data", OnEnvironmentData);
+                            newSocket.On("node_data", OnNodeData);
+                            newSocket.On("heartbeat", HeartBeat);
+                            newSocket.On("load_all", e =>
                             {
                                 Logger.TimingLog.Log(this, "Load All");
                             });
-                            socket.On("ts_race_marshal", OnRaceMarshal);
+                            newSocket.On("ts_race_marshal", OnRaceMarshal);
 
                             connected = true;
                             Logger.TimingLog.Log(this, "Connected");
 
-                            socket.EmitAsync("ts_server_info", OnServerInfo);
+                            newSocket.EmitAsync("ts_server_info", OnServerInfo);
                             SendEventMetaData();
 
                             connectionCount++;
@@ -267,9 +275,14 @@ namespace Timing.RotorHazard
                     };
 
                     lastBeatTime = DateTime.Now;
-                    socket?.ConnectAsync();
+                    newSocket.ConnectAsync();
                     reponseWaiter.WaitOne(TimeOut);
                     result = connected;
+                }
+
+                if (!result)
+                {
+                    Disconnect();
                 }
                 return result;
             }
@@ -512,9 +525,17 @@ namespace Timing.RotorHazard
         {
             //{[{"current_rssi":[57,57,49,41],"frequency":[5658,5695,5760,5800],"loop_time":[1020,1260,1092,1136],"crossing_flag":[false,false,false,false]}]}
 
-            lastBeat = response.GetValue<Heartbeat>();
             connected = true;
             lastBeatTime = DateTime.Now;
+
+            try
+            {
+                lastBeat = response.GetValue<Heartbeat>();
+            }
+            catch (Exception ex)
+            {
+                Logger.TimingLog.LogException(this, ex);
+            }
         }
 
         private void OnNodeData(SocketIOResponse response)
