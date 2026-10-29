@@ -131,6 +131,12 @@ namespace Timing
         /// </returns>  
         bool EndDetection(EndDetectionType type);
 
+        /// <summary>
+        /// Called each time the system (re)connects. Hardware timers use this to stop a race
+        /// left running from a previous session, unless FPVTrackside is mid-race.
+        /// </summary>
+        void OnConnected(bool raceRunning);
+
         int MaxPilots { get; }
 
         /// <summary>  

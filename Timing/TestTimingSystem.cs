@@ -42,6 +42,14 @@ namespace Timing
         {
         }
 
+        public void OnConnected(bool raceRunning)
+        {
+            if (!raceRunning)
+            {
+                EndDetection(EndDetectionType.Normal);
+            }
+        }
+
         public bool EndDetection(EndDetectionType type)
         {
             return true;

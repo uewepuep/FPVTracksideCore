@@ -149,6 +149,11 @@ namespace Timing.Velocidrone
             return true;
         }
 
+        // Ending detection sends AbortRace, which would kill a sim race already in progress.
+        public void OnConnected(bool raceRunning)
+        {
+        }
+
         public bool EndDetection(EndDetectionType type)
         {
             _detecting = false;

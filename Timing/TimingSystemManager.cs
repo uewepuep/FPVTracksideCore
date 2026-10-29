@@ -289,10 +289,7 @@ namespace Timing
                                 }
                                 Logger.TimingLog.Log(this, "Connected", timingSystem, Logger.LogType.Notice);
 
-                                if (!detectionRunning && !(timingSystem is IRaceControlTimingSystem))
-                                {
-                                    timingSystem.EndDetection(EndDetectionType.Normal);
-                                }
+                                timingSystem.OnConnected(detectionRunning);
                             }
                         }
                     }

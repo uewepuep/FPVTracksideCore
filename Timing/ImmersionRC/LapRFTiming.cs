@@ -275,6 +275,14 @@ namespace Timing.ImmersionRC
             }
         }
 
+        public void OnConnected(bool raceRunning)
+        {
+            if (!raceRunning)
+            {
+                EndDetection(EndDetectionType.Normal);
+            }
+        }
+
         public bool EndDetection(EndDetectionType type)
         {
             laprf.prepare_sendable_packet(LapRF.LapRFProtocol.laprf_type_of_record.LAPRF_TOR_STATE_CONTROL);

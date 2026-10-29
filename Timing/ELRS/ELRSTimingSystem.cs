@@ -115,6 +115,11 @@ namespace Timing.ELRS
             return Connected;
         }
 
+        // Race-control only, no detection state to reset.
+        public void OnConnected(bool raceRunning)
+        {
+        }
+
         public bool EndDetection(EndDetectionType type)
         {
             return true;

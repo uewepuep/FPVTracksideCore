@@ -624,6 +624,13 @@ namespace Timing.RotorHazard
             return detecting;
         }
 
+        // RH owns its race lifecycle - ending detection here would stop a race on RH (or leave an
+        // idle one in DONE, blocking the next heat change). Any leftover race is flushed when the
+        // next race stages.
+        public void OnConnected(bool raceRunning)
+        {
+        }
+
         public bool EndDetection(EndDetectionType type)
         {
             if (!Connected)

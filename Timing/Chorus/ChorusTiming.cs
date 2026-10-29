@@ -365,6 +365,14 @@ namespace Timing.Chorus
             }
         }
 
+        public void OnConnected(bool raceRunning)
+        {
+            if (!raceRunning)
+            {
+                EndDetection(EndDetectionType.Normal);
+            }
+        }
+
         public bool EndDetection(EndDetectionType type)
         {
             rssiRequested = false; // Allow next RSSI request 
