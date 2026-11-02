@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <TargetFramework>net9.0-windows</TargetFramework>
     <Platforms>x64;AnyCPU</Platforms>
-    <Version>2.79.1.914</Version>
+    <Version>2.79.1.916</Version>
 	  <usewpf>true</usewpf>
   </PropertyGroup>
 
