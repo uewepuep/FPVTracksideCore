@@ -25,8 +25,9 @@ namespace UI.Nodes
 
         // Laps that a recalculation replaced. Their rows are already in the database, and
         // LapEditorNode.OkButton_OnClick only writes what is still in lapContainers, so without
-        // this they would survive alongside the recalculated set. Disqualified on Ok, the same
-        // way OnRaceMarshal disqualifies a lap the incoming marshal data does not account for.
+        // this they would survive alongside the recalculated set. Removed outright on Ok rather
+        // than disqualified: the RSSI trace can always rebuild them, and keeping them would pile
+        // up a deleted copy of every lap on the timer each time the race is recalculated.
         private readonly List<Lap> replacedLaps = new List<Lap>();
 
         protected override string TitleText => "Marshal / Lap Editor - " + Pilot.Name;
@@ -190,7 +191,7 @@ namespace UI.Nodes
 
         /// <summary>
         /// Replaces every lap with one ending at each of the given times, measured from the race
-        /// start. The laps that go are remembered in replacedLaps and disqualified on Ok.
+        /// start. The laps that go are remembered in replacedLaps and removed on Ok.
         ///
         /// NOTE: this replaces all laps with the recalculated set - unlike RotorHazard's own
         /// Recalculate, it doesn't yet preserve manually-added laps separately, since
@@ -251,7 +252,14 @@ namespace UI.Nodes
             // ReCalculateLaps does not count the replaced ones among the valid detections.
             foreach (Lap replaced in replacedLaps)
             {
-                RaceManager.DisqualifyLap(replaced, Detection.ValidityTypes.Marshall);
+                if (WaveformCanRebuild(replaced))
+                {
+                    RaceManager.RemoveLap(replaced);
+                }
+                else
+                {
+                    RaceManager.DisqualifyLap(replaced, Detection.ValidityTypes.Marshall);
+                }
             }
             replacedLaps.Clear();
 
@@ -259,15 +267,35 @@ namespace UI.Nodes
             PushMarshalUpdate();
         }
 
+        // A replaced lap is only removed if the trace could rebuild it: enough samples, covering
+        // the lap's time, with a real signal in it. A missing, truncated or flat trace (history
+        // not saved, receiver not recording) is no record of anything, so the lap is kept, disqualified.
+        private bool WaveformCanRebuild(Lap lap)
+        {
+            if (waveform == null || waveform.Times == null || waveform.Values == null)
+                return false;
+
+            if (waveform.Times.Length < 10 || waveform.Values.Length < 10)
+                return false;
+
+            TimeSpan raceTime = lap.EndRaceTime;
+            if (raceTime < waveform.Times.First() || raceTime > waveform.Times.Last())
+                return false;
+
+            return waveform.Values.Max() - waveform.Values.Min() >= 20;
+        }
+
         private void PushMarshalUpdate()
         {
-            Lap[] currentLaps = Race.GetLaps(l => l.Pilot == Pilot).OrderBy(l => l.Number).ToArray();
+            Lap[] currentLaps = Race.GetLaps(l => l.Pilot == Pilot).OrderBy(l => l.End).ToArray();
 
             MarshalData marshalData = new MarshalData
             {
                 RaceID = Race.ID,
                 PilotID = Pilot.ID,
                 PilotName = Pilot.Name,
+                EnterAt = waveform != null ? waveformGraph.EnterAt : null,
+                ExitAt = waveform != null ? waveformGraph.ExitAt : null,
                 Laps = currentLaps.Select((lap, index) => new MarshalLap
                 {
                     LapNumber = index,

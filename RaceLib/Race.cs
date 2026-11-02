@@ -476,6 +476,23 @@ namespace RaceLib
             return null;
         }
 
+        public void RemoveLap(IDatabase db, Lap lap)
+        {
+            lock (Laps)
+            {
+                Laps.Remove(lap);
+            }
+
+            lock (Detections)
+            {
+                Detections.Remove(lap.Detection);
+            }
+
+            db.Delete(lap);
+            db.Delete(lap.Detection);
+            db.Update(this);
+        }
+
         public Lap RecordLap(IDatabase db, Detection detection)
         {
             if (!detection.IsLapEnd)

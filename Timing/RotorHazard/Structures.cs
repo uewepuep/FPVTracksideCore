@@ -155,6 +155,12 @@ namespace Timing.RotorHazard
         public string name { get; set; }
     }
 
+    // Sent to ts_race_reset when FPVTrackside resets a race, discarding that attempt.
+    public struct RaceReset
+    {
+        public Guid race_id { get; set; }
+    }
+
     public struct RaceStartPilots
     {
         public double start_time_s { get; set; }
@@ -194,6 +200,8 @@ namespace Timing.RotorHazard
         public Guid race_id { get; set; }
         public Guid pilot_id { get; set; }
         public List<RaceMarshalUpdateLap> laps { get; set; }
+        public int? enter_at { get; set; }
+        public int? exit_at { get; set; }
     }
 
     public struct RaceMarshalUpdateLap

@@ -30,7 +30,7 @@ namespace Timing.RotorHazard
         }
     }
 
-    public class RotorHazardTimingSystem : ITimingSystemWithRSSI, IRemoteMarshalUpdatable, IEventAware
+    public class RotorHazardTimingSystem : ITimingSystemWithRSSI, IRemoteMarshalUpdatable, IEventAware, IRaceResetAware
     {
 
         private bool connected;
@@ -886,6 +886,11 @@ namespace Timing.RotorHazard
             {
                 race_id = marshalData.RaceID,
                 pilot_id = marshalData.PilotID,
+                enter_at = marshalData.EnterAt,
+                exit_at = marshalData.ExitAt,
+
+                // Every lap, invalid ones as deleted. RH replaces the run's laps with this list and
+                // echoes it back, and RaceManager.OnRaceMarshal pairs the two by index.
                 laps = marshalData.Laps.Select(l => new RaceMarshalUpdateLap
                 {
                     deleted = !l.Valid,
@@ -942,6 +947,18 @@ namespace Timing.RotorHazard
                 return;
 
             socket?.EmitAsync("ts_event_info", new EventInfo { name = eventMetaData.Name });
+        }
+
+        // RH saves a new race for every attempt, all tagged with our race ID. Unlink them so
+        // marshalling only reaches the attempt we still hold. Plugins without the handler ignore it.
+        public void RaceReset(Guid raceId)
+        {
+            if (!Connected)
+                return;
+
+            Logger.TimingLog.Log(this, "Race reset: " + raceId);
+
+            socket?.EmitAsync("ts_race_reset", new RaceReset { race_id = raceId });
         }
     }
 }

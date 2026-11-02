@@ -1323,6 +1323,7 @@ namespace RaceLib
                 EventManager.LapRecordManager.ResetRace(race);
                 EventManager.ResultManager.ClearPoints(race);
                 EventManager.GameManager.ClearRace(race);
+                TimingSystemManager.RaceReset(race.ID);
 
                 OnRaceReset?.Invoke(race);
             }
@@ -2177,6 +2178,19 @@ namespace RaceLib
             SetLapValidity(lap, false, validityType);
         }
 
+        // Removes a lap and its detection entirely. Unlike disqualifying, this loses the lap, so
+        // it is only for laps that can be rebuilt - e.g. ones a marshal recalculation replaced,
+        // which the RSSI trace still holds. Disqualified first so records and UI drop it as usual.
+        public void RemoveLap(Lap lap)
+        {
+            DisqualifyLap(lap, Detection.ValidityTypes.Marshall);
+
+            using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
+            {
+                lap.Race.RemoveLap(db, lap);
+            }
+        }
+
         public void SetLapValidity(Lap lap, bool valid, Detection.ValidityTypes validityType = Detection.ValidityTypes.ManualOverride)
         {
             SetDetectionValidity(lap.Race, lap.Detection, valid, validityType);
@@ -2575,25 +2589,31 @@ namespace RaceLib
                     Logger.RaceLog.Log(this, "Mismatch on Pilot ID but override with name, sent ID: " + marshalData.PilotID + " matched name ID: " + pilotChannel.Pilot.ID);
                 }
 
-                Lap[] laps = race.GetLaps(l => l.Pilot == pilotChannel.Pilot).ToArray();
+                // Both sides send every lap, deleted ones included, so the two lists pair up by
+                // index once both are in time order. Our own corrections echo back unchanged.
+                Lap[] laps = race.GetLaps(l => l.Pilot == pilotChannel.Pilot).OrderBy(l => l.End).ToArray();
+                MarshalLap[] marshalLaps = marshalData.Laps.OrderBy(ml => ml.RaceTime).ToArray();
 
                 DateTime start = race.Start;
 
                 int lapNumber = 0;
-                for (;lapNumber < laps.Length; lapNumber++)
+                for (; lapNumber < laps.Length; lapNumber++)
                 {
                     Lap lap = laps[lapNumber];
 
-                    MarshalLap marshalLap = marshalData.Laps.FirstOrDefault(ml => ml.LapNumber == lapNumber);
+                    MarshalLap marshalLap = lapNumber < marshalLaps.Length ? marshalLaps[lapNumber] : null;
                     if (marshalLap == null || !marshalLap.Valid)
                     {
                         DisqualifyLap(lap, Detection.ValidityTypes.Marshall);
+                        continue;
                     }
-                    else
+
+                    // RH round trips times as float milliseconds, so ignore sub-ms differences.
+                    if ((lap.EndRaceTime - marshalLap.RaceTime).Duration() >= TimeSpan.FromMilliseconds(1))
                     {
                         lap.End = start + marshalLap.RaceTime;
+                        lap.Detection.Time = lap.End;
                         lap.UpdateLength();
-                        SetLapValidity(lap, true, Detection.ValidityTypes.Marshall);
 
                         using (IDatabase db = DatabaseFactory.Open(EventManager.EventId))
                         {
@@ -2602,15 +2622,16 @@ namespace RaceLib
                             db.Update(lap.Detection);
                         }
                     }
+
+                    SetLapValidity(lap, true, Detection.ValidityTypes.Marshall);
                 }
 
-                for (;lapNumber < marshalData.Laps.Length; lapNumber++)
+                for (; lapNumber < marshalLaps.Length; lapNumber++)
                 {
-                    MarshalLap marshalLap = marshalData.Laps[lapNumber];
+                    MarshalLap marshalLap = marshalLaps[lapNumber];
                     if (marshalLap.Valid)
                     {
-                        DateTime lapEnd = start + marshalLap.RaceTime;
-                        AddManualLapWithRace(race, pilotChannel.Pilot, lapEnd, lapNumber);
+                        AddManualLapWithRace(race, pilotChannel.Pilot, start + marshalLap.RaceTime, lapNumber);
                     }
                 }
 

@@ -950,6 +950,10 @@ namespace Sound
         {
             if (lap == null) return;
 
+            // Laps added to a finished race come from editing (lap editor, marshalling), not
+            // from a pilot crossing the gate, so there is nothing to announce.
+            if (!lap.Race.Running) return;
+
             PlaySound(SoundKey.Detection, new SpeechParameters());
 
             Lap[] validLaps = lap.Race.GetValidLapsLast(lap.Pilot, lap.Race.TargetLaps);

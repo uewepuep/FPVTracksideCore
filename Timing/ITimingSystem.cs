@@ -274,6 +274,16 @@ namespace Timing
         void SetEventMetaData(EventMetaData eventMetaData);
     }
 
+    /// <summary>
+    /// Implemented by timing systems that keep their own record of a race (e.g. RotorHazard's
+    /// saved races) and need to drop it when FPVTrackside resets that race. A restarted race
+    /// keeps its ID, so without this the remote side holds every attempt under the same ID.
+    /// </summary>
+    public interface IRaceResetAware : ITimingSystem
+    {
+        void RaceReset(Guid raceId);
+    }
+
     public struct RSSI
     {
         public ITimingSystem TimingSystem { get; set; }
@@ -292,6 +302,10 @@ namespace Timing
         public string PilotName { get; set; }
         public Guid PilotID { get; set; }
         public MarshalLap[] Laps { get; set; }
+
+        // Calibration the laps were recalculated with, null when there was no waveform to adjust
+        public int? EnterAt { get; set; }
+        public int? ExitAt { get; set; }
     }
 
     public class MarshalLap

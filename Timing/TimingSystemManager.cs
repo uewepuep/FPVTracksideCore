@@ -433,6 +433,14 @@ namespace Timing
             }
         }
 
+        public void RaceReset(Guid raceId)
+        {
+            foreach (IRaceResetAware timingSystem in AllSystems.OfType<IRaceResetAware>())
+            {
+                timingSystem.RaceReset(raceId);
+            }
+        }
+
         public void Disconnect()
         {
             OnDataSent?.Invoke();

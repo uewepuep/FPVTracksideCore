@@ -180,7 +180,8 @@ namespace UI
 
         private void OnLap(Lap lap)
         {
-            if (lap != null)
+            // Laps added to a finished race come from editing, not a gate crossing.
+            if (lap != null && lap.Race.Running)
             {
                 OnDetection(lap.Detection);
             }

@@ -663,6 +663,10 @@ namespace ExternalData
         private void RaceManager_OnLapDetected(Lap lap)
         {
             if (lap?.Detection == null) return;
+
+            // Laps added to a finished race come from editing, not a gate crossing.
+            if (!lap.Race.Running) return;
+
             EmitDetection(lap.Detection);
         }
 
