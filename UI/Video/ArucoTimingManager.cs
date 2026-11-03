@@ -235,8 +235,7 @@ namespace UI.Video
 
         private void Process()
         {
-            var channelDetectors = new Dictionary<ChannelVideoNode, ArucoMarkerDetector>();
-            var channelMaps = new Dictionary<ChannelVideoNode, UndistortMap>();
+            var channelDetectors = new Dictionary<ChannelVideoNode, ChannelDetectors>();
             try
             {
                 ArucoCalibration calibration = LoadCalibration();
@@ -277,7 +276,7 @@ namespace UI.Video
                         continue;
                     }
 
-                    PrepareChannels(channelNodes, sizedNodes, channelDetectors, channelMaps, calibration);
+                    PrepareChannels(channelNodes, sizedNodes, channelDetectors, calibration);
 
                     var src = channelNodes[0].FrameNode.Source;
                     if (src == null)
@@ -301,7 +300,7 @@ namespace UI.Video
                     ApplyOverlaySettings(reference);
 
                     ChannelInput[] inputs = CollectInputs(channelNodes, settings);
-                    List<MarkerDetection>[] results = DetectAll(inputs, channelDetectors, channelMaps, settings);
+                    List<MarkerDetection>[] results = DetectAll(inputs, channelDetectors, settings);
 
                     for (int ch = 0; ch < inputs.Length; ch++)
                     {
@@ -331,9 +330,6 @@ namespace UI.Video
                 foreach (var det in channelDetectors.Values)
                     det?.Dispose();
                 channelDetectors.Clear();
-                foreach (var map in channelMaps.Values)
-                    map?.Dispose();
-                channelMaps.Clear();
             }
         }
 
@@ -351,12 +347,11 @@ namespace UI.Video
 
         /// <summary>
         /// Sizes each new channel's FrameNodeThumb for detection (480x360, not the default 8x8)
-        /// and gives it its own detector and undistortion map, so per-channel calibration maps and
-        /// DetectorParameters state are not shared across worker threads.
+        /// and gives it its own detectors and undistortion map, so per-channel calibration maps,
+        /// DetectorParameters and any state a detector keeps are not shared across worker threads.
         /// </summary>
         private static void PrepareChannels(ChannelVideoNode[] channelNodes, HashSet<ChannelVideoNode> sizedNodes,
-            Dictionary<ChannelVideoNode, ArucoMarkerDetector> channelDetectors,
-            Dictionary<ChannelVideoNode, UndistortMap> channelMaps, ArucoCalibration calibration)
+            Dictionary<ChannelVideoNode, ChannelDetectors> channelDetectors, ArucoCalibration calibration)
         {
             foreach (var cvn in channelNodes)
             {
@@ -368,8 +363,9 @@ namespace UI.Video
             foreach (var cvn in channelNodes)
             {
                 if (channelDetectors.ContainsKey(cvn)) continue;
-                channelDetectors[cvn] = new ArucoMarkerDetector();
-                channelMaps[cvn] = UndistortMap.Create(calibration, FrameWidth, FrameHeight);
+                channelDetectors[cvn] = new ChannelDetectors(
+                    UndistortMap.Create(calibration, FrameWidth, FrameHeight),
+                    new IMarkerDetector[] { new ArucoMarkerDetector() });
             }
         }
 
@@ -390,13 +386,7 @@ namespace UI.Video
         /// </summary>
         private sealed class DetectionSettings
         {
-            public readonly ArucoDetectMode Mode;
-            public readonly double ErrorCorrectionRate;
-            public readonly int HybridDistance;
-
-            // Rejects sub-threshold candidates inside the detector (perimeter filter) so small
-            // noise squares never reach decoding.
-            public readonly double MinMarkerPercent;
+            public readonly MarkerDetectorOptions Detector;
 
             // Ignore lost-signal frames on racing pilots' channels.
             public readonly bool IgnoreLostSignal;
@@ -409,10 +399,13 @@ namespace UI.Video
 
             public DetectionSettings(ArucoTimingSettings reference)
             {
-                Mode = reference?.DetectMode ?? ArucoDetectMode.Original;
-                ErrorCorrectionRate = reference?.ErrorCorrectionRate ?? 0.0;
-                HybridDistance = reference?.HybridDistanceThreshold ?? 0;
-                MinMarkerPercent = reference?.MinMarkerPercent ?? 0.0;
+                Detector = new MarkerDetectorOptions
+                {
+                    Mode = reference?.DetectMode ?? ArucoDetectMode.Original,
+                    ErrorCorrectionRate = reference?.ErrorCorrectionRate ?? 0.0,
+                    HybridDistance = reference?.HybridDistanceThreshold ?? 0,
+                    MinMarkerPercent = reference?.MinMarkerPercent ?? 0.0,
+                };
                 IgnoreLostSignal = reference?.IgnoreLostSignal ?? false;
                 LostSignalThreshold = reference?.LostSignalThreshold ?? 0.4;
                 MeasureSignal = IgnoreLostSignal || (reference?.ShowSignalRatio ?? false);
@@ -517,8 +510,7 @@ namespace UI.Video
         /// with no frame, or no detector, has a null result.
         /// </summary>
         private static List<MarkerDetection>[] DetectAll(ChannelInput[] inputs,
-            Dictionary<ChannelVideoNode, ArucoMarkerDetector> channelDetectors,
-            Dictionary<ChannelVideoNode, UndistortMap> channelMaps, DetectionSettings settings)
+            Dictionary<ChannelVideoNode, ChannelDetectors> channelDetectors, DetectionSettings settings)
         {
             var results = new List<MarkerDetection>[inputs.Length];
 
@@ -527,12 +519,8 @@ namespace UI.Video
                 var input = inputs[ch];
                 if (input.Bgra == null) return;
                 if (!channelDetectors.TryGetValue(input.Node, out var det)) return;
-                channelMaps.TryGetValue(input.Node, out var map);
-                using (var frame = new DetectionFrame(input.Bgra, FrameWidth, FrameHeight, map))
-                {
-                    results[ch] = det.Detect(frame,
-                        settings.Mode, settings.ErrorCorrectionRate, settings.HybridDistance, settings.MinMarkerPercent);
-                }
+                det.SetFeed(input.Node.FrameNode.Source, input.Node.Channel?.Frequency ?? 0);
+                results[ch] = det.Detect(input.Bgra, FrameWidth, FrameHeight, settings.Detector);
             }
 
             if (settings.MultiThread && inputs.Length > 1)

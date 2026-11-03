@@ -6,22 +6,7 @@ using Tools;
 
 namespace Timing.Aruco
 {
-    public enum DetectionSource
-    {
-        Original,    // detected on raw frame (TVPAS2: blue)
-        Corrected,   // detected on undistorted frame only (TVPAS2: yellow)
-        Both         // detected on both in Hybrid mode (TVPAS2: green)
-    }
-
-    public class MarkerDetection
-    {
-        public int Id;
-        public Point2f[] Corners;
-        public double AreaPx;
-        public DetectionSource Source;
-    }
-
-    public class ArucoMarkerDetector : IDisposable
+    public class ArucoMarkerDetector : IMarkerDetector
     {
         private readonly Dictionary dict;
         private DetectorParameters parameters;
@@ -39,7 +24,18 @@ namespace Timing.Aruco
             defaultMinMarkerPerimeterRate = parameters.MinMarkerPerimeterRate;
         }
 
-        public List<MarkerDetection> Detect(DetectionFrame frame,
+        public void Detect(DetectionFrame frame, MarkerDetectorOptions options, List<MarkerDetection> into)
+        {
+            into.AddRange(Detect(frame, options.Mode, options.ErrorCorrectionRate,
+                options.HybridDistance, options.MinMarkerPercent));
+        }
+
+        /// <summary>Nothing to forget: every frame is detected on its own.</summary>
+        public void Reset()
+        {
+        }
+
+        private List<MarkerDetection> Detect(DetectionFrame frame,
             ArucoDetectMode mode, double ecRate, int hybridDistPx, double minMarkerPercent)
         {
             int width = frame.Width;
