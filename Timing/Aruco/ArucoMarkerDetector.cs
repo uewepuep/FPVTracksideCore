@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using OpenCvSharp;
 using OpenCvSharp.Aruco;
 using Tools;
@@ -30,11 +29,6 @@ namespace Timing.Aruco
         private double cachedMinMarkerPercent = -1;
         private readonly double defaultMinMarkerPerimeterRate;
 
-        private Mat mapX;
-        private Mat mapY;
-        private int mapWidth;
-        private int mapHeight;
-
         public ArucoMarkerDetector()
         {
             // Use the standard Dict4X4_50 dictionary (IDs 0..49); TVPAS2-compatible setups
@@ -45,63 +39,11 @@ namespace Timing.Aruco
             defaultMinMarkerPerimeterRate = parameters.MinMarkerPerimeterRate;
         }
 
-        public bool HasCalibration => mapX != null && mapY != null;
-
-        public void ApplyCalibration(ArucoCalibration cal, int targetWidth, int targetHeight)
-        {
-            DisposeMaps();
-            if (cal == null) return;
-
-            try
-            {
-                double sx = (double)targetWidth / cal.ReferenceWidth;
-                double sy = (double)targetHeight / cal.ReferenceHeight;
-
-                using (Mat cameraMatrix = new Mat(3, 3, MatType.CV_64FC1))
-                using (Mat distMat = new Mat(1, cal.Dist.Length, MatType.CV_64FC1))
-                using (Mat identity = new Mat())
-                {
-                    cameraMatrix.Set(0, 0, cal.Mtx[0, 0] * sx);
-                    cameraMatrix.Set(0, 1, cal.Mtx[0, 1]);
-                    cameraMatrix.Set(0, 2, cal.Mtx[0, 2] * sx);
-                    cameraMatrix.Set(1, 0, cal.Mtx[1, 0]);
-                    cameraMatrix.Set(1, 1, cal.Mtx[1, 1] * sy);
-                    cameraMatrix.Set(1, 2, cal.Mtx[1, 2] * sy);
-                    cameraMatrix.Set(2, 0, cal.Mtx[2, 0]);
-                    cameraMatrix.Set(2, 1, cal.Mtx[2, 1]);
-                    cameraMatrix.Set(2, 2, cal.Mtx[2, 2]);
-
-                    for (int i = 0; i < cal.Dist.Length; i++)
-                        distMat.Set(0, i, cal.Dist[i]);
-
-                    OpenCvSharp.Size size = new OpenCvSharp.Size(targetWidth, targetHeight);
-                    Rect validRoi;
-                    using (Mat newMtx = Cv2.GetOptimalNewCameraMatrix(cameraMatrix, distMat, size, 1.0, size, out validRoi))
-                    {
-                        Mat mx = new Mat();
-                        Mat my = new Mat();
-                        // InitUndistortRectifyMap expects an identity/empty R — pass empty Mat, not null.
-                        Cv2.InitUndistortRectifyMap(cameraMatrix, distMat, identity, newMtx, size, MatType.CV_32FC1, mx, my);
-
-                        mapX = mx;
-                        mapY = my;
-                        mapWidth = targetWidth;
-                        mapHeight = targetHeight;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // If calibration fails we want detection to continue without undistort,
-                // not take down the whole Process thread.
-                Logger.TimingLog.LogException(this, ex);
-                DisposeMaps();
-            }
-        }
-
-        public List<MarkerDetection> Detect(byte[] bgra, int width, int height,
+        public List<MarkerDetection> Detect(DetectionFrame frame,
             ArucoDetectMode mode, double ecRate, int hybridDistPx, double minMarkerPercent)
         {
+            int width = frame.Width;
+            int height = frame.Height;
 
             if (Math.Abs(ecRate - cachedEcRate) > 0.001)
             {
@@ -126,133 +68,64 @@ namespace Timing.Aruco
 
             List<MarkerDetection> results = new List<MarkerDetection>();
 
-            using (Mat bgraMat = new Mat(height, width, MatType.CV_8UC4))
-            using (Mat gray = new Mat())
+            Mat gray = frame.Gray;
+
+            if (mode == ArucoDetectMode.Original || mode == ArucoDetectMode.Hybrid)
             {
-                Marshal.Copy(bgra, 0, bgraMat.Data, bgra.Length);
-                Cv2.CvtColor(bgraMat, gray, ColorConversionCodes.BGRA2GRAY);
+                try { DetectInto(gray, results, DetectionSource.Original); }
+                catch (Exception ex) { /* keep going; Corrected pass may still succeed */ Logger.TimingLog.LogException(this, ex); }
+            }
 
-                if (mode == ArucoDetectMode.Original || mode == ArucoDetectMode.Hybrid)
+            if (frame.CanCorrect && (mode == ArucoDetectMode.Corrected || mode == ArucoDetectMode.Hybrid))
+            {
+                try
                 {
-                    try { DetectInto(gray, results, DetectionSource.Original); }
-                    catch (Exception ex) { /* keep going; Corrected pass may still succeed */ Logger.TimingLog.LogException(this, ex); }
-                }
+                    List<MarkerDetection> corrected = new List<MarkerDetection>();
+                    DetectInto(frame.Corrected, corrected, DetectionSource.Corrected);
 
-                bool canCorrect = HasCalibration && mapWidth == width && mapHeight == height;
-                if (canCorrect && (mode == ArucoDetectMode.Corrected || mode == ArucoDetectMode.Hybrid))
-                {
-                    try
+                    foreach (var c in corrected)
                     {
-                        using (Mat undist = new Mat())
+                        // Warp corners back to original image coords via inverse map lookup
+                        frame.ToOriginal(c.Corners);
+                        // Recompute area to match the warped-back corners so size % reflects
+                        // the marker's actual footprint in the detection frame.
+                        c.AreaPx = ContourArea(c.Corners);
+
+                        if (mode == ArucoDetectMode.Hybrid)
                         {
-                            Cv2.Remap(gray, undist, mapX, mapY, InterpolationFlags.Linear);
-
-                            List<MarkerDetection> corrected = new List<MarkerDetection>();
-                            DetectInto(undist, corrected, DetectionSource.Corrected);
-
-                            foreach (var c in corrected)
+                            var cc = Centroid(c.Corners);
+                            MarkerDetection match = null;
+                            foreach (var r in results)
                             {
-                                // Warp corners back to original image coords via inverse map lookup
-                                for (int i = 0; i < c.Corners.Length; i++)
+                                if (r.Id != c.Id) continue;
+                                if (Distance(Centroid(r.Corners), cc) < hybridDistPx)
                                 {
-                                    int ux = (int)c.Corners[i].X;
-                                    int uy = (int)c.Corners[i].Y;
-                                    if (ux >= 0 && ux < width && uy >= 0 && uy < height)
-                                    {
-                                        c.Corners[i].X = mapX.Get<float>(uy, ux);
-                                        c.Corners[i].Y = mapY.Get<float>(uy, ux);
-                                    }
-                                }
-                                // Recompute area to match the warped-back corners so size % reflects
-                                // the marker's actual footprint in the detection frame.
-                                c.AreaPx = ContourArea(c.Corners);
-
-                                if (mode == ArucoDetectMode.Hybrid)
-                                {
-                                    var cc = Centroid(c.Corners);
-                                    MarkerDetection match = null;
-                                    foreach (var r in results)
-                                    {
-                                        if (r.Id != c.Id) continue;
-                                        if (Distance(Centroid(r.Corners), cc) < hybridDistPx)
-                                        {
-                                            match = r;
-                                            break;
-                                        }
-                                    }
-                                    if (match != null)
-                                    {
-                                        // Promote to Both; prefer corrected corners (more accurate geometry).
-                                        match.Source = DetectionSource.Both;
-                                        match.Corners = c.Corners;
-                                        match.AreaPx = c.AreaPx;
-                                    }
-                                    else
-                                    {
-                                        results.Add(c); // Source already = Corrected
-                                    }
-                                }
-                                else
-                                {
-                                    results.Add(c);
+                                    match = r;
+                                    break;
                                 }
                             }
+                            if (match != null)
+                            {
+                                // Promote to Both; prefer corrected corners (more accurate geometry).
+                                match.Source = DetectionSource.Both;
+                                match.Corners = c.Corners;
+                                match.AreaPx = c.AreaPx;
+                            }
+                            else
+                            {
+                                results.Add(c); // Source already = Corrected
+                            }
+                        }
+                        else
+                        {
+                            results.Add(c);
                         }
                     }
-                    catch (Exception ex) { /* undistort pipeline failed; return whatever Original found */ Logger.TimingLog.LogException(this, ex); }
                 }
+                catch (Exception ex) { /* undistort pipeline failed; return whatever Original found */ Logger.TimingLog.LogException(this, ex); }
             }
 
             return results;
-        }
-
-        /// <summary>
-        /// Measures how much contrast survives a heavy blur — the raspi4eyes signal-quality metric.
-        /// RF snow has no spatial correlation so blurring wipes out its contrast (ratio ~0),
-        /// while real video keeps its large-scale light/dark structure (ratio high, ~0.6-0.85).
-        /// A flat single-colour frame (black/blue screen) returns 0 (no signal).
-        /// Returns 1.0 (treat as valid video) on any failure so detection is never silently lost.
-        /// </summary>
-        public static double SignalRatio(byte[] bgra, int width, int height)
-        {
-            if (bgra == null || bgra.Length < width * height * 4) return 1.0;
-            try
-            {
-                using (Mat bgraMat = new Mat(height, width, MatType.CV_8UC4))
-                using (Mat gray = new Mat())
-                using (Mat small = new Mat())
-                {
-                    Marshal.Copy(bgra, 0, bgraMat.Data, bgra.Length);
-                    Cv2.CvtColor(bgraMat, gray, ColorConversionCodes.BGRA2GRAY);
-                    // Downscale to make the measurement cheap and to suppress per-pixel jitter.
-                    Cv2.Resize(gray, small, new OpenCvSharp.Size(80, 60));
-
-                    Cv2.MeanStdDev(small, out _, out Scalar stdRaw);
-                    double valRaw = stdRaw.Val0;
-                    // Almost no contrast at all => single colour (no signal / blue screen).
-                    if (valRaw < 3.0) return 0.0;
-
-                    using (Mat blurred = new Mat())
-                    {
-                        Cv2.GaussianBlur(small, blurred, new OpenCvSharp.Size(15, 15), 0);
-                        Cv2.MeanStdDev(blurred, out _, out Scalar stdBlur);
-                        return stdBlur.Val0 / valRaw;
-                    }
-                }
-            }
-            catch
-            {
-                return 1.0;
-            }
-        }
-
-        /// <summary>
-        /// Returns true when the BGRA frame looks like a lost signal — RF snow or a flat no-signal
-        /// screen — i.e. its <see cref="SignalRatio"/> is below <paramref name="threshold"/>.
-        /// </summary>
-        public static bool IsLostSignal(byte[] bgra, int width, int height, double threshold)
-        {
-            return SignalRatio(bgra, width, height) < threshold;
         }
 
         private void DetectInto(Mat gray, List<MarkerDetection> into, DetectionSource source)
@@ -308,15 +181,8 @@ namespace Timing.Aruco
             return Math.Sqrt(dx * dx + dy * dy);
         }
 
-        private void DisposeMaps()
-        {
-            mapX?.Dispose(); mapX = null;
-            mapY?.Dispose(); mapY = null;
-        }
-
         public void Dispose()
         {
-            DisposeMaps();
         }
     }
 }

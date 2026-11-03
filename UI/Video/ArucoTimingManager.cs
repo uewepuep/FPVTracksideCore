@@ -236,6 +236,7 @@ namespace UI.Video
         private void Process()
         {
             var channelDetectors = new Dictionary<ChannelVideoNode, ArucoMarkerDetector>();
+            var channelMaps = new Dictionary<ChannelVideoNode, UndistortMap>();
             try
             {
                 ArucoCalibration calibration = LoadCalibration();
@@ -276,7 +277,7 @@ namespace UI.Video
                         continue;
                     }
 
-                    PrepareChannels(channelNodes, sizedNodes, channelDetectors, calibration);
+                    PrepareChannels(channelNodes, sizedNodes, channelDetectors, channelMaps, calibration);
 
                     var src = channelNodes[0].FrameNode.Source;
                     if (src == null)
@@ -300,7 +301,7 @@ namespace UI.Video
                     ApplyOverlaySettings(reference);
 
                     ChannelInput[] inputs = CollectInputs(channelNodes, settings);
-                    List<MarkerDetection>[] results = DetectAll(inputs, channelDetectors, settings);
+                    List<MarkerDetection>[] results = DetectAll(inputs, channelDetectors, channelMaps, settings);
 
                     for (int ch = 0; ch < inputs.Length; ch++)
                     {
@@ -330,6 +331,9 @@ namespace UI.Video
                 foreach (var det in channelDetectors.Values)
                     det?.Dispose();
                 channelDetectors.Clear();
+                foreach (var map in channelMaps.Values)
+                    map?.Dispose();
+                channelMaps.Clear();
             }
         }
 
@@ -347,11 +351,12 @@ namespace UI.Video
 
         /// <summary>
         /// Sizes each new channel's FrameNodeThumb for detection (480x360, not the default 8x8)
-        /// and gives it its own detector, so per-channel calibration maps and DetectorParameters
-        /// state are not shared across worker threads.
+        /// and gives it its own detector and undistortion map, so per-channel calibration maps and
+        /// DetectorParameters state are not shared across worker threads.
         /// </summary>
         private static void PrepareChannels(ChannelVideoNode[] channelNodes, HashSet<ChannelVideoNode> sizedNodes,
-            Dictionary<ChannelVideoNode, ArucoMarkerDetector> channelDetectors, ArucoCalibration calibration)
+            Dictionary<ChannelVideoNode, ArucoMarkerDetector> channelDetectors,
+            Dictionary<ChannelVideoNode, UndistortMap> channelMaps, ArucoCalibration calibration)
         {
             foreach (var cvn in channelNodes)
             {
@@ -363,9 +368,8 @@ namespace UI.Video
             foreach (var cvn in channelNodes)
             {
                 if (channelDetectors.ContainsKey(cvn)) continue;
-                var det = new ArucoMarkerDetector();
-                det.ApplyCalibration(calibration, FrameWidth, FrameHeight);
-                channelDetectors[cvn] = det;
+                channelDetectors[cvn] = new ArucoMarkerDetector();
+                channelMaps[cvn] = UndistortMap.Create(calibration, FrameWidth, FrameHeight);
             }
         }
 
@@ -497,7 +501,7 @@ namespace UI.Video
                 // "0 markers" report, consistent with the unassigned-channel path above.
                 if (settings.MeasureSignal)
                 {
-                    double ratio = ArucoMarkerDetector.SignalRatio(bgra, FrameWidth, FrameHeight);
+                    double ratio = SignalQuality.SignalRatio(bgra, FrameWidth, FrameHeight);
                     inputs[i].SignalRatio = ratio;
                     if (settings.IgnoreLostSignal && ratio < settings.LostSignalThreshold)
                         Array.Clear(bgra, 0, bgra.Length);
@@ -513,7 +517,8 @@ namespace UI.Video
         /// with no frame, or no detector, has a null result.
         /// </summary>
         private static List<MarkerDetection>[] DetectAll(ChannelInput[] inputs,
-            Dictionary<ChannelVideoNode, ArucoMarkerDetector> channelDetectors, DetectionSettings settings)
+            Dictionary<ChannelVideoNode, ArucoMarkerDetector> channelDetectors,
+            Dictionary<ChannelVideoNode, UndistortMap> channelMaps, DetectionSettings settings)
         {
             var results = new List<MarkerDetection>[inputs.Length];
 
@@ -522,8 +527,12 @@ namespace UI.Video
                 var input = inputs[ch];
                 if (input.Bgra == null) return;
                 if (!channelDetectors.TryGetValue(input.Node, out var det)) return;
-                results[ch] = det.Detect(input.Bgra, FrameWidth, FrameHeight,
-                    settings.Mode, settings.ErrorCorrectionRate, settings.HybridDistance, settings.MinMarkerPercent);
+                channelMaps.TryGetValue(input.Node, out var map);
+                using (var frame = new DetectionFrame(input.Bgra, FrameWidth, FrameHeight, map))
+                {
+                    results[ch] = det.Detect(frame,
+                        settings.Mode, settings.ErrorCorrectionRate, settings.HybridDistance, settings.MinMarkerPercent);
+                }
             }
 
             if (settings.MultiThread && inputs.Length > 1)

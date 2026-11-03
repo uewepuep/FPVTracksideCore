@@ -34,7 +34,7 @@ namespace UI.Video
             public bool MirrorX;
 
             /// <summary>
-            /// Latest signal ratio for this channel (see ArucoMarkerDetector.SignalRatio).
+            /// Latest signal ratio for this channel (see SignalQuality.SignalRatio).
             /// NaN when not measured (e.g. unassigned channel) — the overlay then draws nothing.
             /// </summary>
             public double SignalRatio = double.NaN;
