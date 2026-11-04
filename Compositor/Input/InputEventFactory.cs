@@ -333,13 +333,20 @@ namespace Composition.Input
                     MouseState newState = Mouse.GetState(Window);
                     Point cursorPosition = new Point((int)(newState.X * ResolutionScale), (int)(newState.Y * ResolutionScale));
 
+                    // Track activity regardless of focus: the cursor auto-hide in BaseGame depends on this,
+                    // and if focus reporting is wrong (or the window is hovered but unfocused) the cursor
+                    // would otherwise stay hidden over our window forever.
+                    if (newState.Position != OldMouseState.Position ||
+                        newState.LeftButton != OldMouseState.LeftButton ||
+                        newState.MiddleButton != OldMouseState.MiddleButton ||
+                        newState.RightButton != OldMouseState.RightButton ||
+                        newState.ScrollWheelValue != OldMouseState.ScrollWheelValue)
+                    {
+                        LastMouseUpdateTime = DateTime.Now;
+                    }
+
                     if (PlatformTools.Focused)
                     {
-                        if (cursorPosition != OldMouseState.Position)
-                        {
-                            LastMouseUpdateTime = DateTime.Now;
-                        }
-
                         if (newState.LeftButton != OldMouseState.LeftButton)
                         {
                             OnMouseInput(newState.LeftButton, MouseButtons.Left, cursorPosition);
@@ -371,7 +378,7 @@ namespace Composition.Input
                     Logger.Input?.LogException(this, e);
                 }
             }
-            OldMouseState = Mouse.GetState();
+            OldMouseState = Mouse.GetState(Window);
         }
 
         private void UpdateTouch()
