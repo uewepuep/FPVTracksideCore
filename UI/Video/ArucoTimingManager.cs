@@ -1,5 +1,4 @@
 using ImageServer;
-using Microsoft.Xna.Framework;
 using RaceLib;
 using Microsoft.Xna.Framework.Graphics;
 using System;
@@ -7,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Timing;
@@ -40,11 +38,6 @@ namespace UI.Video
         private volatile bool run;
         private Thread thread;
         private volatile bool disposed;
-
-        // FrameNodeThumb.renderTarget is private; we invalidate it via reflection after
-        // enlarging Size, so PreProcess re-creates the RenderTarget at the new size.
-        private static readonly FieldInfo renderTargetField =
-            typeof(FrameNodeThumb).GetField("renderTarget", BindingFlags.NonPublic | BindingFlags.Instance);
 
         public ArucoTimingManager(TimingSystemManager tsm, ChannelsGridNode grid)
         {
@@ -236,15 +229,13 @@ namespace UI.Video
         private void Process()
         {
             var channelDetectors = new Dictionary<ChannelVideoNode, ChannelDetectors>();
+            var capturedFrames = new CapturedFrames();
             try
             {
                 ArucoCalibration calibration = LoadCalibration();
 
                 ArucoFrameOverlay.EnsureRegistered();
                 ArucoFrameOverlay.Enabled = true;
-
-                var sizedNodes = new HashSet<ChannelVideoNode>();
-                long lastFrame = -1;
 
                 // Detection FPS publishing for the optional overlay readout. Recomputed every ~1s
                 // from the iteration count; the overlay reads the latest value via ArucoFrameOverlay.
@@ -276,39 +267,39 @@ namespace UI.Video
                         continue;
                     }
 
-                    PrepareChannels(channelNodes, sizedNodes, channelDetectors, calibration);
+                    PrepareChannels(channelNodes, channelDetectors, calibration);
 
-                    var src = channelNodes[0].FrameNode.Source;
-                    if (src == null)
-                    {
-                        Thread.Sleep(10);
+                    capturedFrames.Watch(channelNodes.Select(cvn => cvn.FrameNode.Source));
+                    if (!capturedFrames.Wait(100))
                         continue;
+
+                    Dictionary<FrameSource, CapturedFrames.Frame> frames = capturedFrames.Take();
+                    try
+                    {
+                        ArucoTimingSettings reference = GetReferenceSettings(systems);
+                        DetectionSettings settings = new DetectionSettings(reference);
+                        ApplyOverlaySettings(reference);
+
+                        ChannelInput[] inputs = CollectInputs(channelNodes, frames, settings);
+                        List<MarkerDetection>[] results = DetectAll(inputs, channelDetectors, settings);
+
+                        for (int ch = 0; ch < inputs.Length; ch++)
+                        {
+                            if (results[ch] == null) continue;
+
+                            PublishOverlay(inputs[ch], results[ch]);
+                            ReportCounts(systems, reference, inputs[ch].Node, results[ch], inputs[ch].CaptureTime);
+                        }
+                    }
+                    finally
+                    {
+                        capturedFrames.Return(frames);
                     }
 
-                    long frame = src.FrameProcessNumber;
-                    if (frame == lastFrame)
-                    {
-                        Thread.Sleep(1);
+                    // Frames of the first channel's source, as the rate the overlay shows.
+                    FrameSource first = channelNodes[0].FrameNode.Source;
+                    if (first == null || !frames.ContainsKey(first))
                         continue;
-                    }
-                    lastFrame = frame;
-
-                    DateTime captureTime = DateTime.Now;
-
-                    ArucoTimingSettings reference = GetReferenceSettings(systems);
-                    DetectionSettings settings = new DetectionSettings(reference);
-                    ApplyOverlaySettings(reference);
-
-                    ChannelInput[] inputs = CollectInputs(channelNodes, settings);
-                    List<MarkerDetection>[] results = DetectAll(inputs, channelDetectors, settings);
-
-                    for (int ch = 0; ch < inputs.Length; ch++)
-                    {
-                        if (results[ch] == null) continue;
-
-                        PublishOverlay(inputs[ch], results[ch]);
-                        ReportCounts(systems, reference, inputs[ch].Node, results[ch], captureTime);
-                    }
 
                     fpsIter++;
                     if (fpsSw.ElapsedMilliseconds >= 1000)
@@ -325,6 +316,7 @@ namespace UI.Video
             }
             finally
             {
+                capturedFrames.Dispose();
                 ArucoFrameOverlay.Enabled = false;
                 ArucoFrameOverlay.ClearAll();
                 foreach (var det in channelDetectors.Values)
@@ -346,20 +338,13 @@ namespace UI.Video
         }
 
         /// <summary>
-        /// Sizes each new channel's FrameNodeThumb for detection (480x360, not the default 8x8)
-        /// and gives it its own detectors and undistortion map, so per-channel calibration maps,
-        /// DetectorParameters and any state a detector keeps are not shared across worker threads.
+        /// Gives each new channel its own detectors and undistortion map, so per-channel
+        /// calibration maps, DetectorParameters and any state a detector keeps are not shared
+        /// across worker threads.
         /// </summary>
-        private static void PrepareChannels(ChannelVideoNode[] channelNodes, HashSet<ChannelVideoNode> sizedNodes,
+        private static void PrepareChannels(ChannelVideoNode[] channelNodes,
             Dictionary<ChannelVideoNode, ChannelDetectors> channelDetectors, ArucoCalibration calibration)
         {
-            foreach (var cvn in channelNodes)
-            {
-                if (sizedNodes.Contains(cvn)) continue;
-                EnsureDetectionFrameSize(cvn.FrameNode);
-                sizedNodes.Add(cvn);
-            }
-
             foreach (var cvn in channelNodes)
             {
                 if (channelDetectors.ContainsKey(cvn)) continue;
@@ -437,18 +422,23 @@ namespace UI.Video
 
             /// <summary>Signal ratio for the overlay; NaN when not measured.</summary>
             public double SignalRatio;
+
+            /// <summary>When the frame arrived from the capture device.</summary>
+            public DateTime CaptureTime;
         }
 
         /// <summary>
-        /// Collects each channel's frame as BGRA, sequentially (GetColorData can race with the UI
-        /// draw thread, so it is done once up front).
+        /// Makes each channel's detection frame (BGRA, FrameWidth x FrameHeight) from its source's
+        /// captured frame. A channel whose source has no new frame is skipped, so no frame is
+        /// detected on twice.
         ///
         /// While a race is running (start -> end, including abort), only channels of pilots
         /// actually racing are detected on. Unassigned channels typically show RF static, which
         /// is extremely expensive for ArUco (huge contour counts), so they get a black frame
         /// instead. Outside a running race, all channels are detected on.
         /// </summary>
-        private static ChannelInput[] CollectInputs(ChannelVideoNode[] channelNodes, DetectionSettings settings)
+        private static ChannelInput[] CollectInputs(ChannelVideoNode[] channelNodes,
+            Dictionary<FrameSource, CapturedFrames.Frame> frames, DetectionSettings settings)
         {
             var raceManager = channelNodes[0].EventManager?.RaceManager;
             bool raceRunning = raceManager != null && raceManager.RaceRunning;
@@ -460,6 +450,11 @@ namespace UI.Video
                 var cvn = channelNodes[i];
                 inputs[i] = new ChannelInput { Node = cvn, SignalRatio = double.NaN };
 
+                FrameSource source = cvn.FrameNode.Source;
+                if (source == null || !frames.TryGetValue(source, out CapturedFrames.Frame frame))
+                    continue;
+                inputs[i].CaptureTime = frame.Time;
+
                 // Black frame (zero buffer) for non-racing / unassigned channels during a race.
                 if (raceRunning &&
                     !(cvn.Pilot != null && currentRace != null && currentRace.HasPilot(cvn.Pilot)))
@@ -468,24 +463,13 @@ namespace UI.Video
                     continue;
                 }
 
-                Color[] pixels = cvn.FrameNode.GetColorData();
-                if (pixels == null)
+                var rsb = cvn.FrameNode.RelativeSourceBounds;
+                ShownTurn(source, out bool flipY, out bool mirrorX);
+                byte[] bgra = DetectionImage.FromCapture(frame.Pixels, frame.Width, frame.Height,
+                    frame.Format == SurfaceFormat.Color,
+                    rsb.X, rsb.Y, rsb.Width, rsb.Height, flipY, mirrorX, FrameWidth, FrameHeight);
+                if (bgra == null)
                     continue;
-
-                Tools.Size size = cvn.FrameNode.Size;
-                if (size.Width != FrameWidth || size.Height != FrameHeight ||
-                    pixels.Length != FrameWidth * FrameHeight)
-                    continue;
-
-                byte[] bgra = new byte[pixels.Length * 4];
-                for (int k = 0; k < pixels.Length; k++)
-                {
-                    var p = pixels[k];
-                    bgra[k * 4 + 0] = p.B;
-                    bgra[k * 4 + 1] = p.G;
-                    bgra[k * 4 + 2] = p.R;
-                    bgra[k * 4 + 3] = p.A;
-                }
 
                 // Of the channels we still detect on (a racing pilot is registered), measure the
                 // signal ratio when we either act on it (ignore) or display it (overlay).
@@ -537,6 +521,24 @@ namespace UI.Video
         }
 
         /// <summary>
+        /// How the display turns a source's captured frame (see <see cref="FrameNode.Flip"/>).
+        /// Detection frames are made turned the same way, and the overlay maps detections back
+        /// with it. If the source pre-applied the user's flip/mirror, it is not applied again.
+        /// </summary>
+        private static void ShownTurn(FrameSource source, out bool flipY, out bool mirrorX)
+        {
+            flipY = source.Direction == FrameSource.Directions.TopDown;
+            mirrorX = false;
+            if (!source.AppliesUserFlipMirror)
+            {
+                if (source.VideoConfig != null && source.VideoConfig.Flipped)
+                    flipY = !flipY;
+                if (source.VideoConfig != null && source.VideoConfig.Mirrored)
+                    mirrorX = true;
+            }
+        }
+
+        /// <summary>
         /// Caches a channel's detections against its full-resolution FrameSource, keyed per
         /// channel so multiple channels sharing one FrameSource (e.g. 2x2 capture) each keep their
         /// own crop. The overlay hook finds them there.
@@ -549,17 +551,7 @@ namespace UI.Video
                 return;
 
             var rsb = cvn.FrameNode.RelativeSourceBounds;
-            bool flipY = source.Direction == FrameSource.Directions.TopDown;
-            bool mirrorX = false;
-            // If the source pre-applied flip/mirror, detection coords are already
-            // in the rendered orientation — don't remap a second time.
-            if (!source.AppliesUserFlipMirror)
-            {
-                if (source.VideoConfig != null && source.VideoConfig.Flipped)
-                    flipY = !flipY;
-                if (source.VideoConfig != null && source.VideoConfig.Mirrored)
-                    mirrorX = true;
-            }
+            ShownTurn(source, out bool flipY, out bool mirrorX);
 
             var cached = new ArucoFrameOverlay.Cached
             {
@@ -611,38 +603,6 @@ namespace UI.Video
                 matching++;
             }
             return matching;
-        }
-
-        /// <summary>
-        /// Resizes the <see cref="FrameNodeThumb"/> to 480x360 and invalidates its existing
-        /// RenderTarget so the next PreProcess recreates it at the new resolution. Safe to call
-        /// repeatedly; no-op if already correctly sized.
-        /// </summary>
-        private static void EnsureDetectionFrameSize(FrameNodeThumb fn)
-        {
-            if (fn == null) return;
-
-            bool sizeOk = fn.Size.Width == FrameWidth && fn.Size.Height == FrameHeight;
-            var existingRt = renderTargetField?.GetValue(fn) as RenderTarget2D;
-            bool rtOk = existingRt != null
-                        && existingRt.Width == FrameWidth
-                        && existingRt.Height == FrameHeight;
-            if (sizeOk && (existingRt == null || rtOk)) return;
-
-            fn.Size = new Tools.Size(FrameWidth, FrameHeight);
-
-            if (existingRt != null && !rtOk)
-            {
-                try
-                {
-                    if (fn.CompositorLayer != null)
-                        fn.CompositorLayer.CleanUp(existingRt);
-                    else
-                        existingRt.Dispose();
-                }
-                catch { }
-                renderTargetField?.SetValue(fn, null);
-            }
         }
     }
 }

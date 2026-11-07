@@ -322,6 +322,8 @@ namespace WindowsMediaPlatform.MediaFoundation
                             hr = buffer.Lock(out intPtr, out length, out current);
                             MFError.ThrowExceptionForHR(hr);
 
+                            OnFrameCaptured(intPtr, length);
+
                             // Overlay hook: mutate the RGB32 sample buffer in place.
                             // NOTE: this is the post-color-conversion RGB32 buffer used for display.
                             // MediaFoundationCaptureFrameSource.ProcessUncompressed passes the
