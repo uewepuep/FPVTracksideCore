@@ -290,6 +290,8 @@ namespace WindowsMediaPlatform.DirectShow
 
                     long sampleTicks = (long)(sampleTime * 10000000);
 
+                    OnFrameCaptured(buffer, bufferLen);
+
                     // Overlay hook: mutate the SampleGrabber's display buffer in place.
                     // NOTE: when this source is DirectShowCaptureFrameSource, recording runs through
                     // a parallel branch of the filter graph (SmartTee → SinkFilter → GMFBridge →

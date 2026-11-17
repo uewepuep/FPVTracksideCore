@@ -183,8 +183,8 @@ namespace Timing.Aruco
         // Only the reference instance records. Splits see the same frames but time a different
         // gate, and the marshal UI takes the first non-null waveform it is offered, so letting a
         // Split answer would put the wrong gate's trace behind the lap times.
-        // ArucoTimingManager.EnforceSinglePrimary guarantees there is at most one.
-        private bool IsPrimary => settings != null && settings.Role == TimingSystemRole.Primary;
+        // ArucoRoles.KeepSinglePrimary, run by ArucoTimingManager, guarantees there is at most one.
+        private bool IsPrimary => ArucoRoles.IsPrimary(settings);
 
         // Opt-in, from the ArUco settings. Off, nothing is captured and nothing is written, so
         // the marshal graph has nothing to draw for races run that way - reading a file an

@@ -926,6 +926,8 @@ namespace FfmpegMediaPlatform
         {
             FrameProcessNumber++;
 
+            OnFrameCaptured(buffer);
+
             // OVERLAY HOOK: allow subscribers (e.g. ArUco overlay) to burn visuals into the raw
             // BGRA buffer before it reaches both the recorder and the display.
             ImageServer.FrameSource.BeforeFrameDispatch?.Invoke(this, buffer);

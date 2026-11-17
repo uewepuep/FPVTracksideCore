@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -29,6 +30,13 @@ namespace ImageServer
         /// the data is copied to RawTexture / passed on to the recorder.
         /// </summary>
         public static Action<FrameSource, IntPtr, int> BeforeFrameDispatchPtr;
+
+        /// <summary>
+        /// The frame as captured, before the overlay hooks above draw on it. Raised on the capture
+        /// thread with FrameWidth x FrameHeight pixels of 4 bytes, laid out as FrameFormat, which
+        /// are only valid during the call.
+        /// </summary>
+        public static Action<FrameSource, IntPtr, int> FrameCaptured;
 
         public enum States
         {
@@ -134,6 +142,28 @@ namespace ImageServer
         {
             State = States.Running;
             return true;
+        }
+
+        protected void OnFrameCaptured(IntPtr pixels, int length)
+        {
+            FrameCaptured?.Invoke(this, pixels, length);
+        }
+
+        protected void OnFrameCaptured(byte[] pixels)
+        {
+            var captured = FrameCaptured;
+            if (captured == null || pixels == null)
+                return;
+
+            GCHandle handle = GCHandle.Alloc(pixels, GCHandleType.Pinned);
+            try
+            {
+                captured(this, handle.AddrOfPinnedObject(), pixels.Length);
+            }
+            finally
+            {
+                handle.Free();
+            }
         }
 
         public void OnFrame(long sampleTime, long processNumber)

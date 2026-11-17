@@ -828,7 +828,9 @@ namespace FfmpegMediaPlatform
                         {
                             // Update global SampleTime in ticks (100ns units) and set on frame
                             SampleTime = (long)(mediaTime.TotalSeconds * 10000000.0);
-                            raw.SetData(rgbaPtr, SampleTime, ++FrameProcessNumber);
+                            ++FrameProcessNumber;
+                            OnFrameCaptured(rgbaPtr, stride * codecCtx->height);
+                            raw.SetData(rgbaPtr, SampleTime, FrameProcessNumber);
                             rawTextures.WriteOne(raw);
                             NotifyReceivedFrame();
                         }

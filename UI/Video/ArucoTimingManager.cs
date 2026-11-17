@@ -1,5 +1,4 @@
 using ImageServer;
-using Microsoft.Xna.Framework;
 using RaceLib;
 using Microsoft.Xna.Framework.Graphics;
 using System;
@@ -7,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Timing;
@@ -40,11 +38,6 @@ namespace UI.Video
         private volatile bool run;
         private Thread thread;
         private volatile bool disposed;
-
-        // FrameNodeThumb.renderTarget is private; we invalidate it via reflection after
-        // enlarging Size, so PreProcess re-creates the RenderTarget at the new size.
-        private static readonly FieldInfo renderTargetField =
-            typeof(FrameNodeThumb).GetField("renderTarget", BindingFlags.NonPublic | BindingFlags.Instance);
 
         public ArucoTimingManager(TimingSystemManager tsm, ChannelsGridNode grid)
         {
@@ -201,31 +194,18 @@ namespace UI.Video
 
         /// <summary>
         /// Keeps at most one ArUco timing system as Primary (the first in iteration order).
-        /// Any additional Primary instances are demoted to Split so that only the start/finish
-        /// sector closes laps; the others record split times.
         /// </summary>
         private void EnforceSinglePrimary()
         {
-            var arucoSystems = timingSystemManager.TimingSystems
+            var demoted = ArucoRoles.KeepSinglePrimary(timingSystemManager.TimingSystems
                 .OfType<ArucoTimingSystem>()
-                .ToArray();
+                .Select(sys => sys.ArucoSettings));
 
-            bool seenPrimary = false;
-            foreach (var sys in arucoSystems)
+            foreach (var s in demoted)
             {
-                if (sys.Settings == null) continue;
-                if (sys.Settings.Role != TimingSystemRole.Primary) continue;
-
-                if (!seenPrimary)
-                {
-                    seenPrimary = true;
-                    continue;
-                }
-
-                string ids = sys.ArucoSettings?.MarkerIds ?? "-";
+                string ids = s.MarkerIds ?? "-";
                 Logger.TimingLog.Log(this,
                     "[ArUco-Debug] only one Primary is allowed; demoting Marker(s) " + ids + " to Split.");
-                sys.Settings.Role = TimingSystemRole.Split;
             }
         }
 
@@ -248,22 +228,14 @@ namespace UI.Video
 
         private void Process()
         {
-            var channelDetectors = new Dictionary<ChannelVideoNode, ArucoMarkerDetector>();
+            var channelDetectors = new Dictionary<ChannelVideoNode, ChannelDetectors>();
+            var capturedFrames = new CapturedFrames();
             try
             {
-                string calPath = Path.Combine(AppContext.BaseDirectory, "Aruco", "camera_calibration.json");
-                ArucoCalibration calibration = ArucoCalibration.TryLoad(calPath, out string calError);
-                if (calibration != null)
-                    Logger.TimingLog.Log(this, "[ArUco-Debug] calibration loaded from " + calPath
-                        + " (ref " + calibration.ReferenceWidth + "x" + calibration.ReferenceHeight + ")");
-                else
-                    Logger.TimingLog.Log(this, "[ArUco-Debug] calibration NOT loaded (" + (calError ?? "unknown") + ") — Corrected/Hybrid passes will be skipped. Path: " + calPath);
+                ArucoCalibration calibration = LoadCalibration();
 
                 ArucoFrameOverlay.EnsureRegistered();
                 ArucoFrameOverlay.Enabled = true;
-
-                var sizedNodes = new HashSet<ChannelVideoNode>();
-                long lastFrame = -1;
 
                 // Detection FPS publishing for the optional overlay readout. Recomputed every ~1s
                 // from the iteration count; the overlay reads the latest value via ArucoFrameOverlay.
@@ -295,240 +267,39 @@ namespace UI.Video
                         continue;
                     }
 
-                    // Ensure each FrameNodeThumb is sized for detection (480x360, not the default 8x8).
-                    foreach (var cvn in channelNodes)
-                    {
-                        if (sizedNodes.Contains(cvn)) continue;
-                        EnsureDetectionFrameSize(cvn.FrameNode);
-                        sizedNodes.Add(cvn);
-                    }
+                    PrepareChannels(channelNodes, channelDetectors, calibration);
 
-                    // Lazily allocate one detector per channel so per-channel calibration maps and
-                    // DetectorParameters state don't get shared across worker threads.
-                    foreach (var cvn in channelNodes)
-                    {
-                        if (channelDetectors.ContainsKey(cvn)) continue;
-                        var det = new ArucoMarkerDetector();
-                        det.ApplyCalibration(calibration, FrameWidth, FrameHeight);
-                        channelDetectors[cvn] = det;
-                    }
-
-                    var first = channelNodes[0];
-                    var src = first.FrameNode.Source;
-                    if (src == null)
-                    {
-                        Thread.Sleep(10);
+                    capturedFrames.Watch(channelNodes.Select(cvn => cvn.FrameNode.Source));
+                    if (!capturedFrames.Wait(100))
                         continue;
+
+                    Dictionary<FrameSource, CapturedFrames.Frame> frames = capturedFrames.Take();
+                    try
+                    {
+                        ArucoTimingSettings reference = GetReferenceSettings(systems);
+                        DetectionSettings settings = new DetectionSettings(reference);
+                        ApplyOverlaySettings(reference);
+
+                        ChannelInput[] inputs = CollectInputs(channelNodes, frames, settings);
+                        List<MarkerDetection>[] results = DetectAll(inputs, channelDetectors, settings);
+
+                        for (int ch = 0; ch < inputs.Length; ch++)
+                        {
+                            if (results[ch] == null) continue;
+
+                            PublishOverlay(inputs[ch], results[ch]);
+                            ReportCounts(systems, reference, inputs[ch].Node, results[ch], inputs[ch].CaptureTime);
+                        }
+                    }
+                    finally
+                    {
+                        capturedFrames.Return(frames);
                     }
 
-                    long frame = src.FrameProcessNumber;
-                    if (frame == lastFrame)
-                    {
-                        Thread.Sleep(1);
+                    // Frames of the first channel's source, as the rate the overlay shows.
+                    FrameSource first = channelNodes[0].FrameNode.Source;
+                    if (first == null || !frames.ContainsKey(first))
                         continue;
-                    }
-                    lastFrame = frame;
-
-                    DateTime captureTime = DateTime.Now;
-
-                    // Reference settings: Primary's if one exists, otherwise the first Split.
-                    // All other instances inherit shared thresholds from the reference so the
-                    // per-instance UI can stay limited to MarkerIds.
-                    ArucoTimingSettings primarySettings = systems
-                        .Where(sys => sys.Settings != null && sys.Settings.Role == TimingSystemRole.Primary)
-                        .Select(sys => sys.ArucoSettings)
-                        .FirstOrDefault()
-                        ?? systems
-                            .Where(sys => sys.Settings != null)
-                            .Select(sys => sys.ArucoSettings)
-                            .FirstOrDefault();
-
-                    // Detector parameters are shared from the reference (Primary). Splits do not
-                    // expose DetectMode in their UI, so their stored value (default Hybrid) must
-                    // not influence the single detection pass — otherwise changing the Primary's
-                    // mode away from Hybrid would have no effect.
-                    ArucoDetectMode sharedMode = primarySettings?.DetectMode ?? ArucoDetectMode.Original;
-                    double sharedEcRate = primarySettings?.ErrorCorrectionRate ?? 0.0;
-                    int sharedHybridDist = primarySettings?.HybridDistanceThreshold ?? 0;
-                    // Reject sub-threshold candidates inside the detector (perimeter filter) so small
-                    // noise squares never reach decoding. Shared from the reference, like the others.
-                    double sharedMinMarkerPercent = primarySettings?.MinMarkerPercent ?? 0.0;
-
-                    // Ignore lost-signal frames on racing pilots' channels (shared from the reference).
-                    bool ignoreLostSignal = primarySettings?.IgnoreLostSignal ?? false;
-                    double lostSignalThreshold = primarySettings?.LostSignalThreshold ?? 0.4;
-                    bool showSignalRatio = primarySettings?.ShowSignalRatio ?? false;
-                    // Measure the ratio whenever we either act on it (ignore) or display it (overlay).
-                    bool measureSignal = ignoreLostSignal || showSignalRatio;
-
-                    // Overlay display flags track the Primary's settings.
-                    if (primarySettings != null)
-                    {
-                        ArucoFrameOverlay.ShowBox = primarySettings.ShowMarkerBox;
-                        ArucoFrameOverlay.ShowId = primarySettings.ShowMarkerId;
-                        ArucoFrameOverlay.ShowSizePercent = primarySettings.ShowMarkerSizePercent;
-                        ArucoFrameOverlay.ShowFps = primarySettings.ShowFps;
-                        ArucoFrameOverlay.ShowSignalRatio = primarySettings.ShowSignalRatio;
-                        ArucoFrameOverlay.LostSignalThreshold = primarySettings.LostSignalThreshold;
-                        ArucoFrameOverlay.FlipTextVertical = primarySettings.CharacterFlipVertical;
-                    }
-                    bool multiThread = primarySettings?.UseMultiThreadDetection ?? true;
-
-                    // Only detect on channels of pilots actually racing while a race is running
-                    // (start -> end, including abort). Unassigned channels typically show RF
-                    // static, which is extremely expensive for ArUco (huge contour counts), so
-                    // feed those a black frame instead. Outside a running race, detect on all.
-                    var raceManager = channelNodes[0].EventManager?.RaceManager;
-                    bool raceRunning = raceManager != null && raceManager.RaceRunning;
-                    var currentRace = raceManager?.CurrentRace;
-
-                    // Phase 1: collect BGRA buffers from each FrameNodeThumb sequentially
-                    // (GetColorData can race with the UI draw thread; do it once up front).
-                    var inputs = new (ChannelVideoNode cvn, byte[] bgra)[channelNodes.Length];
-                    // Per-channel signal ratio for the overlay; NaN = not measured.
-                    var channelSignal = new double[channelNodes.Length];
-                    Array.Fill(channelSignal, double.NaN);
-                    for (int i = 0; i < channelNodes.Length; i++)
-                    {
-                        var cvn = channelNodes[i];
-
-                        // Black frame (zero buffer) for non-racing / unassigned channels during a race.
-                        if (raceRunning &&
-                            !(cvn.Pilot != null && currentRace != null && currentRace.HasPilot(cvn.Pilot)))
-                        {
-                            inputs[i] = (cvn, new byte[FrameWidth * FrameHeight * 4]);
-                            continue;
-                        }
-
-                        Color[] pixels = cvn.FrameNode.GetColorData();
-                        if (pixels == null)
-                        {
-                            inputs[i] = (cvn, null);
-                            continue;
-                        }
-
-                        Tools.Size size = cvn.FrameNode.Size;
-                        if (size.Width != FrameWidth || size.Height != FrameHeight ||
-                            pixels.Length != FrameWidth * FrameHeight)
-                        {
-                            inputs[i] = (cvn, null);
-                            continue;
-                        }
-
-                        byte[] bgra = new byte[pixels.Length * 4];
-                        for (int k = 0; k < pixels.Length; k++)
-                        {
-                            var p = pixels[k];
-                            bgra[k * 4 + 0] = p.B;
-                            bgra[k * 4 + 1] = p.G;
-                            bgra[k * 4 + 2] = p.R;
-                            bgra[k * 4 + 3] = p.A;
-                        }
-
-                        // Of the channels we still detect on (a racing pilot is registered), measure the
-                        // signal ratio when we either act on it (ignore) or display it (overlay).
-                        // Blank out any lost-signal frame so the detector never chews on snow. We
-                        // zero the buffer rather than skip detection so the timing system still receives a
-                        // "0 markers" report, consistent with the unassigned-channel path above.
-                        if (measureSignal)
-                        {
-                            double ratio = ArucoMarkerDetector.SignalRatio(bgra, FrameWidth, FrameHeight);
-                            channelSignal[i] = ratio;
-                            if (ignoreLostSignal && ratio < lostSignalThreshold)
-                                Array.Clear(bgra, 0, bgra.Length);
-                        }
-
-                        inputs[i] = (cvn, bgra);
-                    }
-
-                    // Phase 2: run detection in parallel (or sequentially) across channels.
-                    var channelResults = new List<MarkerDetection>[channelNodes.Length];
-
-                    void DetectOne(int ch)
-                    {
-                        var input = inputs[ch];
-                        if (input.bgra == null) return;
-                        if (!channelDetectors.TryGetValue(input.cvn, out var det)) return;
-                        channelResults[ch] = det.Detect(input.bgra, FrameWidth, FrameHeight,
-                            sharedMode, sharedEcRate, sharedHybridDist, sharedMinMarkerPercent);
-                    }
-
-                    if (multiThread && channelNodes.Length > 1)
-                    {
-                        Parallel.For(0, channelNodes.Length, DetectOne);
-                    }
-                    else
-                    {
-                        for (int ch = 0; ch < channelNodes.Length; ch++)
-                            DetectOne(ch);
-                    }
-
-                    // Phase 3: publish overlay + dispatch detections to timing systems.
-                    for (int ch = 0; ch < channelNodes.Length; ch++)
-                    {
-                        var cvn = inputs[ch].cvn;
-                        var detections = channelResults[ch];
-                        if (detections == null) continue;
-
-                        // Cache per full-resolution FrameSource so the overlay hook can find them.
-                        FrameSource source = cvn.FrameNode.Source;
-                        if (source != null)
-                        {
-                            var rsb = cvn.FrameNode.RelativeSourceBounds;
-                            bool flipY = source.Direction == FrameSource.Directions.TopDown;
-                            bool mirrorX = false;
-                            // If the source pre-applied flip/mirror, detection coords are already
-                            // in the rendered orientation — don't remap a second time.
-                            if (!source.AppliesUserFlipMirror)
-                            {
-                                if (source.VideoConfig != null && source.VideoConfig.Flipped)
-                                    flipY = !flipY;
-                                if (source.VideoConfig != null && source.VideoConfig.Mirrored)
-                                    mirrorX = true;
-                            }
-
-                            var cached = new ArucoFrameOverlay.Cached
-                            {
-                                Detections = detections,
-                                DetectionWidth = FrameWidth,
-                                DetectionHeight = FrameHeight,
-                                CropRelX = rsb.X,
-                                CropRelY = rsb.Y,
-                                CropRelW = rsb.Width,
-                                CropRelH = rsb.Height,
-                                FlipY = flipY,
-                                MirrorX = mirrorX,
-                                SignalRatio = channelSignal[ch],
-                            };
-                            // Key per-channel so multiple channels sharing one FrameSource
-                            // (e.g. 2x2 capture) each keep their own crop cached.
-                            ArucoFrameOverlay.SetLatestDetections(source, cvn, cached);
-                        }
-
-                        foreach (var sys in systems)
-                        {
-                            var s = sys.ArucoSettings;
-                            if (s == null) continue;
-
-                            // Every instance inherits shared thresholds from the reference
-                            // (Primary, or lowest-index Split when no Primary exists).
-                            ArucoTimingSettings effective = primarySettings ?? s;
-
-                            var wantedIds = s.EffectiveMarkerIds;
-                            int matching = 0;
-                            double minAreaPx = (double)FrameWidth * FrameHeight * (effective.MinMarkerPercent / 100.0);
-
-                            foreach (var d in detections)
-                            {
-                                if (!wantedIds.Contains(d.Id)) continue;
-                                if (d.AreaPx < minAreaPx) continue;
-                                matching++;
-                            }
-
-                            sys.ReportMarkerCount(cvn.Channel.Frequency, matching, captureTime,
-                                effective.MarkerThreshold, effective.FlickerLengthMs);
-                        }
-                    }
 
                     fpsIter++;
                     if (fpsSw.ElapsedMilliseconds >= 1000)
@@ -545,6 +316,7 @@ namespace UI.Video
             }
             finally
             {
+                capturedFrames.Dispose();
                 ArucoFrameOverlay.Enabled = false;
                 ArucoFrameOverlay.ClearAll();
                 foreach (var det in channelDetectors.Values)
@@ -553,36 +325,284 @@ namespace UI.Video
             }
         }
 
-        /// <summary>
-        /// Resizes the <see cref="FrameNodeThumb"/> to 480x360 and invalidates its existing
-        /// RenderTarget so the next PreProcess recreates it at the new resolution. Safe to call
-        /// repeatedly; no-op if already correctly sized.
-        /// </summary>
-        private static void EnsureDetectionFrameSize(FrameNodeThumb fn)
+        private ArucoCalibration LoadCalibration()
         {
-            if (fn == null) return;
+            string calPath = Path.Combine(AppContext.BaseDirectory, "Aruco", "camera_calibration.json");
+            ArucoCalibration calibration = ArucoCalibration.TryLoad(calPath, out string calError);
+            if (calibration != null)
+                Logger.TimingLog.Log(this, "[ArUco-Debug] calibration loaded from " + calPath
+                    + " (ref " + calibration.ReferenceWidth + "x" + calibration.ReferenceHeight + ")");
+            else
+                Logger.TimingLog.Log(this, "[ArUco-Debug] calibration NOT loaded (" + (calError ?? "unknown") + ") — Corrected/Hybrid passes will be skipped. Path: " + calPath);
+            return calibration;
+        }
 
-            bool sizeOk = fn.Size.Width == FrameWidth && fn.Size.Height == FrameHeight;
-            var existingRt = renderTargetField?.GetValue(fn) as RenderTarget2D;
-            bool rtOk = existingRt != null
-                        && existingRt.Width == FrameWidth
-                        && existingRt.Height == FrameHeight;
-            if (sizeOk && (existingRt == null || rtOk)) return;
-
-            fn.Size = new Tools.Size(FrameWidth, FrameHeight);
-
-            if (existingRt != null && !rtOk)
+        /// <summary>
+        /// Gives each new channel its own detectors and undistortion map, so per-channel
+        /// calibration maps, DetectorParameters and any state a detector keeps are not shared
+        /// across worker threads.
+        /// </summary>
+        private static void PrepareChannels(ChannelVideoNode[] channelNodes,
+            Dictionary<ChannelVideoNode, ChannelDetectors> channelDetectors, ArucoCalibration calibration)
+        {
+            foreach (var cvn in channelNodes)
             {
-                try
-                {
-                    if (fn.CompositorLayer != null)
-                        fn.CompositorLayer.CleanUp(existingRt);
-                    else
-                        existingRt.Dispose();
-                }
-                catch { }
-                renderTargetField?.SetValue(fn, null);
+                if (channelDetectors.ContainsKey(cvn)) continue;
+                channelDetectors[cvn] = new ChannelDetectors(
+                    UndistortMap.Create(calibration, FrameWidth, FrameHeight),
+                    new IMarkerDetector[] { new ArucoMarkerDetector() });
             }
+        }
+
+        /// <summary>
+        /// The reference settings (see <see cref="ArucoRoles.Reference"/>). Null when no
+        /// instance has settings.
+        /// </summary>
+        private static ArucoTimingSettings GetReferenceSettings(ArucoTimingSystem[] systems)
+        {
+            return ArucoRoles.Reference(systems.Select(sys => sys.ArucoSettings));
+        }
+
+        /// <summary>
+        /// What one detection pass shares across all channels, taken from the reference settings.
+        /// Splits do not expose DetectMode in their UI, so their stored value (default Hybrid)
+        /// must not influence the single detection pass - otherwise changing the Primary's mode
+        /// away from Hybrid would have no effect.
+        /// </summary>
+        private sealed class DetectionSettings
+        {
+            public readonly MarkerDetectorOptions Detector;
+
+            // Ignore lost-signal frames on racing pilots' channels.
+            public readonly bool IgnoreLostSignal;
+            public readonly double LostSignalThreshold;
+
+            // Measure the ratio whenever we either act on it (ignore) or display it (overlay).
+            public readonly bool MeasureSignal;
+
+            public readonly bool MultiThread;
+
+            public DetectionSettings(ArucoTimingSettings reference)
+            {
+                Detector = new MarkerDetectorOptions
+                {
+                    Mode = reference?.DetectMode ?? ArucoDetectMode.Original,
+                    ErrorCorrectionRate = reference?.ErrorCorrectionRate ?? 0.0,
+                    HybridDistance = reference?.HybridDistanceThreshold ?? 0,
+                    MinMarkerPercent = reference?.MinMarkerPercent ?? 0.0,
+                };
+                IgnoreLostSignal = reference?.IgnoreLostSignal ?? false;
+                LostSignalThreshold = reference?.LostSignalThreshold ?? 0.4;
+                MeasureSignal = IgnoreLostSignal || (reference?.ShowSignalRatio ?? false);
+                MultiThread = reference?.UseMultiThreadDetection ?? true;
+            }
+        }
+
+        /// <summary>Overlay display flags track the reference settings.</summary>
+        private static void ApplyOverlaySettings(ArucoTimingSettings reference)
+        {
+            if (reference == null)
+                return;
+
+            ArucoFrameOverlay.ShowBox = reference.ShowMarkerBox;
+            ArucoFrameOverlay.ShowId = reference.ShowMarkerId;
+            ArucoFrameOverlay.ShowSizePercent = reference.ShowMarkerSizePercent;
+            ArucoFrameOverlay.ShowFps = reference.ShowFps;
+            ArucoFrameOverlay.ShowSignalRatio = reference.ShowSignalRatio;
+            ArucoFrameOverlay.LostSignalThreshold = reference.LostSignalThreshold;
+            ArucoFrameOverlay.FlipTextVertical = reference.CharacterFlipVertical;
+        }
+
+        private struct ChannelInput
+        {
+            public ChannelVideoNode Node;
+
+            /// <summary>The frame to detect on, or null to skip this channel.</summary>
+            public byte[] Bgra;
+
+            /// <summary>Signal ratio for the overlay; NaN when not measured.</summary>
+            public double SignalRatio;
+
+            /// <summary>When the frame arrived from the capture device.</summary>
+            public DateTime CaptureTime;
+        }
+
+        /// <summary>
+        /// Makes each channel's detection frame (BGRA, FrameWidth x FrameHeight) from its source's
+        /// captured frame. A channel whose source has no new frame is skipped, so no frame is
+        /// detected on twice.
+        ///
+        /// While a race is running (start -> end, including abort), only channels of pilots
+        /// actually racing are detected on. Unassigned channels typically show RF static, which
+        /// is extremely expensive for ArUco (huge contour counts), so they get a black frame
+        /// instead. Outside a running race, all channels are detected on.
+        /// </summary>
+        private static ChannelInput[] CollectInputs(ChannelVideoNode[] channelNodes,
+            Dictionary<FrameSource, CapturedFrames.Frame> frames, DetectionSettings settings)
+        {
+            var raceManager = channelNodes[0].EventManager?.RaceManager;
+            bool raceRunning = raceManager != null && raceManager.RaceRunning;
+            var currentRace = raceManager?.CurrentRace;
+
+            var inputs = new ChannelInput[channelNodes.Length];
+            for (int i = 0; i < channelNodes.Length; i++)
+            {
+                var cvn = channelNodes[i];
+                inputs[i] = new ChannelInput { Node = cvn, SignalRatio = double.NaN };
+
+                FrameSource source = cvn.FrameNode.Source;
+                if (source == null || !frames.TryGetValue(source, out CapturedFrames.Frame frame))
+                    continue;
+                inputs[i].CaptureTime = frame.Time;
+
+                // Black frame (zero buffer) for non-racing / unassigned channels during a race.
+                if (raceRunning &&
+                    !(cvn.Pilot != null && currentRace != null && currentRace.HasPilot(cvn.Pilot)))
+                {
+                    inputs[i].Bgra = new byte[FrameWidth * FrameHeight * 4];
+                    continue;
+                }
+
+                var rsb = cvn.FrameNode.RelativeSourceBounds;
+                ShownTurn(source, out bool flipY, out bool mirrorX);
+                byte[] bgra = DetectionImage.FromCapture(frame.Pixels, frame.Width, frame.Height,
+                    frame.Format == SurfaceFormat.Color,
+                    rsb.X, rsb.Y, rsb.Width, rsb.Height, flipY, mirrorX, FrameWidth, FrameHeight);
+                if (bgra == null)
+                    continue;
+
+                // Of the channels we still detect on (a racing pilot is registered), measure the
+                // signal ratio when we either act on it (ignore) or display it (overlay).
+                // Blank out any lost-signal frame so the detector never chews on snow. We
+                // zero the buffer rather than skip detection so the timing system still receives a
+                // "0 markers" report, consistent with the unassigned-channel path above.
+                if (settings.MeasureSignal)
+                {
+                    double ratio = SignalQuality.SignalRatio(bgra, FrameWidth, FrameHeight);
+                    inputs[i].SignalRatio = ratio;
+                    if (settings.IgnoreLostSignal && ratio < settings.LostSignalThreshold)
+                        Array.Clear(bgra, 0, bgra.Length);
+                }
+
+                inputs[i].Bgra = bgra;
+            }
+            return inputs;
+        }
+
+        /// <summary>
+        /// Runs detection on every channel with a frame, in parallel or sequentially. A channel
+        /// with no frame, or no detector, has a null result.
+        /// </summary>
+        private static List<MarkerDetection>[] DetectAll(ChannelInput[] inputs,
+            Dictionary<ChannelVideoNode, ChannelDetectors> channelDetectors, DetectionSettings settings)
+        {
+            var results = new List<MarkerDetection>[inputs.Length];
+
+            void DetectOne(int ch)
+            {
+                var input = inputs[ch];
+                if (input.Bgra == null) return;
+                if (!channelDetectors.TryGetValue(input.Node, out var det)) return;
+                det.SetFeed(input.Node.FrameNode.Source, input.Node.Channel?.Frequency ?? 0);
+                results[ch] = det.Detect(input.Bgra, FrameWidth, FrameHeight, settings.Detector);
+            }
+
+            if (settings.MultiThread && inputs.Length > 1)
+            {
+                Parallel.For(0, inputs.Length, DetectOne);
+            }
+            else
+            {
+                for (int ch = 0; ch < inputs.Length; ch++)
+                    DetectOne(ch);
+            }
+
+            return results;
+        }
+
+        /// <summary>
+        /// How the display turns a source's captured frame (see <see cref="FrameNode.Flip"/>).
+        /// Detection frames are made turned the same way, and the overlay maps detections back
+        /// with it. If the source pre-applied the user's flip/mirror, it is not applied again.
+        /// </summary>
+        private static void ShownTurn(FrameSource source, out bool flipY, out bool mirrorX)
+        {
+            flipY = source.Direction == FrameSource.Directions.TopDown;
+            mirrorX = false;
+            if (!source.AppliesUserFlipMirror)
+            {
+                if (source.VideoConfig != null && source.VideoConfig.Flipped)
+                    flipY = !flipY;
+                if (source.VideoConfig != null && source.VideoConfig.Mirrored)
+                    mirrorX = true;
+            }
+        }
+
+        /// <summary>
+        /// Caches a channel's detections against its full-resolution FrameSource, keyed per
+        /// channel so multiple channels sharing one FrameSource (e.g. 2x2 capture) each keep their
+        /// own crop. The overlay hook finds them there.
+        /// </summary>
+        private static void PublishOverlay(ChannelInput input, List<MarkerDetection> detections)
+        {
+            ChannelVideoNode cvn = input.Node;
+            FrameSource source = cvn.FrameNode.Source;
+            if (source == null)
+                return;
+
+            var rsb = cvn.FrameNode.RelativeSourceBounds;
+            ShownTurn(source, out bool flipY, out bool mirrorX);
+
+            var cached = new ArucoFrameOverlay.Cached
+            {
+                Detections = detections,
+                DetectionWidth = FrameWidth,
+                DetectionHeight = FrameHeight,
+                CropRelX = rsb.X,
+                CropRelY = rsb.Y,
+                CropRelW = rsb.Width,
+                CropRelH = rsb.Height,
+                FlipY = flipY,
+                MirrorX = mirrorX,
+                SignalRatio = input.SignalRatio,
+            };
+            ArucoFrameOverlay.SetLatestDetections(source, cvn, cached);
+        }
+
+        /// <summary>
+        /// Hands each ArUco instance the number of its own markers in this channel's detections.
+        /// Every instance inherits shared thresholds from the reference (Primary, or lowest-index
+        /// Split when no Primary exists).
+        /// </summary>
+        private static void ReportCounts(ArucoTimingSystem[] systems, ArucoTimingSettings reference,
+            ChannelVideoNode cvn, List<MarkerDetection> detections, DateTime captureTime)
+        {
+            foreach (var sys in systems)
+            {
+                var s = sys.ArucoSettings;
+                if (s == null) continue;
+
+                ArucoTimingSettings effective = reference ?? s;
+                int matching = CountMatching(detections, s.EffectiveMarkerIds, effective.MinMarkerPercent);
+
+                sys.ReportMarkerCount(cvn.Channel.Frequency, matching, captureTime,
+                    effective.MarkerThreshold, effective.FlickerLengthMs);
+            }
+        }
+
+        /// <summary>Detections with one of the wanted IDs and at least the minimum area.</summary>
+        private static int CountMatching(List<MarkerDetection> detections, IReadOnlyList<int> wantedIds, double minMarkerPercent)
+        {
+            double minAreaPx = (double)FrameWidth * FrameHeight * (minMarkerPercent / 100.0);
+
+            int matching = 0;
+            foreach (var d in detections)
+            {
+                if (!wantedIds.Contains(d.Id)) continue;
+                if (d.AreaPx < minAreaPx) continue;
+                matching++;
+            }
+            return matching;
         }
     }
 }
