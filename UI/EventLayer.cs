@@ -64,6 +64,7 @@ namespace UI
         private ExternalData.RemoteNotifier RemoteNotifier;
         private ExternalData.ExtensionNotifier ExtensionNotifier;
         private WorkQueue workQueueStartStopRace;
+        private ArucoLapRules arucoLapRules;
 
         internal SystemStatusNode systemStatusNode;
         
@@ -123,6 +124,8 @@ namespace UI
 
             EventManager.RaceManager.RemainingTimesToAnnounce = ApplicationProfileSettings.Instance.RemainingSecondsToAnnounce;
             EventManager.RoundManager.LuaFormatManager.ScriptTimeout = TimeSpan.FromSeconds(ApplicationProfileSettings.Instance.LuaScriptTimeoutSeconds);
+
+            arucoLapRules = new ArucoLapRules(EventManager);
 
             // Init the videos into the video directories.
             VideoManagerFactory.Init(eventDirectory.FullName, eventManager.Profile);
@@ -629,6 +632,7 @@ namespace UI
 
         public override void Dispose()
         {
+            arucoLapRules?.Dispose();
             SoundManager.Dispose();
             EventManager.Dispose();
             workQueueStartStopRace.Dispose();
