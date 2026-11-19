@@ -1165,6 +1165,11 @@ namespace UI
 
             if (inputEvent.ButtonState == ButtonStates.Pressed)
             {
+                if (arucoLapRules != null && arucoLapRules.OnKeyboardInput(inputEvent, KeyMapper, TabbedMultiNode.IsOnReplay))
+                {
+                    return true;
+                }
+
                 if (!TabbedMultiNode.IsOnReplay)
                 {
                     if (KeyMapper.HidePilotList.Match(inputEvent))

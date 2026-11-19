@@ -9,8 +9,17 @@ namespace Timing.Aruco
         /// <summary>A timer detection: an ArUco crossing, or any other non-manual lap.</summary>
         Crossing,
 
-        /// <summary>A manual lap (Add Lap, lap editor, marshal, ...). Always kept.</summary>
-        Manual
+        /// <summary>
+        /// A standard manual lap (lap editor, marshal, Add Lap outside an ArUco race, ...).
+        /// Always kept.
+        /// </summary>
+        Manual,
+
+        /// <summary>
+        /// A live manual lap entered during an ArUco race (Add Lap, Alt + click, Add Lap Now),
+        /// which still gives way to ArUco.
+        /// </summary>
+        Provisional
     }
 
     /// <summary>
@@ -44,7 +53,7 @@ namespace Timing.Aruco
         /// <summary>Do not record the crossing.</summary>
         Drop,
 
-        /// <summary>Record the crossing, after disqualifying Replace.</summary>
+        /// <summary>Record the crossing, after disqualifying Replace and DisqualifyProvisional.</summary>
         Accept
     }
 
@@ -61,6 +70,9 @@ namespace Timing.Aruco
         /// <summary>For Accept: the earlier ArUco lap this crossing corrects, or null.</summary>
         public ArucoLapEntry Replace { get; set; }
 
+        /// <summary>For Accept: the provisional laps this crossing takes the place of.</summary>
+        public IReadOnlyList<ArucoLapEntry> DisqualifyProvisional { get; set; } = Array.Empty<ArucoLapEntry>();
+
         /// <summary>
         /// For Accept: a lap stays after the crossing, which leaves it measured and numbered
         /// from the one before, so the pilot's laps need recalculating.
@@ -73,11 +85,15 @@ namespace Timing.Aruco
     /// Primary's Validation Time (an ArUco setting, not the event's Min Lap Time); "within W"
     /// means a difference less than W.
     ///
-    /// A crossing within W of the previous lap:
+    /// A crossing within W of the previous lap (provisional laps aside):
     ///  - after a standard manual lap, or a lap set by hand: dropped;
     ///  - after an ArUco lap: dropped, or with Correct Flicker Laps on, the previous one is
     ///    disqualified and this one kept.
     /// A first crossing is always kept: after the start there is only the event's ignore window.
+    /// A crossing that is kept replaces every provisional lap within W of it, before or after.
+    ///
+    /// A provisional lap is ignored when a crossing or another provisional lap is less than W
+    /// before it.
     /// </summary>
     public static class ArucoLapDecisions
     {
@@ -99,7 +115,7 @@ namespace Timing.Aruco
             ArucoLapEntry[] laps = validLaps.ToArray();
 
             ArucoLapEntry previous = laps
-                .Where(l => l.Time < time)
+                .Where(l => l.Kind != ArucoLapKind.Provisional && l.Time < time)
                 .OrderByDescending(l => l.Time)
                 .FirstOrDefault();
 
@@ -128,12 +144,33 @@ namespace Timing.Aruco
                 };
             }
 
+            // Before or after: a provisional lap entered just after the crossing can already be in if
+            // the crossing is still on its way, which takes FlickerLengthMs and processing.
+            ArucoLapEntry[] provisional = laps
+                .Where(l => l.Kind == ArucoLapKind.Provisional && (l.Time - time).Duration() < validationTime)
+                .ToArray();
+
             return new ArucoCrossingDecision
             {
                 Action = ArucoCrossingAction.Accept,
                 Replace = replace,
-                RecalculateAfter = laps.Any(l => l.Time > time && l != replace),
+                DisqualifyProvisional = provisional,
+                RecalculateAfter = laps.Any(l => l.Time > time && l != replace && !provisional.Contains(l)),
             };
+        }
+
+        /// <summary>
+        /// The lap that stops a provisional lap at <paramref name="time"/> being recorded, or null
+        /// to record it. Standard manual laps never block it.
+        /// </summary>
+        public static ArucoLapEntry FindProvisionalBlocker(DateTime time, IEnumerable<ArucoLapEntry> validLaps, TimeSpan validationTime)
+        {
+            if (validationTime <= TimeSpan.Zero)
+                return null;
+
+            return validLaps
+                .Where(l => l.Kind != ArucoLapKind.Manual)
+                .FirstOrDefault(l => time >= l.Time && time - l.Time < validationTime);
         }
     }
 }

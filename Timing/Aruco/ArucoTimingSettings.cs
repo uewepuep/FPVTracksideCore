@@ -79,7 +79,7 @@ namespace Timing.Aruco
 
         [Category("Lap Validation")]
         [DisplayName("Validation Time (s)")]
-        [Description("During a race, a crossing less than this many seconds after the pilot's previous lap is not recorded as a new lap (see Correct Flicker Laps). Independent of the event's Min Lap Time, which does not apply to ArUco laps. 0 turns this off: every crossing is recorded. Only the reference (Primary) instance's setting is used.")]
+        [Description("During a race, a crossing less than this many seconds after the pilot's previous lap is not recorded as a new lap (see Correct Flicker Laps). While ArUco is doing the timing, Add Lap (shortcut, Alt + click, Add Lap Now) records a lap that gives way to ArUco: ignored within this time after a crossing or another such lap, and replaced by a crossing within this time of it. Independent of the event's Min Lap Time, which does not apply to ArUco laps. 0 turns all of this off: every crossing is recorded and Add Lap is the standard manual lap. Only the reference (Primary) instance's setting is used.")]
         public float ValidationSeconds { get; set; }
 
         [Category("Lap Validation")]
