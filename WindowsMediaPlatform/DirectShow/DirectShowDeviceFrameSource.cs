@@ -25,6 +25,40 @@ namespace WindowsMediaPlatform.DirectShow
         protected ICaptureGraphBuilder2 capGraph;
         private Mode[] modes;
 
+        private static readonly Guid[] supportedSubTypes = new Guid[]
+        {
+            MediaSubType.RGB8,
+            MediaSubType.RGB555,
+            MediaSubType.RGB565,
+            MediaSubType.RGB24,
+            MediaSubType.RGB32,
+            MediaSubType.MJPG,
+            MediaSubType.YUY2,
+            MediaSubType.UYVY,
+            MediaSubType.YVYU,
+
+            // I dont understand these, they seem to often cause memory corruption based on device / available filters? Hard to say!
+            // Update, it's based on render hardware that is available. I think. So we'd need to detect it and only allow certain types..
+            /*MediaSubType.NV12,
+            MediaSubType.I420, */
+        };
+
+        /// <summary>
+        /// Whether a capture pin subtype is offered as a selectable mode, i.e. the capture graph can convert it to RGB32.
+        /// </summary>
+        public static bool IsSupportedSubType(Guid subType)
+        {
+            return supportedSubTypes.Contains(subType);
+        }
+
+        /// <summary>
+        /// Frame rate, in frames per second, of a DirectShow AvgTimePerFrame expressed in 100 ns units.
+        /// </summary>
+        public static float GetFrameRate(long avgTimePerFrame)
+        {
+            return 10000000 / avgTimePerFrame;
+        }
+
         public DirectShowDeviceFrameSource(VideoConfig videoSource)
             : base(videoSource)
         {
@@ -169,32 +203,10 @@ namespace WindowsMediaPlatform.DirectShow
                 mode.Index = index;
                 mode.Width = v.BmiHeader.Width;
                 mode.Height = v.BmiHeader.Height;
-                mode.FrameRate = 10000000 / v.AvgTimePerFrame;
+                mode.FrameRate = GetFrameRate(v.AvgTimePerFrame);
                 mode.Format = MediaFoundation.MFHelper.GetFormat(ammediaType.subType);
 
-                bool valid = false;
-                Guid[] validTypes = new Guid[]
-                {
-                    MediaSubType.RGB8,
-                    MediaSubType.RGB555,
-                    MediaSubType.RGB565,
-                    MediaSubType.RGB24,
-                    MediaSubType.RGB32,
-                    MediaSubType.MJPG,
-                    MediaSubType.YUY2,
-                    MediaSubType.UYVY,
-                    MediaSubType.YVYU,
-
-                    // I dont understand these, they seem to often cause memory corruption based on device / available filters? Hard to say!
-                    // Update, it's based on render hardware that is available. I think. So we'd need to detect it and only allow certain types..
-                    /*MediaSubType.NV12,
-                    MediaSubType.I420, */
-                };
-
-                if (validTypes.Contains(ammediaType.subType))
-                {
-                    valid = true;
-                }
+                bool valid = IsSupportedSubType(ammediaType.subType);
 
                 if (ammediaType.majorType != MediaType.Video)
                 {
@@ -273,7 +285,7 @@ namespace WindowsMediaPlatform.DirectShow
                         result = true;
 
                         string format = MediaFoundation.MFHelper.GetFormat(ammediaType.subType);
-                        double fps = 10000000 / v.AvgTimePerFrame;
+                        double fps = GetFrameRate(v.AvgTimePerFrame);
                         Tools.Logger.VideoLog.Log(this, DeviceName + " mode ", "Width: " + v.BmiHeader.Width + " Height: " + v.BmiHeader.Height + " FPS: " + fps + " Format: " + format);
                     }
                 }
