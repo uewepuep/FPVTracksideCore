@@ -129,6 +129,7 @@ namespace WindowsMediaPlatform.MediaFoundation
             }
 
             yield return new Tuple<Guid, string>(new Guid("e436eb7d-524f-11ce-9f53-0020af0ba770"), "RGB24");
+            yield return new Tuple<Guid, string>(DirectShowLib.MediaSubType.ARGB32, "ARGB32");
         }
 
         public static HResult CopyAttribute(IMFAttributes pSrc, IMFAttributes pDest, Guid key)

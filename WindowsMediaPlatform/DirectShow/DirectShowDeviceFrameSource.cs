@@ -32,6 +32,7 @@ namespace WindowsMediaPlatform.DirectShow
             MediaSubType.RGB565,
             MediaSubType.RGB24,
             MediaSubType.RGB32,
+            MediaSubType.ARGB32,
             MediaSubType.MJPG,
             MediaSubType.YUY2,
             MediaSubType.UYVY,

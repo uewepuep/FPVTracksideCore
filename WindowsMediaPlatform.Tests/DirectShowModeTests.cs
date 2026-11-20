@@ -14,6 +14,7 @@ namespace WindowsMediaPlatform.Tests
         private static readonly Guid HDYC = new Guid("43594448-0000-0010-8000-00aa00389b71");
         private static readonly Guid V210 = new Guid("30313276-0000-0010-8000-00aa00389b71");
         private static readonly Guid R210 = new Guid("30313272-0000-0010-8000-00aa00389b71");
+        private static readonly Guid ARGB32 = new Guid("773c9ac0-3274-11d0-b724-00aa006c1a01");
 
         [Theory]
         [InlineData("59565955-0000-0010-8000-00aa00389b71")]
@@ -30,6 +31,21 @@ namespace WindowsMediaPlatform.Tests
             Assert.False(DirectShowDeviceFrameSource.IsSupportedSubType(HDYC));
             Assert.False(DirectShowDeviceFrameSource.IsSupportedSubType(V210));
             Assert.False(DirectShowDeviceFrameSource.IsSupportedSubType(R210));
+        }
+
+        /// <summary>
+        /// The Blackmagic WDM driver only offers HD and UHD modes as HDYC, v210, r210 or ARGB32.
+        /// </summary>
+        [Fact]
+        public void AcceptsArgb32()
+        {
+            Assert.True(DirectShowDeviceFrameSource.IsSupportedSubType(ARGB32));
+        }
+
+        [Fact]
+        public void NamesDirectShowArgb32()
+        {
+            Assert.Equal("ARGB32", MediaFoundation.MFHelper.GetFormat(ARGB32));
         }
 
         [Theory]
