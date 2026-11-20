@@ -5,7 +5,6 @@
     <TargetFrameworks>net9.0;net9.0-windows</TargetFrameworks>
     <Configurations>Debug;Release</Configurations>
     <Platforms>x64;AnyCPU</Platforms>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
