@@ -797,7 +797,10 @@ namespace UI.Nodes
 
                 if (EventManager.RaceManager.RaceType.HasLaps())
                 {
-                    EventManager.RaceManager.AddManualLap(Pilot, time);
+                    if (playbackTime.HasValue || ArucoLapRules.Instance?.AddManualLap(Pilot, time) != true)
+                    {
+                        EventManager.RaceManager.AddManualLap(Pilot, time);
+                    }
                 }
                 else
                 {

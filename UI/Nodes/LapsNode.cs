@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Timing;
 using Tools;
+using UI.Video;
 
 namespace UI.Nodes
 {
@@ -307,7 +308,11 @@ namespace UI.Nodes
             {
                 mm.AddItem("Add Lap Now", () =>
                 {
-                    EventManager.RaceManager.AddManualLap(Pilot, DateTime.Now);
+                    DateTime now = DateTime.Now;
+                    if (ArucoLapRules.Instance?.AddManualLap(Pilot, now) != true)
+                    {
+                        EventManager.RaceManager.AddManualLap(Pilot, now);
+                    }
                 });
 #if DEBUG
                 mm.AddItem("Add Sector Now", () =>

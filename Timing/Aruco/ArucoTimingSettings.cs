@@ -77,9 +77,14 @@ namespace Timing.Aruco
         [Description("Signal ratio below which a frame is treated as lost signal (0.0 - 1.0). RF snow ~0.01-0.07, live video ~0.6-0.85. Lower = less aggressive. Only used when Ignore Lost-Signal Frames is enabled.")]
         public float LostSignalThreshold { get; set; }
 
-        [Category("Detection")]
+        [Category("Lap Validation")]
+        [DisplayName("Validation Time (s)")]
+        [Description("During a race, a crossing less than this many seconds after the pilot's previous lap is not recorded as a new lap (see Correct Flicker Laps). While ArUco is doing the timing, Add Lap (shortcut, Alt + click, Add Lap Now) records a lap that gives way to ArUco: ignored within this time after a crossing or another such lap, and replaced by a crossing within this time of it. Independent of the event's Min Lap Time, which does not apply to ArUco laps. 0 turns all of this off: every crossing is recorded and Add Lap is the standard manual lap. Only the reference (Primary) instance's setting is used.")]
+        public float ValidationSeconds { get; set; }
+
+        [Category("Lap Validation")]
         [DisplayName("Correct Flicker Laps")]
-        [Description("During a race, when a crossing arrives less than the event's Min Lap Time after the previous one, keep the new one and disqualify the previous one instead of the other way round. A gate pass ends when the marker leaves view, so if it drops out on the way through, the later crossing is the real one - but the automatic check assumes the earlier is. This applies the same rule live that the Marshal / Lap Editor's recalculate button applies afterwards. Only the reference (Primary) instance's setting is used, and only while ArUco is doing the timing.")]
+        [Description("During a race, when a crossing arrives less than Validation Time after the previous ArUco lap, keep the new one and disqualify the previous one. A gate pass ends when the marker leaves view, so if it drops out on the way through, the later crossing is the real one. Off, the new crossing is dropped instead. A crossing that close after a standard manual lap is always dropped. Dropped crossings stay in the marker count log for the Marshal / Lap Editor. Only the reference (Primary) instance's setting is used, and only while ArUco is doing the timing.")]
         public bool CorrectFlickerLaps { get; set; }
 
         [Category("Marshal")]
@@ -129,6 +134,7 @@ namespace Timing.Aruco
             UseMultiThreadDetection = true;
             IgnoreLostSignal = false;
             LostSignalThreshold = 0.4f;
+            ValidationSeconds = 3;
             CorrectFlickerLaps = false;
             RecordMarkerCountLog = false;
             ShowMarkerBox = true;
