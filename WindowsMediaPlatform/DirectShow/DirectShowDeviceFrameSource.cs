@@ -56,7 +56,7 @@ namespace WindowsMediaPlatform.DirectShow
         /// </summary>
         public static float GetFrameRate(long avgTimePerFrame)
         {
-            return 10000000 / avgTimePerFrame;
+            return 10000000f / avgTimePerFrame;
         }
 
         public DirectShowDeviceFrameSource(VideoConfig videoSource)

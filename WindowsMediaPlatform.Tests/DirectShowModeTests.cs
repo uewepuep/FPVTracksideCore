@@ -40,5 +40,15 @@ namespace WindowsMediaPlatform.Tests
         {
             Assert.Equal(expected, DirectShowDeviceFrameSource.GetFrameRate(avgTimePerFrame), 2);
         }
+
+        [Theory]
+        [InlineData(166667L, 60f)]
+        [InlineData(333667L, 29.97f)]
+        [InlineData(166833L, 59.94f)]
+        [InlineData(417083L, 23.976f)]
+        public void KeepsFractionalFrameRates(long avgTimePerFrame, float expected)
+        {
+            Assert.Equal(expected, DirectShowDeviceFrameSource.GetFrameRate(avgTimePerFrame), 2);
+        }
     }
 }
