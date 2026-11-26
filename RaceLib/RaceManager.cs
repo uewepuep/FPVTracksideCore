@@ -1523,7 +1523,10 @@ namespace RaceLib
 
             if (lap != null)
             {
-                if (detection.TimingSystemType != TimingSystemType.Manual)
+                // Video timing (ArUco) decides short laps itself before they get here; its
+                // later crossing is the real one, which Lapalyser's guess does not know.
+                if (detection.TimingSystemType != TimingSystemType.Manual
+                    && detection.TimingSystemType != TimingSystemType.Video)
                     Lapalyser.OnLap(lap);
 
                 if (detection.Valid)

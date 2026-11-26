@@ -33,7 +33,6 @@ namespace UI.Video
         private readonly TimingSystemManager timingSystemManager;
         private readonly ChannelsGridNode channelsGridNode;
         private readonly RaceManager raceManager;
-        private readonly ArucoFlickerLapCorrector flickerLapCorrector;
 
         private volatile bool run;
         private Thread thread;
@@ -53,13 +52,6 @@ namespace UI.Video
             if (raceManager != null)
             {
                 raceManager.OnRaceReset += RaceManager_OnRaceReset;
-            }
-
-            // Owned here so it lives and dies with the rest of the ArUco machinery. It checks
-            // the ArUco settings itself, so it costs nothing when the setting is off.
-            if (grid?.EventManager != null)
-            {
-                flickerLapCorrector = new ArucoFlickerLapCorrector(grid.EventManager, tsm);
             }
         }
 
@@ -95,7 +87,6 @@ namespace UI.Video
             {
                 raceManager.OnRaceReset -= RaceManager_OnRaceReset;
             }
-            flickerLapCorrector?.Dispose();
             CleanUp();
         }
 

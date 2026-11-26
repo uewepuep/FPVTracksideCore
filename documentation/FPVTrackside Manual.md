@@ -22,6 +22,12 @@
     - [Lap RF 8 way](#lap-rf-8-way)
     - [Lap RF Puck](#lap-rf-puck)
     - [ArUco (Video Marker)](#aruco-video-marker)
+      - [How ArUco timing works](#how-aruco-timing-works)
+      - [Placing the markers](#placing-the-markers)
+      - [Marker size and layout](#marker-size-and-layout)
+      - [Recommended video input](#recommended-video-input)
+      - [ArUco timing systems: Primary and Split](#aruco-timing-systems-primary-and-split)
+      - [ArUco settings](#aruco-settings)
     - [Delta 5 / ZippyD](#delta-5-zippyd)
     - [Dummy](#dummy)
     - [Multiple Timing Systems](#multiple-timing-systems)
@@ -224,6 +230,7 @@ So the main things to be aware of
 
 - Delayed. It only invalidates after the next lap.
 - It only removes the clear false reads.
+- It doesn't apply to ArUco laps, which use the ArUco timing system's own Validation Time instead (see [ArUco settings](#aruco-settings)).
 - It can’t invalidate the last lap or change final positioning.
 - Leaves big decisions to the Race Director
 
@@ -295,29 +302,150 @@ After that it’s just a matter of selecting LapRF Puck USB and using the drop d
 
 ### ArUco (Video Marker)
 
-ArUco timing detects a printed marker directly in the pilots' FPV video feeds instead of using an RF timing gate. It's a good option if you don't have RotorHazard or LapRF hardware, since there's nothing to buy — it just runs on the video you're already capturing.
+ArUco timing detects printed markers directly in the pilots' FPV video feeds instead of using an RF timing gate. It's a good option if you don't have RotorHazard or LapRF hardware, since there's nothing to buy — it just runs on the video you're already capturing.
 
-Because it works off the video feed, you'll need Video Settings configured first (capture device added, channels assigned to pilots) before adding an ArUco timing system. Print or display an ArUco marker (4x4_50 dictionary, IDs 0 to 49) and mount it at the gate you want to time, positioned so it's clearly visible in each pilot's camera as they cross.
+Because it works off the video feed, you'll need Video Settings configured first (capture device added, channels assigned to pilots) before adding an ArUco timing system. To add it, press Add in Timing Settings and choose "ArUco (Video Marker)". On macOS this option is greyed out until OpenCV is available on the machine.
 
-You can generate printable markers at [chev.me/arucogen](https://chev.me/arucogen/) — set the dictionary to "Original ArUco 4x4 (50, 100, 250, 1000)", set the Marker ID (0-3) and the physical size in mm, then print or export as SVG.
+#### How ArUco timing works
 
-To add it, press Add in Timing Settings and choose "ArUco (Video Marker)". On macOS this option is greyed out until OpenCV is available on the machine.
+An ArUco marker is a black and white square pattern that can be found in an image and read as an ID. FPVTrackside uses the 4x4_50 dictionary, so marker IDs are 0 to 49. A marker is a 4x4 pattern inside a one-cell black border (6x6 cells in all), and it needs a white margin around it to be read.
 
-Set Marker IDs to whichever ID(s) you printed (default is "0"). You can list more than one, comma-separated, if several physical markers all belong to the same gate — this is how the TVPAS2-style multi-marker gates work: mount several markers (e.g. IDs "0,1,2,3") at different points on the one gate structure so at least a couple stay visible regardless of the pilot's line, tilt, or motion blur. You don't need all of them seen at once — see Marker Threshold below.
+A gate pass is recorded in four steps:
 
-Detection mode can be switched between Original (raw frame), Corrected (undistorted, needs a calibration file) and Hybrid (runs both and merges the results — the default, and the most reliable, but the heaviest on CPU). To enable Corrected or Hybrid properly, drop a TVPAS2-compatible camera_calibration.json into the Aruco folder next to the FPVTrackside executable — without it, correction is skipped and detection effectively runs in Original mode.
+1. **Approach** — the gate comes into view and at least Marker Threshold of the gate's markers are seen in the same frame. The gate is now "in view".
+2. **Fly through** — the markers leave the frame as the pilot passes the gate, and the count drops below the threshold.
+3. **Confirm** — once the count has stayed below the threshold for Flicker Length, the pass is confirmed. A marker that only drops out for a moment does not count as a pass.
+4. **Record** — the crossing is timed at the moment the markers left view, then checked against Validation Time before it becomes a lap.
 
-A few other settings worth knowing about:
+What this means in practice:
 
-- Marker Threshold — how many of your listed Marker IDs need to be visible at the same time, in the same frame, before the gate counts as "in view". Defaults to 2, so if you've listed several markers for redundancy you don't need every one of them in shot at once — just this many. Dropping it to 1 makes false positives from OSD elements more likely.
-- Flicker Length MS — how long a marker has to be gone before a lap/split is actually recorded. Defaults to 150ms and stops a single dropped frame from splitting one pass into two. Raise it if you're getting doubled-up laps, but every millisecond you add is a delay before the lap shows up on screen.
-- Min Marker Percent — filters out markers that are too small/far away to be a reliable read.
-- Multi-thread Detection — runs detection for each channel in parallel. Leave this on unless you're short on CPU cores.
-- Ignore Lost-Signal Frames / Lost Signal Threshold — if your pilots run analog video that shows RF static on a crash rather than going to black, turn this on so the static doesn't get mistaken for markers or spike your CPU.
+- **No extra hardware.** All you need is each pilot's video. Every pilot has their own channel, so pilots never interfere with each other the way RF signals can.
+- **A clear crossing time.** An RF timer works from the peak of the signal strength; ArUco uses the frame where the markers left view, so it is accurate to about one frame (around 17 ms at 60 fps).
+- **It depends on video quality.** Markers can't be read through video breakup, motion blur or backlight. Cameras used with analog VTXs can drop their shutter speed to around 1/60 s, so at high speed the markers blur and are not recognised. To deal with blur, put the marker gate where pilots have slowed down — after a turn, before they accelerate again — and make the markers larger so they can be recognised from further away.
+- **Any marker leaving view counts as a crossing.** If the markers are visible from somewhere else on the track and then leave view, that is recorded as a crossing too. Thinking about where the markers can be seen from is the most important part of setting up. If a quad somewhere other than the gate picks up the markers in its video, block the line of sight with a screen.
 
-Turning on the Show Marker Box / Show Marker ID / Show Marker Size / Show Detection FPS / Show Signal Ratio overlay options draws that info directly onto the video, live and in saved Replay footage, which is the easiest way to tune the above settings — you can watch detections happening in real time and see exactly why a lap did or didn't register.
+#### Placing the markers
 
-Like the other timing systems, an ArUco instance is either Primary or Split — see Multiple Timing Systems below. Only one Primary is allowed; extra ArUco instances added after that are treated as Splits and only need their own Marker IDs set, since the rest of the detection settings are shared from the Primary. With 50 marker IDs available (0-49) you've got plenty of room to give every gate on the track its own distinct ID, or a small group of IDs if you want the multi-marker redundancy described above.
+The rule is: markers should be visible only while approaching the gate, and must leave the frame for certain when the pilot flies through.
+
+- **Put the marker gate where pilots are slower.** Place it after a turn, before the pilots accelerate again. With a camera shutter of around 1/60 s, markers at the end of a straight are too blurred to read.
+- **Mount the markers on the gate frame, facing the approach.** Use places that always leave the frame when the pilot flies through, such as the left and right posts or the top of the gate. Face the markers square to the camera of an approaching quad: seen at an angle a marker looks narrow and is harder to read. Where pilots pass the gate at an angle — yawed, straight out of a turn for example — the markers can be angled to match.
+- **Use several markers, spaced apart.** Marker Threshold defaults to 2, so at least two markers have to be in the same frame. Space them so both stay in view until just before the pilot passes through, for example one on each post. You can use several copies of the same ID, or list different IDs in Marker IDs. To time slower pilots accurately, smaller markers can be mixed in: with less blur, a slow quad's camera recognises small markers too.
+- **Match the camera height and tilt.** FPV cameras are usually tilted up, so low markers tend to leave the bottom of the frame early. Aim for a height where the markers sit near the middle of the frame on approach.
+- **Use different IDs for each gate.** The start/finish gate (Primary) and any sector gates (Split) need markers with different IDs. Each timing system only reacts to the IDs registered to it.
+- **Avoid places that are visible from other parts of the track.** Markers seen from a turn-back or a parallel section are recorded as a crossing every time they come into view and leave again. If they are recognised from such places, block them with a screen. Never put another marker on the back of a marker.
+- **Avoid glare and backlight.** If backlight or reflections make the black parts look whitish, the marker can't be read. Glossy paper and lamination reflect light, so print on matte paper and mount it flat on a board. Avoid facing the markers so that the sun or strong lights are behind them. Where sun or lights shine directly on the markers, making the black parts from a material that reflects little light, such as felt, gives good results.
+- **Keep the white margin.** Leave at least one cell of white around the black border. Stuck straight onto a black post, the border blends into the background and can't be read.
+- **Watch the start position.** If the markers can be seen from the start, a pilot taking off and leaving them behind is recorded as a crossing. Right after the start, only the event's Race Start Ignore Detections applies (0.5 s by default); a first crossing after that is recorded whatever the Validation Time.
+
+#### Marker size and layout
+
+The usual setup is **one marker printed on a sheet of A3 paper** (297 x 420 mm). Keeping a one-cell white margin, the marker can be up to about 22 cm across.
+
+These are commonly **stacked three high on each side of the gate**. Optionally, rows of markers are also placed **along the top and bottom of the gate**.
+
+```
+        [ ] [ ] [ ]         <- optional
+  [ ]                 [ ]
+  [ ]      gate       [ ]
+  [ ]                 [ ]
+        [ ] [ ] [ ]         <- optional
+```
+
+You can generate printable markers at [chev.me/arucogen](https://chev.me/arucogen/) — set the dictionary to "Original ArUco 4x4 (50, 100, 250, 1000)", set the Marker ID (0-49) and the physical size in mm, then print or export as SVG.
+
+#### Recommended video input
+
+ArUco reads each pilot's video directly, so the video input settings affect the timing.
+
+| Input | Recommended setting |
+|---|---|
+| One input split 2x2 into four channels | **1280x720, 60 FPS** |
+
+Split 2x2, each channel is 640x360. Detection runs at 480x360 per channel, so that is enough resolution. The crossing time is decided frame by frame, so capturing at 60 FPS makes timing more accurate. Turn on Show Detection FPS to check that detection keeps up at around 60 FPS.
+
+#### ArUco timing systems: Primary and Split
+
+Add one ArUco timing system for each gate (each set of marker IDs). They all detect on the same video, and each one only counts its own markers.
+
+- **Primary** — the start/finish gate, which closes laps. Only one Primary is allowed; any extra Primary is turned into a Split when the timing systems start.
+- **Split** — a sector gate, which records split times. A Split that is not the reference only shows Marker IDs in its settings.
+- **Reference** — the ArUco timing system whose settings all the others share (detection parameters, thresholds, overlay). This is the Primary, or the first ArUco in the list when there is no Primary.
+
+#### ArUco settings
+
+Each setting below says which timing system's value is used: **own** (each timing system has its own), **reference** (the reference's value is used by all), or **Primary** (only the Primary's value; no effect without an ArUco Primary).
+
+##### Marker
+
+- **Marker IDs** (default "0", own) — the IDs (0-49) of the markers on this gate. Separate several with commas, e.g. "0,1". Any of the listed IDs counts. Give each gate different IDs. The timing system's name, e.g. "ArUco (Marker 0)", is made from this value.
+- **Role** (default Primary, own) — whether this gate closes laps (Primary) or records split times (Split).
+
+##### Detection
+
+- **Marker Threshold** (default 2, reference) — the gate is "in view" while at least this many of this timing system's markers are seen at the same time in one frame, and "out of view" when the count drops below it. Raising it stops a single misread pattern from counting as a pass, but needs more markers, and the gate goes "out of view" as soon as one of them leaves the frame just before the pilot passes through. Lowering it to 1 lets a single marker work, but makes false detections more likely.
+- **Flicker Length (ms)** (default 150, reference) — how long the markers must stay out of view before the pass is confirmed. This is the wait that stops a marker dropping out for a moment, through blur or video breakup, from counting as a pass. Longer makes double counts less likely but delays the lap appearing by the same amount; shorter shows laps sooner but double counts more easily. The crossing time itself — the moment the markers left view — is not changed by this setting.
+- **Min Marker Percent** (default 0.1, reference) — the smallest marker counted, as a percentage of the frame area. Smaller candidates are dropped before the ID is read, which also saves CPU on RF static. Raising it ignores distant markers, so a crossing is less likely to be judged too early, before the real gate; but the gate is only "in view" close up, so at high speed the markers are more likely not to be recognised at all. 0 restores OpenCV's default limit. Use Show Marker Size (%) to see how large the markers actually appear.
+- **Detect Mode** (default Hybrid, reference)
+  - **Original** — detects on the video as it is. The lightest.
+  - **Corrected** — detects on an image corrected for wide-angle lens distortion, so markers that bend near the edge of the frame can be read.
+  - **Hybrid** — detects on both and merges the results. Reads best, but is the heaviest.
+
+  Corrected and Hybrid use the standard calibration file shipped with FPVTrackside. Put detection FPS first: only use Hybrid if Show Detection FPS shows detection running at around 60 FPS with it.
+- **Hybrid Distance Threshold** (default 20 px, reference) — in Hybrid mode, when Original and Corrected both find a marker with the same ID and their centres are within this many pixels, they are merged into one. There is no need to change the default.
+- **Error Correction Rate** (default 0.6, reference) — how much of a misread pattern is corrected and accepted (0.0 - 1.0). Higher reads blurred or dirty markers, but is more likely to mistake an unrelated pattern for a marker. Lower misreads less but misses more.
+- **Multi-thread Detection** (default on, reference) — detects each channel in parallel. Recommended for CPUs with 4 or more cores. Off, all channels are processed one after another on a single thread. Try both, and keep the one with the higher detection FPS in Show Detection FPS.
+- **Ignore Lost-Signal Frames** (default off, reference) — during a race, when a racing pilot's video is lost (RF static or a no-signal screen), detection is given a black frame instead. Static produces huge numbers of contours, which cause CPU spikes and false detections. Only the image given to detection changes; the video on screen is unchanged. The default is off, but **using it on is recommended** — especially at venues where video breaks up, or with many pilots flying at once.
+- **Lost Signal Threshold** (default 0.4, reference) — a frame with a signal ratio below this is treated as lost (0.0 - 1.0). As a guide, RF static is about 0.01 - 0.07 and normal video about 0.6 - 0.85. Lower only drops static; too high drops dark video as well. Set it while watching Show Signal Ratio. Only used when Ignore Lost-Signal Frames is on.
+
+##### Lap Validation
+
+These only apply while ArUco is the Primary and a race is running. ArUco laps are not checked by the event's Min Lap Time (Lapalyser); these settings decide them instead.
+
+- **Validation Time (s)** (default 3, 0 = off, Primary) — the time (W) that decides what happens when a marker drops out for a moment during a pass, or when an ArUco lap and a manual lap overlap. It is independent of the event's Min Lap Time.
+
+  **Crossings.** A lap can't be shorter than W, so a crossing that arrives less than W after the previous lap is taken as the same gate pass counted twice — which is what happens when a marker drops out for a moment on the way through. Which of the two is kept depends on the previous lap. This table is for an ArUco crossing arriving after a previous lap; for a manual lap entered afterwards, see Manual laps during a race below.
+
+  | Previous lap | Next ArUco crossing, less than W later |
+  |---|---|
+  | An ArUco crossing | Depends on Correct Flicker Laps. **On**: the previous lap is disqualified and the later crossing kept. **Off**: the previous lap stays valid and the later crossing is dropped (not recorded as a lap). |
+  | A manual lap entered during the race (Add Lap, Alt + click, Add Lap Now) | **ArUco wins.** The manual lap is disqualified and the ArUco crossing kept, whether the crossing is before or after the manual lap. |
+
+  Example (W = 3 s, Correct Flicker Laps off), with the previous lap recorded at 12:00:10.0:
+  - A crossing at 12:00:11.2 (1.2 s later) is taken as the second count of the same pass and dropped. With Correct Flicker Laps on, 10.0 is disqualified and 11.2 kept instead.
+  - A crossing at 12:00:25.0 (15 s later) is recorded as the next lap as normal.
+
+  The first crossing of a race has no previous lap to compare with, so it is recorded whatever W is. Right after the start only the event's Race Start Ignore Detections applies.
+
+  **Manual laps during a race.** A lap entered with the Add Lap shortcuts (Alt + 1-8 by default), Alt + click on a channel or Add Lap Now is recorded as a provisional lap that gives way to ArUco:
+  - it is ignored when a crossing or another provisional lap is less than W before it (stopping repeated or mistaken presses);
+  - it is replaced by a crossing less than W before or after it;
+  - it is never the previous lap a crossing is measured from;
+  - once an operator sets it valid or invalid by hand, it becomes a standard manual lap.
+
+  Set W shorter than the fastest possible lap, and longer than the gap between the two counts of a double-counted pass. Dropped crossings stay in the marker count log, so the marshal screen can bring them back.
+
+  **0 turns all of this off**: every crossing is recorded and Add Lap is the standard manual lap. Manual laps are also unchanged outside a race, on the replay, in the lap editor and marshal screen, and whenever ArUco isn't the Primary.
+- **Correct Flicker Laps** (default off, Primary) — decides which to keep when a crossing arrives less than Validation Time after the previous ArUco lap.
+  - **On** — keep the new crossing and disqualify the previous lap. When a marker drops out for a moment during a pass, an early crossing and the real one are both reported; a gate pass ends when the markers leave view, so the real one is the later one.
+  - **Off** — drop the new crossing; the first one stays.
+
+  Turn it on if markers often drop out inside the gate. No effect when Validation Time is 0.
+
+##### Marshal
+
+- **Record Marker Count Log** (default off, reference) — records how many markers were seen on each pilot's channel, every frame, for the whole race. This is the waveform drawn behind the lap times in the marshal screen and lap editor, and what the recalculate button reads; a race recorded without it can only be corrected by hand afterwards. Saved to `events/<EventID>/aruco_waveform/<RaceID>.json`, roughly 100 KB per pilot per minute, and kept until the event folder is deleted. Only the reference (Primary) records.
+
+##### Overlay
+
+These only draw on the video and don't affect detection or timing. Use them while setting up and tuning.
+
+- **Show Marker Box** (default on, reference) — draws the outline of each detected marker on the live video, so you can see at a glance which markers are being read. It only appears in Replay recordings when the video is captured with FFmpeg; captured with Media Foundation or DirectShow, it isn't shown on the replay.
+- **Show Marker ID** (default on, reference) — draws each marker's ID on the live video, to check that the right IDs are mounted. Appears in Replay the same way as Show Marker Box.
+- **Show Marker Size (%)** (default on, reference) — shows each marker's area as a percentage of the frame. It uses the same unit as Min Marker Percent, so the two can be compared directly. Use it to decide marker size and placement.
+- **Show Detection FPS** (default off, reference) — shows the number of frames detected per second on each channel. With no frames missed it matches the camera's frame rate; lower means the CPU isn't keeping up.
+- **Show Signal Ratio** (default off, reference) — shows each channel's signal ratio as measured/threshold. It turns red below the threshold, meaning the frame is treated as lost signal. Use it to set Lost Signal Threshold. When on, the signal ratio is measured even with Ignore Lost-Signal Frames off.
+- **Character Flip Vertical** (default on, reference) — draws the overlay text (ID / size % / FPS) upside down. The text stays in place; only the characters are flipped. Depending on how the video is captured (DirectShow, Media Foundation or FFmpeg), the text can appear upside down; use this option to fix it.
 
 
 ### Delta 5
